@@ -332,6 +332,11 @@ public:
   }
 
 protected:
+  // The whole _CCCL_UNREACHABLE() thing was added for MSVC, yet now it complains the
+  // _CCCL_UNREACHABLE() is in fact not reachable. Incredible.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
 #  ifndef _CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_HOST_API ::CUcontext __cu_context() const
   {
@@ -349,11 +354,14 @@ protected:
         return __ctx.__ctx_device_;
     }
     _CCCL_UNREACHABLE();
+    return ::CUcontext{};
 #    else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
     return ::cuda::__driver::__streamGetCtx(__stream);
 #    endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
   }
 #  endif // !_CCCL_DOXYGEN_INVOKED
+
+  _CCCL_DIAG_POP
 };
 
 _CCCL_HOST_API inline void event_ref::record(stream_ref __stream) const
