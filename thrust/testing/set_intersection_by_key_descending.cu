@@ -18,7 +18,7 @@ void TestSetIntersectionByKeyDescendingSimple()
   Vector ref_key{4, 0}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),

@@ -23,7 +23,7 @@ __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_o
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LOGICAL_WARP_THREADS;
 
   T inc_out, exc_out;
   T thread_data = in[tid];
@@ -62,7 +62,7 @@ __global__ void warp_scan_kernel(T* in, T* out, ActionT action)
     cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
   // Get warp index
-  int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LOGICAL_WARP_THREADS;
 
   T thread_data = in[tid];
 
@@ -264,7 +264,7 @@ c2h::host_vector<T> compute_host_reference(
 
   // The accumulator variable is used to calculate warp_aggregate without
   // taking initial_value into consideration in both exclusive and inclusive scan.
-  int num_warps = cuda::ceil_div(static_cast<int>(result.size()), logical_warp_threads);
+  const int num_warps = cuda::ceil_div(static_cast<int>(result.size()), logical_warp_threads);
   c2h::host_vector<T> warp_accumulator(num_warps);
   if (mode == scan_mode::exclusive)
   {

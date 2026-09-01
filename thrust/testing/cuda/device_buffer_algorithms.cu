@@ -19,7 +19,7 @@ namespace
 void TestDeviceBufferShuffleCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto buffer       = cuda::make_device_buffer<int>(stream, device, 5, cuda::no_init);
   const auto policy = thrust::cuda::par_nosync.on(stream.get());
@@ -37,7 +37,7 @@ DECLARE_UNITTEST(TestDeviceBufferShuffleCudaStreams);
 void TestDeviceBufferSortCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto buffer       = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{3, 1, 4, 0, 2});
   const auto policy = thrust::cuda::par_nosync.on(stream.get());

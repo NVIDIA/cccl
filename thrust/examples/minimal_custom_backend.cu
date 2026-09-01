@@ -44,7 +44,7 @@ int main()
   thrust::device_vector<int> vec(1);
 
   // create an instance of our system
-  my_system sys;
+  my_system sys; // NOLINT(misc-const-correctness)
 
   // To invoke our version of for_each, pass sys as the first parameter
   thrust::for_each(sys, vec.begin(), vec.end(), cuda::std::negate{});

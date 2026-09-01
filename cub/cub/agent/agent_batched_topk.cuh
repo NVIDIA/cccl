@@ -255,7 +255,7 @@ struct agent_batched_topk_worker_per_segment
         }
 
         // Load Values (if applicable)
-        [[maybe_unused]] value_t thread_values[items_per_thread];
+        [[maybe_unused]] value_t thread_values[items_per_thread]; // NOLINT(misc-const-correctness)
 
         if constexpr (!is_keys_only)
         {

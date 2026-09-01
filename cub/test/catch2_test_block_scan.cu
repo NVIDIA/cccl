@@ -74,7 +74,7 @@ template <cub::BlockScanAlgorithm Algorithm,
           class ActionT>
 void block_scan(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
 {
-  dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
+  const dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
 
   block_scan_kernel<Algorithm, ItemsPerThread, BlockDimX, BlockDimY, BlockDimZ, T, ActionT>
     <<<1, block_dims>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
@@ -86,7 +86,7 @@ void block_scan(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT a
 template <cub::BlockScanAlgorithm Algorithm, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
 void block_scan_single(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
 {
-  dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
+  const dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
 
   block_scan_single_kernel<Algorithm, BlockDimX, BlockDimY, BlockDimZ, T, ActionT>
     <<<1, block_dims>>>(thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
@@ -520,7 +520,7 @@ CUB_TEST("Block scan returns valid block aggregate", "[scan][block]", CUB_SMALL,
     d_in, d_out, sum_aggregate_op_t<type, mode>{target_thread_id, thrust::raw_pointer_cast(d_block_aggregate.data())});
 
   c2h::host_vector<type> h_out = d_in;
-  type block_aggregate         = host_scan(mode, h_out, std::plus<type>{});
+  const type block_aggregate   = host_scan(mode, h_out, std::plus<type>{});
 
   REQUIRE(h_out == d_out);
   REQUIRE(block_aggregate == d_block_aggregate[0]);
@@ -661,7 +661,7 @@ CUB_TEST("Block custom op scan with initial value returns valid block aggregate"
       target_thread_id, initial_value, thrust::raw_pointer_cast(d_block_aggregate.data())});
 
   c2h::host_vector<type> h_out = d_in;
-  type h_block_aggregate       = host_scan(
+  const type h_block_aggregate = host_scan(
     mode,
     h_out,
     [](type l, type r) {

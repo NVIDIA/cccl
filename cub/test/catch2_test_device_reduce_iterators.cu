@@ -32,11 +32,11 @@ using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::in
 template <typename T, typename offset_t>
 void test_big_indices_helper(offset_t num_items)
 {
-  cuda::constant_iterator<T> const_iter(T{1});
+  const cuda::constant_iterator<T> const_iter(T{1});
   c2h::device_vector<std::size_t> out(1);
   std::size_t* d_out = thrust::raw_pointer_cast(out.data());
   device_sum(const_iter, d_out, num_items);
-  std::size_t result = out[0];
+  const std::size_t result = out[0];
 
   REQUIRE(result == num_items);
 }
@@ -80,8 +80,8 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", C
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t            = cuda::std::__accumulator_t<op_t, item_t, init_value_t>;
-  output_t expected_result = compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
+  using accum_t                  = cuda::std::__accumulator_t<op_t, item_t, init_value_t>;
+  const output_t expected_result = compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
   // Run test
   c2h::device_vector<output_t> out_result(num_segments);

@@ -33,7 +33,7 @@ __device__ void test_identity_mapping(Config config)
     static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
     static_assert(cuda::std::is_empty_v<Mapping>);
 
-    [[maybe_unused]] cudax::identity_mapping mapping;
+    [[maybe_unused]] const cudax::identity_mapping mapping;
   }
 
   // Test map(...).

@@ -125,7 +125,7 @@ CUB_TEST("Block radix sort can sort pairs",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison
@@ -178,7 +178,7 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison
@@ -231,7 +231,7 @@ CUB_TEST("Block radix sort can sort mixed pairs",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison
@@ -284,7 +284,7 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison

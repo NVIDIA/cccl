@@ -20,19 +20,19 @@ void TestCopyNFromConstIterator()
 
   std::vector<T> v{0, 1, 2, 3, 4};
 
-  std::vector<int>::const_iterator begin = v.begin();
+  const std::vector<int>::const_iterator begin = v.begin();
 
   // copy to host_vector
   thrust::host_vector<T> h(5, (T) 10);
-  thrust::host_vector<T>::iterator h_result = thrust::copy_n(begin, h.size(), h.begin());
+  const thrust::host_vector<T>::iterator h_result = thrust::copy_n(begin, h.size(), h.begin());
 
   ASSERT_EQUAL_QUIET(h_result, h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
-  thrust::device_vector<T>::iterator d_result = thrust::copy_n(begin, d.size(), d.begin());
+  const thrust::device_vector<T>::iterator d_result = thrust::copy_n(begin, d.size(), d.begin());
 
-  thrust::device_vector<T> dref{0, 1, 2, 3, 4};
+  const thrust::device_vector<T> dref{0, 1, 2, 3, 4};
   ASSERT_EQUAL(d, dref);
   ASSERT_EQUAL_QUIET(d_result, d.end());
 }
@@ -46,14 +46,14 @@ void TestCopyNToDiscardIterator()
   thrust::device_vector<T> d_input = h_input;
 
   // copy from host_vector
-  thrust::discard_iterator<> h_result =
+  const thrust::discard_iterator<> h_result =
     thrust::copy_n(h_input.begin(), h_input.size(), thrust::make_discard_iterator());
 
   // copy from device_vector
-  thrust::discard_iterator<> d_result =
+  const thrust::discard_iterator<> d_result =
     thrust::copy_n(d_input.begin(), d_input.size(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(5);
+  const thrust::discard_iterator<> reference(5);
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -69,15 +69,15 @@ void TestCopyNMatchingTypes()
 
   // copy to host_vector
   thrust::host_vector<T> h(5, (T) 10);
-  typename thrust::host_vector<T>::iterator h_result = thrust::copy_n(v.begin(), v.size(), h.begin());
-  thrust::host_vector<T> href{0, 1, 2, 3, 4};
+  const typename thrust::host_vector<T>::iterator h_result = thrust::copy_n(v.begin(), v.size(), h.begin());
+  const thrust::host_vector<T> href{0, 1, 2, 3, 4};
   ASSERT_EQUAL(h, href);
   ASSERT_EQUAL_QUIET(h_result, h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
-  typename thrust::device_vector<T>::iterator d_result = thrust::copy_n(v.begin(), v.size(), d.begin());
-  thrust::device_vector<T> dref{0, 1, 2, 3, 4};
+  const typename thrust::device_vector<T>::iterator d_result = thrust::copy_n(v.begin(), v.size(), d.begin());
+  const thrust::device_vector<T> dref{0, 1, 2, 3, 4};
   ASSERT_EQUAL(d, dref);
   ASSERT_EQUAL_QUIET(d_result, d.end());
 }
@@ -93,16 +93,16 @@ void TestCopyNMixedTypes()
 
   // copy to host_vector with different type
   thrust::host_vector<float> h(5, (float) 10);
-  typename thrust::host_vector<float>::iterator h_result = thrust::copy_n(v.begin(), v.size(), h.begin());
+  const typename thrust::host_vector<float>::iterator h_result = thrust::copy_n(v.begin(), v.size(), h.begin());
 
-  thrust::host_vector<float> href{0, 1, 2, 3, 4};
+  const thrust::host_vector<float> href{0, 1, 2, 3, 4};
   ASSERT_EQUAL(h, href);
   ASSERT_EQUAL_QUIET(h_result, h.end());
 
   // copy to device_vector with different type
   thrust::device_vector<float> d(5, (float) 10);
-  typename thrust::device_vector<float>::iterator d_result = thrust::copy_n(v.begin(), v.size(), d.begin());
-  thrust::device_vector<float> dref{0, 1, 2, 3, 4};
+  const typename thrust::device_vector<float>::iterator d_result = thrust::copy_n(v.begin(), v.size(), d.begin());
+  const thrust::device_vector<float> dref{0, 1, 2, 3, 4};
   ASSERT_EQUAL(d, dref);
   ASSERT_EQUAL_QUIET(d_result, d.end());
 }
@@ -120,10 +120,10 @@ void TestCopyNVectorBool()
   thrust::copy_n(v.begin(), v.size(), h.begin());
   thrust::copy_n(v.begin(), v.size(), d.begin());
 
-  thrust::host_vector<bool> href{true, false, true};
+  const thrust::host_vector<bool> href{true, false, true};
   ASSERT_EQUAL(h, href);
 
-  thrust::device_vector<bool> dref{true, false, true};
+  const thrust::device_vector<bool> dref{true, false, true};
   ASSERT_EQUAL(d, dref);
 
   ASSERT_EQUAL(d, dref);
@@ -140,7 +140,7 @@ void TestCopyNListTo()
 
   Vector v(l.size());
 
-  typename Vector::iterator v_result = thrust::copy_n(l.begin(), l.size(), v.begin());
+  const typename Vector::iterator v_result = thrust::copy_n(l.begin(), l.size(), v.begin());
 
   Vector ref{0, 1, 2, 3, 4};
   ASSERT_EQUAL(v, ref);
@@ -171,7 +171,7 @@ void TestCopyNCountingIterator()
 {
   using T = typename Vector::value_type;
 
-  thrust::counting_iterator<T> iter(1);
+  const thrust::counting_iterator<T> iter(1);
 
   Vector vec(4);
 
@@ -231,7 +231,7 @@ void TestCopyNDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::copy_n(sys, vec.begin(), 1, vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());

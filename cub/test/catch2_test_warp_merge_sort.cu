@@ -335,7 +335,7 @@ void compute_host_reference(
 {
   for (unsigned int segment_id = 0; segment_id < num_segments; segment_id++)
   {
-    unsigned int segment_size = segment_sizes[segment_id];
+    const unsigned int segment_size = segment_sizes[segment_id];
     std::stable_sort(h_data, h_data + segment_size);
     std::fill(h_data + segment_size, h_data + logical_warp_items, oob_default);
     h_data += logical_warp_items;
@@ -437,8 +437,8 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
     d_in, d_out, d_segment_sizes.cbegin(), oob_default, warp_sort_delegate{});
 
   // Prepare verification data
-  c2h::host_vector<type> h_in_out     = d_in;
-  c2h::host_vector<int> segment_sizes = d_segment_sizes;
+  c2h::host_vector<type> h_in_out           = d_in;
+  const c2h::host_vector<int> segment_sizes = d_segment_sizes;
   compute_host_reference(h_in_out.begin(), segment_sizes, params::total_warps, oob_default, params::logical_warp_items);
 
   // Verify results
@@ -520,7 +520,7 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   // Prepare verification data
   c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
   c2h::host_vector<value_type> h_values_in_out = d_values_in;
-  c2h::host_vector<int> segment_sizes          = d_segment_sizes;
+  const c2h::host_vector<int> segment_sizes    = d_segment_sizes;
   auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
   compute_host_reference(
     cpu_kv_pairs,

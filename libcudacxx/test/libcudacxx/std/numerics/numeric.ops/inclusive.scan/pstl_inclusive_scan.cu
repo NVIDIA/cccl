@@ -46,7 +46,7 @@ template <class Policy>
 void test_inclusive_scan(
   const Policy& policy, const thrust::device_vector<int>& input, thrust::device_vector<int>& output)
 {
-  cuda::transform_iterator expected{cuda::counting_iterator{1}, sum_of_int{}};
+  const cuda::transform_iterator expected{cuda::counting_iterator{1}, sum_of_int{}};
   { // empty should not access anything
     auto res = cuda::std::inclusive_scan(
       policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), static_cast<int*>(nullptr));
@@ -83,7 +83,7 @@ C2H_TEST("cuda::std::inclusive_scan(Iter1, Iter1, Iter2)", "[parallel algorithm]
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_inclusive_scan(policy, input, output);
   }
@@ -97,7 +97,7 @@ C2H_TEST("cuda::std::inclusive_scan(Iter1, Iter1, Iter2)", "[parallel algorithm]
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);

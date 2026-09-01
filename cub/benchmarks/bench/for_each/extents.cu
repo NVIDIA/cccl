@@ -49,8 +49,8 @@ void for_each_in_extents(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   auto elements_1D = ::cuda::isqrt(elements);
   ext_t ext{elements_1D, elements_1D};
-  cuda::std::mdspan<T, ext_t> temp_in{d_in, ext};
-  cuda::std::mdspan<T, ext_t> temp_out{d_out, ext};
+  const cuda::std::mdspan<T, ext_t> temp_in{d_in, ext};
+  const cuda::std::mdspan<T, ext_t> temp_out{d_out, ext};
   op_t<T, OffsetT> op{temp_in, temp_out};
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {

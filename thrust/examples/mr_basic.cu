@@ -34,7 +34,7 @@ int main()
   {
     // no virtual calls will be issued
     using Alloc = thrust::mr::allocator<int, thrust::mr::new_delete_resource>;
-    Alloc alloc(&memres);
+    const Alloc alloc(&memres);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);
   }
@@ -43,7 +43,7 @@ int main()
     // virtual calls will be issued - wrapping in a polymorphic wrapper
     thrust::mr::polymorphic_adaptor_resource<void*> adaptor(&memres);
     using Alloc = thrust::mr::polymorphic_allocator<int, void*>;
-    Alloc alloc(&adaptor);
+    const Alloc alloc(&adaptor);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);
   }
@@ -54,7 +54,7 @@ int main()
     thrust::mr::polymorphic_adaptor_resource<thrust::device_ptr<void>> adaptor(
       thrust::mr::get_global_resource<Resource>());
     using Alloc = thrust::mr::polymorphic_allocator<int, thrust::device_ptr<void>>;
-    Alloc alloc(&adaptor);
+    const Alloc alloc(&adaptor);
 
     do_stuff_with_vector<thrust::device_vector<int, Alloc>>(alloc);
   }
@@ -63,7 +63,7 @@ int main()
   Pool pool(&memres);
   {
     using Alloc = thrust::mr::allocator<int, Pool>;
-    Alloc alloc(&pool);
+    const Alloc alloc(&pool);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);
   }
@@ -73,7 +73,7 @@ int main()
   DisjointPool disjoint_pool(&memres, &memres);
   {
     using Alloc = thrust::mr::allocator<int, DisjointPool>;
-    Alloc alloc(&disjoint_pool);
+    const Alloc alloc(&disjoint_pool);
 
     do_stuff_with_vector<thrust::host_vector<int, Alloc>>(alloc);
   }

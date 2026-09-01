@@ -32,8 +32,8 @@ struct expected_sum_op
 
   __host__ __device__ __forceinline__ ItemT operator()(const uint64_t index) const
   {
-    uint64_t index_within_segment = index % segment_size;
-    uint64_t full_segments        = index / segment_size;
+    const uint64_t index_within_segment = index % segment_size;
+    const uint64_t full_segments        = index / segment_size;
 
     uint64_t sum_within_partial_segment{};
     if (IsExclusive)
@@ -111,7 +111,7 @@ try
     // Ensure that we created the correct output
     auto expected_out_it = cuda::transform_iterator(
       index_it, expected_sum_op<item_t, is_exclusive>{static_cast<index_t>(segment_size), initial_value});
-    bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
+    const bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
     REQUIRE(all_results_correct == true);
   }
   SECTION("InclusiveScanByKey")
@@ -123,7 +123,7 @@ try
     // Ensure that we created the correct output
     auto expected_out_it = cuda::transform_iterator(
       index_it, expected_sum_op<item_t, is_exclusive>{static_cast<index_t>(segment_size), initial_value});
-    bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
+    const bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
     REQUIRE(all_results_correct == true);
   }
 }

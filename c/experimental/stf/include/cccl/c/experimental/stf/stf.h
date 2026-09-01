@@ -1675,7 +1675,7 @@ static inline cudaError_t stf_cuda_kernel_add_desc(
   const void** args)
 {
   CUfunction cufunc;
-  cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
+  const cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
   if (res != cudaSuccess)
   {
     return res;

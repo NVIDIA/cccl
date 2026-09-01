@@ -29,7 +29,7 @@ __device__ void test_virtual_group(Config config, Level level)
 
   // Test virtual group with identity mapping.
   {
-    cudax::virtual_group vg{cuda::gpu_thread, g, cudax::identity_mapping{}};
+    const cudax::virtual_group vg{cuda::gpu_thread, g, cudax::identity_mapping{}};
 
     REQUIRE(cuda::gpu_thread.is_part_of(vg));
 
@@ -49,7 +49,7 @@ __device__ void test_virtual_group(Config config, Level level)
   {
     constexpr auto n = 4;
 
-    cudax::virtual_group vg{cuda::gpu_thread, g, cudax::group_by<n>{}};
+    const cudax::virtual_group vg{cuda::gpu_thread, g, cudax::group_by<n>{}};
 
     REQUIRE(cuda::gpu_thread.is_part_of(vg));
 

@@ -53,8 +53,8 @@ try
     take(c2h::adjust_seed_count(4),
          map(
            [](const std::vector<buffer_size_t>& chunk) {
-             buffer_size_t lhs = chunk[0];
-             buffer_size_t rhs = chunk[1];
+             const buffer_size_t lhs = chunk[0];
+             const buffer_size_t rhs = chunk[1];
              // Optionally ensure lhs < rhs, for example:
              return (lhs < rhs) ? std::make_tuple(lhs, rhs) : std::make_tuple(rhs, lhs);
            },
@@ -68,7 +68,7 @@ try
   // Generate the buffer sizes: Make sure buffer sizes are a multiple of the most granular unit (one AtomicT) being
   // copied (round down)
   c2h::gen(C2H_SEED(2), d_buffer_sizes, min_buffer_size, max_buffer_size);
-  byte_offset_t num_total_bytes = thrust::reduce(d_buffer_sizes.cbegin(), d_buffer_sizes.cend());
+  const byte_offset_t num_total_bytes = thrust::reduce(d_buffer_sizes.cbegin(), d_buffer_sizes.cend());
 
   // Shuffle input buffer source-offsets
   auto d_buffer_src_offsets = get_shuffled_buffer_offsets<buffer_offset_t, byte_offset_t>(d_buffer_sizes, C2H_SEED(1));
@@ -89,12 +89,12 @@ try
   c2h::host_vector<byte_offset_t> h_dst_offsets(d_buffer_dst_offsets);
 
   // Prepare d_buffer_srcs
-  offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
+  const offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
   auto d_buffer_srcs =
     cuda::transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
   // Prepare d_buffer_dsts
-  offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
+  const offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
   auto d_buffer_dsts =
     cuda::transform_iterator(thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
@@ -123,10 +123,11 @@ try
   using byte_offset_t = uint64_t;
   using buffer_size_t = uint64_t;
 
-  byte_offset_t large_target_copy_size = static_cast<byte_offset_t>(std::numeric_limits<uint32_t>::max()) + (32 << 20);
-  constexpr auto data_type_size        = static_cast<byte_offset_t>(sizeof(data_t));
-  byte_offset_t num_items              = large_target_copy_size / data_type_size;
-  byte_offset_t num_bytes              = num_items * data_type_size;
+  const byte_offset_t large_target_copy_size =
+    static_cast<byte_offset_t>(std::numeric_limits<uint32_t>::max()) + (32 << 20);
+  constexpr auto data_type_size = static_cast<byte_offset_t>(sizeof(data_t));
+  const byte_offset_t num_items = large_target_copy_size / data_type_size;
+  const byte_offset_t num_bytes = num_items * data_type_size;
   c2h::device_vector<data_t> d_in(num_items);
   c2h::device_vector<data_t> d_out(num_items, 42);
 
@@ -162,13 +163,13 @@ try
   constexpr auto num_non_empty_buffers = buffer_offset_t{3 << 20};
   constexpr auto num_buffers           = num_empty_buffers + num_non_empty_buffers;
 
-  buffer_size_t min_buffer_size = 1;
-  buffer_size_t max_buffer_size = 100;
+  const buffer_size_t min_buffer_size = 1;
+  const buffer_size_t max_buffer_size = 100;
 
   // Generate the buffer sizes
   c2h::device_vector<buffer_size_t> d_buffer_sizes(num_non_empty_buffers);
   c2h::gen(C2H_SEED(2), d_buffer_sizes, min_buffer_size, max_buffer_size);
-  byte_offset_t num_total_bytes = thrust::reduce(d_buffer_sizes.cbegin(), d_buffer_sizes.cend());
+  const byte_offset_t num_total_bytes = thrust::reduce(d_buffer_sizes.cbegin(), d_buffer_sizes.cend());
 
   // Shuffle buffer offsets
   auto d_buffer_src_offsets = get_shuffled_buffer_offsets<buffer_offset_t, byte_offset_t>(d_buffer_sizes, C2H_SEED(1));
@@ -187,23 +188,23 @@ try
   c2h::host_vector<byte_offset_t> h_dst_offsets(d_buffer_dst_offsets);
 
   // Prepare d_buffer_srcs
-  offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
+  const offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
   auto d_buffer_srcs =
     cuda::transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
   // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
-  prepend_n_constants_op<decltype(d_buffer_srcs), src_ptr_t> src_skip_first_n_op{
+  const prepend_n_constants_op<decltype(d_buffer_srcs), src_ptr_t> src_skip_first_n_op{
     d_buffer_srcs, nullptr, num_empty_buffers};
   auto d_buffer_srcs_skipped =
     cuda::transform_iterator(cuda::counting_iterator(buffer_offset_t{0}), src_skip_first_n_op);
 
   // Prepare d_buffer_dsts
-  offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
-  cuda::transform_iterator<offset_to_ptr_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
+  const offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
+  const cuda::transform_iterator<offset_to_ptr_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
     thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
   // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
-  prepend_n_constants_op<decltype(d_buffer_dsts), dst_ptr_t> dst_skip_first_n_op{
+  const prepend_n_constants_op<decltype(d_buffer_dsts), dst_ptr_t> dst_skip_first_n_op{
     d_buffer_dsts, nullptr, num_empty_buffers};
   auto d_buffer_dsts_skipped =
     cuda::transform_iterator(cuda::counting_iterator(buffer_offset_t{0}), dst_skip_first_n_op);

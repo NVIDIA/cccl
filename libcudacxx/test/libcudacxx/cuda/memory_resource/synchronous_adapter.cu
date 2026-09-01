@@ -51,7 +51,7 @@ struct explicit_dynamic_resource
 
 C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("Test wrapping a resource")
   {
@@ -94,7 +94,7 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 
   SECTION("explicit dynamic_accessibility_property overrides template")
   {
-    cuda::mr::synchronous_resource_adapter<explicit_dynamic_resource> adapter{explicit_dynamic_resource{}};
+    const cuda::mr::synchronous_resource_adapter<explicit_dynamic_resource> adapter{explicit_dynamic_resource{}};
     STATIC_CHECK(cuda::has_property<decltype(adapter), cuda::mr::dynamic_accessibility_property>);
     CHECK(get_property(adapter, cuda::mr::dynamic_accessibility_property{})
           == cuda::mr::__memory_accessibility ::__device);

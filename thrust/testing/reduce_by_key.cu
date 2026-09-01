@@ -132,15 +132,15 @@ struct TestReduceByKey
     using HostIteratorPair   = typename cuda::std::pair<HostKeyIterator, HostValIterator>;
     using DeviceIteratorPair = typename cuda::std::pair<DeviceKeyIterator, DeviceValIterator>;
 
-    HostIteratorPair h_last =
+    const HostIteratorPair h_last =
       thrust::reduce_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys_output.begin(), h_vals_output.begin());
-    DeviceIteratorPair d_last =
+    const DeviceIteratorPair d_last =
       thrust::reduce_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys_output.begin(), d_vals_output.begin());
 
     ASSERT_EQUAL(h_last.first - h_keys_output.begin(), d_last.first - d_keys_output.begin());
     ASSERT_EQUAL(h_last.second - h_vals_output.begin(), d_last.second - d_vals_output.begin());
 
-    size_t N = h_last.first - h_keys_output.begin();
+    const size_t N = h_last.first - h_keys_output.begin();
 
     h_keys_output.resize(N);
     h_vals_output.resize(N);
@@ -165,22 +165,22 @@ struct TestReduceByKeyToDiscardIterator
     thrust::device_vector<K> d_keys = h_keys;
     thrust::device_vector<V> d_vals = h_vals;
 
-    thrust::host_vector<K> h_keys_output(n);
+    const thrust::host_vector<K> h_keys_output(n);
     thrust::host_vector<V> h_vals_output(n);
-    thrust::device_vector<K> d_keys_output(n);
+    const thrust::device_vector<K> d_keys_output(n);
     thrust::device_vector<V> d_vals_output(n);
 
     thrust::host_vector<K> unique_keys = h_keys;
     unique_keys.erase(thrust::unique(unique_keys.begin(), unique_keys.end()), unique_keys.end());
 
     // discard key output
-    size_t h_size =
+    const size_t h_size =
       thrust::reduce_by_key(
         h_keys.begin(), h_keys.end(), h_vals.begin(), thrust::make_discard_iterator(), h_vals_output.begin())
         .second
       - h_vals_output.begin();
 
-    size_t d_size =
+    const size_t d_size =
       thrust::reduce_by_key(
         d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), d_vals_output.begin())
         .second
@@ -213,7 +213,7 @@ void TestReduceByKeyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reduce_by_key(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());

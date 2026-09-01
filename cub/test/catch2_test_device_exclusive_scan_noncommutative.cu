@@ -148,7 +148,7 @@ CUB_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
   const pair_t init_value{0, 0}; // identity element of the bicyclic monoid
 
   size_t tmp_size{};
-  cudaError_t status1 =
+  const cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op_t{}, init_value, num_items);
   REQUIRE(cudaSuccess == status1);
   REQUIRE(tmp_size > 0);
@@ -158,13 +158,13 @@ CUB_TEST("Device exclusive scan works with non-commutative bicyclic monoid opera
   c2h::device_vector<byte> tmp(tmp_size);
   byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  cudaError_t status2 =
+  const cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op_t{}, init_value, num_items);
   REQUIRE(cudaSuccess == status2);
 
   // transfer to host_vector is synchronizing
-  c2h::host_vector<pair_t> h_output(output);
-  c2h::host_vector<pair_t> h_input(input);
+  const c2h::host_vector<pair_t> h_output(output);
+  const c2h::host_vector<pair_t> h_input(input);
   c2h::host_vector<pair_t> h_expected(num_items);
 
   compute_exclusive_scan_reference(h_input.cbegin(), h_input.cend(), h_expected.begin(), init_value, op_t{});
@@ -205,7 +205,7 @@ CUB_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   symbol_t* d_output = thrust::raw_pointer_cast(output.data());
 
   size_t tmp_size{};
-  cudaError_t status1 =
+  const cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op, empty_stack_symbol, num_items);
   REQUIRE(cudaSuccess == status1);
   REQUIRE(tmp_size > 0);
@@ -215,13 +215,13 @@ CUB_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   c2h::device_vector<byte> tmp(tmp_size);
   byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  cudaError_t status2 =
+  const cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op, empty_stack_symbol, num_items);
   REQUIRE(cudaSuccess == status2);
 
   // transfer to host_vector is synchronizing
-  c2h::host_vector<symbol_t> h_output(output);
-  c2h::host_vector<symbol_t> h_input(input);
+  const c2h::host_vector<symbol_t> h_output(output);
+  const c2h::host_vector<symbol_t> h_input(input);
   c2h::host_vector<symbol_t> h_expected(num_items);
 
   compute_exclusive_scan_reference(h_input.cbegin(), h_input.cend(), h_expected.begin(), empty_stack_symbol, op);
@@ -273,7 +273,7 @@ CUB_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-repor
   symbol_t* d_output = thrust::raw_pointer_cast(output.data());
 
   size_t tmp_size{};
-  cudaError_t status1 =
+  const cudaError_t status1 =
     cub::DeviceScan::ExclusiveScan(nullptr, tmp_size, d_input, d_output, op, empty_stack_symbol, num_elements);
   REQUIRE(cudaSuccess == status1);
 
@@ -282,10 +282,10 @@ CUB_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-repor
   c2h::device_vector<byte> tmp(tmp_size);
   byte* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  cudaError_t status2 =
+  const cudaError_t status2 =
     cub::DeviceScan::ExclusiveScan(d_tmp, tmp_size, d_input, d_output, op, empty_stack_symbol, num_elements);
   REQUIRE(cudaSuccess == status2);
 
-  c2h::host_vector<symbol_t> h_output(output);
+  const c2h::host_vector<symbol_t> h_output(output);
   REQUIRE(h_expected == h_output);
 }

@@ -45,14 +45,14 @@ void TestMinElement(const size_t n)
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  typename thrust::host_vector<T>::iterator h_min   = thrust::min_element(h_data.begin(), h_data.end());
-  typename thrust::device_vector<T>::iterator d_min = thrust::min_element(d_data.begin(), d_data.end());
+  const typename thrust::host_vector<T>::iterator h_min   = thrust::min_element(h_data.begin(), h_data.end());
+  const typename thrust::device_vector<T>::iterator d_min = thrust::min_element(d_data.begin(), d_data.end());
 
   ASSERT_EQUAL(h_min - h_data.begin(), d_min - d_data.begin());
 
-  typename thrust::host_vector<T>::iterator h_max =
+  const typename thrust::host_vector<T>::iterator h_max =
     thrust::min_element(h_data.begin(), h_data.end(), ::cuda::std::greater<T>());
-  typename thrust::device_vector<T>::iterator d_max =
+  const typename thrust::device_vector<T>::iterator d_max =
     thrust::min_element(d_data.begin(), d_data.end(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL(h_max - h_data.begin(), d_max - d_data.begin());
@@ -70,7 +70,7 @@ void TestMinElementDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::min_element(sys, vec.begin(), vec.end());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -96,8 +96,8 @@ DECLARE_UNITTEST(TestMinElementDispatchImplicit);
 
 void TestMinElementWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   ASSERT_EQUAL(*thrust::min_element(thrust::device, begin, end, ::cuda::std::greater<long long>()), (1ll << magnitude));

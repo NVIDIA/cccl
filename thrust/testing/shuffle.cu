@@ -230,15 +230,15 @@ void TestShuffleIteratorConstructibleFromBijection()
 {
   thrust::default_random_engine g(0xD5);
 
-  thrust::detail::feistel_bijection f(32, g);
-  thrust::shuffle_iterator<uint64_t, decltype(f)> it(f);
+  const thrust::detail::feistel_bijection f(32, g);
+  const thrust::shuffle_iterator<uint64_t, thrust::detail::feistel_bijection> it(f);
 
   g.seed(0xD5);
-  thrust::detail::random_bijection<uint64_t> f2(f.size(), g);
-  thrust::shuffle_iterator<uint64_t, decltype(f2)> it2(f2);
+  const thrust::detail::random_bijection<uint64_t> f2(f.size(), g);
+  const thrust::shuffle_iterator<uint64_t, thrust::detail::random_bijection<uint64_t>> it2(f2);
 
   g.seed(0xD5);
-  thrust::shuffle_iterator<uint64_t> it3(f.size(), g);
+  const thrust::shuffle_iterator<uint64_t> it3(f.size(), g);
 
   ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it2));
   ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it3));
@@ -313,18 +313,18 @@ void TestShuffleKeyPositionBase()
     }
   }
 
-  double mu    = (n - 1) / 2.0;
-  double sigma = cuda::std::sqrt((n * n - 1) / 12.0);
-  double zmax  = 0.0;
+  const double mu    = (n - 1) / 2.0;
+  const double sigma = cuda::std::sqrt((n * n - 1) / 12.0);
+  double zmax        = 0.0;
   for (size_t i = 0; i < n; ++i)
   {
-    double mean = expected_value[i] / double(num_samples);
-    double z    = cuda::std::abs(mean - mu) / (sigma / cuda::std::sqrt(double(num_samples)));
-    zmax        = cuda::std::max(zmax, cuda::std::abs(z));
+    const double mean = expected_value[i] / double(num_samples);
+    const double z    = cuda::std::abs(mean - mu) / (sigma / cuda::std::sqrt(double(num_samples)));
+    zmax              = cuda::std::max(zmax, cuda::std::abs(z));
   }
 
-  double alpha = 0.05;
-  double zcrit = inverse_erf(1.0 - alpha / (2.0 * n)) * cuda::std::sqrt(2.0);
+  const double alpha = 0.05;
+  const double zcrit = inverse_erf(1.0 - alpha / (2.0 * n)) * cuda::std::sqrt(2.0);
   ASSERT_LESS(zmax, zcrit);
 }
 template <typename Vector>
@@ -368,9 +368,9 @@ void TestShuffleUniformPermutationBase()
 {
   using T = typename Vector::value_type;
 
-  size_t m                  = 5;
-  size_t num_samples        = 1000;
-  size_t total_permutations = 1 * 2 * 3 * 4 * 5;
+  const size_t m                  = 5;
+  const size_t num_samples        = 1000;
+  const size_t total_permutations = 1 * 2 * 3 * 4 * 5;
   std::map<thrust::host_vector<T>, size_t, vector_compare> permutation_counts;
   Vector sequence(m);
   thrust::sequence(sequence.begin(), sequence.end(), T(0));
@@ -378,14 +378,14 @@ void TestShuffleUniformPermutationBase()
   for (auto i = 0ull; i < num_samples; i++)
   {
     ShuffleFunc{}(sequence.begin(), sequence.end(), g);
-    thrust::host_vector<T> tmp(sequence.begin(), sequence.end());
+    const thrust::host_vector<T> tmp(sequence.begin(), sequence.end());
     permutation_counts[tmp]++;
   }
 
   ASSERT_EQUAL(permutation_counts.size(), total_permutations);
 
-  double chi_squared    = 0.0;
-  double expected_count = static_cast<double>(num_samples) / static_cast<double>(total_permutations);
+  double chi_squared          = 0.0;
+  const double expected_count = static_cast<double>(num_samples) / static_cast<double>(total_permutations);
   for (const auto& kv : permutation_counts)
   {
     chi_squared += std::pow(expected_count - kv.second, 2) / expected_count;

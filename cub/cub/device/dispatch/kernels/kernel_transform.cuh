@@ -1012,7 +1012,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // implies an always_true predicate, so we store unconditionally.
       for (int idx = num_vecs * store_vec_size + threadIdx.x; idx < valid_items; idx += threads_per_block)
       {
-        char* smem         = smem_base;
+        const char* smem   = smem_base;
         auto fetch_operand = [&](auto aligned_ptr) {
           using T                = typename decltype(aligned_ptr)::value_type;
           const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
@@ -1038,7 +1038,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       const int idx = j * threads_per_block + threadIdx.x;
       if (full_tile || idx < valid_items)
       {
-        char* smem         = smem_base;
+        const char* smem   = smem_base;
         auto fetch_operand = [&](auto aligned_ptr) {
           using T                = typename decltype(aligned_ptr)::value_type;
           const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;

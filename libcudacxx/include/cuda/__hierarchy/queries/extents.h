@@ -128,7 +128,7 @@ template <class _Tp, class _Unit, class _Level, class _Hierarchy>
 
   // Remove dependency on runtime storage. This makes the queries work for hierarchy levels with all static extents
   // in constant evaluated context.
-  _CurrExts __curr_exts{};
+  _CurrExts __curr_exts{}; // NOLINT(misc-const-correctness)
   if constexpr (_CurrExts::rank_dynamic() > 0)
   {
     __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).extents());
@@ -211,7 +211,7 @@ struct __extents_query_native<block_level, cluster_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static ::cuda::std::dims<3, _Tp> __call() noexcept
   {
-    ::dim3 __dims{1u, 1u, 1u};
+    ::dim3 __dims{1u, 1u, 1u}; // NOLINT(misc-const-correctness)
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__dims = ::__clusterDim();))
     return ::cuda::std::dims<3, _Tp>{static_cast<_Tp>(__dims.x), static_cast<_Tp>(__dims.y), static_cast<_Tp>(__dims.z)};
   }
@@ -234,7 +234,7 @@ struct __extents_query_native<cluster_level, grid_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static ::cuda::std::dims<3, _Tp> __call() noexcept
   {
-    ::dim3 __dims{gridDim};
+    ::dim3 __dims{gridDim}; // NOLINT(misc-const-correctness)
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__dims = ::__clusterGridDimInClusters();))
     return ::cuda::std::dims<3, _Tp>{static_cast<_Tp>(__dims.x), static_cast<_Tp>(__dims.y), static_cast<_Tp>(__dims.z)};
   }
@@ -283,7 +283,7 @@ struct __extents_query<warp_level, _Level>
       static_assert(__static_thread_count >= 32, "_Hierarchy doesn't contain enough threads to fill a single warp");
 
       constexpr auto __static_warp_count = ::cuda::ceil_div(__static_thread_count, 32);
-      ::cuda::std::extents<_Tp, __static_warp_count> __curr_exts{};
+      const ::cuda::std::extents<_Tp, __static_warp_count> __curr_exts{};
       if constexpr (::cuda::std::is_same_v<_Level, block_level>)
       {
         return __curr_exts;

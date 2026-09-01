@@ -150,7 +150,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   size_t _CCCL_DEVICE argument_pack_size(size_t size, Args const&...) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
-    [[maybe_unused]] int dummy[] = {(size = align_up<Args>(size) + sizeof(Args), 0)...};
+    [[maybe_unused]] const int dummy[] = {(size = align_up<Args>(size) + sizeof(Args), 0)...};
     return size;
   }
 
@@ -170,7 +170,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Args const&... args) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
-    [[maybe_unused]] int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
+    [[maybe_unused]] const int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
   }
 
 #ifdef THRUST_RDC_ENABLED

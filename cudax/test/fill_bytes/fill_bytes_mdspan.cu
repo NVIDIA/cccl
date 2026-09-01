@@ -118,7 +118,8 @@ void test_impl(const thrust::host_vector<Tp>& input,
   using extents_t = cuda::std::extents<Index, Extents...>;
   using mapping_t = typename _Layout::template mapping<extents_t>;
   thrust::device_vector<Tp> device_data(input.begin(), input.end());
-  cuda::device_mdspan<Tp, extents_t, _Layout> dst(thrust::raw_pointer_cast(device_data.data()), mapping_t(extents));
+  const cuda::device_mdspan<Tp, extents_t, _Layout> dst(
+    thrust::raw_pointer_cast(device_data.data()), mapping_t(extents));
 
   cuda::experimental::fill_bytes(dst, value, stream);
   stream.sync();
@@ -141,7 +142,7 @@ void test_impl_stride(
   using mapping_t = cuda::std::layout_stride::mapping<extents_t>;
 
   thrust::device_vector<Tp> device_data(input.begin(), input.end());
-  cuda::device_mdspan<Tp, extents_t, cuda::std::layout_stride> dst(
+  const cuda::device_mdspan<Tp, extents_t, cuda::std::layout_stride> dst(
     thrust::raw_pointer_cast(device_data.data()) + offset, mapping_t(extents, strides));
 
   cuda::experimental::fill_bytes(dst, value, stream);
@@ -165,7 +166,7 @@ void test_impl_relaxed(
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
 
   thrust::device_vector<Tp> device_data(input.begin(), input.end());
-  cuda::device_mdspan<Tp, extents_t, cuda::layout_stride_relaxed> dst(
+  const cuda::device_mdspan<Tp, extents_t, cuda::layout_stride_relaxed> dst(
     thrust::raw_pointer_cast(device_data.data()), mapping_t(extents, strides, offset));
 
   cuda::experimental::fill_bytes(dst, value, stream);
@@ -271,10 +272,10 @@ TEST_CASE("fill_bytes preserves padding bytes in strided row-major destination l
   using extents_t    = cuda::std::extents<int, rows, cols>;
   using mapping_t    = cuda::std::layout_stride::mapping<extents_t>;
 
-  cuda::std::array<int, 2> strides{ld, 1};
-  mapping_t mapping(extents_t{}, strides);
-  auto input     = make_host_data<uint16_t>(mapping.required_span_size(), 0xCD);
-  uint16_t value = 0x1234;
+  const cuda::std::array<int, 2> strides{ld, 1};
+  const mapping_t mapping(extents_t{}, strides);
+  auto input           = make_host_data<uint16_t>(mapping.required_span_size(), 0xCD);
+  const uint16_t value = 0x1234;
 
   auto expected = to_byte_vector(input);
   for (int row = 0; row < rows; ++row)
@@ -295,10 +296,10 @@ TEST_CASE("fill_bytes preserves padding bytes in strided column-major destinatio
   using extents_t    = cuda::std::extents<int, rows, cols>;
   using mapping_t    = cuda::std::layout_stride::mapping<extents_t>;
 
-  cuda::std::array<int, 2> strides{1, ld};
-  mapping_t mapping(extents_t{}, strides);
-  auto input     = make_host_data<uint16_t>(mapping.required_span_size(), 0xCD);
-  uint16_t value = 0x1234;
+  const cuda::std::array<int, 2> strides{1, ld};
+  const mapping_t mapping(extents_t{}, strides);
+  auto input           = make_host_data<uint16_t>(mapping.required_span_size(), 0xCD);
+  const uint16_t value = 0x1234;
 
   auto expected = to_byte_vector(input);
   for (int row = 0; row < rows; ++row)
@@ -337,7 +338,7 @@ TEST_CASE("fill_bytes handles 3D strided permutation layouts", "[fill_bytes][3d]
   using extents_t    = cuda::std::extents<int, dim0, dim1, dim2>;
   constexpr int span = (dim0 - 1) + (dim1 - 1) * dim2 * dim0 + (dim2 - 1) * dim0 + 1;
 
-  cuda::std::array<int, 3> strides{1, dim2 * dim0, dim0};
+  const cuda::std::array<int, 3> strides{1, dim2 * dim0, dim0};
   auto input           = make_host_data<uint32_t>(span, 0xCD);
   constexpr auto value = pattern32::value;
 
@@ -348,7 +349,7 @@ TEST_CASE("fill_bytes handles 3D strided permutation layouts", "[fill_bytes][3d]
     {
       for (int k = 0; k < dim2; ++k)
       {
-        int offset = i + j * dim2 * dim0 + k * dim0;
+        const int offset = i + j * dim2 * dim0 + k * dim0;
         fill_expected_element<uint32_t>(expected, offset, value);
       }
     }
@@ -366,7 +367,7 @@ TEST_CASE("fill_bytes handles 3D strided tile_size greater than one", "[fill_byt
   constexpr int stride1   = 2048;
   constexpr int span_size = (dim0 - 1) * stride0 + (dim1 - 1) * stride1 + dim2;
 
-  cuda::std::array<int, 3> strides{stride0, stride1, 1};
+  const cuda::std::array<int, 3> strides{stride0, stride1, 1};
   auto input           = make_host_data<uint32_t>(span_size, 0xCD);
   constexpr auto value = pattern32::value;
 
@@ -377,7 +378,7 @@ TEST_CASE("fill_bytes handles 3D strided tile_size greater than one", "[fill_byt
     {
       for (int k = 0; k < dim2; ++k)
       {
-        int offset = i * stride0 + j * stride1 + k;
+        const int offset = i * stride0 + j * stride1 + k;
         fill_expected_element<uint32_t>(expected, offset, value);
       }
     }
@@ -394,7 +395,7 @@ TEST_CASE("fill_bytes preserves surrounding bytes in strided subviews with offse
   constexpr int alloc  = 16;
   using extents_t      = cuda::std::extents<int, rows, cols>;
 
-  cuda::std::array<int, 2> strides{1, ld};
+  const cuda::std::array<int, 2> strides{1, ld};
   auto input           = make_host_data<uint32_t>(alloc, 0xCD);
   constexpr auto value = uint32_t{0x12345678};
 
@@ -436,7 +437,7 @@ TEST_CASE("fill_bytes rejects interleaved layout", "[fill_bytes][throw]")
   auto input      = make_host_data<uint32_t>(6, 0xCD);
 
   thrust::device_vector<uint32_t> device_data(input.begin(), input.end());
-  cuda::device_mdspan<uint32_t, extents_t, cuda::layout_stride_relaxed> dst(
+  const cuda::device_mdspan<uint32_t, extents_t, cuda::layout_stride_relaxed> dst(
     thrust::raw_pointer_cast(device_data.data()), mapping_t(extents_t{}, cuda::dstrides<int, 2>(2, 3)));
 
   REQUIRE_THROWS_AS(cuda::experimental::fill_bytes(dst, uint32_t{0x12345678}, stream), std::invalid_argument);

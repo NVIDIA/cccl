@@ -50,18 +50,18 @@ struct detect_wrong_difference
 
 void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  thrust::device_ptr<bool> all_differences_correct = thrust::device_malloc<bool>(1);
-  *all_differences_correct                         = true;
+  const thrust::device_ptr<bool> all_differences_correct = thrust::device_malloc<bool>(1);
+  *all_differences_correct                               = true;
 
-  detect_wrong_difference out = {thrust::raw_pointer_cast(all_differences_correct)};
+  const detect_wrong_difference out = {thrust::raw_pointer_cast(all_differences_correct)};
 
   thrust::adjacent_difference(thrust::device, begin, end, out);
 
-  bool all_differences_correct_h = *all_differences_correct;
+  const bool all_differences_correct_h = *all_differences_correct;
   thrust::device_free(all_differences_correct);
 
   ASSERT_EQUAL(all_differences_correct_h, true);

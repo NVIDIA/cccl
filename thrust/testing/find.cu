@@ -34,7 +34,7 @@ void TestFindDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -86,7 +86,7 @@ void TestFindIfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -138,7 +138,7 @@ void TestFindIfNotDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if_not(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -244,8 +244,8 @@ VariableUnitTest<TestFindIfNot, SignedIntegralTypes> TestFindIfNotInstance;
 
 void TestFindWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   cuda::std::intmax_t distance_low_value = ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, 17));

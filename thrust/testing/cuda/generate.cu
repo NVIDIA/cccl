@@ -67,9 +67,9 @@ void TestGenerateCudaStreams()
 {
   thrust::device_vector<int> result(5);
 
-  int value = 13;
+  const int value = 13;
 
-  return_value<int> f(value);
+  const return_value<int> f(value);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -133,9 +133,9 @@ void TestGenerateNCudaStreams()
 {
   thrust::device_vector<int> result(5);
 
-  int value = 13;
+  const int value = 13;
 
-  return_value<int> f(value);
+  const return_value<int> f(value);
 
   cudaStream_t s;
   cudaStreamCreate(&s);

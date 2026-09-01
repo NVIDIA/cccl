@@ -261,7 +261,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
-      int bin = ThreadBin(u);
+      const int bin = ThreadBin(u);
       if (FULL_BINS || bin < RADIX_DIGITS)
       {
         // write the local sum into the bin
@@ -307,7 +307,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
-      int bin = ThreadBin(u);
+      const int bin = ThreadBin(u);
       if (FULL_BINS || bin < RADIX_DIGITS)
       {
         PortionOffsetT inc_sum = bins[u];
@@ -367,7 +367,7 @@ struct AgentRadixSortOnesweep
     }
     else
     {
-      int tile_items = num_items - tile_offset;
+      const int tile_items = num_items - tile_offset;
       LoadDirectWarpStriped(threadIdx.x, d_values_in + tile_offset, values, tile_items);
     }
   }
@@ -412,14 +412,14 @@ struct AgentRadixSortOnesweep
     // short-circuit handling; note that global look-back is still required
 
     // compute offsets
-    uint32_t common_bin = Digit(keys[0]);
+    const uint32_t common_bin = Digit(keys[0]);
     int offsets[BINS_PER_THREAD];
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
-      int bin    = ThreadBin(u);
-      offsets[u] = bin > common_bin ? TILE_ITEMS : 0;
+      const int bin = ThreadBin(u);
+      offsets[u]    = bin > common_bin ? TILE_ITEMS : 0;
     }
 
     // global lookback
@@ -442,7 +442,7 @@ struct AgentRadixSortOnesweep
     }
     else
     {
-      int tile_items = num_items - block_idx * TILE_ITEMS;
+      const int tile_items = num_items - block_idx * TILE_ITEMS;
       StoreDirectWarpStriped(threadIdx.x, d_keys_out + global_offset, keys, tile_items);
     }
 
@@ -457,7 +457,7 @@ struct AgentRadixSortOnesweep
       }
       else
       {
-        int tile_items = num_items - block_idx * TILE_ITEMS;
+        const int tile_items = num_items - block_idx * TILE_ITEMS;
         StoreDirectWarpStriped(threadIdx.x, d_values_out + global_offset, values, tile_items);
       }
     }
@@ -494,7 +494,7 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
-      int bin = ThreadBin(u);
+      const int bin = ThreadBin(u);
       if (FULL_BINS || bin < RADIX_DIGITS)
       {
         s.global_offsets[bin] = d_bins_in[bin] - offsets[u];
@@ -504,13 +504,13 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void UpdateBinsGlobal(int (&bins)[BINS_PER_THREAD], int (&offsets)[BINS_PER_THREAD])
   {
-    bool last_block = (block_idx + 1) * TILE_ITEMS >= num_items;
+    const bool last_block = (block_idx + 1) * TILE_ITEMS >= num_items;
     if (d_bins_out != nullptr && last_block)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < BINS_PER_THREAD; ++u)
       {
-        int bin = ThreadBin(u);
+        const int bin = ThreadBin(u);
         if (FULL_BINS || bin < RADIX_DIGITS)
         {
           d_bins_out[bin] = s.global_offsets[bin] + offsets[u] + bins[u];
@@ -522,14 +522,14 @@ struct AgentRadixSortOnesweep
   template <bool FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeysGlobalDirect()
   {
-    int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
+    const int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      int idx              = threadIdx.x + u * BLOCK_THREADS;
-      bit_ordered_type key = s.keys_out[idx];
-      OffsetT global_idx   = idx + s.global_offsets[Digit(key)];
+      const int idx              = threadIdx.x + u * BLOCK_THREADS;
+      const bit_ordered_type key = s.keys_out[idx];
+      OffsetT global_idx         = idx + s.global_offsets[Digit(key)];
       if (FULL_TILE || idx < tile_items)
       {
         d_keys_out[global_idx] = Twiddle::Out(key, decomposer);
@@ -541,12 +541,12 @@ struct AgentRadixSortOnesweep
   template <bool FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValuesGlobalDirect(int (&digits)[ITEMS_PER_THREAD])
   {
-    int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
+    const int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      int idx            = threadIdx.x + u * BLOCK_THREADS;
+      const int idx      = threadIdx.x + u * BLOCK_THREADS;
       ValueT value       = s.values_out[idx];
       OffsetT global_idx = idx + s.global_offsets[digits[u]];
       if (FULL_TILE || idx < tile_items)
@@ -573,7 +573,7 @@ struct AgentRadixSortOnesweep
       bit_ordered_type key     = s.keys_out[idx];
       bit_ordered_type key_out = Twiddle::Out(key, decomposer);
       OffsetT global_idx       = idx + s.global_offsets[Digit(key)];
-      int last_lane            = WARP_THREADS - 1;
+      const int last_lane      = WARP_THREADS - 1;
       int num_writes           = WARP_THREADS;
       if (lane == last_lane)
       {
@@ -587,7 +587,7 @@ struct AgentRadixSortOnesweep
       warp_offset += num_writes;
     }
     {
-      int num_writes = warp_end - warp_offset;
+      const int num_writes = warp_end - warp_offset;
       if (lane < num_writes)
       {
         int idx              = warp_offset + lane;
@@ -636,8 +636,8 @@ struct AgentRadixSortOnesweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
-      int idx   = threadIdx.x + u * BLOCK_THREADS;
-      digits[u] = Digit(s.keys_out[idx]);
+      const int idx = threadIdx.x + u * BLOCK_THREADS;
+      digits[u]     = Digit(s.keys_out[idx]);
     }
   }
 

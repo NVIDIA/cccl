@@ -19,7 +19,7 @@ void TestExclusiveScanByKeySimple()
   Vector vals{1, 2, 3, 4, 5, 6, 7};
   Vector output(7, 0);
 
-  Iterator iter = thrust::exclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin());
+  const Iterator iter = thrust::exclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin());
 
   ASSERT_EQUAL_QUIET(iter, output.end());
 
@@ -63,7 +63,7 @@ void TestExclusiveScanByKeyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::exclusive_scan_by_key(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -265,14 +265,14 @@ void TestScanByKeyDiscardOutput(std::size_t n)
       k++;
     }
   }
-  thrust::device_vector<T> d_keys = h_keys;
+  const thrust::device_vector<T> d_keys = h_keys;
 
   thrust::host_vector<T> h_vals(n);
   for (size_t i = 0; i < n; i++)
   {
     h_vals[i] = static_cast<T>(i % 10);
   }
-  thrust::device_vector<T> d_vals = h_vals;
+  const thrust::device_vector<T> d_vals = h_vals;
 
   auto out = thrust::make_discard_iterator();
 
@@ -289,7 +289,7 @@ void TestScanByKeyLargeInput()
 {
   const unsigned int N = 1 << 20;
 
-  thrust::host_vector<unsigned int> vals_sizes = unittest::random_integers<unsigned int>(10);
+  const thrust::host_vector<unsigned int> vals_sizes = unittest::random_integers<unsigned int>(10);
 
   thrust::host_vector<unsigned int> h_vals   = unittest::random_integers<unsigned int>(N);
   thrust::device_vector<unsigned int> d_vals = h_vals;
@@ -324,7 +324,7 @@ DECLARE_UNITTEST(TestScanByKeyLargeInput);
 template <typename T, unsigned int N>
 void _TestScanByKeyWithLargeTypes()
 {
-  size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
+  const size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
   thrust::host_vector<unsigned int> h_keys(n);
   thrust::host_vector<FixedVector<T, N>> h_vals(n);

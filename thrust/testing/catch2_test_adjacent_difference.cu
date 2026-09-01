@@ -112,12 +112,12 @@ TEMPLATE_LIST_TEST_CASE("AdjacentDifferenceDiscardIterator", "[adjacent_differen
     thrust::host_vector<T> h_input   = unittest::random_samples<T>(n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> h_result =
+    const thrust::discard_iterator<> h_result =
       thrust::adjacent_difference(h_input.begin(), h_input.end(), thrust::make_discard_iterator());
-    thrust::discard_iterator<> d_result =
+    const thrust::discard_iterator<> d_result =
       thrust::adjacent_difference(d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));
@@ -137,7 +137,7 @@ TEST_CASE("AdjacentDifferenceDispatchExplicit", "[adjacent_difference]")
 {
   thrust::device_vector<int> d_input(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::adjacent_difference(sys, d_input.begin(), d_input.end(), d_input.begin());
 
   CHECK(sys.is_valid());

@@ -19,7 +19,7 @@ void TestUninitializedCopyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -55,7 +55,7 @@ void TestUninitializedCopyNDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_copy_n(sys, vec.begin(), vec.size(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());

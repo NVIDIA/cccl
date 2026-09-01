@@ -9,7 +9,7 @@ namespace
 void TestUniformDecomposition()
 {
   {
-    uniform_decomposition<int> ud(10, 10, 1);
+    const uniform_decomposition<int> ud(10, 10, 1);
 
     // [0,10)
     ASSERT_EQUAL(ud.size(), 1);
@@ -19,7 +19,7 @@ void TestUniformDecomposition()
   }
 
   {
-    uniform_decomposition<int> ud(10, 20, 1);
+    const uniform_decomposition<int> ud(10, 20, 1);
 
     // [0,10)
     ASSERT_EQUAL(ud.size(), 1);
@@ -29,7 +29,7 @@ void TestUniformDecomposition()
   }
 
   {
-    uniform_decomposition<int> ud(8, 5, 2);
+    const uniform_decomposition<int> ud(8, 5, 2);
 
     // [0,5)[5,8)
     ASSERT_EQUAL(ud.size(), 2);
@@ -42,7 +42,7 @@ void TestUniformDecomposition()
   }
 
   {
-    uniform_decomposition<int> ud(8, 5, 3);
+    const uniform_decomposition<int> ud(8, 5, 3);
 
     // [0,5)[5,8)
     ASSERT_EQUAL(ud.size(), 2);
@@ -55,7 +55,7 @@ void TestUniformDecomposition()
   }
 
   {
-    uniform_decomposition<int> ud(10, 1, 2);
+    const uniform_decomposition<int> ud(10, 1, 2);
 
     // [0,5)[5,10)
     ASSERT_EQUAL(ud.size(), 2);
@@ -69,7 +69,7 @@ void TestUniformDecomposition()
 
   {
     // [0,4)[4,8)[8,10)
-    uniform_decomposition<int> ud(10, 2, 3);
+    const uniform_decomposition<int> ud(10, 2, 3);
 
     ASSERT_EQUAL(ud.size(), 3);
     ASSERT_EQUAL(ud[0].begin(), 0);

@@ -51,7 +51,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortKeys works with default environment",
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   REQUIRE(keys_out == expected);
 }
 
@@ -73,7 +73,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortKeysDescending works with default enviro
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   REQUIRE(keys_out == expected);
 }
 
@@ -95,7 +95,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::StableSortKeys works with default environmen
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   REQUIRE(keys_out == expected);
 }
 
@@ -117,7 +117,7 @@ CUB_TEST_CASE("DeviceSegmentedSort::StableSortKeysDescending works with default 
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   REQUIRE(keys_out == expected);
 }
 
@@ -139,8 +139,8 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortKeys DoubleBuffer works with default env
             thrust::raw_pointer_cast(offsets.data()),
             thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -162,8 +162,8 @@ CUB_TEST_CASE("DeviceSegmentedSort::SortKeysDescending DoubleBuffer works with d
             thrust::raw_pointer_cast(offsets.data()),
             thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -185,8 +185,8 @@ CUB_TEST_CASE("DeviceSegmentedSort::StableSortKeys DoubleBuffer works with defau
             thrust::raw_pointer_cast(offsets.data()),
             thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -208,8 +208,8 @@ CUB_TEST_CASE("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer works 
             thrust::raw_pointer_cast(offsets.data()),
             thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -244,7 +244,7 @@ CUB_TEST("DeviceSegmentedSort::SortKeys uses environment", "[segmented_sort][key
             thrust::raw_pointer_cast(offsets.data()) + 1,
             env);
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   REQUIRE(keys_out == expected);
 }
 
@@ -278,7 +278,7 @@ CUB_TEST("DeviceSegmentedSort::SortKeysDescending uses environment", "[segmented
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   REQUIRE(keys_out == expected);
 }
 
@@ -312,7 +312,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeys uses environment", "[segmented_sor
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   REQUIRE(keys_out == expected);
 }
 
@@ -346,7 +346,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending uses environment", "[seg
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   REQUIRE(keys_out == expected);
 }
 
@@ -379,8 +379,8 @@ CUB_TEST("DeviceSegmentedSort::SortKeys DoubleBuffer uses environment", "[segmen
             thrust::raw_pointer_cast(offsets.data()) + 1,
             env);
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -416,8 +416,8 @@ CUB_TEST("DeviceSegmentedSort::SortKeysDescending DoubleBuffer uses environment"
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -453,8 +453,8 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeys DoubleBuffer uses environment",
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -490,8 +490,8 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
-  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -526,7 +526,7 @@ CUB_TEST("DeviceSegmentedSort::SortKeys can be tuned", "[segmented_sort][keys][d
   auto begin_offsets                       = c2h::device_vector<int>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
 
-  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
 
@@ -538,7 +538,7 @@ CUB_TEST("DeviceSegmentedSort::SortKeys can be tuned", "[segmented_sort][keys][d
             end_offsets,
             env);
 
-  c2h::device_vector<int> expected{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(keys_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -552,7 +552,7 @@ CUB_TEST(
   auto begin_offsets                       = c2h::device_vector<int>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
 
-  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
 
@@ -565,7 +565,7 @@ CUB_TEST(
     end_offsets,
     env);
 
-  c2h::device_vector<int> expected{9, 8, 7, 6, 5, 3, 0};
+  const c2h::device_vector<int> expected{9, 8, 7, 6, 5, 3, 0};
   REQUIRE(keys_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -578,7 +578,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeys can be tuned", "[segmented_sort][k
   auto begin_offsets                       = c2h::device_vector<int>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
 
-  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
 
@@ -591,7 +591,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeys can be tuned", "[segmented_sort][k
     end_offsets,
     env);
 
-  c2h::device_vector<int> expected{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(keys_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -607,7 +607,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending can be tuned",
   auto begin_offsets                       = c2h::device_vector<int>{0};
   c2h::device_vector<unsigned int> d_block_size(1);
 
-  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
 
@@ -620,7 +620,7 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending can be tuned",
     end_offsets,
     env);
 
-  c2h::device_vector<int> expected{9, 8, 7, 6, 5, 3, 0};
+  const c2h::device_vector<int> expected{9, 8, 7, 6, 5, 3, 0};
   REQUIRE(keys_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }

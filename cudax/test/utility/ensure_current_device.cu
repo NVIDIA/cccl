@@ -21,7 +21,7 @@ namespace
 void recursive_check_device_setter(int id)
 {
   int cudart_id;
-  cudax::__ensure_current_device setter(cuda::device_ref{id});
+  const cudax::__ensure_current_device setter(cuda::device_ref{id});
   REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
   auto ctx = driver::__ctxGetCurrent();
   REQUIRE_CUDART(cudaGetDevice(&cudart_id));
@@ -42,7 +42,7 @@ C2H_TEST("ensure current device", "[device]")
 {
   test::empty_driver_stack();
   // If possible use something different than REQUIRE_CUDART default 0
-  int target_device = static_cast<int>(cuda::devices.size() - 1);
+  const int target_device = static_cast<int>(cuda::devices.size() - 1);
 
   SECTION("device setter")
   {

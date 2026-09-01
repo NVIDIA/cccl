@@ -47,7 +47,7 @@ TEST_CASE("ScalarLowerBoundDispatchExplicit", "[binary_search]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::lower_bound(sys, vec.begin(), vec.end(), 0);
 
   CHECK(sys.is_valid());
@@ -124,7 +124,7 @@ TEST_CASE("ScalarUpperBoundDispatchExplicit", "[binary_search]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::upper_bound(sys, vec.begin(), vec.end(), 0);
 
   CHECK(sys.is_valid());
@@ -175,7 +175,7 @@ TEST_CASE("ScalarBinarySearchDispatchExplicit", "[binary_search]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::binary_search(sys, vec.begin(), vec.end(), 0);
 
   CHECK(sys.is_valid());
@@ -237,7 +237,7 @@ TEST_CASE("ScalarEqualRangeDispatchExplicit", "[binary_search]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::equal_range(sys, vec.begin(), vec.end(), 0);
 
   CHECK(sys.is_valid());
@@ -264,8 +264,8 @@ _CCCL_DIAG_POP
 
 void TestBoundsWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   CHECK(::cuda::std::distance(begin, end) == 1ll << magnitude);
 
   ::cuda::std::intmax_t distance_low_value =
@@ -288,7 +288,7 @@ void TestBoundsWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("BoundsWithBigIndexes", "[binary_search]")
 {
-  for (int magnitude : {30, 31, 32, 33})
+  for (const int magnitude : {30, 31, 32, 33})
   {
     TestBoundsWithBigIndexesHelper(magnitude);
   }

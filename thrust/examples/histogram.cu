@@ -78,13 +78,13 @@ void dense_histogram(const Vector1& input, Vector2& histogram)
   print_vector("sorted data", data);
 
   // number of histogram bins is equal to the maximum value plus one
-  IndexType num_bins = data.back() + 1;
+  const IndexType num_bins = data.back() + 1;
 
   // resize histogram storage
   histogram.resize(num_bins);
 
   // find the end of each bin of values
-  thrust::counting_iterator<IndexType> search_begin(0);
+  const thrust::counting_iterator<IndexType> search_begin(0);
   thrust::upper_bound(data.begin(), data.end(), search_begin, search_begin + num_bins, histogram.begin());
 
   // print the cumulative histogram
@@ -117,7 +117,7 @@ void sparse_histogram(const Vector1& input, Vector2& histogram_values, Vector3& 
   print_vector("sorted data", data);
 
   // number of histogram bins is equal to number of unique values (assumes data.size() > 0)
-  IndexType num_bins = thrust::inner_product(
+  const IndexType num_bins = thrust::inner_product(
     data.begin(),
     data.end() - 1,
     data.begin() + 1,

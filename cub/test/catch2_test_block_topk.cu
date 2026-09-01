@@ -84,7 +84,7 @@ void check_topk(const c2h::host_vector<KeyT>& h_in, cuda::std::span<const KeyT> 
   std::sort(h_top.begin(),
             h_top.end(),
             direction_to_comparator_t<SelectMax ? cub::detail::topk::select::max : cub::detail::topk::select::min>{});
-  c2h::host_vector<KeyT> h_ref_vec(h_ref.begin(), h_ref.end());
+  const c2h::host_vector<KeyT> h_ref_vec(h_ref.begin(), h_ref.end());
   CAPTURE(bit_repr(h_top), bit_repr(h_ref_vec));
   REQUIRE(h_top == h_ref_vec);
 }
@@ -123,7 +123,7 @@ CUB_TEST(
   CAPTURE(c2h::type_name<key_t>(), select_max);
 
   const int num_valid = tile_size / 2 + 7;
-  c2h::host_vector<key_t> h_in_partial(h_in.begin(), h_in.begin() + num_valid);
+  const c2h::host_vector<key_t> h_in_partial(h_in.begin(), h_in.begin() + num_valid);
 
   SECTION("full tile, blocked input")
   {
@@ -172,7 +172,7 @@ CUB_TEST("block_topk::select_* selects the right top-k on a full tile",
 
   auto run_check = [&](rng_t& local_rng, key_t boundary_key) {
     CAPTURE(c2h::type_name<key_t>(), select_max, k, overhang, boundary_key);
-    c2h::host_vector<key_t> h_in =
+    const c2h::host_vector<key_t> h_in =
       gen_keys_from_boundary_key<select_max>(tile_size, k, overhang, boundary_key, local_rng);
     const auto h_ref = sorted_top_k<select_max>(h_in, k);
     check_topk<key_t, threads_per_block, items_per_thread, is_full_tile, blocked_input, select_max>(

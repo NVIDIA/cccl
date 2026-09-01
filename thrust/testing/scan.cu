@@ -114,7 +114,7 @@ void TestInclusiveScanDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -150,7 +150,7 @@ void TestExclusiveScanDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::exclusive_scan(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -177,8 +177,8 @@ DECLARE_UNITTEST(TestExclusiveScanDispatchImplicit);
 
 void TestInclusiveScan32()
 {
-  using T  = int;
-  size_t n = 32;
+  using T        = int;
+  const size_t n = 32;
 
   thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_input = h_input;
@@ -195,9 +195,9 @@ DECLARE_UNITTEST(TestInclusiveScan32);
 
 void TestExclusiveScan32()
 {
-  using T  = int;
-  size_t n = 32;
-  T init   = 13;
+  using T        = int;
+  const size_t n = 32;
+  const T init   = 13;
 
   thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_input = h_input;
@@ -305,7 +305,7 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     thrust::discard_iterator<> h_result =
       thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
@@ -383,7 +383,7 @@ struct TestScanToDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -441,7 +441,7 @@ DECLARE_UNITTEST(TestScanMixedTypes);
 template <typename T, unsigned int N>
 void _TestScanWithLargeTypes()
 {
-  size_t n = (1024 * 1024) / sizeof(FixedVector<T, N>);
+  const size_t n = (1024 * 1024) / sizeof(FixedVector<T, N>);
 
   thrust::host_vector<FixedVector<T, N>> h_input(n);
   thrust::host_vector<FixedVector<T, N>> h_output(n);
@@ -608,18 +608,18 @@ namespace
 {
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  cuda::constant_iterator<long long> begin(1);
-  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
+  const cuda::constant_iterator<long long> begin(1);
+  const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
+  thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1); // NOLINT(misc-const-correctness)
   *has_executed                         = false;
 
-  only_set_when_expected_it out = {(1ll << magnitude), thrust::raw_pointer_cast(has_executed)};
+  const only_set_when_expected_it out = {(1ll << magnitude), thrust::raw_pointer_cast(has_executed)};
 
   thrust::inclusive_scan(thrust::device, begin, end, out);
 
-  bool has_executed_h = *has_executed;
+  const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
   ASSERT_EQUAL(has_executed_h, true);
@@ -639,18 +639,18 @@ DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
 
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  cuda::constant_iterator<long long> begin(1);
-  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
+  const cuda::constant_iterator<long long> begin(1);
+  const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
+  thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1); // NOLINT(misc-const-correctness)
   *has_executed                         = false;
 
-  only_set_when_expected_it out = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
+  const only_set_when_expected_it out = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
 
   thrust::exclusive_scan(thrust::device, begin, end, out, 0ll);
 
-  bool has_executed_h = *has_executed;
+  const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
   ASSERT_EQUAL(has_executed_h, true);
@@ -823,7 +823,7 @@ void TestInclusiveScanForInvalidValues()
   if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::lookahead)
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   {
-    for (int n : {1, 100, 10'000})
+    for (const int n : {1, 100, 10'000})
     {
       const thrust::device_vector<value_t> input(n, checking_identity::sentinel);
       thrust::device_vector<value_t> output(n, thrust::no_init);
@@ -930,7 +930,7 @@ void TestScanEdgeCases()
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
     ASSERT_EQUAL((d_output.end() == r), true);
 
-    thrust::device_vector<int> expected = {6, 42};
+    const thrust::device_vector<int> expected = {6, 42};
     ASSERT_EQUAL(d_output, expected);
   }
 
@@ -978,7 +978,7 @@ void TestScanEdgeCases()
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
     ASSERT_EQUAL((d_output.end() == r), true);
 
-    thrust::device_vector<int> expected = {3, 6};
+    const thrust::device_vector<int> expected = {3, 6};
     ASSERT_EQUAL(d_output, expected);
   }
 }

@@ -44,7 +44,7 @@ CUB_TEST_CASE("Device LowerBoundSortedValues works with default environment", "[
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
 
-  c2h::device_vector<int> expected = {0, 2, 2, 4};
+  const c2h::device_vector<int> expected = {0, 2, 2, 4};
   REQUIRE(d_output == expected);
 }
 
@@ -63,7 +63,7 @@ CUB_TEST_CASE("Device UpperBoundSortedValues works with default environment", "[
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 
@@ -99,7 +99,7 @@ CUB_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binar
     cuda::std::less{},
     env);
 
-  c2h::device_vector<int> expected = {0, 2, 2, 4};
+  const c2h::device_vector<int> expected = {0, 2, 2, 4};
   REQUIRE(d_output == expected);
 }
 
@@ -133,7 +133,7 @@ CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binar
     cuda::std::less{},
     env);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 

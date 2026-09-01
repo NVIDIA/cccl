@@ -35,7 +35,7 @@ __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT actio
   }
 
   const int warp_id = tid / LOGICAL_WARP_THREADS;
-  warp_store_t store(storage[warp_id]);
+  warp_store_t store(storage[warp_id]); // NOLINT(misc-const-correctness)
 
   action(store, output_iterator + (warp_id * tile_size), reg);
 }

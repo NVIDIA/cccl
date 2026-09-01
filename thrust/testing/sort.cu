@@ -16,7 +16,7 @@ void TestSortDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::sort(sys, vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -121,8 +121,8 @@ DECLARE_UNITTEST(TestSortBoolDescending);
 // See also: https://github.com/NVIDIA/cccl/issues/4919
 void TestSortTrivial()
 {
-  thrust::host_vector<int> h_data = {1, 0, -1, -2, -3};
-  thrust::host_vector<int> ref    = {-3, -2, -1, 0, 1};
+  thrust::host_vector<int> h_data    = {1, 0, -1, -2, -3};
+  const thrust::host_vector<int> ref = {-3, -2, -1, 0, 1};
 
   thrust::sort(h_data.begin(), h_data.end());
   ASSERT_EQUAL(h_data, ref);

@@ -64,7 +64,7 @@ void ensure_managed_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
-  cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
+  const cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
   CHECK(attributes.type == cudaMemoryTypeManaged);
 }
@@ -83,8 +83,8 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource construction", "[memory_resource]"
 #if _CCCL_CTK_BELOW(13, 0)
   SECTION("Construct with flag")
   {
-    managed_resource defaulted{};
-    managed_resource with_flag{cudaMemAttachHost};
+    const managed_resource defaulted{};
+    const managed_resource with_flag{cudaMemAttachHost};
     CHECK(defaulted != with_flag);
   }
 #endif // _CCCL_CTK_BELOW(13, 0)
@@ -99,7 +99,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
   }
 
   managed_resource res = get_resource<managed_resource>();
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
@@ -188,16 +188,16 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     test::skip_if_unsupported_memory_pool<managed_resource>();
   }
 
-  managed_resource first = get_resource<managed_resource>();
+  const managed_resource first = get_resource<managed_resource>();
   { // comparison against a plain managed_memory_resource
-    managed_resource second = get_resource<managed_resource>();
+    const managed_resource second = get_resource<managed_resource>();
     CHECK((first == second));
     CHECK(!(first != second));
   }
 
   if constexpr (cuda::std::is_same_v<managed_resource, cuda::mr::legacy_managed_memory_resource>)
   { // comparison against a plain legacy_managed_memory_resource with a different flags
-    managed_resource second = cuda::mr::legacy_managed_memory_resource{cudaMemAttachHost};
+    const managed_resource second = cuda::mr::legacy_managed_memory_resource{cudaMemAttachHost};
     CHECK((first != second));
     CHECK(!(first == second));
   }
@@ -213,7 +213,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
 
   { // comparison against a managed_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
     managed_resource second = get_resource<managed_resource>();
-    cuda::mr::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
+    const cuda::mr::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));

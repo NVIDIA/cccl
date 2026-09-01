@@ -167,7 +167,7 @@ void test_vectorized(Variant variant, HostVariant host_variant)
   variant(data_ptr, num_items, target_values_ptr, target_values.size(), output_ptr, op, build_cache, test_key);
 
   std::vector<std::ptrdiff_t> results(output_ptr);
-  std::vector<std::ptrdiff_t> expected(target_values.size(), 0);
+  const std::vector<std::ptrdiff_t> expected(target_values.size(), 0);
 
   std::vector<std::ptrdiff_t> expected_results(target_values.size(), 0);
 
@@ -202,7 +202,7 @@ C2H_TEST("BinarySearch build result has serialization metadata populated", "[bin
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_less_binary_predicate();
+  const cccl_op_t op = make_well_known_less_binary_predicate();
   pointer_t<T> data(1);
   pointer_t<T> values(1);
   pointer_t<T> out(1);

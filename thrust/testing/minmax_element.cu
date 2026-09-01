@@ -78,7 +78,7 @@ void TestMinMaxElementDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::minmax_element(sys, vec.begin(), vec.end());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -105,8 +105,8 @@ DECLARE_UNITTEST(TestMinMaxElementDispatchImplicit);
 void TestMinMaxElementWithBigIndexesHelper(int magnitude)
 {
   using Iter = thrust::counting_iterator<long long>;
-  Iter begin(1);
-  Iter end = begin + (1ll << magnitude);
+  const Iter begin(1);
+  const Iter end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   cuda::std::pair<Iter, Iter> result = thrust::minmax_element(thrust::device, begin, end);

@@ -136,7 +136,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  ::CUresult __status = __get_proc_addr_fn(
+  const ::CUresult __status = __get_proc_addr_fn(
     __name, &__fn, ::cuda::__driver::__make_version(__major, __minor), ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
   if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
@@ -165,7 +165,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 template <typename Fn, typename... Args>
 _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args... __args)
 {
-  ::CUresult __status = __fn(__args...);
+  const ::CUresult __status = __fn(__args...);
   if (__status != ::CUDA_SUCCESS)
   {
     _CCCL_THROW(::cuda::cuda_error, static_cast<::cudaError_t>(__status), __err_msg);
@@ -218,7 +218,7 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 
 [[nodiscard]] _CCCL_HOST_API inline int __getVersion()
 {
-  static int __version = []() {
+  static const int __version = []() {
     int __v;
     auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDriverGetVersion);
     ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to check CUDA driver version", &__v);
@@ -268,7 +268,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetName);
 
   // TODO CUdevice is just an int, we probably could just cast, but for now do the safe thing
-  ::CUdevice __dev = __deviceGet(__ordinal);
+  const ::CUdevice __dev = __deviceGet(__ordinal);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
@@ -276,7 +276,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceTotalMem);
   ::std::size_t __result;
-  ::CUdevice __dev = __deviceGet(__ordinal);
+  const ::CUdevice __dev = __deviceGet(__ordinal);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query total memory of a device", &__result, __dev);
   return static_cast<::cuda::std::size_t>(__result);
 }
@@ -580,7 +580,7 @@ __mempoolDestroyNoThrow(::CUmemoryPool __pool) noexcept // NOLINT(bugprone-excep
 
 _CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
 {
-  ::cudaError_t __status = ::cuda::__driver::__mempoolDestroyNoThrow(__pool);
+  const ::cudaError_t __status = ::cuda::__driver::__mempoolDestroyNoThrow(__pool);
   if (__status != ::cudaSuccess)
   {
     _CCCL_THROW(::cuda::cuda_error, __status, "Failed to destroy a memory pool");

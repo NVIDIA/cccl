@@ -54,7 +54,7 @@ thrust::host_vector<int> random_vector(size_t N)
 
 int main()
 {
-  size_t N = 20;
+  const size_t N = 20;
 
   // generate three arrays of random values
   thrust::device_vector<int> upper  = random_vector(N);

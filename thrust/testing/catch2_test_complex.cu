@@ -103,13 +103,13 @@ TEMPLATE_LIST_TEST_CASE("ComplexConstructionAndAssignment", "[complex]", Floatin
 
   {
     const thrust::complex<T> expected(real, imag);
-    thrust::complex<T> construct_from_copy(expected);
+    const thrust::complex<T> construct_from_copy(expected);
     CHECK(expected.real() == construct_from_copy.real());
     CHECK(expected.imag() == construct_from_copy.imag());
   }
 
   {
-    thrust::complex<T> construct_from_move(thrust::complex<T>(real, imag));
+    const thrust::complex<T> construct_from_move(thrust::complex<T>(real, imag));
     CHECK(real == construct_from_move.real());
     CHECK(imag == construct_from_move.imag());
   }
@@ -198,13 +198,13 @@ TEMPLATE_LIST_TEST_CASE("ComplexConstructionAndAssignmentWithPromoting", "[compl
 
   {
     const thrust::complex<T1> expected(real_T1, imag_T1);
-    thrust::complex<T0> construct_from_copy(expected);
+    const thrust::complex<T0> construct_from_copy(expected);
     require_almost_equal(real_T0, construct_from_copy.real());
     require_almost_equal(imag_T0, construct_from_copy.imag());
   }
 
   {
-    thrust::complex<T0> construct_from_move(thrust::complex<T1>(real_T1, imag_T1));
+    const thrust::complex<T0> construct_from_move(thrust::complex<T1>(real_T1, imag_T1));
     require_almost_equal(real_T0, construct_from_move.real());
     require_almost_equal(imag_T0, construct_from_move.imag());
   }

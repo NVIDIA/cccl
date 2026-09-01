@@ -285,8 +285,8 @@ struct dispatch_dummy_algorithm_t
     cudaError error = cudaSuccess;
 
     // Compute temporary storage requirements
-    void* allocations[1]            = {nullptr};
-    std::size_t allocation_sizes[1] = {total_vsmem};
+    void* allocations[1]                  = {nullptr};
+    const std::size_t allocation_sizes[1] = {total_vsmem};
     error = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (cudaSuccess != error)
     {
@@ -407,18 +407,18 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", CUB_S
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, item_t*, item_t*, offset_t>;
 
   // Get the information as it is expected from the vsmem helper to work as expected
-  std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
-  std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
-  bool expected_to_use_fallback =
+  const std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
+  const std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
+  const bool expected_to_use_fallback =
     default_smem_size > cub::detail::max_smem_per_block && fallback_smem_size <= cub::detail::max_smem_per_block;
-  std::size_t expected_smem_per_block = expected_to_use_fallback ? fallback_smem_size : default_smem_size;
-  bool expected_needs_vsmem           = expected_smem_per_block > cub::detail::max_smem_per_block;
-  std::size_t expected_threads_per_block =
+  const std::size_t expected_smem_per_block = expected_to_use_fallback ? fallback_smem_size : default_smem_size;
+  const bool expected_needs_vsmem           = expected_smem_per_block > cub::detail::max_smem_per_block;
+  const std::size_t expected_threads_per_block =
     expected_to_use_fallback ? fallback_policy_t::BLOCK_THREADS : default_policy_t::BLOCK_THREADS;
-  std::size_t expected_items_per_thread =
+  const std::size_t expected_items_per_thread =
     expected_to_use_fallback ? fallback_policy_t::ITEMS_PER_THREAD : default_policy_t::ITEMS_PER_THREAD;
-  std::size_t expected_tile_size       = expected_threads_per_block * expected_items_per_thread;
-  std::size_t expected_vsmem_per_block = (expected_needs_vsmem ? expected_smem_per_block : 0ULL);
+  const std::size_t expected_tile_size       = expected_threads_per_block * expected_items_per_thread;
+  const std::size_t expected_vsmem_per_block = (expected_needs_vsmem ? expected_smem_per_block : 0ULL);
 
   // Setup vsmem test
   launch_config_test_info_t* launch_config_info = nullptr;

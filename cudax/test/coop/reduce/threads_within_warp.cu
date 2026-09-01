@@ -47,8 +47,9 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
-    cudax::this_warp warp{config};
-    cudax::group group{cuda::gpu_thread, warp, cudax::group_by<NThreadsInGroup, false>{}, cudax::lane_synchronizer{}};
+    const cudax::this_warp warp{config};
+    const cudax::group group{
+      cuda::gpu_thread, warp, cudax::group_by<NThreadsInGroup, false>{}, cudax::lane_synchronizer{}};
 
     // All threads that are not part of the groups should exit early.
     if (!cuda::gpu_thread.is_part_of(group))
@@ -219,7 +220,7 @@ C2H_TEST("reduce/threads_within_warp Integral Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result =
@@ -246,7 +247,7 @@ C2H_TEST("reduce/threads_within_warp Floating-Point Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result =
@@ -269,7 +270,7 @@ C2H_TEST(
   c2h::device_vector<value_t> d_in(max_size * nthreads_in_group);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     c2h::device_vector<value_t> d_out(nthreads_in_group);

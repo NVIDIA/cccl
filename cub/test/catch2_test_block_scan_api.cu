@@ -26,8 +26,8 @@ __global__ void InclusiveBlockScanKernel(int* output)
   // Allocate shared memory for BlockScan
   __shared__ temp_storage_t temp_storage;
 
-  int initial_value = 1;
-  int thread_data[] = {
+  const int initial_value = 1;
+  int thread_data[]       = {
     +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
     -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
   };
@@ -76,8 +76,8 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
   // Allocate shared memory for BlockScan
   __shared__ temp_storage_t temp_storage;
 
-  int initial_value = 1;
-  int thread_data[] = {
+  const int initial_value = 1;
+  int thread_data[]       = {
     +1 * ((int) threadIdx.x * num_items_per_thread), // item 0
     -1 * ((int) threadIdx.x * num_items_per_thread + 1) // item 1
   };

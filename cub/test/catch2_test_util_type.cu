@@ -88,18 +88,18 @@ CUB_TEST("Test FutureValue", "[util][type]", CUB_SMALL)
 {
   // read
   int value;
-  cub::FutureValue<int> fv{&value};
+  cub::FutureValue<int> fv{&value}; // NOLINT(misc-const-correctness)
   value = 42;
   CHECK(fv == 42);
   value = 43;
   CHECK(fv == 43);
 
   // CTAD
-  cub::FutureValue fv2{&value};
+  cub::FutureValue fv2{&value}; // NOLINT(misc-const-correctness): decltype must not be const-qualified
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(fv2), cub::FutureValue<int, int*>>);
 
   c2h::device_vector<int> v(0);
-  cub::FutureValue fv3{v.begin()};
+  cub::FutureValue fv3{v.begin()}; // NOLINT(misc-const-correctness): decltype must not be const-qualified
   STATIC_REQUIRE(
     cuda::std::is_same_v<decltype(fv3), cub::FutureValue<int, typename c2h::device_vector<int>::iterator>>);
 }

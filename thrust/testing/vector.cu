@@ -24,11 +24,11 @@ DECLARE_VECTOR_UNITTEST(TestVectorZeroSize);
 
 void TestVectorBool()
 {
-  thrust::host_vector<bool> h{true, false, true};
-  thrust::device_vector<bool> d{true, false, true};
+  const thrust::host_vector<bool> h{true, false, true};
+  const thrust::device_vector<bool> d{true, false, true};
 
-  thrust::host_vector<bool> h_ref{true, false, true};
-  thrust::device_vector<bool> d_ref{true, false, true};
+  const thrust::host_vector<bool> h_ref{true, false, true};
+  const thrust::device_vector<bool> d_ref{true, false, true};
   ASSERT_EQUAL(h, h_ref);
   ASSERT_EQUAL(d, d_ref);
 }
@@ -115,12 +115,12 @@ void TestVectorFromSTLVector()
 {
   using T = typename Vector::value_type;
 
-  std::vector<T> stl_vector{0, 1, 2};
+  const std::vector<T> stl_vector{0, 1, 2};
 
   thrust::host_vector<T> v(stl_vector);
 
   ASSERT_EQUAL(v.size(), 3lu);
-  thrust::host_vector<T> ref{0, 1, 2};
+  const thrust::host_vector<T> ref{0, 1, 2};
   ASSERT_EQUAL(v, ref);
 
   v = stl_vector;
@@ -139,7 +139,7 @@ void TestVectorFillAssign()
   v.assign(3, 13);
 
   ASSERT_EQUAL(v.size(), 3lu);
-  thrust::host_vector<T> ref{13, 13, 13};
+  const thrust::host_vector<T> ref{13, 13, 13};
   ASSERT_EQUAL(v, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
@@ -283,7 +283,7 @@ void TestVectorAssignFromSTLVector()
   v.assign(stl_vector.begin(), stl_vector.end());
 
   ASSERT_EQUAL(v.size(), 3lu);
-  thrust::host_vector<T> ref{0, 1, 2};
+  const thrust::host_vector<T> ref{0, 1, 2};
   ASSERT_EQUAL(v, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromSTLVector);
@@ -527,17 +527,17 @@ DECLARE_VECTOR_UNITTEST(TestVectorEraseRange);
 
 void TestVectorEquality()
 {
-  thrust::host_vector<int> h_a{0, 1, 2};
-  thrust::host_vector<int> h_b{0, 1, 3};
-  thrust::host_vector<int> h_c(3);
+  const thrust::host_vector<int> h_a{0, 1, 2};
+  const thrust::host_vector<int> h_b{0, 1, 3};
+  const thrust::host_vector<int> h_c(3);
 
-  thrust::device_vector<int> d_a{0, 1, 2};
-  thrust::device_vector<int> d_b{0, 1, 3};
-  thrust::device_vector<int> d_c(3);
+  const thrust::device_vector<int> d_a{0, 1, 2};
+  const thrust::device_vector<int> d_b{0, 1, 3};
+  const thrust::device_vector<int> d_c(3);
 
-  std::vector<int> s_a{0, 1, 2};
-  std::vector<int> s_b{0, 1, 3};
-  std::vector<int> s_c(3);
+  const std::vector<int> s_a{0, 1, 2};
+  const std::vector<int> s_b{0, 1, 3};
+  const std::vector<int> s_c(3);
 
   ASSERT_EQUAL((h_a == h_a), true);
   ASSERT_EQUAL((h_a == d_a), true);
@@ -625,17 +625,17 @@ DECLARE_UNITTEST(TestVectorEquality);
 
 void TestVectorInequality()
 {
-  thrust::host_vector<int> h_a{0, 1, 2};
-  thrust::host_vector<int> h_b{0, 1, 3};
-  thrust::host_vector<int> h_c(3);
+  const thrust::host_vector<int> h_a{0, 1, 2};
+  const thrust::host_vector<int> h_b{0, 1, 3};
+  const thrust::host_vector<int> h_c(3);
 
-  thrust::device_vector<int> d_a{0, 1, 2};
-  thrust::device_vector<int> d_b{0, 1, 3};
-  thrust::device_vector<int> d_c(3);
+  const thrust::device_vector<int> d_a{0, 1, 2};
+  const thrust::device_vector<int> d_b{0, 1, 3};
+  const thrust::device_vector<int> d_c(3);
 
-  std::vector<int> s_a{0, 1, 2};
-  std::vector<int> s_b{0, 1, 3};
-  std::vector<int> s_c(3);
+  const std::vector<int> s_a{0, 1, 2};
+  const std::vector<int> s_b{0, 1, 3};
+  const std::vector<int> s_c(3);
 
   ASSERT_EQUAL((h_a != h_a), false);
   ASSERT_EQUAL((h_a != d_a), false);
@@ -763,7 +763,7 @@ void TestVectorReserving()
 
   ASSERT_GEQUAL(v.capacity(), 3lu);
 
-  size_t old_capacity = v.capacity();
+  const size_t old_capacity = v.capacity();
 
   v.reserve(0);
 
@@ -775,7 +775,7 @@ template <class Vector>
 void TestVectorUninitialisedCopy()
 {
   thrust::device_vector<int> v;
-  std::vector<int> std_vector;
+  const std::vector<int> std_vector;
 
   v = std_vector;
 
@@ -833,13 +833,13 @@ void TestVectorContainingLargeType()
   const static int N = 100;
   using T            = LargeStruct<N>;
 
-  thrust::device_vector<T> dv1;
-  thrust::host_vector<T> hv1;
+  const thrust::device_vector<T> dv1;
+  const thrust::host_vector<T> hv1;
 
   ASSERT_EQUAL_QUIET(dv1, hv1);
 
-  thrust::device_vector<T> dv2(20);
-  thrust::host_vector<T> hv2(20);
+  const thrust::device_vector<T> dv2(20);
+  const thrust::host_vector<T> hv2(20);
 
   ASSERT_EQUAL_QUIET(dv2, hv2);
 
@@ -943,19 +943,19 @@ void TestVectorDefaultInitCtor()
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
-    thrust::host_vector<int> hv(10, thrust::default_init);
-    thrust::device_vector<int> dv(10, thrust::default_init);
+    const thrust::host_vector<int> hv(10, thrust::default_init);
+    const thrust::device_vector<int> dv(10, thrust::default_init);
   }
 
   // non-trivially-constructible type: check that initialization was performed
   {
-    thrust::host_vector<IntWithInit> hv(10, thrust::default_init);
+    const thrust::host_vector<IntWithInit> hv(10, thrust::default_init);
     for (auto e : hv)
     {
       ASSERT_EQUAL(e.value, 42);
     }
 
-    thrust::device_vector<IntWithInit> dv(10, thrust::default_init);
+    const thrust::device_vector<IntWithInit> dv(10, thrust::default_init);
     for (auto e : dv)
     {
       ASSERT_EQUAL(static_cast<IntWithInit>(e).value, 42);
@@ -968,8 +968,8 @@ void TestVectorNoInitCtor()
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
-    thrust::host_vector<int> hv(10, thrust::no_init);
-    thrust::device_vector<int> dv(10, thrust::no_init);
+    const thrust::host_vector<int> hv(10, thrust::no_init);
+    const thrust::device_vector<int> dv(10, thrust::no_init);
   }
 
   // non-trivially-constructible type: those should fail to compile

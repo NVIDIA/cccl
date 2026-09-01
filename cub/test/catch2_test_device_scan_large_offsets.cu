@@ -30,12 +30,12 @@ struct expected_exclusive_sum_op
 
   __host__ __device__ __forceinline__ ItemT operator()(const uint64_t index) const
   {
-    uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
-    uint64_t full_segments        = index / segment_size;
-    uint64_t index_within_segment = index % segment_size;
+    const uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
+    const uint64_t full_segments        = index / segment_size;
+    const uint64_t index_within_segment = index % segment_size;
 
-    uint64_t sum_within_partial_segment = (index_within_segment * (index_within_segment - 1)) / 2;
-    uint64_t sum_over_full_segments     = full_segments * sum_per_full_segment;
+    const uint64_t sum_within_partial_segment = (index_within_segment * (index_within_segment - 1)) / 2;
+    const uint64_t sum_over_full_segments     = full_segments * sum_per_full_segment;
     return static_cast<ItemT>(sum_within_partial_segment + sum_over_full_segments);
   }
 };
@@ -49,15 +49,15 @@ struct expected_inclusive_sum_op
   {
     // The sum of a completed segment (0 to segment_size-1)
     // Formula: n(n+1)/2 where n is segment_size-1
-    uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
+    const uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
 
-    uint64_t full_segments        = index / segment_size;
-    uint64_t index_within_segment = index % segment_size;
+    const uint64_t full_segments        = index / segment_size;
+    const uint64_t index_within_segment = index % segment_size;
 
     // For inclusive, this includes the current index value in the sum.
-    uint64_t sum_within_partial_segment = (index_within_segment * (index_within_segment + 1)) / 2;
+    const uint64_t sum_within_partial_segment = (index_within_segment * (index_within_segment + 1)) / 2;
 
-    uint64_t sum_over_full_segments = full_segments * sum_per_full_segment;
+    const uint64_t sum_over_full_segments = full_segments * sum_per_full_segment;
 
     return static_cast<ItemT>(sum_within_partial_segment + sum_over_full_segments);
   }
@@ -109,7 +109,7 @@ try
   // Ensure that we created the correct output
   auto expected_out_it =
     cuda::transform_iterator(index_it, expected_exclusive_sum_op<item_t>{static_cast<index_t>(segment_size)});
-  bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
+  const bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
 catch (std::bad_alloc&)
@@ -153,7 +153,7 @@ try
   // Ensure that we created the correct output
   auto expected_out_it =
     cuda::transform_iterator(index_it, expected_inclusive_sum_op<item_t>{static_cast<index_t>(segment_size)});
-  bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
+  const bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
 catch (std::bad_alloc&)
