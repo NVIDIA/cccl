@@ -59,8 +59,8 @@ CUB_TEST_CASE("DeviceMergeSort::SortPairs works with default environment", "[mer
           == cub::DeviceMergeSort::SortPairs(
             d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
-  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
 }
@@ -73,7 +73,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeys works with default environment", "[merg
     cudaSuccess
     == cub::DeviceMergeSort::SortKeys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys == expected_keys);
 }
 
@@ -86,8 +86,8 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortPairs works with default environment",
           == cub::DeviceMergeSort::StableSortPairs(
             d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 6, 8, 9};
-  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 6, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
 }
@@ -100,7 +100,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeys works with default environment", 
           == cub::DeviceMergeSort::StableSortKeys(
             d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys == expected_keys);
 }
 
@@ -121,8 +121,8 @@ CUB_TEST_CASE("DeviceMergeSort::SortPairsCopy works with default environment", "
       static_cast<int>(d_keys_in.size()),
       cuda::std::less<int>{}));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
-  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys_out == expected_keys);
   REQUIRE(d_values_out == expected_values);
 }
@@ -137,7 +137,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy works with default environment", "[
     == cub::DeviceMergeSort::SortKeysCopy(
       d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), cuda::std::less<int>{}));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
 
@@ -151,7 +151,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy works with default environmen
     == cub::DeviceMergeSort::StableSortKeysCopy(
       d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), cuda::std::less<int>{}));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
 
@@ -178,8 +178,8 @@ CUB_TEST("DeviceMergeSort::SortPairs uses environment", "[merge_sort][device]", 
   device_merge_sort_pairs(
     d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
-  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
 }
@@ -198,7 +198,7 @@ CUB_TEST("DeviceMergeSort::SortKeys uses environment", "[merge_sort][device]", C
 
   device_merge_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys == expected_keys);
 }
 
@@ -223,8 +223,8 @@ CUB_TEST("DeviceMergeSort::StableSortPairs uses environment", "[merge_sort][devi
   device_merge_stable_sort_pairs(
     d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 6, 8, 9};
-  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 6, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
 }
@@ -243,7 +243,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeys uses environment", "[merge_sort][devic
 
   device_merge_stable_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys == expected_keys);
 }
 
@@ -274,8 +274,8 @@ CUB_TEST_CASE("DeviceMergeSort::SortPairs uses custom stream", "[merge_sort][dev
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
-  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys == expected_keys);
   REQUIRE(d_values == expected_values);
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
@@ -301,7 +301,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeys uses custom stream", "[merge_sort
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys == expected_keys);
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
@@ -337,8 +337,8 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy uses environment", "[merge_sort][device
     cuda::std::less<int>{},
     env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
-  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys_out == expected_keys);
   REQUIRE(d_values_out == expected_values);
 }
@@ -364,7 +364,7 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy uses environment", "[merge_sort][device]
   device_merge_sort_keys_copy(
     d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), cuda::std::less<int>{}, env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
 
@@ -389,7 +389,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy uses environment", "[merge_sort][d
   device_merge_stable_sort_keys_copy(
     d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), cuda::std::less<int>{}, env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
 
@@ -398,7 +398,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy uses custom stream", "[merge_sort][
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_keys_out = c2h::device_vector<int>(7);
 
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -411,7 +411,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy uses custom stream", "[merge_sort][
       static_cast<int>(d_keys_in.size()),
       cuda::std::less<int>{}));
 
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
 
   device_merge_sort_keys_copy(
@@ -419,7 +419,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeysCopy uses custom stream", "[merge_sort][
 
   stream.sync();
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
 
@@ -428,7 +428,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_
   auto d_keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_keys_out = c2h::device_vector<int>(7);
 
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -441,7 +441,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_
       static_cast<int>(d_keys_in.size()),
       cuda::std::less<int>{}));
 
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
   auto env = stdexec::env{stream_ref, expected_allocation_size(expected_bytes_allocated)};
 
   device_merge_stable_sort_keys_copy(
@@ -449,7 +449,7 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_
 
   stream.sync();
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys_out == expected_keys);
 }
 
@@ -578,7 +578,7 @@ CUB_TEST_CASE("DeviceMergeSort::SortKeys works with unroll disabled", "[merge_so
 
   device_merge_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), cuda::std::less<int>{}, env);
 
-  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   REQUIRE(d_keys == expected_keys);
 }
 

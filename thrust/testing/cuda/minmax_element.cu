@@ -114,8 +114,8 @@ void TestMinMaxElementDevicePointer()
   data[4] = 5;
   data[5] = 1;
 
-  T* raw_ptr = thrust::raw_pointer_cast(data.data());
-  size_t n   = data.size();
+  T* raw_ptr     = thrust::raw_pointer_cast(data.data());
+  const size_t n = data.size();
   ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).first - raw_ptr, 2);
   ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr, 1);
 }

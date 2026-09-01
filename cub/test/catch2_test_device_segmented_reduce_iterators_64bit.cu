@@ -45,7 +45,7 @@ CUB_TEST(
     offset_zero, num_items_in_first_segment, num_items_in_first_segment + num_items_in_second_segment};
 
   // store expected result and initialize device output container
-  c2h::host_vector<offset_t> expected_result = {
+  const c2h::host_vector<offset_t> expected_result = {
     iterator_value * num_items_in_first_segment, iterator_value * num_items_in_second_segment};
   c2h::device_vector<offset_t> device_result(num_segments);
 

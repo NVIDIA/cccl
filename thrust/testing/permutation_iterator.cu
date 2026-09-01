@@ -95,7 +95,7 @@ void TestPermutationIteratorGather()
   // initialize input
   thrust::sequence(source.begin(), source.end(), 1);
 
-  thrust::permutation_iterator<Iterator, Iterator> p_source(source.begin(), indices.begin());
+  const thrust::permutation_iterator<Iterator, Iterator> p_source(source.begin(), indices.begin());
 
   thrust::copy(p_source, p_source + 4, output.begin());
 
@@ -117,7 +117,7 @@ void TestPermutationIteratorScatter()
   thrust::sequence(output.begin(), output.end(), 1);
 
   // construct transform_iterator
-  thrust::permutation_iterator<Iterator, Iterator> p_output(output.begin(), indices.begin());
+  const thrust::permutation_iterator<Iterator, Iterator> p_output(output.begin(), indices.begin());
 
   thrust::copy(source.begin(), source.end(), p_output);
 
@@ -159,14 +159,14 @@ void TestPermutationIteratorReduce()
   thrust::sequence(source.begin(), source.end(), 1);
 
   // construct transform_iterator
-  thrust::permutation_iterator<Iterator, Iterator> iter(source.begin(), indices.begin());
+  const thrust::permutation_iterator<Iterator, Iterator> iter(source.begin(), indices.begin());
 
-  T result1 = thrust::reduce(thrust::make_permutation_iterator(source.begin(), indices.begin()),
-                             thrust::make_permutation_iterator(source.begin(), indices.begin()) + 4);
+  const T result1 = thrust::reduce(thrust::make_permutation_iterator(source.begin(), indices.begin()),
+                                   thrust::make_permutation_iterator(source.begin(), indices.begin()) + 4);
 
   ASSERT_EQUAL(result1, 19);
 
-  T result2 = thrust::transform_reduce(
+  const T result2 = thrust::transform_reduce(
     thrust::make_permutation_iterator(source.begin(), indices.begin()),
     thrust::make_permutation_iterator(source.begin(), indices.begin()) + 4,
     ::cuda::std::negate<T>(),
@@ -196,19 +196,19 @@ void TestPermutationIteratorHostDeviceGather()
   thrust::sequence(h_source.begin(), h_source.end(), 1);
   thrust::sequence(d_source.begin(), d_source.end(), 1);
 
-  thrust::permutation_iterator<HostIterator, HostIterator> p_h_source(h_source.begin(), h_indices.begin());
-  thrust::permutation_iterator<DeviceIterator, DeviceIterator> p_d_source(d_source.begin(), d_indices.begin());
+  const thrust::permutation_iterator<HostIterator, HostIterator> p_h_source(h_source.begin(), h_indices.begin());
+  const thrust::permutation_iterator<DeviceIterator, DeviceIterator> p_d_source(d_source.begin(), d_indices.begin());
 
   // gather host->device
   thrust::copy(p_h_source, p_h_source + 4, d_output.begin());
 
-  DeviceVector dref{4, 1, 6, 8};
+  const DeviceVector dref{4, 1, 6, 8};
   ASSERT_EQUAL(d_output, dref);
 
   // gather device->host
   thrust::copy(p_d_source, p_d_source + 4, h_output.begin());
 
-  HostVector href{4, 1, 6, 8};
+  const HostVector href{4, 1, 6, 8};
   ASSERT_EQUAL(h_output, href);
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceGather);
@@ -233,19 +233,19 @@ void TestPermutationIteratorHostDeviceScatter()
   thrust::sequence(h_output.begin(), h_output.end(), 1);
   thrust::sequence(d_output.begin(), d_output.end(), 1);
 
-  thrust::permutation_iterator<HostIterator, HostIterator> p_h_output(h_output.begin(), h_indices.begin());
-  thrust::permutation_iterator<DeviceIterator, DeviceIterator> p_d_output(d_output.begin(), d_indices.begin());
+  const thrust::permutation_iterator<HostIterator, HostIterator> p_h_output(h_output.begin(), h_indices.begin());
+  const thrust::permutation_iterator<DeviceIterator, DeviceIterator> p_d_output(d_output.begin(), d_indices.begin());
 
   // scatter host->device
   thrust::copy(h_source.begin(), h_source.end(), p_d_output);
 
-  DeviceVector dref{10, 2, 3, 10, 5, 10, 7, 10};
+  const DeviceVector dref{10, 2, 3, 10, 5, 10, 7, 10};
   ASSERT_EQUAL(d_output, dref);
 
   // scatter device->host
   thrust::copy(d_source.begin(), d_source.end(), p_h_output);
 
-  HostVector href = dref;
+  const HostVector href = dref;
   ASSERT_EQUAL(h_output, href);
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);
@@ -256,7 +256,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIte
   using T      = typename Vector::value_type;
   using diff_t = typename thrust::counting_iterator<T>::difference_type;
 
-  thrust::counting_iterator<T> input(0), index(0);
+  const thrust::counting_iterator<T> input(0), index(0);
 
   // test copy()
   {

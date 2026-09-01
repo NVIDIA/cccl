@@ -38,9 +38,9 @@ C2H_TEST("stf_ctx_wait reads data without finalizing", "[context]")
   stf_host_launch_add_dep(h, lVal, STF_WRITE);
   stf_host_launch_set_user_data(h, &src_val, sizeof(int), nullptr);
   stf_host_launch_submit(h, [](stf_host_launch_deps_handle deps) {
-    int* data = (int*) stf_host_launch_deps_get(deps, 0);
-    int* src  = (int*) stf_host_launch_deps_get_user_data(deps);
-    data[0]   = *src;
+    int* data      = (int*) stf_host_launch_deps_get(deps, 0);
+    const int* src = (int*) stf_host_launch_deps_get_user_data(deps);
+    data[0]        = *src;
   });
   stf_host_launch_destroy(h);
 
@@ -58,9 +58,9 @@ C2H_TEST("stf_ctx_wait reads data without finalizing", "[context]")
   stf_host_launch_add_dep(h2, lVal, STF_WRITE);
   stf_host_launch_set_user_data(h2, &src_val, sizeof(int), nullptr);
   stf_host_launch_submit(h2, [](stf_host_launch_deps_handle deps) {
-    int* data = (int*) stf_host_launch_deps_get(deps, 0);
-    int* src  = (int*) stf_host_launch_deps_get_user_data(deps);
-    data[0]   = *src;
+    int* data      = (int*) stf_host_launch_deps_get(deps, 0);
+    const int* src = (int*) stf_host_launch_deps_get_user_data(deps);
+    data[0]        = *src;
   });
   stf_host_launch_destroy(h2);
 

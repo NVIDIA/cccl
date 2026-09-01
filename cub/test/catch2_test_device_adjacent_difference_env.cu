@@ -45,7 +45,7 @@ CUB_TEST_CASE("Device adjacent difference subtract left copy works with default 
           == cub::DeviceAdjacentDifference::SubtractLeftCopy(
             input.begin(), output.begin(), input.size(), cuda::std::minus{}));
 
-  c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   REQUIRE(output == expected);
 }
 
@@ -57,7 +57,7 @@ CUB_TEST_CASE("Device adjacent difference subtract left works with default envir
 
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractLeft(data.begin(), data.size(), cuda::std::minus{}));
 
-  c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   REQUIRE(data == expected);
 }
 
@@ -72,7 +72,7 @@ CUB_TEST_CASE("Device adjacent difference subtract right copy works with default
           == cub::DeviceAdjacentDifference::SubtractRightCopy(
             input.begin(), output.begin(), input.size(), cuda::std::minus{}));
 
-  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(output == expected);
 }
 
@@ -84,7 +84,7 @@ CUB_TEST_CASE("Device adjacent difference subtract right works with default envi
 
   REQUIRE(cudaSuccess == cub::DeviceAdjacentDifference::SubtractRight(data.begin(), data.size(), cuda::std::minus{}));
 
-  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(data == expected);
 }
 
@@ -104,7 +104,7 @@ CUB_TEST("Device adjacent difference subtract left copy uses environment", "[adj
 
   device_adjacent_difference_subtract_left_copy(input.begin(), output.begin(), input.size(), cuda::std::minus{}, env);
 
-  c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   REQUIRE(output == expected);
 }
 
@@ -121,7 +121,7 @@ CUB_TEST("Device adjacent difference subtract left uses environment", "[adjacent
 
   device_adjacent_difference_subtract_left(data.begin(), data.size(), cuda::std::minus{}, env);
 
-  c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   REQUIRE(data == expected);
 }
 
@@ -139,7 +139,7 @@ CUB_TEST("Device adjacent difference subtract right copy uses environment", "[ad
 
   device_adjacent_difference_subtract_right_copy(input.begin(), output.begin(), input.size(), cuda::std::minus{}, env);
 
-  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(output == expected);
 }
 
@@ -156,7 +156,7 @@ CUB_TEST("Device adjacent difference subtract right uses environment", "[adjacen
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), cuda::std::minus{}, env);
 
-  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(data == expected);
 }
 
@@ -203,7 +203,7 @@ CUB_TEST(
 
   device_adjacent_difference_subtract_left_copy(input.begin(), output.begin(), input.size(), op, env);
 
-  c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   REQUIRE(output == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -218,7 +218,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft can be tuned", "[adjacent_diffe
 
   device_adjacent_difference_subtract_left(data.begin(), data.size(), op, env);
 
-  c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  const c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   REQUIRE(data == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -235,7 +235,7 @@ CUB_TEST(
 
   device_adjacent_difference_subtract_right_copy(input.begin(), output.begin(), input.size(), op, env);
 
-  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(output == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -250,7 +250,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
 
-  c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  const c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(data == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }

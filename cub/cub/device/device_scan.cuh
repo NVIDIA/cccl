@@ -388,7 +388,7 @@ struct DeviceScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return detail::scan::dispatch(
       d_temp_storage,
@@ -468,7 +468,7 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return scan_impl_env(
       d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
@@ -2672,7 +2672,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
     return scan_by_key_impl<::cuda::std::execution::env<>>(
       d_temp_storage,
       temp_storage_bytes,

@@ -259,7 +259,7 @@ CUB_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
   // Verify results
   auto keys_expected_it   = cuda::std::make_reverse_iterator(keys_in + num_items);
   auto values_expected_it = cuda::std::make_reverse_iterator(values_in + num_items);
-  bool res                = check_results(
+  const bool res          = check_results(
     keys_expected_it, values_expected_it, keys_out, values_out, num_items, static_cast<num_items_t>(k), comparator_t{});
   REQUIRE(res == true);
 }

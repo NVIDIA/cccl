@@ -447,7 +447,7 @@ struct memory_pool_properties
   }
 
   ::CUmemoryPool __cuda_pool_handle{};
-  ::cudaError_t __error = ::cuda::__driver::__mempoolCreateNoThrow(&__cuda_pool_handle, &__pool_properties);
+  const ::cudaError_t __error = ::cuda::__driver::__mempoolCreateNoThrow(&__cuda_pool_handle, &__pool_properties);
   if (__error != ::cudaSuccess)
   {
     auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
@@ -466,7 +466,7 @@ struct memory_pool_properties
   // We need to use a new stream so we do not wait on other work
   if (__properties.initial_pool_size != 0)
   {
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
+    const ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
       __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
     if (::cuda::__driver::__freeAsyncNoThrow(__ptr, __cccl_allocation_stream().get()) != ::cudaSuccess)
     {
@@ -514,7 +514,8 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to __memory_pool_base::allocate_sync.");
     }
 
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
+    const ::CUdeviceptr __ptr =
+      ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
     return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
@@ -569,7 +570,7 @@ public:
   //! @returns Pointer to the newly allocated memory.
   [[nodiscard]] _CCCL_HOST_API void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
+    const ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
     return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 

@@ -17,7 +17,7 @@ namespace
 {
 __global__ void increment_kernel(int* p, int n)
 {
-  int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (idx < n)
   {
     p[idx] += 1;

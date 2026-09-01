@@ -55,7 +55,7 @@ CUB_TEST("Nondeterministic Device reduce works with float and double on gpu",
   const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 20}));
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
 
-  type amplitude = static_cast<type>(1);
+  const type amplitude = static_cast<type>(1);
   c2h::gen(C2H_SEED(2), d_input, -amplitude / (num_items + 1), 2 * amplitude / (num_items + 1));
 
   c2h::device_vector<type> d_output(1);
@@ -65,8 +65,8 @@ CUB_TEST("Nondeterministic Device reduce works with float and double on gpu",
     cudaSuccess
     == cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
-  c2h::host_vector<type> h_input  = d_input;
-  c2h::host_vector<type> h_actual = d_output;
+  c2h::host_vector<type> h_input        = d_input;
+  const c2h::host_vector<type> h_actual = d_output;
 
   c2h::host_vector<type> h_expected(1);
   // TODO: Use std::reduce once we drop support for GCC 7 and 8
@@ -77,7 +77,7 @@ CUB_TEST("Nondeterministic Device reduce works with float and double on gpu",
     const type ab = cuda::std::fabs(b);
     return cuda::std::plus<type>{}(aa, ab);
   };
-  type sum_abs = std::accumulate(h_input.begin(), h_input.end(), type{}, plus_abs);
+  const type sum_abs = std::accumulate(h_input.begin(), h_input.end(), type{}, plus_abs);
 
   // relative round-off error of recursive summation is proportional to n * type::epsilon,
   // see https://epubs.siam.org/doi/epdf/10.1137/19M1257780
@@ -178,15 +178,15 @@ CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
     c2h::host_vector<type> h_expected(1);
     // TODO: Use std::reduce once we drop support for GCC 7 and 8
-    h_expected[0]                   = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
-    c2h::host_vector<type> h_output = d_output;
+    h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
+    const c2h::host_vector<type> h_output = d_output;
 
     REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
   }
 
   SECTION("constant iterator")
   {
-    cuda::constant_iterator<type> input(1.0f);
+    const cuda::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
     REQUIRE(cudaSuccess
@@ -341,7 +341,7 @@ CUB_TEST("Nondeterministic Device reduce works with various types on gpu with di
   // TODO: Use std::reduce once we drop support for GCC 7 and 8
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>{});
 
-  c2h::host_vector<type> h_output = d_output;
+  const c2h::host_vector<type> h_output = d_output;
   if constexpr (cuda::std::is_integral_v<type>)
   {
     REQUIRE(h_expected == h_output);

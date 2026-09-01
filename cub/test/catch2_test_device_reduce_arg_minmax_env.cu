@@ -196,7 +196,7 @@ CUB_TEST("Device ArgMin[Last]Max uses custom stream", "[reduce][device]", CUB_SM
   const auto n                                = static_cast<::cuda::std::int64_t>(input.size());
   const cuda::std::int64_t expected_max_index = last_max ? 2 : 1;
 
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   const auto error = call_argminmax_api(
     last_max, input.begin(), min_out.begin(), min_index.begin(), max_out.begin(), max_index.begin(), n, stream);
   stream.sync();
@@ -218,7 +218,7 @@ CUB_TEST("Device ArgMin[Last]Max can be tuned", "[reduce][device]", CUB_SMALL, b
 
   c2h::device_vector<unsigned int> d_block_size(1);
   using compare_t = block_size_extracting_op<cuda::std::less<>>;
-  compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const compare_t compare_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   // The maximum value 4 appears twice, so first-max and last-max disagree on the reported index.
   auto input     = c2h::device_vector<int>{3, 4, 4, 0, 2};

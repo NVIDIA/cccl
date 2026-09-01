@@ -47,7 +47,7 @@ void TestGatherDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::gather(sys, vec.begin(), vec.end(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -123,13 +123,13 @@ void TestGatherToDiscardIterator(const size_t n)
 
   thrust::device_vector<unsigned int> d_map = h_map;
 
-  thrust::discard_iterator<> h_result =
+  const thrust::discard_iterator<> h_result =
     thrust::gather(h_map.begin(), h_map.end(), h_source.begin(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> d_result =
+  const thrust::discard_iterator<> d_result =
     thrust::gather(d_map.begin(), d_map.end(), d_source.begin(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -177,7 +177,7 @@ void TestGatherIfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::gather_if(sys, vec.begin(), vec.end(), vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -293,7 +293,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
 
   thrust::device_vector<unsigned int> d_stencil = h_stencil;
 
-  thrust::discard_iterator<> h_result = thrust::gather_if(
+  const thrust::discard_iterator<> h_result = thrust::gather_if(
     h_map.begin(),
     h_map.end(),
     h_stencil.begin(),
@@ -301,7 +301,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
     thrust::make_discard_iterator(),
     is_even_gather_if<unsigned int>());
 
-  thrust::discard_iterator<> d_result = thrust::gather_if(
+  const thrust::discard_iterator<> d_result = thrust::gather_if(
     d_map.begin(),
     d_map.end(),
     d_stencil.begin(),
@@ -309,7 +309,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
     thrust::make_discard_iterator(),
     is_even_gather_if<unsigned int>());
 
-  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);

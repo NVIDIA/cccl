@@ -63,7 +63,7 @@ CUB_TEST("Test partially filled storage", "[temporary_storage_layout]", CUB_SMAL
 
   const std::size_t temp_storage_bytes = temporary_storage.get_size();
 
-  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[temp_storage_bytes]);
+  const std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[temp_storage_bytes]);
 
   temporary_storage.map_to_buffer(temp_storage.get(), temp_storage_bytes);
 
@@ -110,7 +110,7 @@ CUB_TEST("Test grow", "[temporary_storage_layout]", CUB_SMALL, num_storage_slots
   CHECK(preset_layout.get_size() == postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
-  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
+  const std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
 
   preset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
   postset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
@@ -149,7 +149,7 @@ CUB_TEST("Test double grow", "[temporary_storage_layout]", CUB_SMALL, num_storag
   CHECK(preset_layout.get_size() == postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
-  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
+  const std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
 
   preset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
   postset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);

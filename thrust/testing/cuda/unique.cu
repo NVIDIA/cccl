@@ -125,7 +125,7 @@ void TestUniqueCudaStreams(ExecutionPolicy policy)
 
   Vector data{11, 11, 12, 20, 29, 21, 21, 31, 31, 37};
 
-  thrust::device_vector<Vector::iterator> new_last_vec(1);
+  const thrust::device_vector<Vector::iterator> new_last_vec(1);
   Vector::iterator new_last;
 
   cudaStream_t s;
@@ -249,7 +249,7 @@ void TestUniqueCopyCudaStreams(ExecutionPolicy policy)
 
   Vector output(10, -1);
 
-  thrust::device_vector<Vector::iterator> new_last_vec(1);
+  const thrust::device_vector<Vector::iterator> new_last_vec(1);
   Vector::iterator new_last;
 
   cudaStream_t s;
@@ -391,34 +391,34 @@ void TestUniqueWithMagnitude(int magnitude)
   using offset_t      = std::int64_t;
   using equality_op_t = div_n_equality_op<offset_t>;
 
-  offset_t run_length_of_equal_items = offset_t{10};
-  equality_op_t equality_op          = equality_op_t{run_length_of_equal_items};
+  const offset_t run_length_of_equal_items = offset_t{10};
+  const equality_op_t equality_op          = equality_op_t{run_length_of_equal_items};
 
   // Prepare input
-  offset_t num_items = offset_t{1ull} << magnitude;
-  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  const offset_t num_items = offset_t{1ull} << magnitude;
+  const thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + num_items;
   ASSERT_EQUAL(static_cast<offset_t>(cuda::std::distance(begin, end)), num_items);
 
-  offset_t expected_num_unique = ::cuda::ceil_div(num_items, offset_t{10});
+  const offset_t expected_num_unique = ::cuda::ceil_div(num_items, offset_t{10});
   thrust::device_vector<offset_t> unique_out(expected_num_unique);
   auto unique_out_end = thrust::unique_copy(begin, end, unique_out.begin(), equality_op);
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(cuda::std::distance(unique_out.begin(), unique_out_end));
+  const offset_t num_selected_out = static_cast<offset_t>(cuda::std::distance(unique_out.begin(), unique_out_end));
   ASSERT_EQUAL(num_selected_out, expected_num_unique);
   unique_out.resize(expected_num_unique);
 
   // Ensure selected items are correct
-  auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{run_length_of_equal_items});
-  bool all_results_correct = thrust::equal(unique_out.begin(), unique_out.end(), expected_out_it);
+  auto expected_out_it = thrust::make_transform_iterator(begin, multiply_n<offset_t>{run_length_of_equal_items});
+  const bool all_results_correct = thrust::equal(unique_out.begin(), unique_out.end(), expected_out_it);
   ASSERT_EQUAL(all_results_correct, true);
 }
 
 void TestUniqueWithLargeNumberOfItems()
 try
 {
-  for (int mag : {30, 31, 32, 33})
+  for (const int mag : {30, 31, 32, 33})
   {
     TestUniqueWithMagnitude(mag);
   }
@@ -448,7 +448,7 @@ void TestUniqueWithCustomEqualityOp()
   auto num_selected_out = cuda::std::distance(unique_out.begin(), unique_out_end);
   ASSERT_EQUAL(num_selected_out, num_items);
   ASSERT_EQUAL(error_counter[0], ::cuda::std::uint32_t{0});
-  bool all_results_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), data);
+  const bool all_results_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), data);
   ASSERT_EQUAL(all_results_correct, true);
 }
 

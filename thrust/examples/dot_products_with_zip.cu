@@ -82,9 +82,9 @@ int main()
   using Float3Iterator     = thrust::zip_iterator<FloatIteratorTuple>;
 
   // Now we'll create some zip_iterators for A and B
-  Float3Iterator A_first = thrust::make_zip_iterator(A0.begin(), A1.begin(), A2.begin());
-  Float3Iterator A_last  = thrust::make_zip_iterator(A0.end(), A1.end(), A2.end());
-  Float3Iterator B_first = thrust::make_zip_iterator(B0.begin(), B1.begin(), B2.begin());
+  const Float3Iterator A_first = thrust::make_zip_iterator(A0.begin(), A1.begin(), A2.begin());
+  const Float3Iterator A_last  = thrust::make_zip_iterator(A0.end(), A1.end(), A2.end());
+  const Float3Iterator B_first = thrust::make_zip_iterator(B0.begin(), B1.begin(), B2.begin());
 
   // Finally, we pass the zip_iterators into transform() as if they
   // were 'normal' iterators for a device_vector<Float3>.
@@ -110,9 +110,9 @@ int main()
   std::cout << std::fixed;
   for (size_t i = 0; i < 4; i++)
   {
-    Float3 a  = A_first[static_cast<std::ptrdiff_t>(i)];
-    Float3 b  = B_first[static_cast<std::ptrdiff_t>(i)];
-    float dot = result[i];
+    Float3 a        = A_first[static_cast<std::ptrdiff_t>(i)];
+    Float3 b        = B_first[static_cast<std::ptrdiff_t>(i)];
+    const float dot = result[i];
 
     std::cout << "(" << cuda::std::get<0>(a) << "," << cuda::std::get<1>(a) << "," << cuda::std::get<2>(a) << ")";
     std::cout << " * ";

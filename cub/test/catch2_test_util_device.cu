@@ -56,16 +56,16 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   c2h::device_vector<int> cuda_cc(single_item);
 
   // Query the arch the kernel was actually compiled for
-  int ptx_version = [&]() -> int {
+  const int ptx_version = [&]() -> int {
     int* buffer{};
     cudaMallocHost(&buffer, sizeof(*buffer));
     get_cuda_cc_from_kernel(thrust::raw_pointer_cast(cuda_cc.data()), buffer);
-    int result = *buffer;
+    const int result = *buffer;
     cudaFreeHost(buffer);
     return result;
   }();
 
-  int kernel_cuda_cc = cuda_cc[0];
+  const int kernel_cuda_cc = cuda_cc[0];
 
   // Host cub::PtxVersion
   int host_ptx_version{};
@@ -305,7 +305,7 @@ __global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
 
 CUB_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]", CUB_SMALL)
 {
-  cuda::device_ref device{0};
+  const cuda::device_ref device{0};
 
   // Calculate the expected max potential dynamic shared memory size.
   const auto max_smem_per_block_optin = device.attribute(cuda::device_attributes::max_shared_memory_per_block_optin);

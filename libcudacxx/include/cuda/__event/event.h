@@ -157,7 +157,7 @@ private:
   _CCCL_HOST_API explicit event(device_ref __device, unsigned __flags)
       : event_ref(::cudaEvent_t{})
   {
-    [[maybe_unused]] __ensure_current_context __ctx_setter(__device);
+    [[maybe_unused]] const __ensure_current_context __ctx_setter(__device);
     __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
   }
 };

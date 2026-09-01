@@ -64,11 +64,11 @@ CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
 
 CUB_TEST("InequalityWrapper", "[thread_operator]", CUB_SMALL)
 {
-  cuda::std::equal_to<> wrapped_op{};
+  const cuda::std::equal_to<> wrapped_op{};
   cub::InequalityWrapper<cuda::std::equal_to<>> op{wrapped_op};
 
   constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
+  const int magic_val           = const_magic_val;
 
   CHECK(op(const_magic_val, const_magic_val) == false);
   CHECK(op(const_magic_val, magic_val) == false);

@@ -283,7 +283,7 @@ CUB_TEST("DeviceTransform::Transform non-default constructible types", "[device]
 
   transform_many(cuda::std::make_tuple(input.begin()), result.begin(), num_items, cuda::std::identity{});
 
-  c2h::host_vector<type> reference_h(num_items, non_default_constructible{42});
+  const c2h::host_vector<type> reference_h(num_items, non_default_constructible{42});
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
 }
 
@@ -384,7 +384,7 @@ CUB_TEST("DeviceTransform::Generate", "[device][transform]", CUB_SMALL)
   generate(result.begin(), num_items, give_me_five{});
 
   // compute reference and verify
-  c2h::device_vector<int> reference(num_items, 5);
+  const c2h::device_vector<int> reference(num_items, 5);
   REQUIRE(reference == result);
 }
 
@@ -395,7 +395,7 @@ CUB_TEST("DeviceTransform::Fill", "[device][transform]", CUB_SMALL)
   fill(result.begin(), num_items, 5);
 
   // compute reference and verify
-  c2h::device_vector<int> reference(num_items, 5);
+  const c2h::device_vector<int> reference(num_items, 5);
   REQUIRE(reference == result);
 }
 
@@ -403,8 +403,8 @@ CUB_TEST("DeviceTransform::Transform fancy input iterator types", "[device][tran
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::counting_iterator<type> a{0};
-  cuda::counting_iterator<type> b{10};
+  const cuda::counting_iterator<type> a{0};
+  const cuda::counting_iterator<type> b{10};
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
   transform_many(cuda::std::make_tuple(a, b), result.begin(), num_items, cuda::std::plus<type>{});
@@ -457,7 +457,7 @@ CUB_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][tra
 {
   using type          = unsigned; // overflow is defined
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::counting_iterator<type> a{0};
+  const cuda::counting_iterator<type> a{0};
   c2h::device_vector<type> b(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), b);
 
@@ -656,7 +656,7 @@ CUB_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform
 {
   using thrust::placeholders::_1;
 
-  int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
+  const int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
   c2h::device_vector<std::uint16_t> input(num_items);
   c2h::device_vector<std::uint16_t> output(num_items);
   thrust::sequence(input.begin(), input.end());
@@ -727,7 +727,7 @@ CUB_TEST("DeviceTransform::Transform function/output_iter return type not conver
   auto out_it = cuda::transform_output_iterator(output.begin(), BtoC{});
   transform_many(input.begin(), out_it, num_items, AtoB{});
 
-  c2h::device_vector<C> reference(num_items, C{-43});
+  const c2h::device_vector<C> reference(num_items, C{-43});
   CHECK(output == reference);
 }
 

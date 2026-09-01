@@ -202,7 +202,7 @@ CUB_TEST("Block load works with caching iterators", "[load][block]", CUB_SMALL, 
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
   c2h::gen(C2H_SEED(10), d_input);
-  cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, type> in(
+  const cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, type> in(
     thrust::raw_pointer_cast(d_input.data()));
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
 }

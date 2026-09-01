@@ -19,7 +19,7 @@ void TestTransformReduceDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::transform_reduce(sys, vec.begin(), vec.begin(), 0, 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -50,8 +50,9 @@ void TestTransformReduceSimple()
 
   Vector data{1, -2, 3};
 
-  T init   = 10;
-  T result = thrust::transform_reduce(data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
+  const T init = 10;
+  const T result =
+    thrust::transform_reduce(data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(result, 8);
 }
@@ -77,8 +78,8 @@ DECLARE_VARIABLE_UNITTEST(TestTransformReduce);
 template <typename T>
 void TestTransformReduceFromConst(const size_t n)
 {
-  thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
-  thrust::device_vector<T> d_data = h_data;
+  const thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
+  const thrust::device_vector<T> d_data = h_data;
 
   T init = 13;
 
@@ -97,9 +98,10 @@ void TestTransformReduceCountingIterator()
   using T     = typename Vector::value_type;
   using space = typename thrust::iterator_system<typename Vector::iterator>::type;
 
-  thrust::counting_iterator<T, space> first(1);
+  const thrust::counting_iterator<T, space> first(1);
 
-  T result = thrust::transform_reduce(first, first + 3, ::cuda::std::negate<short>(), 0, ::cuda::std::plus<short>());
+  const T result =
+    thrust::transform_reduce(first, first + 3, ::cuda::std::negate<short>(), 0, ::cuda::std::plus<short>());
 
   ASSERT_EQUAL(result, -6);
 }

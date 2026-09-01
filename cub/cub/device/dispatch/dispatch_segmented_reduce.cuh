@@ -870,8 +870,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   const auto tiles_per_invocation        = num_segments_per_invocation * tiles_per_segment;
 
   // Temporary storage allocation requirements
-  void* allocations[1]       = {};
-  size_t allocation_sizes[1] = {static_cast<size_t>(tiles_per_invocation) * kernel_source.AccumSize()};
+  void* allocations[1]             = {};
+  const size_t allocation_sizes[1] = {static_cast<size_t>(tiles_per_invocation) * kernel_source.AccumSize()};
 
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
@@ -884,7 +884,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
     return cudaSuccess;
   }
 
-  AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+  AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]); // NOLINT(misc-const-correctness)
 
   for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
   {

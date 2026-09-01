@@ -47,10 +47,10 @@ struct TestTupleReduce
     cuda::std::tuple<T, T> zero(0, 0);
 
     // sum on host
-    cuda::std::tuple<T, T> h_result = thrust::reduce(h_tuples.begin(), h_tuples.end(), zero, SumTupleFunctor());
+    const cuda::std::tuple<T, T> h_result = thrust::reduce(h_tuples.begin(), h_tuples.end(), zero, SumTupleFunctor());
 
     // sum on device
-    cuda::std::tuple<T, T> d_result = thrust::reduce(d_tuples.begin(), d_tuples.end(), zero, SumTupleFunctor());
+    const cuda::std::tuple<T, T> d_result = thrust::reduce(d_tuples.begin(), d_tuples.end(), zero, SumTupleFunctor());
 
     ASSERT_EQUAL_QUIET(h_result, d_result);
   }

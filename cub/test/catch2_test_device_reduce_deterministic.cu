@@ -107,7 +107,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with la
     d_chunk.begin() + half_chunk_size,
     cuda::std::negate<type>{});
 
-  cyclic_chunk_accessor<type, decltype(d_chunk.data())> wrapper{d_chunk.data(), chunk_size};
+  const cyclic_chunk_accessor<type, decltype(d_chunk.data())> wrapper{d_chunk.data(), chunk_size};
   auto d_input = cuda::transform_iterator(cuda::counting_iterator<size_t>{}, wrapper);
   c2h::device_vector<type> d_output(1);
 
@@ -117,8 +117,8 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with la
 
   // expected sum must be zero, as there would be equal number of positive and negative values
   // in the input and they will cancel each other out
-  c2h::host_vector<type> h_expected(1, type{});
-  c2h::host_vector<type> h_output = d_output;
+  const c2h::host_vector<type> h_expected(1, type{});
+  const c2h::host_vector<type> h_output = d_output;
 
   // output should be exactly equal to expected i.e 0.0
   REQUIRE_APPROX_EQ_ABS(h_expected, h_output, type{1e-10});
@@ -204,14 +204,14 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with di
     // with the device RFA result.
     // NOTE: `cuda::std::reduce` is not equivalent
     h_expected[0] = cuda::std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
-    c2h::host_vector<type> h_output = d_output;
+    const c2h::host_vector<type> h_output = d_output;
 
     REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
   }
 
   SECTION("constant iterator")
   {
-    cuda::constant_iterator<type> input(1.0f);
+    const cuda::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
     auto error = cub::DeviceReduce::Reduce(input, d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env);
@@ -223,7 +223,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with di
     // NOTE: `cuda::std::reduce` is not equivalent
     h_expected[0] = cuda::std::accumulate(input, input + num_items, type{}, cuda::std::plus<type>());
 
-    c2h::host_vector<type> h_output = d_output;
+    const c2h::host_vector<type> h_output = d_output;
     REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
   }
 }
@@ -280,7 +280,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with di
 
   c2h::device_vector<type> d_output(1);
 
-  type init_value = GENERATE_COPY(
+  const type init_value = GENERATE_COPY(
     static_cast<type>(42), cuda::std::numeric_limits<type>::max(), cuda::std::numeric_limits<type>::min());
 
   const auto env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
@@ -347,7 +347,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
       // NOTE: `cuda::std::reduce` is not equivalent
       h_expected[0] = cuda::std::accumulate(h_input.begin(), h_input.end(), init_value_t{}, cuda::std::plus<type>{});
 
-      c2h::host_vector<type> h_output = d_output;
+      const c2h::host_vector<type> h_output = d_output;
       REQUIRE(h_expected == h_output);
     }
 
@@ -355,7 +355,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
     {
       c2h::device_vector<type> d_output(1);
 
-      init_value_t init_value{};
+      const init_value_t init_value{};
 
       auto error = cub::DeviceReduce::Reduce(
         d_input.begin(), d_output.begin(), num_items, cuda::std::bit_xor<>{}, init_value, env);
@@ -366,7 +366,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
       h_expected[0] =
         cuda::std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::bit_xor<type>{});
 
-      c2h::host_vector<type> h_output = d_output;
+      const c2h::host_vector<type> h_output = d_output;
       REQUIRE(h_expected == h_output);
     }
 
@@ -374,7 +374,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
     {
       c2h::device_vector<type> d_output(1);
 
-      init_value_t init_value{};
+      const init_value_t init_value{};
 
       auto error = cub::DeviceReduce::Reduce(
         d_input.begin(), d_output.begin(), num_items, cuda::std::logical_or<>{}, init_value, env);
@@ -385,7 +385,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
       h_expected[0] =
         cuda::std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::std::logical_or<>{});
 
-      c2h::host_vector<type> h_output = d_output;
+      const c2h::host_vector<type> h_output = d_output;
       REQUIRE(h_expected == h_output);
     }
   }
@@ -394,7 +394,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
   {
     c2h::device_vector<type> d_output(1);
 
-    init_value_t init_value{cuda::std::numeric_limits<init_value_t>::max()};
+    const init_value_t init_value{cuda::std::numeric_limits<init_value_t>::max()};
 
     auto error = cub::DeviceReduce::Reduce(
       d_input.begin(), d_output.begin(), num_items, cuda::minimum<init_value_t>{}, init_value, env);
@@ -404,7 +404,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
     c2h::host_vector<type> h_expected(1);
     h_expected[0] = cuda::std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::minimum<>{});
 
-    c2h::host_vector<type> h_output = d_output;
+    const c2h::host_vector<type> h_output = d_output;
     REQUIRE(h_expected == h_output);
   }
 
@@ -412,7 +412,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
   {
     c2h::device_vector<type> d_output(1);
 
-    init_value_t init_value{cuda::std::numeric_limits<init_value_t>::min()};
+    const init_value_t init_value{cuda::std::numeric_limits<init_value_t>::min()};
 
     auto error = cub::DeviceReduce::Reduce(
       d_input.begin(), d_output.begin(), num_items, cuda::maximum<init_value_t>{}, init_value, env);
@@ -422,7 +422,7 @@ CUB_TEST("Deterministic Device reduce works with integral types on gpu with diff
     c2h::host_vector<type> h_expected(1);
     h_expected[0] = cuda::std::accumulate(h_input.begin(), h_input.end(), type{init_value}, cuda::maximum<>{});
 
-    c2h::host_vector<type> h_output = d_output;
+    const c2h::host_vector<type> h_output = d_output;
     REQUIRE(h_expected == h_output);
   }
 }

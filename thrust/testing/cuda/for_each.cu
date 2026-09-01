@@ -13,7 +13,7 @@ const size_t NUM_REGISTERS = 64;
 template <size_t N>
 _CCCL_HOST_DEVICE void f(int* x)
 {
-  int temp = *x;
+  const int temp = *x;
   f<N - 1>(x + 1);
   *x = temp;
 };
@@ -235,7 +235,7 @@ void TestForEachCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
+  const thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
   ASSERT_EQUAL(output, ref);
 
   cudaStreamDestroy(s);

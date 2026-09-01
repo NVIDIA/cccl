@@ -306,7 +306,7 @@ struct AgentReduceImpl
     {
       // Fabricate a vectorized input iterator
       InputT* d_in_unqualified = const_cast<InputT*>(d_in) + block_offset + (lane_id * vec_size);
-      CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
+      const CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, VectorT, OffsetT> d_vec_in(
         reinterpret_cast<VectorT*>(d_in_unqualified));
 
       // Load items as vector items
@@ -366,7 +366,7 @@ struct AgentReduceImpl
     // Continue reading items (block-striped)
     while (thread_offset < valid_items)
     {
-      InputT item(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
+      const InputT item(d_wrapped_in[block_offset + thread_offset]); // NOLINT(bugprone-misplaced-widening-cast)
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += NumThreads;
@@ -389,7 +389,7 @@ struct AgentReduceImpl
     if (even_share.block_end - even_share.block_offset < TILE_ITEMS)
     {
       // First tile isn't full (not all threads have valid items)
-      int valid_items = even_share.block_end - even_share.block_offset;
+      int valid_items = even_share.block_end - even_share.block_offset; // NOLINT(misc-const-correctness)
       ConsumePartialTile<true>(thread_aggregate, even_share.block_offset, valid_items);
 
       // For Warp Reduction, we need to explicitly handle the valid_items,
@@ -474,7 +474,7 @@ private:
     // Consume a partially-full tile
     if (even_share.block_offset < even_share.block_end)
     {
-      int valid_items = even_share.block_end - even_share.block_offset;
+      const int valid_items = even_share.block_end - even_share.block_offset;
       ConsumePartialTile<false>(thread_aggregate, even_share.block_offset, valid_items);
     }
   }

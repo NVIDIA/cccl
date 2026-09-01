@@ -35,7 +35,7 @@ struct TestPairManipulation
     ASSERT_EQUAL(p1.second, sp.second);
 
     // test initialization
-    P p3 = p2; // NOLINT(performance-unnecessary-copy-initialization)
+    const P p3 = p2; // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(p2.first, p3.first);
     ASSERT_EQUAL(p2.second, p3.second);
 
@@ -279,11 +279,11 @@ DECLARE_UNITTEST(TestPairTupleElement);
 
 void TestPairSwap()
 {
-  int x = 7;
-  int y = 13;
+  const int x = 7;
+  const int y = 13;
 
-  int z = 42;
-  int w = 0;
+  const int z = 42;
+  const int w = 0;
 
   thrust::pair<int, int> a(x, y);
   thrust::pair<int, int> b(z, w);
@@ -304,7 +304,7 @@ void TestPairSwap()
   thrust::swap_ranges(h_v1.begin(), h_v1.end(), h_v2.begin());
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());
 
-  swappable_pair ref(user_swappable(true), user_swappable(true));
+  const swappable_pair ref(user_swappable(true), user_swappable(true));
 
   ASSERT_EQUAL_QUIET(ref, h_v1[0]);
   ASSERT_EQUAL_QUIET(ref, h_v1[0]);

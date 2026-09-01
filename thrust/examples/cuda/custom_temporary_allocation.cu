@@ -128,17 +128,17 @@ private:
 
 int main()
 {
-  std::size_t num_elements = 32768;
+  const std::size_t num_elements = 32768;
 
   thrust::host_vector<int> h_input(num_elements);
 
   // Generate random input.
   thrust::generate(h_input.begin(), h_input.end(), rand);
 
-  thrust::cuda::vector<int> d_input = h_input;
+  const thrust::cuda::vector<int> d_input = h_input;
   thrust::cuda::vector<int> d_result(num_elements);
 
-  std::size_t num_trials = 5;
+  const std::size_t num_trials = 5;
 
   cached_allocator alloc;
 

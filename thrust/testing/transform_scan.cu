@@ -25,7 +25,7 @@ void TestTransformInclusiveScanDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::transform_inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -44,7 +44,7 @@ void TestTransformInclusiveScanInitDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::transform_inclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -82,7 +82,7 @@ void TestTransformExclusiveScanDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::transform_exclusive_scan(sys, vec.begin(), vec.begin(), vec.begin(), 0, 0, 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -224,9 +224,9 @@ void TestTransformInclusiveScanDifferentTypes()
 
   thrust::host_vector<Record> h_input{{1}, {3}, {-2}, {4}, {-5}};
   thrust::host_vector<int> h_output(5);
-  thrust::host_vector<int> result{-1, -4, -2, -6, -1};
+  const thrust::host_vector<int> result{-1, -4, -2, -6, -1};
 
-  thrust::host_vector<Record> input_copy(h_input);
+  const thrust::host_vector<Record> input_copy(h_input);
 
   h_iter = thrust::transform_inclusive_scan(
     h_input.begin(), h_input.end(), h_output.begin(), negate{}, ::cuda::std::plus<int>{});
@@ -308,7 +308,7 @@ void TestTransformScanCountingIterator()
   using T     = typename Vector::value_type;
   using space = typename thrust::iterator_system<typename Vector::iterator>::type;
 
-  thrust::counting_iterator<T, space> first(1);
+  const thrust::counting_iterator<T, space> first(1);
 
   Vector result(3);
 
@@ -327,7 +327,7 @@ struct TestTransformScanToDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     thrust::discard_iterator<> h_result = thrust::transform_inclusive_scan(
       h_input.begin(), h_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
@@ -504,7 +504,7 @@ void TestTransformScanEdgeCases()
       vec.begin(), vec.end(), vec.begin(), ::cuda::std::negate<int>(), 10, ::cuda::std::multiplies<>{});
     ASSERT_EQUAL((vec.end() == r), true);
 
-    thrust::device_vector<int> expected = {10, -20, 60, -240};
+    const thrust::device_vector<int> expected = {10, -20, 60, -240};
     ASSERT_EQUAL(vec, expected);
   }
 
@@ -537,7 +537,7 @@ void TestTransformScanEdgeCases()
       d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<int>(), 2, ::cuda::std::multiplies<>{});
     ASSERT_EQUAL((d_output.end() == r), true);
 
-    thrust::device_vector<int> expected = {-6, 42};
+    const thrust::device_vector<int> expected = {-6, 42};
     ASSERT_EQUAL(d_output, expected);
   }
 }

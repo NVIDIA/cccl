@@ -345,7 +345,7 @@ TEST_CASE("transform_iterator", "[iterators]")
 
 TEST_CASE("zip_iterator", "[iterators]")
 {
-  cuda::zip_function<cuda::std::plus<void>> fun{};
+  const cuda::zip_function<cuda::std::plus<void>> fun{};
   { // device system
     thrust::device_vector<int> vec{-1, -1, -1, -1};
     auto iter = cuda::make_transform_iterator(cuda::make_zip_iterator(vec.begin(), cuda::counting_iterator{4}), fun);

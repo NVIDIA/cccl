@@ -30,7 +30,7 @@ struct with_get_execution_policy_const_lvalue
 C2H_TEST("Can call get_execution_policy on a type with a get_execution_policy method that returns a const lvalue",
          "[execution][policies]")
 {
-  with_get_execution_policy_const_lvalue val{};
+  with_get_execution_policy_const_lvalue val{}; // NOLINT(misc-const-correctness)
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
@@ -48,7 +48,7 @@ struct with_get_execution_policy_rvalue
 C2H_TEST("Can call get_execution_policy on a type with a get_execution_policy method returns an rvalue",
          "[execution][policies]")
 {
-  with_get_execution_policy_rvalue val{};
+  with_get_execution_policy_rvalue val{}; // NOLINT(misc-const-correctness)
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
@@ -82,7 +82,7 @@ struct env_with_query_const_ref
 C2H_TEST("Can call get_execution_policy on an env with a get_execution_policy query that returns a const lvalue",
          "[execution][policies]")
 {
-  env_with_query_const_ref val{};
+  const env_with_query_const_ref val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
@@ -100,7 +100,7 @@ struct env_with_query_rvalue
 C2H_TEST("Can call get_execution_policy on an env with a get_execution_policy query that returns an rvalue",
          "[execution][policies]")
 {
-  env_with_query_rvalue val{};
+  const env_with_query_rvalue val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
@@ -137,7 +137,7 @@ struct env_with_query_and_method
 };
 C2H_TEST("Can call get_execution_policy on a type with both get_execution_policy and query", "[execution][policies]")
 {
-  env_with_query_and_method val{};
+  const env_with_query_and_method val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);

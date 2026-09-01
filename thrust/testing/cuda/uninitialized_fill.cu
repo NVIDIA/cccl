@@ -83,7 +83,7 @@ void TestUninitializedFillCudaStreams()
   using T      = Vector::value_type;
 
   Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  const T sub(7);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -91,7 +91,7 @@ void TestUninitializedFillCudaStreams()
   thrust::uninitialized_fill(thrust::cuda::par.on(s), v.begin(), v.end(), sub);
   cudaStreamSynchronize(s);
 
-  Vector ref(v.size(), sub);
+  const Vector ref(v.size(), sub);
   ASSERT_EQUAL(v, ref);
 
   cudaStreamDestroy(s);
@@ -191,7 +191,7 @@ void TestUninitializedFillNCudaStreams()
   using T      = Vector::value_type;
 
   Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  const T sub(7);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -199,7 +199,7 @@ void TestUninitializedFillNCudaStreams()
   thrust::uninitialized_fill_n(thrust::cuda::par.on(s), v.begin(), v.size(), sub);
   cudaStreamSynchronize(s);
 
-  Vector ref(5, sub);
+  const Vector ref(5, sub);
   ASSERT_EQUAL(v, ref);
 
   cudaStreamDestroy(s);

@@ -19,8 +19,8 @@ namespace
 {
 __global__ void fill_kernel(int cnt, double* data, double value)
 {
-  int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
-  int nthreads = static_cast<int>(gridDim.x * blockDim.x);
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < cnt; i += nthreads)
   {

@@ -145,16 +145,16 @@ void TestDisjointPool()
   upstream.id_to_allocate = 1;
 
   // first allocation
-  alloc_id a1 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
+  const alloc_id a1 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
   ASSERT_EQUAL(a1.id, 1u);
 
   // due to chunking, the above allocation should be enough for the next one too
-  alloc_id a2 = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
+  const alloc_id a2 = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
   ASSERT_EQUAL(a2.id, 1u);
 
   // deallocating and allocating back should give the same resource back
   pool->do_deallocate(a1, 12, THRUST_MR_DEFAULT_ALIGNMENT);
-  alloc_id a3 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
+  const alloc_id a3 = pool->do_allocate(12, THRUST_MR_DEFAULT_ALIGNMENT);
   ASSERT_EQUAL(a1.id, a3.id);
   ASSERT_EQUAL(a1.size, a3.size);
   ASSERT_EQUAL(a1.alignment, a3.alignment);
@@ -162,7 +162,7 @@ void TestDisjointPool()
 
   // allocating over-aligned memory should give non-cached results
   upstream.id_to_allocate = 2;
-  alloc_id a4             = pool->do_allocate(32, THRUST_MR_DEFAULT_ALIGNMENT * 2);
+  const alloc_id a4       = pool->do_allocate(32, THRUST_MR_DEFAULT_ALIGNMENT * 2);
   ASSERT_EQUAL(a4.id, 2u);
   ASSERT_EQUAL(a4.size, 32u);
   ASSERT_EQUAL(a4.alignment, (std::size_t) THRUST_MR_DEFAULT_ALIGNMENT * 2);
@@ -179,7 +179,7 @@ void TestDisjointPool()
 
   // and does the same for oversized/overaligned memory
   upstream.id_to_allocate = 3;
-  alloc_id a5             = pool->do_allocate(1024, THRUST_MR_DEFAULT_ALIGNMENT * 2);
+  const alloc_id a5       = pool->do_allocate(1024, THRUST_MR_DEFAULT_ALIGNMENT * 2);
   ASSERT_EQUAL(upstream.id_to_allocate, 0u);
   ASSERT_EQUAL(a5.id, 3u);
 
@@ -190,7 +190,7 @@ void TestDisjointPool()
   // and after that, the formerly cached memory isn't used anymore,
   // so new memory from upstream is returned back
   upstream.id_to_allocate = 4;
-  alloc_id a6             = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
+  const alloc_id a6       = pool->do_allocate(16, THRUST_MR_DEFAULT_ALIGNMENT);
   ASSERT_EQUAL(upstream.id_to_allocate, 0u);
   ASSERT_EQUAL(a6.id, 4u);
 
@@ -230,21 +230,21 @@ void TestDisjointPoolCachingOversized()
   Pool pool(&upstream, &bookkeeper, opts);
 
   upstream.id_to_allocate = 1;
-  alloc_id a1             = pool.do_allocate(2048, 32);
+  const alloc_id a1       = pool.do_allocate(2048, 32);
   ASSERT_EQUAL(a1.id, 1u);
 
   upstream.id_to_allocate = 2;
-  alloc_id a2             = pool.do_allocate(64, 32);
+  const alloc_id a2       = pool.do_allocate(64, 32);
   ASSERT_EQUAL(a2.id, 2u);
 
   pool.do_deallocate(a2, 64, 32);
   pool.do_deallocate(a1, 2048, 32);
 
   // make sure a good fit is used from the cache
-  alloc_id a3 = pool.do_allocate(32, 32);
+  const alloc_id a3 = pool.do_allocate(32, 32);
   ASSERT_EQUAL(a3.id, 2u);
 
-  alloc_id a4 = pool.do_allocate(1024, 32);
+  const alloc_id a4 = pool.do_allocate(1024, 32);
   ASSERT_EQUAL(a4.id, 1u);
 
   pool.do_deallocate(a4, 1024, 32);
@@ -252,18 +252,18 @@ void TestDisjointPoolCachingOversized()
   // make sure that a new block is allocated when there's nothing cached with
   // the required alignment
   upstream.id_to_allocate = 3;
-  alloc_id a5             = pool.do_allocate(32, 64);
+  const alloc_id a5       = pool.do_allocate(32, 64);
   ASSERT_EQUAL(a5.id, 3u);
 
   pool.release();
 
   // make sure that release actually clears caches
   upstream.id_to_allocate = 4;
-  alloc_id a6             = pool.do_allocate(32, 64);
+  const alloc_id a6       = pool.do_allocate(32, 64);
   ASSERT_EQUAL(a6.id, 4u);
 
   upstream.id_to_allocate = 5;
-  alloc_id a7             = pool.do_allocate(2048, 1024);
+  const alloc_id a7       = pool.do_allocate(2048, 1024);
   ASSERT_EQUAL(a7.id, 5u);
 
   pool.do_deallocate(a7, 2048, 1024);
@@ -271,13 +271,13 @@ void TestDisjointPoolCachingOversized()
   // make sure that the 'ridiculousness' factor for size (options.cached_size_cutoff_factor)
   // is respected
   upstream.id_to_allocate = 6;
-  alloc_id a8             = pool.do_allocate(24, 1024);
+  const alloc_id a8       = pool.do_allocate(24, 1024);
   ASSERT_EQUAL(a8.id, 6u);
 
   // make sure that the 'ridiculousness' factor for alignment (options.cached_alignment_cutoff_factor)
   // is respected
   upstream.id_to_allocate = 7;
-  alloc_id a9             = pool.do_allocate(2048, 32);
+  const alloc_id a9       = pool.do_allocate(2048, 32);
   ASSERT_EQUAL(a9.id, 7u);
 }
 
@@ -348,23 +348,23 @@ void TestDisjointPoolSqueeze()
   {
     // Allocate several blocks from different pools + oversized:
     upstream.id_to_allocate = 1u;
-    alloc_id a1             = pool->do_allocate(small_block);
+    const alloc_id a1       = pool->do_allocate(small_block);
     ASSERT_EQUAL(a1.id, 1u);
     ASSERT_EQUAL(upstream.id_to_allocate, 0u);
 
     upstream.id_to_allocate = 2u;
-    alloc_id a2             = pool->do_allocate(large_block);
+    const alloc_id a2       = pool->do_allocate(large_block);
     ASSERT_EQUAL(a2.id, 2u);
     ASSERT_EQUAL(upstream.id_to_allocate, 0u);
 
     upstream.id_to_allocate = 3u;
-    alloc_id a3             = pool->do_allocate(oversized_block);
+    const alloc_id a3       = pool->do_allocate(oversized_block);
     ASSERT_EQUAL(a3.id, 3u);
     ASSERT_EQUAL(upstream.id_to_allocate, 0u);
 
     // Simulate OOM, ensure that the allocations are still in place:
-    std::size_t old_free_bytes = upstream.free_bytes;
-    upstream.free_bytes        = not_enough_bytes;
+    const std::size_t old_free_bytes = upstream.free_bytes;
+    upstream.free_bytes              = not_enough_bytes;
     ASSERT_THROWS([[maybe_unused]] auto _ = pool->do_allocate(medium_block), thrust::system::detail::bad_alloc);
     ASSERT_THROWS([[maybe_unused]] auto _ = pool->do_allocate(oversized_block), thrust::system::detail::bad_alloc);
     ASSERT_EQUAL(upstream.free_bytes, not_enough_bytes);
@@ -422,7 +422,7 @@ void TestDisjointPoolSqueeze()
     // in-use allocations exist:
     upstream.free_bytes     = not_enough_bytes;
     upstream.id_to_allocate = 4u;
-    alloc_id a4             = pool->do_allocate(extra_large_block);
+    const alloc_id a4       = pool->do_allocate(extra_large_block);
     ASSERT_EQUAL(a4.id, 4u);
     ASSERT_EQUAL(upstream.id_to_allocate, 0u);
     ASSERT_EQUAL(upstream.allocation_ids.size(), 4u);
@@ -483,7 +483,7 @@ void TestDisjointPoolSqueeze()
     // in-use allocation exist:
     upstream.free_bytes     = not_enough_bytes;
     upstream.id_to_allocate = 1u;
-    alloc_id a5             = pool->do_allocate(extra_large_block);
+    const alloc_id a5       = pool->do_allocate(extra_large_block);
     ASSERT_EQUAL(a5.id, 1u);
     ASSERT_EQUAL(upstream.id_to_allocate, 0u);
     ASSERT_EQUAL(upstream.allocation_ids.size(), 1u);

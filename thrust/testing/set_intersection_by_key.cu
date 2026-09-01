@@ -30,7 +30,7 @@ void TestSetIntersectionByKeyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_intersection_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
@@ -85,7 +85,7 @@ void TestSetIntersectionByKeySimple()
   Vector ref_key{0, 4}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(), a_key.end(), b_key.begin(), b_key.end(), a_val.begin(), result_key.begin(), result_val.begin());
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
@@ -101,12 +101,12 @@ void TestSetIntersectionByKey(const size_t n)
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
 
-  size_t denominators[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-  size_t num_denominators = sizeof(denominators) / sizeof(size_t);
+  const size_t denominators[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+  const size_t num_denominators = sizeof(denominators) / sizeof(size_t);
 
   for (size_t i = 0; i < num_denominators; ++i)
   {
-    size_t size_a = n / denominators[i];
+    const size_t size_a = n / denominators[i];
 
     thrust::host_vector<T> h_a_keys(random_keys.begin(), random_keys.begin() + size_a);
     thrust::host_vector<T> h_b_keys(random_keys.begin() + size_a, random_keys.end());
@@ -162,7 +162,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetIntersectionByKey);
 template <typename T>
 void TestSetIntersectionByKeyEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h_a_key = temp;
   thrust::sort(h_a_key.begin(), h_a_key.end());

@@ -336,12 +336,12 @@ void TestRemoveCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::remove(thrust::cuda::par.on(s), data.begin(), data.end(), (T) 2);
+  const Vector::iterator end = thrust::remove(thrust::cuda::par.on(s), data.begin(), data.end(), (T) 2);
 
   ASSERT_EQUAL(end - data.begin(), 3);
   data.erase(end, data.end());
 
-  Vector ref{1, 1, 3};
+  const Vector ref{1, 1, 3};
   ASSERT_EQUAL(data, ref);
 
   cudaStreamDestroy(s);
@@ -360,12 +360,13 @@ void TestRemoveCopyCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::remove_copy(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), (T) 2);
+  const Vector::iterator end =
+    thrust::remove_copy(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), (T) 2);
 
   ASSERT_EQUAL(end - result.begin(), 3);
   result.erase(end, result.end());
 
-  Vector ref{1, 1, 3};
+  const Vector ref{1, 1, 3};
   ASSERT_EQUAL(result, ref);
 
   cudaStreamDestroy(s);
@@ -382,12 +383,12 @@ void TestRemoveIfCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), is_even<T>());
+  const Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), is_even<T>());
 
   ASSERT_EQUAL(end - data.begin(), 3);
   data.erase(end, data.end());
 
-  Vector ref{1, 1, 3};
+  const Vector ref{1, 1, 3};
   ASSERT_EQUAL(data, ref);
 
   cudaStreamDestroy(s);
@@ -406,13 +407,13 @@ void TestRemoveIfStencilCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end =
+  const Vector::iterator end =
     thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(end - data.begin(), 3);
   data.erase(end, data.end());
 
-  Vector ref{1, 1, 3};
+  const Vector ref{1, 1, 3};
   ASSERT_EQUAL(data, ref);
 
   cudaStreamDestroy(s);
@@ -431,13 +432,13 @@ void TestRemoveCopyIfCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end =
+  const Vector::iterator end =
     thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), is_even<T>());
 
   ASSERT_EQUAL(end - result.begin(), 3);
   result.erase(end, result.end());
 
-  Vector ref{1, 1, 3};
+  const Vector ref{1, 1, 3};
   ASSERT_EQUAL(result, ref);
 
   cudaStreamDestroy(s);
@@ -458,13 +459,13 @@ void TestRemoveCopyIfStencilCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::remove_copy_if(
+  const Vector::iterator end = thrust::remove_copy_if(
     thrust::cuda::par.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(end - result.begin(), 3);
   result.erase(end, result.end());
 
-  Vector ref{1, 1, 3};
+  const Vector ref{1, 1, 3};
   ASSERT_EQUAL(result, ref);
 
   cudaStreamDestroy(s);

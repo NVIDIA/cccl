@@ -86,17 +86,17 @@ bool check_segment(const c2h::host_vector<ValueT>& h_output,
     }
     else if constexpr (cuda::std::is_same_v<ValueT, half_t> || cuda::std::is_same_v<ValueT, bfloat16_t>)
     {
-      float ref_v = h_ref[pos];
-      float act_v = h_output[pos];
+      const float ref_v = h_ref[pos];
+      const float act_v = h_output[pos];
       if (cuda::std::isfinite(ref_v) && cuda::std::isfinite(act_v))
       {
-        float diff   = (ref_v - act_v);
-        float adiff  = (diff > float{0}) ? diff : -diff;
-        float ref_av = (ref_v > float{0}) ? ref_v : -ref_v;
-        float act_av = (act_v > float{0}) ? act_v : -act_v;
+        const float diff   = (ref_v - act_v);
+        const float adiff  = (diff > float{0}) ? diff : -diff;
+        const float ref_av = (ref_v > float{0}) ? ref_v : -ref_v;
+        const float act_av = (act_v > float{0}) ? act_v : -act_v;
 
-        float eps = float{1} / float{128};
-        correct   = correct && (adiff < 3 * eps + 5 * eps * (::cuda::std::max(ref_av, act_av)));
+        const float eps = float{1} / float{128};
+        correct         = correct && (adiff < 3 * eps + 5 * eps * (::cuda::std::max(ref_av, act_av)));
       }
     }
     else
@@ -165,7 +165,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
   auto d_out_it = thrust::raw_pointer_cast(output_vec.data());
 
   c2h::host_vector<offset_t> h_segment_offsets = d_segment_offsets;
-  c2h::host_vector<input_t> h_input            = in_items;
+  const c2h::host_vector<input_t> h_input      = in_items;
   c2h::host_vector<output_t> h_output(num_items);
   c2h::host_vector<output_t> h_ref(num_items);
 
@@ -188,7 +188,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
         output_t{},
         op_t{});
 
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -200,7 +200,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -229,7 +229,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
         scan_op,
         h_accum_t{});
 
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -246,7 +246,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
       for (offset_t i = 0; i < num_segments; ++i)
       {
-        bool correct = check_segment(
+        const bool correct = check_segment(
           h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
         REQUIRE(correct);
       }
@@ -291,7 +291,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
         scan_op,
         h_accum_t{init_value});
       // Verify result
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -305,7 +305,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     for (offset_t i = 0; i < num_segments; ++i)
     {
       // Verify result
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -330,7 +330,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
         output_t{},
         cuda::std::plus<>{});
 
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -342,7 +342,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -366,7 +366,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
         cuda::std::plus<>{},
         output_t{});
 
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }
@@ -378,7 +378,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
 
     for (offset_t i = 0; i < num_segments; ++i)
     {
-      bool correct = check_segment(
+      const bool correct = check_segment(
         h_output, h_ref, h_segment_offsets[i], h_segment_offsets[i + 1]); // NOLINT(bugprone-misplaced-widening-cast)
       REQUIRE(correct);
     }

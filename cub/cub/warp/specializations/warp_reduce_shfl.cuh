@@ -125,7 +125,7 @@ struct WarpReduceShfl
   ReduceStep(unsigned int input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     unsigned int output;
-    int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
+    const int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -161,7 +161,7 @@ struct WarpReduceShfl
   ReduceStep(float input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     float output;
-    int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
+    const int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -274,7 +274,7 @@ struct WarpReduceShfl
   ReduceStep(double input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     double output;
-    int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
+    const int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
 
     // Use predicate set from SHFL to guard against invalid peers
     asm volatile(
@@ -515,7 +515,7 @@ struct WarpReduceShfl
     warp_flags |= 1u << (LOGICAL_WARP_THREADS - 1);
 
     // Find the next set flag
-    int last_lane = ::cuda::std::countr_zero(warp_flags);
+    const int last_lane = ::cuda::std::countr_zero(warp_flags);
 
     T output = input;
     // Template-iterate reduction steps

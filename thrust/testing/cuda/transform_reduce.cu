@@ -51,12 +51,12 @@ void TestTransformReduceCudaStreams()
   using T      = Vector::value_type;
 
   Vector data{1, -2, 3};
-  T init = 10;
+  const T init = 10;
 
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  T result = thrust::transform_reduce(
+  const T result = thrust::transform_reduce(
     thrust::cuda::par.on(s), data.begin(), data.end(), ::cuda::std::negate<T>(), init, ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 

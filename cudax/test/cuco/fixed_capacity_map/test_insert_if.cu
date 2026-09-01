@@ -101,7 +101,7 @@ C2H_TEST("fixed_capacity_map insert_if", "[container]", key_types, cg_sizes, buc
   constexpr int num_keys                = 400;
   constexpr key_type empty_key_sentinel = key_type{-1};
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr           = ::cuda::device_default_memory_pool(stream.device());
   const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
 

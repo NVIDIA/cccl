@@ -262,8 +262,8 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * segment_size;
-    host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
+    const std::size_t row_offset = i * segment_size;
+    host_output_it[i]            = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
 }
@@ -327,7 +327,7 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
   end_offset_it.state.linear_id    = 1;
   end_offset_it.state.segment_size = segment_size;
 
-  cccl_op_t op = make_well_known_binary_operation();
+  const cccl_op_t op = make_well_known_binary_operation();
   value_t<TestType> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_WellKnown_Fixture_Tag>();
@@ -340,8 +340,8 @@ C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type "
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * segment_size;
-    host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
+    const std::size_t row_offset = i * segment_size;
+    host_output_it[i]            = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
 }
@@ -402,10 +402,10 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 }}
 )XXX";
 
-  std::string plus_pair_op_src = std::format(plus_pair_op_template, device_op_name);
+  const std::string plus_pair_op_src = std::format(plus_pair_op_template, device_op_name);
 
   operation_t op = make_operation(device_op_name, plus_pair_op_src);
-  pair v0        = pair{4, 2};
+  const pair v0  = pair{4, 2};
   value_t<pair> init{v0};
 
   auto& build_cache    = get_cache<SegmentedReduce_CustomTypes_Fixture_Tag>();
@@ -471,12 +471,12 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
 }}
 )XXX";
 
-  std::string plus_pair_op_src = std::format(plus_pair_op_template, device_op_name);
+  const std::string plus_pair_op_src = std::format(plus_pair_op_template, device_op_name);
 
   operation_t op_state = make_operation(device_op_name, plus_pair_op_src);
   cccl_op_t op         = op_state;
   op.type              = cccl_op_kind_t::CCCL_PLUS;
-  pair v0              = pair{4, 2};
+  const pair v0        = pair{4, 2};
   value_t<pair> init{v0};
 
   auto& build_cache    = get_cache<SegmentedReduce_CustomTypes_WellKnown_Fixture_Tag>();
@@ -588,7 +588,7 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
   }
   std::vector<ValueT> host_output(n_cols, 0);
 
-  pointer_t<ValueT> input_ptr(host_input); // copy from host to device
+  const pointer_t<ValueT> input_ptr(host_input); // copy from host to device
   pointer_t<ValueT> output_ptr(host_output); // copy from host to device
 
   static constexpr std::string_view index_ty_name          = "unsigned long long";
@@ -735,8 +735,8 @@ C2H_TEST("segmented_reduce can work with floating point types", "[segmented_redu
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * row_size;
-    host_output_it[i]      = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
+    const std::size_t row_offset = i * row_size;
+    host_output_it[i]            = std::reduce(host_input_it + row_offset, host_input_it + (row_offset + n_cols));
   }
   REQUIRE(output == std::vector<T>(output_ptr));
 }
@@ -1043,7 +1043,7 @@ extern "C" __device__ {4} {0}({1} *functor_state, {2} n) {{
 
   pointer_t<CmpT> as_expected(1);
 
-  CmpT expected_value{1};
+  const CmpT expected_value{1};
   value_t<CmpT> _true{expected_value};
 
   static constexpr std::string_view cmp_combine_op_name = "_logical_and";
@@ -1131,8 +1131,8 @@ void run_guaranteed_max_seg_size_test(
 
   for (std::size_t i = 0; i < n_rows; ++i)
   {
-    std::size_t row_offset = i * segment_size;
-    host_output[i]         = std::reduce(host_input.begin() + row_offset, host_input.begin() + row_offset + n_cols);
+    const std::size_t row_offset = i * segment_size;
+    host_output[i] = std::reduce(host_input.begin() + row_offset, host_input.begin() + row_offset + n_cols);
   }
   REQUIRE(host_output == std::vector<TestType>(output_ptr));
 }
@@ -1198,7 +1198,7 @@ C2H_TEST("SegmentedReduce build result has serialization metadata populated", "[
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_binary_operation();
+  const cccl_op_t op = make_well_known_binary_operation();
   pointer_t<T> in(1);
   pointer_t<T> out(1);
   pointer_t<T> begin_offsets(1);
@@ -1241,7 +1241,7 @@ C2H_TEST("SegmentedReduce compile/load round-trip", "[segmented_reduce][serializ
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_binary_operation();
+  const cccl_op_t op = make_well_known_binary_operation();
   pointer_t<T> dummy_in(1);
   pointer_t<T> dummy_out(1);
   pointer_t<T> dummy_begin_offsets(1);
@@ -1304,7 +1304,7 @@ C2H_TEST("SegmentedReduce compile/load round-trip", "[segmented_reduce][serializ
       init,
       /*max_segment_size=*/0,
       null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_segmented_reduce(

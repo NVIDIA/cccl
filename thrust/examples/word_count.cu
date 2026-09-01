@@ -71,10 +71,10 @@ int main()
   std::cout << raw_input << "\n";
 
   // transfer to device
-  thrust::device_vector<char> input(cuda::std::begin(raw_input), cuda::std::end(raw_input));
+  const thrust::device_vector<char> input(cuda::std::begin(raw_input), cuda::std::end(raw_input));
 
   // count words
-  int wc = word_count(input);
+  const int wc = word_count(input);
 
   std::cout << "Text sample contains " << wc << " words\n";
 

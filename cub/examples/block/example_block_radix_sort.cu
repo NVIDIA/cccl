@@ -78,7 +78,7 @@ __launch_bounds__(BLOCK_THREADS) __global__
   Key items[ITEMS_PER_THREAD];
 
   // Our current block's offset
-  int block_offset = blockIdx.x * TILE_SIZE;
+  const int block_offset = blockIdx.x * TILE_SIZE;
 
   // Load items into a blocked arrangement
   BlockLoadT(temp_storage.load).Load(d_in + block_offset, items);
@@ -87,13 +87,13 @@ __launch_bounds__(BLOCK_THREADS) __global__
   __syncthreads();
 
   // Start cycle timer
-  clock_t start = clock();
+  const clock_t start = clock();
 
   // Sort keys
   BlockRadixSortT(temp_storage.sort).SortBlockedToStriped(items);
 
   // Stop cycle timer
-  clock_t stop = clock();
+  const clock_t stop = clock();
 
   // Store output in striped fashion
   StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_out + block_offset, items);
@@ -193,7 +193,7 @@ void Test()
 
   // Check results
   printf("\tOutput items: ");
-  int compare = CompareDeviceResults(h_reference, d_out, TILE_SIZE, g_verbose, g_verbose);
+  const int compare = CompareDeviceResults(h_reference, d_out, TILE_SIZE, g_verbose, g_verbose);
   printf("%s\n", compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
   fflush(stdout);
@@ -225,10 +225,10 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis           = elapsed_millis / static_cast<float>(g_timing_iterations);
-  float avg_items_per_sec    = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
-  double avg_clocks          = double(elapsed_clocks) / g_timing_iterations / g_grid_size;
-  double avg_clocks_per_item = avg_clocks / TILE_SIZE;
+  const float avg_millis           = elapsed_millis / static_cast<float>(g_timing_iterations);
+  const float avg_items_per_sec    = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  const double avg_clocks          = double(elapsed_clocks) / g_timing_iterations / g_grid_size;
+  const double avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockRadixSort::SortBlocked clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockRadixSort::SortBlocked clocks per item: %.3f\n", avg_clocks_per_item);

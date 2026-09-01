@@ -43,7 +43,7 @@ struct mark_present_for_each
 template <class Policy>
 void test_for_each_n(const Policy& policy, thrust::device_vector<bool>& res)
 {
-  mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
+  const mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
   { // empty should not access anything
     const auto result = cuda::std::for_each_n(policy, static_cast<int*>(nullptr), 0, fn);
@@ -77,7 +77,7 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_for_each_n(policy, res);
   }
@@ -91,7 +91,7 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);

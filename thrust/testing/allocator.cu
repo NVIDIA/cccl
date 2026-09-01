@@ -35,8 +35,8 @@ struct my_allocator_with_custom_construct1 : thrust::device_malloc_allocator<T>
 template <typename T>
 void TestAllocatorCustomDefaultConstruct(size_t n)
 {
-  thrust::device_vector<T> ref(n, 13);
-  thrust::device_vector<T, my_allocator_with_custom_construct1<T>> vec(n);
+  const thrust::device_vector<T> ref(n, 13);
+  const thrust::device_vector<T, my_allocator_with_custom_construct1<T>> vec(n);
 
   ASSERT_EQUAL_QUIET(ref, vec);
 }
@@ -57,9 +57,9 @@ struct my_allocator_with_custom_construct2 : thrust::device_malloc_allocator<T>
 template <typename T>
 void TestAllocatorCustomCopyConstruct(size_t n)
 {
-  thrust::device_vector<T> ref(n, 13);
+  const thrust::device_vector<T> ref(n, 13);
   thrust::device_vector<T> copy_from(n, 7);
-  thrust::device_vector<T, my_allocator_with_custom_construct2<T>> vec(copy_from.begin(), copy_from.end());
+  const thrust::device_vector<T, my_allocator_with_custom_construct2<T>> vec(copy_from.begin(), copy_from.end());
 
   ASSERT_EQUAL_QUIET(ref, vec);
 }
@@ -132,7 +132,7 @@ void TestAllocatorCustomDestroy(size_t n)
   my_allocator_with_custom_destroy<T>::g_state = false;
 
   {
-    thrust::cpp::vector<T, my_allocator_with_custom_destroy<T>> vec(n);
+    const thrust::cpp::vector<T, my_allocator_with_custom_destroy<T>> vec(n);
   } // destroy everything
 
   // state should only be true when there are values to destroy:
@@ -178,8 +178,8 @@ void TestAllocatorMinimal(size_t n)
   thrust::cpp::vector<int, my_minimal_allocator<int>> vec(n, 13);
 
   // XXX copy to h_vec because ASSERT_EQUAL doesn't know about cpp::vector
-  thrust::host_vector<int> h_vec(vec.begin(), vec.end());
-  thrust::host_vector<int> ref(n, 13);
+  const thrust::host_vector<int> h_vec(vec.begin(), vec.end());
+  const thrust::host_vector<int> ref(n, 13);
 
   ASSERT_EQUAL(ref, h_vec);
 }

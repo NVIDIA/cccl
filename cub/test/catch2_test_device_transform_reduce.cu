@@ -43,7 +43,7 @@ CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", CUB_
 
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
-  item_t init{42};
+  const item_t init{42};
   c2h::device_vector<item_t> out(1);
   c2h::device_vector<item_t> in(num_items + 1);
   c2h::gen(C2H_SEED(2), in);

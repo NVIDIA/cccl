@@ -43,7 +43,7 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
-    cudax::this_warp warp{config};
+    const cudax::this_warp warp{config};
 
     T thread_data[NumItems];
     for (int i = 0; i < NumItems; ++i)
@@ -162,7 +162,7 @@ C2H_TEST("reduce/this_warp Integral Type Tests", "[reduce][this_warp]", integral
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result =
@@ -183,7 +183,7 @@ C2H_TEST("reduce/this_warp Floating-Point Type Tests", "[reduce][this_warp]", fp
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result =
@@ -203,7 +203,7 @@ C2H_TEST("reduce/this_warp Broadcasted", "[reduce][this_warp]", integral_type_li
   c2h::device_vector<value_t> d_in(max_size * warp_size);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     c2h::device_vector<value_t> d_out(warp_size);

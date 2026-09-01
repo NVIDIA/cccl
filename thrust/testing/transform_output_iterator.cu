@@ -56,6 +56,7 @@ void TestTransformOutputIterator()
   thrust::sequence(input.begin(), input.end(), T{1});
 
   // construct transform_iterator
+  // NOLINTNEXTLINE(misc-const-correctness)
   thrust::transform_output_iterator<UnaryFunction, Iterator> output_iter(output.begin(), UnaryFunction());
 
   thrust::copy(input.begin(), input.end(), output_iter);

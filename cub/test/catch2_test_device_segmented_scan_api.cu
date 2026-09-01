@@ -76,7 +76,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
     static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<int> expected{0, 1, 3, 0, 4, 0, 6, 13};
+  const thrust::device_vector<int> expected{0, 1, 3, 0, 4, 0, 6, 13};
   // example-end exclusive-segmented-sum-two-offsets
 
   REQUIRE(status == cudaSuccess);
@@ -94,11 +94,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   auto input = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
   // offsets to starts of each of 4 rows
-  size_t row_size       = 4;
+  const size_t row_size = 4;
   auto in_begin_offsets = thrust::device_vector<size_t>{0, row_size, 2 * row_size};
   auto num_segments     = in_begin_offsets.size();
   // Perform row-wise sum for 3-by-3 principal sub-matrix
-  size_t segment_size = 3;
+  const size_t segment_size = 3;
 
   auto in_end_offsets = thrust::device_vector<size_t>{
     0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size};
@@ -143,7 +143,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
     static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<int> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
+  const thrust::device_vector<int> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
   // example-end exclusive-segmented-sum-three-offsets
 
   REQUIRE(status == cudaSuccess);
@@ -193,7 +193,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
     static_cast<::cuda::std::int64_t>(num_segments));
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<int> expected{2, 3, 4, 2, 3, 2, 3, 4};
+  const thrust::device_vector<int> expected{2, 3, 4, 2, 3, 2, 3, 4};
   // example-end inclusive-segmented-sum-two-offsets
 
   REQUIRE(status == cudaSuccess);
@@ -211,14 +211,14 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   auto input = thrust::device_vector<int>{1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2};
 
   // begin offsets for each of 4 rows
-  size_t m          = 4;
+  const size_t m    = 4;
   auto row_offsets  = thrust::device_vector<size_t>{0, m, 2 * m, 3 * m, 4 * m};
   auto num_segments = row_offsets.size() - 1;
 
   // Allocate m rows of m + 1 filled with zero-initialized values
   auto output = thrust::device_vector<int>((m + 1) * m, 0);
   // begin offsets to second element of each row
-  size_t lda             = m + 1;
+  const size_t lda       = m + 1;
   auto out_begin_offsets = thrust::device_vector<size_t>{1, lda + 1, 2 * lda + 1, 3 * lda + 1};
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
@@ -260,7 +260,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
 
   std::vector<int> h_expected{};
   h_expected.reserve(output.size());
-  std::vector<std::vector<int>> expected_rows{
+  const std::vector<std::vector<int>> expected_rows{
     {0, 1, 2, 3, 4}, {0, -1, -2, -3, -4}, {0, 2, 4, 6, 8}, {0, -2, -4, -6, -8}};
   for (const auto& row : expected_rows)
   {
@@ -280,13 +280,13 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[2 offsets]";
   // example-begin inclusive-segmented-scan-init-two-offsets
-  unsigned prime = 7;
-  auto input     = thrust::device_vector<unsigned>{
+  const unsigned prime = 7;
+  auto input           = thrust::device_vector<unsigned>{
     2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6};
 
   auto row_size    = static_cast<size_t>(prime);
   auto row_offsets = thrust::device_vector<size_t>{0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size};
-  size_t num_segments = row_offsets.size() - 1;
+  const size_t num_segments = row_offsets.size() - 1;
 
   thrust::device_vector<unsigned> output(input.size(), thrust::no_init);
 
@@ -297,7 +297,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
     const auto proj_v2 = (v2 % m_p);
     return (proj_v1 * proj_v2) % m_p;
   };
-  unsigned init_value = 1;
+  const unsigned init_value = 1;
 
   auto d_in  = input.begin();
   auto d_out = output.begin();
@@ -339,7 +339,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
 
   std::vector<unsigned> h_expected{};
   h_expected.reserve(output.size());
-  std::vector<std::vector<unsigned>> expected_rows{
+  const std::vector<std::vector<unsigned>> expected_rows{
     {2, 4, 1, 2, 4, 1, 2}, {3, 2, 6, 4, 5, 1, 3}, {4, 2, 1, 4, 2, 1, 4}, {5, 4, 6, 2, 3, 1, 5}, {6, 1, 6, 1, 6, 1, 6}};
   for (const auto& row : expected_rows)
   {
@@ -384,7 +384,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   auto scan_op = [] __host__ __device__(unsigned v1, unsigned v2) -> unsigned {
     return v1 ^ v2;
   };
-  unsigned init_value = 0u;
+  const unsigned init_value = 0u;
 
   // 128 input elements
   // auto input = thrust::device_vector<unsigned>{0x64b40b1b, 0x7bf23c0c, 0xaa982e07, ... };
@@ -396,11 +396,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
 
-  auto d_in           = input.begin();
-  auto d_out          = output.begin();
-  auto begin_offsets  = offsets.begin();
-  auto end_offsets    = offsets.begin() + 1;
-  size_t num_segments = offsets.size() - 1;
+  auto d_in                 = input.begin();
+  auto d_out                = output.begin();
+  auto begin_offsets        = offsets.begin();
+  auto end_offsets          = offsets.begin() + 1;
+  const size_t num_segments = offsets.size() - 1;
 
   // inquire size of needed temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
@@ -442,7 +442,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   */
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScan[3-offsets]";
   // example-begin inclusive-segmented-scan-three-offsets
-  size_t n = 8;
+  const size_t n = 8;
   thrust::device_vector<float> input{0.21f, 0.33f, 0.17f, 0.56f, 0.31f, 0.25f, 1.0f, 0.72f};
 
   constexpr unsigned _zero{0};
@@ -480,7 +480,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
     d_temp_storage, temp_storage_bytes, d_in, d_out, in_begin_offsets, in_end_offsets, out_begin_offsets, n, scan_op);
   check_execution_status(status, algo_name);
 
-  thrust::device_vector<float> expected{
+  const thrust::device_vector<float> expected{
     0.21f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 0
     0.00f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 1
     0.00f, 0.00f, 0.17f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 2

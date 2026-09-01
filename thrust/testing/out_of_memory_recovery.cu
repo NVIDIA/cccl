@@ -28,9 +28,9 @@ void test_out_of_memory_recovery()
 {
   try
   {
-    thrust::device_vector<non_trivial> x(1);
+    const thrust::device_vector<non_trivial> x(1);
 
-    thrust::device_vector<std::uint32_t> y(0x00ffffffffffffff);
+    const thrust::device_vector<std::uint32_t> y(0x00ffffffffffffff);
   }
   catch (...)
   {

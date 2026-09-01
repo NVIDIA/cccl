@@ -65,7 +65,7 @@ C2H_TEST_LIST(
   static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value);
 
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("construction")
   {
@@ -120,7 +120,7 @@ C2H_TEST_LIST(
     static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value);
 
     {
-      cuda::stream other_stream{cuda::device_ref{0}};
+      const cuda::stream other_stream{cuda::device_ref{0}};
       __uninitialized_async_buffer input{resource, other_stream, 42};
       const TestType* ptr = input.data();
 
@@ -265,14 +265,14 @@ int test_async_device_memory_pool_ref::count = 0;
 
 C2H_TEST("__uninitialized_async_buffer's memory resource does not dangle", "[container]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   cuda::__uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{
     cuda::device_default_memory_pool(cuda::device_ref{0}), stream, 0};
 
   {
     CHECK(test_async_device_memory_pool_ref::count == 0);
 
-    cuda::__uninitialized_async_buffer<int, ::cuda::mr::device_accessible> src_buffer{
+    const cuda::__uninitialized_async_buffer<int, ::cuda::mr::device_accessible> src_buffer{
       test_async_device_memory_pool_ref{}, stream, 1024};
 
     CHECK(test_async_device_memory_pool_ref::count == 1);

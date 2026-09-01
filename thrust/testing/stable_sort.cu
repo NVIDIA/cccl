@@ -16,7 +16,7 @@ void TestStableSortDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_sort(sys, vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());

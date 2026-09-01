@@ -37,7 +37,7 @@ template <typename PolicySelector, typename OffsetT, typename OpT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPolicy active_policy)
 {
-  int threads_per_block = 256;
+  int threads_per_block = 256; // NOLINT(misc-const-correctness)
   auto kernel           = detail::for_each::dynamic_kernel<PolicySelector, OffsetT, OpT>;
   NV_IF_TARGET(NV_IS_HOST, ({
                  int _{};

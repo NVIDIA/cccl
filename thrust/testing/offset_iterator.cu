@@ -68,11 +68,11 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
 
   // value offset
   {
-    thrust::offset_iterator iter0(v.begin());
+    const thrust::offset_iterator iter0(v.begin());
 #if _CCCL_COMPILER(MSVC) // MSVC cannot deduce the template arguments from the copy ctor
     decltype(iter0) iter1(iter0);
 #else // _CCCL_COMPILER(MSVC)
-    thrust::offset_iterator iter1(iter0);
+    const thrust::offset_iterator iter1(iter0);
 #endif // _CCCL_COMPILER(MSVC)
     ASSERT_EQUAL(iter0 == iter1, true);
     ASSERT_EQUAL(*iter0 == *iter1, true);
@@ -89,12 +89,12 @@ void TestOffsetIteratorCopyConstructorAndAssignment()
   // indirect offset
   {
     const typename Vector::iterator::difference_type offset = 0;
-    thrust::offset_iterator iter0(v.begin(), &offset);
+    const thrust::offset_iterator iter0(v.begin(), &offset);
 
 #if _CCCL_COMPILER(MSVC) // MSVC cannot deduce the template arguments from the copy ctor
     decltype(iter0) iter1(iter0);
 #else // _CCCL_COMPILER(MSVC)
-    thrust::offset_iterator iter1(iter0);
+    const thrust::offset_iterator iter1(iter0);
 #endif // _CCCL_COMPILER(MSVC)
     ASSERT_EQUAL(iter0 == iter1, true);
     ASSERT_EQUAL(*iter0 == *iter1, true);
@@ -202,7 +202,7 @@ void TestOffsetIteratorLateValue()
 {
   typename Vector::difference_type offset;
   Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
-  thrust::offset_iterator iter(v.begin(), &offset);
+  const thrust::offset_iterator iter(v.begin(), &offset);
   offset = 2; // we provide the offset value **after** constructing the iterator
   ASSERT_EQUAL(*iter, 2);
 }
@@ -216,7 +216,7 @@ void TestOffsetIteratorIndirectValueFancyIterator()
   Vector v{0, 1, 2, 3, 4, 5, 6, 7, 8};
   thrust::device_vector<typename Vector::difference_type> offsets{2};
   auto it = thrust::make_transform_iterator(offsets.begin(), _1 * 3);
-  thrust::offset_iterator iter(v.begin(), it);
+  const thrust::offset_iterator iter(v.begin(), it);
   ASSERT_EQUAL(*iter, 6);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValueFancyIterator);
