@@ -435,6 +435,39 @@ public:
       __container_ref);
   }
 
+  //! @brief Asynchronously applies `__callback_op` to a copy of every slot matching each key in
+  //! `[__first, __last)`.
+  //!
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _CallbackOp, class _Ref>
+  _CCCL_HOST_API void for_each_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op, _Ref __container_ref)
+    const
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    if constexpr (__cg_size == 1)
+    {
+      __open_addressing::__for_each_fn __op{__first, __callback_op, __container_ref};
+      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
+    }
+    else
+    {
+      const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+
+      __open_addressing::__for_each_n<__cg_size, detail::__default_block_size>
+        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
+          __first, __num_keys, __callback_op, __container_ref);
+      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to query keys");
+    }
+  }
+
   //! @brief Retrieves all elements in the container.
   //!
   //! @note This function synchronizes the given stream.
