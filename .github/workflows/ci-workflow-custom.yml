@@ -31,11 +31,6 @@ on:
         description: "Branch (in this repo) containing the CI matrix file to sideload."
         required: true
         type: string
-      matrix_path:
-        description: "Path to the CI matrix file within <branch>. It must define a 'nightly' workflow, which is run as a full build."
-        required: true
-        type: string
-        default: ci/matrix.yaml
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
