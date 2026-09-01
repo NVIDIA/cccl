@@ -42,10 +42,17 @@ Returns a ``cuda::std::simd::basic_vec<cuda::std::make_unsigned_t<T>, Abi>`` whe
 
 **Performance considerations**
 
-- Packed 8-bit integer vectors perform absolute difference using:
+- On device, packed 8-bit integer vectors translate to:
 
   - ``VABSDIFF4`` on ``SM80``, ``SM86``, ``SM87``, ``SM89``, ``SM90``, ``SM100``, ``SM103``, and ``SM110``.
-  - ``VIMNMX.S8x4/U8x4``, ``VIADD.S8x4/U8x4`` on ``SM120f`` and ``SM107f``.
+  - Two ``VIMNMX.S8x4/U8x4`` instructions followed by ``VIADD.S8x4/U8x4`` on ``SM107f`` and ``SM120f``.
+
+- Other integer element types use the equivalent ``max(lhs, rhs) - min(lhs, rhs)`` formulation:
+
+  - 16-bit elements use packed ``VIMNMX.S16x2/U16x2`` and ``VIADD.16x2`` instructions on ``SM90``
+    and later architectures.
+  - 32-bit elements use ``VIMNMX`` for minimum and maximum on ``SM90`` and later architectures.
+  - Other cases use scalar instructions.
 
 Example
 -------

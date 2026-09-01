@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__internal/features.h>
+#include <cuda/std/__simd/algorithm.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -38,45 +39,25 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
-template <typename _Tp, typename _Abi>
+#if _CCCL_HAS_SIMD_VABSDIFF()
+
+template <typename _Tp>
 struct __abs_diff_operation
 {
   template <typename _ResultStorage, typename _Storage>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _ResultStorage
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _ResultStorage
   operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
   {
-#if _CCCL_HAS_SIMD_VABSDIFF()
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-    {
-      if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t))
-      {
-        NV_IF_TARGET(NV_IS_DEVICE, ({
-                       using __unsigned_storage_t = ::cuda::std::simd::__simd_storage_u32_t<_ResultStorage>;
-                       constexpr __unsigned_storage_t __c_u{};
-                       const auto __lhs_u    = ::cuda::std::simd::__to_unsigned_storage(__lhs);
-                       const auto __rhs_u    = ::cuda::std::simd::__to_unsigned_storage(__rhs);
-                       const auto __result_u = ::cuda::simd::__vabsdiff_8bit_x4<_Tp>(__lhs_u, __rhs_u, __c_u);
-                       return ::cuda::std::simd::__copy_from_unsigned_storage<_ResultStorage>(__result_u);
-                     }));
-      }
-      // 16-bit path (vabsdiff2) generates worse code in most cases
-    }
-#endif // _CCCL_HAS_SIMD_VABSDIFF()
-
-    using __result_value_t = ::cuda::std::make_unsigned_t<_Tp>;
-    constexpr auto __size  = ::cuda::std::simd::basic_vec<_Tp, _Abi>::size();
-    _ResultStorage __result{};
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
-    {
-      const __result_value_t __lhs_i = static_cast<__result_value_t>(__lhs.__data[__i]);
-      const __result_value_t __rhs_i = static_cast<__result_value_t>(__rhs.__data[__i]);
-      const bool __is_less           = __lhs.__data[__i] < __rhs.__data[__i];
-      __result.__data[__i]           = __is_less ? (__rhs_i - __lhs_i) : (__lhs_i - __rhs_i);
-    }
-    return __result;
+    using __unsigned_storage_t = ::cuda::std::simd::__simd_storage_u32_t<_ResultStorage>;
+    constexpr __unsigned_storage_t __c_u{};
+    const auto __lhs_u    = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+    const auto __rhs_u    = ::cuda::std::simd::__to_unsigned_storage(__rhs);
+    const auto __result_u = ::cuda::simd::__vabsdiff_8bit_x4<_Tp>(__lhs_u, __rhs_u, __c_u);
+    return ::cuda::std::simd::__copy_from_unsigned_storage<_ResultStorage>(__result_u);
   }
 };
+
+#endif // _CCCL_HAS_SIMD_VABSDIFF()
 
 //! @brief Performs element-wise absolute difference.
 //! @param[in] __lhs The left-hand side input vector.
@@ -88,9 +69,21 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 abs_diff(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
          const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __rhs) noexcept
 {
+#if _CCCL_HAS_SIMD_VABSDIFF()
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t))
+    {
+      NV_IF_TARGET(NV_IS_DEVICE,
+                   (return __simd_abs_diff_impl(
+                             __lhs, __rhs, __abs_diff_operation<_Tp>{}, static_cast<__result_type*>(nullptr));)) // ADL
+    }
+    // TODO(fbusato): optimize 32-bit case, see nvbug 6705847
+  }
+#endif // _CCCL_HAS_SIMD_VABSDIFF()
+
   using __result_type = ::cuda::std::simd::basic_vec<::cuda::std::make_unsigned_t<_Tp>, _Abi>;
-  return __simd_abs_diff_impl(
-    __lhs, __rhs, __abs_diff_operation<_Tp, _Abi>{}, static_cast<__result_type*>(nullptr)); // ADL
+  return __result_type{::cuda::std::simd::max(__lhs, __rhs)} - __result_type{::cuda::std::simd::min(__lhs, __rhs)};
 }
 
 _CCCL_END_NAMESPACE_CUDA_SIMD
