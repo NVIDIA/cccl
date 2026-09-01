@@ -49,4 +49,4 @@ jobs:
     with:
       workflows: nightly
       matrix_branch: ${{ inputs.branch }}
-      matrix_file: .private/${{ inputs.matrix_path }}
+      matrix_file: ${{ inputs.matrix_path }}
