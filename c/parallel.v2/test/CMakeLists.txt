@@ -72,3 +72,5 @@ cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/test_device
 cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/test_device_copy_hostjit_smoke.cpp")
 
 add_subdirectory(freestanding)
+
+cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/test_device_copy_relaxed_strides_smoke.cpp")
