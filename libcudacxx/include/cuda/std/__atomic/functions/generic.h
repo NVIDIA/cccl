@@ -122,7 +122,12 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_fetch_and(
 {
   using _ValueType = __unv<_Type>;
   __dst            = ::cuda::std::__cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_and>{__op}, __order, _Operand{}, __scope);
+    __backend,
+    __ptr,
+    __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_and<_ValueType>>{__op},
+    __order,
+    _Operand{},
+    __scope);
 }
 
 template <class _Backend,
@@ -136,7 +141,12 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_fetch_or(
 {
   using _ValueType = __unv<_Type>;
   __dst            = ::cuda::std::__cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_or>{__op}, __order, _Operand{}, __scope);
+    __backend,
+    __ptr,
+    __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_or<_ValueType>>{__op},
+    __order,
+    _Operand{},
+    __scope);
 }
 
 template <class _Backend,
@@ -150,7 +160,12 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_fetch_xor(
 {
   using _ValueType = __unv<_Type>;
   __dst            = ::cuda::std::__cuda_atomic_fetch_update(
-    __backend, __ptr, __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_xor>{__op}, __order, _Operand{}, __scope);
+    __backend,
+    __ptr,
+    __cuda_atomic_op_bind<_ValueType, ::cuda::std::bit_xor<_ValueType>>{__op},
+    __order,
+    _Operand{},
+    __scope);
 }
 
 template <class _Backend,

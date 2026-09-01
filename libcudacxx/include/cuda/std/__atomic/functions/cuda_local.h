@@ -96,7 +96,7 @@ __cuda_atomic_load_weak_if_local(const _Type* __ptr, __unv<_Type>* __ret, [[mayb
   {
     return false;
   }
-  __atomic_assign_volatile(__ret, *__ptr);
+  ::cuda::std::__atomic_assign_volatile(__ret, *__ptr);
   // Required to workaround a compiler bug, see nvbug/4064730
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
@@ -110,7 +110,7 @@ __cuda_atomic_store_weak_if_local(_Type* __ptr, const __unv<_Type>* __val, [[may
   {
     return false;
   }
-  __atomic_assign_volatile(__ptr, *__val);
+  ::cuda::std::__atomic_assign_volatile(__ptr, *__val);
   return true;
 }
 
@@ -124,10 +124,10 @@ _CCCL_DEVICE_API bool __cuda_atomic_compare_exchange_weak_if_local(
   }
   using _ValueType = __unv<_Type>;
   _ValueType __old{};
-  __atomic_assign_volatile(&__old, *__ptr);
-  if (__atomic_memcmp(&__old, __expected, sizeof(_ValueType)) == 0)
+  ::cuda::std::__atomic_assign_volatile(&__old, *__ptr);
+  if (::cuda::std::__atomic_memcmp(&__old, __expected, sizeof(_ValueType)) == 0)
   {
-    __atomic_assign_volatile(__ptr, *__desired);
+    ::cuda::std::__atomic_assign_volatile(__ptr, *__desired);
     *__success = true;
   }
   else
@@ -146,8 +146,8 @@ _CCCL_DEVICE_API bool __cuda_atomic_exchange_weak_if_local(_Type* __ptr, __unv<_
   {
     return false;
   }
-  __atomic_assign_volatile(__ret, *__ptr);
-  __atomic_assign_volatile(__ptr, *__val);
+  ::cuda::std::__atomic_assign_volatile(__ret, *__ptr);
+  ::cuda::std::__atomic_assign_volatile(__ptr, *__val);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
 }
@@ -162,10 +162,10 @@ __cuda_atomic_fetch_weak_if_local(_Type* __ptr, __unv<_Type> __val, __unv<_Type>
   }
   using _ValueType = __unv<_Type>;
   _ValueType __old{};
-  __atomic_assign_volatile(&__old, *__ptr);
+  ::cuda::std::__atomic_assign_volatile(&__old, *__ptr);
   *__ret                     = __old;
   const _ValueType __desired = __bop(__old, __val);
-  __atomic_assign_volatile(__ptr, __desired);
+  ::cuda::std::__atomic_assign_volatile(__ptr, __desired);
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
 }

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -335,9 +335,9 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
   __proxy_t* __exp_proxy       = reinterpret_cast<__proxy_t*>(__exp);
   __proxy_t* __des_proxy       = reinterpret_cast<__proxy_t*>(&__des);
 #if _CCCL_CUDA_COMPILATION()
-  bool __res = false;
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
+    bool __res = false;
     if (::cuda::std::__cuda_atomic_compare_exchange_weak_if_local(__ptr_proxy, __exp_proxy, __des_proxy, &__res))
     {
       return __res;

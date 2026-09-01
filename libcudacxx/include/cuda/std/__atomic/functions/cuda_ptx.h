@@ -103,7 +103,7 @@ _CCCL_DEVICE_API auto __cuda_atomic_ptx_backend::__with_transformed_order(
     }))
 }
 
-template <class _Type, enable_if_t<is_integral_v<_Type>, bool> = false>
+template <class _Type, enable_if_t<is_integral_v<_Type>, int> = 0>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_ptx_negate(_Type __value)
 {
   using __unsigned_type = make_unsigned_t<_Type>;
@@ -112,7 +112,7 @@ template <class _Type, enable_if_t<is_integral_v<_Type>, bool> = false>
   return ::cuda::std::bit_cast<_Type>(__negated);
 }
 
-template <class _Type, enable_if_t<!is_integral_v<_Type>, bool> = false>
+template <class _Type, enable_if_t<!is_integral_v<_Type>, int> = 0>
 [[nodiscard]] _CCCL_DEVICE_API _Type __cuda_atomic_ptx_negate(_Type __value)
 {
   return -__value;
@@ -122,7 +122,7 @@ template <class _Type,
           class _Order,
           class _Operand,
           class _Sco,
-          enable_if_t<(_Operand::__size >= 32) && (_Operand::__size <= 64), bool> = false>
+          enable_if_t<(_Operand::__size >= 32) && (_Operand::__size <= 64), int> = 0>
 _CCCL_DEVICE_API void __cuda_atomic_fetch_sub(
   __cuda_atomic_ptx_backend __backend,
   _Type* __ptr,

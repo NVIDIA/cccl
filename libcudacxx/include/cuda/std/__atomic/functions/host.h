@@ -63,7 +63,7 @@ struct _CCCL_ALIGNAS(sizeof(_Tp)) __atomic_alignment_wrapper
 };
 
 template <typename _Tp>
-__atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
+_CCCL_HOST_API __atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
 {
   __atomic_alignment_wrapper<_Tp>* __w =
     reinterpret_cast<__atomic_alignment_wrapper<_Tp>*>(const_cast<remove_cv_t<_Tp>*>(__a));
@@ -71,12 +71,13 @@ __atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
 }
 
 // Guard ifdef for lock free query in case it is assigned elsewhere (MSVC/CUDA)
-inline void __cuda_atomic_thread_fence(__cuda_atomic_host_backend, memory_order __order, __thread_scope_tag)
+_CCCL_HOST_API inline void
+__cuda_atomic_thread_fence(__cuda_atomic_host_backend, memory_order __order, __thread_scope_tag)
 {
   __atomic_thread_fence(__atomic_order_to_int(__order));
 }
 
-inline void __cuda_atomic_signal_fence(__cuda_atomic_host_backend, memory_order __order)
+_CCCL_HOST_API inline void __cuda_atomic_signal_fence(__cuda_atomic_host_backend, memory_order __order)
 {
   __atomic_signal_fence(__atomic_order_to_int(__order));
 }
@@ -216,7 +217,7 @@ _CCCL_HOST_API void __cuda_atomic_fetch_sub(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), bool> = false>
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), int> = 0>
 _CCCL_HOST_API void __cuda_atomic_fetch_and(
   __cuda_atomic_host_backend,
   _Type* __ptr,
@@ -232,7 +233,7 @@ _CCCL_HOST_API void __cuda_atomic_fetch_and(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), bool> = false>
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), int> = 0>
 _CCCL_HOST_API void __cuda_atomic_fetch_or(
   __cuda_atomic_host_backend,
   _Type* __ptr,
@@ -248,7 +249,7 @@ _CCCL_HOST_API void __cuda_atomic_fetch_or(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), bool> = false>
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), int> = 0>
 _CCCL_HOST_API void __cuda_atomic_fetch_xor(
   __cuda_atomic_host_backend,
   _Type* __ptr,

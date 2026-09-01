@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 
@@ -39,91 +40,79 @@ template <class _Backend, class _Operand>
 using __cuda_atomic_enable_generic_rmw = enable_if_t<(_Operand::__size <= _Backend::__widest_cas), bool>;
 
 template <size_t _Size>
-struct __cuda_atomic_rmw_type;
-
-template <>
-struct __cuda_atomic_rmw_type<8>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_rmw_type_impl() noexcept
 {
-  using type = uint8_t;
-};
-
-template <>
-struct __cuda_atomic_rmw_type<16>
-{
-  using type = uint16_t;
-};
-
-template <>
-struct __cuda_atomic_rmw_type<32>
-{
-  using type = uint32_t;
-};
-
-template <>
-struct __cuda_atomic_rmw_type<64>
-{
-  using type = uint64_t;
-};
-
-template <>
-struct __cuda_atomic_rmw_type<128>
-{
-  using type = __cuda_atomic_longlong2;
-};
-
-template <class _Type, class _RmwType, bool = sizeof(_Type) == sizeof(_RmwType)>
-struct __cuda_atomic_rmw_window
-{
-  using __logical_type = typename __cuda_atomic_rmw_type<sizeof(_Type) * 8>::type;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static _RmwType __replace(_RmwType __old, _Type __op, uint8_t __offset)
+  if constexpr (_Size == 8)
   {
+    return uint8_t{};
+  }
+  else if constexpr (_Size == 16)
+  {
+    return uint16_t{};
+  }
+  else if constexpr (_Size == 32)
+  {
+    return uint32_t{};
+  }
+  else if constexpr (_Size == 64)
+  {
+    return uint64_t{};
+  }
+  else
+  {
+    static_assert(_Size == 128, "invalid generic RMW size");
+    return __cuda_atomic_longlong2{};
+  }
+}
+
+template <size_t _Size>
+using __cuda_atomic_rmw_type_t = decltype(__cuda_atomic_rmw_type_impl<_Size>());
+
+template <class _Type, class _RmwType>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _RmwType __cuda_atomic_rmw_replace(_RmwType __old, _Type __op, uint8_t __offset)
+{
+  if constexpr (sizeof(_Type) == sizeof(_RmwType))
+  {
+    return ::cuda::std::bit_cast<_RmwType>(__op);
+  }
+  else if constexpr (is_same_v<_RmwType, __cuda_atomic_longlong2>)
+  {
+    static_assert(sizeof(_Type) == sizeof(uint64_t), "only 64-bit atomics can be widened to 128 bits");
+    using __logical_type                    = __cuda_atomic_rmw_type_t<sizeof(_Type) * 8>;
+    (__offset == 0 ? __old.__x : __old.__y) = ::cuda::std::bit_cast<__logical_type>(__op);
+    return __old;
+  }
+  else
+  {
+    using __logical_type      = __cuda_atomic_rmw_type_t<sizeof(_Type) * 8>;
     constexpr auto __sizemask = (_RmwType{1} << (sizeof(_Type) * 8)) - 1;
     const auto __value_mask   = __sizemask << __offset;
     const auto __op_bits      = static_cast<_RmwType>(::cuda::std::bit_cast<__logical_type>(__op));
     return (__old & ~__value_mask) | ((__op_bits << __offset) & __value_mask);
   }
+}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static _Type __extract(_RmwType __old, uint8_t __offset)
+template <class _Type, class _RmwType>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _Type __cuda_atomic_rmw_extract(_RmwType __old, uint8_t __offset)
+{
+  if constexpr (sizeof(_Type) == sizeof(_RmwType))
   {
+    return ::cuda::std::bit_cast<_Type>(__old);
+  }
+  else if constexpr (is_same_v<_RmwType, __cuda_atomic_longlong2>)
+  {
+    static_assert(sizeof(_Type) == sizeof(uint64_t), "only 64-bit atomics can be widened to 128 bits");
+    using __logical_type = __cuda_atomic_rmw_type_t<sizeof(_Type) * 8>;
+    return ::cuda::std::bit_cast<_Type>(static_cast<__logical_type>(__offset == 0 ? __old.__x : __old.__y));
+  }
+  else
+  {
+    using __logical_type      = __cuda_atomic_rmw_type_t<sizeof(_Type) * 8>;
     constexpr auto __sizemask = (_RmwType{1} << (sizeof(_Type) * 8)) - 1;
     const auto __old_bits     = static_cast<__logical_type>((__old >> __offset) & __sizemask);
     return ::cuda::std::bit_cast<_Type>(__old_bits);
   }
-};
-
-template <class _Type, class _RmwType>
-struct __cuda_atomic_rmw_window<_Type, _RmwType, true>
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static _RmwType __replace(_RmwType, _Type __op, uint8_t)
-  {
-    return ::cuda::std::bit_cast<_RmwType>(__op);
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static _Type __extract(_RmwType __old, uint8_t)
-  {
-    return ::cuda::std::bit_cast<_Type>(__old);
-  }
-};
-
-template <class _Type>
-struct __cuda_atomic_rmw_window<_Type, __cuda_atomic_longlong2, false>
-{
-  static_assert(sizeof(_Type) == sizeof(uint64_t), "only 64-bit atomics can be widened to 128 bits");
-  using __logical_type = typename __cuda_atomic_rmw_type<sizeof(_Type) * 8>::type;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static __cuda_atomic_longlong2
-  __replace(__cuda_atomic_longlong2 __old, _Type __op, uint8_t __offset)
-  {
-    (__offset == 0 ? __old.__x : __old.__y) = ::cuda::std::bit_cast<__logical_type>(__op);
-    return __old;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API static _Type __extract(__cuda_atomic_longlong2 __old, uint8_t __offset)
-  {
-    return ::cuda::std::bit_cast<_Type>(static_cast<__logical_type>(__offset == 0 ? __old.__x : __old.__y));
-  }
-};
+}
 
 template <class _Type>
 struct __cuda_atomic_rmw_update
@@ -162,9 +151,8 @@ _CCCL_HOST_DEVICE_API __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rm
   static_assert(_RmwOperand::__op == __cuda_atomic_operand::_b, "generic RMW requires a bitwise CAS operand");
   static_assert(_Operand::__size <= _RmwOperand::__size, "generic RMW cannot use a narrower CAS operand");
 
-  using __rmw_type    = typename __cuda_atomic_rmw_type<_RmwOperand::__size>::type;
+  using __rmw_type    = __cuda_atomic_rmw_type_t<_RmwOperand::__size>;
   using __rmw_pointee = __copy_cv_t<_Pointee, __rmw_type>;
-  using __window      = __cuda_atomic_rmw_window<_Type, __rmw_type>;
 
   __rmw_pointee* __aligned;
   uint8_t __offset;
@@ -185,14 +173,14 @@ _CCCL_HOST_DEVICE_API __cuda_atomic_rmw_result<__unv<_Pointee>> __cuda_atomic_rm
 
   while (true)
   {
-    const _Type __logical_old                      = __window::__extract(__old, __offset);
+    const _Type __logical_old                      = ::cuda::std::__cuda_atomic_rmw_extract<_Type>(__old, __offset);
     const __cuda_atomic_rmw_update<_Type> __update = __op(__logical_old);
     if (!__update.__apply)
     {
       return {__logical_old, false};
     }
 
-    const __rmw_type __attempt = __window::__replace(__old, __update.__value, __offset);
+    const __rmw_type __attempt = ::cuda::std::__cuda_atomic_rmw_replace(__old, __update.__value, __offset);
     if (__cuda_atomic_compare_exchange(
           __backend, __aligned, __old, __old, __attempt, __cuda_atomic_cas_weak{}, __order, _RmwOperand{}, __scope))
     {
@@ -224,30 +212,30 @@ struct __cuda_atomic_compare_exchange_op
   }
 };
 
-template <class _Type, template <class> class _Op>
+template <class _Type, class _Op>
 struct __cuda_atomic_op_bind
 {
   _Type __val;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __old) const
   {
-    return _Op<_Type>{}(__val, __old);
+    return _Op{}(__val, __old);
   }
 };
 
-template <class _Type>
 struct __cuda_atomic_op_store
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __val, _Type) const
+  template <class _Type>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type _CCCL_STATIC_CALL_OPERATOR(_Type __val, _Type)
   {
     return __val;
   }
 };
 
-template <class _Type>
 struct __cuda_atomic_op_fetch_add
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
+  template <class _Type>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type _CCCL_STATIC_CALL_OPERATOR(_Type __op, _Type __old)
   {
     if constexpr (is_integral_v<_Type>)
     {
@@ -263,10 +251,10 @@ struct __cuda_atomic_op_fetch_add
   }
 };
 
-template <class _Type>
 struct __cuda_atomic_op_fetch_sub
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
+  template <class _Type>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type _CCCL_STATIC_CALL_OPERATOR(_Type __op, _Type __old)
   {
     if constexpr (is_integral_v<_Type>)
     {
@@ -282,19 +270,19 @@ struct __cuda_atomic_op_fetch_sub
   }
 };
 
-template <class _Type>
 struct __cuda_atomic_op_fetch_min
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
+  template <class _Type>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type _CCCL_STATIC_CALL_OPERATOR(_Type __op, _Type __old)
   {
     return ::cuda::std::__cuda_atomic_less(__op, __old) ? __op : __old;
   }
 };
 
-template <class _Type>
 struct __cuda_atomic_op_fetch_max
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type operator()(_Type __op, _Type __old) const
+  template <class _Type>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Type _CCCL_STATIC_CALL_OPERATOR(_Type __op, _Type __old)
   {
     return ::cuda::std::__cuda_atomic_less(__old, __op) ? __op : __old;
   }
