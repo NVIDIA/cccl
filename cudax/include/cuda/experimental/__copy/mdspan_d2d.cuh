@@ -283,7 +283,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       }
     }
 
-    // (2) inner size is large
+    // (2) both contiguous and inner size is large
     if (__both_stride1 && __inner_extent_bytes >= cudax::__bytes_in_flight())
     {
       // (2a) vectorized case
@@ -327,7 +327,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       return false;
     };
 
-    // (3) inner size is not large -> try vectorized case
+    // (3) both non-contiguous and inner size is not large -> try vectorized case
     if constexpr (__are_vectorizable_copy)
     {
       if (__both_stride1)
@@ -354,13 +354,35 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       }
     }
 
-    // (4) transpose case (non-vectorizable)
+    // (4) If only the source tensor has a negative stride (on a given mode) and the destination is contiguous, perform
+    // the copy following the destination order.
+    if constexpr (::cuda::std::is_signed_v<__src_stride_t>)
+    {
+      bool __has_negative_src_stride = false;
+      for (::cuda::std::size_t __i = 0; __i < __src_normalized.__rank; ++__i)
+      {
+        __has_negative_src_stride = __has_negative_src_stride || __src_normalized.__strides[__i] < 0;
+      }
+      if (__has_negative_src_stride && cudax::__num_contiguous_dimensions(__dst_normalized) == __dst_normalized.__rank)
+      {
+        cudax::__copy_dst_contiguous(
+          __src_normalized,
+          __dst_normalized,
+          cudax::__total_size(__src_normalized),
+          __stream,
+          __src.accessor(),
+          __dst.accessor());
+        return;
+      }
+    }
+
+    // (5) transpose case (non-vectorizable)
     if (__try_shared_mem_copy())
     {
       return;
     }
 
-    // (5) use the simplified rank in device code for common low-rank layouts
+    // (6) use the simplified rank in device code for common low-rank layouts
     if constexpr (__max_rank > 1)
     {
       if (__src_simplified.__rank == 1)
@@ -398,7 +420,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       }
     }
 
-    // (6) generic case (fallback)
+    // (7) generic case (fallback)
     cudax::__copy_optimized(
       __src_normalized,
       __dst_normalized,

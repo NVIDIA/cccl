@@ -130,14 +130,15 @@ TEST_CASE("copy d2d nvmath reorder_strides", "[copy][d2d][nvmath][reorder_stride
 
 // src: (63,70,1001):(-1001,-63063,-1), offset=alloc-1
 // dst: (63,70,1001):(70070,1001,1), offset=0
-TEST_CASE("copy d2d nvmath src_neg_stride", "[copy][d2d][nvmath][neg_stride]")
+TEMPLATE_TEST_CASE(
+  "copy d2d nvmath src_neg_stride", "[copy][d2d][nvmath][neg_stride]", int8_t, int16_t, int32_t, int64_t)
 {
   constexpr int alloc      = 63 * 70 * 1001;
   constexpr int src_offset = alloc - 1;
   cuda::std::array<int, 3> shape{63, 70, 1001};
   cuda::std::array<int, 3> src_strides{-1001, -63063, -1};
   cuda::std::array<int, 3> dst_strides{70070, 1001, 1};
-  test_copy_stride_relaxed<data_t>(alloc, src_offset, shape, src_strides, alloc, 0, dst_strides);
+  test_copy_stride_relaxed<TestType>(alloc, src_offset, shape, src_strides, alloc, 0, dst_strides);
 }
 
 /***********************************************************************************************************************
