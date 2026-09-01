@@ -20,14 +20,6 @@
 
 #include <c2h/catch2_test_helper.h>
 
-// Large enough to force a multi-block, multi-pass device fold.
-inline constexpr cuda::std::size_t large_values_per_rank = 100'000;
-
-[[nodiscard]] inline cuda::std::minstd_rand make_rng(const c2h::seed_t& seed)
-{
-  return cuda::std::minstd_rand(static_cast<cuda::std::minstd_rand::result_type>(seed.get()));
-}
-
 // `total_count` is the size of the whole global input. The bound derived from it keeps a fold over
 // the whole input from overflowing.
 //

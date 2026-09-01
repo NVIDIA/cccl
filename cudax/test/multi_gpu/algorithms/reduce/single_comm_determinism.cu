@@ -28,8 +28,10 @@
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
-#include "reduce_common.cuh"
 #include <c2h/catch2_test_helper.h>
+
+// Large enough to force a multi-block, multi-pass device fold.
+inline constexpr cuda::std::size_t large_values_per_rank = 100'000;
 
 // `not_guaranteed` makes CUB select an atomic-based block reduction. That path calls
 // `cuda::atomic_ref<T>::fetch_add`, which exists only for integral and floating-point types.
