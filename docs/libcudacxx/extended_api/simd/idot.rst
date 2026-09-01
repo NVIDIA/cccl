@@ -44,6 +44,10 @@ Returns ``init`` plus the integer dot product of ``lhs`` and ``rhs``.
 
 - ``T``, ``U``, and ``AccT`` must be integer types.
 
+**Undefined behavior**
+
+- THe functionality follows the rules of the C++ standard for integer overflow. If the product of two signed integer elements is not representable in the accumulator type, the result is undefined. Unsigned integer results are truncated to modulo the accumulator type's range.
+
 **Performance considerations**
 
 - Packed 8-bit input vectors with compatible 32-bit accumulators use ``IDP4A`` on ``SM61`` and newer device targets.
