@@ -330,7 +330,6 @@ def coverage(args):
 
 def parallel_coordinates_plot(df, title):
     # Parallel coordinates plot adaptation of https://stackoverflow.com/a/69411450
-    import matplotlib.cm as cm
     import matplotlib.patches as patches
     from matplotlib.path import Path
 
@@ -395,7 +394,7 @@ def parallel_coordinates_plot(df, title):
     host_ax.tick_params(axis="x", which="major", pad=7)
 
     # Color map:
-    colormap = cm.get_cmap("turbo")
+    colormap = plt.get_cmap("turbo")
 
     # Normalize speedups:
     df["speedup_normalized"] = (df["speedup"] - df["speedup"].min()) / (
@@ -535,7 +534,7 @@ def extract_modes(samples):
     """
     mode_ids = []
 
-    widths, heights = hd_displot(samples)
+    widths, heights = qrde_hd(samples)
     peak_ids = extract_peaks(heights)
     bin_area = 1.0 / len(heights)
 
