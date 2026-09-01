@@ -873,35 +873,10 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
     return make_cluster_policy();
   }
 
-  // Below the 8K crossover the non-deterministic path runs the baseline backend; nothing to tune here.
-  if (static_max_segment_size <= 4 * 1024) // 4096
-  {
-    return make_cluster_policy();
-  }
-
+  // At and below the 8K crossover the non-deterministic path mostly runs the baseline backend, and the one
+  // measured 8Ki candidate regressed at high segment counts; everything through 8Ki keeps the default policy.
   if (static_max_segment_size <= 8 * 1024) // 8192
   {
-    if (max_k <= 1024)
-    {
-      return make_cluster_policy();
-    }
-    else if (max_k <= 2048)
-    {
-      return cluster_topk_policy{
-        /*threads_per_block=*/352,
-        /*min_blocks_per_sm=*/1,
-        /*min_chunks_per_block=*/1,
-        /*chunk_bytes=*/23 * 1024,
-        /*load_align_bytes=*/64,
-        /*pipeline_stages=*/3,
-        /*single_block_max_seg_size=*/8 * 1024,
-        /*bits_per_pass=*/11,
-        /*histogram_items_per_thread=*/15,
-        /*tie_break_items_per_thread=*/2,
-        /*copy_items_per_thread=*/23,
-        /*max_blocks_per_cluster=*/0,
-        /*max_chunk_slots_per_block=*/0};
-    }
     return make_cluster_policy();
   }
 
@@ -1113,7 +1088,6 @@ make_sm100_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
   return make_cluster_policy();
 }
 
-static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(8192, 2048)));
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(16384, 512)));
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(16384, 1024)));
 static_assert(is_valid_cluster_policy(make_sm100_keys_cluster_policy(16384, 2048)));
