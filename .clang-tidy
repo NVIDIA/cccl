@@ -106,6 +106,12 @@ Checks:
   - '-bugprone-implicit-widening-of-multiplication-result'
   - '-misc-include-cleaner'
   - '-misc-header-include-cycle'
+  # This check flags any class with more than one non-pure-virtual base. CCCL relies on
+  # exactly that for the empty base optimization (__compressed_pair, __mdspan_ebco,
+  # __tuple_impl, counting_iterator, ...) and for CRTP policy mixins (custom_type_t). The
+  # _CCCL_DECLSPEC_EMPTY_BASES macro exists solely to make this pattern pack correctly on
+  # MSVC. Removing a base would add storage and break the ABI, so there is no fix to apply.
+  - '-misc-multiple-inheritance'
   - '-modernize-macro-to-enum'
   - '-cppcoreguidelines-macro-to-enum'
   - '-misc-no-recursion'
