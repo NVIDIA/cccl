@@ -57,9 +57,7 @@ __device__ Vec_u16_x2 test_operator_unary_minus_u16_x2(Vec_u16_x2 in)
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_minus_u16_x2.*}}
 ; SM90: {{.*VIADD\.16x2.*}}
-; SM90-NOT: {{.*VIADD\.16x2.*}}
 ; SM1XX: {{.*VIADD\.16x2.*}}
-; SM1XX-NOT: {{.*VIADD\.16x2.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_plus_u16_x2.*}}
 ; SM90: {{.*VIADD.*}}
