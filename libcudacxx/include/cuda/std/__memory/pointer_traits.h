@@ -50,19 +50,19 @@ struct __pointer_traits_element_type;
 template <class _Ptr>
 struct __pointer_traits_element_type<_Ptr, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Ptr::element_type;
+  using type _CCCL_NODEBUG = typename _Ptr::element_type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Sp<_Tp, _Args...>::element_type;
+  using type _CCCL_NODEBUG = typename _Sp<_Tp, _Args...>::element_type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, false>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 template <class _Tp, class = void>
@@ -74,13 +74,13 @@ inline constexpr bool __has_difference_type<_Tp, void_t<typename _Tp::difference
 template <class _Ptr, bool = __has_difference_type<_Ptr>>
 struct __pointer_traits_difference_type
 {
-  using type _CCCL_NODEBUG_ALIAS = ptrdiff_t;
+  using type _CCCL_NODEBUG = ptrdiff_t;
 };
 
 template <class _Ptr>
 struct __pointer_traits_difference_type<_Ptr, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Ptr::difference_type;
+  using type _CCCL_NODEBUG = typename _Ptr::difference_type;
 };
 
 template <class _Tp, class _Up, class = void>
@@ -92,13 +92,13 @@ inline constexpr bool __has_rebind<_Tp, _Up, void_t<typename _Tp::template rebin
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>>
 struct __pointer_traits_rebind
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Tp::template rebind<_Up>;
+  using type _CCCL_NODEBUG = typename _Tp::template rebind<_Up>;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Sp<_Tp, _Args...>::template rebind<_Up>;
+  using type _CCCL_NODEBUG = typename _Sp<_Tp, _Args...>::template rebind<_Up>;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>

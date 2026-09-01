@@ -810,30 +810,31 @@ struct __ctx_from_stream
   };
 
   __kind __ctx_kind_;
-  union
-  {
-    ::CUcontext __ctx_device_;
-    ::CUgreenCtx __ctx_green_;
-  };
+  ::CUcontext __ctx_device_;
+  ::CUgreenCtx __ctx_green_;
 };
 
 [[nodiscard]] _CCCL_HOST_API inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
 
-  ::CUcontext __ctx   = nullptr;
-  ::CUgreenCtx __gctx = nullptr;
-  __ctx_from_stream __result;
-  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
-  if (__gctx)
+  __ctx_from_stream __result{};
+
+  _CCCLRT_CALL_STREAM_DRIVER_FN(
+    __driver_fn,
+    __stream,
+    "Failed to get context from a stream",
+    __stream,
+    &__result.__ctx_device_,
+    &__result.__ctx_green_);
+
+  if (__result.__ctx_green_)
   {
-    __result.__ctx_kind_  = __ctx_from_stream::__kind::__green;
-    __result.__ctx_green_ = __gctx;
+    __result.__ctx_kind_ = __ctx_from_stream::__kind::__green;
   }
   else
   {
-    __result.__ctx_kind_   = __ctx_from_stream::__kind::__device;
-    __result.__ctx_device_ = __ctx;
+    __result.__ctx_kind_ = __ctx_from_stream::__kind::__device;
   }
   return __result;
 }
