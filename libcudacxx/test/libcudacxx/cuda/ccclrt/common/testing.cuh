@@ -59,8 +59,6 @@ struct StringMaker<dim3>
 };
 } // namespace Catch
 
-namespace
-{
 namespace test
 {
 inline int count_driver_stack()
@@ -105,7 +103,6 @@ struct ccclrt_test_fixture
   }
 };
 } // namespace test
-} // namespace
 
 // Test macro that should be used in all cccl-rt tests
 // It first empties the driver stack in case some other test has left it non-empty

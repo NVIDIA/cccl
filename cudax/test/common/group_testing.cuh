@@ -20,6 +20,10 @@
 
 #include "testing.cuh"
 
+// global_barriers_storage is mutable device state. The unnamed namespace gives each
+// translation unit its own barrier storage; sharing one copy across translation units
+// would change the synchronization behavior of the tests.
+// NOLINTNEXTLINE(misc-anonymous-namespace-in-header)
 namespace
 {
 template <class T, cuda::std::size_t Id>

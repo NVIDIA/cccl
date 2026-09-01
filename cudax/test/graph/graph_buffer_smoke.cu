@@ -24,8 +24,6 @@
 
 namespace
 {
-namespace test
-{
 // RAII wrapper around a pinned-memory allocation.
 template <typename T>
 struct pinned_array
@@ -59,7 +57,6 @@ struct pinned_array
     return __ptr[i];
   }
 };
-} // namespace test
 
 struct write_iota
 {
@@ -162,7 +159,7 @@ C2H_TEST("graph_buffer with zero-fill initializes to zero", "[graph][graph_buffe
 C2H_TEST("graph_buffer from span", "[graph][graph_buffer]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> host_data{6};
+  pinned_array<int> host_data{6};
   for (int i = 0; i < 6; ++i)
   {
     host_data[i] = i + 1;
@@ -176,7 +173,7 @@ C2H_TEST("graph_buffer from span", "[graph][graph_buffer]")
 
   REQUIRE(buf.size() == 6);
 
-  test::pinned_array<int> result{6};
+  pinned_array<int> result{6};
   cudax::copy_bytes(pb, buf, cuda::std::span<int>{result.get(), 6});
 
   buf.destroy(pb);
@@ -203,7 +200,7 @@ C2H_TEST("graph_buffer from initializer_list", "[graph][graph_buffer]")
 
   REQUIRE(buf.size() == 4);
 
-  test::pinned_array<int> result{4};
+  pinned_array<int> result{4};
   cudax::copy_bytes(pb, buf, cuda::std::span<int>{result.get(), 4});
 
   buf.destroy(pb);
@@ -244,7 +241,7 @@ C2H_TEST("make_buffer factory with no_init", "[graph][graph_buffer]")
 C2H_TEST("graph_buffer on forked paths", "[graph][graph_buffer]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> result_mem{1};
+  pinned_array<int> result_mem{1};
   int* result = result_mem.get();
 
   constexpr int N = 10;

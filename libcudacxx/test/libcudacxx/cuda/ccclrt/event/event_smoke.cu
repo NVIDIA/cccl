@@ -18,8 +18,6 @@
 
 namespace
 {
-namespace test
-{
 cuda::event_ref fn_takes_event_ref(cuda::event_ref ref)
 {
   return ref;
@@ -53,7 +51,6 @@ void test_event_uses_explicit_device_when_current_device_differs()
 
   explicit_device_stream.sync();
 }
-} // namespace test
 } // namespace
 
 static_assert(!::cuda::std::is_default_constructible_v<cuda::event_ref>);
@@ -69,7 +66,7 @@ C2H_CCCLRT_TEST("can construct an event_ref from a cudaEvent_t", "[event]")
   CCCLRT_REQUIRE(ref.get() == ev);
   CCCLRT_REQUIRE(!!ref);
   // test implicit conversion from cudaEvent_t:
-  cuda::event_ref ref2 = ::test::fn_takes_event_ref(ev);
+  cuda::event_ref ref2 = fn_takes_event_ref(ev);
   CCCLRT_REQUIRE(ref2.get() == ev);
   CCCLRT_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
   // test an empty event_ref:
@@ -138,8 +135,8 @@ C2H_CCCLRT_TEST("can construct an event with a device_ref", "[event]")
 
 C2H_CCCLRT_TEST("event device_ref constructors use the explicit device", "[event][multi_gpu]")
 {
-  ::test::test_event_uses_explicit_device_when_current_device_differs<cuda::event>();
-  ::test::test_event_uses_explicit_device_when_current_device_differs<cuda::timed_event>();
+  test_event_uses_explicit_device_when_current_device_differs<cuda::event>();
+  test_event_uses_explicit_device_when_current_device_differs<cuda::timed_event>();
 }
 
 C2H_CCCLRT_TEST("can wait on an event from another device", "[event][multi_gpu]")
