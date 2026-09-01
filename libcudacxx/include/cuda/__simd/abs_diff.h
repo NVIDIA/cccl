@@ -48,7 +48,7 @@ struct __abs_diff_operation
   [[nodiscard]] _CCCL_DEVICE_API constexpr _ResultStorage
   operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
   {
-    using __unsigned_storage_t = ::cuda::std::simd::__simd_storage_u32_t<_ResultStorage>;
+    using __unsigned_storage_t _CCCL_NODEBUG = ::cuda::std::simd::__simd_storage_u32_t<_ResultStorage>;
     constexpr __unsigned_storage_t __c_u{};
     const auto __lhs_u    = ::cuda::std::simd::__to_unsigned_storage(__lhs);
     const auto __rhs_u    = ::cuda::std::simd::__to_unsigned_storage(__rhs);
@@ -69,7 +69,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 abs_diff(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
          const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __rhs) noexcept
 {
-  using __result_type = ::cuda::std::simd::basic_vec<::cuda::std::make_unsigned_t<_Tp>, _Abi>;
+  using __result_type _CCCL_NODEBUG = ::cuda::std::simd::basic_vec<::cuda::std::make_unsigned_t<_Tp>, _Abi>;
 #if _CCCL_HAS_SIMD_VABSDIFF()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
