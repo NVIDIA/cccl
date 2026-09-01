@@ -36,7 +36,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Interface>
-using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for_t<_Interface>::__vtable;
+using __vtable_for _CCCL_NODEBUG = typename __overrides_for_t<_Interface>::__vtable;
 
 //!
 //! __basic_vtable
@@ -46,8 +46,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __basic_vtable
     : __rtti_base
     , __virtual_fn<_Mbrs>...
 {
-  using interface _CCCL_NODEBUG_ALIAS = _Interface;
-  static constexpr size_t __cbases    = ::cuda::std::__type_list_size<__unique_interfaces<interface>>::value;
+  using interface _CCCL_NODEBUG    = _Interface;
+  static constexpr size_t __cbases = ::cuda::std::__type_list_size<__unique_interfaces<interface>>::value;
 
   template <class _VPtr, class _Tp, class... _OtherMembers, class... _Interfaces>
   _CCCL_HOST_DEVICE_API constexpr __basic_vtable(
@@ -73,7 +73,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __basic_vtable
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __query_interface(__iset_<_Others...>) const noexcept
     -> __vptr_for<__iset_<_Others...>>
   {
-    using __remainder _CCCL_NODEBUG_ALIAS =
+    using __remainder _CCCL_NODEBUG =
       ::cuda::std::__type_list_size<::cuda::std::__type_find<__unique_interfaces<interface>, __iset_<_Others...>>>;
     constexpr size_t __index = __cbases - __remainder::value;
     if constexpr (__index < __cbases)
@@ -137,7 +137,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _CCCL_TYPE_VISIBILITY_DEFAULT __vtable_tuple
 // The vtable type for type `_Interface` is a `__vtable_tuple` of `_Interface`
 // and all of its base interfaces.
 template <class _Interface>
-using __vtable _CCCL_NODEBUG_ALIAS = __unique_interfaces<_Interface, ::cuda::std::__type_quote<__vtable_tuple>>;
+using __vtable _CCCL_NODEBUG = __unique_interfaces<_Interface, ::cuda::std::__type_quote<__vtable_tuple>>;
 
 // __vtable_for_v<_Interface, _Tp> is an instance of `__vtable<_Interface>` that
 // contains the overrides for `_Tp`.
