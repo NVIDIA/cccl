@@ -303,21 +303,23 @@ public:
   [[nodiscard]] _CCCL_HOST_API __logical_device_ref __logical_device() const
   {
 #  if _CCCL_CTK_AT_LEAST(12, 5)
-    const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
-
-    // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
-    // the stream, not the one you would get from cuCtxFromGreenCtx(green).
-    //
-    // So the outer context of the green context must be recovered separately to match what
-    // __logical_device_ref{device_ref, CUgreenCtx} would store.
-    switch (__ctx.__ctx_kind_)
+    // NOLINTNEXTLINE(readability-magic-numbers, bugprone-argument-comment)
+    if (::cuda::__driver::__version_at_least(12, 5))
     {
-      case ::cuda::__driver::__ctx_from_stream::__kind::__green:
-        return {this->device(), __ctx.__ctx_green_};
-      case ::cuda::__driver::__ctx_from_stream::__kind::__device:
-        return {this->device(), __ctx.__ctx_device_};
+      // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
+      // the stream, not the one you would get from cuCtxFromGreenCtx(green).
+      //
+      // So the outer context of the green context must be recovered separately to match what
+      // __logical_device_ref{device_ref, CUgreenCtx} would store.
+      switch (const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream); __ctx.__ctx_kind_)
+      {
+        case ::cuda::__driver::__ctx_from_stream::__kind::__green:
+          return {this->device(), __ctx.__ctx_green_};
+        case ::cuda::__driver::__ctx_from_stream::__kind::__device:
+          return {this->device(), __ctx.__ctx_device_};
+      }
+      _CCCL_UNREACHABLE();
     }
-    _CCCL_UNREACHABLE();
 #  endif // ^^^ _CCCL_AT_LEAST(12, 5) ^^^
     return {this->device(), this->__cu_context()};
   }
@@ -344,20 +346,22 @@ protected:
     // cuGreenCtxStreamCreate() made. cuStreamGetCtx_v2() supports such a stream, and always
     // gives a usable device context.
 #    if _CCCL_CTK_AT_LEAST(12, 5)
-    // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
-    // the stream, not the one you would get from cuCtxFromGreenCtx(green).
-    switch (const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream); __ctx.__ctx_kind_)
+    // NOLINTNEXTLINE(readability-magic-numbers, bugprone-argument-comment)
+    if (::cuda::__driver::__version_at_least(12, 5))
     {
-      case ::cuda::__driver::__ctx_from_stream::__kind::__green:
-        return ::cuda::__driver::__ctxFromGreenCtx(__ctx.__ctx_green_);
-      case ::cuda::__driver::__ctx_from_stream::__kind::__device:
-        return __ctx.__ctx_device_;
+      // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
+      // the stream, not the one you would get from cuCtxFromGreenCtx(green).
+      switch (const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream); __ctx.__ctx_kind_)
+      {
+        case ::cuda::__driver::__ctx_from_stream::__kind::__green:
+          return ::cuda::__driver::__ctxFromGreenCtx(__ctx.__ctx_green_);
+        case ::cuda::__driver::__ctx_from_stream::__kind::__device:
+          return __ctx.__ctx_device_;
+      }
+      _CCCL_UNREACHABLE();
     }
-    _CCCL_UNREACHABLE();
-    return ::CUcontext{};
-#    else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
+#    endif // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^
     return ::cuda::__driver::__streamGetCtx(__stream);
-#    endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
   }
 #  endif // !_CCCL_DOXYGEN_INVOKED
 
@@ -400,7 +404,7 @@ _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_
     using stream_ref::__cu_context;
   };
 
-  ::cuda::__driver::__ctxPush(static_cast<__access&>(__stream).__cu_context());
+  ::cuda::__driver::__ctxPush(__access{__stream}.__cu_context());
 }
 #  endif // !_CCCL_DOXYGEN_INVOKED
 
