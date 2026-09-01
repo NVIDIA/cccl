@@ -59,7 +59,7 @@ struct __abs_diff_operation
                        return ::cuda::std::simd::__copy_from_unsigned_storage<_ResultStorage>(__result_u);
                      }));
       }
-      // 16-bit path (vabsdiff2) generates worst code in most cases
+      // 16-bit path (vabsdiff2) generates worse code in most cases
     }
 #endif // _CCCL_HAS_SIMD_VABSDIFF()
 
