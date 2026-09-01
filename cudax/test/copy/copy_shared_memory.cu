@@ -48,7 +48,7 @@ TEST_CASE("copy d2d shared_memory 2D partial tiles", "[copy][d2d][shared_memory]
 }
 
 TEMPLATE_TEST_CASE(
-  "copy d2d shared_memory 2D small-element transpose", "[copy][d2d][shared_memory][transpose][small]", char, short)
+  "copy d2d shared_memory 2D typed transpose", "[copy][d2d][shared_memory][transpose][typed]", char, short, long long)
 {
   SECTION("column-major to row-major")
   {
@@ -88,19 +88,36 @@ TEST_CASE("copy d2d shared_memory 3D transpose", "[copy][d2d][shared_memory][tra
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
-// src: (8193,16,16):(1,8193,131088), column-major
-// dst: (8193,16,16):(256,16,1), row-major
-// The first dimension is not tile-aligned, so rank-3 boundary tiles use the direct-copy fallback.
+// src: (8193,17,19):(1,8193,139281), column-major
+// dst: (8193,17,19):(323,19,1), row-major
+// All dimensions are odd, so rank-3 boundary tiles exercise multiple clipped dimensions.
 TEST_CASE("copy d2d shared_memory 3D partial tiles", "[copy][d2d][shared_memory][transpose][3d][partial]")
 {
   constexpr int D0    = 8193;
-  constexpr int D1    = 16;
-  constexpr int D2    = 16;
+  constexpr int D1    = 17;
+  constexpr int D2    = 19;
   constexpr int alloc = D0 * D1 * D2;
   cuda::std::array<int, 3> shape{D0, D1, D2};
   cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
   cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+}
+
+// src: (257,17,19,5):(1,257,5000,100000), padded after the second and third dimensions
+// dst: (257,17,19,5):(2000,100,5,1), padded after the second dimension
+// The odd extents and padding exercise rank-4 partial tiles with irregular source and destination strides.
+TEST_CASE("copy d2d shared_memory 4D irregular partial tiles", "[copy][d2d][shared_memory][transpose][4d][partial]")
+{
+  constexpr int D0        = 257;
+  constexpr int D1        = 17;
+  constexpr int D2        = 19;
+  constexpr int D3        = 5;
+  constexpr int src_alloc = (D0 - 1) + (D1 - 1) * 257 + (D2 - 1) * 5000 + (D3 - 1) * 100000 + 1;
+  constexpr int dst_alloc = (D0 - 1) * 2000 + (D1 - 1) * 100 + (D2 - 1) * 5 + D3;
+  cuda::std::array<int, 4> shape{D0, D1, D2, D3};
+  cuda::std::array<int, 4> src_strides{1, 257, 5000, 100000};
+  cuda::std::array<int, 4> dst_strides{2000, 100, 5, 1};
+  test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
 }
 
 // src: (33,257,33):(1,33,8481), column-major
