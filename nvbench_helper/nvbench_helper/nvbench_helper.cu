@@ -43,6 +43,11 @@ enum class executor
 class host_generator_t
 {
 public:
+  host_generator_t()
+      : m_distribution()
+  {}
+  ~host_generator_t() {}
+
   template <typename T>
   void generate(seed_t seed, cuda::std::span<T> device_span, bit_entropy entropy, T min, T max);
 
