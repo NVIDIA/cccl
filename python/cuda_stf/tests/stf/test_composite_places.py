@@ -12,8 +12,9 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
 from conftest import require_vmm  # noqa: E402  (shared VMM gate)
+
+import cuda.stf._experimental as stf  # noqa: E402
 
 
 def blocked_mapper_1d(data_coords, data_dims, grid_dims):

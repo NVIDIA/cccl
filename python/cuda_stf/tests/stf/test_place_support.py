@@ -6,10 +6,10 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
+from conftest import require_vmm  # noqa: E402  (shared VMM gate)
 from cuda.bindings import runtime as cudart  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
-from conftest import require_vmm  # noqa: E402  (shared VMM gate)
 
 
 def _require_device():

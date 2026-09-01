@@ -52,7 +52,6 @@ using namespace cuda::experimental::stf;
 
 namespace
 {
-
 constexpr size_t MiB  = 1024 * 1024;
 constexpr size_t ROWS = 8192;
 constexpr size_t COLS = 8192; // float payload: 256 MiB, 32 KiB rows
@@ -85,7 +84,6 @@ localized_stats score(const exec_place& grid, const Partition& part)
   return evaluate_localized_placement(
     grid, part, sizeof(float), ::cuda::experimental::places::localized_placement_default_probes, PAGE);
 }
-
 } // namespace
 
 int main()
@@ -100,17 +98,17 @@ int main()
   // every page holds a 50/50 mix and half the bytes are misplaced whatever
   // the page's owner is.
   auto cols_blocked = make_partition(dim4(COLS, ROWS), partition_spec{blocked<0>, whole}, dim4(2));
-  auto s1 = report("1-D columns-blocked (inner axis)", grid2, score(grid2, cols_blocked));
+  auto s1           = report("1-D columns-blocked (inner axis)", grid2, score(grid2, cols_blocked));
 
   // GOOD: block the outer axis. Two contiguous, page-aligned 128 MiB runs.
   auto rows_blocked = make_partition(dim4(COLS, ROWS), partition_spec{whole, blocked<0>}, dim4(2));
-  auto s2 = report("1-D rows-blocked (outer axis)", grid2, score(grid2, rows_blocked));
+  auto s2           = report("1-D rows-blocked (outer axis)", grid2, score(grid2, rows_blocked));
 
   // BAD: the natural 2-D block distribution of the FLAT matrix. The row
   // halves alternate owners along every row: 16 KiB runs again. Adding grid
   // dimensions does not fix a layout problem.
   auto naive_2d = make_partition(dim4(COLS, ROWS), partition_spec{blocked<0>, blocked<1>}, dim4(2, 2));
-  auto s3 = report("2-D blocked, flat layout", grid4, score(grid4, naive_2d));
+  auto s3       = report("2-D blocked, flat layout", grid4, score(grid4, naive_2d));
 
   // GOOD in spite of paging: tensor-of-tiles. Storage reorganized as
   // (tile_x, tile_y, tiles_x, tiles_y) with a 1024x512 float payload =

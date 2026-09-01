@@ -248,10 +248,11 @@ void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
 //! rejected with a defined error instead.
 inline size_t checked_grid_index(const dim4& grid_dims, const pos4& p)
 {
-  const bool in_range = p.get(0) >= 0 && static_cast<size_t>(p.get(0)) < static_cast<size_t>(grid_dims.x)
-                     && p.get(1) >= 0 && static_cast<size_t>(p.get(1)) < static_cast<size_t>(grid_dims.y)
-                     && p.get(2) >= 0 && static_cast<size_t>(p.get(2)) < static_cast<size_t>(grid_dims.z)
-                     && p.get(3) >= 0 && static_cast<size_t>(p.get(3)) < static_cast<size_t>(grid_dims.t);
+  const bool in_range =
+    p.get(0) >= 0 && static_cast<size_t>(p.get(0)) < static_cast<size_t>(grid_dims.x) && p.get(1) >= 0
+    && static_cast<size_t>(p.get(1)) < static_cast<size_t>(grid_dims.y) && p.get(2) >= 0
+    && static_cast<size_t>(p.get(2)) < static_cast<size_t>(grid_dims.z) && p.get(3) >= 0
+    && static_cast<size_t>(p.get(3)) < static_cast<size_t>(grid_dims.t);
   if (!in_range)
   {
     _CCCL_THROW(::std::out_of_range, "placement mapper returned a position outside the grid");
@@ -704,8 +705,7 @@ private:
  *        is assumed uniform across the machine's devices), or a 2 MiB default
  *        otherwise (this granularity query is the only driver interaction)
  */
-template <typename OwnerFn,
-          typename = ::cuda::std::enable_if_t<::cuda::std::is_invocable_r_v<pos4, OwnerFn, size_t>>>
+template <typename OwnerFn, typename = ::cuda::std::enable_if_t<::cuda::std::is_invocable_r_v<pos4, OwnerFn, size_t>>>
 [[nodiscard]] localized_stats evaluate_localized_placement(
   const exec_place& grid,
   OwnerFn&& owner_of,

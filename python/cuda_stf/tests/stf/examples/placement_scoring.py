@@ -52,7 +52,9 @@ ROW_BYTES = COLS * ELEMSIZE  # 32 KiB: one page holds 64 complete rows
 
 
 def score(grid, partition):
-    return stf.placement_evaluate(grid, partition, None, elemsize=ELEMSIZE, block_size=PAGE)
+    return stf.placement_evaluate(
+        grid, partition, None, elemsize=ELEMSIZE, block_size=PAGE
+    )
 
 
 def report(name, s):
@@ -73,12 +75,16 @@ def main():
     # two owners, so ownership runs are COLS/2 * 4 B = 16 KiB — 128x smaller
     # than the 2 MiB page. Every page holds a 50/50 mix of both owners: no
     # placement can do better than getting half the bytes wrong.
-    cols_blocked = stf.cute_partition.from_spec((ROWS, COLS), (None, ("blocked", 0)), (2,))
+    cols_blocked = stf.cute_partition.from_spec(
+        (ROWS, COLS), (None, ("blocked", 0)), (2,)
+    )
     s1 = report("1-D columns-blocked (inner axis)", score(grid2, cols_blocked))
 
     # GOOD: block the outer axis. Two contiguous 128 MiB runs, page-aligned:
     # every page belongs entirely to its owner.
-    rows_blocked = stf.cute_partition.from_spec((ROWS, COLS), (("blocked", 0), None), (2,))
+    rows_blocked = stf.cute_partition.from_spec(
+        (ROWS, COLS), (("blocked", 0), None), (2,)
+    )
     s2 = report("1-D rows-blocked (outer axis)", score(grid2, rows_blocked))
 
     # ---- 2-D candidates on a 2x2 grid ------------------------------------
@@ -110,8 +116,16 @@ def main():
     assert abs(s1.accuracy - 0.5) < 1e-12, "mixed pages: half the bytes are misplaced"
     assert s2.accuracy == 1.0 and s2.nallocs == 2, "two page-aligned runs"
     assert abs(s3.accuracy - 0.5) < 1e-12, "2-D on a flat layout is still mixed pages"
-    assert s4.accuracy == 1.0, "whole-tile runs are page-exact under any tile distribution"
-    assert s1.total_bytes == s2.total_bytes == s3.total_bytes == s4.total_bytes == ROWS * COLS * ELEMSIZE
+    assert s4.accuracy == 1.0, (
+        "whole-tile runs are page-exact under any tile distribution"
+    )
+    assert (
+        s1.total_bytes
+        == s2.total_bytes
+        == s3.total_bytes
+        == s4.total_bytes
+        == ROWS * COLS * ELEMSIZE
+    )
 
     print(
         "\n  Same matrix, same page size: the run length decides. Score with\n"
