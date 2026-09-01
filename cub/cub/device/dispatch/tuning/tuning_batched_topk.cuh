@@ -331,6 +331,13 @@ make_sm100_pairs_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::
     return make_cluster_policy();
   }
 
+  // No benchmark coverage below 512 (the K axis starts at 512, so smaller segments only ever
+  // measure the copy fast path), so stay on the default policy.
+  if (static_max_segment_size <= 512)
+  {
+    return make_cluster_policy();
+  }
+
   if (static_max_segment_size <= 1024)
   {
     if (max_k <= 512)
