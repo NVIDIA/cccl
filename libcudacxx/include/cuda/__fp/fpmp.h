@@ -766,13 +766,8 @@ public:
   _CCCL_HOST_DEVICE_API explicit operator __uint128_t() const volatile = delete;
 #endif // _CCCL_HAS_INT128()
 
-  // (renormalize)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2 renormalize(const fpmp2& __x) noexcept
-  {
-    fpmp2 __res;
-    __fpmp2_renormalize(__x.__mp2_hi_, __x.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
-    return __res;
-  }
+  // (renormalize) is a plain free function at namespace scope, with the other
+  // standard-named ones further down this header.
 
   /*
   // Arithmetic operations:
@@ -1218,12 +1213,38 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 inline constexpr bool __fpmp_is_fpmp2_v<fpmp2<_FpType, _TypeAcc>> = true;
 
 /*********************************************************************
- * Standard-named math free functions (sqrt / rsqrt / fma / mad). These
- * are plain non-friend free functions: they read the operands through
- * the public hi()/lo() accessors and build the result with the public
- * (hi, lo) constructor, so they need no friendship.
- * (The arithmetic/comparison operators and renormalize remain friends.)
+ * Standard-named free functions (renormalize / sqrt / rsqrt / fma /
+ * mad). These are plain non-friend free functions: they read the
+ * operands through the public hi()/lo() accessors and build the result
+ * with the public (hi, lo) constructor, so they need no friendship.
+ * (The arithmetic/comparison operators remain friends.)
+ *
+ * The ones that share a name with a math function on double - sqrt,
+ * rsqrt, fma, mad - are meant to be called unqualified, so that code
+ * being ported keeps its call sites when double is swapped for fpmp2:
+ * ADL finds them, and they beat the <cmath> overloads because taking
+ * the operand as-is is an exact match while reaching ::sqrt(double)
+ * costs a user-defined conversion.
+ *
+ * They are at namespace scope rather than being hidden friends so that
+ * the qualified spelling works too, which is what renormalize needs:
+ * having no counterpart on double, it only ever appears in code written
+ * against this header, where cuda::experimental::renormalize(x) is the
+ * clearer form. The accuracy-selecting add/sub/mul/div/fma below have no
+ * choice in the matter - a call that spells out its template argument,
+ * add<fpmp2_accuracy::high>(a, b), needs the name found by ordinary
+ * lookup to parse as a template-id before C++20 - and being SDK-specific
+ * too, they are written qualified for the same reason.
  *********************************************************************/
+
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+renormalize(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
+{
+  _FpType __rhi, __rlo;
+  __fpmp2_renormalize(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
+}
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc> sqrt(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
