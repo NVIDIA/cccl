@@ -91,7 +91,8 @@ _CCCL_DEVICE_API __shuffle_array_t<_Tp> __shuffle_array_cast(const _Tp& __data) 
   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t) && !::cuda::std::is_array_v<_Tp>)
   {
     const auto __value = ::cuda::std::bit_cast<::cuda::std::uint64_t>(__data);
-    asm("mov.b64 {%0, %1}, %2;" : "=r"(__array[0]), "=r"(__array[1]) : "l"(__value));
+    __array[0]         = static_cast<::cuda::std::uint32_t>(__value);
+    __array[1]         = static_cast<::cuda::std::uint32_t>(__value >> 32);
   }
 #  if _CCCL_HAS_INT128()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t) && !::cuda::std::is_array_v<_Tp>)
@@ -117,8 +118,8 @@ __make_shuffle_result(const ::cuda::std::array<::cuda::std::uint32_t, _Ratio>& _
 {
   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t) && !::cuda::std::is_array_v<_Tp>)
   {
-    ::cuda::std::uint64_t __shuffled;
-    asm("mov.b64 %0, {%1, %2};" : "=l"(__shuffled) : "r"(__array[0]), "r"(__array[1]));
+    const ::cuda::std::uint64_t __shuffled =
+      static_cast<::cuda::std::uint64_t>(__array[0]) | (static_cast<::cuda::std::uint64_t>(__array[1]) << 32);
     return warp_shuffle_result<_Tp>{::cuda::std::bit_cast<_Tp>(__shuffled), __pred};
   }
 #  if _CCCL_HAS_INT128()
