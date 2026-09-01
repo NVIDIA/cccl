@@ -49,7 +49,6 @@ Checks:
   - '-misc-definitions-in-headers'
   - '-misc-override-with-different-visibility'
   - '-misc-predictable-rand'
-  - '-misc-unused-alias-decls'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
