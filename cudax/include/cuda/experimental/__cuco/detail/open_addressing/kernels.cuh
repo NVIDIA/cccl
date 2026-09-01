@@ -315,8 +315,7 @@ __for_each_n(_InputIt __first, detail::__index_type __n, _CallbackOp __callback_
 
   while (__idx < __n)
   {
-    using __value_t       = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
-    const __value_t __key = *(__first + __idx);
+    const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
     if constexpr (_CgSize == 1)
     {
       __ref.for_each(__key, __callback_op);
