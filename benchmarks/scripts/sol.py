@@ -47,7 +47,7 @@ def filter_by_type(df):
 
 def alg_dfs(files, alg_regex):
     pattern = re.compile(alg_regex)
-    result = {}
+    result: dict[str, pd.DataFrame] = {}
     for file in files:
         storage = cccl.bench.SQLiteStorage(file)
         for algname in storage.algnames():
@@ -83,6 +83,8 @@ def alg_dfs(files, alg_regex):
 
 
 def alg_bws(dfs, verbose):
+    # Concat once at the end: the old per-iteration concat relied on
+    # pd.concat silently dropping a None accumulator (see #11096).
     frames = []
     for algname in dfs:
         df = dfs[algname]

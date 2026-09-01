@@ -31,6 +31,8 @@ def first_val(my_dict):
 
 class JsonCache:
     _instance = None
+    bench_cache: dict
+    device_cache: dict
 
     def __new__(cls):
         if cls._instance is None:
@@ -225,7 +227,7 @@ class SubBenchState:
 class SubBenchResult:
     def __init__(self, bench):
         axes_names = {}
-        axes_values = {}
+        axes_values: dict[str, dict] = {}
         for axis in bench["axes"]:
             short_name = axis["name"]
             full_name = get_axis_name(axis)
@@ -373,6 +375,7 @@ class RunsCache:
 
 class BenchCache:
     _instance = None
+    existing_tables: set[str]
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -402,7 +405,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers = {}
+        centers: dict[str, dict] = {}
         with conn:
             for subbench in result.subbenches:
                 centers[subbench] = {}
@@ -418,7 +421,6 @@ class BenchCache:
                         placeholders = placeholders + ", ?"
                         values.append(value)
 
-                    values = tuple(values)
                     samples = fpzip.compress(state.samples)
                     center = estimator(state.samples)
                     to_insert = (
@@ -430,7 +432,7 @@ class BenchCache:
                         center,
                         state.bw,
                         samples,
-                    ) + values
+                    ) + tuple(values)
 
                     query = """
                     INSERT INTO "{0}" (ctk, cccl, gpu, variant, elapsed, center, bw, samples {1})
@@ -452,7 +454,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers = {}
+        centers: dict[str, dict] = {}
 
         with conn:
             for subbench in rt_values:
@@ -502,7 +504,7 @@ def speedup(base, variant):
     if benchmarks != set(variant.keys()):
         raise Exception("Benchmarks do not match.")
 
-    result = {}
+    result: dict[str, dict] = {}
     for bench in benchmarks:
         base_states = base[bench]
         variant_states = variant[bench]
@@ -628,7 +630,7 @@ class Bench:
     def ct_axes_value_descriptions(self):
         subbench_descriptions = {}
         for bench in json_benches(self.algname)["benchmarks"]:
-            descriptions = {}
+            descriptions: dict[str, dict] = {}
             for axis in bench["axes"]:
                 name = axis["name"]
                 if "{ct}" not in name:
