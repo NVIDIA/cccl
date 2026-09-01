@@ -34,7 +34,7 @@ The result is equivalent to:
 
 - ``lhs``: The left-hand side input vector.
 - ``rhs``: The right-hand side input vector.
-- ``acc``: The initial accumulator value.
+- ``init``: The initial accumulator value.
 
 **Return value**
 
