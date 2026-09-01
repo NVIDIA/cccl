@@ -53,6 +53,15 @@ struct odd_count_op
   }
 };
 
+// c2h selects the device via -d/--device, so the stream must be created on the current device;
+// c2h::device_vector allocates there, and a device 0 stream would cross devices.
+[[nodiscard]] cuda::stream make_current_device_stream()
+{
+  int device_id{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
+  return cuda::stream{cuda::devices[device_id]};
+}
+
 // -----------------------------------------------------------------------
 // Bulk
 // -----------------------------------------------------------------------
@@ -60,16 +69,16 @@ struct odd_count_op
 CUB_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-  square_idx_op op{thrust::raw_pointer_cast(vec.data())};
+  const square_idx_op op{thrust::raw_pointer_cast(vec.data())};
 
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
+  cuda::stream stream = make_current_device_stream();
+  const auto env      = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::Bulk(4, op, env);
+  const auto error = cub::DeviceFor::Bulk(4, op, env);
   REQUIRE(error == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
 
-  c2h::device_vector<int> expected{1, 4, 9, 16};
+  const c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
 }
 
@@ -80,16 +89,16 @@ CUB_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]", CUB_SMALL)
 CUB_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-  square_ref_op op{};
+  const square_ref_op op{};
 
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
+  cuda::stream stream = make_current_device_stream();
+  const auto env      = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, env);
+  const auto error = cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, env);
   REQUIRE(error == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
 
-  c2h::device_vector<int> expected{1, 4, 9, 16};
+  const c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
 }
 
@@ -97,23 +106,23 @@ CUB_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]", CUB_SMALL)
 CUB_TEST("DeviceFor::__for_each_n two-phase overload takes an environment", "[for][env]", CUB_SMALL)
 {
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-  square_ref_op op{};
+  const square_ref_op op{};
   const auto num_items = static_cast<int>(vec.size());
 
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
+  cuda::stream stream = make_current_device_stream();
+  const auto env      = cuda::std::execution::env{cuda::stream_ref{stream}};
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == cub::DeviceFor::__for_each_n(nullptr, temp_storage_bytes, vec.begin(), num_items, op, env));
   REQUIRE(temp_storage_bytes > 0);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(
     cudaSuccess == cub::DeviceFor::__for_each_n(d_temp_storage, temp_storage_bytes, vec.begin(), num_items, op, env));
   REQUIRE(cudaSuccess == cudaStreamSynchronize(stream.get()));
 
-  c2h::device_vector<int> expected{1, 4, 9, 16};
+  const c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
 }
 
@@ -124,16 +133,16 @@ CUB_TEST("DeviceFor::__for_each_n two-phase overload takes an environment", "[fo
 CUB_TEST("DeviceFor::ForEach env uses custom stream", "[for][env]", CUB_SMALL)
 {
   auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-  square_ref_op op{};
+  const square_ref_op op{};
 
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
+  cuda::stream stream = make_current_device_stream();
+  const auto env      = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env);
+  const auto error = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env);
   REQUIRE(error == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
 
-  c2h::device_vector<int> expected{1, 4, 9, 16};
+  const c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
 }
 
@@ -145,16 +154,16 @@ CUB_TEST("DeviceFor::ForEachCopyN env uses custom stream", "[for][env]", CUB_SMA
 {
   auto vec   = c2h::device_vector<int>{1, 2, 3, 4};
   auto count = c2h::device_vector<int>(1);
-  odd_count_op op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
+  cuda::stream stream = make_current_device_stream();
+  const auto env      = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, env);
+  const auto error = cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, env);
   REQUIRE(error == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
 
-  c2h::device_vector<int> expected_count{2};
+  const c2h::device_vector<int> expected_count{2};
   REQUIRE(count == expected_count);
 }
 
@@ -166,16 +175,16 @@ CUB_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]", CUB_SMAL
 {
   auto vec   = c2h::device_vector<int>{1, 2, 3, 4};
   auto count = c2h::device_vector<int>(1);
-  odd_count_op op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
+  cuda::stream stream = make_current_device_stream();
+  const auto env      = cuda::std::execution::env{cuda::stream_ref{stream}};
 
-  auto error = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env);
+  const auto error = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env);
   REQUIRE(error == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
 
-  c2h::device_vector<int> expected_count{2};
+  const c2h::device_vector<int> expected_count{2};
   REQUIRE(count == expected_count);
 }
 
@@ -244,12 +253,12 @@ struct bulk_single_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-    square_idx_op op{thrust::raw_pointer_cast(vec.data())};
+    const square_idx_op op{thrust::raw_pointer_cast(vec.data())};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
 
-    c2h::device_vector<int> expected{1, 4, 9, 16};
+    const c2h::device_vector<int> expected{1, 4, 9, 16};
     REQUIRE(vec == expected);
   }
 };
@@ -260,18 +269,18 @@ struct bulk_two_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-    square_idx_op op{thrust::raw_pointer_cast(vec.data())};
+    const square_idx_op op{thrust::raw_pointer_cast(vec.data())};
 
     size_t temp_storage_bytes = 0;
     REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(nullptr, temp_storage_bytes, 4, op, env));
     REQUIRE(temp_storage_bytes > 0);
 
     c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-    void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+    void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
     REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, 4, op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
 
-    c2h::device_vector<int> expected{1, 4, 9, 16};
+    const c2h::device_vector<int> expected{1, 4, 9, 16};
     REQUIRE(vec == expected);
   }
 };
@@ -282,12 +291,12 @@ struct for_each_n_single_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-    square_ref_op op{};
+    const square_ref_op op{};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
 
-    c2h::device_vector<int> expected{1, 4, 9, 16};
+    const c2h::device_vector<int> expected{1, 4, 9, 16};
     REQUIRE(vec == expected);
   }
 };
@@ -298,7 +307,7 @@ struct for_each_n_two_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-    square_ref_op op{};
+    const square_ref_op op{};
     const auto num_items = static_cast<int>(vec.size());
 
     size_t temp_storage_bytes = 0;
@@ -306,12 +315,12 @@ struct for_each_n_two_phase_test
     REQUIRE(temp_storage_bytes > 0);
 
     c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-    void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+    void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
     REQUIRE(
       cudaSuccess == cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), num_items, op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
 
-    c2h::device_vector<int> expected{1, 4, 9, 16};
+    const c2h::device_vector<int> expected{1, 4, 9, 16};
     REQUIRE(vec == expected);
   }
 };
@@ -322,12 +331,12 @@ struct for_each_single_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-    square_ref_op op{};
+    const square_ref_op op{};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
 
-    c2h::device_vector<int> expected{1, 4, 9, 16};
+    const c2h::device_vector<int> expected{1, 4, 9, 16};
     REQUIRE(vec == expected);
   }
 };
@@ -338,19 +347,19 @@ struct for_each_two_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto vec = c2h::device_vector<int>{1, 2, 3, 4};
-    square_ref_op op{};
+    const square_ref_op op{};
 
     size_t temp_storage_bytes = 0;
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(nullptr, temp_storage_bytes, vec.begin(), vec.end(), op, env));
     REQUIRE(temp_storage_bytes > 0);
 
     c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-    void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+    void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
     REQUIRE(
       cudaSuccess == cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
 
-    c2h::device_vector<int> expected{1, 4, 9, 16};
+    const c2h::device_vector<int> expected{1, 4, 9, 16};
     REQUIRE(vec == expected);
   }
 };
@@ -362,11 +371,11 @@ struct for_each_copy_n_single_phase_test
   {
     auto vec   = c2h::device_vector<int>{1, 2, 3, 4};
     auto count = c2h::device_vector<int>(1);
-    odd_count_op op{thrust::raw_pointer_cast(count.data())};
+    const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
-    c2h::device_vector<int> expected{2};
+    const c2h::device_vector<int> expected{2};
     REQUIRE(count == expected);
   }
 };
@@ -379,7 +388,7 @@ struct for_each_copy_n_two_phase_test
     auto vec             = c2h::device_vector<int>{1, 2, 3, 4};
     auto count           = c2h::device_vector<int>(1);
     const auto num_items = static_cast<int>(vec.size());
-    odd_count_op op{thrust::raw_pointer_cast(count.data())};
+    const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
     size_t temp_storage_bytes = 0;
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(nullptr, temp_storage_bytes, vec.begin(), num_items, op, env));
@@ -390,7 +399,7 @@ struct for_each_copy_n_two_phase_test
             == cub::DeviceFor::ForEachCopyN(
               thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, vec.begin(), num_items, op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
-    c2h::device_vector<int> expected{2};
+    const c2h::device_vector<int> expected{2};
     REQUIRE(count == expected);
   }
 };
@@ -402,11 +411,11 @@ struct for_each_copy_single_phase_test
   {
     auto vec   = c2h::device_vector<int>{1, 2, 3, 4};
     auto count = c2h::device_vector<int>(1);
-    odd_count_op op{thrust::raw_pointer_cast(count.data())};
+    const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
-    c2h::device_vector<int> expected{2};
+    const c2h::device_vector<int> expected{2};
     REQUIRE(count == expected);
   }
 };
@@ -418,7 +427,7 @@ struct for_each_copy_two_phase_test
   {
     auto vec   = c2h::device_vector<int>{1, 2, 3, 4};
     auto count = c2h::device_vector<int>(1);
-    odd_count_op op{thrust::raw_pointer_cast(count.data())};
+    const odd_count_op op{thrust::raw_pointer_cast(count.data())};
 
     size_t temp_storage_bytes = 0;
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(nullptr, temp_storage_bytes, vec.begin(), vec.end(), op, env));
@@ -429,7 +438,7 @@ struct for_each_copy_two_phase_test
             == cub::DeviceFor::ForEachCopy(
               thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, vec.begin(), vec.end(), op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
-    c2h::device_vector<int> expected{2};
+    const c2h::device_vector<int> expected{2};
     REQUIRE(count == expected);
   }
 };
@@ -465,7 +474,7 @@ struct for_each_in_extents_single_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto output = c2h::device_vector<int>(coords_extents{}.extent(0) * coords_extents{}.extent(1));
-    store_coords_op op{thrust::raw_pointer_cast(output.data())};
+    const store_coords_op op{thrust::raw_pointer_cast(output.data())};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(coords_extents{}, op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
@@ -479,7 +488,7 @@ struct for_each_in_extents_two_phase_test
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
     auto output = c2h::device_vector<int>(coords_extents{}.extent(0) * coords_extents{}.extent(1));
-    store_coords_op op{thrust::raw_pointer_cast(output.data())};
+    const store_coords_op op{thrust::raw_pointer_cast(output.data())};
 
     size_t temp_storage_bytes = 0;
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(nullptr, temp_storage_bytes, coords_extents{}, op, env));
@@ -499,9 +508,9 @@ struct for_each_in_layout_single_phase_test
   template <class EnvT>
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
-    auto output  = c2h::device_vector<int>(coords_extents{}.extent(0) * coords_extents{}.extent(1));
-    auto mapping = cuda::std::layout_left::mapping<coords_extents>{};
-    store_coords_op op{thrust::raw_pointer_cast(output.data())};
+    auto output        = c2h::device_vector<int>(coords_extents{}.extent(0) * coords_extents{}.extent(1));
+    const auto mapping = cuda::std::layout_left::mapping<coords_extents>{};
+    const store_coords_op op{thrust::raw_pointer_cast(output.data())};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(mapping, op, env));
     REQUIRE(cudaSuccess == cudaStreamSynchronize(sync_stream.get()));
@@ -514,9 +523,9 @@ struct for_each_in_layout_two_phase_test
   template <class EnvT>
   void operator()(const EnvT& env, cuda::stream_ref sync_stream) const
   {
-    auto output  = c2h::device_vector<int>(coords_extents{}.extent(0) * coords_extents{}.extent(1));
-    auto mapping = cuda::std::layout_left::mapping<coords_extents>{};
-    store_coords_op op{thrust::raw_pointer_cast(output.data())};
+    auto output        = c2h::device_vector<int>(coords_extents{}.extent(0) * coords_extents{}.extent(1));
+    const auto mapping = cuda::std::layout_left::mapping<coords_extents>{};
+    const store_coords_op op{thrust::raw_pointer_cast(output.data())};
 
     size_t temp_storage_bytes = 0;
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(nullptr, temp_storage_bytes, mapping, op, env));
@@ -534,9 +543,7 @@ struct for_each_in_layout_two_phase_test
 template <class TestFn>
 void test_env_kinds(TestFn test_fn)
 {
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-  cuda::stream stream{cuda::devices[device_id]};
+  cuda::stream stream       = make_current_device_stream();
   const auto default_stream = cuda::stream_ref{cudaStream_t{}};
 
   SECTION("default environment")
@@ -735,7 +742,7 @@ struct bulk_stream_routing
   void operator()(const capture_args& args, const EnvT& env) const
   {
     size_t bytes = args.temp_storage_bytes;
-    square_idx_op op{args.data};
+    const square_idx_op op{args.data};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(args.num_items, op, env));
     REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(args.d_temp_storage, bytes, args.num_items, op, env));
@@ -748,7 +755,7 @@ struct for_each_n_stream_routing
   void operator()(const capture_args& args, const EnvT& env) const
   {
     size_t bytes = args.temp_storage_bytes;
-    square_ref_op op{};
+    const square_ref_op op{};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(args.data, args.num_items, op, env));
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(args.d_temp_storage, bytes, args.data, args.num_items, op, env));
@@ -761,7 +768,7 @@ struct for_each_stream_routing
   void operator()(const capture_args& args, const EnvT& env) const
   {
     size_t bytes = args.temp_storage_bytes;
-    square_ref_op op{};
+    const square_ref_op op{};
     int* last = args.data + args.num_items;
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(args.data, last, op, env));
@@ -775,7 +782,7 @@ struct for_each_copy_n_stream_routing
   void operator()(const capture_args& args, const EnvT& env) const
   {
     size_t bytes = args.temp_storage_bytes;
-    odd_count_op op{args.count};
+    const odd_count_op op{args.count};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(args.data, args.num_items, op, env));
     REQUIRE(
@@ -789,7 +796,7 @@ struct for_each_copy_stream_routing
   void operator()(const capture_args& args, const EnvT& env) const
   {
     size_t bytes = args.temp_storage_bytes;
-    odd_count_op op{args.count};
+    const odd_count_op op{args.count};
     int* last = args.data + args.num_items;
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(args.data, last, op, env));
@@ -803,7 +810,7 @@ struct for_each_in_extents_stream_routing
   void operator()(const capture_args& args, const EnvT& env) const
   {
     size_t bytes = args.temp_storage_bytes;
-    store_coords_op op{args.data};
+    const store_coords_op op{args.data};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(coords_extents{}, op, env));
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(args.d_temp_storage, bytes, coords_extents{}, op, env));
@@ -816,8 +823,8 @@ struct for_each_in_layout_stream_routing
   void operator()(const capture_args& args, const EnvT& env) const
   {
     size_t bytes = args.temp_storage_bytes;
-    store_coords_op op{args.data};
-    auto mapping = cuda::std::layout_left::mapping<coords_extents>{};
+    const store_coords_op op{args.data};
+    const auto mapping = cuda::std::layout_left::mapping<coords_extents>{};
 
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(mapping, op, env));
     REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(args.d_temp_storage, bytes, mapping, op, env));
@@ -827,9 +834,7 @@ struct for_each_in_layout_stream_routing
 template <class LaunchFn>
 void test_env_stream_routing(LaunchFn launch)
 {
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-  cuda::stream stream{cuda::devices[device_id]};
+  cuda::stream stream = make_current_device_stream();
 
   // allocation is not capturable, so everything the launches touch is set up before capture begins
   c2h::device_vector<int> vec(coords_extents{}.extent(0) * coords_extents{}.extent(1), 1);
@@ -959,8 +964,8 @@ CUB_TEST("DeviceFor::Bulk can be tuned", "[for][device]", CUB_SMALL, block_sizes
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -971,8 +976,8 @@ CUB_TEST("DeviceFor::ForEachN can be tuned", "[for][device]", CUB_SMALL, block_s
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -983,8 +988,8 @@ CUB_TEST("DeviceFor::ForEach can be tuned", "[for][device]", CUB_SMALL, block_si
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(d_data.begin(), d_data.end(), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -995,8 +1000,8 @@ CUB_TEST("DeviceFor::ForEachCopyN can be tuned", "[for][device]", CUB_SMALL, blo
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -1007,8 +1012,8 @@ CUB_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", CUB_SMALL, bloc
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_data.begin(), d_data.end(), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -1018,14 +1023,14 @@ CUB_TEST("DeviceFor::Bulk two-phase API propagates tuning", "[for][device]", CUB
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(nullptr, temp_storage_bytes, 4, op, env));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, 4, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -1035,15 +1040,15 @@ CUB_TEST("DeviceFor::ForEachN two-phase API propagates tuning", "[for][device]",
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env             = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env       = cuda::execution::tune(for_each_tuning<target_block_size>{});
   const auto num_items = static_cast<int>(d_data.size());
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(nullptr, temp_storage_bytes, d_data.begin(), num_items, op, env));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(
     cudaSuccess == cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, d_data.begin(), num_items, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -1054,14 +1059,14 @@ CUB_TEST("DeviceFor::ForEach two-phase API propagates tuning", "[for][device]", 
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(nullptr, temp_storage_bytes, d_data.begin(), d_data.end(), op, env));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(
     cudaSuccess == cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, d_data.begin(), d_data.end(), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -1072,15 +1077,15 @@ CUB_TEST("DeviceFor::ForEachCopyN two-phase API propagates tuning", "[for][devic
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env             = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env       = cuda::execution::tune(for_each_tuning<target_block_size>{});
   const auto num_items = static_cast<int>(d_data.size());
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(nullptr, temp_storage_bytes, d_data.begin(), num_items, op, env));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(cudaSuccess
           == cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, d_data.begin(), num_items, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -1091,15 +1096,15 @@ CUB_TEST("DeviceFor::ForEachCopy two-phase API propagates tuning", "[for][device
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
     cudaSuccess == cub::DeviceFor::ForEachCopy(nullptr, temp_storage_bytes, d_data.begin(), d_data.end(), op, env));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(cudaSuccess
           == cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, d_data.begin(), d_data.end(), op, env));
   REQUIRE(d_block_size[0] == target_block_size);
@@ -1123,14 +1128,14 @@ CUB_TEST("DeviceFor::ForEachInExtents two-phase API propagates tuning", "[for][d
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
   using extents_type = cuda::std::extents<int, 4>;
-  extents_block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const extents_block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(nullptr, temp_storage_bytes, extents_type{}, op, env));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(d_temp_storage, temp_storage_bytes, extents_type{}, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -1140,15 +1145,15 @@ CUB_TEST("DeviceFor::ForEachInLayout two-phase API propagates tuning", "[for][de
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
   using extents_type = cuda::std::extents<int, 4>;
-  auto mapping       = cuda::std::layout_left::mapping<extents_type>{};
-  extents_block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+  const auto mapping = cuda::std::layout_left::mapping<extents_type>{};
+  const extents_block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(nullptr, temp_storage_bytes, mapping, op, env));
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInLayout(d_temp_storage, temp_storage_bytes, mapping, op, env));
   REQUIRE(d_block_size[0] == target_block_size);
 }
