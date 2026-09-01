@@ -54,6 +54,16 @@ struct compare_key_prefix_op
 //! prefix <= k-th prefix) into shared memory via atomic counters, then each thread reads back
 //! its portion. Supports key-only and key-value selection.
 //!
+//! Keys and values are consumed and returned in a blocked arrangement, i.e., thread `t` holds the tile's items
+//! `[t * ItemsPerThread, (t + 1) * ItemsPerThread)`. On a partial tile, the valid items are the tile's first
+//! `valid_items` items. The selected items are returned in the tile's first `min(k, valid_items)` slots. The
+//! contents of the remaining slots are unspecified.
+//!
+//! TODO (elstehle): Support a striped arrangement through `select_*_striped_to_striped` overloads. The blocked
+//! arrangement is assumed by the partial-tile validity checks in `compute_histograms` and `select_topk`, by
+//! `select_topk`'s early return for `k >= valid_items`, and by the slots that `select_topk` gathers the selected
+//! items from.
+//!
 //! @tparam UnrollBitPasses
 //!   <b>[optional]</b> When true (default), the radix-pass loop may be fully unrolled. Unrolling provides better
 //!   throughput and latency but may come at increased register usage.
@@ -249,8 +259,8 @@ private:
     histo_counter_t(&histogram)[num_buckets] = storage.stage.passes.histogram[pass & 1];
 
     // Compute histogram over the current pass's bits, pre-filtered for keys matching the previous pass's prefix mask
-    auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
-    auto digit_extractor =
+    const auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
+    const auto digit_extractor =
       traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
     compute_histograms<SelectDirection, IsFullTile>(unsigned_keys, valid_items, digit_extractor, filter_op, histogram);
     if (zero_next_histogram)
@@ -317,7 +327,7 @@ private:
     __syncthreads();
 
     constexpr int num_passes = ::cuda::ceil_div(max_bit, RadixBits);
-    auto run_pass            = [&](int pass) -> bool {
+    const auto run_pass      = [&](int pass) -> bool {
       const int pass_end_bit   = max_bit - pass * RadixBits;
       const int pass_begin_bit = (::cuda::std::max) (pass_end_bit - RadixBits, 0);
       return run_radix_pass<SelectDirection, IsFullTile>(
@@ -379,6 +389,8 @@ private:
     }
 
     // TODO (elstehle): Short-circuit if k is greater than the number of items in the tile
+    // Every valid item is selected. The blocked arrangement already places the valid items in
+    // the tile's leading slots, so keys and values can stay where they are
     if ((!IsFullTile && k >= valid_items) || k >= tile_items)
     {
       return;
