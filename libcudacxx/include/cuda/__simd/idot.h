@@ -43,7 +43,7 @@ struct __idot_operation
 {
   template <typename _AccumT, typename _LhsStorage, typename _RhsStorage>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _AccumT
-  operator()(const _LhsStorage& __lhs, const _RhsStorage& __rhs, const _AccumT __acc) const noexcept
+  operator()(const _LhsStorage& __lhs, const _RhsStorage& __rhs, const _AccumT __init) const noexcept
   {
 #if _CCCL_HAS_SIMD_IDOT()
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -65,7 +65,7 @@ struct __idot_operation
         NV_IF_TARGET(NV_PROVIDES_SM_61, ({
                        const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
                        const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
-                       return ::cuda::simd::__dp4a_8bit_x4<_Tp, _Up>(__lhs_u, __rhs_u, __acc);
+                       return ::cuda::simd::__dp4a_8bit_x4<_Tp, _Up>(__lhs_u, __rhs_u, __init);
                      }))
       }
       else if constexpr (__is_dp2_16bitx2_8bitx4)
@@ -73,7 +73,7 @@ struct __idot_operation
         NV_IF_TARGET(NV_PROVIDES_SM_61, ({
                        const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
                        const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
-                       return ::cuda::simd::__dp2a_16bit_x2_8bit_x4<_Tp, _Up>(__lhs_u, __rhs_u, __acc);
+                       return ::cuda::simd::__dp2a_16bit_x2_8bit_x4<_Tp, _Up>(__lhs_u, __rhs_u, __init);
                      }))
       }
       else if constexpr (__is_dp2_8bitx4_16bitx2)
@@ -81,21 +81,21 @@ struct __idot_operation
         NV_IF_TARGET(NV_PROVIDES_SM_61, ({
                        const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
                        const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
-                       return ::cuda::simd::__dp2a_16bit_x2_8bit_x4<_Up, _Tp>(__rhs_u, __lhs_u, __acc);
+                       return ::cuda::simd::__dp2a_16bit_x2_8bit_x4<_Up, _Tp>(__rhs_u, __lhs_u, __init);
                      }))
       }
     }
 #endif // _CCCL_HAS_SIMD_IDOT()
 
     constexpr auto __size = ::cuda::std::simd::basic_vec<_Tp, _Abi>::size();
-    _AccumT __result      = __acc;
+    _AccumT __result      = __init;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
     {
       const auto __lhs_value = static_cast<_AccumT>(__lhs.__data[__i]);
       const auto __rhs_value = static_cast<_AccumT>(__rhs.__data[__i]);
       const auto __product   = static_cast<_AccumT>(__lhs_value * __rhs_value);
-      __result               = static_cast<_AccumT>(__result + __product);
+      __result               = __result + __product;
     }
     return __result;
   }
@@ -104,7 +104,7 @@ struct __idot_operation
 //! @brief Computes an integer dot product and adds it to an accumulator.
 //! @param[in] __lhs The left-hand side input vector.
 //! @param[in] __rhs The right-hand side input vector.
-//! @param[in] __acc The initial accumulator value.
+//! @param[in] __init The initial accumulator value.
 //! @return The accumulator plus the dot product of the input vectors.
 _CCCL_TEMPLATE(typename _Tp, typename _Up, typename _Abi, typename _AccumT)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Up>
@@ -112,9 +112,9 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cc
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _AccumT
 idot(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
      const ::cuda::std::simd::basic_vec<_Up, _Abi>& __rhs,
-     const _AccumT __acc) noexcept
+     const _AccumT __init) noexcept
 {
-  return __simd_idot_impl(__lhs, __rhs, __acc, __idot_operation<_Tp, _Up, _Abi>{}); // ADL
+  return __simd_idot_impl(__lhs, __rhs, __init, __idot_operation<_Tp, _Up, _Abi>{}); // ADL
 }
 
 _CCCL_END_NAMESPACE_CUDA_SIMD

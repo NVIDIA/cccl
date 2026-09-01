@@ -14,17 +14,21 @@ Defined in the ``<cuda/simd>`` header.
    AccT idot(
      const cuda::std::simd::basic_vec<T, Abi>& lhs,
      const cuda::std::simd::basic_vec<U, Abi>& rhs,
-     AccT acc) noexcept;
+     AccT init) noexcept;
 
    } // namespace cuda::simd
 
 The function ``cuda::simd::idot`` computes the dot product of two integer ``cuda::std::simd::basic_vec`` objects and adds the result to an accumulator.
 
-For each element ``i`` in the input vectors, the result is equivalent to:
+The result is equivalent to:
 
 .. code:: cuda
 
-   acc += static_cast<AccT>(lhs[i]) * static_cast<AccT>(rhs[i])
+    AccT acc = init;
+    for (size_t i = 0; i < lhs.size(); ++i) {
+        acc += static_cast<AccT>(lhs[i]) * static_cast<AccT>(rhs[i]);
+    }
+    return acc;
 
 **Parameters**
 
@@ -34,7 +38,7 @@ For each element ``i`` in the input vectors, the result is equivalent to:
 
 **Return value**
 
-Returns ``acc`` plus the integer dot product of ``lhs`` and ``rhs``.
+Returns ``init`` plus the integer dot product of ``lhs`` and ``rhs``.
 
 **Constraints**
 
@@ -69,7 +73,7 @@ Example
         vec_t lhs(lhs_values);
         vec_t rhs(rhs_values);
 
-        int32_t result = cuda::simd::idot(lhs, rhs, int32_t{10});
+        int result = cuda::simd::idot(lhs, rhs, int{10});
 
         assert(result == 80);
     }

@@ -145,20 +145,20 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _AccumT __idot_impl(
     const basic_vec& __lhs,
     const basic_vec<_Up, _Abi>& __rhs,
-    const _AccumT __acc,
+    const _AccumT __init,
     const _Operation& __operation) noexcept
   {
-    return __operation(__lhs.__s_, __rhs.__s_, __acc);
+    return __operation(__lhs.__s_, __rhs.__s_, __init);
   }
 
   template <typename _Up, typename _AccumT, typename _Operation>
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr _AccumT __simd_idot_impl(
     const basic_vec& __lhs,
     const basic_vec<_Up, _Abi>& __rhs,
-    const _AccumT __acc,
+    const _AccumT __init,
     const _Operation& __operation) noexcept
   {
-    return basic_vec::__idot_impl(__lhs, __rhs, __acc, __operation);
+    return basic_vec::__idot_impl(__lhs, __rhs, __init, __operation);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec

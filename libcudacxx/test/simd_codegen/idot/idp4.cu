@@ -17,29 +17,29 @@ using Vec_s8_x4 = simd::basic_vec<cuda::std::int8_t, simd::fixed_size<4>>;
 using Vec_s8_x5 = simd::basic_vec<cuda::std::int8_t, simd::fixed_size<5>>;
 using Vec_u8_x4 = simd::basic_vec<cuda::std::uint8_t, simd::fixed_size<4>>;
 
-__device__ cuda::std::int32_t test_idot_s8_s8(Vec_s8_x4 lhs, Vec_s8_x4 rhs, cuda::std::int32_t acc)
+__device__ cuda::std::int32_t test_idot_s8_s8(Vec_s8_x4 lhs, Vec_s8_x4 rhs, cuda::std::int32_t init)
 {
-  return cuda::simd::idot(lhs, rhs, acc);
+  return cuda::simd::idot(lhs, rhs, init);
 }
 
-__device__ cuda::std::uint32_t test_idot_u8_u8(Vec_u8_x4 lhs, Vec_u8_x4 rhs, cuda::std::uint32_t acc)
+__device__ cuda::std::uint32_t test_idot_u8_u8(Vec_u8_x4 lhs, Vec_u8_x4 rhs, cuda::std::uint32_t init)
 {
-  return cuda::simd::idot(lhs, rhs, acc);
+  return cuda::simd::idot(lhs, rhs, init);
 }
 
-__device__ cuda::std::int32_t test_idot_u8_s8(Vec_u8_x4 lhs, Vec_s8_x4 rhs, cuda::std::int32_t acc)
+__device__ cuda::std::int32_t test_idot_u8_s8(Vec_u8_x4 lhs, Vec_s8_x4 rhs, cuda::std::int32_t init)
 {
-  return cuda::simd::idot(lhs, rhs, acc);
+  return cuda::simd::idot(lhs, rhs, init);
 }
 
-__device__ cuda::std::int32_t test_idot_s8_u8(Vec_s8_x4 lhs, Vec_u8_x4 rhs, cuda::std::int32_t acc)
+__device__ cuda::std::int32_t test_idot_s8_u8(Vec_s8_x4 lhs, Vec_u8_x4 rhs, cuda::std::int32_t init)
 {
-  return cuda::simd::idot(lhs, rhs, acc);
+  return cuda::simd::idot(lhs, rhs, init);
 }
 
-__device__ cuda::std::int32_t test_idot_s8_s8_x5(Vec_s8_x5 lhs, Vec_s8_x5 rhs, cuda::std::int32_t acc)
+__device__ cuda::std::int32_t test_idot_s8_s8_x5(Vec_s8_x5 lhs, Vec_s8_x5 rhs, cuda::std::int32_t init)
 {
-  return cuda::simd::idot(lhs, rhs, acc);
+  return cuda::simd::idot(lhs, rhs, init);
 }
 
 /*

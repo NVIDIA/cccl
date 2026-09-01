@@ -86,11 +86,11 @@ template <typename _Tp, typename _Up, typename _AccumT, ::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_DEVICE_API _AccumT __dp4a_8bit_x4(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u,
-  const _AccumT __acc) noexcept
+  const _AccumT __init) noexcept
 {
   static_assert(::cuda::std::is_integral_v<_AccumT> && sizeof(_AccumT) == 4,
                 "idot intrinsic path requires a 32-bit integral accumulator");
-  _AccumT __result = __acc;
+  _AccumT __result = __init;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
   {
@@ -118,12 +118,12 @@ template <typename _Tp, typename _Up, typename _AccumT, ::cuda::std::size_t _N16
 [[nodiscard]] _CCCL_DEVICE_API _AccumT __dp2a_16bit_x2_8bit_x4(
   const ::cuda::std::simd::__array_u32_t<_N16Bit>& __lhs_u16,
   const ::cuda::std::simd::__array_u32_t<_N8Bit>& __rhs_u8,
-  const _AccumT __acc) noexcept
+  const _AccumT __init) noexcept
 {
   static_assert(::cuda::std::is_integral_v<_AccumT> && sizeof(_AccumT) == 4,
                 "idot intrinsic path requires a 32-bit integral accumulator");
   static_assert(_N16Bit == 2 * _N8Bit || _N16Bit + 1 == 2 * _N8Bit, "Input vector sizes must match");
-  _AccumT __result = __acc;
+  _AccumT __result = __init;
   _CCCL_PRAGMA_UNROLL_FULL()
   for (::cuda::std::size_t __i = 0; __i < _N16Bit; ++__i)
   {
