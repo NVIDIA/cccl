@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct my_policy_hub
 {
@@ -72,3 +74,4 @@ CUB_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]", CUB_SMAL
 
   REQUIRE(out_items == expected);
 }
+} // namespace

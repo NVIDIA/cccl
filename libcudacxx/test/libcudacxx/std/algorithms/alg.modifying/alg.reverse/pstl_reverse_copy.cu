@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_reverse_copy(const Policy& policy,
                        const c2h::device_vector<T>& input,
@@ -141,3 +143,4 @@ C2H_TEST("cuda::std::reverse_copy", "[parallel algorithm]", all_types)
     test_reverse_copy(policy, input, output, converting);
   }
 }
+} // namespace

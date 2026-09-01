@@ -32,6 +32,8 @@ constexpr bool same_properties =
   && passed_property<Resource, extra_property> && passed_property<Resource, get_data>
   && passed_property<Resource, cuda::mr::dynamic_accessibility_property>;
 
+namespace
+{
 struct explicit_dynamic_resource
 {
   void* allocate_sync(size_t, size_t)
@@ -98,3 +100,4 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
           == cuda::mr::__memory_accessibility ::__device);
   }
 }
+} // namespace

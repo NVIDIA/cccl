@@ -31,6 +31,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_min_element(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -112,3 +114,4 @@ C2H_TEST("cuda::std::min_element(Iter, Iter)", "[parallel algorithm]", all_types
     test_min_element(policy, input);
   }
 }
+} // namespace

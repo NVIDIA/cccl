@@ -16,6 +16,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 struct square_ref_op
 {
   __device__ void operator()(int& i)
@@ -261,3 +263,4 @@ CUB_TEST("Test ForPolicy properties", "[for][device]", CUB_SMALL)
   REQUIRE(to_string(p1) == "ForPolicy { .threads_per_block = 128, .items_per_thread = 4 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

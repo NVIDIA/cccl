@@ -48,6 +48,8 @@ TEST_CASE("iterator_category_to_traversal", "[iterators]")
   STATIC_REQUIRE(traversal_is<thrust::random_access_host_iterator_tag, thrust::random_access_traversal_tag>);
 }
 
+namespace
+{
 struct cuda_make_counting_iterator
 {
   template <typename... Args>
@@ -209,3 +211,4 @@ TEMPLATE_LIST_TEST_CASE(
   STATIC_REQUIRE(cuda::std::is_same_v<thrust::iterator_system_t<decltype(zip_it)>, vec_tag>);
   STATIC_REQUIRE(has_random_access_traversal<decltype(zip_it)>);
 }
+} // namespace

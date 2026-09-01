@@ -9,6 +9,8 @@
 // We have a matrix stored in a `thrust::device_vector`. We want to perform a
 // scan on each row of a matrix.
 
+namespace
+{
 __host__ void scan_matrix_by_rows0(thrust::device_vector<int>& u, int n, int m)
 {
   // Here, we launch a separate scan for each row in the matrix. This works,
@@ -57,6 +59,7 @@ __host__ void scan_matrix_by_rows1(thrust::device_vector<int>& u, int n, int m)
   thrust::inclusive_scan_by_key(
     t_first, t_first + n * m, u.begin(), u.begin()); // NOLINT(bugprone-misplaced-widening-cast)
 }
+} // namespace
 
 int main()
 {

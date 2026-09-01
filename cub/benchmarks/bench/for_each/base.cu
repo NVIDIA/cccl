@@ -5,6 +5,8 @@
 
 #include <nvbench_helper.cuh>
 
+namespace
+{
 template <class T>
 struct op_t
 {
@@ -52,3 +54,4 @@ NVBENCH_BENCH_TYPES(for_each, NVBENCH_TYPE_AXES(fundamental_types, offset_types)
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

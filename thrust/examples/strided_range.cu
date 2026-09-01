@@ -15,6 +15,8 @@
 //   strided_range([0, 1, 2, 3, 4, 5, 6], 3) -> [0, 3, 6]
 //   ...
 
+namespace
+{
 template <typename Iterator>
 class strided_range
 {
@@ -64,6 +66,7 @@ protected:
   Iterator last;
   difference_type stride;
 };
+} // namespace
 
 int main()
 {

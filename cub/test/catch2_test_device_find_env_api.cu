@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin find-if-predicate
 struct is_greater_than_t
 {
@@ -155,3 +157,4 @@ CUB_TEST("cub::DeviceFind::FindIf accepts a custom policy selector", "[find][env
 }
 
 #endif // _CCCL_STD_VER >= 2020
+} // namespace

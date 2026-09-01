@@ -21,8 +21,10 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T, class FlagT>
-static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
+c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
 {
   struct selector
   {
@@ -635,3 +637,4 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
   SUCCEED("exceeding memory is not a failure");
 }
+} // namespace

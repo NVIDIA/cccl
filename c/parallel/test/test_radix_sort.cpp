@@ -29,6 +29,8 @@ using key_types =
                  double>;
 using item_t = float;
 
+namespace
+{
 template <typename KeyTy, typename ItemTy, bool descending = false, bool overwrite_okay = false>
 struct TestParameters
 {
@@ -469,3 +471,4 @@ C2H_TEST("RadixSort compile/load round-trip", "[radix_sort][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

@@ -28,6 +28,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 /// Verbose output
 bool g_verbose = false;
 
@@ -1202,6 +1204,7 @@ void TestDocumentationExamples()
   delete[] h_data;
   cudaFree(d_data);
 }
+} // namespace
 
 /**
  * Main

@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 struct sum_of_int
 {
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
@@ -117,3 +119,4 @@ C2H_TEST("cuda::std::exclusive_scan(Iter1, Iter1, Iter2, Init)", "[parallel algo
     test_exclusive_scan(policy, input, output);
   }
 }
+} // namespace

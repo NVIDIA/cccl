@@ -8,6 +8,8 @@
 #include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
+namespace
+{
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LOGICAL_WARP_THREADS,
           int ITEMS_PER_THREAD,
@@ -293,3 +295,4 @@ CUB_TEST("Vectorized warp store with different alignment cases",
 }
 
 #endif
+} // namespace

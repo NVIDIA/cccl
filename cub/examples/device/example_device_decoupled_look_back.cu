@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+namespace
+{
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
 {
@@ -97,6 +99,7 @@ void decoupled_look_back_example(int blocks_in_grid)
   // Wait for kernel to finish
   cudaDeviceSynchronize();
 }
+} // namespace
 
 int main()
 {

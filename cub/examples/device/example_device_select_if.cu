@@ -35,6 +35,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 bool g_verbose = false; // Whether to display input/output to console
 
 /// Selection functor type
@@ -118,6 +120,7 @@ int Solve(int* h_in, SelectOp select_op, int* h_reference, int num_items)
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
+} // namespace
 
 /**
  * Main

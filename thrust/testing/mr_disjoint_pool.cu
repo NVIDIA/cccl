@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct alloc_id
 {
   std::size_t id;
@@ -28,6 +30,7 @@ struct alloc_id
     return ret;
   }
 };
+} // namespace
 
 template <>
 struct cuda::std::pointer_traits<alloc_id>
@@ -47,6 +50,8 @@ struct cuda::std::pointer_traits<alloc_id>
   }
 };
 
+namespace
+{
 class dummy_resource final : public thrust::mr::memory_resource<alloc_id>
 {
 public:
@@ -505,3 +510,4 @@ void TestDisjointSynchronizedPoolSqueeze()
   TestDisjointPoolSqueeze<thrust::mr::disjoint_synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestDisjointSynchronizedPoolSqueeze);
+} // namespace

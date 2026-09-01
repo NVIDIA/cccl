@@ -18,6 +18,8 @@
 
 using value_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 
+namespace
+{
 template <typename AccumT>
 struct policy_hub_t
 {
@@ -81,3 +83,4 @@ CUB_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][devic
   const T expected_result = static_cast<T>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
   REQUIRE(expected_result == out_result[0]);
 }
+} // namespace

@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // clang-format off
 void test_pp_stringize()
 {
@@ -724,3 +726,4 @@ DECLARE_UNITTEST(test_pp_dispatch);
 #undef THRUST_TEST_PP_DISPATCH_PLUS1
 #undef THRUST_TEST_PP_DISPATCH_PLUS2
 #undef THRUST_TEST_PP_DISPATCH_PLUS3
+} // namespace

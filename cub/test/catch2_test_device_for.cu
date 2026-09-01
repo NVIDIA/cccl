@@ -17,6 +17,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEach, device_for_each);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachN, device_for_each_n);
 
@@ -243,3 +245,4 @@ CUB_TEST("Device for each works with counting iterator", "[for][device]", CUB_SM
   const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
 }
+} // namespace

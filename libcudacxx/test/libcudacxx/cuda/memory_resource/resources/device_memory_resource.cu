@@ -32,7 +32,9 @@ static_assert(cuda::std::is_move_assignable<cuda::device_memory_pool_ref>::value
 static_assert(cuda::std::is_trivially_destructible<cuda::device_memory_pool_ref>::value);
 static_assert(!cuda::std::is_empty<cuda::device_memory_pool_ref>::value);
 
-static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
+namespace
+{
+bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
   size_t release_threshold = expected_threshold + 1337; // use something different than the expected threshold
   _CCCL_TRY_CUDA_API(
@@ -44,7 +46,7 @@ static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected
   return release_threshold == expected_threshold;
 }
 
-static bool ensure_disable_reuse(::cudaMemPool_t pool, const int driver_version)
+bool ensure_disable_reuse(::cudaMemPool_t pool, const int driver_version)
 {
   int disable_reuse = 0;
   _CCCL_TRY_CUDA_API(
@@ -58,7 +60,7 @@ static bool ensure_disable_reuse(::cudaMemPool_t pool, const int driver_version)
   return driver_version < min_async_version ? disable_reuse == 0 : disable_reuse != 0;
 }
 
-static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocationHandleType allocation_handle)
+bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocationHandleType allocation_handle)
 {
   size_t handle              = 0;
   const ::cudaError_t status = ::cudaMemPoolExportToShareableHandle(&handle, pool, allocation_handle, 0);
@@ -266,7 +268,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 #endif // !_CCCL_OS(WINDOWS)
 }
 
-static void ensure_device_ptr(void* ptr)
+void ensure_device_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
@@ -522,3 +524,4 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
     }
   }
 }
+} // namespace

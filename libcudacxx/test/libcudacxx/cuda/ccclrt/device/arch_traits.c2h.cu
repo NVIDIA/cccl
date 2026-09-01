@@ -15,6 +15,8 @@
 
 #include "test_macros.h"
 
+namespace
+{
 template <class T>
 TEST_DEVICE_FUNC T foo(const T& x)
 {
@@ -183,3 +185,4 @@ C2H_CCCLRT_TEST("Traits", "[device]")
                    == dev.attribute(cuda::device_attributes::max_shared_memory_per_block_optin));
   }
 }
+} // namespace

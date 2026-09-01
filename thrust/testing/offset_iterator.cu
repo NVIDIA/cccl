@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::counting_iterator from cuda::std
 void TestOffsetIteratorTraits()
 {
@@ -218,3 +220,4 @@ void TestOffsetIteratorIndirectValueFancyIterator()
   ASSERT_EQUAL(*iter, 6);
 }
 DECLARE_VECTOR_UNITTEST(TestOffsetIteratorIndirectValueFancyIterator);
+} // namespace

@@ -178,6 +178,8 @@ void TestFindIfNotDeviceDevice()
 DECLARE_UNITTEST(TestFindIfNotDeviceDevice);
 #endif
 
+namespace
+{
 void TestFindCudaStreams()
 {
   thrust::device_vector<int> vec{1, 2, 3, 3, 5};
@@ -195,3 +197,4 @@ void TestFindCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestFindCudaStreams);
+} // namespace

@@ -12,6 +12,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 
 #if TEST_TYPES == 0
@@ -306,3 +308,4 @@ catch (std::bad_alloc& e)
 }
 
 #endif // TEST_TYPES == 0
+} // namespace

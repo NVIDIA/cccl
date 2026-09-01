@@ -10,6 +10,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::constant_iterator from cuda::std
 void TestConstantIteratorTraits()
 {
@@ -190,3 +192,4 @@ void TestConstantIteratorReduce()
   ASSERT_EQUAL(sum, 4 * 7);
 };
 DECLARE_UNITTEST(TestConstantIteratorReduce);
+} // namespace

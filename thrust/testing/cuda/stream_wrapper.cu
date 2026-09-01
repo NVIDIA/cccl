@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // Simple non-owning stream wrapper that allows implicit conversion to cudaStream_t.
 struct stream_wrapper
 {
@@ -84,3 +86,4 @@ void TestCudaStreamRefNoSync()
   TestOnStream<stream_wrapper_ref>(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestCudaStreamRefNoSync);
+} // namespace

@@ -25,6 +25,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -593,3 +595,4 @@ CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMA
   REQUIRE(num_selected_out == c2h::device_vector<int>{1000, 1000});
   REQUIRE(out == expected);
 }
+} // namespace

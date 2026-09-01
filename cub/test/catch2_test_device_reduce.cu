@@ -20,6 +20,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
@@ -620,3 +622,4 @@ CUB_TEST("Device reduce works without initial value", "[reduce][device]", CUB_SM
   }
 }
 #endif // TEST_TYPES == 0
+} // namespace

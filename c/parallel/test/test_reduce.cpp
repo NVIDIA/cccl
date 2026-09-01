@@ -30,6 +30,8 @@
 #  include <cccl/c/serialization.h>
 #endif
 
+namespace
+{
 using BuildResultT = cccl_device_reduce_build_result_t;
 
 struct reduce_cleanup
@@ -1097,3 +1099,4 @@ C2H_TEST("Reduce deserialize rejects bad blobs", "[reduce][serialization]")
   CHECK(build.payload == nullptr);
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

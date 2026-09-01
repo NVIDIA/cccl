@@ -31,6 +31,8 @@
 // %RANGE% TUNE_BLOCK_LOAD_ALGORITHM ld 0:2:1
 // %RANGE% TUNE_BACKEND backend 0:1:1
 
+namespace
+{
 enum class topk_backend
 {
   baseline,
@@ -278,3 +280,4 @@ NVBENCH_BENCH_TYPES(fixed_seg_size_topk_keys, NVBENCH_TYPE_AXES(key_type_list, s
   .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "MaxNumSelected{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(28, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.201", "0.000"});
+} // namespace

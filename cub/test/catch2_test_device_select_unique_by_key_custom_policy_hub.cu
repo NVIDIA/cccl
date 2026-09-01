@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class KeyT, class ValueT>
 struct my_policy_hub
 {
@@ -94,3 +96,4 @@ CUB_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_
   REQUIRE(d_keys_out == expected_keys);
   REQUIRE(d_vals_out == expected_vals);
 }
+} // namespace

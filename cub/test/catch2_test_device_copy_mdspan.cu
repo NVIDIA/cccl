@@ -20,6 +20,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Copy, device_copy_mdspan);
 
 using dims_1d_t = cuda::std::dims<1, int>;
@@ -238,3 +240,4 @@ CUB_TEST("DeviceCopy::Copy: 2D strided mdspan + contiguous mdspan", "[copy][mdsp
     }
   }
 }
+} // namespace

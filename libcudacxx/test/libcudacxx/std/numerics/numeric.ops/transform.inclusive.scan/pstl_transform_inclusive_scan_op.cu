@@ -32,6 +32,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct plus_two
 {
@@ -173,3 +175,4 @@ C2H_TEST("cuda::std::transform_inclusive_scan(Iter1, Iter1, Iter2, Op)", "[paral
     test_inclusive_scan(policy, input, output);
   }
 }
+} // namespace

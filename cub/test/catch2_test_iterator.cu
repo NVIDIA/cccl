@@ -49,6 +49,8 @@ using types =
                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
 #endif
 
+namespace
+{
 template <typename InputIteratorT, typename T>
 __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIteratorT* d_itrs)
 {
@@ -173,3 +175,4 @@ CUB_TEST("Test texture transform iterator", "[iterator]", CUB_SMALL, types)
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }
+} // namespace

@@ -8,6 +8,8 @@
 
 const size_t NUM_SAMPLES = 10000;
 
+namespace
+{
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 void TestBinaryFunctional()
 {
@@ -75,3 +77,4 @@ Macro(vector_type, operator_name, unittest::uint64_t)
 DECLARE_BINARY_BITWISE_FUNCTIONAL_UNITTEST(bit_and, BitAnd);
 DECLARE_BINARY_BITWISE_FUNCTIONAL_UNITTEST(bit_or, BitOr);
 DECLARE_BINARY_BITWISE_FUNCTIONAL_UNITTEST(bit_xor, BitXor);
+} // namespace

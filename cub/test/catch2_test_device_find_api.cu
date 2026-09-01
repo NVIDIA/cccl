@@ -9,6 +9,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin find-if-predicate
 struct is_greater_than_t
 {
@@ -161,3 +163,4 @@ CUB_TEST("DeviceFind::UpperBound legacy size-query is unambiguous", "[find][devi
     cudaSuccess
     == cub::DeviceFind::UpperBound(nullptr, bytes, d_range, range_n, d_values, values_n, d_output, cuda::std::less{}));
 }
+} // namespace

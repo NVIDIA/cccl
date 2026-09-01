@@ -22,6 +22,8 @@
 
 #include "../../test/test_util.h"
 
+namespace
+{
 // example-begin env-mr-fallback-definition
 // A synchronous memory resource on top of cudaMalloc/cudaFree. Allocations block the
 // calling thread; deallocations additionally synchronize the device. Passing it
@@ -83,6 +85,7 @@ cuda::mr::any_resource<cuda::mr::device_accessible> make_device_resource(cuda::d
 // example-end env-mr-fallback-definition
 
 bool g_verbose = false; // Whether to display input/output to console
+} // namespace
 
 int main(int argc, char** argv)
 {

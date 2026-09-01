@@ -6,7 +6,9 @@
 #include "thrust/device_vector.h"
 #include <unittest/unittest.h>
 
-static const size_t NUM_REGISTERS = 64;
+namespace
+{
+const size_t NUM_REGISTERS = 64;
 
 template <size_t N>
 _CCCL_HOST_DEVICE void f(int* x)
@@ -66,6 +68,7 @@ struct mark_present_for_each
     ptr[(int) x] = 1;
   }
 };
+} // namespace
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy, typename Iterator, typename Function>
@@ -215,6 +218,8 @@ void TestForEachNDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestForEachNDeviceDevice);
 #endif
 
+namespace
+{
 void TestForEachCudaStreams()
 {
   cudaStream_t s;
@@ -236,3 +241,4 @@ void TestForEachCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestForEachCudaStreams);
+} // namespace

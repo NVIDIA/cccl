@@ -14,6 +14,8 @@
 // the number of characters where input[i] is an alphabetical
 // character and input[i-1] is not an alphabetical character.
 
+namespace
+{
 // determines whether the character is alphabetical
 __host__ __device__ bool is_alpha(const char c)
 {
@@ -51,6 +53,7 @@ int word_count(const thrust::device_vector<char>& input)
 
   return wc;
 }
+} // namespace
 
 int main()
 {

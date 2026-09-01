@@ -18,6 +18,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 struct fake_equal_to
 {
   template <class T, class U>
@@ -74,6 +76,7 @@ inline c2h::custom_type_t<c2h::equal_comparable_t> to_bound(const unsigned long 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Unique, select_unique);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+} // namespace
 
 using all_types =
   c2h::type_list<std::uint8_t,
@@ -385,6 +388,8 @@ CUB_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", 
   REQUIRE(reference == out);
 }
 
+namespace
+{
 template <class T>
 struct convertible_from_T
 {
@@ -404,6 +409,7 @@ struct convertible_from_T
     return val_;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][select_unique]", CUB_SMALL, types)
 {

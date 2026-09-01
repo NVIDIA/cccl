@@ -12,6 +12,8 @@
 // With cudaMemcpyDefault, CUDA determines the correct direction at runtime,
 // which is necessary when device-accessible pointers may point to host memory.
 
+namespace
+{
 void TestTrivialCopyFromDevice_HostSource()
 {
   int src[]  = {0, 10, 20, 30, 40};
@@ -41,3 +43,4 @@ void TestTrivialCopyToDevice_HostDest()
   }
 }
 DECLARE_UNITTEST(TestTrivialCopyToDevice_HostDest);
+} // namespace

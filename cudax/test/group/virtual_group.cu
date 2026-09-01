@@ -20,6 +20,8 @@
 
 #include "group_testing.cuh"
 
+namespace
+{
 template <class Config, class Level>
 __device__ void test_virtual_group(Config config, Level level)
 {
@@ -93,3 +95,4 @@ C2H_TEST("Virtual Group", "[virtual_group]")
 
   stream.sync();
 }
+} // namespace

@@ -7,8 +7,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T>
-static void benchmark(nvbench::state& state, nvbench::type_list<T>)
+void benchmark(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
   thrust::device_vector<T> a(elements, T{1});
@@ -36,3 +38,4 @@ NVBENCH_BENCH_TYPES(benchmark, NVBENCH_TYPE_AXES(integral_types))
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("CommonPrefixRatio", std::vector{1.0, 0.5, 0.0});
+} // namespace

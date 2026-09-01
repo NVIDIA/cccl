@@ -13,6 +13,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
 
@@ -130,3 +132,4 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
   SUCCEED("exceeding memory is not a failure");
 }
+} // namespace

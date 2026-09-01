@@ -20,8 +20,11 @@ struct stream_registry_factory_t;
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, device_partition_if);
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::Flagged, device_partition_flagged);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -29,6 +32,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::Flagged, device_partition_flagged);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <typename T>
 struct greater_than_t
 {
@@ -490,3 +495,4 @@ CUB_TEST("Test PartitionPolicy properties", "[partition][device]", CUB_SMALL)
              ", .delay = 350, .l2_write_latency = 450 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

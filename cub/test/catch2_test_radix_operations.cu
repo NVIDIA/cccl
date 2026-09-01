@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <typename KeyT>
 struct fundamental_extractor_t
 {
@@ -651,3 +653,4 @@ CUB_TEST_CASE("Radix operations allow fields permutation", "[radix][operations]"
     }
   }
 }
+} // namespace

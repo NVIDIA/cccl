@@ -16,6 +16,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin bulk-square-env-t
 struct square_t
 {
@@ -202,3 +204,4 @@ CUB_TEST("cub::DeviceFor::Bulk accepts a custom policy selector", "[for][env]", 
 }
 
 #endif // _CCCL_STD_VER >= 2020
+} // namespace

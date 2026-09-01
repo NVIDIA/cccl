@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator>
 ForwardIterator unique(my_system& system, ForwardIterator first, ForwardIterator)
 {
@@ -298,3 +300,4 @@ struct TestUniqueMemoryAccess
   }
 };
 SimpleUnitTest<TestUniqueMemoryAccess, unittest::type_list<int>> TestUniqueMemoryAccessInstance;
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -17,6 +17,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeft, adjacent_difference_subtract_left);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeftCopy, adjacent_difference_subtract_left_copy);
 
@@ -503,3 +505,4 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy uses right number of invoca
 
   REQUIRE(counts.front() == static_cast<unsigned long long>(num_items - 1));
 }
+} // namespace

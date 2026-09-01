@@ -31,6 +31,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_fill_n(const Policy& policy, c2h::device_vector<T>& output)
 {
@@ -101,3 +103,4 @@ C2H_TEST("cuda::std::fill_n", "[parallel algorithm]", all_types)
     test_fill_n(policy, output);
   }
 }
+} // namespace

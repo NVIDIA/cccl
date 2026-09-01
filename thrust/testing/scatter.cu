@@ -9,6 +9,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestScatterSimple()
 {
@@ -308,3 +310,4 @@ void TestScatterIfCountingIterator()
   ASSERT_EQUAL(output, map);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestScatterIfCountingIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

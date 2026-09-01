@@ -25,6 +25,8 @@
 
 inline constexpr short size = 1000;
 
+namespace
+{
 template <class T = int>
 struct less_than_val
 {
@@ -106,3 +108,4 @@ C2H_TEST("cuda::std::any_of", "[parallel algorithm]")
     test_any_of(policy);
   }
 }
+} // namespace

@@ -10,6 +10,8 @@
 #  include <unittest/cuda/testframework.h>
 #endif
 
+namespace
+{
 struct basic_arithmetic_functor
 {
   template <typename T>
@@ -355,3 +357,4 @@ struct TestComplexTrigonometricTransform
   }
 };
 VariableUnitTest<TestComplexTrigonometricTransform, FloatingPointTypes> TestComplexTrigonometricTransformInstance;
+} // namespace

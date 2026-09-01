@@ -25,6 +25,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_KEY_BITS key_bits 8:16:32:64
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
 
@@ -550,3 +552,4 @@ catch (std::bad_alloc& e)
 }
 #  endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 #endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
+} // namespace

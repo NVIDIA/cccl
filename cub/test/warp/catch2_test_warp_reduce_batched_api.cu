@@ -13,6 +13,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 {
   // example-begin warp-reduce-batched-overview
@@ -352,3 +354,4 @@ CUB_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce]
   c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
   REQUIRE(expected == d_out);
 }
+} // namespace

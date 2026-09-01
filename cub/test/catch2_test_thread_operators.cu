@@ -6,6 +6,8 @@
 #include "cub_test_macros.h"
 #include "test_util.h"
 
+namespace
+{
 template <class T>
 T Make(int val)
 {
@@ -58,6 +60,7 @@ public:
   }
 
 CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
+} // namespace
 
 CUB_TEST("InequalityWrapper", "[thread_operator]", CUB_SMALL)
 {

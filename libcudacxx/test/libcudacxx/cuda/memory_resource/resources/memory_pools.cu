@@ -31,6 +31,8 @@
 
 // check if pinned and managed pools are supported
 
+namespace
+{
 template <typename PoolType>
 void pool_static_asserts()
 {
@@ -90,7 +92,7 @@ PoolType construct_pool(cuda::memory_pool_properties props = {})
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 
-static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
+bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
   size_t release_threshold = expected_threshold + 1337; // use something different than the expected threshold
   _CCCL_TRY_CUDA_API(
@@ -102,7 +104,7 @@ static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected
   return release_threshold == expected_threshold;
 }
 
-static bool ensure_disable_reuse(::cudaMemPool_t pool)
+bool ensure_disable_reuse(::cudaMemPool_t pool)
 {
   int disable_reuse = 0;
   _CCCL_TRY_CUDA_API(
@@ -115,7 +117,7 @@ static bool ensure_disable_reuse(::cudaMemPool_t pool)
   return disable_reuse != 0;
 }
 
-static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocationHandleType allocation_handle)
+bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocationHandleType allocation_handle)
 {
   size_t handle              = 0;
   const ::cudaError_t status = ::cudaMemPoolExportToShareableHandle(&handle, pool, allocation_handle, 0);
@@ -905,3 +907,4 @@ C2H_CCCLRT_TEST("managed_memory_pool no_init constructor", "[memory_resource]")
   CHECK(pool.get() == nullptr);
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+} // namespace

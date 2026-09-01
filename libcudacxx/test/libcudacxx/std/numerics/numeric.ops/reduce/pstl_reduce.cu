@@ -35,6 +35,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_reduce(const Policy& policy, const thrust::device_vector<int>& data)
 {
@@ -235,3 +237,4 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp, Fn)", "[parallel algorithm]")
     test_reduce_init_fn(policy, data);
   }
 }
+} // namespace

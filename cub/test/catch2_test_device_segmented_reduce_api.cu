@@ -17,6 +17,8 @@
 #include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
 
+namespace
+{
 // example-begin segmented-reduce-custommin
 struct CustomMin
 {
@@ -501,3 +503,4 @@ CUB_TEST("DeviceSegmentedReduce::ArgMax legacy size-query is unambiguous", "[seg
     cudaSuccess
     == cub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out, n, d_offsets, d_offsets));
 }
+} // namespace

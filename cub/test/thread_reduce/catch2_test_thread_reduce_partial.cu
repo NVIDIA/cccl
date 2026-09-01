@@ -27,6 +27,8 @@ inline constexpr int num_seeds = 3;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NumItems, typename In, typename Out, typename ReduceOperator>
 __global__ void thread_reduce_partial_kernel(In d_in, Out d_out, ReduceOperator reduce_operator, int valid_items)
 {
@@ -292,3 +294,4 @@ CUB_TEST("ThreadReducePartial does not invoke the reduction operator on invalid 
     REQUIRE(reference_result == c2h::host_vector<segment>(d_out)[0]);
   }
 }
+} // namespace

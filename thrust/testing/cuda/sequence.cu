@@ -68,6 +68,8 @@ void TestSequenceDeviceDevice()
 DECLARE_UNITTEST(TestSequenceDeviceDevice);
 #endif
 
+namespace
+{
 void TestSequenceCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -98,3 +100,4 @@ void TestSequenceCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestSequenceCudaStreams);
+} // namespace

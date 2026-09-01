@@ -9,6 +9,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 class forwarding_resource : public thrust::mr::memory_resource<>
 {
 public:
@@ -80,3 +82,4 @@ void TestMemoryResourceEquivalentEquality()
   ASSERT_EQUAL(first_allocator != second_allocator, false);
 }
 DECLARE_UNITTEST(TestMemoryResourceEquivalentEquality);
+} // namespace

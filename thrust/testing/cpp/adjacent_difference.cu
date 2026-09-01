@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct detect_wrong_difference
 {
   using difference_type   = void;
@@ -73,3 +75,4 @@ void TestAdjacentDifferenceWithBigIndexes()
   TestAdjacentDifferenceWithBigIndexesHelper(33);
 }
 DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);
+} // namespace

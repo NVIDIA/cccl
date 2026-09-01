@@ -18,7 +18,10 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, device_copy_batched);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -28,6 +31,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, device_copy_batched);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <typename T>
 struct index_to_ptr
 {
@@ -183,3 +188,4 @@ CUB_TEST("DeviceCopy::Batched can be tuned", "[copy][device]", CUB_SMALL, block_
 }
 
 #endif // TEST_LAUNCH != 1
+} // namespace

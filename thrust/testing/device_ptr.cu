@@ -12,6 +12,8 @@ static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 #endif // __cpp_lib_concepts
 static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 
+namespace
+{
 void TestDevicePointerManipulation()
 {
   thrust::device_vector<int> data(5);
@@ -280,3 +282,4 @@ static_assert(
 static_assert(
   cuda::std::is_same_v<cuda::std::allocator_traits<device_char_allocator>::void_pointer, thrust::device_ptr<void>>,
   "allocator_traits::void_pointer should be device_ptr<void> for device_ptr-based allocators");
+} // namespace

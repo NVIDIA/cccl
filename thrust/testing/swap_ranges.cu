@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator1, typename ForwardIterator2>
 ForwardIterator2 swap_ranges(my_system& system, ForwardIterator1, ForwardIterator1, ForwardIterator2 first2)
 {
@@ -192,3 +194,4 @@ void TestSwapRangesUserSwap()
   ASSERT_EQUAL_QUIET(ref, d_B[2]);
 }
 DECLARE_UNITTEST(TestSwapRangesUserSwap);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

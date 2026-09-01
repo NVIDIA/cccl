@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_reverse(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -90,3 +92,4 @@ C2H_TEST("cuda::std::reverse", "[parallel algorithm]", all_types)
     test_reverse(policy, input);
   }
 }
+} // namespace

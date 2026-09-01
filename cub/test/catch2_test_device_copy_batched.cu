@@ -23,6 +23,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, copy_batched);
 
 /**
@@ -375,3 +377,4 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
+} // namespace

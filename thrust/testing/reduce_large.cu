@@ -2,6 +2,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T, unsigned int N>
 void _TestReduceWithLargeTypes()
 {
@@ -36,3 +38,4 @@ void TestReduceWithLargeTypes()
   //  _TestReduceWithLargeTypes<int,  512>();
 }
 DECLARE_UNITTEST(TestReduceWithLargeTypes);
+} // namespace

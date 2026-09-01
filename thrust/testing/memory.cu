@@ -20,6 +20,8 @@
 
 // Define a new system class, as the my_system one is already used with a thrust::sort template definition
 // that calls back into sort.cu
+namespace
+{
 class my_memory_system : public thrust::device_execution_policy<my_memory_system>
 {
 public:
@@ -335,3 +337,4 @@ void TestTemporaryBufferNewCustomization()
   }
 }
 DECLARE_UNITTEST(TestTemporaryBufferNewCustomization);
+} // namespace

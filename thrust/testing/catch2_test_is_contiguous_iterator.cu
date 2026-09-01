@@ -25,6 +25,8 @@
 
 #include "catch2_test_helper.h"
 
+namespace
+{
 template <typename Iterator, bool Expected>
 void check_is_contiguous()
 {
@@ -133,3 +135,4 @@ TEMPLATE_LIST_TEST_CASE("try_unwrap_contiguous_iterator", "[iterators]", generic
   check_iterator_unwrapping<std::istream_iterator<T>, T*, false>();
   check_iterator_unwrapping<std::ostream_iterator<T>, void, false>();
 }
+} // namespace

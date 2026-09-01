@@ -42,6 +42,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class Iter>
 void test_transform_reduce(const Policy policy, const thrust::device_vector<int>& Input1, Iter input2)
 {
@@ -142,3 +144,4 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
     test_transform_reduce(policy, input1, ::cuda::constant_iterator<int>{1});
   }
 }
+} // namespace

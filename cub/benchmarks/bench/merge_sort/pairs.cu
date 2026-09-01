@@ -31,6 +31,8 @@ struct policy_selector
 };
 #endif // TUNE_BASE
 
+namespace
+{
 template <typename KeyT, typename ValueT, typename OffsetT>
 void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
@@ -105,3 +107,4 @@ NVBENCH_BENCH_TYPES(pairs, NVBENCH_TYPE_AXES(key_types, value_types, offset_type
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"});
+} // namespace

@@ -10,6 +10,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
@@ -103,3 +105,4 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]", 
     REQUIRE(result.value == -inf);
   }
 }
+} // namespace

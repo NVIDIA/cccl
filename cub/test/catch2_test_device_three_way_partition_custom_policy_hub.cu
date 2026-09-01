@@ -18,6 +18,8 @@ using namespace cub;
 // TODO(bgruber): drop this test with CCCL 4.0 when we drop the three way partition dispatcher after publishing the
 // tuning API
 
+namespace
+{
 template <class InputT, class OffsetT>
 struct my_policy_hub
 {
@@ -131,3 +133,4 @@ CUB_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition
   REQUIRE(d_second == expected_second);
   REQUIRE(d_unselected == expected_unselected);
 }
+} // namespace

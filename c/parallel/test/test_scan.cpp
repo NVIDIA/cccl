@@ -21,6 +21,8 @@
 #include "test_util.h"
 #include <cccl/c/scan.h>
 
+namespace
+{
 using BuildResultT = cccl_device_scan_build_result_t;
 
 struct scan_cleanup
@@ -31,7 +33,7 @@ struct scan_cleanup
   }
 };
 
-static std::string init_kind_as_key(cccl_init_kind_t k)
+std::string init_kind_as_key(cccl_init_kind_t k)
 {
   switch (k)
   {
@@ -1002,3 +1004,4 @@ C2H_TEST("Scan link_ltoir round-trip", "[scan][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

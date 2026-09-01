@@ -13,6 +13,8 @@
 
 #include "policy_selector.h"
 
+namespace
+{
 template <typename KeyT, typename ValueT, typename OffsetT>
 void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
@@ -92,3 +94,4 @@ NVBENCH_BENCH_TYPES(radix_sort_values, NVBENCH_TYPE_AXES(key_types, value_types,
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"});
+} // namespace

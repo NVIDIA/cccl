@@ -29,6 +29,8 @@ using float_type_list =
 #endif
                  >;
 
+namespace
+{
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
@@ -349,3 +351,4 @@ CUB_TEST("Nondeterministic Device reduce works with various types on gpu with di
     REQUIRE_APPROX_EQ_EPSILON(h_expected, h_output, type{0.01});
   }
 }
+} // namespace

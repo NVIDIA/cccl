@@ -9,6 +9,8 @@
 #include "cub/block/radix_rank_sort_operations.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin custom-type
 struct custom_t
 {
@@ -1005,3 +1007,4 @@ CUB_TEST_CASE("Block radix sort works in some corner cases", "[radix][sort][bloc
   REQUIRE(cudaSuccess == cudaGetLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
+} // namespace

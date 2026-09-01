@@ -16,6 +16,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
@@ -386,3 +388,4 @@ CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
     REQUIRE(h_expected_result == h_out_result);
   }
 }
+} // namespace

@@ -130,6 +130,8 @@ struct TestScanDeviceDevice
 VariableUnitTest<TestScanDeviceDevice, IntegralTypes> TestScanDeviceDeviceInstance;
 #endif
 
+namespace
+{
 void TestScanCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -249,7 +251,7 @@ struct const_ref_plus_mod3
   }
 };
 
-static void TestInclusiveScanWithConstAccumulator()
+void TestInclusiveScanWithConstAccumulator()
 {
   // add numbers modulo 3 with external lookup table
   thrust::device_vector<int> data{0, 1, 2, 1, 2, 0, 1};
@@ -263,3 +265,4 @@ static void TestInclusiveScanWithConstAccumulator()
   ASSERT_EQUAL(data, ref);
 }
 DECLARE_UNITTEST(TestInclusiveScanWithConstAccumulator);
+} // namespace

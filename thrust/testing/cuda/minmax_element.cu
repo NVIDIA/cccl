@@ -81,6 +81,8 @@ void TestMinMaxElementDeviceDevice()
 DECLARE_UNITTEST(TestMinMaxElementDeviceDevice);
 #endif
 
+namespace
+{
 void TestMinMaxElementCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -118,3 +120,4 @@ void TestMinMaxElementDevicePointer()
   ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr, 1);
 }
 DECLARE_UNITTEST(TestMinMaxElementDevicePointer);
+} // namespace

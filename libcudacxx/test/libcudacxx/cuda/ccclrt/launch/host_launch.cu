@@ -16,6 +16,8 @@
 #include <cooperative_groups.h>
 #include <testing.cuh>
 
+namespace
+{
 void block_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
 {
   auto block_lambda = [&]() {
@@ -305,3 +307,4 @@ C2H_CCCLRT_TEST("Host launch uses the stream device when current device differs"
   stream.sync();
   CCCLRT_REQUIRE(value == 42);
 }
+} // namespace

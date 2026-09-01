@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Vector>
 void TestSetUnionDescendingSimple()
 {
@@ -53,3 +55,4 @@ void TestSetUnionDescending(const size_t n)
   ASSERT_EQUAL(h_result, d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionDescending);
+} // namespace

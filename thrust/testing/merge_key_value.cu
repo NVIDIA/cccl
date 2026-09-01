@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T, typename CompareOp, typename... Args>
 auto call_merge(Args&&... args) -> decltype(thrust::merge(std::forward<Args>(args)...))
 {
@@ -73,3 +75,4 @@ void TestMergeKeyValueDescending(size_t n)
   TestMergeKeyValue<U, ::cuda::std::greater<key_value<U, U>>>(n);
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeKeyValueDescending);
+} // namespace

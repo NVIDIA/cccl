@@ -46,6 +46,8 @@
 #include "../../common.h"
 #include "bfloat16.h"
 
+namespace
+{
 // ============================================================================
 // at::opmath_type<T> — the compute type for intermediate math
 // float for both float and BFloat16 (ATen/OpMathType.h)
@@ -319,7 +321,7 @@ using element_types = nvbench::type_list<float, BFloat16>;
 // ============================================================================
 
 template <typename T>
-static void many_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
+void many_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -497,7 +499,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void many_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
+void many_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -647,7 +649,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void few_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
+void few_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -805,7 +807,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void few_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
+void few_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -965,6 +967,7 @@ catch (const std::bad_alloc&)
 {
   state.skip("Skipping: out of memory.");
 }
+} // namespace
 
 NVBENCH_BENCH_TYPES(many_inputs_many_instructions, NVBENCH_TYPE_AXES(element_types))
   .set_name("many_inputs_many_instructions")

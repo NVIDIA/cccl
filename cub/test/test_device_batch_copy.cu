@@ -28,6 +28,8 @@
 
 CUB_TEST_MEMORY_CLASS(CUB_LARGE);
 
+namespace
+{
 /**
  * @brief Host-side random data generation
  */
@@ -333,6 +335,7 @@ void nontrivial_constructor_test()
     }
   }
 }
+} // namespace
 
 int main(int argc, char** argv)
 {

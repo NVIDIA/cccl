@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyIteratorT>
 struct my_policy_hub
 {
@@ -75,3 +77,4 @@ CUB_TEST("DispatchMergeSort::Dispatch: custom policy hub", "[merge][sort][device
   std::stable_sort(ref_keys.begin(), ref_keys.end(), custom_less_op_t{});
   REQUIRE(ref_keys == out_keys);
 }
+} // namespace

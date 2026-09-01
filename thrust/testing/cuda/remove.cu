@@ -56,6 +56,8 @@ __global__ void remove_copy_if_kernel(
 }
 #endif
 
+namespace
+{
 template <typename T>
 struct is_even
 {
@@ -468,3 +470,4 @@ void TestRemoveCopyIfStencilCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestRemoveCopyIfStencilCudaStreams);
+} // namespace

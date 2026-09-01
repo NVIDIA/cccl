@@ -45,6 +45,8 @@
 
 namespace cudax = cuda::experimental;
 
+namespace
+{
 struct simple_kernel
 {
   template <typename Configuration>
@@ -181,6 +183,7 @@ void test_cross_device_access_from_kernel(
     exit(EXIT_FAILURE);
   }
 }
+} // namespace
 
 int main([[maybe_unused]] int argc, char** argv)
 try

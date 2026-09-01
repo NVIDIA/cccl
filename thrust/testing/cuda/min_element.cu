@@ -63,6 +63,8 @@ void TestMinElementDeviceDevice()
 DECLARE_UNITTEST(TestMinElementDeviceDevice);
 #endif
 
+namespace
+{
 void TestMinElementCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -110,3 +112,4 @@ void TestMinElementDevicePointer()
   ASSERT_EQUAL(thrust::min_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr, 1);
 }
 DECLARE_UNITTEST(TestMinElementDevicePointer);
+} // namespace

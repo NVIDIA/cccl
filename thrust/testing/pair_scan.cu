@@ -9,6 +9,8 @@
 #  include <unittest/cuda/testframework.h>
 #endif
 
+namespace
+{
 struct make_pair_functor
 {
   template <typename T1, typename T2>
@@ -72,3 +74,4 @@ struct TestPairScan
 };
 VariableUnitTest<TestPairScan, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
   TestPairScanInstance;
+} // namespace

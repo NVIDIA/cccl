@@ -55,6 +55,8 @@
  * order, producing incorrect results for non-commutative operators.
  */
 
+namespace
+{
 namespace impl
 {
 // bicyclic monoid operator: associative and non-commutative
@@ -120,6 +122,7 @@ struct populate_sparse_write_input
   }
 };
 } // namespace impl
+} // namespace
 
 // Sizes chosen to cover: single-element, small, medium, the original bug-report size (8160),
 // and large enough to span multiple lookahead tiles on any supported architecture.

@@ -21,6 +21,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void scale_inplace(int n, float* data, float factor)
 {
   int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -159,3 +161,4 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
     REQUIRE(h_result[i] == static_cast<float>(i) * factor);
   }
 }
+} // namespace

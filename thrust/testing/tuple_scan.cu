@@ -11,6 +11,8 @@
 
 using namespace unittest;
 
+namespace
+{
 struct SumTupleFunctor
 {
   template <typename Tuple>
@@ -62,3 +64,4 @@ struct TestTupleScan
   }
 };
 VariableUnitTest<TestTupleScan, IntegralTypes> TestTupleScanInstance;
+} // namespace

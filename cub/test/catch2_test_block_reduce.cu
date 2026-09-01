@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <cub::BlockReduceAlgorithm Algorithm,
           int ItemsPerThread,
           int BlockDimX,
@@ -320,3 +322,4 @@ CUB_TEST(
 
   REQUIRE(h_reference == d_out);
 }
+} // namespace

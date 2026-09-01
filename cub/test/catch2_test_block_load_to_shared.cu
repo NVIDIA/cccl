@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 enum struct test_mode
 {
   single_copy,
@@ -278,3 +280,4 @@ CUB_TEST("Block load to shared works with const and non-const datatype and diffe
     d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
 }
 #endif
+} // namespace

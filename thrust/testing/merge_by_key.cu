@@ -10,6 +10,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename Vector>
 void TestMergeByKeySimple()
 {
@@ -321,3 +323,4 @@ void TestMergeByKeyFromCuDFDremel()
   ASSERT_EQUAL(reference_def_level, def_level);
 }
 DECLARE_UNITTEST(TestMergeByKeyFromCuDFDremel);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

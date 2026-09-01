@@ -46,6 +46,8 @@
 //
 // [1] http://en.wikipedia.org/wiki/Histogram
 
+namespace
+{
 // simple routine to print contents of a vector
 template <typename Vector>
 void print_vector(const std::string& name, const Vector& v)
@@ -135,6 +137,7 @@ void sparse_histogram(const Vector1& input, Vector2& histogram_values, Vector3& 
   print_vector("histogram values", histogram_values);
   print_vector("histogram counts", histogram_counts);
 }
+} // namespace
 
 int main()
 {

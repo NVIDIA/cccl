@@ -13,6 +13,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // Test that we can use a few common utilities and algorithms from a wrapped
 // namespace at runtime. More extensive testing is performed by the header
 // tests and the check_namespace.cmake test.
@@ -36,3 +38,4 @@ void TestWrappedNamespace()
   }
 }
 DECLARE_UNITTEST(TestWrappedNamespace);
+} // namespace

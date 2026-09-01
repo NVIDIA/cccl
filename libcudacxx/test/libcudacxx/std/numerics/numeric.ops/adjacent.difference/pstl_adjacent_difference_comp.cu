@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_adjacent_difference(
   const Policy& policy, const thrust::device_vector<int>& input, thrust::device_vector<int>& output)
@@ -110,3 +112,4 @@ C2H_TEST("cuda::std::adjacent_difference(Iter1, Iter1, Iter2, Init)", "[parallel
     test_adjacent_difference(policy, input, output);
   }
 }
+} // namespace

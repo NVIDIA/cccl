@@ -25,6 +25,8 @@
 
 CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
+namespace
+{
 bool g_verbose = false;
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
@@ -279,6 +281,7 @@ void Test()
 
   Test<ThreadsPerBlock>(cuda::std::bool_constant<(ThreadsPerBlock % 32) == 0>{});
 }
+} // namespace
 
 int main(int argc, char** argv)
 {

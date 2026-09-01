@@ -9,6 +9,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
 __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT action)
 {
@@ -677,3 +679,4 @@ CUB_TEST("Warp combination custom scan works with initial value", "[scan][warp]"
   REQUIRE(h_inclusive_out == d_inclusive_out);
   REQUIRE(h_exclusive_out == d_exclusive_out);
 }
+} // namespace

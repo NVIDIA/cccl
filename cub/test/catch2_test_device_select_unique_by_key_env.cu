@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T>
 inline T to_bound(const unsigned long long bound)
 {
@@ -78,6 +80,7 @@ struct custom_equality_op
     return (lhs / div_val) == (rhs / div_val);
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::UniqueByKey works with user provided memory and environment",
          "[device][select_unique_by_key]",

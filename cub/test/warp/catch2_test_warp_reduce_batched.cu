@@ -33,6 +33,8 @@ inline constexpr int block_size = 2 * warp_size;
 template <typename T>
 using input_2d_mdspan_t = cuda::std::mdspan<T, cuda::std::dextents<int, 2>>;
 
+namespace
+{
 enum class WarpReduceBatchedMode
 {
   SingleOut,
@@ -804,3 +806,4 @@ CUB_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation and 
                            cond_participation,
                            sync_physical_warp>();
 }
+} // namespace

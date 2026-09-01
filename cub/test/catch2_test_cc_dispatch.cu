@@ -9,6 +9,8 @@
 
 using cuda::compute_capability;
 
+namespace
+{
 struct a_policy
 {
   int value;
@@ -151,3 +153,4 @@ CUB_TEST("policy_selector concept", "[util][dispatch]", CUB_SMALL)
   STATIC_REQUIRE(!::cub::detail::policy_selector<policy_selector_all, bad_policy>); // policy mismatch
 }
 #endif // _CCCL_HAS_CONCEPTS()
+} // namespace

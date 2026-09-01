@@ -22,6 +22,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_descending);
 
@@ -200,3 +202,4 @@ CUB_TEST("DeviceRadixSort::SortPairs: Large Offsets",
 
   do_large_offset_test<key_t, value_t, num_items_t>(num_items);
 }
+} // namespace

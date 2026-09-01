@@ -18,6 +18,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyT>
 struct my_policy_hub
 {
@@ -113,3 +115,4 @@ CUB_TEST("DispatchSegmentedSort::Dispatch: custom policy hub", "[segmented][sort
   const auto& d_sorted = (d_keys.selector == 0) ? d_keys_in : d_keys_out;
   REQUIRE(d_sorted == expected);
 }
+} // namespace

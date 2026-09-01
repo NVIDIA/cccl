@@ -7,6 +7,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,
           int BlockDimX,
@@ -704,3 +706,4 @@ CUB_TEST("Block scan supports prefix op and custom scan op", "[scan][block]", CU
 
   REQUIRE(h_out == d_out);
 }
+} // namespace

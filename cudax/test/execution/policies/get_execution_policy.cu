@@ -16,6 +16,8 @@
 
 namespace execution = cuda::experimental::execution;
 
+namespace
+{
 struct with_get_execution_policy_const_lvalue
 {
   execution::any_execution_policy pol_ = execution::seq;
@@ -140,3 +142,4 @@ C2H_TEST("Can call get_execution_policy on a type with both get_execution_policy
   STATIC_REQUIRE(cuda::std::is_same_v<decltype(res), execution::any_execution_policy&&>);
   CHECK(val.pol_ == res);
 }
+} // namespace

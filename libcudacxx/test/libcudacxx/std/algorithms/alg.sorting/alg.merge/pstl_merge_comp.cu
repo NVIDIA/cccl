@@ -38,6 +38,8 @@
 inline constexpr int size1 = 100;
 inline constexpr int size2 = 50;
 
+namespace
+{
 template <class Policy>
 void test_merge(const Policy& policy,
                 const thrust::device_vector<int>& in1,
@@ -172,3 +174,4 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
     test_merge(policy, in1, in2, out);
   }
 }
+} // namespace

@@ -10,6 +10,8 @@
 #include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
+namespace
+{
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
           int LOGICAL_WARP_THREADS,
           int ITEMS_PER_THREAD,
@@ -364,3 +366,4 @@ CUB_TEST("Vectorized warp load with const and non-const datatype and different a
   REQUIRE(num_errors == expected_error_count);
 }
 #endif
+} // namespace

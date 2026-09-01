@@ -23,6 +23,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::philox4x32, "philox", "cuda::std::philox
 
 using rng_types = nvbench::type_list<cuda::std::minstd_rand, cuda::std::philox4x32>;
 
+namespace
+{
 template <class Rng>
 __global__ void cuda_sample_kernel(
   const int* __restrict__ population, cuda::std::size_t n, cuda::std::size_t k, Rng rng, int* __restrict__ out)
@@ -92,3 +94,4 @@ NVBENCH_BENCH_TYPES(cuda_std_sample, NVBENCH_TYPE_AXES(rng_types))
   .set_type_axes_names({"Rng{ct}"})
   .add_int64_power_of_two_axis("PopulationSize", nvbench::range(10, 22, 4))
   .add_int64_power_of_two_axis("SampleSize", {6, 12});
+} // namespace

@@ -24,6 +24,8 @@
 #include "helper.h"
 #include "types.h"
 
+namespace
+{
 template <class T1, class T2, class... PropertiesSuperSet, class... PropertiesSubset>
 constexpr bool is_matching_buffer(const cuda::buffer<T1, PropertiesSuperSet...>&,
                                   const cuda::buffer<T2, PropertiesSubset...>&) noexcept
@@ -321,3 +323,4 @@ C2H_CCCLRT_TEST("make_buffer with legacy resource", "[container][buffer]")
   auto buf = cuda::make_buffer(input.stream(), resource, input);
   CCCLRT_CHECK(equal_range(buf));
 }
+} // namespace

@@ -43,6 +43,8 @@ C2H_CCCLRT_TEST("From native handle", "[stream]")
   REQUIRE_CUDART(cudaStreamDestroy(handle));
 }
 
+namespace
+{
 template <typename StreamType>
 void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 {
@@ -182,3 +184,4 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
 #endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
   }
 }
+} // namespace

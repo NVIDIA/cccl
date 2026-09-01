@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename RandomAccessIterator>
 void sort(my_system& system, RandomAccessIterator, RandomAccessIterator)
 {
@@ -126,3 +128,4 @@ void TestSortTrivial()
   ASSERT_EQUAL(h_data, ref);
 }
 DECLARE_UNITTEST(TestSortTrivial);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

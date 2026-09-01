@@ -12,6 +12,8 @@
 
 // Helper routines
 
+namespace
+{
 void initialize(thrust::device_vector<int>& v)
 {
   thrust::default_random_engine rng(123456);
@@ -120,6 +122,7 @@ struct evens_before_odds
     }
   }
 };
+} // namespace
 
 int main()
 {

@@ -34,6 +34,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct plus_one
 {
@@ -119,3 +121,4 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
     test_transform_reduce(policy, ::cuda::counting_iterator<int>{1});
   }
 }
+} // namespace

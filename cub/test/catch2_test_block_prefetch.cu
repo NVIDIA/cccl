@@ -35,6 +35,8 @@ CUB_TEST("can_prefetch_from accepts contiguous iterators and rejects explicit ca
     cub::detail::can_prefetch_from<cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_CS, int>>);
 }
 
+namespace
+{
 // Prefetch the tile, then copy it through so the launch has an observable result.
 template <typename T, int ThreadsInBlock, cub::detail::LoadPrefetch Level, int Stride, typename InputIteratorT>
 __global__ void block_prefetch_kernel(InputIteratorT input, T* output, int num_items)
@@ -204,3 +206,4 @@ CUB_TEST("BlockPrefetch honors a non-default stride", "[prefetch][block]", CUB_S
   test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::l2, 256>(
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
+} // namespace

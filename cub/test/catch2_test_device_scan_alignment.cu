@@ -23,6 +23,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
 // We cover types of various sizes smaller than 16 byte
@@ -70,3 +72,4 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
   const output_t out_sentinel = out_result[offset + num_items]; // NOLINT(bugprone-misplaced-widening-cast)
   REQUIRE(out_sentinel == out_sentinel_value);
 }
+} // namespace

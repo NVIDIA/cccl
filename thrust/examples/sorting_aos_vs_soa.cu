@@ -18,6 +18,8 @@
 // traditional AoS method.  Therefore, it is almost always worthwhile to
 // convert AoS data structures to SoA.
 
+namespace
+{
 struct MyStruct
 {
   int key;
@@ -58,6 +60,7 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
 
   structures = h_structures;
 }
+} // namespace
 
 int main()
 {

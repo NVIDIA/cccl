@@ -17,6 +17,8 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_reduce_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_reduce_min);
@@ -25,6 +27,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_redu
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -38,6 +41,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 namespace stdexec = cuda::std::execution;
 using cuda::execution::determinism::__determinism_t;
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct reduce_tuning
 {
@@ -1221,3 +1226,4 @@ CUB_TEST("Test ReduceByKeyPolicy properties", "[reduce][device]", CUB_SMALL)
              ", .delay = 832, .l2_write_latency = 1165 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

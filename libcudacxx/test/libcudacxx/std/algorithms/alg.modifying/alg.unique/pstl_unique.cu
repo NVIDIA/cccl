@@ -30,6 +30,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_unique(const Policy& policy, thrust::device_vector<int>& input)
 {
@@ -97,3 +99,4 @@ C2H_TEST("cuda::std::unique", "[parallel algorithm]")
     test_unique(policy, input);
   }
 }
+} // namespace

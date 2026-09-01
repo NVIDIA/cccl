@@ -32,6 +32,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
 
@@ -853,3 +855,4 @@ CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogra
     static_cast<int>(d_samples.size()));
   CHECK(h_histogram_ref == d_histogram);
 }
+} // namespace

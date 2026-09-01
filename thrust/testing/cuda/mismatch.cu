@@ -69,6 +69,8 @@ void TestMismatchDeviceDevice()
 DECLARE_UNITTEST(TestMismatchDeviceDevice);
 #endif
 
+namespace
+{
 void TestMismatchCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -128,3 +130,4 @@ void TestMismatchBug3591()
   thrust::mismatch(thrust::device, p, p, p, cuda::std::equal_to<T>());
 }
 DECLARE_UNITTEST(TestMismatchBug3591);
+} // namespace

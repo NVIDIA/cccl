@@ -65,6 +65,8 @@ C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_tran
   REQUIRE(reference_h == result_h);
 }
 
+namespace
+{
 struct add_kernel
 {
   template <typename T>
@@ -100,3 +102,4 @@ C2H_CCCLRT_TEST("cuda::buffer launch transform", "[container][buffer]")
     REQUIRE(host_result[i] == array[i] + 1);
   }
 }
+} // namespace

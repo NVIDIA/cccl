@@ -34,6 +34,8 @@
 #include "cub_test_macros.h"
 #include <c2h/generators.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
@@ -226,6 +228,7 @@ struct select_then_reduce_t
       stream);
   }
 };
+} // namespace
 
 using count_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 

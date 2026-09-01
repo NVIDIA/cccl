@@ -11,6 +11,8 @@
 #  define WAIVE_GCC11_FAILURES
 #endif
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct is_even
 {
@@ -1275,3 +1277,4 @@ void TestStablePartitionCopyStencilDispatchImplicit()
   ASSERT_EQUAL(13, vec.front());
 }
 DECLARE_UNITTEST(TestStablePartitionCopyStencilDispatchImplicit);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

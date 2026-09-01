@@ -17,10 +17,13 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortKeysDescending, sort_keys_descending);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeysDescending, stable_sort_keys_descending);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1
 
@@ -492,6 +495,8 @@ CUB_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
   REQUIRE(result == expected);
 }
 
+namespace
+{
 template <int BlockThreads>
 struct segmented_sort_tuning
 {
@@ -721,3 +726,4 @@ CUB_TEST("Test SegmentedSortPolicy properties", "[segmented_sort][device]", CUB_
        ", .partitioning_threshold = 300 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

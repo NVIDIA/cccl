@@ -13,6 +13,8 @@
 
 #include <testing.cuh>
 
+namespace
+{
 struct trivial_payload
 {
   int __value;
@@ -233,3 +235,4 @@ C2H_CCCLRT_TEST("__shared_block_ptr self assignment", "[memory_resource]")
   }
   CHECK(counting_payload::__destruct_count == 1);
 }
+} // namespace

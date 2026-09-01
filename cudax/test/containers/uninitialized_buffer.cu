@@ -31,6 +31,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wself-move")
 #endif // _CCCL_COMPILER(GCC, >=, 13)
 _CCCL_DIAG_SUPPRESS_CLANG("-Wself-move")
 
+namespace
+{
 struct do_not_construct
 {
   do_not_construct()
@@ -312,3 +314,4 @@ C2H_TEST("uninitialized_buffer's memory resource does not dangle", "[container]"
 
   CHECK(test_device_memory_pool_ref::count == 1);
 }
+} // namespace

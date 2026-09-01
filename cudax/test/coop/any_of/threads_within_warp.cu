@@ -18,6 +18,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 template <class Group>
 __device__ void test_group(const Group& group)
 {
@@ -185,3 +187,4 @@ C2H_TEST("any_of/threads_within_warp", "[any_of][threads_within_warp]")
 
   stream.sync();
 }
+} // namespace

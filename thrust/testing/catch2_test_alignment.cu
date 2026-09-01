@@ -2,6 +2,8 @@
 
 #include "catch2_test_helper.h"
 
+namespace
+{
 struct alignof_mock_0
 {
   char a;
@@ -113,3 +115,4 @@ TEST_CASE("aligned_reinterpret_cast", "[alignment]")
   // Cast to type with less strict (smaller) alignment requirement.
   a1 = thrust::detail::aligned_reinterpret_cast<T1*>(a2);
 }
+} // namespace

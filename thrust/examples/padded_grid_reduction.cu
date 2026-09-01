@@ -15,6 +15,8 @@
 // over a padded grid.  The padded values are not considered
 // during the reduction operation.
 
+namespace
+{
 // transform a tuple (int,value) into a tuple (bool,value,value)
 // where the bool is true for valid grid values and false for
 // values in the padded region of the grid
@@ -63,6 +65,7 @@ struct reduce_tuple
     }
   }
 };
+} // namespace
 
 int main()
 {

@@ -210,6 +210,8 @@ CUB_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
   REQUIRE(values_out == expected_values);
 }
 
+namespace
+{
 // example-begin topk-custom-type
 struct custom_t
 {
@@ -503,3 +505,4 @@ CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", 
     REQUIRE(expected_vals == vals_out);
   }
 }
+} // namespace

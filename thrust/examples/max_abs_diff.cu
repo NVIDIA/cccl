@@ -9,6 +9,8 @@
 // this example computes the maximum absolute difference
 // between the elements of two vectors
 
+namespace
+{
 template <typename T>
 struct abs_diff
 {
@@ -17,6 +19,7 @@ struct abs_diff
     return fabsf(b - a);
   }
 };
+} // namespace
 
 int main()
 {

@@ -28,6 +28,8 @@
 #include "test_macros.h"
 #include "test_pstl.h"
 
+namespace
+{
 template <class Policy, class T>
 void test_rotate(const Policy& policy, c2h::device_vector<T>& input, const int size)
 {
@@ -117,3 +119,4 @@ C2H_TEST("cuda::std::rotate", "[parallel algorithm]", all_types)
     test_rotate(policy, input, size);
   }
 }
+} // namespace

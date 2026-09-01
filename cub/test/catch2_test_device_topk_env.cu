@@ -34,6 +34,8 @@ struct stream_registry_factory_t;
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 auto topk_requirements()
 {
   return cuda::execution::require(
@@ -49,6 +51,7 @@ struct topk_tuning
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::BLOCK_SCAN_WARP_SCANS, 8};
   }
 };
+} // namespace
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

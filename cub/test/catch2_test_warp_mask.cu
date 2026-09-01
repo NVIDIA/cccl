@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int logical_warp_threads>
 struct total_warps_t
 {
@@ -82,3 +84,4 @@ CUB_TEST("Warp mask ignores lanes after current logical warp", "[mask][warp]", C
     }
   }
 }
+} // namespace

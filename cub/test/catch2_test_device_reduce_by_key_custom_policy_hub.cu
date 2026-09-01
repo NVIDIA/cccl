@@ -15,6 +15,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class ReductionOpT, class AccumT, class KeyT>
 struct my_policy_hub
 {
@@ -99,3 +101,4 @@ CUB_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][de
   REQUIRE(d_keys_out == expected_keys);
   REQUIRE(d_aggregates_out == expected_values);
 }
+} // namespace

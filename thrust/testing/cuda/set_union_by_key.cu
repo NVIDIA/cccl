@@ -86,6 +86,8 @@ void TestSetUnionByKeyDeviceDevice()
 DECLARE_UNITTEST(TestSetUnionByKeyDeviceDevice);
 #endif
 
+namespace
+{
 void TestSetUnionByKeyCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
@@ -115,3 +117,4 @@ void TestSetUnionByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
 }
 DECLARE_UNITTEST(TestSetUnionByKeyCudaStreams);
+} // namespace

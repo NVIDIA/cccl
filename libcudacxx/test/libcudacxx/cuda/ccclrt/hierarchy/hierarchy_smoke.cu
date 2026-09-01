@@ -24,6 +24,8 @@ namespace cg = cooperative_groups;
 
 using size_t3 = cuda::vector_type_t<cuda::std::size_t, 3>;
 
+namespace
+{
 struct basic_test_single_dim
 {
   static constexpr int block_size = 256;
@@ -565,3 +567,4 @@ C2H_TEST("hierarchy merge", "[hierarchy]")
     static_assert(cuda::cluster.count(cuda::grid, with_grid_cluster_replaced) == 7);
   }
 }
+} // namespace

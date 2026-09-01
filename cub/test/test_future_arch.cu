@@ -30,9 +30,12 @@
 
 CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
+namespace
+{
 cudaError_t compile_only_fn(void* tmp_storage, cuda::std::size_t tmp_storage_size, int* in, int* out, int nitems)
 {
   return cub::DeviceReduce::Sum(tmp_storage, tmp_storage_size, in, out, nitems);
 }
+} // namespace
 
 int main() {}

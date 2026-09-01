@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_swap_ranges(const Policy& policy, c2h::device_vector<T>& input1, c2h::device_vector<T>& input2)
 {
@@ -122,3 +124,4 @@ C2H_TEST("cuda::std::swap_ranges", "[parallel algorithm]", all_types)
     test_swap_ranges(policy, input1, input2);
   }
 }
+} // namespace

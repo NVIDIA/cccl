@@ -20,6 +20,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <typename PredOpT>
 struct predicate_op_wrapper_t
 {
@@ -33,7 +35,7 @@ struct predicate_op_wrapper_t
 };
 
 template <class T, class FlagT, class Pred>
-static c2h::host_vector<T>
+c2h::host_vector<T>
 get_reference(c2h::device_vector<T> const& in, c2h::device_vector<FlagT> const& flags, Pred if_predicate)
 {
   c2h::host_vector<T> reference   = in;
@@ -73,6 +75,7 @@ struct is_even_t<custom_t>
     return !(elem.key % 2);
   }
 };
+} // namespace
 
 using all_types =
   c2h::type_list<std::uint8_t,
@@ -430,6 +433,8 @@ CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
   }
 }
 
+namespace
+{
 template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
 struct flagged_if_prefetch_policy_selector
 {
@@ -440,6 +445,7 @@ struct flagged_if_prefetch_policy_selector
     return policy;
   }
 };
+} // namespace
 
 using prefetch_policies =
   c2h::enum_type_list<cub::detail::LoadPrefetch, cub::detail::LoadPrefetch::l2, cub::detail::LoadPrefetch::bulk_l2>;

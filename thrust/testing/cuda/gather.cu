@@ -62,6 +62,8 @@ void TestGatherDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherDeviceDevice);
 #endif
 
+namespace
+{
 void TestGatherCudaStreams()
 {
   thrust::device_vector<int> map = {6, 2, 1, 7, 2}; // gather indices
@@ -200,3 +202,4 @@ void TestGatherIfCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestGatherIfCudaStreams);
+} // namespace

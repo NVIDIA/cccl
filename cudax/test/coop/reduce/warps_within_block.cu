@@ -34,6 +34,8 @@ constexpr int warp_size       = 32;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -232,3 +234,4 @@ C2H_TEST("reduce/warps_within_block Broadcasted", "[reduce][warps_within_block]"
                    c2h::host_vector<value_t>(d_out));
   }
 }
+} // namespace

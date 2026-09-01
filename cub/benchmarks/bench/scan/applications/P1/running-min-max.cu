@@ -41,6 +41,8 @@
 
 #include "../../policy_selector.h"
 
+namespace
+{
 namespace impl
 {
 /* Given input sequence of values, compute sequence of
@@ -184,7 +186,7 @@ void validate(const thrust::device_vector<ValueT>& input,
   assert(computed_mins == ref_mins);
   assert(computed_maxs == ref_maxs);
 }
-}; // namespace impl
+} // namespace impl
 
 template <typename T, typename OffsetT>
 void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
@@ -234,6 +236,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // for verification use
   // impl::validate(input, output, state.get_cuda_stream().get_stream());
 }
+} // namespace
 
 #ifdef TUNE_T
 using bench_types = nvbench::type_list<TUNE_T>;

@@ -17,6 +17,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct iterator_shuffle_copy
 {
   template <typename Iterator, typename ResultIterator>
@@ -404,3 +406,4 @@ void TestShuffleUniformPermutationIterator()
 }
 DECLARE_VECTOR_UNITTEST(TestShuffleUniformPermutation);
 DECLARE_VECTOR_UNITTEST(TestShuffleUniformPermutationIterator);
+} // namespace

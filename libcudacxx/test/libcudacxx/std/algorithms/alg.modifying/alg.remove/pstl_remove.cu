@@ -34,6 +34,8 @@
 
 inline constexpr int size = 10000;
 
+namespace
+{
 template <class Policy, class T>
 void test_remove(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -122,3 +124,4 @@ C2H_TEST("cuda::std::remove", "[parallel algorithm]", all_types)
     test_remove(policy, input);
   }
 }
+} // namespace

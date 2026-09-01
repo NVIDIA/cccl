@@ -12,6 +12,8 @@ using key_types   = nvbench::type_list<int16_t, float>;
 using value_types = offset_types;
 using len_values  = nvbench::enum_type_list<32, 64, 96, 128, 160, 192, 224, 256>;
 
+namespace
+{
 template <int ItemsPerThread>
 struct full_op_t
 {
@@ -84,3 +86,4 @@ void partial(nvbench::state& state, nvbench::type_list<nvbench::enum_type<mode>,
 
 NVBENCH_BENCH_TYPES(partial, NVBENCH_TYPE_AXES(modes, key_types, value_types, len_values))
   .set_type_axes_names({"mode", "KeyT", "ValueT", "len"});
+} // namespace

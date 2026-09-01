@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestDeviceReferenceConstructorFromDeviceReference()
 {
   using T = int;
@@ -555,3 +557,4 @@ void TestTaggedReferenceCompare()
   }
 }
 DECLARE_UNITTEST(TestTaggedReferenceCompare);
+} // namespace

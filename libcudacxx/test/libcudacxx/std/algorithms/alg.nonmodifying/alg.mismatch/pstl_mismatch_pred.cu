@@ -35,6 +35,8 @@
 
 inline constexpr short size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_mismatch(const Policy& policy)
 {
@@ -211,3 +213,4 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2, last2, pred)", "[parallel a
     test_mismatch2(policy);
   }
 }
+} // namespace

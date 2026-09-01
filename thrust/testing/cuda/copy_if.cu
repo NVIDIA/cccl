@@ -5,6 +5,8 @@
 #include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct is_even
 {
@@ -361,3 +363,4 @@ void TestCopyIfStencilWithLargeNumberOfItems()
   TestCopyIfStencilWithMagnitude(33);
 }
 DECLARE_UNITTEST(TestCopyIfStencilWithLargeNumberOfItems);
+} // namespace

@@ -7,6 +7,8 @@
 #include <cassert>
 #include <iostream>
 
+namespace
+{
 template <typename IndexVector, typename ValueVector>
 void print_sparse_vector(const IndexVector& A_index, const ValueVector& A_value)
 {
@@ -82,6 +84,7 @@ void sum_sparse_vectors(
     cuda::std::equal_to<IndexType>(),
     cuda::std::plus<ValueType>());
 }
+} // namespace
 
 int main()
 {

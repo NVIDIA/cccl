@@ -16,6 +16,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void scale_kernel(int cnt, double* data, double factor)
 {
   const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -92,3 +94,4 @@ C2H_TEST("task_get_graph: explicit kernel node in a stackable graph scope", "[st
 
   REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
+} // namespace

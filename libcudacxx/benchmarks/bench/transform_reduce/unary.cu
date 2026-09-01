@@ -16,6 +16,8 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <class T>
 struct plus_one
 {
@@ -27,7 +29,7 @@ struct plus_one
 };
 
 template <typename T>
-static void unary(nvbench::state& state, nvbench::type_list<T>)
+void unary(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -45,6 +47,7 @@ static void unary(nvbench::state& state, nvbench::type_list<T>)
                  cuda_policy(alloc, launch), in.begin(), in.end(), 42, cuda::std::plus<T>{}, plus_one<T>{}));
              });
 }
+} // namespace
 
 NVBENCH_BENCH_TYPES(unary, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("base")

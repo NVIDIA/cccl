@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int BINS,
           int BLOCK_THREADS,
           int ITEMS_PER_THREAD,
@@ -168,3 +170,4 @@ CUB_TEST("Block histogram can be computed with random input",
 
   REQUIRE(h_reference == d_histogram);
 }
+} // namespace

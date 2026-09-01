@@ -12,6 +12,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 //----------------------------------------------------------------------------
 // Helper section
 //----------------------------------------------------------------------------
@@ -449,3 +451,4 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", CUB_S
 
   cudaFreeHost(launch_config_info);
 }
+} // namespace

@@ -29,6 +29,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 /// Verbose output
 bool g_verbose = false;
 
@@ -260,6 +262,7 @@ void Test()
     CubDebugExit(cudaFree(d_elapsed));
   }
 }
+} // namespace
 
 /**
  * Main

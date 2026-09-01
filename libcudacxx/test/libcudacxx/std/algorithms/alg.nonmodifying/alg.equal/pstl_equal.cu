@@ -33,6 +33,8 @@
 
 inline constexpr short size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_equal(const Policy& policy)
 {
@@ -162,3 +164,4 @@ C2H_TEST("cuda::std::equal(first1, last1, first2, last2)", "[parallel algorithm]
     test_equal2(policy);
   }
 }
+} // namespace

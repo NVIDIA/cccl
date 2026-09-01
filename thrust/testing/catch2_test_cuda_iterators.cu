@@ -131,6 +131,8 @@ TEST_CASE("reverse_iterator", "[iterators]")
   }
 }
 
+namespace
+{
 struct fake_bijection
 {
   using index_type = ::cuda::std::uint32_t;
@@ -395,3 +397,4 @@ TEST_CASE("zip_transform_iterator", "[iterators]")
     CHECK(thrust::equal(vec.begin(), vec.end(), expected.begin()));
   }
 }
+} // namespace

@@ -17,6 +17,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin radix-sort-keys-custom-decomposer
 struct custom_key_t
 {
@@ -746,3 +748,4 @@ CUB_TEST("cub::DeviceRadixSort::SortKeys accepts a custom policy selector", "[ra
 }
 
 #endif // _CCCL_STD_VER >= 2020
+} // namespace

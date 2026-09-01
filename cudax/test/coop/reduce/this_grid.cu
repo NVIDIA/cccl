@@ -33,6 +33,8 @@ constexpr int block_size   = 128;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -250,3 +252,4 @@ C2H_TEST("reduce/this_grid Broadcasted", "[reduce][this_grid]", integral_type_li
                    c2h::host_vector<value_t>(d_out));
   }
 }
+} // namespace

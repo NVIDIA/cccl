@@ -15,6 +15,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 struct CustomLess
 {
   template <typename T>
@@ -531,3 +533,4 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   REQUIRE(h_keys_in_out == d_keys_out);
   REQUIRE(h_values_in_out == d_values_out);
 }
+} // namespace

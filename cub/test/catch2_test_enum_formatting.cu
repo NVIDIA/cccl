@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 struct OStreamOperatorTester
 {
   template <class T>
@@ -202,3 +204,4 @@ CUB_TEST("Enum formatting", "", CUB_SMALL)
   do_test(FormatTester{});
 #endif // __cpp_lib_format >= 201907L
 }
+} // namespace

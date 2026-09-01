@@ -16,6 +16,8 @@
 // We'll use a 3-tuple to store our 3d vector type
 using Float3 = cuda::std::tuple<float, float, float>;
 
+namespace
+{
 // This functor implements the dot product between 3d vectors
 struct DotProduct
 {
@@ -39,6 +41,7 @@ thrust::host_vector<float> random_vector(const size_t N, unsigned int seed = thr
   }
   return temp;
 }
+} // namespace
 
 int main()
 {
