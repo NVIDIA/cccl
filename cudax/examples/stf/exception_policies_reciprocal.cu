@@ -25,9 +25,12 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <cfenv>
 #include <cmath>
 #include <cstdio>
+#include <exception>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
