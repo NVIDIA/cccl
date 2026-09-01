@@ -238,13 +238,11 @@ int stf_fill_placement_outputs(
     }
     for (const auto& entry : stats.bytes_per_grid_index)
     {
-      if (entry.first >= grid_size)
-      {
-        // A mapper returned coordinates outside the grid: refuse to write
-        // past the caller's buffer and report the failure.
-        fprintf(stderr, "placement evaluation: mapper returned a position outside the grid\n");
-        return 1;
-      }
+      // Keys are produced by checked_grid_index(), which validates every
+      // mapper-returned position per dimension (out-of-grid positions throw in
+      // evaluate_localized_placement and surface as a non-zero return from the
+      // entry point), so they are always within the caller's buffer.
+      _CCCL_ASSERT(entry.first < grid_size, "placement accounting key outside the grid");
       bytes_per_grid_index[entry.first] = entry.second;
     }
   }

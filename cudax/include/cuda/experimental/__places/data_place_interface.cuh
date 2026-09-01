@@ -77,6 +77,18 @@ using partition_fn_t = void (*)(pos4* result, pos4 data_coords, dim4 data_dims, 
  * called: reinterpret_cast between function pointer types is well defined as
  * long as the result is not invoked, which is exactly how a foreign-ABI
  * callback can serve as one.
+ *
+ * LIFETIME CONTRACT (foreign-ABI callers): because caches key on the identity
+ * and may outlive the data place, the identity must stay unique for as long
+ * as any mapping derived from it can be reused. A trampoline freed and
+ * reallocated at the same address for a DIFFERENT mapper would alias the old
+ * cache entry and silently serve the old mapper's placement. Bindings must
+ * therefore keep their trampoline (and thus its address) alive for the
+ * lifetime of any context that may cache placements from it. The Python
+ * bindings currently pin the trampoline for the *data place's* lifetime,
+ * which narrows but does not close the window (a cache can outlive the
+ * place); making the cache robust to identity reuse (generation-tagged
+ * identities, or invalidation on mapper destruction) is follow-up work.
  */
 class partition_mapper
 {

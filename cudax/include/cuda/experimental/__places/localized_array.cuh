@@ -237,6 +237,28 @@ void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
   }
 }
 
+//! Linear grid index of an owner position, validated per dimension.
+//!
+//! dim4::get_index only asserts its bounds, so in release builds an owner
+//! position that overflows a fast dimension while remaining inside the grid's
+//! total size (e.g. (2, 0) on a 2x2 grid, aliasing (0, 1)) would silently
+//! misattribute placement to another grid position. Owner positions come from
+//! user-provided mappers (possibly through a foreign ABI), so they are
+//! validated here — the one place every accounting path funnels through — and
+//! rejected with a defined error instead.
+inline size_t checked_grid_index(const dim4& grid_dims, const pos4& p)
+{
+  const bool in_range = p.get(0) >= 0 && static_cast<size_t>(p.get(0)) < static_cast<size_t>(grid_dims.x)
+                     && p.get(1) >= 0 && static_cast<size_t>(p.get(1)) < static_cast<size_t>(grid_dims.y)
+                     && p.get(2) >= 0 && static_cast<size_t>(p.get(2)) < static_cast<size_t>(grid_dims.z)
+                     && p.get(3) >= 0 && static_cast<size_t>(p.get(3)) < static_cast<size_t>(grid_dims.t);
+  if (!in_range)
+  {
+    _CCCL_THROW(::std::out_of_range, "placement mapper returned a position outside the grid");
+  }
+  return grid_dims.get_index(p);
+}
+
 //! Merge a one-owner-per-block vector into maximal block runs.
 inline ::std::vector<block_run> owners_to_block_runs(const ::std::vector<pos4>& owners)
 {
@@ -479,10 +501,11 @@ private:
 
     for (const auto& r : runs)
     {
-      data_place place  = grid_pos_to_place(r.owner);
-      size_t alloc_size = r.num_blocks * block_size_bytes;
+      const size_t grid_index = checked_grid_index(this->grid.get_dims(), r.owner);
+      data_place place        = grid_pos_to_place(r.owner);
+      size_t alloc_size       = r.num_blocks * block_size_bytes;
       stats.bytes_per_place[place.to_string()] += alloc_size;
-      stats.bytes_per_grid_index[this->grid.get_dims().get_index(r.owner)] += alloc_size;
+      stats.bytes_per_grid_index[grid_index] += alloc_size;
       meta.emplace_back(mv(place), alloc_size, r.first_block * block_size_bytes);
     }
 
@@ -676,11 +699,13 @@ private:
  * @param data_dims Extents of the tensor
  * @param elemsize Size of one element in bytes
  * @param probes Number of samples per block for the majority vote
- * @param block_size Placement granularity in bytes; 0 selects the device
- *        allocation granularity when a device is present, or a 2 MiB default
+ * @param block_size Placement granularity in bytes; 0 selects the allocation
+ *        granularity queried on device 0 when a device is present (granularity
+ *        is assumed uniform across the machine's devices), or a 2 MiB default
  *        otherwise (this granularity query is the only driver interaction)
  */
-template <typename OwnerFn>
+template <typename OwnerFn,
+          typename = ::cuda::std::enable_if_t<::cuda::std::is_invocable_r_v<pos4, OwnerFn, size_t>>>
 [[nodiscard]] localized_stats evaluate_localized_placement(
   const exec_place& grid,
   OwnerFn&& owner_of,
@@ -706,9 +731,10 @@ template <typename OwnerFn>
     ::cuda::std::forward<OwnerFn>(owner_of), stats.nblocks, block_size, elemsize, total_elems, probes, stats);
 
   for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
-    const data_place place = grid.get_place(p).affine_data_place();
+    const size_t grid_index = checked_grid_index(grid.get_dims(), p);
+    const data_place place  = grid.get_place(p).affine_data_place();
     stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
-    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
+    stats.bytes_per_grid_index[grid_index] += num_blocks * block_size;
     stats.nallocs++;
   });
 

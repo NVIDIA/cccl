@@ -519,8 +519,9 @@ typedef struct stf_partition_dim_spec
 //! \param data_dims Extents of the tensor (dimension 0 fastest; must not be NULL)
 //! \param elemsize  Size of one element in bytes
 //! \param probes    Samples per block for the majority vote (0 = default)
-//! \param block_size Placement granularity in bytes; 0 selects the device
-//!        allocation granularity when a device is present (2 MiB otherwise)
+//! \param block_size Placement granularity in bytes; 0 selects the allocation
+//!        granularity queried on device 0 when a device is present, assumed
+//!        uniform across the machine's devices (2 MiB otherwise)
 //! \param out_stats Filled with the resulting statistics (must not be NULL)
 //! \param bytes_per_grid_index Optional array of one entry per grid position
 //!        (length = product of the grid dims), filled with the bytes owned by

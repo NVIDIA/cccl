@@ -156,7 +156,14 @@ C2H_TEST("partition evaluation matches the equivalent native mapper", "[places][
 
   REQUIRE(s_mapper.nblocks == s_part.nblocks);
   REQUIRE(s_mapper.nallocs == s_part.nallocs);
-  REQUIRE(s_mapper.matching_samples == s_part.matching_samples);
+  // The two paths agree on placement but count in different units: the native
+  // mapper is sampled (probe counts), while the structured partition resolves
+  // through the analytic tier (byte counts). Compare the unit-independent
+  // full-match property per path, and the byte-denominated outputs directly.
+  REQUIRE(s_mapper.total_samples > 0);
+  REQUIRE(s_mapper.matching_samples == s_mapper.total_samples);
+  REQUIRE(s_part.total_samples > 0);
+  REQUIRE(s_part.matching_samples == s_part.total_samples);
   REQUIRE(b_mapper[0] == b_part[0]);
   REQUIRE(b_mapper[1] == b_part[1]);
 

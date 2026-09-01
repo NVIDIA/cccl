@@ -32,22 +32,7 @@ def _require_device():
         pytest.skip("no usable CUDA device")
 
 
-def _require_vmm():
-    """Shaped composite allocations build a localized array, which needs CUDA
-    virtual address management. Skip rather than fail where it is absent (the
-    C test at c/experimental/stf/test/test_placement.cpp gates the same way)."""
-    from cuda.bindings import driver as cu
-
-    assert cu.cuInit(0)[0] == cu.CUresult.CUDA_SUCCESS
-    err, dev = cu.cuDeviceGet(0)
-    assert err == cu.CUresult.CUDA_SUCCESS
-    err, supported = cu.cuDeviceGetAttribute(
-        cu.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED,
-        dev,
-    )
-    assert err == cu.CUresult.CUDA_SUCCESS
-    if not supported:
-        pytest.skip("device 0 does not support CUDA VMM (virtual address management)")
+from conftest import require_vmm as _require_vmm  # noqa: E402  (shared VMM gate)
 
 
 def blocked_mapper_1d(data_coords, data_dims, grid_dims):
@@ -323,13 +308,13 @@ def test_placement_evaluate_misaligned_majority():
     assert s.nallocs == 2
     assert s.bytes_per_grid_index == [2 * MiB, 2 * MiB]
     # The straddled block's majority holds at least half of its samples and
-    # the aligned block matches fully, so accuracy lands in [0.75, 1). The
+    # the aligned block matches fully, so accuracy lands in [0.75, 1.0]. The
     # exact value depends on the standard library's distribution mapping, so
-    # only the bounds are asserted; the upper bound is strict up to the
-    # ~0.75**100 chance that every probe of the straddled block lands on one
-    # side of the boundary.
+    # only the bounds are asserted — and the upper bound must be inclusive: a
+    # mapping under which every probe of the straddled block lands on the
+    # majority side legitimately reports accuracy == 1.0.
     assert s.total_samples == 200
-    assert 0.75 <= s.accuracy < 1.0
+    assert 0.75 <= s.accuracy <= 1.0
 
 
 def test_partition_fn_returns_typed_wrapper():
@@ -340,6 +325,20 @@ def test_partition_fn_returns_typed_wrapper():
     assert int(fn) != 0
     assert isinstance(stf.partition_fn_cyclic(), stf.native_partition_fn)
     assert int(stf.partition_fn_blocked(1, data_rank=2)) != 0
+
+
+def test_native_partition_fn_rejects_forged_values():
+    """The wrapped pointer is *invoked* as a C function, so an arbitrary
+    integer must not become a native_partition_fn by accident: only the
+    factories construct one, and foreign pointers go through the explicit
+    from_raw_pointer() escape hatch (which round-trips int(fn))."""
+    with pytest.raises(TypeError):
+        stf.native_partition_fn(123)
+    fn = stf.partition_fn_blocked()
+    rewrapped = stf.native_partition_fn.from_raw_pointer(int(fn))
+    assert int(rewrapped) == int(fn)
+    with pytest.raises(ValueError):
+        stf.native_partition_fn.from_raw_pointer(0)
 
 
 def test_shaped_allocation_on_composite_places():

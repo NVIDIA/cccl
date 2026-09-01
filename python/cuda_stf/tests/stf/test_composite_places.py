@@ -13,6 +13,7 @@ import pytest
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
 import cuda.stf._experimental as stf  # noqa: E402
+from conftest import require_vmm  # noqa: E402  (shared VMM gate)
 
 
 def blocked_mapper_1d(data_coords, data_dims, grid_dims):
@@ -146,6 +147,7 @@ class TestCompositeDataPlace:
 class TestCompositeTask:
     def test_task_with_composite_dep(self):
         """Task uses a composite data place for its dependency."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
         dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
 
@@ -165,6 +167,7 @@ class TestCompositeTask:
 
     def test_task_with_composite_dep_graph(self):
         """Same test in graph mode."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
         dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
 
@@ -184,6 +187,7 @@ class TestCompositeTask:
 
     def test_numpy_integer_mapper_result(self):
         """NumPy integer scalars satisfy the 1-D mapper result contract."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
 
         def numpy_mapper(data_coords, data_dims, grid_dims):
@@ -215,6 +219,7 @@ class TestCompositeTask:
 
     def test_affine_with_grid(self):
         """Grid with affine data place set; deps use the default (affine) placement."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
         dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
@@ -231,6 +236,7 @@ class TestCompositeTask:
 
     def test_grid_create_with_mapper(self):
         """exec_place_grid.create with mapper= sets affine automatically."""
+        require_vmm()
         places = [stf.exec_place.device(0), stf.exec_place.device(0)]
         grid = stf.exec_place_grid.create(places, mapper=blocked_mapper_1d, data_rank=1)
 
@@ -246,6 +252,7 @@ class TestCompositeTask:
 
     def test_host_launch_with_composite(self):
         """host_launch can read data placed via a composite data place."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
         dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
@@ -264,6 +271,7 @@ class TestCompositeTask:
 
     def test_task_on_exec_place_grid(self):
         """Task runs on an exec_place_grid; query grid dims and streams by index."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
         dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
@@ -285,6 +293,7 @@ class TestCompositeTask:
 
     def test_task_on_grid_get_stream_ptrs(self):
         """get_stream_ptrs() returns one stream per grid place."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0, 0])
         dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
@@ -309,6 +318,7 @@ class TestCompositeTask:
         each place on its own place stream. A ``None`` stream is therefore valid
         for a grid just as it is for a scalar task.
         """
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
         dplace = stf.data_place.composite(grid, blocked_mapper_1d, data_rank=1)
         grid.set_affine_data_place(dplace)
@@ -353,6 +363,7 @@ class TestCompositeTask:
         The ctypes callback cannot raise through the C boundary, so the failure
         must be captured and re-raised right after the synchronous submit.
         """
+        require_vmm()
 
         def broken_mapper(data_coords, data_dims, grid_dims):
             raise RuntimeError("mapper boom")
@@ -417,6 +428,7 @@ class TestCompositeTask:
         regardless of the array's Python-side shape. True element
         coordinates flow through the shaped-allocation path only (see
         test_composite_mapper_rank2_c_order)."""
+        require_vmm()
         grid = stf.exec_place_grid.from_devices([0, 0])
         seen_dims = set()
 
@@ -438,6 +450,7 @@ class TestCompositeTask:
 
     def test_composite_mapper_out_of_range_propagates(self):
         """A mapper returning coordinates outside the grid surfaces an error."""
+        require_vmm()
 
         def out_of_range_mapper(data_coords, data_dims, grid_dims):
             return grid_dims[0] + 5

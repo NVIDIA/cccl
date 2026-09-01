@@ -1934,6 +1934,14 @@ def _public_axis_to_native(axis, int rank, what="axis"):
     return rank - 1 - axis
 
 
+# Private construction token: native_partition_fn wraps a raw C function
+# pointer that the bindings later INVOKE, so a forged value (e.g.
+# native_partition_fn(123)) would crash the interpreter instead of raising.
+# Only the trusted factories below hold the token; foreign pointers must go
+# through the explicitly-unsafe from_raw_pointer().
+_NATIVE_PARTITION_FN_TOKEN = object()
+
+
 class native_partition_fn:
     """A native (C++) partition function, as returned by
     :func:`partition_fn_blocked` and :func:`partition_fn_cyclic`.
@@ -1943,15 +1951,34 @@ class native_partition_fn:
     policies run entirely in C++ on the native representation (no FFI
     callback cost) and are shape-free, so they never take ``data_rank``.
     ``int(fn)`` exposes the raw pointer for advanced FFI use.
+
+    Instances are only produced by the ``partition_fn_*`` factories: the
+    wrapped pointer is *called* as a C function, so this type is deliberately
+    not constructible from an arbitrary integer. A pointer obtained from a
+    foreign FFI layer can be wrapped with :meth:`from_raw_pointer`, whose
+    caller vouches for its validity.
     """
 
     __slots__ = ("_ptr",)
 
-    def __init__(self, ptr):
+    def __init__(self, ptr, *, _token=None):
+        if _token is not _NATIVE_PARTITION_FN_TOKEN:
+            raise TypeError(
+                "native_partition_fn cannot be constructed from a raw value; use the "
+                "partition_fn_* factories, or native_partition_fn.from_raw_pointer() "
+                "for a pointer whose validity you vouch for")
         ptr = int(ptr)
         if ptr == 0:
             raise ValueError("native partition function pointer must not be NULL")
         self._ptr = ptr
+
+    @classmethod
+    def from_raw_pointer(cls, ptr):
+        """Wrap a raw ``stf_get_executor_fn`` pointer obtained through a
+        foreign FFI layer. The pointer is invoked as a C function during
+        placement operations: passing anything else is undefined behavior.
+        """
+        return cls(ptr, _token=_NATIVE_PARTITION_FN_TOKEN)
 
     def __index__(self):
         return self._ptr
@@ -1977,17 +2004,19 @@ def partition_fn_blocked(int axis=0, data_rank=None):
     if axis == 0 and data_rank is None:
         # Native -1 selects the highest-rank dimension, which is always the
         # public outermost axis regardless of rank.
-        return native_partition_fn(<uintptr_t>stf_partition_fn_blocked(-1))
+        return native_partition_fn(<uintptr_t>stf_partition_fn_blocked(-1), _token=_NATIVE_PARTITION_FN_TOKEN)
     if data_rank is None:
         raise ValueError("partition_fn_blocked requires data_rank for a nonzero axis")
-    return native_partition_fn(<uintptr_t>stf_partition_fn_blocked(
-        <int>_public_axis_to_native(axis, data_rank, "partition_fn_blocked axis")))
+    return native_partition_fn(
+        <uintptr_t>stf_partition_fn_blocked(
+            <int>_public_axis_to_native(axis, data_rank, "partition_fn_blocked axis")),
+        _token=_NATIVE_PARTITION_FN_TOKEN)
 
 
 def partition_fn_cyclic():
     """Native cyclic (round-robin) partition function, as a
     :class:`native_partition_fn` usable wherever a partitioner is expected."""
-    return native_partition_fn(<uintptr_t>stf_partition_fn_cyclic())
+    return native_partition_fn(<uintptr_t>stf_partition_fn_cyclic(), _token=_NATIVE_PARTITION_FN_TOKEN)
 
 
 #: Per-dimension policies accepted by cute_partition.from_spec
@@ -2300,7 +2329,8 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
     fast path.
 
     ``probes`` and ``block_size`` of 0 select the defaults (10 samples per
-    block; the device allocation granularity, or 2 MiB without a GPU).
+    block; the allocation granularity queried on device 0, assumed uniform
+    across devices, or 2 MiB without a GPU).
     """
     cdef stf_dim4 dims
     cdef stf_dim4 gd

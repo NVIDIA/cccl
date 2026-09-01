@@ -9,6 +9,7 @@ pytest.importorskip("cuda.stf._experimental._stf_bindings")
 from cuda.bindings import runtime as cudart  # noqa: E402
 
 import cuda.stf._experimental as stf  # noqa: E402
+from conftest import require_vmm  # noqa: E402  (shared VMM gate)
 
 
 def _require_device():
@@ -338,6 +339,7 @@ def test_device_array_tensor_of_tiles_allocation():
     """A rank-4 tensor-of-tiles DeviceArray allocates through composite_cute
     with its own shape as the allocation geometry, and adjacent tile axes and
     payload axes collapse with a plain reshape."""
+    require_vmm()
     import numpy as np
 
     _require_device()
