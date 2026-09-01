@@ -563,7 +563,7 @@ template <requires_stable_address StableAddress,
 #if _CCCL_HAS_CONCEPTS()
   requires transform_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in,
   RandomAccessIteratorOut out,
   Offset num_items,

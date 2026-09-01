@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,6 +32,7 @@
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__fwd/hash.h>
 #  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
@@ -218,16 +219,7 @@ public:
   //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
-    const auto __result = ::cuda::__driver::__streamQueryNoThrow(__stream);
-    switch (__result)
-    {
-      case ::cudaErrorNotReady:
-        return false;
-      case ::cudaSuccess:
-        return true;
-      default:
-        _CCCL_THROW(::cuda::cuda_error, __result, "Failed to query stream.");
-    }
+    return ::cuda::__driver::__streamQuery(__stream);
   }
 
   //! @brief Queries if all operations on the wrapped stream have completed.
@@ -348,6 +340,30 @@ _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_
 #  endif // !_CCCL_DOXYGEN_INVOKED
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <>
+struct hash<::cuda::stream_id>
+{
+  [[nodiscard]] _CCCL_HOST_API size_t _CCCL_STATIC_CALL_OPERATOR(::cuda::stream_id __id) noexcept
+  {
+    return ::std::hash<::cuda::std::underlying_type_t<::cuda::stream_id>>{}(::cuda::std::to_underlying(__id));
+  }
+};
+
+template <>
+struct hash<::cuda::stream_ref>
+{
+  [[nodiscard]] _CCCL_HOST_API size_t _CCCL_STATIC_CALL_OPERATOR(::cuda::stream_ref __stream)
+  {
+    return ::std::hash<::cuda::stream_id>{}(__stream.id());
+  }
+};
+
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
 
 #  include <cuda/std/__cccl/epilogue.h>
 

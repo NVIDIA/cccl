@@ -37,8 +37,8 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <type_traits>
 #include <utility>
@@ -608,7 +608,7 @@ public:
 
   /// @brief Constructor keeping the partitioner instance (required when
   /// ownership depends on the partitioner value; type-defined policies cost
-  /// nothing thanks to [[no_unique_address]])
+  /// nothing thanks to _CCCL_NO_UNIQUE_ADDRESS)
   parallel_for_scope(context& ctx, partitioner_t p, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
       : deps(mv(deps)...)
       , ctx(ctx)
@@ -1177,7 +1177,8 @@ public:
     auto host_func = [](void* untyped_args) {
       // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
       // it.
-      on_throw(::std::abort) << [untyped_args] {
+      ON_THROW(abort)
+      {
         auto p = static_cast<decltype(args)>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);
@@ -1254,7 +1255,7 @@ private:
   {};
   using stored_partitioner_t =
     ::cuda::std::conditional_t<::cuda::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
-  [[no_unique_address]] stored_partitioner_t p_{};
+  _CCCL_NO_UNIQUE_ADDRESS stored_partitioner_t p_{};
 };
 } // end namespace reserved
 

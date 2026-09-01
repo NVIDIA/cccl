@@ -24,6 +24,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#if _CCCL_HAS_BUILTIN(__remove_const) && _CCCL_CUDA_COMPILER(CLANG)
+#  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__remove_const)
+
 #if defined(_CCCL_BUILTIN_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
 template <class _Tp>
 struct remove_const

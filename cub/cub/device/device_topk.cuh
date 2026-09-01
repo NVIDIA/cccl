@@ -51,7 +51,7 @@ template <topk::select SelectDirection,
           typename NumOutItemsT,
           typename DecomposerT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorT d_keys_in,
@@ -128,7 +128,7 @@ template <topk::select SelectDirection,
           typename NumItemsT,
           typename NumOutItemsT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk_hub(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorT d_keys_in,

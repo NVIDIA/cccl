@@ -33,6 +33,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -132,7 +133,7 @@ inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsExhaustive>> = tru
 
 struct non_exhaustive_t;
 
-inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
+inline constexpr ::cuda::std::uint32_t __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

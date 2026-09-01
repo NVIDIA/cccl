@@ -28,7 +28,7 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__utility/call_once.h>
-#  include <cuda/std/__concepts/constructible.h>
+#  include <cuda/__utility/raw_storage.h>
 #  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__memory/construct_at.h>
@@ -59,20 +59,6 @@ struct __physical_devices_view
 
 [[nodiscard]] _CCCL_HOST_API inline __physical_devices_view __physical_devices();
 
-// Frees storage that came from `new _OrigTp[]` (probably either std::byte or char), after
-// destroying the `__count_` elements built in it.
-template <class _Tp, class _OrigTp>
-struct __raw_storage_array_deleter
-{
-  ::cuda::std::size_t __count_{};
-
-  _CCCL_HOST_API void operator()(_Tp* __ptr) const noexcept
-  {
-    ::cuda::std::__reverse_destroy(__ptr, __ptr + __count_);
-    delete[] reinterpret_cast<_OrigTp*>(__ptr);
-  }
-};
-
 // This is the element type of the the global `devices` array. In the future, we
 // can cache device properties here.
 //
@@ -81,22 +67,6 @@ class __physical_device
 {
   friend _CCCL_HOST_API inline ::cuda::std::unique_ptr<__physical_device[]>
   __make_physical_devices(::cuda::std::size_t __device_count);
-
-  template <class _Tp>
-  using __raw_storage_array = ::cuda::std::unique_ptr<_Tp[], __raw_storage_array_deleter<_Tp, ::cuda::std::byte>>;
-
-  // Returns storage for `__count` elements, reporting zero of them constructed.
-  template <class _Tp>
-  [[nodiscard]] _CCCL_HOST_API static __raw_storage_array<_Tp> __make_raw_storage_array(::cuda::std::size_t __count)
-  {
-    auto __bytes = ::cuda::std::make_unique<::cuda::std::byte[]>(sizeof(_Tp) * __count);
-
-    static_assert(!::cuda::std::constructible_from<_Tp>,
-                  "Do not use this helper if your type is already default constructible. Just use a regular "
-                  "unique_ptr<T> in that case.");
-    static_assert(alignof(_Tp) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
-    return __raw_storage_array<_Tp>{reinterpret_cast<_Tp*>(__bytes.release()), {}};
-  }
 
   ::CUdevice __device_{};
 
@@ -163,6 +133,9 @@ class __physical_device
   {
     const auto __domain_count = static_cast<::cuda::std::size_t>(
       ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, __device_));
+
+    _CCCL_VERIFY(__domain_count > 0, "The driver should never return 0 locality domains");
+
     const auto __full_resource = ::cuda::__driver::__deviceGetDevResource(__device_, ::CU_DEV_RESOURCE_TYPE_SM);
     const auto __params        = ::cuda::std::make_unique<::CU_DEV_SM_RESOURCE_GROUP_PARAMS[]>(__domain_count);
 
@@ -180,7 +153,7 @@ class __physical_device
 
     // Neither `__logical_device` nor `__logical_device_ref` is default constructible, so both
     // arrays must be constructed element by element in raw storage.
-    auto __domains = __make_raw_storage_array<__logical_device>(__domain_count);
+    auto __domains = ::cuda::__make_raw_storage_array<__logical_device>(__domain_count);
 
     for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
     {
@@ -192,7 +165,7 @@ class __physical_device
       __domains.get_deleter().__count_ = __i + 1;
     }
 
-    auto __refs = __make_raw_storage_array<__logical_device_ref>(__domain_count);
+    auto __refs = ::cuda::__make_raw_storage_array<__logical_device_ref>(__domain_count);
 
     for (::cuda::std::size_t __i = 0; __i < __domain_count; ++__i)
     {
@@ -208,14 +181,12 @@ class __physical_device
 #  elif _CCCL_CTK_AT_LEAST(12, 5) // ^^^ 13.4+ ^^^ / vvv 12.5+ vvv
   _CCCL_HOST_API void __set_locality_domains_impl()
   {
-    auto __domains = __make_raw_storage_array<__logical_device>(/*__count=*/1);
+    auto __domains = ::cuda::__make_raw_storage_array<__logical_device>(/*__count=*/1);
 
-    ::cuda::std::__construct_at(__domains.get(),
-                                __logical_device::from_native_handle(
-                                  __device_, ::cuda::__driver::__greenCtxCreate(__device_, /*__descriptor=*/nullptr)));
+    ::cuda::std::__construct_at(__domains.get(), __device_);
     __domains.get_deleter().__count_ = 1;
 
-    auto __refs = __make_raw_storage_array<__logical_device_ref>(/*__count=*/1);
+    auto __refs = ::cuda::__make_raw_storage_array<__logical_device_ref>(/*__count=*/1);
 
     ::cuda::std::__construct_at(__refs.get(), __domains[0]);
     __refs.get_deleter().__count_ = 1;

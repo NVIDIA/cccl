@@ -76,9 +76,9 @@ template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, 
   //
   // In this case cuMemAllocFromPool fails with INVALID_CONTEXT because the driver cannot pick
   // an appropriate context to tie the allocation to.
-  const auto _                = ::cuda::__ensure_current_context{__logical_device.context()};
+  const auto _                = ::cuda::__ensure_current_context{__logical_device};
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device.underlying_device());
+  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device);
 
   // Allocate enough storage so that we can use the buffer directly in an in-place comm all
   // gather/all reduce call. Those calls require that the receive buffer is of size nranks *
