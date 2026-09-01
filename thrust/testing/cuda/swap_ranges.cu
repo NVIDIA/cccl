@@ -47,8 +47,8 @@ void TestSwapRangesCudaStreams()
 
   Vector v1{0, 1, 2, 3, 4};
   Vector v2{5, 6, 7, 8, 9};
-  Vector v1_ref(v2);
-  Vector v2_ref(v1);
+  const Vector v1_ref(v2);
+  const Vector v2_ref(v1);
 
   cudaStream_t s;
   cudaStreamCreate(&s);

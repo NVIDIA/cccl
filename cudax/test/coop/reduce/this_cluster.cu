@@ -43,7 +43,7 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
-    cudax::this_cluster cluster{config};
+    const cudax::this_cluster cluster{config};
 
     T thread_data[NumItems];
     for (int i = 0; i < NumItems; ++i)
@@ -170,8 +170,8 @@ C2H_TEST("reduce/this_cluster Integral Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{device};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{device};
+  for (const int num_items : {1, 4})
   {
     auto reference_result = cuda::std::accumulate(
       h_in.begin(), h_in.begin() + num_items * cluster_size_t::value * block_size, operator_identity, reduce_op);
@@ -202,8 +202,8 @@ C2H_TEST("reduce/this_cluster Floating-Point Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{device};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{device};
+  for (const int num_items : {1, 4})
   {
     auto reference_result = cuda::std::accumulate(
       h_in.begin(), h_in.begin() + num_items * cluster_size_t::value * block_size, operator_identity, reduce_op);
@@ -229,8 +229,8 @@ C2H_TEST("reduce/this_cluster Broadcasted", "[reduce][this_cluster]", integral_t
   c2h::device_vector<value_t> d_in(max_size * cluster_size_t::value * block_size);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{device};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{device};
+  for (const int num_items : {1, 4})
   {
     c2h::device_vector<value_t> d_out(cluster_size_t::value * block_size);
     auto reference_result = cuda::std::accumulate(

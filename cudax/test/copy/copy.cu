@@ -142,8 +142,8 @@ TEST_CASE("copy d2d 2D strided padded row-major", "[copy][d2d][2d][stride][row]"
   constexpr int M  = 4;
   constexpr int N  = 8;
   constexpr int Ld = 16;
-  cuda::std::array<int, 2> shape{M, N};
-  cuda::std::array<int, 2> strides{Ld, 1};
+  const cuda::std::array<int, 2> shape{M, N};
+  const cuda::std::array<int, 2> strides{Ld, 1};
 
   using extents_t      = cuda::std::dextents<int, 2>;
   using mapping_t      = cuda::std::layout_stride::mapping<extents_t>;
@@ -167,8 +167,8 @@ TEST_CASE("copy d2d 2D strided padded column-major", "[copy][d2d][2d][stride][co
   constexpr int M  = 4;
   constexpr int N  = 8;
   constexpr int Ld = 16;
-  cuda::std::array<int, 2> shape{M, N};
-  cuda::std::array<int, 2> strides{1, Ld};
+  const cuda::std::array<int, 2> shape{M, N};
+  const cuda::std::array<int, 2> strides{1, Ld};
 
   using extents_t      = cuda::std::dextents<int, 2>;
   using mapping_t      = cuda::std::layout_stride::mapping<extents_t>;
@@ -193,9 +193,9 @@ TEST_CASE("copy d2d 3D strided permutation", "[copy][d2d][3d][stride][permutatio
   constexpr int D1 = 3;
   constexpr int D2 = 4;
   auto input       = make_iota<int>(D0 * D1 * D2);
-  cuda::std::array<int, 3> shape{D0, D1, D2};
-  cuda::std::array<int, 3> src_strides{D1 * D2, D2, 1};
-  cuda::std::array<int, 3> dst_strides{1, D2 * D0, D0};
+  const cuda::std::array<int, 3> shape{D0, D1, D2};
+  const cuda::std::array<int, 3> src_strides{D1 * D2, D2, 1};
+  const cuda::std::array<int, 3> dst_strides{1, D2 * D0, D0};
 
   using extents_t     = cuda::std::dextents<int, 3>;
   using mapping_t     = cuda::std::layout_stride::mapping<extents_t>;
@@ -224,9 +224,9 @@ TEST_CASE("copy d2d 3D strided different stride order", "[copy][d2d][3d][stride]
   constexpr int D1 = 3;
   constexpr int D2 = 4;
   auto input       = make_iota<int>(D0 * D1 * D2);
-  cuda::std::array<int, 3> shape{D0, D1, D2};
-  cuda::std::array<int, 3> src_strides{D1 * D2, D2, 1};
-  cuda::std::array<int, 3> dst_strides{8, 16, 1};
+  const cuda::std::array<int, 3> shape{D0, D1, D2};
+  const cuda::std::array<int, 3> src_strides{D1 * D2, D2, 1};
+  const cuda::std::array<int, 3> dst_strides{8, 16, 1};
 
   using extents_t     = cuda::std::dextents<int, 3>;
   using mapping_t     = cuda::std::layout_stride::mapping<extents_t>;

@@ -295,7 +295,7 @@ void TestEngineSaveRestore()
 template <typename Engine>
 void TestEngineEqual()
 {
-  ValidateEngineEqual<Engine> f;
+  const ValidateEngineEqual<Engine> f;
 
   // test host
   thrust::host_vector<bool> h(1);
@@ -313,7 +313,7 @@ void TestEngineEqual()
 template <typename Engine>
 void TestEngineUnequal()
 {
-  ValidateEngineUnequal<Engine> f;
+  const ValidateEngineUnequal<Engine> f;
 
   // test host
   thrust::host_vector<bool> h(1);
@@ -715,9 +715,9 @@ void ValidateDistributionCharacteristic()
     // test Distribution with smaller range than engine
 
     // test host
-    typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
-    typename Distribution::result_type smaller_min  = engine_range / 3;
-    typename Distribution::result_type smaller_max  = engine_range - smaller_min;
+    const typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
+    const typename Distribution::result_type smaller_min  = engine_range / 3;
+    const typename Distribution::result_type smaller_max  = engine_range - smaller_min;
 
     thrust::generate(h.begin(), h.end(), Validator(Distribution(smaller_min, smaller_max)));
 

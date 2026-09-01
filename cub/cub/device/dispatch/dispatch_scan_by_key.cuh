@@ -414,7 +414,7 @@ struct dispatch_scan_by_key
       return cudaSuccess;
     }
 
-    KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]);
+    KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]); // NOLINT(misc-const-correctness)
 
     // Construct the tile status interface
     if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
@@ -780,7 +780,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-  KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]);
+  KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]); // NOLINT(misc-const-correctness)
 
   // Construct the tile status interface
   if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))

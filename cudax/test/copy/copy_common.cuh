@@ -46,20 +46,20 @@ void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>
 {
   [[maybe_unused]] constexpr size_t Rank = sizeof...(Ints); // msvc warns, only used in nttp
   using extents_t                        = cuda::std::dextents<int, Rank>;
-  extents_t ext(static_cast<int>(shape)...);
-  typename SrcLayout::template mapping<extents_t> src_mapping(ext);
-  typename DstLayout::template mapping<extents_t> dst_mapping(ext);
+  const extents_t ext(static_cast<int>(shape)...);
+  const typename SrcLayout::template mapping<extents_t> src_mapping(ext);
+  const typename DstLayout::template mapping<extents_t> dst_mapping(ext);
 
   thrust::device_vector<T> d_src(input.begin(), input.end());
   thrust::device_vector<T> d_dst(expected.size(), T{0});
 
-  cuda::device_mdspan<T, extents_t, SrcLayout> src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
-  cuda::device_mdspan<T, extents_t, DstLayout> dst(thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
+  const cuda::device_mdspan<T, extents_t, SrcLayout> src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
+  const cuda::device_mdspan<T, extents_t, DstLayout> dst(thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
 
   cuda::experimental::copy(src, dst, stream);
   stream.sync();
 
-  thrust::host_vector<T> result(d_dst);
+  const thrust::host_vector<T> result(d_dst);
   REQUIRE(result == expected);
 }
 
@@ -88,20 +88,22 @@ void test_copy_strided(
 {
   using extents_t = cuda::std::dextents<int, Rank>;
   using mapping_t = cuda::std::layout_stride::mapping<extents_t>;
-  extents_t ext(shape);
-  mapping_t src_mapping(ext, src_strides);
-  mapping_t dst_mapping(ext, dst_strides);
+  const extents_t ext(shape);
+  const mapping_t src_mapping(ext, src_strides);
+  const mapping_t dst_mapping(ext, dst_strides);
 
   thrust::device_vector<T> d_src(input.begin(), input.end());
   thrust::device_vector<T> d_dst(expected.size(), T{0});
 
-  cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
-  cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> dst(thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
+  const cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> src(
+    thrust::raw_pointer_cast(d_src.data()), src_mapping);
+  const cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> dst(
+    thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
 
   cuda::experimental::copy(src, dst, stream);
   stream.sync();
 
-  thrust::host_vector<T> result(d_dst);
+  const thrust::host_vector<T> result(d_dst);
   REQUIRE(result == expected);
 }
 
@@ -157,19 +159,19 @@ void test_copy_stride_relaxed(
   using strides_t = cuda::dstrides<int, Rank>;
   using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
 
-  extents_t ext(shape);
+  const extents_t ext(shape);
   auto src_ptr = thrust::raw_pointer_cast(d_src.data());
   auto dst_ptr = thrust::raw_pointer_cast(d_dst.data());
-  mapping_t src_map(ext, strides_t(src_strides), src_offset);
-  mapping_t dst_map(ext, strides_t(dst_strides), dst_offset);
+  const mapping_t src_map(ext, strides_t(src_strides), src_offset);
+  const mapping_t dst_map(ext, strides_t(dst_strides), dst_offset);
 
-  cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> src(src_ptr, src_map);
-  cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> dst(dst_ptr, dst_map);
+  const cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> src(src_ptr, src_map);
+  const cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> dst(dst_ptr, dst_map);
 
   cuda::experimental::copy(src, dst, stream);
   stream.sync();
 
-  thrust::host_vector<T> result(d_dst);
+  const thrust::host_vector<T> result(d_dst);
   REQUIRE(result == expected);
 }
 

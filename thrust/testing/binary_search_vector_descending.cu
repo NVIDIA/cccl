@@ -35,12 +35,12 @@ void TestVectorLowerBoundDescendingSimple()
 
   // test with integral output type
   IntVector integral_output(10);
-  typename IntVector::iterator output_end = thrust::lower_bound(
+  const typename IntVector::iterator output_end = thrust::lower_bound(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(integral_output.end(), output_end);
 
-  IntVector ref{4, 4, 3, 3, 3, 2, 2, 1, 0, 0};
+  const IntVector ref{4, 4, 3, 3, 3, 2, 2, 1, 0, 0};
   ASSERT_EQUAL(ref, integral_output);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundDescendingSimple);
@@ -59,12 +59,12 @@ void TestVectorUpperBoundDescendingSimple()
 
   // test with integral output type
   IntVector integral_output(10);
-  typename IntVector::iterator output_end = thrust::upper_bound(
+  const typename IntVector::iterator output_end = thrust::upper_bound(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(output_end, integral_output.end());
 
-  IntVector ref{5, 4, 4, 3, 3, 3, 2, 2, 1, 0};
+  const IntVector ref{5, 4, 4, 3, 3, 3, 2, 2, 1, 0};
   ASSERT_EQUAL(ref, integral_output);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundDescendingSimple);
@@ -84,22 +84,22 @@ void TestVectorBinarySearchDescendingSimple()
 
   // test with boolean output type
   BoolVector bool_output(10);
-  typename BoolVector::iterator bool_output_end = thrust::binary_search(
+  const typename BoolVector::iterator bool_output_end = thrust::binary_search(
     vec.begin(), vec.end(), input.begin(), input.end(), bool_output.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(bool_output_end, bool_output.end());
 
-  BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
+  const BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
   ASSERT_EQUAL(bool_ref, bool_output);
 
   // test with integral output type
   IntVector integral_output(10, 2);
-  typename IntVector::iterator int_output_end = thrust::binary_search(
+  const typename IntVector::iterator int_output_end = thrust::binary_search(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(int_output_end, integral_output.end());
 
-  IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
+  const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
 
   ASSERT_EQUAL(int_ref, integral_output);
 }

@@ -313,7 +313,7 @@ struct AgentThreeWayPartition
     // Scatter items to shared memory (rejections first)
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
+      const int item_idx = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
 
       const OffsetT first_items_selection_indices  = AccumPackHelperT::first(items_selection_indices[ITEM]);
       const OffsetT second_items_selection_indices = AccumPackHelperT::second(items_selection_indices[ITEM]);
@@ -333,9 +333,9 @@ struct AgentThreeWayPartition
         else
         {
           // Medium item
-          int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
-                                  + (second_items_selection_indices - num_second_selections_prefix);
-          local_scatter_offset    = second_item_end + item_idx - local_selection_idx;
+          const int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
+                                        + (second_items_selection_indices - num_second_selections_prefix);
+          local_scatter_offset          = second_item_end + item_idx - local_selection_idx;
         }
 
         temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
@@ -354,11 +354,11 @@ struct AgentThreeWayPartition
     // NOLINTEND(bugprone-misplaced-widening-cast)
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      const int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;
 
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
       {
-        InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+        const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
 
         if (item_idx < first_item_end)
         {
@@ -370,7 +370,7 @@ struct AgentThreeWayPartition
         }
         else
         {
-          int rejection_idx              = item_idx - second_item_end;
+          const int rejection_idx        = item_idx - second_item_end;
           unselected_base[rejection_idx] = item;
         }
       }

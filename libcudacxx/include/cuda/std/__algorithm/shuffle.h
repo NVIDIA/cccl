@@ -42,7 +42,7 @@ __shuffle(_RandomAccessIterator __first, _Sentinel __last_sentinel, _UniformRand
   difference_type __d  = __last - __first;
   if (__d > 1)
   {
-    _Dp __uid;
+    _Dp __uid; // NOLINT(misc-const-correctness)
     for (--__last, (void) --__d; __first < __last; ++__first, (void) --__d)
     {
       difference_type __i = __uid(__g, _Pp(0, __d));

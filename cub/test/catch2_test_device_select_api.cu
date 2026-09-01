@@ -31,7 +31,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_out(num_items);
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  const is_even_t is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -59,7 +59,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     num_items,
     is_even);
 
-  c2h::device_vector<int> expected{0, 1, 5};
+  const c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -74,7 +74,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   c2h::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
   c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   c2h::device_vector<int> d_num_selected_out(num_items);
-  is_even_t is_even{};
+  const is_even_t is_even{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -94,7 +94,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
     num_items,
     is_even);
 
-  c2h::device_vector<int> expected{0, 1, 5};
+  const c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif-inplace
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -127,7 +127,7 @@ CUB_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[se
   // Resize input to new length
   d_data.resize(d_num_selected_out[0]);
 
-  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected{0, 2, 9, 5, 8};
   // example-end select-unique-inplace
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -152,7 +152,7 @@ CUB_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int dat
   constexpr int num_items                       = 8;
   thrust::device_vector<int> d_data             = {0, 2, 2, 9, 5, 5, 5, 8};
   thrust::device_vector<int> d_num_selected_out = {0};
-  my_equality_op equality_op{};
+  const my_equality_op equality_op{};
 
   // Determine temporary device storage requirements
   size_t temp_storage_bytes = 0;
@@ -174,7 +174,7 @@ CUB_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int dat
   // Resize input to new length
   d_data.resize(d_num_selected_out[0]);
 
-  thrust::device_vector<int> expected{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected{0, 2, 9, 5, 8};
   // example-end select-unique-inplace-eqop
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -299,7 +299,7 @@ CUB_TEST("DeviceSelect::UniqueByKey legacy size-query is unambiguous", "[select]
   int* d_keys_out           = nullptr;
   int* d_values_out         = nullptr;
   int* d_num_selected       = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess
           == cub::DeviceSelect::UniqueByKey(

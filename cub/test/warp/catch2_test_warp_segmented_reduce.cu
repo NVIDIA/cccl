@@ -22,7 +22,7 @@ __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
   const int tid = static_cast<int>(threadIdx.x);
 
   // Get warp index
-  int warp_id = tid / LOGICAL_WARP_THREADS;
+  const int warp_id = tid / LOGICAL_WARP_THREADS;
 
   // Load data
   T thread_data = in[tid];
@@ -153,8 +153,8 @@ void compute_host_reference(
   // Accumulate segments (lane 0 of each warp is implicitly a segment head)
   for (int warp = 0; warp < warps; ++warp)
   {
-    int warp_offset = warp * logical_warp_threads;
-    int item_offset = warp_offset + valid_warp_threads - 1;
+    const int warp_offset = warp * logical_warp_threads;
+    int item_offset       = warp_offset + valid_warp_threads - 1;
 
     // Last item in warp
     auto head_aggregate = h_in[item_offset];
@@ -286,9 +286,9 @@ CUB_TEST("Warp segmented sum works", "[reduce][warp]", CUB_SMALL, full_type_list
     d_in, d_out, warp_seg_sum_t{thrust::raw_pointer_cast(d_flags.data())});
 
   // Prepare verification data
-  c2h::host_vector<type> h_in       = d_in;
-  c2h::host_vector<uint8_t> h_flags = d_flags;
-  c2h::host_vector<type> h_out      = h_in;
+  const c2h::host_vector<type> h_in       = d_in;
+  const c2h::host_vector<uint8_t> h_flags = d_flags;
+  c2h::host_vector<type> h_out            = h_in;
   compute_host_reference(
     segmented_mod,
     h_in,
@@ -337,9 +337,9 @@ CUB_TEST("Warp segmented reduction works",
     d_in, d_out, warp_seg_reduction_t{thrust::raw_pointer_cast(d_flags.data()), red_op_t{}});
 
   // Prepare verification data
-  c2h::host_vector<type> h_in       = d_in;
-  c2h::host_vector<uint8_t> h_flags = d_flags;
-  c2h::host_vector<type> h_out      = h_in;
+  const c2h::host_vector<type> h_in       = d_in;
+  const c2h::host_vector<uint8_t> h_flags = d_flags;
+  c2h::host_vector<type> h_out            = h_in;
   compute_host_reference(
     segmented_mod,
     h_in,

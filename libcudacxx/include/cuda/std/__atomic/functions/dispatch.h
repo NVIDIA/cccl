@@ -285,7 +285,7 @@ __cuda_atomic_store_dispatch(_Backend __backend, _Type* __ptr, _Up __val, memory
   using __proxy_tag            = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __value_type __store         = __val;
-  __proxy_t* __val_proxy       = reinterpret_cast<__proxy_t*>(&__store);
+  const __proxy_t* __val_proxy = reinterpret_cast<__proxy_t*>(&__store);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -333,7 +333,7 @@ template <class _Backend, class _Type, class _Cas, class _Sco>
   using __proxy_tag            = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __exp_proxy       = reinterpret_cast<__proxy_t*>(__exp);
-  __proxy_t* __des_proxy       = reinterpret_cast<__proxy_t*>(&__des);
+  const __proxy_t* __des_proxy = reinterpret_cast<__proxy_t*>(&__des);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -374,7 +374,7 @@ _CCCL_HOST_DEVICE_API void __cuda_atomic_exchange_dispatch(
   using __proxy_tag _CCCL_NODEBUG     = __cuda_atomic_deduce_bitwise_tag_t<__value_type>;
   __proxy_pointee* __ptr_proxy        = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __old_proxy              = reinterpret_cast<__proxy_t*>(&__old);
-  __proxy_t* __new_proxy              = reinterpret_cast<__proxy_t*>(&__new);
+  __proxy_t* __new_proxy              = reinterpret_cast<__proxy_t*>(&__new); // NOLINT(misc-const-correctness)
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -425,7 +425,7 @@ __cuda_atomic_fetch_add_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  __proxy_t* __op_proxy        = reinterpret_cast<__proxy_t*>(&__op);
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -465,7 +465,7 @@ __cuda_atomic_fetch_and_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  __proxy_t* __op_proxy        = reinterpret_cast<__proxy_t*>(&__op);
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -505,7 +505,7 @@ __cuda_atomic_fetch_max_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  __proxy_t* __op_proxy        = reinterpret_cast<__proxy_t*>(&__op);
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -545,7 +545,7 @@ __cuda_atomic_fetch_min_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  __proxy_t* __op_proxy        = reinterpret_cast<__proxy_t*>(&__op);
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -585,7 +585,7 @@ __cuda_atomic_fetch_or_dispatch(_Backend __backend, _Type* __ptr, _Up __op, memo
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  __proxy_t* __op_proxy        = reinterpret_cast<__proxy_t*>(&__op);
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {
@@ -625,7 +625,7 @@ __cuda_atomic_fetch_xor_dispatch(_Backend __backend, _Type* __ptr, _Up __op, mem
   __value_type __dst{};
   __proxy_pointee* __ptr_proxy = reinterpret_cast<__proxy_pointee*>(__ptr);
   __proxy_t* __dst_proxy       = reinterpret_cast<__proxy_t*>(&__dst);
-  __proxy_t* __op_proxy        = reinterpret_cast<__proxy_t*>(&__op);
+  const __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
 #if _CCCL_CUDA_COMPILATION()
   if constexpr (_Backend::__requires_local_memory_workaround)
   {

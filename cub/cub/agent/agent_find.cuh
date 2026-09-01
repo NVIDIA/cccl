@@ -91,7 +91,7 @@ struct agent_t
 
     // vectorized loads begin
     auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
-    CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
+    const CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
 
     alignas(VectorT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
     auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);

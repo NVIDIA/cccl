@@ -96,7 +96,7 @@ void TestIsSortedUntilExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::is_sorted_until(sys, vec.begin(), vec.end());
 
   ASSERT_EQUAL(true, sys.is_valid());

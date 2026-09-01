@@ -15,7 +15,8 @@ void TestSetUnionDescendingSimple()
   Vector ref{4, 3, 3, 2, 0};
   Vector result(5);
 
-  Iterator end = thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
+  const Iterator end =
+    thrust::set_union(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
   ASSERT_EQUAL(ref, result);

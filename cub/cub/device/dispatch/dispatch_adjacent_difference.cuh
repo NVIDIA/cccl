@@ -90,8 +90,8 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
 
   Agent agent(storage, input, first_tile_previous, result, difference_op, num_items);
 
-  int tile_idx      = static_cast<int>(blockIdx.x);
-  OffsetT tile_base = static_cast<OffsetT>(tile_idx) * AdjacentDifferencePolicyT::ITEMS_PER_TILE;
+  const int tile_idx = static_cast<int>(blockIdx.x);
+  OffsetT tile_base  = static_cast<OffsetT>(tile_idx) * AdjacentDifferencePolicyT::ITEMS_PER_TILE;
 
   agent.Process(tile_idx, tile_base);
 }
@@ -166,10 +166,10 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
       constexpr int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
       const int num_tiles     = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
-      size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(InputT);
+      const size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(InputT);
 
-      void* allocations[1]       = {nullptr};
-      size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
+      void* allocations[1]             = {nullptr};
+      const size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
       error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
@@ -384,10 +384,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const int tile_size = active_policy.threads_per_block * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(static_cast<offset_t>(num_items), tile_size));
 
-  size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(input_t);
+  const size_t first_tile_previous_size = (AliasOpt == MayAlias::Yes) * num_tiles * sizeof(input_t);
 
-  void* allocations[1]       = {nullptr};
-  size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
+  void* allocations[1]             = {nullptr};
+  const size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))

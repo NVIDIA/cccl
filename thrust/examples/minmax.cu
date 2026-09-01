@@ -52,7 +52,7 @@ struct minmax_binary_op
 int main()
 {
   // input size
-  size_t N = 10;
+  const size_t N = 10;
 
   // initialize random number generator
   thrust::default_random_engine rng;
@@ -67,14 +67,14 @@ int main()
   thrust::device_vector<int> data = host_data;
 
   // setup arguments
-  minmax_unary_op<int> unary_op;
-  minmax_binary_op<int> binary_op;
+  const minmax_unary_op<int> unary_op;
+  const minmax_binary_op<int> binary_op;
 
   // initialize reduction with the first value
-  minmax_pair<int> init = unary_op(data[0]);
+  const minmax_pair<int> init = unary_op(data[0]);
 
   // compute minimum and maximum values
-  minmax_pair<int> result = thrust::transform_reduce(data.begin(), data.end(), unary_op, init, binary_op);
+  const minmax_pair<int> result = thrust::transform_reduce(data.begin(), data.end(), unary_op, init, binary_op);
 
   // print results
   std::cout << "[ ";

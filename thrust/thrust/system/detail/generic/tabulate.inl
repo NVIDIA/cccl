@@ -33,7 +33,7 @@ _CCCL_HOST_DEVICE void tabulate(
   // this causes problems when a zip_iterator is created in transform's implementation -- ForwardIterator is
   // incremented by a 64b difference_type and some compilers warn
   // to avoid this, specify the counting_iterator's difference_type to be the same as ForwardIterator's.
-  thrust::counting_iterator<difference_type, thrust::use_default, thrust::use_default, difference_type> iter(0);
+  const thrust::counting_iterator<difference_type, thrust::use_default, thrust::use_default, difference_type> iter(0);
 
   thrust::transform(exec, iter, iter + ::cuda::std::distance(first, last), first, unary_op);
 } // end tabulate()

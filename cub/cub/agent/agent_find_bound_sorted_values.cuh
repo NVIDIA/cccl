@@ -163,7 +163,7 @@ struct agent_t
 
     const auto partition_comp = Mode::make_partition_comp(compare_op);
 
-    int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x);
+    int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x); // NOLINT(misc-const-correctness)
     if constexpr (!IsFullTile)
     {
       d0_thread = ::cuda::std::min(d0_thread, total_in_tile);
