@@ -285,21 +285,13 @@ public:
     ::CUdevice __device{};
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     __device = ::cuda::__driver::__streamGetDevice(__stream);
-#  elif _CCCL_CTK_AT_LEAST(12, 5) // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 5) vvv
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
     {
-      // cuStreamGetCtx() returns CUDA_ERROR_NOT_SUPPORTED for a stream that cuGreenCtxStreamCreate()
-      // made. cuStreamGetCtx_v2() supports such a stream, and always gives a usable device context.
-      const auto _ = __ensure_current_context{::cuda::__driver::__streamGetCtx_v2(__stream).__ctx_device_};
+      const auto _ = __ensure_current_context{*this};
 
       __device = ::cuda::__driver::__ctxGetDevice();
     }
-#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
-    {
-      const auto _ = __ensure_current_context{::cuda::__driver::__streamGetCtx(__stream)};
-
-      __device = ::cuda::__driver::__ctxGetDevice();
-    }
-#  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
     return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
   }
 
@@ -327,7 +319,7 @@ public:
     }
     _CCCL_UNREACHABLE();
 #  endif // ^^^ _CCCL_AT_LEAST(12, 5) ^^^
-    return __logical_device_ref{this->device()};
+    return {this->device(), this->__cu_context()};
   }
 
   _CCCL_DIAG_POP
@@ -338,6 +330,29 @@ public:
   {
     return *this;
   }
+
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  [[nodiscard]] _CCCL_HOST_API ::CUcontext __cu_context() const
+  {
+    // cuStreamGetCtx() returns CUDA_ERROR_NOT_SUPPORTED for a stream that
+    // cuGreenCtxStreamCreate() made. cuStreamGetCtx_v2() supports such a stream, and always
+    // gives a usable device context.
+#    if _CCCL_CTK_AT_LEAST(12, 5)
+    // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
+    // the stream, not the one you would get from cuCtxFromGreenCtx(green).
+    switch (const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream); __ctx.__ctx_kind_)
+    {
+      case ::cuda::__driver::__ctx_from_stream::__kind::__green:
+        return ::cuda::__driver::__ctxFromGreenCtx(__ctx.__ctx_green_);
+      case ::cuda::__driver::__ctx_from_stream::__kind::__device:
+        return __ctx.__ctx_device_;
+    }
+    _CCCL_UNREACHABLE();
+#    else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
+    return ::cuda::__driver::__streamGetCtx(__stream);
+#    endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
+  }
+#  endif // !_CCCL_DOXYGEN_INVOKED
 };
 
 _CCCL_HOST_API inline void event_ref::record(stream_ref __stream) const
@@ -371,8 +386,7 @@ _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags 
 #  ifndef _CCCL_DOXYGEN_INVOKED
 _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
-  auto __ctx = __driver::__streamGetCtx(__stream.get());
-  ::cuda::__driver::__ctxPush(__ctx);
+  ::cuda::__driver::__ctxPush(__stream.__cu_context());
 }
 #  endif // !_CCCL_DOXYGEN_INVOKED
 
