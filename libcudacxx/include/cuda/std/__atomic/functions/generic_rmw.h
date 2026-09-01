@@ -69,7 +69,8 @@ template <size_t _Size>
 using __cuda_atomic_rmw_type_t = decltype(__cuda_atomic_rmw_type_impl<_Size>());
 
 template <class _Type, class _RmwType>
-[[nodiscard]] _CCCL_HOST_DEVICE_API _RmwType __cuda_atomic_rmw_replace(_RmwType __old, _Type __op, uint8_t __offset)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _RmwType
+__cuda_atomic_rmw_replace([[maybe_unused]] _RmwType __old, _Type __op, uint8_t __offset)
 {
   if constexpr (sizeof(_Type) == sizeof(_RmwType))
   {
