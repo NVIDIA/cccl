@@ -34,6 +34,7 @@
  */
 
 #include <cstdio>
+#include <random>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda/std/span>
@@ -84,10 +85,12 @@ try
   cudax::vector<float> C(numElements); // output
 
   // Initialize the host input vectors
+  std::mt19937 gen{std::random_device{}()};
+  std::uniform_real_distribution<float> dist{0.0f, 1.0f};
   for (int i = 0; i < numElements; ++i)
   {
-    A[i] = static_cast<float>(rand()) / (float) RAND_MAX;
-    B[i] = static_cast<float>(rand()) / (float) RAND_MAX;
+    A[i] = dist(gen);
+    B[i] = dist(gen);
   }
 
   // Define the kernel launch parameters
