@@ -26,5 +26,5 @@ SIMD
 
    * - :ref:`cuda::simd::abs_diff <libcudacxx-extended-api-simd-abs-diff>`
      - Performs element-wise absolute difference of two integer ``basic_vec`` objects
-     - CCCL 3.5.0
-     - CUDA 13.5
+     - CCCL 3.6.0
+     - CUDA 13.6
