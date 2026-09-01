@@ -331,6 +331,7 @@ public:
     return *this;
   }
 
+protected:
 #  ifndef _CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_HOST_API ::CUcontext __cu_context() const
   {
@@ -386,7 +387,12 @@ _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags 
 #  ifndef _CCCL_DOXYGEN_INVOKED
 _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
-  ::cuda::__driver::__ctxPush(__stream.__cu_context());
+  struct __access final : stream_ref
+  {
+    using stream_ref::__cu_context;
+  };
+
+  ::cuda::__driver::__ctxPush(static_cast<__access&>(__stream).__cu_context());
 }
 #  endif // !_CCCL_DOXYGEN_INVOKED
 
