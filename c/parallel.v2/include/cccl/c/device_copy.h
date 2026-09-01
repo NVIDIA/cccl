@@ -17,11 +17,6 @@
 
 CCCL_C_EXTERN_C_BEGIN
 
-enum
-{
-  CCCL_DEVICE_COPY_MAX_RANK = 8,
-};
-
 typedef enum cccl_device_copy_axis_metadata_kind_t
 {
   // The value for this axis is supplied by the runtime view passed to cccl_device_copy.
@@ -64,7 +59,7 @@ typedef struct cccl_device_copy_view_build_t
 typedef struct cccl_device_copy_build_spec_t
 {
   cccl_type_info value_type;
-  // Current implementation accepts ranks in [1, CCCL_DEVICE_COPY_MAX_RANK].
+  // Current implementation accepts positive ranks.
   size_t rank;
   // Array of rank extent metadata entries. Static extent values must be
   // non-negative. Runtime extent values are supplied by runtime views. Current

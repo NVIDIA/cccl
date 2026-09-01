@@ -27,7 +27,6 @@
 namespace
 {
 constexpr const char* device_copy_fn_name = "cccl_jit_device_copy";
-constexpr size_t max_device_copy_rank     = CCCL_DEVICE_COPY_MAX_RANK;
 
 using device_copy_fn_t = int (*)(
   const void* source_data,
@@ -204,7 +203,7 @@ CUresult validate_build_spec(cccl_device_copy_build_spec_t spec)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (spec.rank == 0 || spec.rank > max_device_copy_rank)
+  if (spec.rank == 0)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -580,8 +579,8 @@ CUresult cccl_device_copy(cccl_device_copy_build_result_t build,
                           CUstream stream)
 try
 {
-  if (build.copy_fn == nullptr || build.rank == 0 || build.rank > max_device_copy_rank
-      || !is_supported_layout(build.source_layout) || !is_supported_layout(build.destination_layout))
+  if (build.copy_fn == nullptr || build.rank == 0 || !is_supported_layout(build.source_layout)
+      || !is_supported_layout(build.destination_layout))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

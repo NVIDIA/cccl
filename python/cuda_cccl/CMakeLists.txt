@@ -186,3 +186,59 @@ target_link_libraries(
 set_target_properties(_bindings_impl PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
 
 install(TARGETS _bindings_impl DESTINATION cuda/compute/${CUDA_VERSION_DIR})
+
+if (CCCL_PYTHON_USE_V2)
+  set(
+    device_copy_pyx_source_file
+    "${cuda_cccl_SOURCE_DIR}/cuda/compute/_device_copy_impl.pyx"
+  )
+  set(
+    _generated_device_copy_extension_src
+    "${cuda_cccl_BINARY_DIR}/_device_copy_impl.c"
+  )
+  set(_device_copy_depfile "${cuda_cccl_BINARY_DIR}/_device_copy_impl.c.dep")
+
+  add_custom_command(
+    OUTPUT "${_generated_device_copy_extension_src}"
+    COMMAND
+      "${Python3_EXECUTABLE}" -m cython
+      # gersemi: off
+      ${CYTHON_FLAGS}
+      -I "${CMAKE_CURRENT_BINARY_DIR}"
+      "${device_copy_pyx_source_file}"
+      --output-file "${_generated_device_copy_extension_src}"
+    # gersemi: on
+    DEPENDS "${device_copy_pyx_source_file}"
+    DEPFILE "${_device_copy_depfile}"
+    COMMENT
+      "Cythonizing ${device_copy_pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
+  )
+  add_custom_target(
+    cythonize_device_copy_impl
+    ALL
+    DEPENDS "${_generated_device_copy_extension_src}"
+  )
+
+  python3_add_library(
+    _device_copy_impl
+    MODULE
+    WITH_SOABI
+    "${_generated_device_copy_extension_src}"
+  )
+  add_dependencies(_device_copy_impl cythonize_device_copy_impl)
+  target_link_libraries(
+    _device_copy_impl
+    PRIVATE #
+      ${_cccl_c_parallel_target}
+      CUDA::cuda_driver
+  )
+  set_target_properties(
+    _device_copy_impl
+    PROPERTIES INSTALL_RPATH "$ORIGIN/cccl"
+  )
+
+  install(
+    TARGETS _device_copy_impl
+    DESTINATION cuda/compute/${CUDA_VERSION_DIR}
+  )
+endif()
