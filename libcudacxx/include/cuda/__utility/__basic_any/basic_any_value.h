@@ -498,7 +498,7 @@ private:
   __convert_from(__basic_any<_SrcInterface>&& __from) noexcept(::cuda::std::same_as<_SrcInterface, _Interface>)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<_SrcInterface>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<_SrcInterface>;
     // if the source is an lvalue reference, we need to copy from it.
     if constexpr (__is_lvalue_reference_v<_SrcInterface>)
     {
@@ -535,7 +535,7 @@ private:
   _CCCL_HOST_DEVICE_API void __convert_from(__basic_any<_SrcInterface> const& __from)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
     if (auto __to_vptr = __vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
     {
       bool const __small = __from.__copy_to(__buffer_, __size_, __align_);

@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_default_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp)>
+is_nothrow_default_constructible : bool_constant<_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp)>
 {};
 
 template <class _Tp, class... _Args>
@@ -39,11 +39,11 @@ inline constexpr bool is_nothrow_default_constructible_v = _CCCL_BUILTIN_IS_NOTH
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_default_constructible : public is_nothrow_constructible<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_default_constructible : bool_constant<is_nothrow_constructible_v<_Tp>>
 {};
 
 template <class _Tp>
-inline constexpr bool is_nothrow_default_constructible_v = is_nothrow_constructible<_Tp>::value;
+inline constexpr bool is_nothrow_default_constructible_v = is_nothrow_constructible_v<_Tp>;
 
 #endif // defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 
