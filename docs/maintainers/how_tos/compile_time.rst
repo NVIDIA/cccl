@@ -30,9 +30,9 @@ flow:
     -baseline-ref origin/main \
     -- --slices /path/to/slices.json
 
-Supported projects are ``pytorch``, ``matx``, and ``rapids``. RAPIDS also
-requires one or more ``-target`` options naming the libraries selected for the
-build.
+Supported projects are ``pytorch``, ``matx``, and ``rapids``. By default,
+RAPIDS builds every C++ project in its build manifest; pass one or more
+``-target`` options to select specific libraries instead.
 
 The CI slices live in ``ci/matrix.yaml`` under
 ``compile_time.pull_request[].slices``. To reproduce the PR shape locally, copy

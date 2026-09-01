@@ -67,7 +67,8 @@ Build options:
   -preset <name>              CCCL CMake configure preset (default: all-dev)
   -cmake-options <args>       Extra CCCL CMake options handled by ci/build_common.sh
   -target <name>              Build-system target; repeatable
-                              (CCCL default: public include-check target set)
+                              (CCCL default: public include-check target set;
+                              RAPIDS default: all manifest C++ projects)
   -baseline-ref <commit-ish>  Build this commit-ish as a comparison baseline
   -skip-configure             Do not run cmake configure
   -skip-build                 Do not run cmake --build
@@ -161,7 +162,6 @@ create_current_snapshot() {
 
   # Every index operation below is redirected away from the user's .git/index.
   index_file="$(mktemp "${TMPDIR:-/tmp}/cccl-compile-time-index.XXXXXX")"
-  rm -f "${index_file}"
   if ! GIT_INDEX_FILE="${index_file}" git -C "${repo_root}" read-tree HEAD; then
     rm -f "${index_file}"
     return 1
@@ -421,8 +421,14 @@ case "${project}" in
     trace_repo_root="${project_build_dir}"
     ;;
   rapids)
-    ((${#build_targets[@]} > 0)) \
-      || { echo "error: rapids requires at least one -target library" >&2; exit 1; }
+    if ((${#build_targets[@]} == 0)); then
+      require_command yq
+      rapids_manifest="${PROJECT_MANIFEST_YML:-/opt/rapids-build-utils/manifest.yaml}"
+      rapids_targets="$(yq -r '.repos[].cpp[].name' "${rapids_manifest}")"
+      [[ -n "${rapids_targets}" ]] \
+        || { echo "error: RAPIDS manifest contains no C++ projects" >&2; exit 1; }
+      mapfile -t build_targets <<< "${rapids_targets}"
+    fi
     project_build_dir="${current_build_dir}/${project}"
     trace_repo_root="${HOME}"
     ;;

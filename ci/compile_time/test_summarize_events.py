@@ -1806,6 +1806,29 @@ compile_time:
             rendered,
         )
 
+    def test_combiner_falls_back_to_artifacts_when_summaries_are_too_large(
+        self,
+    ) -> None:
+        artifacts_url = "https://example.test/artifacts"
+        configs = [
+            {"id": f"config-{index}", "name": f"Configuration {index}"}
+            for index in range(100)
+        ]
+
+        rendered = combine_pr_comments.render_combined_comment(
+            {"include": configs},
+            self.work / "missing-fragments",
+            artifacts_url=artifacts_url,
+            max_comment_bytes=1_000,
+        )
+
+        if rendered is None:
+            self.fail("non-empty matrix did not render a comment")
+        self.assertLessEqual(len(rendered.encode("utf-8")), 1_000)
+        self.assertIn("Per-configuration summaries also exceed", rendered)
+        self.assertIn(artifacts_url, rendered)
+        self.assertNotIn("<details>", rendered)
+
     def test_combiner_keeps_full_fragments_when_they_fit(self) -> None:
         fragments = self.work / "fragments"
         fragment_dir = fragments / "compile-time-cccl-comment"
@@ -1859,6 +1882,32 @@ compile_time:
             self.assertIn("-DCMAKE_CUDA_COMPILER_LAUNCHER=", script)
             self.assertIn("CCCL_RESOLVE_TAG_LOCALLY", script)
             self.assertNotIn("nvcc_trace_launcher", script)
+
+    def test_wrapper_keeps_temporary_index_until_git_initializes_it(self) -> None:
+        script = WRAPPER_SCRIPT.read_text(encoding="utf-8")
+        snapshot = script.split("create_current_snapshot() {", 1)[1].split("\n}", 1)[0]
+        index_created = snapshot.index('index_file="$(mktemp ')
+        index_initialized = snapshot.index('GIT_INDEX_FILE="${index_file}" git ')
+
+        self.assertNotIn(
+            'rm -f "${index_file}"',
+            snapshot[index_created:index_initialized],
+        )
+
+    def test_wrapper_defaults_rapids_to_all_manifest_cpp_projects(self) -> None:
+        script = WRAPPER_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'rapids_manifest="${PROJECT_MANIFEST_YML:-'
+            '/opt/rapids-build-utils/manifest.yaml}"',
+            script,
+        )
+        self.assertIn(
+            'rapids_targets="$(yq -r \'.repos[].cpp[].name\' "${rapids_manifest}")"',
+            script,
+        )
+        self.assertIn('mapfile -t build_targets <<< "${rapids_targets}"', script)
+        self.assertNotIn("rapids requires at least one -target library", script)
 
     def test_render_comment_omits_empty_sections_and_splits_directions(self) -> None:
         summary = self.work / "summary.json"

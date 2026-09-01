@@ -187,7 +187,16 @@ def render_combined_comment(
         + "\n"
     )
     if len(compact.encode("utf-8")) > max_comment_bytes:
-        raise SystemExit("compact comment exceeds the configured size limit")
+        return (
+            preamble(
+                artifacts_url=artifacts_url,
+                compact=True,
+                download_failed=artifact_download_failed,
+            ).rstrip()
+            + "\n\n"
+            + "Per-configuration summaries also exceed the comment size limit; "
+            + f"[open the full reports in the workflow artifacts]({artifacts_url}).\n"
+        )
     return compact
 
 
