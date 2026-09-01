@@ -47,7 +47,6 @@
 
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
 
 using namespace cuda::experimental::stf;
 
@@ -125,21 +124,22 @@ int main()
   auto s4 = report("2-D blocked, tensor-of-tiles", grid4, score(grid4, tensor_of_tiles));
 
   // The structured tiers are byte-exact, so the contrast verifies precisely
-  // (explicit checks, not asserts: they must hold in release builds too).
+  // (EXPECT throws with the offending values in release builds too).
   const size_t total = ROWS * COLS * sizeof(float);
-  auto expect        = [](bool ok, const char* what) {
-    if (!ok)
-    {
-      fprintf(stderr, "Verification FAILED: %s\n", what);
-      exit(1);
-    }
-  };
-  expect(::std::fabs(s1.accuracy() - 0.5) < 1e-12, "mixed pages misplace half the bytes");
-  expect(s2.accuracy() == 1.0 && s2.nallocs == 2, "two page-aligned runs");
-  expect(::std::fabs(s3.accuracy() - 0.5) < 1e-12, "2-D on a flat layout is still mixed pages");
-  expect(s4.accuracy() == 1.0, "whole-tile runs are page-exact under any tile distribution");
-  expect(s1.total_bytes == total && s2.total_bytes == total && s3.total_bytes == total && s4.total_bytes == total,
-         "every candidate scored the same matrix");
+  // Mixed pages misplace half the bytes, whatever owner each page gets:
+  EXPECT(::std::fabs(s1.accuracy() - 0.5) < 1e-12);
+  // Two contiguous page-aligned runs, one per owner:
+  EXPECT(s2.accuracy() == 1.0);
+  EXPECT(s2.nallocs == 2);
+  // 2-D distribution over a flat layout still mixes every page:
+  EXPECT(::std::fabs(s3.accuracy() - 0.5) < 1e-12);
+  // Whole-tile runs are page-exact under any distribution of the tiles:
+  EXPECT(s4.accuracy() == 1.0);
+  // Every candidate scored the same matrix:
+  EXPECT(s1.total_bytes == total);
+  EXPECT(s2.total_bytes == total);
+  EXPECT(s3.total_bytes == total);
+  EXPECT(s4.total_bytes == total);
 
   printf("\n  Same matrix, same page size: the run length decides. Score with\n"
          "  evaluate_localized_placement() before allocating; misplaced bytes\n"
