@@ -114,8 +114,8 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
     - {jobs: ['build'], project: 'cudax', std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Newest
     # CTK '13.X' build with tile support: default projects
-    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], ctk: '13.X', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
-    - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   ctk: '13.X', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
+    - {jobs: ['build'],                     std: 'all', project: ['libcudacxx', 'thrust'], ctk: '13.X', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
+    - {jobs: ['build_nolid', 'build_lid0'], std: 'all', project: 'cub',                    ctk: '13.X', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
     # Current CTK testing:
     - {jobs: ['test'], project: 'thrust',     std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
     - {jobs: ['test'], project: ['libcudacxx', 'cudax'], std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 't4'}
