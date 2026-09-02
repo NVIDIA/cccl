@@ -160,7 +160,15 @@ void test_container_model(place_group& group)
     EXPECT(total_elements(arr) == total);
 
     bool overflow_threw = false;
-    ::std::vector<size_t> too_big(arr.num_shards(), n); // > per-shard capacity
+    // One past each shard's own capacity: exceeds regardless of how many
+    // locality domains the machine has (with P shards of an n-element array,
+    // n per shard only overflows when P >= 2 — a single-domain runner has
+    // capacity == n and must still see the refusal).
+    ::std::vector<size_t> too_big(arr.num_shards());
+    for (size_t i = 0; i < too_big.size(); ++i)
+    {
+      too_big[i] = arr.shard(i).capacity + 1;
+    }
     try
     {
       arr.commit_sizes(too_big);
