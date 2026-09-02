@@ -11,11 +11,13 @@ from .reduce import reduce as reduce
 from .reduce import sum as sum
 from .thread_group import ThreadGroup as ThreadGroup
 from .thread_group import this_block as this_block
+from .thread_group import this_warp as this_warp
 
 __all__ = [
     "CoopCompilerContextRequiredError",
     "ThreadGroup",
     "this_block",
+    "this_warp",
     "reduce",
     "sum",
 ]

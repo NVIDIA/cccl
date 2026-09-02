@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import Literal
+
 import numpy as np
 
 from cuda import coop
@@ -26,6 +28,19 @@ def block_sum(value: np.float32) -> np.float32:
     )
 
 
+def warp_reduce(value: np.int32, valid_items: np.int32) -> np.int32:
+    return coop.reduce(
+        coop.this_warp(),
+        value,
+        binary_op="maximum",
+        valid_items=valid_items,
+    )
+
+
+def warp_sum(value: np.float32) -> np.float32:
+    return coop.sum(coop.this_warp(), value)
+
+
 def narrow_integer_sums(
     signed8: np.int8,
     signed16: np.int16,
@@ -39,4 +54,4 @@ def narrow_integer_sums(
     )
 
 
-opaque_group = coop.ThreadGroup()  # type: ignore[call-arg]
+opaque_group: coop.ThreadGroup[Literal["block"]] = coop.ThreadGroup()  # type: ignore[call-arg]

@@ -38,7 +38,15 @@ from .group import (
     resolve_thread_group,
 )
 from .launch import Dim3, LaunchFactOrigin, LaunchFacts
-from .thread_group import ThreadGroup, ThreadHierarchy, this_block
+from .thread_group import (
+    PHYSICAL_WARP_THREADS,
+    ThreadGroup,
+    ThreadGroupKind,
+    ThreadHierarchy,
+    this_block,
+    this_warp,
+)
+from .warp import WarpReduceOperation, WarpReduceSpec, make_warp_reduce_spec
 
 __all__ = [
     "ArgumentBinding",
@@ -61,6 +69,7 @@ __all__ = [
     "LaunchFactOrigin",
     "LaunchFacts",
     "ParticipationContract",
+    "PHYSICAL_WARP_THREADS",
     "ResultContract",
     "ResultOwnership",
     "ResultVisibility",
@@ -69,12 +78,17 @@ __all__ = [
     "SynchronizationScope",
     "TempStorageContract",
     "ThreadGroup",
+    "ThreadGroupKind",
     "ThreadHierarchy",
+    "WarpReduceOperation",
+    "WarpReduceSpec",
     "make_block_reduce_spec",
     "make_group_primitive_call",
+    "make_warp_reduce_spec",
     "normalize_block_reduce_algorithm",
     "normalize_block_reduce_operator",
     "plan_group_primitive",
     "resolve_thread_group",
     "this_block",
+    "this_warp",
 ]

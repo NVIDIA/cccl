@@ -2,14 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral CUDA thread-block descriptors."""
+"""Backend-neutral CUDA thread-group descriptors."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Generic, Literal, TypeVar
 
 Dim3 = tuple[int, int, int]
+PHYSICAL_WARP_THREADS = 32
+ThreadGroupKind = Literal["block", "warp"]
+_GroupKindT_co = TypeVar(
+    "_GroupKindT_co",
+    bound=ThreadGroupKind,
+    covariant=True,
+)
 
 
 def normalize_thread_dim(
@@ -63,15 +70,15 @@ class ThreadHierarchy:
 
 
 @dataclass(frozen=True, init=False)
-class ThreadGroup:
-    """Descriptor for the current CUDA thread block.
+class ThreadGroup(Generic[_GroupKindT_co]):
+    """Descriptor for the current CUDA thread block or physical warp.
 
     The descriptor is compiler-free. A backend resolves its exact dimensions
     from verified launch facts while tracing a cooperative operation.
 
     Raises:
         TypeError: If user code attempts to construct the opaque descriptor
-            directly instead of calling ``this_block``.
+            directly instead of calling ``this_block`` or ``this_warp``.
 
     Example:
         >>> from cuda import coop
@@ -80,24 +87,28 @@ class ThreadGroup:
         'block'
     """
 
-    kind: Literal["block"] = "block"
+    kind: ThreadGroupKind = "block"
     hierarchy: ThreadHierarchy = field(default_factory=ThreadHierarchy)
     source: str = field(default="current", compare=False, hash=False)
 
     def __init__(self) -> None:
         raise TypeError(
-            "ThreadGroup descriptors are opaque; call cuda.coop.this_block()"
+            "ThreadGroup descriptors are opaque; call cuda.coop.this_block() "
+            "or cuda.coop.this_warp()"
         )
 
     @classmethod
     def _create(
         cls,
         *,
+        kind: ThreadGroupKind,
         hierarchy: ThreadHierarchy | None = None,
         source: str = "current",
     ) -> ThreadGroup:
+        if kind not in {"block", "warp"}:
+            raise ValueError(f"unsupported thread group kind {kind!r}")
         result = object.__new__(cls)
-        object.__setattr__(result, "kind", "block")
+        object.__setattr__(result, "kind", kind)
         object.__setattr__(result, "hierarchy", hierarchy or ThreadHierarchy())
         object.__setattr__(result, "source", source)
         return result
@@ -108,6 +119,8 @@ class ThreadGroup:
 
     @property
     def static_size(self) -> int | None:
+        if self.kind == "warp":
+            return PHYSICAL_WARP_THREADS
         return self.hierarchy.block_thread_count
 
     @property
@@ -122,7 +135,11 @@ class ThreadGroup:
     ) -> ThreadGroup:
         if not isinstance(hierarchy, ThreadHierarchy):
             raise TypeError("ThreadGroup hierarchy must be a ThreadHierarchy")
-        return ThreadGroup._create(hierarchy=hierarchy, source=source)
+        return ThreadGroup._create(
+            kind=self.kind,
+            hierarchy=hierarchy,
+            source=source,
+        )
 
 
 def this_block() -> ThreadGroup:
@@ -145,13 +162,41 @@ def this_block() -> ThreadGroup:
         'block'
     """
 
-    return ThreadGroup._create()
+    return ThreadGroup._create(kind="block")
+
+
+def this_warp() -> ThreadGroup:
+    """Return a descriptor for the current physical CUDA warp.
+
+    The descriptor always represents 32 lanes. A compiler integration resolves
+    the surrounding block dimensions and rejects launches containing a partial
+    physical warp when lowering a collective.
+
+    Returns:
+        A compiler-free physical-warp descriptor accepted by cooperative
+        primitives.
+
+    Raises:
+        RuntimeError: If a compiler later cannot resolve exact compatible block
+            dimensions.
+
+    Example:
+        >>> from cuda import coop
+        >>> warp = coop.this_warp()
+        >>> warp.kind
+        'warp'
+    """
+
+    return ThreadGroup._create(kind="warp")
 
 
 __all__ = [
     "Dim3",
+    "PHYSICAL_WARP_THREADS",
     "ThreadGroup",
+    "ThreadGroupKind",
     "ThreadHierarchy",
     "normalize_thread_dim",
     "this_block",
+    "this_warp",
 ]

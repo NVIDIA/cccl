@@ -26,7 +26,7 @@ def make_group_primitive_call(
     *,
     source: str = "canonical",
 ) -> GroupPrimitiveCall:
-    """Build one canonical group reduction call."""
+    """Build one canonical block or warp reduction call."""
 
     return GroupPrimitiveCall(group=group, operation=operation, source=source)
 
@@ -35,7 +35,7 @@ def plan_group_primitive(
     call: GroupPrimitiveCall,
     launch: LaunchFacts,
 ) -> GroupLoweringPlan:
-    """Resolve one scalar block reduction to a typed CUB plan."""
+    """Resolve one scalar block or warp reduction to a typed CUB plan."""
 
     if not isinstance(call, GroupPrimitiveCall):
         raise TypeError("call must be a GroupPrimitiveCall")

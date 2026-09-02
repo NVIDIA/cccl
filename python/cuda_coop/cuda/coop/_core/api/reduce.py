@@ -4,7 +4,7 @@
 
 """Portable cooperative reduction entry points.
 
-The root functions validate the conservative block-reduction profile before
+The root functions validate the conservative group-reduction profile before
 delegating to the active backend. Semantic planning and provider selection live
 in the portable group family and backend lowering layers.
 """
@@ -24,16 +24,21 @@ from ._dispatch import _group_primitive_marker
 _ScalarT = TypeVar("_ScalarT")
 
 
-def _validate_block_group(group: ThreadGroup, *, operation: str) -> None:
+def _validate_group(group: ThreadGroup, *, operation: str) -> None:
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"cuda.coop.{operation} group must be a ThreadGroup")
-    if group.kind != "block":
+    if group.kind not in {"block", "warp"}:
         raise NotImplementedError(
-            f"cuda.coop.{operation} currently supports block groups only"
+            f"cuda.coop.{operation} currently supports block and warp groups only"
         )
 
 
-def _normalize_valid_items(operation: str, valid_items: Any) -> Any:
+def _normalize_valid_items(
+    operation: str,
+    valid_items: Any,
+    *,
+    group_size: int | None = None,
+) -> Any:
     if valid_items is None:
         return None
     if isinstance(valid_items, bool):
@@ -42,6 +47,10 @@ def _normalize_valid_items(operation: str, valid_items: Any) -> Any:
         normalized = int(valid_items)
         if normalized < 1:
             raise ValueError(f"cuda.coop.{operation} valid_items must be at least 1")
+        if group_size is not None and normalized > group_size:
+            raise ValueError(
+                f"cuda.coop.{operation} valid_items must be at most {group_size}"
+            )
         return normalized
     try:
         width = valid_items.width
@@ -72,21 +81,22 @@ def reduce(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> _ScalarT:
-    """Reduce one scalar per block thread and return the root result.
+    """Reduce one scalar per group member and return the root result.
 
-    Every thread in ``group`` must participate in converged control flow. The
-    return value is defined only for block rank zero; other threads must not
-    consume it. ``valid_items`` selects a prefix of participating block ranks.
+    Every member of ``group`` must participate in converged control flow. The
+    return value is defined only for group rank zero; other members must not
+    consume it. ``valid_items`` selects a prefix of participating group ranks.
 
     Args:
-        group: The current CUDA thread block.
+        group: The current CUDA thread block or physical warp.
         value: One numeric scalar owned by the calling thread.
         binary_op: Built-in reduction selector. The default is ``"sum"``.
-        valid_items: Optional number of valid block ranks, starting at rank zero.
-        algorithm: Optional deterministic CUB BlockReduce algorithm selector.
+        valid_items: Optional number of valid group ranks, starting at rank zero.
+        algorithm: Optional deterministic CUB BlockReduce algorithm selector;
+            accepted for block groups only.
 
     Returns:
-        The reduced scalar, defined only for block rank zero.
+        The reduced scalar, defined only for group rank zero.
 
     Raises:
         TypeError: If ``group`` or a static ``valid_items`` is invalid.
@@ -97,17 +107,28 @@ def reduce(
         >>> total = coop.reduce(block, value, binary_op="sum")
     """
 
-    _validate_block_group(group, operation="reduce")
+    _validate_group(group, operation="reduce")
     operator = normalize_block_reduce_operator(binary_op)
-    selected_algorithm = normalize_block_reduce_algorithm(algorithm)
-    valid_items = _normalize_valid_items("reduce", valid_items)
+    if group.kind == "warp" and algorithm is not None:
+        raise ValueError(
+            "cuda.coop.reduce algorithm selection applies to block groups, "
+            "not physical warps"
+        )
+    selected_algorithm = (
+        normalize_block_reduce_algorithm(algorithm).value
+        if group.kind == "block"
+        else None
+    )
+    valid_items = _normalize_valid_items(
+        "reduce", valid_items, group_size=group.static_size
+    )
     return _group_primitive_marker(
         "reduce",
         group,
         value,
         binary_op=operator.value,
         valid_items=valid_items,
-        algorithm=selected_algorithm.value,
+        algorithm=selected_algorithm,
     )
 
 
@@ -119,20 +140,21 @@ def sum(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> _ScalarT:
-    """Sum one scalar per block thread and return the root result.
+    """Sum one scalar per group member and return the root result.
 
-    Every thread in ``group`` must participate in converged control flow. The
-    return value is defined only for block rank zero; other threads must not
-    consume it. ``valid_items`` selects a prefix of participating block ranks.
+    Every member of ``group`` must participate in converged control flow. The
+    return value is defined only for group rank zero; other members must not
+    consume it. ``valid_items`` selects a prefix of participating group ranks.
 
     Args:
-        group: The current CUDA thread block.
+        group: The current CUDA thread block or physical warp.
         value: One numeric scalar owned by the calling thread.
-        valid_items: Optional number of valid block ranks, starting at rank zero.
-        algorithm: Optional deterministic CUB BlockReduce algorithm selector.
+        valid_items: Optional number of valid group ranks, starting at rank zero.
+        algorithm: Optional deterministic CUB BlockReduce algorithm selector;
+            accepted for block groups only.
 
     Returns:
-        The sum, defined only for block rank zero.
+        The sum, defined only for group rank zero.
 
     Raises:
         TypeError: If ``group`` or a static ``valid_items`` is invalid.
@@ -143,15 +165,26 @@ def sum(
         >>> total = coop.sum(block, value)
     """
 
-    _validate_block_group(group, operation="sum")
-    selected_algorithm = normalize_block_reduce_algorithm(algorithm)
-    valid_items = _normalize_valid_items("sum", valid_items)
+    _validate_group(group, operation="sum")
+    if group.kind == "warp" and algorithm is not None:
+        raise ValueError(
+            "cuda.coop.sum algorithm selection applies to block groups, "
+            "not physical warps"
+        )
+    selected_algorithm = (
+        normalize_block_reduce_algorithm(algorithm).value
+        if group.kind == "block"
+        else None
+    )
+    valid_items = _normalize_valid_items(
+        "sum", valid_items, group_size=group.static_size
+    )
     return _group_primitive_marker(
         "sum",
         group,
         value,
         valid_items=valid_items,
-        algorithm=selected_algorithm.value,
+        algorithm=selected_algorithm,
     )
 
 

@@ -21,6 +21,7 @@ from ..thread_group import ThreadGroup
 
 if TYPE_CHECKING:
     from ..block.reduce import BlockReduceSpec
+    from ..warp.reduce import WarpReduceSpec
     from ._dispatch import GroupOperationSemantics
 
 
@@ -28,6 +29,7 @@ class GroupLoweringTarget(str, Enum):
     """Backend provider selected for one group primitive."""
 
     CUB_BLOCK = "cub_block"
+    CUB_WARP = "cub_warp"
     UNSUPPORTED = "unsupported"
 
 
@@ -59,12 +61,14 @@ class SynchronizationScope(str, Enum):
     """Synchronization required before temporary-storage reuse."""
 
     BLOCK = "block"
+    WARP = "warp"
 
 
 class UnsupportedReasonCode(str, Enum):
     """Stable reason codes for fail-closed planning."""
 
     MISSING_EXACT_BLOCK_DIM = "missing_exact_block_dim"
+    PARTIAL_PHYSICAL_WARP = "partial_physical_warp"
     UNVERIFIED_EXACT_BLOCK_DIM = "unverified_exact_block_dim"
 
 
@@ -99,7 +103,7 @@ class GroupPrimitiveCall:
 
 @dataclass(frozen=True)
 class ParticipationContract:
-    """Participation requirements for one block collective."""
+    """Participation requirements for one group collective."""
 
     group_kind: str
     exact_group_size: int
@@ -196,7 +200,7 @@ class GroupLoweringPlan:
     target: GroupLoweringTarget
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
-    implementation: BlockReduceSpec | None
+    implementation: BlockReduceSpec | WarpReduceSpec | None
     participation: ParticipationContract | None
     result: ResultContract | None
     synchronization: SynchronizationContract | None

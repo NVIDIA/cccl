@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Portable planning for scalar block reduction."""
+"""Portable planning for scalar block and warp reduction."""
 
 from ._dispatch import (
     GroupOperationSemantics,
