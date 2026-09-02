@@ -21,13 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/dispatch.h>
 #include <cuda/std/__atomic/platform.h>
-
-// Device atomics
-#include <cuda/std/__atomic/functions/cuda_ptx_derived.h>
-#include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
-
-// Host atomics
-#include <cuda/std/__atomic/functions/host.h>
 
 #endif // __CUDA_STD___ATOMIC_FUNCTIONS_H

@@ -284,7 +284,8 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 #  if _CCCL_CTK_AT_LEAST(12, 4)
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __deviceGetDevResource(::CUdevice __dev, ::CUdevResourceType __type)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDevResource);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDeviceGetDevResource, cuDeviceGetDevResource, 12, 4);
   ::CUdevResource __resource{};
 
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the device SM resource", __dev, &__resource, __type);
@@ -292,7 +293,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-#  if _CCCL_CTK_AT_LEAST(13, 4)
+#  if _CCCL_CTK_AT_LEAST(13, 1)
 // Note: this function doesn't need to be [[nodiscard]]. The returned remainder is technically
 // an optional output (and can be NULL in the actual driver call), the true return value is
 // __groups.
@@ -302,7 +303,8 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   const ::CUdevResource& __in_resource,
   ::CU_DEV_SM_RESOURCE_GROUP_PARAMS* __params)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevSmResourceSplit);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDevSmResourceSplit, cuDevSmResourceSplit, 13, 1);
   ::CUdevResource __remainder{};
 
   ::cuda::__driver::__call_driver_fn(
@@ -316,13 +318,14 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
     __params);
   return __remainder;
 }
-#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+#  endif // _CCCL_CTK_AT_LEAST(13, 1)
 
-#  if _CCCL_CTK_AT_LEAST(12, 5)
+#  if _CCCL_CTK_AT_LEAST(12, 4)
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResourceDesc
 __devResourceGenerateDesc(::CUdevResource* __resources, unsigned int __num_resources)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevResourceGenerateDesc);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDevResourceGenerateDesc, cuDevResourceGenerateDesc, 12, 4);
   ::CUdevResourceDesc __ret{};
 
   ::cuda::__driver::__call_driver_fn(

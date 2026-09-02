@@ -11,8 +11,8 @@
 // UNSUPPORTED: force-tile
 // error: dynamic allocation is not supported in tile mode
 
-// UNSUPPORTED: enable-tile && !c++17
-// ptxas error   : Stack size for entry function '_Z16fake_main_kernelPi' cannot be statically determined
+// UNSUPPORTED: !c++17
+// ptxas error: Stack size for entry function '_Z16fake_main_kernelPi' cannot be statically determined
 
 // <memory>
 
