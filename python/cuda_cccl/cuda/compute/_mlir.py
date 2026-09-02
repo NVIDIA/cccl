@@ -85,6 +85,7 @@ __all__ = [
     "as_numpy_dtype",
     "struct_field_position",
     "compile_to_llvm_ir",
+    "infer_return_type",
     "mlir_target",
     "refresh_contexts",
 ]
@@ -117,6 +118,19 @@ def as_numpy_dtype(numba_type):
 def struct_field_position(index):
     """MLIR position attribute for ``llvm.extractvalue``/``llvm.insertvalue`` at field ``index``."""
     return mlir_ir.DenseI64ArrayAttr.get([index])
+
+
+def infer_return_type(pyfunc, arg_types):
+    """Return the numba type ``pyfunc`` returns for ``arg_types``.
+
+    Type inference needs no generated code, so this stops after lowering to
+    MLIR.  Asking ``cuda.compile`` for an output format instead would run a full
+    code generation whose result is discarded.
+    """
+    from numba_cuda_mlir import compiler as _compiler
+
+    result = _compiler._compile_only(pyfunc, tuple(arg_types), {"device": True})
+    return result.signature.return_type
 
 
 def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
