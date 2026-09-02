@@ -16,11 +16,20 @@ from typing import Any
 
 import pytest
 
+import cuda.coop._core as semantic_core
+import cuda.coop._core.api as root_api
 from cuda import coop
-from cuda.coop._core import _auto_registration, root_api
+from cuda.coop._core import _auto_registration
+from cuda.coop._core.api import _dispatch as api_dispatch
+from cuda.coop._core.api.reduce import _normalize_valid_items
 
 _SOURCE_ROOT = Path(__file__).parents[3]
-_STUB = _SOURCE_ROOT / "cuda" / "coop" / "__init__.pyi"
+_CORE_INIT = _SOURCE_ROOT / "cuda" / "coop" / "_core" / "__init__.py"
+_API_STUB_ROOT = _SOURCE_ROOT / "cuda" / "coop" / "_core" / "api"
+_STUBS = (
+    _API_STUB_ROOT / "thread_group.pyi",
+    _API_STUB_ROOT / "reduce.pyi",
+)
 _FIRST_SENTENCES = {
     "ThreadGroup": "Descriptor for the current CUDA thread block.",
     "this_block": "Return a descriptor for the current CUDA thread block.",
@@ -34,25 +43,58 @@ def _first_sentence(docstring: str) -> str:
 
 
 def _stub_docstrings() -> dict[str, str]:
-    tree = ast.parse(_STUB.read_text(encoding="utf-8"))
     result = {}
-    for statement in tree.body:
-        if isinstance(statement, (ast.ClassDef, ast.FunctionDef)):
-            docstring = ast.get_docstring(statement, clean=False)
-            if docstring is not None:
-                result[statement.name] = docstring
+    for stub in _STUBS:
+        tree = ast.parse(stub.read_text(encoding="utf-8"))
+        for statement in tree.body:
+            if isinstance(statement, (ast.ClassDef, ast.FunctionDef)):
+                docstring = ast.get_docstring(statement, clean=False)
+                if docstring is not None:
+                    result[statement.name] = docstring
     return result
 
 
 def test_root_exports_exact_initial_surface() -> None:
     assert coop.__all__ == [
         "__version__",
+        "CoopCompilerContextRequiredError",
         "ThreadGroup",
         "this_block",
         "reduce",
         "sum",
     ]
-    assert root_api.__all__ == ["ThreadGroup", "this_block", "reduce", "sum"]
+    assert root_api.__all__ == [
+        "CoopCompilerContextRequiredError",
+        "ThreadGroup",
+        "this_block",
+        "reduce",
+        "sum",
+    ]
+    assert (
+        coop.CoopCompilerContextRequiredError
+        is semantic_core.CoopCompilerContextRequiredError
+    )
+
+
+def test_semantic_core_owns_context_error_without_importing_api_layer() -> None:
+    tree = ast.parse(_CORE_INIT.read_text(encoding="utf-8"))
+    upward_imports = [
+        statement.module
+        for statement in tree.body
+        if isinstance(statement, ast.ImportFrom)
+        and statement.module is not None
+        and (statement.module == "api" or statement.module.startswith("api."))
+    ]
+
+    assert upward_imports == []
+    assert (
+        semantic_core.CoopCompilerContextRequiredError
+        is api_dispatch.CoopCompilerContextRequiredError
+    )
+    assert (
+        semantic_core.CoopCompilerContextRequiredError.__module__
+        == "cuda.coop._core._errors"
+    )
 
 
 def test_root_signatures_match_scalar_reduction_contract() -> None:
@@ -134,10 +176,10 @@ def test_root_import_succeeds_when_numba_cuda_mlir_is_absent() -> None:
 def test_missing_backend_reports_structured_context_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
-    monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
+    monkeypatch.setattr(api_dispatch, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(api_dispatch, "_BACKEND_ACTIVATION_FAILURE", None)
     with pytest.raises(
-        root_api.CoopCompilerContextRequiredError,
+        api_dispatch.CoopCompilerContextRequiredError,
         match=(
             r"cuda\.coop\.sum requires an active compiler backend; "
             r"install a compatible backend or import cuda\.coop\.numba_mlir"
@@ -155,15 +197,15 @@ def test_compiler_context_error_retains_incompatible_backend_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cause = ImportError("missing compiler pass registration")
-    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
-    monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
-    root_api._record_backend_activation_failure(
+    monkeypatch.setattr(api_dispatch, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(api_dispatch, "_BACKEND_ACTIVATION_FAILURE", None)
+    api_dispatch._record_backend_activation_failure(
         "numba_mlir",
         "backend-runtime-incompatible",
         cause,
     )
 
-    with pytest.raises(root_api.CoopCompilerContextRequiredError) as raised:
+    with pytest.raises(api_dispatch.CoopCompilerContextRequiredError) as raised:
         root_api.sum(root_api.this_block(), 1)
 
     error = raised.value
@@ -198,12 +240,12 @@ def test_auto_registration_preserves_structured_runtime_reason(
         "_activate_numba_mlir",
         fail_activation,
     )
-    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
-    monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
+    monkeypatch.setattr(api_dispatch, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(api_dispatch, "_BACKEND_ACTIVATION_FAILURE", None)
 
     with pytest.warns(_auto_registration.CudaCoopAutoRegistrationWarning):
         assert not _auto_registration._auto_register_numba_mlir()
-    with pytest.raises(root_api.CoopCompilerContextRequiredError) as raised:
+    with pytest.raises(api_dispatch.CoopCompilerContextRequiredError) as raised:
         root_api.sum(root_api.this_block(), 1)
 
     assert raised.value.reason_code == "backend-runtime-too-old"
@@ -241,7 +283,7 @@ def test_registered_backend_receives_canonical_root_calls(
     def record(name: str):
         def implementation(*args: Any, **kwargs: Any) -> Any:
             observed.append(
-                (name, args, kwargs, root_api._common_root_operation_name())
+                (name, args, kwargs, api_dispatch._common_root_operation_name())
             )
             return args[1]
 
@@ -250,10 +292,10 @@ def test_registered_backend_receives_canonical_root_calls(
     backend.reduce = record("reduce")  # type: ignore[attr-defined]
     backend.sum = record("sum")  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, backend_name, backend)
-    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
-    monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
+    monkeypatch.setattr(api_dispatch, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(api_dispatch, "_BACKEND_ACTIVATION_FAILURE", None)
 
-    root_api._register_qualified_backend(backend_name)
+    api_dispatch._register_qualified_backend(backend_name)
     block = root_api.this_block()
     maximum = root_api.reduce(
         block,
@@ -293,23 +335,23 @@ def test_compiler_scope_selects_backend_without_persisting_it(
     backend = ModuleType(backend_name)
     backend.sum = lambda group, value, **kwargs: value  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, backend_name, backend)
-    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(api_dispatch, "_QUALIFIED_BACKEND_MODULE", None)
 
-    with root_api._compiler_scope(backend_name):
+    with api_dispatch._compiler_scope(backend_name):
         assert root_api.sum(root_api.this_block(), 3) == 3
-    with pytest.raises(root_api.CoopCompilerContextRequiredError):
+    with pytest.raises(api_dispatch.CoopCompilerContextRequiredError):
         root_api.sum(root_api.this_block(), 3)
 
 
 def test_backend_registration_is_idempotent_and_rejects_conflicts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
-    monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
-    root_api._register_qualified_backend("cuda.coop.numba_mlir")
-    root_api._register_qualified_backend("cuda.coop.numba_mlir")
+    monkeypatch.setattr(api_dispatch, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(api_dispatch, "_BACKEND_ACTIVATION_FAILURE", None)
+    api_dispatch._register_qualified_backend("cuda.coop.numba_mlir")
+    api_dispatch._register_qualified_backend("cuda.coop.numba_mlir")
     with pytest.raises(RuntimeError, match="already activated"):
-        root_api._register_qualified_backend("cuda.coop.other")
+        api_dispatch._register_qualified_backend("cuda.coop.other")
 
 
 @pytest.mark.parametrize("valid_items", (True, 0, -1, 1.5, "one", object()))
@@ -330,7 +372,7 @@ def test_root_accepts_a_structural_compiler_integer() -> None:
 
     valid_items = CompilerInteger()
 
-    assert root_api._normalize_valid_items("sum", valid_items) is valid_items
+    assert _normalize_valid_items("sum", valid_items) is valid_items
 
 
 def test_root_rejects_callbacks_and_nondeterministic_algorithm() -> None:

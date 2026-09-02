@@ -52,7 +52,7 @@ def _auto_register_numba_mlir() -> bool:
     try:
         _activate_numba_mlir()
     except _BackendUnavailable as error:
-        from .root_api import _record_backend_activation_failure
+        from .api._dispatch import _record_backend_activation_failure
 
         _record_backend_activation_failure(
             "numba_mlir",
@@ -61,7 +61,7 @@ def _auto_register_numba_mlir() -> bool:
         )
         return False
     except Exception as error:
-        from .root_api import _record_backend_activation_failure
+        from .api._dispatch import _record_backend_activation_failure
 
         reason_code = getattr(
             error,

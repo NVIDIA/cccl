@@ -2,14 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Transactionally activate the Numba-CUDA-MLIR planner."""
+"""Activate the Numba-CUDA-MLIR whole-function planners."""
 
 from __future__ import annotations
 
 import importlib
 import importlib.metadata
-import sys
-from dataclasses import dataclass
 from typing import Any
 
 _MINIMUM_RUNTIME_VERSION = "0.5.0"
@@ -30,12 +28,6 @@ class NumbaMlirBackendImportError(ImportError):
         self.details = details
         if cause is not None:
             self.__cause__ = cause
-
-
-@dataclass(frozen=True)
-class _RegistrationSnapshot:
-    registry: Any
-    planners: tuple[type, ...]
 
 
 def _runtime_requirement(runtime: Any = None) -> str:
@@ -108,34 +100,11 @@ def _load_runtime() -> Any:
     return cuda_module
 
 
-def _snapshot_registration() -> _RegistrationSnapshot:
-    try:
-        planner_module = importlib.import_module(
-            "numba_cuda_mlir._whole_function_planners"
-        )
-        registry = planner_module._planner_registry
-        with registry._lock:
-            planners = tuple(registry._planners)
-    except (ImportError, AttributeError, TypeError) as error:
-        raise NumbaMlirBackendImportError(
-            "registration-transaction-unavailable",
-            "cuda.coop.numba_mlir cannot transactionally register its "
-            "planner with this Numba-CUDA-MLIR runtime.",
-            cause=error,
-        ) from error
-    return _RegistrationSnapshot(registry=registry, planners=planners)
-
-
-def _restore_registration(snapshot: _RegistrationSnapshot) -> None:
-    with snapshot.registry._lock:
-        snapshot.registry._planners[:] = snapshot.planners
-
-
 _initialized = False
 
 
 def _initialize_runtime_hooks() -> None:
-    """Register exactly one whole-function planner, with rollback on failure."""
+    """Register the ordered two-planner flow through public extension hooks."""
 
     global _initialized
     if _initialized:
@@ -153,7 +122,6 @@ def _initialize_runtime_hooks() -> None:
     required = (
         "WholeFunctionPlanner",
         "overload",
-        "refresh_registries",
         "register_planner",
         "require_launch_config",
     )
@@ -170,34 +138,17 @@ def _initialize_runtime_hooks() -> None:
             missing_capabilities=missing,
         )
 
-    snapshot = _snapshot_registration()
     package_name = __package__.removesuffix("._compiler")
-    loaded_modules = frozenset(
-        name for name in sys.modules if name.startswith(f"{package_name}._compiler.")
-    )
-    phase = "planner import"
+    phase = "compiler hook import"
     try:
-        planner_module = importlib.import_module(f"{package_name}._compiler._planner")
-        planner = planner_module.CoopBlockReducePlanner
-        with snapshot.registry._lock:
-            count = snapshot.registry._planners.count(planner)
-        if count != 1:
-            raise NumbaMlirBackendImportError(
-                "registration-postcondition-failed",
-                "cuda.coop.numba_mlir did not register exactly one block "
-                f"reduction planner (count={count}).",
-                registration_count=count,
-            )
-        phase = "registry refresh"
-        extending.refresh_registries()
+        group_module = importlib.import_module(
+            f"{package_name}._compiler._group_planner"
+        )
+        rewrite_module = importlib.import_module(f"{package_name}._compiler._rewrite")
+        phase = "planner registration"
+        extending.register_planner(group_module.CoopGroupHierarchyPlanner)
+        extending.register_planner(rewrite_module.CoopWholeFunctionPlanner)
     except BaseException as error:
-        _restore_registration(snapshot)
-        for name in tuple(sys.modules):
-            if (
-                name.startswith(f"{package_name}._compiler.")
-                and name not in loaded_modules
-            ):
-                sys.modules.pop(name, None)
         if isinstance(
             error,
             (NumbaMlirBackendImportError, KeyboardInterrupt, SystemExit),

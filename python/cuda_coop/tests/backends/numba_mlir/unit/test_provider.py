@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -10,23 +11,51 @@ pytest.importorskip("numba_cuda_mlir")
 
 from numba_cuda_mlir import types
 
-from cuda.coop.numba_mlir._compiler import _nvrtc, _provider
+from cuda.coop._core.block.reduce import make_block_reduce_spec
+from cuda.coop.numba_mlir._compiler import _nvrtc
+from cuda.coop.numba_mlir._compiler._operations import factory_operation
+from cuda.coop.numba_mlir._lowering import _reduce
 
 
 def _spec(**changes):
     values = {
+        "dtype": types.int32,
         "block_dim": (32, 2, 1),
         "operation": "reduce",
         "binary_op": "max",
         "algorithm": "raking",
-        "has_valid_items": True,
+        "valid_items": True,
     }
     values.update(changes)
-    return _provider.ReductionMarkerSpec(**values)
+    return make_block_reduce_spec(**values)
+
+
+def _context(**changes):
+    values = {
+        "nvrtc_path": "/cuda/lib/libnvrtc.so.13",
+        "nvrtc_builtins_path": "/cuda/lib/libnvrtc-builtins.so.13.3",
+        "nvrtc_version": (13, 3),
+        "include_dirs": ("/cccl/include", "/cuda/include"),
+        "header_identity": "headers-a",
+        "architecture": "90",
+    }
+    values.update(changes)
+    return _nvrtc.CompileContext(**values)
+
+
+def _marker_spec(**changes):
+    spec = _spec(dtype=None, valid_items=False, **changes)
+    return _reduce._MarkerSpec(
+        block_dim=spec.block_dim,
+        operation=spec.operation,
+        binary_op=spec.binary_op,
+        algorithm=spec.algorithm,
+        valid_items=spec.valid_items,
+    )
 
 
 def test_generated_provider_is_direct_root_only_cub_block_reduce():
-    source = _provider._source(
+    source = _reduce._source(
         symbol="test_symbol",
         cpp_type="::cuda::std::int32_t",
         spec=_spec(),
@@ -34,6 +63,8 @@ def test_generated_provider_is_direct_root_only_cub_block_reduce():
 
     assert "#include <cub/block/block_reduce.cuh>" in source
     assert "#include <cuda/functional>" in source
+    assert "#include <cuda/std/cstdint>" in source
+    assert "#include <cuda/std/functional>" in source
     assert "::cub::BlockReduce<" in source
     assert "::cub::BLOCK_REDUCE_RAKING" in source
     assert ".Reduce(value, ::cuda::maximum<T>{}, valid_items)" in source
@@ -41,15 +72,17 @@ def test_generated_provider_is_direct_root_only_cub_block_reduce():
     assert 'extern "C" __device__' in source
 
 
-def test_sum_provider_selects_sum_without_a_callback():
-    source = _provider._source(
+@pytest.mark.parametrize("operation", ["sum", "reduce"])
+def test_sum_operator_selects_cub_sum_without_a_callback(operation):
+    source = _reduce._source(
         symbol="test_symbol",
         cpp_type="float",
         spec=_spec(
-            operation="sum",
+            dtype=types.float32,
+            operation=operation,
             binary_op="sum",
             algorithm="warp_reductions",
-            has_valid_items=False,
+            valid_items=False,
         ),
     )
 
@@ -57,38 +90,71 @@ def test_sum_provider_selects_sum_without_a_callback():
     assert "BLOCK_REDUCE_WARP_REDUCTIONS" in source
 
 
-def test_default_reduce_selects_sum_without_a_callback():
-    source = _provider._source(
-        symbol="test_symbol",
-        cpp_type="float",
-        spec=_spec(
-            operation="reduce",
-            binary_op="sum",
-            has_valid_items=False,
-        ),
+def test_lowering_factories_are_registered_by_exact_identity():
+    sum_metadata = factory_operation(_reduce.sum)
+    reduce_metadata = factory_operation(_reduce.block_reduce_builtin)
+
+    assert (sum_metadata.operation, sum_metadata.namespace) == ("sum", "block")
+    assert (reduce_metadata.operation, reduce_metadata.namespace) == (
+        "block_reduce_builtin",
+        "block",
     )
 
-    assert ".Sum(value)" in source
 
-
-def test_header_resolution_requires_all_provider_headers(monkeypatch):
+def test_compile_context_requires_every_direct_header_and_exact_toolkit(
+    monkeypatch,
+):
     requested = []
+    validated = []
+    paths = SimpleNamespace(
+        cuda=(Path("/cuda/include"),),
+        as_tuple=lambda: (Path("/cccl/include"), Path("/cuda/include")),
+    )
+    libraries = SimpleNamespace(
+        nvrtc_path="/cuda/lib/libnvrtc.so.13",
+        nvrtc_builtins_path="/cuda/lib/libnvrtc-builtins.so.13.3",
+        toolkit_version=(13, 3),
+    )
     monkeypatch.setattr(
         _nvrtc,
         "resolve_include_paths",
-        lambda **kwargs: (
-            requested.append(kwargs)
-            or SimpleNamespace(as_tuple=lambda: ("/cccl/include", "/cuda/include"))
-        ),
+        lambda **kwargs: requested.append(kwargs) or paths,
     )
+    monkeypatch.setattr(
+        _nvrtc,
+        "preload_toolkit_compiler_libraries",
+        lambda include_dirs: validated.append(("preload", include_dirs)) or libraries,
+    )
+    monkeypatch.setattr(_nvrtc, "_load_nvrtc", lambda: object())
+    monkeypatch.setattr(_nvrtc, "_version", lambda nvrtc: (13, 3))
+    monkeypatch.setattr(
+        _nvrtc,
+        "validate_nvrtc_version",
+        lambda selected, version: validated.append((selected, version)),
+    )
+    monkeypatch.setattr(
+        _nvrtc,
+        "include_dirs_identity",
+        lambda include_dirs: SimpleNamespace(digest="headers-a"),
+    )
+    monkeypatch.setattr(
+        _nvrtc.cuda,
+        "get_current_device",
+        lambda: pytest.fail("the explicit compiler target must be authoritative"),
+    )
+    state = SimpleNamespace(metadata={"targetoptions": {"chip": "sm_90a"}})
 
-    assert _nvrtc.include_paths() == ("/cccl/include", "/cuda/include")
+    context = _nvrtc.resolve_compile_context(state)
+
     assert requested[0]["required_headers"] == (
         "cub/block/block_reduce.cuh",
         "cuda/functional",
         "cuda/std/cstdint",
         "cuda/std/functional",
     )
+    assert validated[0] == ("preload", paths.cuda)
+    assert validated[1] == (libraries, (13, 3))
+    assert context == _context(architecture="90a")
 
 
 @pytest.mark.parametrize(
@@ -107,126 +173,154 @@ def test_header_resolution_requires_all_provider_headers(monkeypatch):
     ],
 )
 def test_provider_declares_the_supported_scalar_numeric_types(dtype):
-    assert dtype in _provider._CPP_TYPES
+    assert dtype in _reduce._CPP_TYPES
 
 
 @pytest.mark.parametrize("dtype", [types.boolean, types.complex64, types.complex128])
 def test_provider_rejects_bool_and_complex_before_nvrtc(monkeypatch, dtype):
     monkeypatch.setattr(
-        _provider._nvrtc,
-        "include_paths",
-        lambda: pytest.fail("unsupported types must fail before NVRTC"),
+        _reduce,
+        "_provider_for_context",
+        lambda *args: pytest.fail("unsupported types must fail before NVRTC"),
     )
 
     with pytest.raises(TypeError, match="does not support scalar type"):
-        _provider._provider(dtype, _spec(has_valid_items=False))
+        _reduce._typed_provider(_marker_spec(), dtype, _context())
 
 
 def test_provider_rejects_bitwise_float_before_nvrtc(monkeypatch):
     monkeypatch.setattr(
-        _provider._nvrtc,
-        "include_paths",
-        lambda: pytest.fail("invalid operators must fail before NVRTC"),
+        _reduce,
+        "_provider_for_context",
+        lambda *args: pytest.fail("invalid operators must fail before NVRTC"),
     )
 
     with pytest.raises(TypeError, match="requires an integer scalar"):
-        _provider._provider(
-            types.float32,
-            _spec(binary_op="bit_xor", has_valid_items=False),
+        _reduce._typed_provider(
+            _marker_spec(binary_op="bit_xor"), types.float32, _context()
         )
 
 
-def test_provider_cache_includes_the_resolved_compiler_context(monkeypatch):
-    compiled = []
-    declared = []
-    include_paths = [
-        ("/cccl/first", "/cuda/include"),
-        ("/cccl/second", "/cuda/include"),
-    ]
-    current_includes = [include_paths[0]]
-    current_cc = [(9, 0)]
-    monkeypatch.setattr(_provider._nvrtc, "include_paths", lambda: current_includes[0])
-    monkeypatch.setattr(_provider._nvrtc, "version", lambda: (13, 3))
+def test_generic_marker_specializes_from_the_overload_value_type(monkeypatch):
+    registrations = []
+    provider_requests = []
+    provider = _reduce._Provider(
+        extern=lambda value: value,
+        ltoir_path="/tmp/provider.ltoir",
+    )
+
+    def overload(marker, **kwargs):
+        assert kwargs == {
+            "inline": "always",
+            "typing_registry": _reduce.typing_registry,
+        }
+
+        def register(typer):
+            registrations.append((marker, typer))
+            return typer
+
+        return register
+
+    monkeypatch.setattr(_reduce, "overload", overload)
     monkeypatch.setattr(
-        _provider._nvrtc,
-        "compile_lto_ir",
-        lambda source, cc, includes: (
-            compiled.append((source, cc, includes)) or b"ltoir"
+        _reduce,
+        "_typed_provider",
+        lambda spec, dtype, context: (
+            provider_requests.append((spec, dtype, context)) or provider
         ),
     )
+    marker_spec = _marker_spec()
+    context = _context()
+    _reduce._marker_for.cache_clear()
+    try:
+        marker = _reduce._marker_for(marker_spec, context)
+        assert provider_requests == []
+
+        implementation = registrations[0][1](types.int32)
+    finally:
+        _reduce._marker_for.cache_clear()
+
+    assert registrations[0][0] is marker
+    assert provider_requests == [(marker_spec, types.int32, context)]
+    assert implementation(types.int32) is types.int32
+
+
+def test_typed_provider_is_governed_by_the_concrete_portable_plan(monkeypatch):
+    plans = []
+    providers = []
+    original = _reduce.plan_group_primitive
+    expected = _reduce._Provider(extern=object(), ltoir_path="/tmp/provider.ltoir")
+
+    def plan(call, launch):
+        result = original(call, launch)
+        plans.append(result)
+        return result
+
+    monkeypatch.setattr(_reduce, "plan_group_primitive", plan)
     monkeypatch.setattr(
-        _provider.cuda,
-        "get_current_device",
-        lambda: SimpleNamespace(compute_capability=current_cc[0]),
+        _reduce,
+        "_provider_for_context",
+        lambda spec, cpp_type, context: (
+            providers.append((spec, cpp_type, context)) or expected
+        ),
+    )
+    context = _context()
+
+    actual = _reduce._typed_provider(_marker_spec(), types.int32, context)
+
+    assert actual is expected
+    assert len(plans) == 1
+    portable = plans[0].require_supported()
+    assert portable.call.operation.dtype is types.int32
+    assert portable.implementation is not None
+    assert providers == [(portable.implementation, "::cuda::std::int32_t", context)]
+
+
+def test_provider_cache_and_symbol_include_the_exact_compile_context(monkeypatch):
+    compiled = []
+    declared = []
+    monkeypatch.setattr(
+        _reduce._nvrtc,
+        "compile_lto_ir",
+        lambda source, context: compiled.append((source, context)) or b"ltoir",
     )
     monkeypatch.setattr(
-        _provider.cuda,
+        _reduce.cuda,
         "declare_device",
         lambda name, sig, **kwargs: declared.append((name, sig, kwargs)) or object(),
     )
-    spec = _spec(has_valid_items=False)
-    _provider._provider_for_context.cache_clear()
+    spec = _spec(valid_items=False)
+    contexts = (
+        _context(),
+        _context(nvrtc_builtins_path="/cuda/lib/libnvrtc-builtins.so.13.2"),
+        _context(header_identity="headers-b"),
+        _context(architecture="75"),
+    )
+    _reduce._provider_for_context.cache_clear()
     try:
-        first = _provider._provider(types.int32, spec)
-        assert _provider._provider(types.int32, spec) is first
-        current_includes[0] = include_paths[1]
-        second = _provider._provider(types.int32, spec)
-        current_cc[0] = (7, 5)
-        third = _provider._provider(types.int32, spec)
+        first = _reduce._provider_for_context(
+            spec, _reduce._CPP_TYPES[spec.dtype], contexts[0]
+        )
+        assert (
+            _reduce._provider_for_context(
+                spec, _reduce._CPP_TYPES[spec.dtype], contexts[0]
+            )
+            is first
+        )
+        remaining = [
+            _reduce._provider_for_context(
+                spec,
+                _reduce._CPP_TYPES[spec.dtype],
+                context,
+            )
+            for context in contexts[1:]
+        ]
     finally:
-        _provider._provider_for_context.cache_clear()
+        _reduce._provider_for_context.cache_clear()
 
-    assert len(compiled) == 3
-    assert compiled[0][1:] == ("90", include_paths[0])
-    assert compiled[1][1:] == ("90", include_paths[1])
-    assert compiled[2][1:] == ("75", include_paths[1])
+    assert [context for _, context in compiled] == list(contexts)
     assert first.ltoir_path.endswith(".ltoir")
-    assert second.ltoir_path.endswith(".ltoir")
-    assert third.ltoir_path.endswith(".ltoir")
-    assert len({declaration[0] for declaration in declared}) == 3
+    assert all(provider.ltoir_path.endswith(".ltoir") for provider in remaining)
+    assert len({declaration[0] for declaration in declared}) == len(contexts)
     assert declared[0][2]["abi"] == "c"
     assert declared[0][2]["link"] == [first.ltoir_path]
-
-
-def test_provider_context_uses_the_explicit_compiler_target(monkeypatch):
-    monkeypatch.setattr(_provider._nvrtc, "version", lambda: (13, 3))
-    monkeypatch.setattr(
-        _provider._nvrtc,
-        "include_paths",
-        lambda: ("/cccl/include", "/cuda/include"),
-    )
-    monkeypatch.setattr(
-        _provider.cuda,
-        "get_current_device",
-        lambda: pytest.fail("an explicit compiler target must be authoritative"),
-    )
-    state = SimpleNamespace(
-        metadata={"targetoptions": {"chip": "sm_90a"}},
-    )
-
-    context = _provider.resolve_provider_context(state)
-
-    assert context == _provider.ProviderContext(
-        architecture="90a",
-        nvrtc_version=(13, 3),
-        include_paths=("/cccl/include", "/cuda/include"),
-    )
-
-
-def test_marker_identity_includes_the_resolved_provider_context():
-    spec = _spec(has_valid_items=False)
-    first_context = _provider.ProviderContext(
-        architecture="90",
-        nvrtc_version=(13, 3),
-        include_paths=("/cccl/include", "/cuda/include"),
-    )
-    second_context = _provider.ProviderContext(
-        architecture="75",
-        nvrtc_version=(13, 3),
-        include_paths=("/cccl/include", "/cuda/include"),
-    )
-
-    first = _provider.marker_for(spec, first_context)
-
-    assert _provider.marker_for(spec, first_context) is first
-    assert _provider.marker_for(spec, second_context) is not first
