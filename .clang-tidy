@@ -35,6 +35,21 @@ Checks:
   # This is just noise
   - '-bugprone-signed-char-misuse'
   - '-bugprone-multi-level-implicit-pointer-conversion'
+  - 'misc-*'
+  - '-misc-const-correctness'
+  - '-misc-use-anonymous-namespace'
+  - '-misc-use-internal-linkage'
+  - '-misc-unused-parameters'
+  - '-misc-redundant-expression'
+  - '-misc-unconventional-assign-operator'
+  - '-misc-throw-by-value-catch-by-reference'
+  - '-misc-misplaced-const'
+  - '-misc-multiple-inheritance'
+  - '-misc-anonymous-namespace-in-header'
+  - '-misc-definitions-in-headers'
+  - '-misc-override-with-different-visibility'
+  - '-misc-predictable-rand'
+  - '-misc-unused-alias-decls'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
