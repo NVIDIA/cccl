@@ -11,7 +11,7 @@ from typing import Any
 from cuda.coop._core import LaunchFactOrigin, LaunchFacts
 from cuda.coop._core.root_api import CoopCompilerContextRequiredError
 
-from ._runtime import validate_cutlass_runtime
+from ._runtime import is_current_cutlass_environment, validate_cutlass_runtime
 
 
 def _field(value: Any, name: str) -> Any:
@@ -20,8 +20,7 @@ def _field(value: Any, name: str) -> Any:
     return getattr(value, name, None)
 
 
-def _to_core_launch_facts(value: Any) -> LaunchFacts:
-    exact_block_dim = _field(value, "exact_block_dim")
+def _to_core_launch_facts(exact_block_dim: Any) -> LaunchFacts:
     return LaunchFacts(
         exact_block_dim=exact_block_dim,
         provenance=(
@@ -42,9 +41,22 @@ def _to_core_launch_facts(value: Any) -> LaunchFacts:
 def current_launch_facts(*, feature: str) -> LaunchFacts:
     """Return exact CUTLASS facts for the kernel currently being compiled."""
 
-    runtime = validate_cutlass_runtime()
     try:
-        facts = _to_core_launch_facts(runtime.cute._get_launch_facts())
+        if not is_current_cutlass_environment():
+            raise CoopCompilerContextRequiredError(feature)
+        runtime = validate_cutlass_runtime()
+        provider_facts = runtime.cute._get_launch_facts()
+        exact_block_dim = _field(provider_facts, "exact_block_dim")
+    except CoopCompilerContextRequiredError:
+        raise
+    except Exception as error:
+        raise CoopCompilerContextRequiredError(feature) from error
+    try:
+        facts = _to_core_launch_facts(exact_block_dim)
+    except (TypeError, ValueError) as error:
+        raise NotImplementedError(
+            f"cuda.coop.cutlass {feature} requires exact static block dimensions"
+        ) from error
     except Exception as error:
         raise CoopCompilerContextRequiredError(feature) from error
     if facts.exact_block_dim is None:

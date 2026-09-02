@@ -26,6 +26,8 @@ _DISPATCHER_ATTR = "_cuda_coop_cutlass_trace_finalize_dispatcher"
 _TARGET_ATTR = "_cuda_coop_cutlass_trace_finalize_target"
 _ARTIFACTS = tempfile.TemporaryDirectory(prefix="cuda-coop-cutlass-")
 _STATE_LOCK = threading.RLock()
+_I32_MAX = (1 << 31) - 1
+_I64_MAX = (1 << 63) - 1
 
 
 @dataclass(frozen=True)
@@ -270,14 +272,23 @@ class _LoadStoreRequest:
                     )
         if valid_kind == "static":
             tile_items = math.prod(block_dim) * items_per_thread
-            if (
-                isinstance(valid_value, bool)
-                or not isinstance(valid_value, Integral)
-                or not 0 <= int(valid_value) <= tile_items
-            ):
+            if isinstance(valid_value, bool) or not isinstance(valid_value, Integral):
+                raise ValueError("valid_items must be an integer")
+            normalized_valid_items = int(valid_value)
+            if not 0 <= normalized_valid_items <= _I32_MAX:
+                raise ValueError(
+                    "valid_items must fit a nonnegative signed 32-bit integer"
+                )
+            if normalized_valid_items > tile_items:
                 raise ValueError(
                     f"valid_items must be between zero and the tile size ({tile_items})"
                 )
+        if offset_kind == "static" and (
+            isinstance(offset_value, bool)
+            or not isinstance(offset_value, Integral)
+            or not 0 <= int(offset_value) <= _I64_MAX
+        ):
+            raise ValueError("offset must fit a nonnegative signed 64-bit integer")
 
         provenance = getattr(plan, "provenance", None)
         expected_provenance = (
@@ -992,11 +1003,15 @@ def _append_link_library(module: Any, path: Path) -> None:
 def _trace_finalize(dsl: Any, module: Any, function_name: str) -> None:
     del function_name
     with _STATE_LOCK:
-        session = _SESSIONS.pop(dsl.compile_options, None)
-    if session is None or not session.requests:
+        session = _SESSIONS.get(dsl.compile_options)
+        if session is None:
+            return
+        module_op = getattr(module, "operation", module)
+        if not _same_operation(session.module_op, module_op):
+            return
+        _SESSIONS.pop(dsl.compile_options, None)
+    if not session.requests:
         return
-    if not _same_operation(session.module_op, module.operation):
-        raise RuntimeError("CUTLASS provider requests escaped their originating trace")
     source = _render_bundle_source(session.requests)
     artifact = _compile_ltoir(source)
     _append_link_library(module, artifact)

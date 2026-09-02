@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
 from cuda.coop._core import (
@@ -188,6 +189,41 @@ def test_artifact_identity_tracks_partial_tile_controls() -> None:
     assert full.artifact_key != partial.artifact_key
 
 
+@pytest.mark.parametrize(
+    ("left", "right"),
+    (
+        (True, 1),
+        (0.0, -0.0),
+        ([1, 2], [1, 3]),
+        ({"value": [1]}, {"value": [2]}),
+    ),
+)
+def test_binding_identity_preserves_type_representation_and_unhashable_values(
+    left,
+    right,
+) -> None:
+    left_binding = ArgumentBinding.static(left)
+    same_binding = ArgumentBinding.static(left)
+    right_binding = ArgumentBinding.static(right)
+
+    assert left_binding == same_binding
+    assert hash(left_binding) == hash(same_binding)
+    assert left_binding != right_binding
+    assert left_binding.semantic_key != right_binding.semantic_key
+
+
+def test_semantics_with_unhashable_static_binding_remain_hashable() -> None:
+    semantics = GroupLoadStoreSemantics(
+        kind="load",
+        dtype="int32",
+        items_per_thread=1,
+        valid_items=ArgumentBinding.runtime(),
+        oob_default=ArgumentBinding.static([1]),
+    )
+
+    assert isinstance(hash(semantics), int)
+
+
 def test_semantic_tokens_sort_heterogeneous_mapping_keys_stably() -> None:
     left = {1: "integer", "1": "string"}
     right = {"1": "string", 1: "integer"}
@@ -235,25 +271,25 @@ def test_only_direct_algorithm_is_accepted() -> None:
 
 @pytest.mark.parametrize("valid_items", (True, 65, -1, 1.5))
 def test_static_valid_items_are_checked_against_tile(valid_items) -> None:
-    operation = GroupLoadStoreSemantics(
-        kind="load",
-        dtype="int32",
-        items_per_thread=1,
-        valid_items=ArgumentBinding.static(valid_items),
-    )
     with pytest.raises((TypeError, ValueError), match="valid_items"):
+        operation = GroupLoadStoreSemantics(
+            kind="load",
+            dtype="int32",
+            items_per_thread=1,
+            valid_items=ArgumentBinding.static(valid_items),
+        )
         _plan(operation, block_dim=64)
 
 
 @pytest.mark.parametrize("offset", (True, 1.5, "one"))
 def test_static_offset_must_be_an_integer(offset) -> None:
-    operation = GroupLoadStoreSemantics(
-        kind="store",
-        dtype="int32",
-        items_per_thread=1,
-        offset=ArgumentBinding.static(offset),
-    )
-    with pytest.raises(TypeError, match="offset must be an integer"):
+    with pytest.raises(TypeError, match="static offset must be an integer"):
+        operation = GroupLoadStoreSemantics(
+            kind="store",
+            dtype="int32",
+            items_per_thread=1,
+            offset=ArgumentBinding.static(offset),
+        )
         _plan(operation)
 
 
@@ -266,3 +302,57 @@ def test_static_offset_must_be_non_negative() -> None:
     )
     with pytest.raises(ValueError, match="offset must be at least 0"):
         _plan(operation)
+
+
+def test_static_valid_items_must_fit_signed_i32() -> None:
+    with pytest.raises(ValueError, match="fit a signed 32-bit integer"):
+        operation = GroupLoadStoreSemantics(
+            kind="load",
+            dtype="int32",
+            items_per_thread=1,
+            valid_items=ArgumentBinding.static(1 << 31),
+        )
+        _plan(operation, block_dim=1)
+
+
+def test_static_offset_accepts_signed_i64_maximum() -> None:
+    operation = GroupLoadStoreSemantics(
+        kind="store",
+        dtype="int32",
+        items_per_thread=1,
+        offset=ArgumentBinding.static((1 << 63) - 1),
+    )
+
+    assert _plan(operation).require_supported().call.operation is operation
+
+
+def test_static_offset_rejects_signed_i64_overflow() -> None:
+    with pytest.raises(ValueError, match="fit a signed 64-bit integer"):
+        operation = GroupLoadStoreSemantics(
+            kind="store",
+            dtype="int32",
+            items_per_thread=1,
+            offset=ArgumentBinding.static(1 << 63),
+        )
+        _plan(operation)
+
+
+def test_static_integer_controls_are_canonicalized_before_identity() -> None:
+    numpy_controls = GroupLoadStoreSemantics(
+        kind="load",
+        dtype="int32",
+        items_per_thread=1,
+        valid_items=ArgumentBinding.static(np.int32(1)),
+        offset=ArgumentBinding.static(np.int64(2)),
+    )
+    python_controls = GroupLoadStoreSemantics(
+        kind="load",
+        dtype="int32",
+        items_per_thread=1,
+        valid_items=ArgumentBinding.static(1),
+        offset=ArgumentBinding.static(2),
+    )
+
+    assert type(numpy_controls.valid_items.value) is int
+    assert type(numpy_controls.offset.value) is int
+    assert numpy_controls == python_controls

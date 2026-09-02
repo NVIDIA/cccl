@@ -5,13 +5,14 @@
 """Automatically connect ``cuda.coop`` to compatible Python kernel DSLs.
 
 The portable ``from cuda import coop`` API does not select a compiler backend.
-At import time, this module probes installed DSL integrations, verifies the
-capabilities needed by ``cuda.coop``, and lets each compatible integration
-register its compiler hooks. CUTLASS is the first integration; other DSLs can
-provide their own registration paths without changing the portable API.
+At import time, this module probes the installed CUTLASS DSL, verifies the
+capabilities needed by ``cuda.coop``, and registers it as a conditional
+candidate. The common root selects CUTLASS only while its exact compiler
+environment manager is current.
 
 Set ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` to a truthy value to skip these
-probes when backend activation must be controlled explicitly.
+probes. Activate a backend explicitly by importing its ``cuda.coop.<dsl>``
+subpackage directly.
 """
 
 from __future__ import annotations

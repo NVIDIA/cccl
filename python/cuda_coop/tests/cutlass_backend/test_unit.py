@@ -25,18 +25,16 @@ from cuda.coop._core import (  # noqa: E402
     LaunchFacts,
     make_group_primitive_call,
     plan_group_primitive,
+    root_api,  # noqa: E402
 )
-from cuda.coop.cutlass import _provider  # noqa: E402
-from cuda.coop.cutlass._compiler import (  # noqa: E402
-    register_trace_context,
-    trace_context,
-)
+from cuda.coop.cutlass import _launch, _load_store, _provider  # noqa: E402
 from cuda.coop.cutlass._load_store import (  # noqa: E402
     _integer_binding,
     _oob_binding,
 )
 from cuda.coop.cutlass._runtime import (  # noqa: E402
     _missing_capabilities,
+    is_current_cutlass_environment,
     validate_cutlass_runtime,
 )
 
@@ -185,6 +183,141 @@ def test_integer_controls_reject_non_integer_scalars(value: object) -> None:
 def test_integer_controls_accept_cutlass_runtime_integers() -> None:
     binding = _integer_binding(cutlass_types.Int32(7), name="valid_items")
     assert binding.kind.value == "runtime"
+
+
+def test_integer_controls_canonicalize_numpy_static_integers() -> None:
+    binding = _integer_binding(np.int64((1 << 63) - 1), name="offset")
+
+    assert binding == ArgumentBinding.static((1 << 63) - 1)
+    assert type(binding.value) is int
+
+
+def test_qualified_load_preserves_the_supplied_thread_data_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    items = coop.ThreadData(2)
+    plan = object()
+    monkeypatch.setattr(
+        _load_store,
+        "_memory_type",
+        lambda source, *, feature: cutlass_types.Int32,
+    )
+    monkeypatch.setattr(_load_store, "_plan", lambda **kwargs: plan)
+
+    def materialize_load(**kwargs):
+        assert kwargs["plan"] is plan
+        assert kwargs["output"] is items
+        return kwargs["output"]
+
+    monkeypatch.setattr(_load_store, "materialize_load", materialize_load)
+
+    assert _load_store.load(coop.this_block(), object(), items) is items
+
+
+def test_launch_facts_require_the_current_cutlass_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(_launch, "is_current_cutlass_environment", lambda: False)
+
+    with pytest.raises(root_api.CoopCompilerContextRequiredError):
+        _launch.current_launch_facts(feature="load")
+
+
+def test_launch_fact_provider_failures_are_compiler_context_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cause = RuntimeError("launch facts are unavailable in this trace")
+
+    def fail():
+        raise cause
+
+    runtime = SimpleNamespace(cute=SimpleNamespace(_get_launch_facts=fail))
+    monkeypatch.setattr(_launch, "is_current_cutlass_environment", lambda: True)
+    monkeypatch.setattr(_launch, "validate_cutlass_runtime", lambda: runtime)
+
+    with pytest.raises(root_api.CoopCompilerContextRequiredError) as raised:
+        _launch.current_launch_facts(feature="load")
+
+    assert raised.value.__cause__ is cause
+
+
+def test_launch_fact_accessor_failures_are_compiler_context_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cause = RuntimeError("provider facts accessor failed")
+
+    class ProviderFacts:
+        @property
+        def exact_block_dim(self):
+            raise cause
+
+    runtime = SimpleNamespace(
+        cute=SimpleNamespace(_get_launch_facts=lambda: ProviderFacts())
+    )
+    monkeypatch.setattr(_launch, "is_current_cutlass_environment", lambda: True)
+    monkeypatch.setattr(_launch, "validate_cutlass_runtime", lambda: runtime)
+
+    with pytest.raises(root_api.CoopCompilerContextRequiredError) as raised:
+        _launch.current_launch_facts(feature="load")
+
+    assert raised.value.__cause__ is cause
+
+
+@pytest.mark.parametrize(
+    "provider_facts",
+    (
+        {},
+        {"exact_block_dim": "dynamic"},
+        {"exact_block_dim": (32, object())},
+        {"exact_block_dim": ()},
+        {"exact_block_dim": (1, 2, 3, 4)},
+        {"exact_block_dim": (0, 1, 1)},
+        {"exact_block_dim": (-1, 1, 1)},
+        {"exact_block_dim": (True, 1, 1)},
+    ),
+)
+def test_unusable_launch_dimensions_remain_not_implemented(
+    provider_facts: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = SimpleNamespace(
+        cute=SimpleNamespace(_get_launch_facts=lambda: provider_facts)
+    )
+    monkeypatch.setattr(_launch, "is_current_cutlass_environment", lambda: True)
+    monkeypatch.setattr(_launch, "validate_cutlass_runtime", lambda: runtime)
+
+    with pytest.raises(NotImplementedError, match="exact static block dimensions"):
+        _launch.current_launch_facts(feature="load")
+
+
+@pytest.mark.parametrize(
+    ("provider_dim", "expected"),
+    (
+        (32, (32, 1, 1)),
+        ((8, 4), (8, 4, 1)),
+        ((8, 4, 2), (8, 4, 2)),
+    ),
+)
+def test_launch_dimensions_come_only_from_the_verified_provider_api(
+    provider_dim: object,
+    expected: tuple[int, int, int],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = SimpleNamespace(
+        cute=SimpleNamespace(
+            _get_launch_facts=lambda: {"exact_block_dim": provider_dim}
+        )
+    )
+    monkeypatch.setattr(_launch, "is_current_cutlass_environment", lambda: True)
+    monkeypatch.setattr(_launch, "validate_cutlass_runtime", lambda: runtime)
+
+    facts = _launch.current_launch_facts(feature="load")
+
+    assert facts.exact_block_dim == expected
+    assert facts.is_verified("exact_block_dim")
+    assert tuple(origin.source for origin in facts.provenance) == (
+        "cutlass_provider_api",
+    )
 
 
 @pytest.mark.parametrize(
@@ -471,6 +604,64 @@ def test_per_trace_registration_deduplicates_identical_requests(
         _provider._SESSIONS.pop(compile_options, None)
 
 
+def test_trace_finalizer_preserves_a_session_for_its_owning_module(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    request = _provider._LoadStoreRequest.from_plan(
+        _load_plan(),
+        value_type=cutlass_types.Int32,
+    )
+
+    class CompileOptions:
+        pass
+
+    compile_options = CompileOptions()
+    owner = object()
+    unrelated = object()
+    dsl = SimpleNamespace(compile_options=compile_options)
+    session = _provider._TraceSession(owner, {request})
+    calls: list[tuple[str, object]] = []
+    artifact = object()
+    monkeypatch.setattr(
+        _provider,
+        "_render_bundle_source",
+        lambda requests: calls.append(("render", requests)) or "source",
+    )
+    monkeypatch.setattr(
+        _provider,
+        "_compile_ltoir",
+        lambda source: calls.append(("compile", source)) or artifact,
+    )
+    monkeypatch.setattr(
+        _provider,
+        "_append_link_library",
+        lambda module, path: calls.append(("link", (module, path))),
+    )
+    try:
+        _provider._SESSIONS[compile_options] = session
+
+        _provider._trace_finalize(
+            dsl,
+            SimpleNamespace(operation=unrelated),
+            "unrelated",
+        )
+
+        assert _provider._SESSIONS[compile_options] is session
+        assert calls == []
+
+        owner_module = SimpleNamespace(operation=owner)
+        _provider._trace_finalize(dsl, owner_module, "owner")
+
+        assert compile_options not in _provider._SESSIONS
+        assert calls == [
+            ("render", session.requests),
+            ("compile", "source"),
+            ("link", (owner_module, artifact)),
+        ]
+    finally:
+        _provider._SESSIONS.pop(compile_options, None)
+
+
 @pytest.mark.parametrize(
     ("shape", "stride", "reason"),
     [
@@ -535,16 +726,23 @@ def test_provider_rejects_a_plan_with_an_incompatible_dtype() -> None:
         )
 
 
-def test_runtime_and_compiler_trace_context_use_validated_capabilities() -> None:
+def test_root_activation_tracks_the_exact_current_cutlass_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     runtime = validate_cutlass_runtime()
-
     dsl = runtime.dsl_type._get_dsl()
-    before = tuple(dsl._trace_context_factories)
-    register_trace_context()
-    register_trace_context()
-    after = tuple(dsl._trace_context_factories)
-    assert len(after) == len(before)
-    assert getattr(dsl, "_cuda_coop_cutlass_trace_context_target") is trace_context
+    current_manager = [None]
+    monkeypatch.setattr(
+        runtime.common,
+        "get_current_env_manager",
+        lambda: current_manager[0],
+    )
+
+    assert not is_current_cutlass_environment()
+    assert root_api._backend_module_name() is None
+    current_manager[0] = dsl.envar
+    assert is_current_cutlass_environment()
+    assert root_api._backend_module_name() == "cuda.coop.cutlass"
 
 
 def test_runtime_capabilities_match_the_provider_link_contract() -> None:
@@ -553,6 +751,7 @@ def test_runtime_capabilities_match_the_provider_link_contract() -> None:
         runtime.cutlass_dsl,
         runtime.cute,
         runtime.compiler,
+        runtime.common,
     )
 
     without_arch = SimpleNamespace(LinkLibraries=runtime.compiler.LinkLibraries)
@@ -560,6 +759,7 @@ def test_runtime_capabilities_match_the_provider_link_contract() -> None:
         runtime.cutlass_dsl,
         runtime.cute,
         without_arch,
+        runtime.common,
     )
 
     class RenamedLinkLibraries:
@@ -575,5 +775,47 @@ def test_runtime_capabilities_match_the_provider_link_contract() -> None:
             runtime.cutlass_dsl,
             runtime.cute,
             renamed_link_attribute,
+            runtime.common,
+        )
+    )
+
+    class WithoutScopedFinalization:
+        _get_dsl = runtime.dsl_type._get_dsl
+        register_trace_finalize_hook = runtime.dsl_type.register_trace_finalize_hook
+
+    without_scoped = SimpleNamespace(CuTeDSL=WithoutScopedFinalization)
+    assert "cutlass.cutlass_dsl.CuTeDSL.trace_finalize_hooks" in _missing_capabilities(
+        without_scoped,
+        runtime.cute,
+        runtime.compiler,
+        runtime.common,
+    )
+    assert "cutlass.base_dsl.common.get_current_env_manager" in _missing_capabilities(
+        runtime.cutlass_dsl,
+        runtime.cute,
+        runtime.compiler,
+        SimpleNamespace(),
+    )
+    assert "register_trace_context_factory" not in " ".join(
+        _missing_capabilities(
+            runtime.cutlass_dsl,
+            runtime.cute,
+            runtime.compiler,
+            runtime.common,
+        )
+    )
+
+    class WithoutPermanentFinalization:
+        _get_dsl = runtime.dsl_type._get_dsl
+        trace_finalize_hooks = runtime.dsl_type.trace_finalize_hooks
+
+    without_permanent = SimpleNamespace(CuTeDSL=WithoutPermanentFinalization)
+    assert (
+        "cutlass.cutlass_dsl.CuTeDSL.register_trace_finalize_hook"
+        in _missing_capabilities(
+            without_permanent,
+            runtime.cute,
+            runtime.compiler,
+            runtime.common,
         )
     )

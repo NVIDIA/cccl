@@ -311,9 +311,10 @@ def test_registered_backend_receives_payload_load_and_store(
     backend.store = record("store", None)  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, backend_name, backend)
     monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_IS_ACTIVE", None)
     monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
 
-    root_api._register_qualified_backend(backend_name)
+    root_api._register_qualified_backend(backend_name, is_active=lambda: True)
     block = root_api.this_block()
     items = root_api.ThreadData(2, dtype="int32")
     loaded = root_api.load(
@@ -356,11 +357,58 @@ def test_backend_registration_is_idempotent_and_rejects_conflicts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_IS_ACTIVE", None)
     monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
-    root_api._register_qualified_backend("cuda.coop.cutlass")
-    root_api._register_qualified_backend("cuda.coop.cutlass")
+    root_api._register_qualified_backend(
+        "cuda.coop.cutlass",
+        is_active=lambda: True,
+    )
+    root_api._register_qualified_backend(
+        "cuda.coop.cutlass",
+        is_active=lambda: True,
+    )
     with pytest.raises(RuntimeError, match="already activated"):
-        root_api._register_qualified_backend("cuda.coop.other")
+        root_api._register_qualified_backend(
+            "cuda.coop.other",
+            is_active=lambda: True,
+        )
+
+
+def test_registered_backend_is_hidden_when_its_environment_is_not_current(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend_name = "cuda.coop.inactive_testing_backend"
+    backend = ModuleType(backend_name)
+    backend.ThreadData = lambda *args, **kwargs: object()  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, backend_name, backend)
+    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_IS_ACTIVE", None)
+    monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
+
+    root_api._register_qualified_backend(backend_name, is_active=lambda: False)
+
+    with pytest.raises(root_api.CoopCompilerContextRequiredError):
+        root_api.ThreadData(1)
+
+
+def test_backend_activation_predicate_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend_name = "cuda.coop.failing_testing_backend"
+    backend = ModuleType(backend_name)
+    backend.ThreadData = lambda *args, **kwargs: object()  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, backend_name, backend)
+    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_MODULE", None)
+    monkeypatch.setattr(root_api, "_QUALIFIED_BACKEND_IS_ACTIVE", None)
+    monkeypatch.setattr(root_api, "_BACKEND_ACTIVATION_FAILURE", None)
+
+    def fail() -> bool:
+        raise RuntimeError("environment manager lookup failed")
+
+    root_api._register_qualified_backend(backend_name, is_active=fail)
+
+    with pytest.raises(root_api.CoopCompilerContextRequiredError):
+        root_api.ThreadData(1)
 
 
 def test_load_rejects_oob_default_without_partial_tile() -> None:

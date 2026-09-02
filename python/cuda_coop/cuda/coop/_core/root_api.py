@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -17,15 +17,12 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 from .thread_group import ThreadGroup
 from .thread_group import this_block as _core_this_block
 
-_ACTIVE_BACKEND_MODULE: ContextVar[str | None] = ContextVar(
-    "cuda_coop_active_backend_module",
-    default=None,
-)
 _ACTIVE_ROOT_OPERATION: ContextVar[str | None] = ContextVar(
     "cuda_coop_active_root_operation",
     default=None,
 )
 _QUALIFIED_BACKEND_MODULE: str | None = None
+_QUALIFIED_BACKEND_IS_ACTIVE: Callable[[], bool] | None = None
 _BACKEND_ACTIVATION_FAILURE: _BackendActivationFailure | None = None
 _ItemT = TypeVar("_ItemT")
 
@@ -111,22 +108,18 @@ def _validate_backend_module(backend_module: str) -> str:
     return backend_module
 
 
-@contextmanager
-def _compiler_scope(backend_module: str) -> Iterator[None]:
-    """Activate one backend while the compiler processes a kernel function."""
-
-    token = _ACTIVE_BACKEND_MODULE.set(_validate_backend_module(backend_module))
-    try:
-        yield
-    finally:
-        _ACTIVE_BACKEND_MODULE.reset(token)
-
-
-def _register_qualified_backend(backend_module: str) -> None:
-    """Activate one imported qualified backend for common-root calls."""
+def _register_qualified_backend(
+    backend_module: str,
+    *,
+    is_active: Callable[[], bool],
+) -> None:
+    """Register one qualified backend candidate for common-root calls."""
 
     backend_module = _validate_backend_module(backend_module)
-    global _BACKEND_ACTIVATION_FAILURE, _QUALIFIED_BACKEND_MODULE
+    if not callable(is_active):
+        raise TypeError("is_active must be callable")
+    global _BACKEND_ACTIVATION_FAILURE
+    global _QUALIFIED_BACKEND_IS_ACTIVE, _QUALIFIED_BACKEND_MODULE
     if _QUALIFIED_BACKEND_MODULE not in {None, backend_module}:
         raise RuntimeError(
             "cuda.coop common-root fallback is already activated by "
@@ -134,6 +127,7 @@ def _register_qualified_backend(backend_module: str) -> None:
             f"{backend_module!r}"
         )
     _QUALIFIED_BACKEND_MODULE = backend_module
+    _QUALIFIED_BACKEND_IS_ACTIVE = is_active
     _BACKEND_ACTIVATION_FAILURE = None
 
 
@@ -159,7 +153,13 @@ def _record_backend_activation_failure(
 
 
 def _backend_module_name() -> str | None:
-    return _ACTIVE_BACKEND_MODULE.get() or _QUALIFIED_BACKEND_MODULE
+    if _QUALIFIED_BACKEND_MODULE is None or _QUALIFIED_BACKEND_IS_ACTIVE is None:
+        return None
+    try:
+        active = _QUALIFIED_BACKEND_IS_ACTIVE()
+    except Exception:
+        return None
+    return _QUALIFIED_BACKEND_MODULE if active is True else None
 
 
 @contextmanager

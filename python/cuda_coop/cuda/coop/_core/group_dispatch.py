@@ -10,7 +10,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from ._bindings import ArgumentBinding, BindingKind
+from ._bindings import (
+    ArgumentBinding,
+    BindingKind,
+    _normalize_i32_binding,
+    _normalize_i64_binding,
+)
 from ._symbols import semantic_token
 from .block.load_store import (
     BlockLoadStoreAlgorithm,
@@ -21,6 +26,9 @@ from .block.load_store import (
 )
 from .launch import Dim3, LaunchFacts
 from .thread_group import ThreadGroup, ThreadHierarchy
+
+_I32_MAX = (1 << 31) - 1
+_I64_MAX = (1 << 63) - 1
 
 
 class GroupLoweringTarget(str, Enum):
@@ -82,6 +90,16 @@ class GroupLoadStoreSemantics:
         for name in ("valid_items", "oob_default", "offset"):
             if not isinstance(getattr(self, name), ArgumentBinding):
                 raise TypeError(f"{name} must be an ArgumentBinding")
+        object.__setattr__(
+            self,
+            "valid_items",
+            _normalize_i32_binding(self.valid_items, name="valid_items"),
+        )
+        object.__setattr__(
+            self,
+            "offset",
+            _normalize_i64_binding(self.offset, name="offset"),
+        )
         if (
             self.kind is GroupLoadStoreKind.STORE
             and self.oob_default.kind is not BindingKind.OMITTED
@@ -112,9 +130,9 @@ class GroupLoadStoreSemantics:
             semantic_token(self.dtype),
             self.items_per_thread,
             self.algorithm.value,
-            self.valid_items,
-            self.oob_default,
-            self.offset,
+            self.valid_items.semantic_key,
+            self.oob_default.semantic_key,
+            self.offset.semantic_key,
         )
 
     def __eq__(self, other: object) -> bool:
@@ -427,8 +445,14 @@ def plan_group_primitive(
         operation.valid_items,
         name="valid_items",
         minimum=0,
+        maximum=_I32_MAX,
     )
-    _validate_static_integer_binding(operation.offset, name="offset", minimum=0)
+    _validate_static_integer_binding(
+        operation.offset,
+        name="offset",
+        minimum=0,
+        maximum=_I64_MAX,
+    )
     resolution = resolve_thread_group(call.group, launch)
     if resolution.unsupported is not None:
         return _unsupported_plan(call, resolution)

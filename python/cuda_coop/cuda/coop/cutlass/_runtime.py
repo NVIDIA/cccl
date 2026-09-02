@@ -41,6 +41,7 @@ class CutlassRuntime:
     cutlass_dsl: ModuleType
     cute: ModuleType
     compiler: ModuleType
+    common: ModuleType
     dsl_type: type
 
 
@@ -48,6 +49,7 @@ def _missing_capabilities(
     cutlass_dsl: ModuleType,
     cute: ModuleType,
     compiler: ModuleType,
+    common: ModuleType,
 ) -> tuple[str, ...]:
     dsl_type = getattr(cutlass_dsl, "CuTeDSL", None)
     missing: list[str] = []
@@ -56,13 +58,15 @@ def _missing_capabilities(
     else:
         for name in (
             "_get_dsl",
-            "register_trace_context_factory",
             "register_trace_finalize_hook",
+            "trace_finalize_hooks",
         ):
             if not callable(getattr(dsl_type, name, None)):
                 missing.append(f"cutlass.cutlass_dsl.CuTeDSL.{name}")
     if not callable(getattr(cute, "_get_launch_facts", None)):
         missing.append("cutlass.cute._get_launch_facts")
+    if not callable(getattr(common, "get_current_env_manager", None)):
+        missing.append("cutlass.base_dsl.common.get_current_env_manager")
     link_libraries = getattr(compiler, "LinkLibraries", None)
     if not callable(link_libraries):
         missing.append("cutlass.base_dsl.compiler.LinkLibraries")
@@ -83,6 +87,7 @@ def validate_cutlass_runtime() -> CutlassRuntime:
         cutlass_dsl = importlib.import_module("cutlass.cutlass_dsl")
         cute = importlib.import_module("cutlass.cute")
         compiler = importlib.import_module("cutlass.base_dsl.compiler")
+        common = importlib.import_module("cutlass.base_dsl.common")
     except ImportError as error:
         missing = getattr(error, "name", None)
         raise CutlassRuntimeDependencyError(
@@ -101,13 +106,18 @@ def validate_cutlass_runtime() -> CutlassRuntime:
             exception_type=type(error).__name__,
         ) from error
 
-    missing_capabilities = _missing_capabilities(cutlass_dsl, cute, compiler)
+    missing_capabilities = _missing_capabilities(
+        cutlass_dsl,
+        cute,
+        compiler,
+        common,
+    )
     if missing_capabilities:
         raise CutlassRuntimeDependencyError(
             "backend-runtime-incompatible",
-            "cuda.coop.cutlass requires CUTLASS trace contexts, trace "
-            "finalization, exact launch facts, and link-library merging; missing: "
-            + ", ".join(missing_capabilities),
+            "cuda.coop.cutlass requires CUTLASS scoped trace finalization, a "
+            "current compiler environment, exact launch facts, and link-library "
+            "merging; missing: " + ", ".join(missing_capabilities),
             missing_capabilities=missing_capabilities,
         )
 
@@ -115,12 +125,25 @@ def validate_cutlass_runtime() -> CutlassRuntime:
         cutlass_dsl=cutlass_dsl,
         cute=cute,
         compiler=compiler,
+        common=common,
         dsl_type=cutlass_dsl.CuTeDSL,
     )
+
+
+def is_current_cutlass_environment() -> bool:
+    """Return whether CUTLASS owns the compiler environment in this context."""
+
+    runtime = validate_cutlass_runtime()
+    dsl = runtime.dsl_type._get_dsl()
+    try:
+        return runtime.common.get_current_env_manager() is dsl.envar
+    except Exception:
+        return False
 
 
 __all__ = [
     "CutlassRuntime",
     "CutlassRuntimeDependencyError",
+    "is_current_cutlass_environment",
     "validate_cutlass_runtime",
 ]
