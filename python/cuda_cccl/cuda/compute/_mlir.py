@@ -134,9 +134,11 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     numba-cuda-mlir falls back to querying the current device, which requires a
     GPU to be present.
 
-    Note: this is the cc < sm_100 path.  For newer architectures numba-cuda-mlir
-    routes through ``libMLIRToLLVM70`` instead and does not expose LLVM IR this
-    way; that case is not handled here.
+    The ``gpu.module`` is translated here rather than through an output format
+    numba-cuda-mlir produces itself, so this works for every target arch.  No
+    output format is requested: asking for ``ltoir`` would run a full LTO
+    codegen whose result is then discarded, and the optimized MLIR this needs is
+    the same either way.
     """
     from numba_cuda_mlir import compiler as _compiler
     from numba_cuda_mlir._mlir.dialects import gpu as _gpu
@@ -161,7 +163,6 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
         device=True,
         abi="c",
         abi_info={"abi_name": abi_name},
-        output="ltoir",
         lto=False,
         **target_options,
     )
