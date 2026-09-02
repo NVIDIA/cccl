@@ -143,6 +143,29 @@ bool has_runtime_metadata(const cccl_device_copy_axis_metadata_t* metadata, size
   return false;
 }
 
+std::unique_ptr<cccl_device_copy_axis_metadata_t[]>
+retain_axis_metadata(const cccl_device_copy_axis_metadata_t* metadata, size_t rank)
+{
+  auto retained = std::make_unique<cccl_device_copy_axis_metadata_t[]>(rank);
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    retained[axis] = metadata[axis];
+  }
+
+  return retained;
+}
+
+std::unique_ptr<cccl_device_copy_axis_metadata_t[]>
+retain_stride_metadata(cccl_device_copy_view_build_t view, size_t rank)
+{
+  if (!is_relaxed_layout(view.layout))
+  {
+    return {};
+  }
+
+  return retain_axis_metadata(view.strides, rank);
+}
+
 bool validate_view_build(cccl_device_copy_view_build_t view, size_t rank)
 {
   if (!is_supported_layout(view.layout))
@@ -567,11 +590,9 @@ try
     return status;
   }
 
-  auto retained_shape = std::make_unique<cccl_device_copy_axis_metadata_t[]>(spec.rank);
-  for (size_t axis = 0; axis < spec.rank; ++axis)
-  {
-    retained_shape[axis] = spec.shape[axis];
-  }
+  auto retained_shape               = retain_axis_metadata(spec.shape, spec.rank);
+  auto retained_source_strides      = retain_stride_metadata(spec.source, spec.rank);
+  auto retained_destination_strides = retain_stride_metadata(spec.destination, spec.rank);
 
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
@@ -602,14 +623,16 @@ try
   }
 
   cccl::detail::copy_cubin(compiler->getCubin(), build_ptr->payload, build_ptr->payload_size);
-  build_ptr->cc                 = cc_major * 10 + cc_minor;
-  build_ptr->jit_compiler       = compiler.release();
-  build_ptr->copy_fn            = reinterpret_cast<void*>(fn);
-  build_ptr->value_type         = spec.value_type;
-  build_ptr->rank               = spec.rank;
-  build_ptr->shape              = retained_shape.release();
-  build_ptr->source_layout      = spec.source.layout;
-  build_ptr->destination_layout = spec.destination.layout;
+  build_ptr->cc                  = cc_major * 10 + cc_minor;
+  build_ptr->jit_compiler        = compiler.release();
+  build_ptr->copy_fn             = reinterpret_cast<void*>(fn);
+  build_ptr->value_type          = spec.value_type;
+  build_ptr->rank                = spec.rank;
+  build_ptr->shape               = retained_shape.release();
+  build_ptr->source_strides      = retained_source_strides.release();
+  build_ptr->destination_strides = retained_destination_strides.release();
+  build_ptr->source_layout       = spec.source.layout;
+  build_ptr->destination_layout  = spec.destination.layout;
 
   return CUDA_SUCCESS;
 }
@@ -649,6 +672,12 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   if (!valid_shape_metadata(build.shape, build.rank))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (!validate_view_build(cccl_device_copy_view_build_t{build.source_layout, build.source_strides}, build.rank)
+      || !validate_view_build(cccl_device_copy_view_build_t{build.destination_layout, build.destination_strides},
+                              build.rank))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -712,9 +741,13 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  cccl::detail::release_jit_artifacts(build_ptr);
+  delete[] build_ptr->destination_strides;
+  build_ptr->destination_strides = nullptr;
+  delete[] build_ptr->source_strides;
+  build_ptr->source_strides = nullptr;
   delete[] build_ptr->shape;
-  build_ptr->shape   = nullptr;
+  build_ptr->shape = nullptr;
+  cccl::detail::release_jit_artifacts(build_ptr);
   build_ptr->copy_fn = nullptr;
 
   return CUDA_SUCCESS;

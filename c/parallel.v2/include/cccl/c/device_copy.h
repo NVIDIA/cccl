@@ -112,6 +112,11 @@ typedef struct cccl_device_copy_build_result_t
   // Owned deep copy of the build-time shape metadata. Used to validate runtime
   // descriptors when generated code specializes static extents.
   cccl_device_copy_axis_metadata_t* shape;
+  // Owned deep copies of the build-time stride metadata for source and
+  // destination views. NULL when the corresponding layout ignores explicit
+  // strides.
+  cccl_device_copy_axis_metadata_t* source_strides;
+  cccl_device_copy_axis_metadata_t* destination_strides;
   cccl_device_copy_layout_kind_t source_layout;
   cccl_device_copy_layout_kind_t destination_layout;
 } cccl_device_copy_build_result_t;

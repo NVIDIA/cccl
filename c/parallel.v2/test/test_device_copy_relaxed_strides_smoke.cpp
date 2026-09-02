@@ -180,6 +180,12 @@ CATCH_TEST_CASE("C v2 DeviceCopy can copy runtime layout_stride_relaxed views", 
       TEST_LIBCUDACXX_PATH,
       TEST_CTK_PATH)
     == CUDA_SUCCESS);
+  CATCH_REQUIRE(device_copy.build.shape != nullptr);
+  CATCH_REQUIRE(device_copy.build.source_strides != nullptr);
+  CATCH_REQUIRE(device_copy.build.destination_strides != nullptr);
+
+  source_stride_metadata[0]      = {CCCL_DEVICE_COPY_AXIS_STATIC, 1};
+  destination_stride_metadata[0] = {CCCL_DEVICE_COPY_AXIS_STATIC, 1};
 
   const cccl_device_copy_source_view_t source{
     d_source.get(), source_first_element * sizeof(int), shape.data(), source_strides.data()};
@@ -251,6 +257,9 @@ CATCH_TEST_CASE("C v2 DeviceCopy can copy mixed static and runtime extents", "[d
       TEST_LIBCUDACXX_PATH,
       TEST_CTK_PATH)
     == CUDA_SUCCESS);
+  CATCH_REQUIRE(device_copy.build.shape != nullptr);
+  CATCH_REQUIRE(device_copy.build.source_strides == nullptr);
+  CATCH_REQUIRE(device_copy.build.destination_strides == nullptr);
 
   const cccl_device_copy_source_view_t source{d_source.get(), 0, shape.data(), nullptr};
   const cccl_device_copy_destination_view_t destination{d_destination.get(), 0, shape.data(), nullptr};
