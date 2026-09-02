@@ -2667,8 +2667,9 @@ private:
   // tunings from cub/benchmarks/bench/select/if.cu and cub/benchmarks/bench/select/unique.cu, which dispatch through
   // the same cells; each entry won on both benchmarks. These are raw measured values and must not be passed through
   // nominal_4B_items_to_items.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning(bool has_flags, bool keep_rejects, bool may_alias)
-    const -> ::cuda::std::optional<SelectLookbackPolicy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  get_sm107_tuning(bool has_flags, bool keep_rejects, bool may_alias) const
+    -> ::cuda::std::optional<SelectLookbackPolicy>
   {
     if (has_flags || keep_rejects || may_alias || offset_size_bytes != 4)
     {
