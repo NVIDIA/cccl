@@ -32,37 +32,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<_Tp> __abs_diff_impl_generic(_Tp __x, _Tp __y) noexcept
-{
-  using _Up _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_Tp>;
-
-  const auto __minuend    = static_cast<_Up>((__x > __y) ? __x : __y);
-  const auto __subtrahend = static_cast<_Up>((__x > __y) ? __y : __x);
-  return static_cast<_Up>(__minuend - __subtrahend);
-}
-
-#if _CCCL_CUDA_COMPILATION()
-template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::make_unsigned_t<_Tp> __abs_diff_impl_device(_Tp __x, _Tp __y) noexcept
-{
-  using _Up _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_Tp>;
-
-  if constexpr (::cuda::std::is_signed_v<_Tp> && sizeof(_Tp) <= sizeof(::cuda::std::int32_t))
-  {
-    return static_cast<_Up>(::__sad(__x, __y, 0));
-  }
-  else if constexpr (::cuda::std::is_unsigned_v<_Tp> && sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
-  {
-    return static_cast<_Up>(::__usad(__x, __y, 0));
-  }
-  else
-  {
-    return ::cuda::__abs_diff_impl_generic(__x, __y);
-  }
-}
-#endif // _CCCL_CUDA_COMPILATION()
-
 //! @brief Computes absolute difference.
 //! @param[in] __lhs The left-hand side input.
 //! @param[in] __rhs The right-hand side input.
@@ -71,11 +40,25 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::make_unsigned_t<_Tp> abs_diff(_Tp __lhs, _Tp __rhs) noexcept
 {
+  using _Up _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_Tp>;
+
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_DEVICE, ({ return ::cuda::__abs_diff_impl_device(__lhs, __rhs); }))
+    NV_IF_TARGET(NV_IS_DEVICE, ({
+                   if constexpr (::cuda::std::is_signed_v<_Tp> && sizeof(_Tp) <= sizeof(::cuda::std::int32_t))
+                   {
+                     return static_cast<_Up>(::__sad(__lhs, __rhs, 0));
+                   }
+                   else if constexpr (::cuda::std::is_unsigned_v<_Tp> && sizeof(_Tp) <= sizeof(::cuda::std::uint32_t))
+                   {
+                     return static_cast<_Up>(::__usad(__lhs, __rhs, 0));
+                   }
+                 }))
   }
-  return ::cuda::__abs_diff_impl_generic(__lhs, __rhs);
+
+  const auto __minuend    = static_cast<_Up>((__lhs > __rhs) ? __lhs : __rhs);
+  const auto __subtrahend = static_cast<_Up>((__lhs > __rhs) ? __rhs : __lhs);
+  return static_cast<_Up>(__minuend - __subtrahend);
 }
 
 _CCCL_END_NAMESPACE_CUDA
