@@ -316,3 +316,47 @@ def test_field_conversion_preserves_signedness(field_dtype, input_dtype, values)
     cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size)
 
     np.testing.assert_array_equal(d_out.copy_to_host()["a"], h_in.astype(field_dtype))
+
+
+def test_complex_argument_rejected_for_a_real_field():
+    """A complex value cannot initialize a real field.
+
+    Converting it would drop the imaginary part silently, so the call is
+    rejected while typing instead.
+    """
+    Real = gpu_struct({"a": np.float64})
+
+    def pack(x):
+        return Real(x + 1j)
+
+    h_in = np.array([1.0, 2.0], dtype=np.float64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Real.dtype)
+
+    with pytest.raises(Exception, match="cannot initialize field"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size
+        )
+
+
+def test_struct_of_different_layout_rejected_for_a_struct_field():
+    """A struct field only accepts a struct with a matching layout.
+
+    The struct-to-struct cast rebuilds the value field by field, so a mismatch
+    would otherwise type cleanly and then fail while lowering.
+    """
+    OneField = gpu_struct({"p": np.int32})
+    TwoField = gpu_struct({"p": np.int32, "q": np.int32})
+    Outer = gpu_struct({"n": TwoField})
+
+    def pack(x):
+        return Outer(OneField(x))
+
+    h_in = np.array([1, 2], dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Outer.dtype)
+
+    with pytest.raises(Exception, match="cannot initialize field"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size
+        )
