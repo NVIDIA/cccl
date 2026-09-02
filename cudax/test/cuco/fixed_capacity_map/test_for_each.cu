@@ -51,7 +51,8 @@ struct iota_pair
 {
   __host__ __device__ Pair operator()(typename Pair::first_type i) const noexcept
   {
-    return Pair{i, static_cast<typename Pair::second_type>(i + payload_offset)};
+    using mapped_type = typename Pair::second_type;
+    return Pair{i, static_cast<mapped_type>(i) + static_cast<mapped_type>(payload_offset)};
   }
 };
 
@@ -65,7 +66,7 @@ struct record_visit
   __device__ void operator()(Value slot) const noexcept
   {
     using mapped_type = typename Value::second_type;
-    if (slot.second != static_cast<mapped_type>(slot.first + payload_offset))
+    if (slot.second != static_cast<mapped_type>(slot.first) + static_cast<mapped_type>(payload_offset))
     {
       return;
     }
