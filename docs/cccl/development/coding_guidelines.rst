@@ -51,7 +51,7 @@ libcu++
 #. All user-defined names for entities which are not part of the public API
    must be prefixed with ``__`` when they use ``snake_case``,
    and with ``_`` when they use ``PascalCase`` or ``ALL_CAPS``.
-   This avoids name collisions with user code and macros.
+   This turns them into C++ reserved identifiers to avoid name collisions with user code and macros.
 
 CUB
 ----
