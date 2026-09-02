@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___SIMD_IDOT_H
-#define _CUDA___SIMD_IDOT_H
+#ifndef _CUDA___SIMD_DOT_H
+#define _CUDA___SIMD_DOT_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__internal/features.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -39,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 template <typename _Tp, typename _Up, typename _Abi>
-struct __idot_operation
+struct __dot_operation
 {
   template <typename _AccumT, typename _LhsStorage, typename _RhsStorage>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _AccumT
@@ -50,8 +49,12 @@ struct __idot_operation
     {
       using ::cuda::std::is_signed_v;
       using ::cuda::std::is_unsigned_v;
-      constexpr bool __is_unsigned_dot   = is_unsigned_v<_Tp> && is_unsigned_v<_Up> && is_unsigned_v<_AccumT>;
-      constexpr bool __is_signed_dot     = (is_signed_v<_Tp> || is_signed_v<_Up>) && is_signed_v<_AccumT>;
+      constexpr bool __is_integer_dot = ::cuda::std::__cccl_is_integer_v<_Tp> && ::cuda::std::__cccl_is_integer_v<_Up>
+                                     && ::cuda::std::__cccl_is_integer_v<_AccumT>;
+      constexpr bool __is_unsigned_dot =
+        __is_integer_dot && is_unsigned_v<_Tp> && is_unsigned_v<_Up> && is_unsigned_v<_AccumT>;
+      constexpr bool __is_signed_dot =
+        __is_integer_dot && (is_signed_v<_Tp> || is_signed_v<_Up>) && is_signed_v<_AccumT>;
       constexpr bool __has_matching_sign = __is_unsigned_dot || __is_signed_dot;
 
       constexpr bool __is_dp4 = sizeof(_Tp) == 1 && sizeof(_Up) == 1 && sizeof(_AccumT) == 4 && __has_matching_sign;
@@ -101,24 +104,22 @@ struct __idot_operation
   }
 };
 
-//! @brief Computes an integer dot product and adds it to an accumulator.
+//! @brief Computes a dot product and adds it to an accumulator.
 //! @param[in] __lhs The left-hand side input vector.
 //! @param[in] __rhs The right-hand side input vector.
 //! @param[in] __init The initial accumulator value.
 //! @return The accumulator plus the dot product of the input vectors.
-_CCCL_TEMPLATE(typename _Tp, typename _Up, typename _Abi, typename _AccumT)
-_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Up>
-                 _CCCL_AND ::cuda::std::__cccl_is_integer_v<_AccumT>)
+template <typename _Tp, typename _Up, typename _Abi, typename _AccumT>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _AccumT
-idot(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
-     const ::cuda::std::simd::basic_vec<_Up, _Abi>& __rhs,
-     const _AccumT __init) noexcept
+dot(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
+    const ::cuda::std::simd::basic_vec<_Up, _Abi>& __rhs,
+    const _AccumT __init) noexcept
 {
-  return __simd_idot_impl(__lhs, __rhs, __init, __idot_operation<_Tp, _Up, _Abi>{}); // ADL
+  return __simd_dot_impl(__lhs, __rhs, __init, __dot_operation<_Tp, _Up, _Abi>{}); // ADL
 }
 
 _CCCL_END_NAMESPACE_CUDA_SIMD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___SIMD_IDOT_H
+#endif // _CUDA___SIMD_DOT_H

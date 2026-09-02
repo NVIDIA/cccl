@@ -8,15 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/__simd/idot.h>
+// <cuda/simd>
 
 // template<class T, class U, class Abi, class AccT>
-//   constexpr AccT cuda::simd::idot(
+//   constexpr AccT cuda::simd::dot(
 //     const basic_vec<T, Abi>& lhs, const basic_vec<U, Abi>& rhs, AccT acc) noexcept;
 
 #include <cuda/simd>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -29,19 +30,19 @@ template <typename T, int N>
 using fixed_size_vec = simd::basic_vec<T, simd::fixed_size<N>>;
 
 template <typename LhsVec, typename RhsVec, typename AccT, typename = void>
-inline constexpr bool has_idot = false;
+inline constexpr bool has_dot = false;
 
 template <typename LhsVec, typename RhsVec, typename AccT>
 inline constexpr bool
-  has_idot<LhsVec,
-           RhsVec,
-           AccT,
-           cuda::std::void_t<decltype(cuda::simd::idot(
-             cuda::std::declval<LhsVec>(), cuda::std::declval<RhsVec>(), cuda::std::declval<AccT>()))>> = true;
+  has_dot<LhsVec,
+          RhsVec,
+          AccT,
+          cuda::std::void_t<decltype(cuda::simd::dot(
+            cuda::std::declval<LhsVec>(), cuda::std::declval<RhsVec>(), cuda::std::declval<AccT>()))>> = true;
 
 template <typename T, typename U, typename AccT, int N>
 TEST_FUNC constexpr AccT
-scalar_idot(const cuda::std::array<T, N>& lhs_values, const cuda::std::array<U, N>& rhs_values, AccT acc)
+scalar_dot(const cuda::std::array<T, N>& lhs_values, const cuda::std::array<U, N>& rhs_values, AccT acc)
 {
   AccT result = acc;
   for (int i = 0; i < N; ++i)
@@ -59,14 +60,14 @@ TEST_FUNC constexpr void test_values(cuda::std::array<T, N> lhs_values, cuda::st
 {
   using LhsVec = simd::basic_vec<T, simd::fixed_size<N>>;
   using RhsVec = simd::basic_vec<U, simd::fixed_size<N>>;
-  LhsVec lhs(lhs_values);
-  RhsVec rhs(rhs_values);
+  LhsVec lhs(lhs_values, simd::flag_convert);
+  RhsVec rhs(rhs_values, simd::flag_convert);
 
-  static_assert(cuda::std::is_same_v<decltype(cuda::simd::idot(lhs, rhs, acc)), AccT>);
-  static_assert(noexcept(cuda::simd::idot(lhs, rhs, acc)));
+  static_assert(cuda::std::is_same_v<decltype(cuda::simd::dot(lhs, rhs, acc)), AccT>);
+  static_assert(noexcept(cuda::simd::dot(lhs, rhs, acc)));
 
-  AccT result   = cuda::simd::idot(lhs, rhs, acc);
-  AccT expected = scalar_idot<T, U, AccT, N>(lhs_values, rhs_values, acc);
+  AccT result   = cuda::simd::dot(lhs, rhs, acc);
+  AccT expected = scalar_dot<T, U, AccT, N>(lhs_values, rhs_values, acc);
   assert(result == expected);
 }
 
@@ -175,14 +176,35 @@ TEST_FUNC constexpr void test_16bit_8bit_dp2a()
   test_generated<uint16_t, uint8_t, uint32_t, 7>(uint32_t{67});
 }
 
+TEST_FUNC constexpr void test_non_integer()
+{
+  {
+    cuda::std::array<float, 4> lhs_values{1.5f, -2.0f, 0.25f, 4.0f};
+    cuda::std::array<double, 4> rhs_values{2.0, 3.0, -4.0, 0.5};
+    test_values<float, double, double, 4>(lhs_values, rhs_values, 0.25);
+  }
+  {
+    cuda::std::array<int8_t, 4> lhs_values{1, -2, 3, -4};
+    cuda::std::array<uint8_t, 4> rhs_values{5, 6, 7, 8};
+    test_values<int8_t, uint8_t, float, 4>(lhs_values, rhs_values, 0.5f);
+  }
+  {
+    using complex = cuda::std::complex<double>;
+    cuda::std::array<complex, 3> lhs_values{complex{1.0, 2.0}, complex{-3.0, 0.5}, complex{2.0, -1.0}};
+    cuda::std::array<complex, 3> rhs_values{complex{0.5, -1.0}, complex{2.0, 3.0}, complex{-1.0, 4.0}};
+    test_values<complex, complex, complex, 3>(lhs_values, rhs_values, complex{1.0, -2.0});
+  }
+}
+
 TEST_FUNC constexpr bool test_all()
 {
-  static_assert(!has_idot<fixed_size_vec<float, 4>, fixed_size_vec<float, 4>, int>);
-  static_assert(!has_idot<fixed_size_vec<int, 4>, fixed_size_vec<float, 4>, int>);
-  static_assert(!has_idot<fixed_size_vec<int, 4>, fixed_size_vec<int, 4>, float>);
+  static_assert(has_dot<fixed_size_vec<float, 4>, fixed_size_vec<float, 4>, int>);
+  static_assert(has_dot<fixed_size_vec<int, 4>, fixed_size_vec<float, 4>, int>);
+  static_assert(has_dot<fixed_size_vec<int, 4>, fixed_size_vec<int, 4>, float>);
 
   test_8bit_dp4a();
   test_16bit_8bit_dp2a();
+  test_non_integer();
 
   test_generated<short, short, int, 3>(5);
   test_generated<int, unsigned, long long, 5>(-7);
