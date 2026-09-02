@@ -25,6 +25,7 @@
 #include <cuda/__execution/guarantee.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -33,14 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 struct device_description
 {
-  static constexpr ::cuda::std::uint32_t unspecified = static_cast<::cuda::std::uint32_t>(-1);
-
-  ::cuda::std::uint32_t __max_sms_ = unspecified;
-
-  [[nodiscard]] _CCCL_API constexpr bool __has_max_sms() const noexcept
-  {
-    return __max_sms_ != unspecified;
-  }
+  ::cuda::std::optional<::cuda::std::uint32_t> __max_sms_{};
 };
 
 struct __get_runs_on_t;
