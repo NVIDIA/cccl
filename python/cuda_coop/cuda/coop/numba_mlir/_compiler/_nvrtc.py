@@ -24,6 +24,7 @@ from cuda.coop._headers._toolkit import (
 
 _REQUIRED_HEADERS = (
     "cub/block/block_reduce.cuh",
+    "cub/warp/warp_reduce.cuh",
     "cuda/functional",
     "cuda/std/cstdint",
     "cuda/std/functional",
@@ -123,7 +124,7 @@ def resolve_compile_context(state: Any = None) -> CompileContext:
 def compile_lto_ir(
     source: str,
     context: CompileContext,
-    program_name: str = "cuda_coop_block_reduce.cu",
+    program_name: str = "cuda_coop_group_reduce.cu",
 ) -> bytes:
     """Compile one source string to LTO IR, cached only in this process."""
 

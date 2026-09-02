@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Direct scalar CUB BlockReduce lowering for Numba-CUDA-MLIR."""
+"""Direct scalar CUB BlockReduce and WarpReduce lowering."""
 
 from __future__ import annotations
 
@@ -32,7 +32,8 @@ from cuda.coop._core.group import (
     plan_group_primitive,
 )
 from cuda.coop._core.launch import LaunchFactOrigin, LaunchFacts
-from cuda.coop._core.thread_group import this_block
+from cuda.coop._core.thread_group import this_block, this_warp
+from cuda.coop._core.warp.reduce import WarpReduceSpec, make_warp_reduce_spec
 
 from .._compiler import _nvrtc
 
@@ -89,11 +90,18 @@ class _Provider:
 class _MarkerSpec:
     """Static reduction controls captured before payload typing."""
 
+    group_kind: str
     block_dim: tuple[int, int, int]
     operation: BlockReduceOperation
     binary_op: BlockReduceOperator
-    algorithm: BlockReduceAlgorithm
+    algorithm: BlockReduceAlgorithm | None
     valid_items: bool
+
+    def __post_init__(self) -> None:
+        if self.group_kind not in {"block", "warp"}:
+            raise ValueError(f"unsupported reduction group kind {self.group_kind!r}")
+        if self.group_kind == "warp" and self.algorithm is not None:
+            raise ValueError("physical-warp reduction does not accept an algorithm")
 
 
 def _unliteral(dtype: Any) -> Any:
@@ -107,7 +115,7 @@ def _validate_scalar_dtype(dtype: Any, binary_op: str) -> Any:
     if dtype not in _CPP_TYPES:
         supported = ", ".join(str(item) for item in _CPP_TYPES)
         raise TypeError(
-            f"cuda.coop block reduction does not support scalar type {dtype}; "
+            f"cuda.coop group reduction does not support scalar type {dtype}; "
             f"expected one of: {supported}"
         )
     if binary_op in _BITWISE_OPERATORS and dtype not in _INTEGRAL_TYPES:
@@ -115,7 +123,7 @@ def _validate_scalar_dtype(dtype: Any, binary_op: str) -> Any:
     return dtype
 
 
-def _source(*, symbol: str, cpp_type: str, spec: BlockReduceSpec) -> str:
+def _block_source(*, symbol: str, cpp_type: str, spec: BlockReduceSpec) -> str:
     x, y, z = spec.block_dim
     binary_op = spec.binary_op.value
     method_args = "value"
@@ -145,23 +153,68 @@ extern "C" __device__ {cpp_type} {symbol}({cpp_type} value{valid_parameter}) {{
 """
 
 
+def _warp_source(*, symbol: str, cpp_type: str, spec: WarpReduceSpec) -> str:
+    binary_op = spec.binary_op.value
+    method_args = "value"
+    if spec.method_name == "Sum":
+        method = "Sum"
+    else:
+        method = "Reduce"
+        method_args += f", {_OPERATORS[binary_op]}"
+    if spec.valid_items:
+        method_args += ", valid_items"
+    valid_parameter = ", int valid_items" if spec.valid_items else ""
+    return f"""
+#include <cub/warp/warp_reduce.cuh>
+#include <cuda/functional>
+#include <cuda/std/cstdint>
+#include <cuda/std/functional>
+
+extern "C" __device__ {cpp_type} {symbol}({cpp_type} value{valid_parameter}) {{
+  using T = {cpp_type};
+  using WarpReduce = ::cub::WarpReduce<T, {spec.threads_in_warp}>;
+  __shared__ typename WarpReduce::TempStorage storage[{spec.warp_count}];
+  const unsigned int linear_thread_rank =
+    threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z);
+  const unsigned int warp_id = linear_thread_rank / {spec.threads_in_warp};
+  T result = WarpReduce(storage[warp_id]).{method}({method_args});
+  __syncwarp();
+  return result;
+}}
+"""
+
+
+def _source(
+    *,
+    symbol: str,
+    cpp_type: str,
+    spec: BlockReduceSpec | WarpReduceSpec,
+) -> str:
+    """Render one direct CUB reduction provider."""
+
+    if isinstance(spec, WarpReduceSpec):
+        return _warp_source(symbol=symbol, cpp_type=cpp_type, spec=spec)
+    return _block_source(symbol=symbol, cpp_type=cpp_type, spec=spec)
+
+
 @functools.lru_cache(maxsize=None)
 def _provider_for_context(
-    spec: BlockReduceSpec,
+    spec: BlockReduceSpec | WarpReduceSpec,
     cpp_type: str,
     context: _nvrtc.CompileContext,
 ) -> _Provider:
     """Compile or reuse a provider for one exact target and toolchain."""
 
+    scope = "warp" if isinstance(spec, WarpReduceSpec) else "block"
     source_template = _source(
-        symbol="cuda_coop_block_reduce_PROVIDER_DIGEST",
+        symbol=f"cuda_coop_{scope}_reduce_PROVIDER_DIGEST",
         cpp_type=cpp_type,
         spec=spec,
     )
     digest = hashlib.sha256(
         repr((source_template, spec.semantic_key, context)).encode()
     ).hexdigest()[:24]
-    symbol = f"cuda_coop_block_reduce_{digest}"
+    symbol = f"cuda_coop_{scope}_reduce_{digest}"
     source = _source(symbol=symbol, cpp_type=cpp_type, spec=spec)
     image = _nvrtc.compile_lto_ir(source, context)
     path = Path(_ARTIFACT_DIRECTORY.name, f"{symbol}.ltoir")
@@ -205,9 +258,15 @@ def _typed_provider(
             verified=True,
         ),
     )
+    if marker_spec.group_kind == "block":
+        group = this_block()
+    elif marker_spec.group_kind == "warp":
+        group = this_warp()
+    else:
+        raise ValueError(f"unsupported reduction group kind {marker_spec.group_kind!r}")
     plan = plan_group_primitive(
         make_group_primitive_call(
-            this_block(),
+            group,
             semantics,
             source="numba-cuda-mlir overload typing",
         ),
@@ -276,10 +335,38 @@ def _materialize(
         valid_items=num_valid,
     )
     marker_spec = _MarkerSpec(
+        group_kind="block",
         block_dim=normalized.block_dim,
         operation=normalized.operation,
         binary_op=normalized.binary_op,
         algorithm=normalized.algorithm,
+        valid_items=normalized.valid_items,
+    )
+    context = _nvrtc.resolve_compile_context(state)
+    return _marker_for(marker_spec, context)
+
+
+def _materialize_warp(
+    *,
+    threads_per_block: Any,
+    operation: str,
+    binary_op: Any,
+    num_valid: bool,
+    state: Any = None,
+):
+    normalized = make_warp_reduce_spec(
+        dtype=None,
+        block_dim=threads_per_block,
+        operation=operation,
+        binary_op=binary_op,
+        valid_items=num_valid,
+    )
+    marker_spec = _MarkerSpec(
+        group_kind="warp",
+        block_dim=normalized.block_dim,
+        operation=BlockReduceOperation(normalized.operation.value),
+        binary_op=normalized.binary_op,
+        algorithm=None,
         valid_items=normalized.valid_items,
     )
     context = _nvrtc.resolve_compile_context(state)
@@ -325,4 +412,39 @@ def block_reduce_builtin(
     )
 
 
-__all__ = ["block_reduce_builtin", "sum"]
+def warp_sum(
+    threads_per_block: Any,
+    num_valid: bool = False,
+    *,
+    _state: Any = None,
+):
+    """Materialize the physical-warp sum selected by hierarchy planning."""
+
+    return _materialize_warp(
+        threads_per_block=threads_per_block,
+        operation="sum",
+        binary_op="sum",
+        num_valid=num_valid,
+        state=_state,
+    )
+
+
+def warp_reduce_builtin(
+    threads_per_block: Any,
+    binary_op: Any,
+    num_valid: bool = False,
+    *,
+    _state: Any = None,
+):
+    """Materialize a direct built-in physical CUB WarpReduce factory."""
+
+    return _materialize_warp(
+        threads_per_block=threads_per_block,
+        operation="reduce",
+        binary_op=binary_op,
+        num_valid=num_valid,
+        state=_state,
+    )
+
+
+__all__ = ["block_reduce_builtin", "sum", "warp_reduce_builtin", "warp_sum"]

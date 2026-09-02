@@ -73,6 +73,20 @@ def test_block_sum_has_root_only_cub_plan() -> None:
     assert plan.provenance.method == "Sum"
 
 
+def test_omitted_block_algorithm_canonicalizes_to_warp_reductions() -> None:
+    omitted = _plan(GroupReduceSemantics(dtype="int32", operation="sum"))
+    explicit = _plan(
+        GroupReduceSemantics(
+            dtype="int32",
+            operation="sum",
+            algorithm="warp_reductions",
+        )
+    )
+
+    assert omitted.semantic_key == explicit.semantic_key
+    assert omitted.artifact_key == explicit.artifact_key
+
+
 @pytest.mark.parametrize(
     "algorithm",
     (

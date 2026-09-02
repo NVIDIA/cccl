@@ -12,7 +12,7 @@ import sys
 import textwrap
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, Literal, get_args, get_origin
 
 import pytest
 
@@ -21,6 +21,7 @@ import cuda.coop._core.api as root_api
 from cuda import coop
 from cuda.coop._core import _auto_registration
 from cuda.coop._core.api import _dispatch as api_dispatch
+from cuda.coop._core.api import thread_group as thread_group_api
 from cuda.coop._core.api.reduce import _normalize_valid_items
 
 _SOURCE_ROOT = Path(__file__).parents[3]
@@ -31,10 +32,11 @@ _STUBS = (
     _API_STUB_ROOT / "reduce.pyi",
 )
 _FIRST_SENTENCES = {
-    "ThreadGroup": "Descriptor for the current CUDA thread block.",
+    "ThreadGroup": "Descriptor for the current CUDA thread block or physical warp.",
     "this_block": "Return a descriptor for the current CUDA thread block.",
-    "reduce": "Reduce one scalar per block thread and return the root result.",
-    "sum": "Sum one scalar per block thread and return the root result.",
+    "this_warp": "Return a descriptor for the current physical CUDA warp.",
+    "reduce": "Reduce one scalar per group member and return the root result.",
+    "sum": "Sum one scalar per group member and return the root result.",
 }
 
 
@@ -60,6 +62,7 @@ def test_root_exports_exact_initial_surface() -> None:
         "CoopCompilerContextRequiredError",
         "ThreadGroup",
         "this_block",
+        "this_warp",
         "reduce",
         "sum",
     ]
@@ -67,6 +70,7 @@ def test_root_exports_exact_initial_surface() -> None:
         "CoopCompilerContextRequiredError",
         "ThreadGroup",
         "this_block",
+        "this_warp",
         "reduce",
         "sum",
     ]
@@ -99,6 +103,7 @@ def test_semantic_core_owns_context_error_without_importing_api_layer() -> None:
 
 def test_root_signatures_match_scalar_reduction_contract() -> None:
     assert tuple(inspect.signature(root_api.this_block).parameters) == ()
+    assert tuple(inspect.signature(root_api.this_warp).parameters) == ()
     assert tuple(inspect.signature(root_api.reduce).parameters) == (
         "group",
         "value",
@@ -128,7 +133,7 @@ def test_runtime_and_stub_docstrings_share_locked_summaries() -> None:
 
 
 def test_root_callables_have_explicit_backend_markers() -> None:
-    for name in ("this_block", "reduce", "sum"):
+    for name in ("this_block", "this_warp", "reduce", "sum"):
         assert getattr(coop, name).__cuda_coop_backend_member__ == name
 
 
@@ -154,6 +159,8 @@ def test_root_import_succeeds_when_numba_cuda_mlir_is_absent() -> None:
         from cuda import coop
 
         assert coop.this_block().kind == "block"
+        assert coop.this_warp().kind == "warp"
+        assert coop.this_warp().static_size == 32
         assert not any(
             name == "numba_cuda_mlir" or name.startswith("numba_cuda_mlir.")
             for name in sys.modules
@@ -271,6 +278,26 @@ def test_auto_registration_honors_explicit_opt_out(
 def test_thread_group_is_an_opaque_descriptor() -> None:
     with pytest.raises(TypeError, match="opaque"):
         coop.ThreadGroup()
+
+
+def test_thread_group_runtime_matches_public_generic_stub() -> None:
+    block_group = coop.ThreadGroup[Literal["block"]]
+    warp_group = coop.ThreadGroup[Literal["warp"]]
+
+    assert get_origin(block_group) is coop.ThreadGroup
+    assert get_args(block_group) == (Literal["block"],)
+    assert thread_group_api.BlockGroup == block_group
+    assert thread_group_api.WarpGroup == warp_group
+    assert thread_group_api.ThreadGroupKind == Literal["block", "warp"]
+
+
+def test_physical_warp_root_validation_is_group_specific() -> None:
+    warp = root_api.this_warp()
+
+    with pytest.raises(ValueError, match="valid_items must be at most 32"):
+        root_api.sum(warp, 1, valid_items=33)
+    with pytest.raises(ValueError, match="applies to block groups"):
+        root_api.sum(warp, 1, algorithm="warp_reductions")
 
 
 def test_registered_backend_receives_canonical_root_calls(

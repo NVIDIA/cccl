@@ -11,13 +11,21 @@ from cuda.coop._core.thread_group import ThreadGroup
 from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 
 
-def test_qualified_api_exposes_only_the_block_reduction_slice():
-    assert coop.__all__ == ["ThreadGroup", "this_block", "reduce", "sum"]
+def test_qualified_api_exposes_block_and_warp_reduction():
+    assert coop.__all__ == [
+        "ThreadGroup",
+        "this_block",
+        "this_warp",
+        "reduce",
+        "sum",
+    ]
     assert coop.ThreadGroup is ThreadGroup
     assert coop.this_block.__cuda_coop_backend_member__ == "this_block"
+    assert coop.this_warp.__cuda_coop_backend_member__ == "this_warp"
     assert coop.reduce.__cuda_coop_backend_member__ == "reduce"
     assert coop.sum.__cuda_coop_backend_member__ == "sum"
     assert coop.this_block.__module__ == "cuda.coop.numba_mlir._thread_group"
+    assert coop.this_warp.__module__ == "cuda.coop.numba_mlir._thread_group"
     assert coop.reduce.__module__ == "cuda.coop.numba_mlir._group_reduce"
     assert coop.sum.__module__ == "cuda.coop.numba_mlir._group_reduce"
 
@@ -29,6 +37,7 @@ def test_public_markers_are_recognized_only_by_exact_callable_identity():
     assert group_operation_name(coop.reduce) == "reduce"
     assert group_operation_name(coop.sum) == "sum"
     assert group_operation_name(coop.this_block) == "this_block"
+    assert group_operation_name(coop.this_warp) == "this_warp"
     assert group_operation_name(reduce) is None
 
 
@@ -40,6 +49,14 @@ def test_qualified_block_descriptor_is_compiler_free():
     assert group.static_size is None
 
 
+def test_qualified_warp_descriptor_has_physical_width():
+    group = coop.this_warp()
+
+    assert group.kind == "warp"
+    assert group.is_current
+    assert group.static_size == 32
+
+
 def test_reduction_markers_fail_outside_kernel_compilation():
     group = coop.this_block()
 
@@ -47,3 +64,5 @@ def test_reduction_markers_fail_outside_kernel_compilation():
         coop.sum(group, 1)
     with pytest.raises(RuntimeError, match="kernel compile-time construct"):
         coop.reduce(group, 1, binary_op="max")
+    with pytest.raises(RuntimeError, match="kernel compile-time construct"):
+        coop.sum(coop.this_warp(), 1)

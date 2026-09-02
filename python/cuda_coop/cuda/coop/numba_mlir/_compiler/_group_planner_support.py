@@ -5,7 +5,7 @@
 # The family planner imports these private support names explicitly.
 # ruff: noqa: F401
 
-"""Shared exact-identity support for block group hierarchy planning."""
+"""Shared exact-identity support for group hierarchy planning."""
 
 from __future__ import annotations
 
@@ -23,14 +23,29 @@ from numba_cuda_mlir.numbair_transforms import ir
 from cuda.coop._core.api.reduce import reduce as root_reduce
 from cuda.coop._core.api.reduce import sum as root_sum
 from cuda.coop._core.api.thread_group import this_block as root_this_block
-from cuda.coop._core.thread_group import ThreadGroup, normalize_thread_dim
+from cuda.coop._core.api.thread_group import this_warp as root_this_warp
+from cuda.coop._core.thread_group import (
+    ThreadGroup,
+    normalize_thread_dim,
+)
+from cuda.coop._core.thread_group import (
+    this_block as core_this_block,
+)
+from cuda.coop._core.thread_group import (
+    this_warp as core_this_warp,
+)
 
 from .._group_reduce import reduce, sum
-from .._thread_group import this_block
+from .._thread_group import this_block, this_warp
 from ._operations import group_operation_name
 
 _NAME_COUNTER = count()
-_GROUP_CONSTRUCTORS = frozenset({root_this_block, this_block})
+_GROUP_CONSTRUCTORS = {
+    root_this_block: core_this_block(),
+    root_this_warp: core_this_warp(),
+    this_block: core_this_block(),
+    this_warp: core_this_warp(),
+}
 _ROOT_OPERATIONS = {
     root_reduce: "reduce",
     root_sum: "sum",

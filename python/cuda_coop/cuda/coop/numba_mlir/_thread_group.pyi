@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Thread-block descriptor for the qualified backend."""
+"""Thread-group descriptors for the qualified backend."""
 
-from cuda.coop import ThreadGroup as ThreadGroup
+from typing import Literal
 
-def this_block() -> ThreadGroup: ...
+from cuda.coop._core.api.thread_group import ThreadGroup as ThreadGroup
 
-__all__ = ["ThreadGroup", "this_block"]
+def this_block() -> ThreadGroup[Literal["block"]]: ...
+def this_warp() -> ThreadGroup[Literal["warp"]]: ...
+
+__all__ = ["ThreadGroup", "this_block", "this_warp"]

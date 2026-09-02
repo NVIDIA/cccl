@@ -11,9 +11,9 @@ not own semantic lowering, provider rendering, or backend compiler state.
 
 from .._errors import CoopCompilerContextRequiredError
 from .reduce import reduce, sum
-from .thread_group import ThreadGroup, this_block
+from .thread_group import ThreadGroup, this_block, this_warp
 
-for _member_name in ("this_block", "reduce", "sum"):
+for _member_name in ("this_block", "this_warp", "reduce", "sum"):
     globals()[_member_name].__cuda_coop_backend_member__ = _member_name
 del _member_name
 
@@ -21,6 +21,7 @@ __all__ = [
     "CoopCompilerContextRequiredError",
     "ThreadGroup",
     "this_block",
+    "this_warp",
     "reduce",
     "sum",
 ]

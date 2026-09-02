@@ -66,6 +66,21 @@ def _kernel_with_runtime_binary_op(source, binary_op):
     )
 
 
+def _warp_kernel(source):
+    return coop.sum(
+        coop.this_warp(),
+        source[0],
+    )
+
+
+def _warp_kernel_with_algorithm(source):
+    return coop.sum(
+        coop.this_warp(),
+        source[0],
+        algorithm="warp_reductions",
+    )
+
+
 def _kernel_with_invalid_group(source):
     return coop.sum(source[0], source[0])
 
@@ -232,7 +247,56 @@ def test_group_planner_rejects_non_descriptor_group():
         types.Array(types.int32, 1, "C"),
     )
 
-    with pytest.raises(GroupRewriteError, match="group must come from this_block"):
+    with pytest.raises(
+        GroupRewriteError,
+        match=r"group must come from this_block\(\) or this_warp\(\)",
+    ):
+        _GroupCallPlanner(state, {"grid": 1, "block": 32}).run()
+
+
+@pytest.mark.parametrize("block_dim", ((8, 8), (8, 4, 2), (4, 4, 4)))
+def test_warp_hierarchy_planning_selects_physical_warp_factory(block_dim):
+    func_ir = run_frontend(_warp_kernel)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(types.Array(types.int32, 1, "C"),),
+        typemap={},
+        calltypes={},
+        metadata={"targetoptions": {}},
+    )
+
+    assert _GroupCallPlanner(state, {"grid": 1, "block": block_dim}).run()
+    func_ir._definitions = build_definitions(func_ir.blocks)
+    selected = []
+    for block in func_ir.blocks.values():
+        for inst in block.body:
+            if not isinstance(inst, ir.Assign):
+                continue
+            call = inst.value
+            if not isinstance(call, ir.Expr) or call.op != "call":
+                continue
+            if (target := _factory_from_call(func_ir, call)) is not None:
+                selected.append((target, call))
+
+    assert len(selected) == 1
+    (factory, metadata), call = selected[0]
+    assert factory is _reduce.warp_sum
+    assert (metadata.operation, metadata.namespace) == ("warp_sum", "warp")
+    keyword_values = dict(call.kws)
+    assert set(keyword_values) == {"threads_per_block"}
+
+
+def test_warp_hierarchy_planning_rejects_partial_physical_warp():
+    state = _state(_warp_kernel, types.Array(types.int32, 1, "C"))
+
+    with pytest.raises(NotImplementedError, match="complete 32-thread warps"):
+        _GroupCallPlanner(state, {"grid": 1, "block": (3, 3, 4)}).run()
+
+
+def test_warp_hierarchy_planning_rejects_explicit_block_algorithm():
+    state = _state(_warp_kernel_with_algorithm, types.Array(types.int32, 1, "C"))
+
+    with pytest.raises(ValueError, match="applies to block groups"):
         _GroupCallPlanner(state, {"grid": 1, "block": 32}).run()
 
 

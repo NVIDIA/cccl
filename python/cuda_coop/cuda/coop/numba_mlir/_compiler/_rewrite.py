@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Materialize exact BlockReduce factories after group hierarchy planning."""
+"""Materialize exact group-reduction factories after hierarchy planning."""
 
 from __future__ import annotations
 
@@ -19,16 +19,28 @@ from ._rewrite_support import (
 
 _FACTORY_SPECS = {
     "sum": {
+        "namespace": "block",
         "allowed": {"threads_per_block", "algorithm", "num_valid"},
         "required": {"threads_per_block"},
     },
     "block_reduce_builtin": {
+        "namespace": "block",
         "allowed": {
             "threads_per_block",
             "binary_op",
             "algorithm",
             "num_valid",
         },
+        "required": {"threads_per_block", "binary_op"},
+    },
+    "warp_sum": {
+        "namespace": "warp",
+        "allowed": {"threads_per_block", "num_valid"},
+        "required": {"threads_per_block"},
+    },
+    "warp_reduce_builtin": {
+        "namespace": "warp",
+        "allowed": {"threads_per_block", "binary_op", "num_valid"},
         "required": {"threads_per_block", "binary_op"},
     },
 }
@@ -60,10 +72,8 @@ class CoopSinglePhaseRewrite:
             if target is None:
                 continue
             factory, metadata = target
-            if (
-                metadata.namespace != "block"
-                or metadata.operation not in _FACTORY_SPECS
-            ):
+            spec = _FACTORY_SPECS.get(metadata.operation)
+            if spec is None or metadata.namespace != spec["namespace"]:
                 raise CoopSinglePhaseRewriteError(
                     f"unsupported cuda.coop lowering factory {metadata.operation!r}"
                 )
@@ -76,7 +86,6 @@ class CoopSinglePhaseRewrite:
                     f"cuda.coop {metadata.operation} factory expects one runtime value"
                 )
             keyword_vars = dict(call.kws)
-            spec = _FACTORY_SPECS[metadata.operation]
             unknown = set(keyword_vars) - spec["allowed"]
             missing = spec["required"] - set(keyword_vars)
             if unknown or missing:

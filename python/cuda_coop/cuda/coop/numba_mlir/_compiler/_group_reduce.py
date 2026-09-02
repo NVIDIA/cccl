@@ -2,19 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Scalar BlockReduce family planning after block hierarchy resolution."""
+"""Scalar group-reduction planning after hierarchy resolution."""
 
 from __future__ import annotations
 
 from cuda.coop._core._bindings import ArgumentBinding
 from cuda.coop._core.block.reduce import BlockReduceOperator
 from cuda.coop._core.group import (
+    GroupLoweringTarget,
     GroupReduceSemantics,
     make_group_primitive_call,
     plan_group_primitive,
 )
 from cuda.coop._core.launch import LaunchFactOrigin, LaunchFacts
-from cuda.coop._core.thread_group import this_block
 
 from ._group_planner_support import ir
 
@@ -28,9 +28,10 @@ class _ReducePlanning:
         operation: str,
     ) -> None:
         bound = self._bind(function, call)
-        if not self._is_descriptor(bound.arguments["group"]):
+        group = self._descriptor(bound.arguments["group"])
+        if group is None or group.kind not in {"block", "warp"}:
             raise self.error_type(
-                "cuda.coop block reduction group must come from this_block()"
+                "cuda.coop reduction group must come from this_block() or this_warp()"
             )
 
         algorithm = self._constant(bound.arguments["algorithm"], name="algorithm")
@@ -69,7 +70,7 @@ class _ReducePlanning:
         )
         plan = plan_group_primitive(
             make_group_primitive_call(
-                this_block(),
+                group,
                 semantics,
                 source="numba-cuda-mlir hierarchy planner",
             ),
@@ -78,21 +79,40 @@ class _ReducePlanning:
         implementation = plan.implementation
         assert implementation is not None
 
-        from .._lowering._reduce import block_reduce_builtin, sum
+        from .._lowering._reduce import (
+            block_reduce_builtin,
+            sum,
+            warp_reduce_builtin,
+            warp_sum,
+        )
 
-        if implementation.binary_op is BlockReduceOperator.SUM:
-            factory = sum
+        if plan.target is GroupLoweringTarget.CUB_BLOCK:
+            factory = (
+                sum
+                if implementation.binary_op is BlockReduceOperator.SUM
+                else block_reduce_builtin
+            )
             factory_kwargs = {
                 "threads_per_block": implementation.block_dim,
                 "algorithm": implementation.algorithm.value,
             }
+            if implementation.binary_op is not BlockReduceOperator.SUM:
+                factory_kwargs["binary_op"] = implementation.binary_op.value
+        elif plan.target is GroupLoweringTarget.CUB_WARP:
+            factory = (
+                warp_sum
+                if implementation.binary_op is BlockReduceOperator.SUM
+                else warp_reduce_builtin
+            )
+            factory_kwargs = {
+                "threads_per_block": implementation.block_dim,
+            }
+            if implementation.binary_op is not BlockReduceOperator.SUM:
+                factory_kwargs["binary_op"] = implementation.binary_op.value
         else:
-            factory = block_reduce_builtin
-            factory_kwargs = {
-                "threads_per_block": implementation.block_dim,
-                "binary_op": implementation.binary_op.value,
-                "algorithm": implementation.algorithm.value,
-            }
+            raise self.error_type(
+                f"unsupported cuda.coop lowering target {plan.target.value!r}"
+            )
         if has_valid_items:
             factory_kwargs["num_valid"] = valid_items
         self.replacements[inst] = self._rewritten_call(

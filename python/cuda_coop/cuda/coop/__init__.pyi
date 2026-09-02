@@ -15,6 +15,9 @@ from ._core.api.thread_group import (
 from ._core.api.thread_group import (
     this_block as this_block,
 )
+from ._core.api.thread_group import (
+    this_warp as this_warp,
+)
 
 __version__: str
 
@@ -23,6 +26,7 @@ __all__ = [
     "CoopCompilerContextRequiredError",
     "ThreadGroup",
     "this_block",
+    "this_warp",
     "reduce",
     "sum",
 ]

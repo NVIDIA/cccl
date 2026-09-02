@@ -5,7 +5,7 @@
 # The registered rewrite imports these private support names explicitly.
 # ruff: noqa: F401
 
-"""Small post-inlining provider-rewrite helpers for scalar BlockReduce."""
+"""Small post-inlining provider-rewrite helpers for group reduction."""
 
 from __future__ import annotations
 

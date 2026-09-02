@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from .._bindings import ArgumentBinding, BindingKind
 from ..launch import LaunchFacts
-from ..thread_group import ThreadGroup
+from ..thread_group import PHYSICAL_WARP_THREADS, ThreadGroup
 from ._model import (
     GroupLoweringPlan,
     GroupLoweringTarget,
@@ -80,26 +80,34 @@ def _reduction_contracts(
     SynchronizationContract,
     TempStorageContract,
 ]:
-    """Build the portable contracts shared by block reduction providers."""
+    """Build portable contracts shared by block and warp providers."""
 
     assert launch.exact_block_dim is not None
     assert launch.exact_block_threads is not None
+    if resolved_group.kind == "block":
+        group_size = launch.exact_block_threads
+        selection = "first valid_items block members"
+        synchronization_scope = SynchronizationScope.BLOCK
+    elif resolved_group.kind == "warp":
+        group_size = PHYSICAL_WARP_THREADS
+        selection = "first valid_items warp lanes"
+        synchronization_scope = SynchronizationScope.WARP
+    else:
+        raise ValueError(f"unsupported reduction group kind {resolved_group.kind!r}")
     return (
         ParticipationContract(
             group_kind=resolved_group.kind,
-            exact_group_size=launch.exact_block_threads,
+            exact_group_size=group_size,
             exact_block_dim=launch.exact_block_dim,
             complete_membership=True,
             converged_entry=True,
             uniform_arguments=("valid_items",) if operation.has_valid_items else (),
-            valid_member_selection=(
-                "first valid_items block members" if operation.has_valid_items else None
-            ),
+            valid_member_selection=selection if operation.has_valid_items else None,
         ),
         ResultContract(dtype=operation.dtype),
         SynchronizationContract(
             converged_entry=True,
-            storage_reuse_barrier=SynchronizationScope.BLOCK,
+            storage_reuse_barrier=synchronization_scope,
         ),
         TempStorageContract(ownership=StorageOwnership.IMPLEMENTATION),
     )
