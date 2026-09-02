@@ -16,9 +16,7 @@
 name: Pull Windows container E2E
 
 on:
-  push:
-    branches:
-      - codex/publish-windows-containers-e2e
+  workflow_dispatch:
 
 permissions: {}
 
