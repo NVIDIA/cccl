@@ -35,7 +35,7 @@ from __future__ import annotations
 import itertools
 import threading
 
-from ._mlir import as_numpy_dtype, cuda, types
+from ._mlir import as_numpy_dtype, cuda, infer_return_type, types
 from ._utils import sanitize_identifier
 
 # Global counter to generate unique symbol names even when the same function
@@ -87,9 +87,7 @@ def _is_gpu_struct_type(numba_type):
 
 def _op_returns_tuple(op_device, arg_types) -> bool:
     """Whether ``op`` naturally returns a tuple for the given argument types."""
-    _, op_return_type = cuda.compile(
-        op_device, tuple(arg_types), device=True, output="ltoir"
-    )
+    op_return_type = infer_return_type(op_device, arg_types)
     return isinstance(op_return_type, (types.Tuple, types.UniTuple))
 
 
