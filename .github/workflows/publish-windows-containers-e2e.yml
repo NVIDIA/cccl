@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Publish Windows containers E2E
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  push:
+    branches:
+      - codex/publish-windows-containers-e2e
+
+permissions: {}
+
+concurrency:
+  group: publish-windows-containers
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Verify package
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      packages: read
+    steps:
+      - name: Require internal package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          visibility="$(
+            gh api /orgs/NVIDIA/packages/container/cccl-windows-containers \
+              --jq '.visibility'
+          )"
+          if [[ "${visibility}" != "internal" ]]; then
+            echo "::error::Expected cccl-windows-containers to be internal; found ${visibility}."
+            exit 1
+          fi
+
+  publish:
+    name: Build and publish Windows containers
+    needs: preflight
+    permissions:
+      contents: read
+      packages: write
+    uses: rapidsai/devcontainers/.github/workflows/release-windows.yml@f0d3eebdef13157c4f6bd5ae8462c0194beac82f
+    with:
+      repo: ghcr.io/nvidia/cccl-windows-containers
