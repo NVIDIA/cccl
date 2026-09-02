@@ -131,3 +131,28 @@ def test_generated_wrapper_compiles_under_its_sanitized_name(op_name, expected_p
         wrapper, wrapper_signature, wrapper.__name__, (8, 9)
     )
     assert f"define void @{wrapper.__name__}" in text_ir
+
+
+def test_operator_device_code_is_textual_llvm_ir():
+    """The v2 backend hands an operator's LLVM IR over as text.
+
+    The reader accepts either the textual or the bitcode encoding, so the IR
+    needs no conversion to bitcode.
+    """
+    from cuda.compute._jit import _compile_op_to_llvm_ir
+    from cuda.compute._odr_helpers import create_op_void_ptr_wrapper
+
+    def add(a, b):
+        return a + b
+
+    signature = _mlir.types.int32(_mlir.types.int32, _mlir.types.int32)
+    wrapper, wrapper_signature = create_op_void_ptr_wrapper(add, signature)
+
+    code = _compile_op_to_llvm_ir(wrapper, wrapper_signature, (8, 9))
+
+    # Bitcode would start with the "BC" magic; this is text.
+    assert not code.startswith(b"BC")
+    text = code.decode("utf-8")
+    assert f"define void @{wrapper.__name__}" in text
+    # Dropped so the module adopts the HostJIT module's layout when linked.
+    assert "target datalayout" not in text

@@ -50,57 +50,36 @@ if TYPE_CHECKING:
     from .typing import DeviceArrayLike
 
 
-# LLVM attribute keywords that numba-cuda-mlir's (newer) LLVM emits but
-# llvmlite's bundled (older) LLVM cannot parse.  We round-trip the extracted IR
-# through llvmlite to produce bitcode, so strip these from attribute groups;
-# they are advisory (optimizer hints on intrinsic declarations) and not needed
-# for linking or inlining.  Extend as newer attributes surface.
-_LLVMLITE_UNSUPPORTED_ATTRS = ("nocreateundeforpoison",)
-
-
 def _sanitize_extracted_llvm_ir(text_ir: str) -> str:
-    """Make numba-cuda-mlir's LLVM IR text consumable by llvmlite + the HostJIT.
+    """Make numba-cuda-mlir's LLVM IR text consumable by the HostJIT.
 
-    - Drop the ``target datalayout`` line so the module adopts the HostJIT
-      module's layout when linked (matches the numba-cuda v1 path and avoids a
-      layout-mismatch warning that can lead to miscompiles).
-    - Remove attribute keywords too new for llvmlite's LLVM to parse (which
-      otherwise fail with "unterminated attribute group").
+    Drops the ``target datalayout`` line so the module adopts the HostJIT
+    module's layout when linked (matches the numba-cuda v1 path and avoids a
+    layout-mismatch warning that can lead to miscompiles).
     """
     import re
 
-    text_ir = re.sub(r"(?m)^target datalayout =.*\n", "", text_ir)
-    if _LLVMLITE_UNSUPPORTED_ATTRS:
-        unsupported = re.compile(
-            r"\b(?:" + "|".join(_LLVMLITE_UNSUPPORTED_ATTRS) + r")\b ?"
-        )
-        text_ir = re.sub(
-            r"(?m)^attributes #\d+ = \{[^}]*\}",
-            lambda m: unsupported.sub("", m.group(0)),
-            text_ir,
-        )
-    return text_ir
+    return re.sub(r"(?m)^target datalayout =.*\n", "", text_ir)
 
 
-def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig, cc=None) -> bytes:
-    """Compile a device op to LLVM bitcode (.bc) bytes via numba-cuda-mlir.
+def _compile_op_to_llvm_ir(wrapped_op, wrapper_sig, cc=None) -> bytes:
+    """Compile a device op to LLVM IR text via numba-cuda-mlir.
 
-    Used on the v2 (HostJIT) backend, which prefers LLVM bitcode over NVRTC
-    LTO-IR — the JIT linker routes "BC"-magic blobs through LLVM's native
-    bitcode linker instead of nvJitLink's LTO codegen.
+    Used on the v2 (HostJIT) backend, which links LLVM IR into the CUB module
+    with LLVM's own linker instead of running it through nvJitLink's LTO
+    codegen.  The IR is handed over as text: the reader accepts either the
+    textual or the bitcode encoding, so it needs no conversion.
 
-    numba-cuda-mlir's public ``cuda.compile`` only emits PTX or LTO-IR, so we
-    extract LLVM IR from its internal MLIR -> LLVM translation (one step before
-    libnvvm; see ``_mlir.compile_to_llvm_ir``) and turn that textual IR into
-    bitcode with llvmlite.  The C-ABI wrapper is emitted under the exact symbol
-    ``wrapped_op.__name__`` that CUB's PTX references by name.
+    numba-cuda-mlir's public ``cuda.compile`` only emits PTX or LTO-IR, so the
+    IR comes from its internal MLIR -> LLVM translation (one step before
+    libnvvm; see ``_mlir.compile_to_llvm_ir``).  The C-ABI wrapper is emitted
+    under the exact symbol ``wrapped_op.__name__`` that CUB's PTX references by
+    name.
 
     ``cc`` is the target compute capability; passing it keeps compilation from
     having to query the current device.
     """
     import os
-
-    import llvmlite.binding as llvm
 
     target_name = wrapped_op.__name__
     text_ir = _mlir.compile_to_llvm_ir(wrapped_op, wrapper_sig, target_name, cc)
@@ -116,23 +95,7 @@ def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig, cc=None) -> bytes:
         with open(os.path.join(debug_dir, f"{target_name}.sanitized.ll"), "w") as f:
             f.write(text_ir)
 
-    try:
-        module = llvm.parse_assembly(text_ir)
-        module.verify()
-    except Exception as exc:
-        raise RuntimeError(
-            f"Failed to parse LLVM IR for '{target_name}': {exc}"
-        ) from exc
-
-    if debug_dir:
-        with open(os.path.join(debug_dir, f"{target_name}.symbols.txt"), "w") as f:
-            f.write(f"target_name={target_name}\n")
-            for fn in module.functions:
-                f.write(
-                    f"  {fn.linkage} {'decl' if fn.is_declaration else 'def '} {fn.name}\n"
-                )
-
-    return bytes(module.as_bitcode())
+    return text_ir.encode("utf-8")
 
 
 # -----------------------------------------------------------------------------
@@ -830,7 +793,7 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
 
     if USING_V2:
         code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig, cc),
+            op_bytes=_compile_op_to_llvm_ir(wrapped_op, wrapper_sig, cc),
             kind="llvm_ir",
         )
     else:
@@ -1179,9 +1142,7 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
 
     if USING_V2:
         code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_bitcode(
-                wrapped_op, wrapper_sig, get_target_cc()
-            ),
+            op_bytes=_compile_op_to_llvm_ir(wrapped_op, wrapper_sig, get_target_cc()),
             kind="llvm_ir",
         )
     else:
