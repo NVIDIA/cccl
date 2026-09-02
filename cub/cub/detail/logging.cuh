@@ -32,13 +32,13 @@ namespace detail
 #if _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
   NV_IF_TARGET(NV_IS_HOST,
                ({
+                 _CCCL_DIAG_PUSH
+                 _CCCL_DIAG_SUPPRESS_MSVC(4996) // 'getenv': This function or variable may be unsafe.
                  static const bool enabled = [] {
-                   _CCCL_DIAG_PUSH
-                   _CCCL_DIAG_SUPPRESS_MSVC(4996) // 'getenv': This function or variable may be unsafe.
                    const char* const env = ::std::getenv("CCCL_EXPERIMENTAL_LOGGING");
-                   _CCCL_DIAG_POP
                    return env != nullptr && ::std::atoi(env) != 0;
                  }();
+                 _CCCL_DIAG_POP
                  return enabled;
                }),
                ({ return false; }));
