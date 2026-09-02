@@ -86,3 +86,31 @@ def test_return_type_check_does_not_generate_code(monkeypatch):
     )
 
     assert generated == []
+
+
+def test_stateful_wrapper_accepts_numpy_integer_shapes():
+    """A state shape of numpy integers must not leak into the generated source.
+
+    The shape is interpolated into the wrapper's source, where a numpy integer
+    would render as ``np.int64(4)`` and reference a name the wrapper's namespace
+    does not define.
+    """
+    import numpy as np
+
+    from cuda.compute import _odr_helpers
+
+    def add_state(state, x):
+        return x + state[0]
+
+    signature = _mlir.types.int32(
+        _mlir.types.Array(_mlir.types.int32, 1, "C"), _mlir.types.int32
+    )
+
+    wrapper, wrapper_signature = _odr_helpers.create_stateful_op_void_ptr_wrapper(
+        add_state, signature, [_mlir.types.int32], [(np.int64(4),)]
+    )
+
+    text_ir = _mlir.compile_to_llvm_ir(
+        wrapper, wrapper_signature, "numpy_shape_wrapper", (8, 9)
+    )
+    assert "define" in text_ir
