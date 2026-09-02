@@ -42,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 #if _CCCL_HAS_SIMD_VABSDIFF()
 
 template <typename _Tp>
-struct __abs_diff_operation
+struct __abs_diff_8bit_operation
 {
   template <typename _ResultStorage, typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _ResultStorage
@@ -59,6 +59,17 @@ struct __abs_diff_operation
 
 #endif // _CCCL_HAS_SIMD_VABSDIFF()
 
+template <typename _Tp>
+struct __abs_diff_32bit_operation
+{
+  template <typename _ResultStorage, typename _Storage>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _ResultStorage
+  operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
+  {
+    return ::cuda::abs_diff(__lhs, __rhs);
+  }
+};
+
 //! @brief Performs element-wise absolute difference.
 //! @param[in] __lhs The left-hand side input vector.
 //! @param[in] __rhs The right-hand side input vector.
@@ -73,13 +84,18 @@ abs_diff(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
 #if _CCCL_HAS_SIMD_VABSDIFF()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t))
-    {
-      NV_IF_TARGET(NV_IS_DEVICE,
-                   (return __simd_abs_diff_impl(
-                             __lhs, __rhs, __abs_diff_operation<_Tp>{}, static_cast<__result_type*>(nullptr));)) // ADL
-    }
-    // TODO(fbusato): optimize 32-bit case, see nvbug 6705847
+    NV_IF_TARGET(NV_IS_DEVICE, ({
+                   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t))
+                   {
+                     return __simd_abs_diff_impl(
+                       __lhs, __rhs, __abs_diff_8bit_operation<_Tp>{}, static_cast<__result_type*>(nullptr)); // ADL
+                   }
+                   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
+                   {
+                     return __simd_abs_diff_impl(
+                       __lhs, __rhs, __abs_diff_32bit_operation<_Tp>{}, static_cast<__result_type*>(nullptr)); // ADL
+                   }
+                 }))
   }
 #endif // _CCCL_HAS_SIMD_VABSDIFF()
 
