@@ -284,6 +284,41 @@ void test_vector_of_spans()
   cuda_safe_call(cudaStreamDestroy(s1));
 }
 
+// Building environments from places: the provider path. A grid-like place
+// (exec_place::all_devices() here — one device on single-GPU runners, N on
+// multi-GPU ones) becomes a place_group in one line, and group.envs() is
+// the per-shard environment range the generic algorithms consume — one env
+// per place, pool streams born in each place's context, memory resources at
+// each place's affine data place. Works for any place count.
+void test_envs_from_places()
+{
+  place_group group(cuda::experimental::places::exec_place::all_devices());
+  auto envs = group.envs();
+  EXPECT(envs.size() == group.size());
+
+  const ::std::size_t per = 100000;
+  const ::std::size_t n   = per * group.size();
+  double* d               = nullptr;
+  cuda_safe_call(cudaMalloc(&d, n * sizeof(double)));
+  cuda_safe_call(cudaMemset(d, 0, n * sizeof(double)));
+
+  ::std::vector<::cuda::std::span<double>> pieces;
+  for (::std::size_t i = 0; i < group.size(); i++)
+  {
+    pieces.push_back({d + i * per, per});
+  }
+  const auto view = make_sharded_view(pieces);
+  EXPECT(validate(view));
+
+  transform(view, envs, times3{}); // 0 -> 0 (sanity of the plumbing)
+  transform(view, envs, [] __device__(double) {
+    return 5.0;
+  });
+  EXPECT(reduce(view, envs, ::cuda::std::plus<double>{}, 0.0) == 5.0 * n);
+
+  cuda_safe_call(cudaFree(d));
+}
+
 } // namespace
 
 static_assert(sharded_view<basic_sharded_view<double>>, "the make_sharded_view result models sharded_view");
@@ -300,6 +335,7 @@ int main()
   test_fully_foreign_model();
   test_adopted_model();
   test_vector_of_spans();
+  test_envs_from_places();
 
   return 0;
 }

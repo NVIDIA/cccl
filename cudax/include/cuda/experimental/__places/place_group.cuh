@@ -473,6 +473,32 @@ public:
     return env(place_idx, get_stream(place_idx));
   }
 
+  /**
+   * @brief One environment per place: the per-shard environment range the
+   * generic sharded algorithms consume (`algo(view, envs, ...)`).
+   *
+   * Each environment carries the place's pool stream at @p color (a fresh
+   * color by default, so repeated calls yield independent lanes — the same
+   * policy as container allocation) and a memory resource at the place's
+   * affine data place. This is how execution environments are manufactured
+   * from places: e.g. `place_group(exec_place::all_devices()).envs()` binds
+   * one environment per device, streams born in each device's context.
+   *
+   * The returned environments borrow the group's pool streams: the group
+   * must outlive them.
+   */
+  [[nodiscard]] auto envs(size_t color = auto_stream_color)
+  {
+    const size_t effective_color = (color == auto_stream_color) ? next_stream_color() : color;
+    ::std::vector<decltype(env(::cuda::std::declval<const data_place&>(), cudaStream_t{}))> result;
+    result.reserve(places_.size());
+    for (size_t i = 0; i < places_.size(); i++)
+    {
+      result.push_back(env(place(i).affine_data_place(), get_stream(i, effective_color)));
+    }
+    return result;
+  }
+
   // ==========================================================================
   // Resource ownership
   // ==========================================================================
