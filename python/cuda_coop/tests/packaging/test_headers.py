@@ -71,6 +71,65 @@ def test_source_resolution_uses_only_required_cccl_header_trees() -> None:
     assert all("cudax" not in path.parts for path in paths.cccl)
 
 
+def test_environment_inside_checkout_does_not_capture_source_headers(
+    tmp_path: Path,
+) -> None:
+    checkout = tmp_path / "cccl"
+    for path in (
+        checkout / "thrust",
+        checkout / "cub" / "cub",
+        checkout / "libcudacxx" / "include",
+    ):
+        path.mkdir(parents=True)
+    (checkout / "cub" / "cub" / "version.cuh").write_text(
+        "// source probe\n", encoding="utf-8"
+    )
+    installed_module = (
+        checkout
+        / ".venv"
+        / "lib"
+        / "python3.14"
+        / "site-packages"
+        / "cuda"
+        / "coop"
+        / "_headers"
+        / "__init__.py"
+    )
+    installed_module.parent.mkdir(parents=True)
+    installed_module.touch()
+
+    assert headers._find_source_checkout(installed_module) is None
+
+
+def test_source_package_path_resolves_its_checkout(tmp_path: Path) -> None:
+    checkout = tmp_path / "cccl"
+    for path in (
+        checkout / "thrust",
+        checkout / "cub" / "cub",
+        checkout / "libcudacxx" / "include",
+    ):
+        path.mkdir(parents=True)
+    (checkout / "cub" / "cub" / "version.cuh").write_text(
+        "// source probe\n", encoding="utf-8"
+    )
+    source_module = (
+        checkout / "python" / "cuda_coop" / "cuda" / "coop" / "_headers" / "__init__.py"
+    )
+    source_module.parent.mkdir(parents=True)
+    source_module.touch()
+
+    source = headers._find_source_checkout(source_module)
+
+    assert source is not None
+    root, include_paths = source
+    assert root == checkout
+    assert include_paths == (
+        checkout / "thrust",
+        checkout / "cub",
+        checkout / "libcudacxx" / "include",
+    )
+
+
 def test_required_header_diagnostic_never_falls_back_to_toolkit() -> None:
     with pytest.raises(HeaderResolutionError, match="does not fall back"):
         resolve_include_paths(

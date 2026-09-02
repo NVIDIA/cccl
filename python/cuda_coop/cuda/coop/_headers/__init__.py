@@ -88,9 +88,20 @@ def _find_source_checkout(start: Path) -> tuple[Path, tuple[Path, ...]] | None:
         current = current.parent
     for candidate in (current, *current.parents):
         source_paths = _source_checkout_paths(candidate)
-        if source_paths:
+        if source_paths and _belongs_to_source_package(current, candidate):
             return candidate, source_paths
     return None
+
+
+def _belongs_to_source_package(start: Path, root: Path) -> bool:
+    """Return whether ``start`` belongs to this checkout's source package."""
+
+    package_root = root / "python" / "cuda_coop"
+    try:
+        start.relative_to(package_root)
+    except ValueError:
+        return False
+    return True
 
 
 @functools.lru_cache(maxsize=1)
