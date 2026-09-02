@@ -27,20 +27,14 @@ from numba_cuda_mlir import cuda, types
 
 # --- Low-level lowering: MLIR builder + dialects --------------------------------
 from numba_cuda_mlir._mlir import ir as mlir_ir
-from numba_cuda_mlir._mlir.dialects import arith, llvm
-
-# The global compilation target.  Its typing/target contexts are built lazily on
-# the first compile and then marked "initialized", after which they are never
-# refreshed automatically.  Extension types (gpu_struct) registered *after* that
-# first compile are therefore invisible until we refresh the contexts by hand
-# (see ``refresh_contexts``).
-from numba_cuda_mlir.descriptor import mlir_target
+from numba_cuda_mlir._mlir.dialects import llvm
 
 # --- High-level extension API (typing) -----------------------------------------
 from numba_cuda_mlir.extending import (
     lower_cast,
     lowering_registry,
     overload,
+    refresh_registries,
     typing_registry,
 )
 from numba_cuda_mlir.lowering_utilities import (
@@ -52,7 +46,7 @@ from numba_cuda_mlir.lowering_utilities import (
 )
 
 # --- Data models ----------------------------------------------------------------
-from numba_cuda_mlir.models import OpaqueModel, PrimitiveModel, register_model
+from numba_cuda_mlir.models import PrimitiveModel, register_model
 from numba_cuda_mlir.numba_cuda.core import errors
 from numba_cuda_mlir.numba_cuda.extending import as_numba_type, typeof_impl
 from numba_cuda_mlir.numba_cuda.np import numpy_support
@@ -60,7 +54,6 @@ from numba_cuda_mlir.numba_cuda.typeconv import Conversion
 from numba_cuda_mlir.numba_cuda.typing.templates import (
     AbstractTemplate,
     AttributeTemplate,
-    ConcreteTemplate,
 )
 from numba_cuda_mlir.typing import signature
 
@@ -68,7 +61,6 @@ __all__ = [
     "cuda",
     "types",
     "errors",
-    "numpy_support",
     "signature",
     "lower_cast",
     "lowering_registry",
@@ -79,12 +71,8 @@ __all__ = [
     "Conversion",
     "AbstractTemplate",
     "AttributeTemplate",
-    "ConcreteTemplate",
-    "OpaqueModel",
     "PrimitiveModel",
     "register_model",
-    "mlir_ir",
-    "arith",
     "llvm",
     "convert",
     "is_complex_type",
@@ -96,7 +84,6 @@ __all__ = [
     "struct_field_position",
     "compile_to_llvm_ir",
     "infer_return_type",
-    "mlir_target",
     "refresh_contexts",
 ]
 
@@ -111,8 +98,7 @@ def refresh_contexts():
     surfacing as ``Untyped global name '<Struct>'`` the next time an operator
     references it.  Call this once a new struct type has finished registering.
     """
-    mlir_target.typing_context.refresh()
-    mlir_target.target_context.refresh()
+    refresh_registries()
 
 
 def from_numpy_dtype(dtype):
