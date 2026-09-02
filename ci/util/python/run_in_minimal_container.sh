@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run a CI script inside a deliberately minimal sibling container. See "Testing
 # Python in a minimal container" in
-# docs/infrastructure/ci/references/ci_overview.rst for what this buys and why
+# docs/infrastructure/ci/references/ci_scripts.rst for what this buys and why
 # the lanes are split this way.
 #
 # Note that a matrix `environment:` entry reaches the devcontainer but not this
@@ -51,10 +51,21 @@ readonly script
 # `--gpus all` would reach every GPU on the host, including any assigned to a
 # different job. NVIDIA_VISIBLE_DEVICES cannot be used to discover them -- the
 # devcontainer image pins it to "void" -- so ask the driver.
+# Every lane that reaches this helper is a GPU lane, so failing to enumerate is
+# fatal rather than silently handing over a GPU-less container -- that surfaces
+# much later, as confusing failures inside pytest. nvidia-smi's own diagnostic is
+# left on stderr. CCCL_MINIMAL_CONTAINER_NO_GPU=1 opts out, matching the Windows
+# helper.
 declare -a gpu_request=()
-gpu_uuids="$(nvidia-smi --query-gpu=uuid --format=csv,noheader 2>/dev/null | paste -sd, - || true)"
-readonly gpu_uuids
-if [[ -n "${gpu_uuids}" ]]; then
+if [[ "${CCCL_MINIMAL_CONTAINER_NO_GPU:-}" != "1" ]]; then
+  if ! gpu_uuids="$(nvidia-smi --query-gpu=uuid --format=csv,noheader | paste -sd, -)" ||
+     [[ -z "${gpu_uuids}" ]]; then
+    echo "ERROR: could not enumerate GPUs with nvidia-smi, but the payload needs one." >&2
+    echo "       Set CCCL_MINIMAL_CONTAINER_NO_GPU=1 to run without a GPU, or" >&2
+    echo "       CCCL_MINIMAL_CONTAINER=0 to run the payload in the devcontainer." >&2
+    exit 1
+  fi
+  readonly gpu_uuids
   # The inner quotes are load-bearing: docker splits the --gpus value on commas
   # unless the device list is quoted within the argument itself.
   gpu_request+=(--gpus "\"device=${gpu_uuids}\"")

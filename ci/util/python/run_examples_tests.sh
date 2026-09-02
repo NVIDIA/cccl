@@ -4,7 +4,7 @@
 # put the cuda_cccl wheel in wheelhouse/.
 #
 # Runs in the minimal container: nothing here may assume more than Python and
-# the wheel's declared deps (docs/infrastructure/ci/references/ci_overview.rst).
+# the wheel's declared deps (docs/infrastructure/ci/references/ci_scripts.rst).
 
 set -euo pipefail
 

@@ -41,13 +41,27 @@ setup_python_env() {
     end_group "🐍 Setting up Python ${py_version} (uv)"
 }
 
+# The lane's mode gate: accepts "pinned" (the default; empty also means pinned),
+# "latest" and "sysctk", and rejects anything else. Both halves of a lane call it
+# -- the entry point before it branches on the mode, the payload via
+# pin_cuda_toolkit -- so nothing downstream, ctk_extra_flavor included, reads a
+# mode that was never checked.
+validate_ctk_mode() {
+    local mode="${1:-pinned}"
+    case "${mode,,}" in
+        pinned | latest | sysctk) ;;
+        *)
+            echo "ERROR: invalid ctk mode '${mode}' (expected pinned|latest|sysctk)" >&2
+            return 1
+            ;;
+    esac
+}
+
 # Pin the cuda-toolkit wheels to the container's CTK major.minor
 # via PIP_CONSTRAINT when the mode ($1) is "pinned" (the default; empty also means
-# pinned). "latest" and "sysctk" leave it unpinned; any other value is a hard
-# error. This is the lane's mode gate -- it runs before ctk_extra_flavor in every
-# script, so ctk_extra_flavor can assume the mode is already valid. Also sets and
-# exports cuda_version / cuda_major_version; the caller uses cuda_major_version in
-# the pip-extra name (e.g. minimal-cu${cuda_major_version}).
+# pinned). "latest" and "sysctk" leave it unpinned. Also sets and exports
+# cuda_version / cuda_major_version; the caller uses cuda_major_version in the
+# pip-extra name (e.g. minimal-cu${cuda_major_version}).
 pin_cuda_toolkit() {
     # nvcc is the source of truth wherever it exists; `sysctk` mode depends on
     # matching the toolkit actually installed. The minimal containers have no
@@ -64,6 +78,7 @@ pin_cuda_toolkit() {
     export cuda_version cuda_major_version
 
     local mode="${1:-pinned}"
+    validate_ctk_mode "${mode}" || return 1
     case "${mode,,}" in
         pinned)
             export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
@@ -76,7 +91,7 @@ pin_cuda_toolkit() {
             unset PIP_CONSTRAINT
             ;;
         *)
-            echo "ERROR: invalid ctk mode '${mode}' (expected pinned|latest|sysctk)" >&2
+            # Unreachable: validate_ctk_mode above rejects anything else.
             return 1
             ;;
     esac
@@ -84,8 +99,8 @@ pin_cuda_toolkit() {
 
 # Echoes the pip-extra toolkit "flavor" for the mode ($1): "sysctk" when the mode
 # is sysctk (rely on the system-provided CUDA toolkit) or "cu" otherwise
-# (pip-installed toolkit). The mode is validated by pin_cuda_toolkit, which every
-# lane calls first. Combine with the CUDA major, e.g.
+# (pip-installed toolkit). The mode is validated by validate_ctk_mode, which runs
+# before anything reads it. Combine with the CUDA major, e.g.
 # "minimal-$(ctk_extra_flavor "${ctk_mode}")${cuda_major_version}" -> minimal-sysctk12.
 ctk_extra_flavor() {
     local mode="${1:-}"
@@ -132,10 +147,14 @@ python_payload_init() {
 # container except in `sysctk` mode, which exists to test a system-provided CUDA
 # toolkit, or when CCCL_MINIMAL_CONTAINER=0. Expects parse_python_args to have
 # run. See "Testing Python in a minimal container" in
-# docs/infrastructure/ci/references/ci_overview.rst.
+# docs/infrastructure/ci/references/ci_scripts.rst.
 dispatch_python_lane() {
     local payload="$1"
     shift
+
+    # This half runs before pin_cuda_toolkit does (that happens in the payload,
+    # possibly in another container), so it owns the mode check.
+    validate_ctk_mode "${ctk_mode}" || return 1
 
     local ci_dir repo_root
     ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -3,7 +3,7 @@
     Run a CI script inside a deliberately minimal sibling container.
 .DESCRIPTION
     See "Testing Python in a minimal container" in
-    docs/infrastructure/ci/references/ci_overview.rst for what this buys and why
+    docs/infrastructure/ci/references/ci_scripts.rst for what this buys and why
     the lanes are split this way.
 .PARAMETER Script
     Repo-relative path to the script to run, e.g. 'ci\windows\run_compute_tests.ps1'.

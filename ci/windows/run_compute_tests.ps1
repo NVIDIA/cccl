@@ -5,7 +5,7 @@
     Invoked by ci/windows/test_cuda_compute_python.ps1, which has already put the
     cuda_cccl wheel in wheelhouse/. This normally runs in the minimal container;
     see "Testing Python in a minimal container" in
-    docs/infrastructure/ci/references/ci_overview.rst.
+    docs/infrastructure/ci/references/ci_scripts.rst.
 
     build_common.psm1 must NOT be imported here: it resolves cl.exe at import
     time, which by design does not exist in the minimal image.

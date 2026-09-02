@@ -5,7 +5,7 @@
     Provisions the cuda_cccl wheel, then runs the test payload -- by default in a
     minimal sibling container, except in `sysctk` mode or when
     CCCL_MINIMAL_CONTAINER=0. See "Testing Python in a minimal container" in
-    docs/infrastructure/ci/references/ci_overview.rst.
+    docs/infrastructure/ci/references/ci_scripts.rst.
 #>
 Param(
     [Parameter(Mandatory = $true)]
