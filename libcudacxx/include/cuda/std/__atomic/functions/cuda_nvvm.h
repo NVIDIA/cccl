@@ -24,6 +24,7 @@
 #include <cuda/std/__atomic/functions/cuda_nvvm_backend.h>
 #include <cuda/std/__atomic/functions/generic.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cassert>
@@ -39,64 +40,43 @@ extern "C" _CCCL_DEVICE void __cuda_atomic_nvvm_cas_128b_unsupported_before_SM_9
 extern "C" _CCCL_DEVICE void __cuda_atomic_nvvm_exchange_128b_unsupported_before_SM_90();
 
 template <class _Order>
-struct __cuda_atomic_nvvm_order;
+inline constexpr int __cuda_atomic_nvvm_order = [] {
+  static_assert(__always_false_v<_Order>, "invalid atomic memory order");
+  return 0;
+}();
 
 template <>
-struct __cuda_atomic_nvvm_order<__cuda_atomic_order_relaxed>
-{
-  static constexpr int __value = __NV_ATOMIC_RELAXED;
-};
+inline constexpr int __cuda_atomic_nvvm_order<__cuda_atomic_order_relaxed> = __NV_ATOMIC_RELAXED;
 
 template <>
-struct __cuda_atomic_nvvm_order<__cuda_atomic_order_release>
-{
-  static constexpr int __value = __NV_ATOMIC_RELEASE;
-};
+inline constexpr int __cuda_atomic_nvvm_order<__cuda_atomic_order_release> = __NV_ATOMIC_RELEASE;
 
 template <>
-struct __cuda_atomic_nvvm_order<__cuda_atomic_order_acquire>
-{
-  static constexpr int __value = __NV_ATOMIC_ACQUIRE;
-};
+inline constexpr int __cuda_atomic_nvvm_order<__cuda_atomic_order_acquire> = __NV_ATOMIC_ACQUIRE;
 
 template <>
-struct __cuda_atomic_nvvm_order<__cuda_atomic_order_acq_rel>
-{
-  static constexpr int __value = __NV_ATOMIC_ACQ_REL;
-};
+inline constexpr int __cuda_atomic_nvvm_order<__cuda_atomic_order_acq_rel> = __NV_ATOMIC_ACQ_REL;
 
 template <>
-struct __cuda_atomic_nvvm_order<__cuda_atomic_order_seq_cst>
-{
-  static constexpr int __value = __NV_ATOMIC_SEQ_CST;
-};
+inline constexpr int __cuda_atomic_nvvm_order<__cuda_atomic_order_seq_cst> = __NV_ATOMIC_SEQ_CST;
 
 template <class _Scope>
-struct __cuda_atomic_nvvm_scope;
+inline constexpr int __cuda_atomic_nvvm_scope = [] {
+  static_assert(__always_false_v<_Scope>, "invalid atomic thread scope");
+  return 0;
+}();
 
 template <>
-struct __cuda_atomic_nvvm_scope<__thread_scope_block_tag>
-{
-  static constexpr int __value = __NV_THREAD_SCOPE_BLOCK;
-};
+inline constexpr int __cuda_atomic_nvvm_scope<__thread_scope_block_tag> = __NV_THREAD_SCOPE_BLOCK;
 
 template <>
-struct __cuda_atomic_nvvm_scope<__thread_scope_cluster_tag>
-{
-  static constexpr int __value = __NV_THREAD_SCOPE_CLUSTER;
-};
+inline constexpr int __cuda_atomic_nvvm_scope<__thread_scope_cluster_tag> = __NV_THREAD_SCOPE_CLUSTER;
 
 template <>
-struct __cuda_atomic_nvvm_scope<__thread_scope_device_tag>
-{
-  static constexpr int __value = __NV_THREAD_SCOPE_DEVICE;
-};
+inline constexpr int __cuda_atomic_nvvm_scope<__thread_scope_device_tag> = __NV_THREAD_SCOPE_DEVICE;
 
 template <>
-struct __cuda_atomic_nvvm_scope<__thread_scope_system_tag>
-{
-  static constexpr int __value = __NV_THREAD_SCOPE_SYSTEM;
-};
+inline constexpr int __cuda_atomic_nvvm_scope<__thread_scope_system_tag> = __NV_THREAD_SCOPE_SYSTEM;
 
 template <class _Type>
 [[nodiscard]] _CCCL_DEVICE_API __unv<_Type>* __cuda_atomic_nvvm_ptr(_Type* __ptr)
@@ -146,10 +126,8 @@ _CCCL_DEVICE_API void __cuda_atomic_load(
   _Scope __scope,
   __cuda_atomic_mmio_disable)
 {
-  ::__nv_atomic_load(__cuda_atomic_nvvm_ptr(__ptr),
-                     &__dst,
-                     +__cuda_atomic_nvvm_order<_Order>::__value,
-                     +__cuda_atomic_nvvm_scope<_Scope>::__value);
+  ::__nv_atomic_load(
+    __cuda_atomic_nvvm_ptr(__ptr), &__dst, +__cuda_atomic_nvvm_order<_Order>, +__cuda_atomic_nvvm_scope<_Scope>);
 }
 
 template <class _Type, class _Order, class _Operand, class _Scope>
@@ -162,10 +140,8 @@ _CCCL_DEVICE_API void __cuda_atomic_store(
   _Scope __scope,
   __cuda_atomic_mmio_disable)
 {
-  ::__nv_atomic_store(__cuda_atomic_nvvm_ptr(__ptr),
-                      &__val,
-                      +__cuda_atomic_nvvm_order<_Order>::__value,
-                      +__cuda_atomic_nvvm_scope<_Scope>::__value);
+  ::__nv_atomic_store(
+    __cuda_atomic_nvvm_ptr(__ptr), &__val, +__cuda_atomic_nvvm_order<_Order>, +__cuda_atomic_nvvm_scope<_Scope>);
 }
 
 template <class _Type,
@@ -199,9 +175,9 @@ template <class _Type,
                 &__dst,
                 &__op,
                 __cuda_atomic_cas_is_weak(_Cas{}),
-                +__cuda_atomic_nvvm_order<__success>::__value,
-                +__cuda_atomic_nvvm_order<__failure>::__value,
-                +__cuda_atomic_nvvm_scope<_Scope>::__value);),
+                +__cuda_atomic_nvvm_order<__success>,
+                +__cuda_atomic_nvvm_order<__failure>,
+                +__cuda_atomic_nvvm_scope<_Scope>);),
       (__cuda_atomic_nvvm_cas_128b_unsupported_before_SM_90(); return false;))
   }
   else
@@ -211,9 +187,9 @@ template <class _Type,
       &__dst,
       &__op,
       __cuda_atomic_cas_is_weak(_Cas{}),
-      +__cuda_atomic_nvvm_order<__success>::__value,
-      +__cuda_atomic_nvvm_order<__failure>::__value,
-      +__cuda_atomic_nvvm_scope<_Scope>::__value);
+      +__cuda_atomic_nvvm_order<__success>,
+      +__cuda_atomic_nvvm_order<__failure>,
+      +__cuda_atomic_nvvm_scope<_Scope>);
   }
 }
 
@@ -235,8 +211,8 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
          __cuda_atomic_nvvm_ptr(__ptr),
          &__op,
          &__dst,
-         +__cuda_atomic_nvvm_order<_Order>::__value,
-         +__cuda_atomic_nvvm_scope<_Scope>::__value);),
+         +__cuda_atomic_nvvm_order<_Order>,
+         +__cuda_atomic_nvvm_scope<_Scope>);),
       (__dst = __cuda_atomic_fetch_update(
          __cuda_atomic_nvvm_backend{},
          __ptr,
@@ -253,8 +229,8 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
          __cuda_atomic_nvvm_ptr(__ptr),
          &__op,
          &__dst,
-         +__cuda_atomic_nvvm_order<_Order>::__value,
-         +__cuda_atomic_nvvm_scope<_Scope>::__value);),
+         +__cuda_atomic_nvvm_order<_Order>,
+         +__cuda_atomic_nvvm_scope<_Scope>);),
       (__cuda_atomic_nvvm_exchange_128b_unsupported_before_SM_90();))
   }
   else
@@ -263,8 +239,8 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
       __cuda_atomic_nvvm_ptr(__ptr),
       &__op,
       &__dst,
-      +__cuda_atomic_nvvm_order<_Order>::__value,
-      +__cuda_atomic_nvvm_scope<_Scope>::__value);
+      +__cuda_atomic_nvvm_order<_Order>,
+      +__cuda_atomic_nvvm_scope<_Scope>);
   }
 }
 
@@ -280,10 +256,7 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
       __cuda_atomic_nvvm_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order, _Operand, _Scope)     \
     {                                                                                                                 \
       __dst = ::__nv_atomic_fetch_##_Name(                                                                            \
-        __cuda_atomic_nvvm_ptr(__ptr),                                                                                \
-        __op,                                                                                                         \
-        +__cuda_atomic_nvvm_order<_Order>::__value,                                                                   \
-        +__cuda_atomic_nvvm_scope<_Scope>::__value);                                                                  \
+        __cuda_atomic_nvvm_ptr(__ptr), __op, +__cuda_atomic_nvvm_order<_Order>, +__cuda_atomic_nvvm_scope<_Scope>);   \
     }                                                                                                                 \
                                                                                                                       \
     template <class _Type,                                                                                            \
@@ -298,27 +271,24 @@ _CCCL_DEVICE_API void __cuda_atomic_exchange(
       const auto __result = ::__nv_atomic_fetch_##_Name(                                                              \
         reinterpret_cast<uint64_t*>(__cuda_atomic_nvvm_ptr(__ptr)),                                                   \
         ::cuda::std::bit_cast<uint64_t>(__op),                                                                        \
-        +__cuda_atomic_nvvm_order<_Order>::__value,                                                                   \
-        +__cuda_atomic_nvvm_scope<_Scope>::__value);                                                                  \
+        +__cuda_atomic_nvvm_order<_Order>,                                                                            \
+        +__cuda_atomic_nvvm_scope<_Scope>);                                                                           \
       __dst = ::cuda::std::bit_cast<__unv<_Type>>(__result);                                                          \
     }
 
-#  define _CCCL_DEFINE_NVVM_FETCH_OP(_Name, _TypeConstraint)                                                      \
-    template <class _Type,                                                                                        \
-              class _Order,                                                                                       \
-              class _Operand,                                                                                     \
-              class _Scope,                                                                                       \
-              enable_if_t<(_Operand::__size < 128) && ((_Operand::__size >= 32) || (_CCCL_PTX_ARCH() >= 1000))    \
-                            && (_TypeConstraint),                                                                 \
-                          bool> = false>                                                                          \
-    _CCCL_DEVICE_API void __cuda_atomic_fetch_##_Name(                                                            \
-      __cuda_atomic_nvvm_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order, _Operand, _Scope) \
-    {                                                                                                             \
-      __dst = ::__nv_atomic_fetch_##_Name(                                                                        \
-        __cuda_atomic_nvvm_ptr(__ptr),                                                                            \
-        __op,                                                                                                     \
-        +__cuda_atomic_nvvm_order<_Order>::__value,                                                               \
-        +__cuda_atomic_nvvm_scope<_Scope>::__value);                                                              \
+#  define _CCCL_DEFINE_NVVM_FETCH_OP(_Name, _TypeConstraint)                                                        \
+    template <class _Type,                                                                                          \
+              class _Order,                                                                                         \
+              class _Operand,                                                                                       \
+              class _Scope,                                                                                         \
+              enable_if_t<(_Operand::__size < 128) && ((_Operand::__size >= 32) || (_CCCL_PTX_ARCH() >= 1000))      \
+                            && (_TypeConstraint),                                                                   \
+                          bool> = false>                                                                            \
+    _CCCL_DEVICE_API void __cuda_atomic_fetch_##_Name(                                                              \
+      __cuda_atomic_nvvm_backend, _Type* __ptr, __unv<_Type>& __dst, __unv<_Type> __op, _Order, _Operand, _Scope)   \
+    {                                                                                                               \
+      __dst = ::__nv_atomic_fetch_##_Name(                                                                          \
+        __cuda_atomic_nvvm_ptr(__ptr), __op, +__cuda_atomic_nvvm_order<_Order>, +__cuda_atomic_nvvm_scope<_Scope>); \
     }
 
 _CCCL_DEFINE_NVVM_FETCH_ARITHMETIC(add)
@@ -335,10 +305,7 @@ _CCCL_DEVICE_API void __cuda_atomic_fetch_sub(
   _Scope)
 {
   __dst = ::__nv_atomic_fetch_add(
-    __cuda_atomic_nvvm_ptr(__ptr),
-    -__op,
-    +__cuda_atomic_nvvm_order<_Order>::__value,
-    +__cuda_atomic_nvvm_scope<_Scope>::__value);
+    __cuda_atomic_nvvm_ptr(__ptr), -__op, +__cuda_atomic_nvvm_order<_Order>, +__cuda_atomic_nvvm_scope<_Scope>);
 }
 
 _CCCL_DEFINE_NVVM_FETCH_OP(and, true)
@@ -356,7 +323,7 @@ struct __cuda_atomic_nvvm_fence
   template <class _Order>
   _CCCL_DEVICE_API void operator()(_Order) const
   {
-    ::__nv_atomic_thread_fence(+__cuda_atomic_nvvm_order<_Order>::__value, +__cuda_atomic_nvvm_scope<_Scope>::__value);
+    ::__nv_atomic_thread_fence(+__cuda_atomic_nvvm_order<_Order>, +__cuda_atomic_nvvm_scope<_Scope>);
   }
 };
 
