@@ -22,10 +22,10 @@ enum class block_exchange_op
   scatter_to_striped_flagged
 };
 
-template <block_exchange_op Op, int BlockThreads, int ItemsPerThread, typename T>
+template <block_exchange_op Op, int BlockThreads, int ItemsPerThread, bool WarpTimeSlicing, typename T>
 __global__ void block_exchange_kernel(T* data)
 {
-  using block_exchange_t = cub::BlockExchange<T, BlockThreads, ItemsPerThread>;
+  using block_exchange_t = cub::BlockExchange<T, BlockThreads, ItemsPerThread, WarpTimeSlicing>;
   using temp_storage_t   = typename block_exchange_t::TempStorage;
 
   __shared__ temp_storage_t temp_storage;
@@ -104,10 +104,11 @@ __global__ void block_exchange_kernel(T* data)
   }
 }
 
-template <block_exchange_op Op, int BlockThreads, int ItemsPerThread, typename T>
+template <block_exchange_op Op, int BlockThreads, int ItemsPerThread, bool WarpTimeSlicing, typename T>
 void invoke_block_exchange(c2h::device_vector<T>& data)
 {
-  block_exchange_kernel<Op, BlockThreads, ItemsPerThread><<<1, BlockThreads>>>(thrust::raw_pointer_cast(data.data()));
+  block_exchange_kernel<Op, BlockThreads, ItemsPerThread, WarpTimeSlicing>
+    <<<1, BlockThreads>>>(thrust::raw_pointer_cast(data.data()));
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -241,17 +242,19 @@ using types = c2h::type_list<std::int32_t>;
 using types = c2h::type_list<std::int64_t>;
 #endif
 
-using block_threads    = c2h::enum_type_list<int, 32, 128>;
-using items_per_thread = c2h::enum_type_list<int, 1, 4, 7>;
+using block_threads     = c2h::enum_type_list<int, 32, 128>;
+using items_per_thread  = c2h::enum_type_list<int, 5, 8>;
+using warp_time_slicing = c2h::enum_type_list<bool, false, true>;
 
 template <typename TestType>
 struct params_t
 {
   using type = typename c2h::get<0, TestType>;
 
-  static constexpr int block_threads    = c2h::get<1, TestType>::value;
-  static constexpr int items_per_thread = c2h::get<2, TestType>::value;
-  static constexpr int tile_size        = block_threads * items_per_thread;
+  static constexpr int block_threads      = c2h::get<1, TestType>::value;
+  static constexpr int items_per_thread   = c2h::get<2, TestType>::value;
+  static constexpr bool warp_time_slicing = c2h::get<3, TestType>::value;
+  static constexpr int tile_size          = block_threads * items_per_thread;
 };
 
 CUB_TEST("Block exchange striped to blocked works in-place",
@@ -259,7 +262,8 @@ CUB_TEST("Block exchange striped to blocked works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -271,7 +275,10 @@ CUB_TEST("Block exchange striped to blocked works in-place",
   const c2h::host_vector<type> expected =
     striped_to_blocked_reference(input, params::block_threads, params::items_per_thread);
 
-  invoke_block_exchange<block_exchange_op::striped_to_blocked, params::block_threads, params::items_per_thread>(data);
+  invoke_block_exchange<block_exchange_op::striped_to_blocked,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   REQUIRE(expected == data);
 }
@@ -281,7 +288,8 @@ CUB_TEST("Block exchange blocked to striped works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -293,7 +301,10 @@ CUB_TEST("Block exchange blocked to striped works in-place",
   const c2h::host_vector<type> expected =
     blocked_to_striped_reference(input, params::block_threads, params::items_per_thread);
 
-  invoke_block_exchange<block_exchange_op::blocked_to_striped, params::block_threads, params::items_per_thread>(data);
+  invoke_block_exchange<block_exchange_op::blocked_to_striped,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   REQUIRE(expected == data);
 }
@@ -303,7 +314,8 @@ CUB_TEST("Block exchange warp-striped to blocked works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -315,8 +327,10 @@ CUB_TEST("Block exchange warp-striped to blocked works in-place",
   const c2h::host_vector<type> expected =
     warp_striped_to_blocked_reference(input, params::block_threads, params::items_per_thread);
 
-  invoke_block_exchange<block_exchange_op::warp_striped_to_blocked, params::block_threads, params::items_per_thread>(
-    data);
+  invoke_block_exchange<block_exchange_op::warp_striped_to_blocked,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   REQUIRE(expected == data);
 }
@@ -326,7 +340,8 @@ CUB_TEST("Block exchange blocked to warp-striped works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -338,8 +353,10 @@ CUB_TEST("Block exchange blocked to warp-striped works in-place",
   const c2h::host_vector<type> expected =
     blocked_to_warp_striped_reference(input, params::block_threads, params::items_per_thread);
 
-  invoke_block_exchange<block_exchange_op::blocked_to_warp_striped, params::block_threads, params::items_per_thread>(
-    data);
+  invoke_block_exchange<block_exchange_op::blocked_to_warp_striped,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   REQUIRE(expected == data);
 }
@@ -349,7 +366,8 @@ CUB_TEST("Block exchange scatter to blocked works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -360,7 +378,10 @@ CUB_TEST("Block exchange scatter to blocked works in-place",
   const c2h::host_vector<type> input    = data;
   const c2h::host_vector<type> expected = scatter_to_blocked_reference(input);
 
-  invoke_block_exchange<block_exchange_op::scatter_to_blocked, params::block_threads, params::items_per_thread>(data);
+  invoke_block_exchange<block_exchange_op::scatter_to_blocked,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   REQUIRE(expected == data);
 }
@@ -370,7 +391,8 @@ CUB_TEST("Block exchange scatter to striped works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -382,7 +404,10 @@ CUB_TEST("Block exchange scatter to striped works in-place",
   const c2h::host_vector<type> expected =
     scatter_to_striped_reference(input, params::block_threads, params::items_per_thread);
 
-  invoke_block_exchange<block_exchange_op::scatter_to_striped, params::block_threads, params::items_per_thread>(data);
+  invoke_block_exchange<block_exchange_op::scatter_to_striped,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   REQUIRE(expected == data);
 }
@@ -392,7 +417,8 @@ CUB_TEST("Block exchange guarded scatter to striped works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -402,8 +428,10 @@ CUB_TEST("Block exchange guarded scatter to striped works in-place",
 
   const c2h::host_vector<type> input = data;
 
-  invoke_block_exchange<block_exchange_op::scatter_to_striped_guarded, params::block_threads, params::items_per_thread>(
-    data);
+  invoke_block_exchange<block_exchange_op::scatter_to_striped_guarded,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   require_valid_scatter_outputs(data, input, params::block_threads, params::items_per_thread);
 }
@@ -413,7 +441,8 @@ CUB_TEST("Block exchange flagged scatter to striped works in-place",
          CUB_SMALL,
          types,
          block_threads,
-         items_per_thread)
+         items_per_thread,
+         warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -423,8 +452,10 @@ CUB_TEST("Block exchange flagged scatter to striped works in-place",
 
   const c2h::host_vector<type> input = data;
 
-  invoke_block_exchange<block_exchange_op::scatter_to_striped_flagged, params::block_threads, params::items_per_thread>(
-    data);
+  invoke_block_exchange<block_exchange_op::scatter_to_striped_flagged,
+                        params::block_threads,
+                        params::items_per_thread,
+                        params::warp_time_slicing>(data);
 
   require_valid_scatter_outputs(data, input, params::block_threads, params::items_per_thread);
 }
