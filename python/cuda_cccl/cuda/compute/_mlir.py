@@ -14,10 +14,9 @@ depends on a single, well-defined surface instead of importing from a dozen
 
 One export reaches past that public surface: ``compile_to_llvm_ir``.
 numba-cuda-mlir's ``cuda.compile`` emits only PTX or LTO-IR, but the v2
-(HostJIT) backend wants LLVM bitcode, so ``_jit._compile_op_to_llvm_bitcode``
-drives the internal pipeline one step further -- to optimized MLIR, then
-``translate_to_llvmir`` -- and turns the resulting textual IR into bitcode with
-llvmlite.  See those two functions for the rationale.
+(HostJIT) backend links LLVM IR, so ``_jit._compile_op_to_llvm_ir`` drives the
+internal pipeline one step further -- to optimized MLIR, then
+``translate_to_llvmir``.  See those two functions for the rationale.
 """
 
 from __future__ import annotations
@@ -133,11 +132,11 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     """Compile a device function to LLVM IR text via numba-cuda-mlir.
 
     numba-cuda-mlir's public ``cuda.compile`` only emits PTX or LTO-IR.  The v2
-    (HostJIT) backend needs LLVM bitcode, so we drive the internal pipeline one
-    step further than ``ltoir``: compile to optimized MLIR, then translate the
+    (HostJIT) backend needs LLVM IR, so we drive the internal pipeline one step
+    further than ``ltoir``: compile to optimized MLIR, then translate the
     ``gpu.module`` to LLVM IR (the same ``translate_to_llvmir`` step the ltoir
-    path runs internally, before libnvvm).  The caller turns this textual IR
-    into bitcode with llvmlite.
+    path runs internally, before libnvvm).  The caller passes this textual IR
+    on as-is.
 
     The function is emitted with a C ABI under the exact symbol ``abi_name``.
     ``cc`` is the target compute capability as ``(major, minor)``; when omitted

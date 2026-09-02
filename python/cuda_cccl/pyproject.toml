@@ -206,7 +206,6 @@ module = [
   "numpy.*",
   "numba.*",
   "numba_cuda_mlir.*",
-  "llvmlite.*",
   "ml_dtypes",
   "cuda.cccl.*",
   "cuda.bindings.*",
