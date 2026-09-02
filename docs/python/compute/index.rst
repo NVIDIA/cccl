@@ -146,6 +146,13 @@ restrictions as Numba CUDA functions:
   `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
   scalars and host arrays are captured by value (as constants),
   while device arrays are captured by reference.
+* A :func:`gpu_struct <cuda.compute.gpu_struct>` value must be indexed with a
+  compile-time constant, so ``value[0]`` is allowed but ``value[i]`` for a loop
+  variable ``i`` is not. Fields may have different types, so the type of
+  ``value[i]`` would not be known while compiling. Access the fields by name, or
+  index them individually.
+* A multi-dimensional device array captured as operator state must be
+  C-contiguous.
 
 
 .. _cuda.compute.iterators:
