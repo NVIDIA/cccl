@@ -72,6 +72,7 @@ Developer Guides
 
 For more information about architecture, design, and development practices, consult the following developer guides:
 
+- :doc:`CCCL Coding Guidelines </cccl/development/coding_guidelines>` - Our coding guidelines, must be followed
 - :doc:`CCCL Development Guide </cccl/development/index>` - Internal details and development process shared across CCCL libraries, mostly libcudacxx
 - :doc:`Thrust Systems </thrust/developer/systems>` - Overview of Thrust's backend systems and execution policies
 - :doc:`Thrust Developer CMake Options </thrust/developer/cmake_options>` - CMake options for Thrust development builds
