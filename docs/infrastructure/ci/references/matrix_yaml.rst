@@ -20,7 +20,14 @@ Top-level keys
      - Map of workflow name to a list of job entries. Holds ``override``, ``pull_request``,
        ``pull_request_lite``, ``nightly``, ``weekly``, etc.
    * - ``devcontainer_version``
-     - Image version tag for ``rapidsai/devcontainers``.
+     - Version prefix for generated devcontainer image tags.
+   * - ``devcontainer_image``
+     - Default image repository for generated references, including Linux CI and local
+       devcontainers.
+   * - ``windows_devcontainer_image``
+     - Optional image repository override for generated Windows CI references.
+   * - ``devcontainer_image_includes_version``
+     - Whether generated image tags include the ``devcontainer_version`` prefix.
    * - ``cuda99_gcc_version``, ``cuda99_clang_version``
      - Compiler versions used for internal cuda99.X builds.
    * - ``all_stds``

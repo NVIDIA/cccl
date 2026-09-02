@@ -303,8 +303,10 @@ def get_runner_label_config():
 @static_result
 def get_devcontainer_image_config():
     """Return devcontainer image config from matrix.yaml, with defaults."""
+    image = matrix_yaml.get("devcontainer_image", "rapidsai/devcontainers")
     return {
-        "image": matrix_yaml.get("devcontainer_image", "rapidsai/devcontainers"),
+        "image": image,
+        "windows_image": matrix_yaml.get("windows_devcontainer_image", image),
         "includes_version": matrix_yaml.get(
             "devcontainer_image_includes_version", True
         ),
@@ -559,7 +561,11 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
 def generate_dispatch_job_image(matrix_job, job_type):
     devcontainer_version = matrix_yaml["devcontainer_version"]
     image_config = get_devcontainer_image_config()
-    image_repo = image_config["image"]
+    image_repo = (
+        image_config["windows_image"]
+        if is_windows(matrix_job)
+        else image_config["image"]
+    )
     version_prefix = (
         f"{devcontainer_version}-" if image_config["includes_version"] else ""
     )

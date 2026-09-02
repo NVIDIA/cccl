@@ -30,8 +30,8 @@
 .PARAMETER Cuda13Image
     Optional. The Docker image name used for a nested build of the CUDA 13
     wheel when the outer container defaults to CUDA 12.9.  The default value
-    matches the RAPIDS dev-container image that contains the required
-    toolchain: `rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022`.
+    matches the CCCL Windows container image that contains the required
+    toolchain: `ghcr.io/nvidia/cccl-windows-containers:26.10-cuda13.0-cl14.44-windows2022`.
 
 .PARAMETER SkipUpload
     When set, prevents the final wheel(s) from being uploaded as a GitHub
@@ -57,7 +57,7 @@ Param(
     [string]$OnlyCudaMajor,
 
     [Parameter(Mandatory = $false)]
-    [string]$Cuda13Image = "rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022",
+    [string]$Cuda13Image = "ghcr.io/nvidia/cccl-windows-containers:26.10-cuda13.0-cl14.44-windows2022",
 
     [Parameter(Mandatory = $false)]
     [switch]$SkipUpload
@@ -194,6 +194,57 @@ function Invoke-Cuda13NestedBuild {
     }
     Write-Host "DooD appears to be working, continuing..."
 
+    $UsesGhcr = $Cuda13Image.StartsWith(
+        'ghcr.io/',
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+    if ($UsesGhcr) {
+        if (-not $env:GH_TOKEN) {
+            throw 'GH_TOKEN is required to pull the nested GHCR image.'
+        }
+        if (-not $env:GITHUB_ACTOR) {
+            throw 'GITHUB_ACTOR is required to pull the nested GHCR image.'
+        }
+
+        $PreviousDockerConfig = $env:DOCKER_CONFIG
+        $TemporaryDockerConfig = Join-Path `
+            ([System.IO.Path]::GetTempPath()) `
+            "cccl-ghcr-$([guid]::NewGuid().ToString('N'))"
+        New-Item -ItemType Directory -Path $TemporaryDockerConfig -Force |
+            Out-Null
+        $env:DOCKER_CONFIG = $TemporaryDockerConfig
+        $LoggedIn = $false
+
+        try {
+            Invoke-Checked {
+                $env:GH_TOKEN |
+                    & docker login ghcr.io `
+                        --username $env:GITHUB_ACTOR `
+                        --password-stdin
+            } 'GHCR login failed'
+            $LoggedIn = $true
+
+            Invoke-Checked {
+                & docker pull $Cuda13Image
+            } 'Nested CUDA 13 image pull failed'
+        }
+        finally {
+            if ($LoggedIn) {
+                & docker logout ghcr.io
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning 'GHCR logout failed; removing isolated Docker config.'
+                }
+            }
+            Remove-Item $TemporaryDockerConfig `
+                -Recurse -Force -ErrorAction SilentlyContinue
+            $CleanupFailed = Test-Path $TemporaryDockerConfig
+            $env:DOCKER_CONFIG = $PreviousDockerConfig
+            if ($CleanupFailed) {
+                throw 'Failed to remove temporary GHCR Docker configuration.'
+            }
+        }
+    }
+
     # Detect outer-container resources so we can set sensible limits.
     $os = Get-WmiObject -Class Win32_OperatingSystem
     $totalGB = [math]::Floor($os.TotalVisibleMemorySize / 1MB) # KB -> GB
@@ -206,7 +257,12 @@ function Invoke-Cuda13NestedBuild {
     Write-Host "Launching nested Docker for CUDA 13 build using image: $Cuda13Image"
     $targetFile = Join-Path $ContainerWorkspace 'ci\windows\build_cuda_cccl_python.ps1'
     $dockerArgs = @(
-        'run', '--rm', '-i',
+        'run', '--rm', '-i'
+    )
+    if ($UsesGhcr) {
+        $dockerArgs += @('--pull', 'never')
+    }
+    $dockerArgs += @(
         '--cpu-count', "$cpuCount",
         '--memory', "${memLimitGB}g",
         '--workdir', $ContainerWorkspace,

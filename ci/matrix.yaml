@@ -569,16 +569,19 @@ workflows:
 #############################################################################################
 
 
-# The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
+# The version of the devcontainer images to use.
 devcontainer_version: '26.10'
 
 # Devcontainer image configuration.
 #
 # devcontainer_image:
-#   The image repo (registry/organization/name) used as the prefix for all
-#   generated devcontainer image references. Override this to point at an
-#   internal or alternative registry.
+#   The default image repo (registry/organization/name) used as the prefix for
+#   generated devcontainer image references.
 #   Default: 'rapidsai/devcontainers'
+#
+# windows_devcontainer_image:
+#   The image repo used for generated Windows image references. Defaults to
+#   devcontainer_image when omitted.
 #
 # devcontainer_image_includes_version:
 #   When true, the devcontainer_version is prepended to the image tag
@@ -587,6 +590,7 @@ devcontainer_version: '26.10'
 #   (e.g. 'rapidsai/devcontainers:cpp-gcc14-cuda12.9').
 #   Default: true
 devcontainer_image: 'rapidsai/devcontainers'
+windows_devcontainer_image: 'ghcr.io/nvidia/cccl-windows-containers'
 devcontainer_image_includes_version: true
 
 # Runner label templates.

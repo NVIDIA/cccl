@@ -47,7 +47,6 @@ runs:
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
         ENVIRONMENT: ${{ inputs.environment }}
-        GH_TOKEN: ${{ github.token }}
       run: |
         echo "::group::️🔍 Job Vars"
         echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
@@ -55,7 +54,6 @@ runs:
         # Define the job input parameters as JOB_* environment variables that are visible in all steps:
         echo "JOB_ID=${{inputs.id}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_RUNNER=${{inputs.runner}}" | tee -a "${GITHUB_ENV}"
-        echo "JOB_IMAGE=${{inputs.image}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_CUDA=${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_HOST=${{inputs.host}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_ENVIRONMENT=${ENVIRONMENT}" | tee -a "${GITHUB_ENV}"
@@ -164,11 +162,21 @@ runs:
         echo "HOST_REPO=${{ github.workspace }}\${{ github.event.repository.name }}".Replace('\', '/') | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
+    - name: Log in to GHCR
+      if: ${{ startsWith(inputs.image, 'ghcr.io/') }}
+      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
     - name: Fetch ${{ inputs.image }}
       shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        IMAGE: ${{ inputs.image }}
       run: |
-        echo "::group::Pulling Docker image ${{ inputs.image }}"
-        docker pull ${{ inputs.image }}
+        echo "::group::Pulling Docker image ${IMAGE}"
+        docker pull "${IMAGE}"
         echo "::endgroup::"
 
     - name: Run command
@@ -176,6 +184,8 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         GH_TOKEN: ${{ github.token }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        JOB_IMAGE: ${{ inputs.image }}
         ENABLE_GPU: ${{ inputs.gpu_count != '0' && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
       run: |
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
@@ -213,7 +223,7 @@ runs:
 
         docker_exit=0
         set +e
-        docker run \
+        docker run --rm \
           -v //./pipe/docker_engine://./pipe/docker_engine \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
@@ -235,6 +245,7 @@ runs:
           --env "HOST_WORKSPACE=${{steps.paths.outputs.HOST_REPO}}" \
           --env "GH_TOKEN=$GH_TOKEN" \
           --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+          --env "GITHUB_ACTOR=$GITHUB_ACTOR" \
           --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
@@ -252,7 +263,7 @@ runs:
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           ${ENVARGS:-} \
-          ${{ inputs.image }} \
+          "${JOB_IMAGE}" \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
         docker_exit=$?
