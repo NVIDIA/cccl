@@ -223,7 +223,7 @@ private:
 
   //! @brief Alias for the type of the first function that is callable with a given set of arguments.
   template <class _Self, class... _Args>
-  using __1st_fn_t _CCCL_NODEBUG_ALIAS = decltype(__first_callable::__get_1st<_Args...>(declval<_Self>()));
+  using __1st_fn_t _CCCL_NODEBUG = decltype(__first_callable::__get_1st<_Args...>(declval<_Self>()));
 
 public:
   //! @brief Calls the first function that is callable with a given set of arguments.
@@ -286,21 +286,21 @@ template <bool>
 struct __call_result_or
 {
   template <class _Fn, class _Default, class... _Args>
-  using __call _CCCL_NODEBUG_ALIAS = __call_result_t<__call_or_t, _Fn, _Default, _Args...>;
+  using __call _CCCL_NODEBUG = __call_result_t<__call_or_t, _Fn, _Default, _Args...>;
 };
 
 template <>
 struct __call_result_or<true>
 {
   template <class _Fn, class _Default, class... _Args>
-  using __call _CCCL_NODEBUG_ALIAS = decltype(__call_or_t()(declval<_Fn>(), {}, declval<_Args>()...));
+  using __call _CCCL_NODEBUG = decltype(__call_or_t()(declval<_Fn>(), {}, declval<_Args>()...));
 };
 } // namespace __detail
 
 _CCCL_GLOBAL_CONSTANT __detail::__call_or_t __call_or{};
 
 template <class _Fn, class _Default, class... _Args>
-using __call_result_or_t _CCCL_NODEBUG_ALIAS =
+using __call_result_or_t _CCCL_NODEBUG =
   cuda::std::__type_call<__detail::__call_result_or<__same_as<_Default, __nil>>, _Fn, _Default, _Args...>;
 
 //! @brief A callable that always return a value of type _Ty, regardless of the arguments
@@ -406,18 +406,18 @@ constexpr auto __next(long) -> size_t
 #if _CCCL_COMPILER(CLANG, <, 12)
 
 template <class _Type>
-using __zip _CCCL_NODEBUG_ALIAS = _Type;
+using __zip _CCCL_NODEBUG = _Type;
 
 template <class _Id>
-using __unzip _CCCL_NODEBUG_ALIAS = _Id;
+using __unzip _CCCL_NODEBUG = _Id;
 
 #else // ^^^ _CCCL_COMPILER(CLANG, <, 12) ^^^ / vvv !_CCCL_COMPILER(CLANG, <, 12) vvv
 
 template <class _Type, size_t _Val = execution::__next<_Type>(0)>
-using __zip _CCCL_NODEBUG_ALIAS = __slot<_Val>;
+using __zip _CCCL_NODEBUG = __slot<_Val>;
 
 template <class _Id>
-using __unzip _CCCL_NODEBUG_ALIAS = decltype(__slot_allocated(_Id())());
+using __unzip _CCCL_NODEBUG = decltype(__slot_allocated(_Id())());
 
 #endif // ^^^ !_CCCL_COMPILER(CLANG, <, 12) ^^^
 

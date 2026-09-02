@@ -88,7 +88,7 @@ inline constexpr unsigned __fmt_packed_types_max          = __fmt_packed_types_s
 template <class _Context>
 class __basic_format_arg_value
 {
-  using _CharT _CCCL_NODEBUG_ALIAS = typename _Context::char_type;
+  using _CharT _CCCL_NODEBUG = typename _Context::char_type;
 
   template <class _Tp>
   _CCCL_HOST_DEVICE_API static void

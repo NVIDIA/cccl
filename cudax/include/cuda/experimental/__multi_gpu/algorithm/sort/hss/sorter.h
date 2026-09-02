@@ -152,11 +152,11 @@ private:
     ::cuda::std::span<const ::cuda::std::size_t> __cap_displs,
     ::std::vector<__per_comm_sampling_scratch_type>* __local_scratch);
 
-  template <class _CommRange, class _EnvRange>
+  template <class _EnvRange>
   [[nodiscard]]
   _CCCL_HOST_API static ::cuda::std::pair<::std::vector<__per_comm_sampling_scratch_type>,
                                           ::std::vector<__per_comm_histogramming_result_type>>
-  __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs);
+  __allocate_histogramming_buffers(const __local_setup_result_type& __setup, _EnvRange&& __envs);
 
   template <class _CommRange>
   _CCCL_HOST_API static void __exchange_sample_counts(
@@ -224,9 +224,7 @@ private:
 
   // ------------------------------------------------------------------------------------------
 
-  template <class _Comm>
   _CCCL_HOST_API static void __merge_k_way_tree(
-    const _Comm& __comm,
     const _Env& __env,
     const __resizable_buffer_type<_Tp>& __data,
     ::cuda::std::span<const ::cuda::std::size_t> __counts,
@@ -234,9 +232,7 @@ private:
     const _BinaryOp& __cmp,
     __resizable_buffer_type<_Tp>* __ret);
 
-  template <class _Comm>
   _CCCL_HOST_API static void __merge_k_way(
-    const _Comm& __comm,
     const _Env& __env,
     const __resizable_buffer_type<_Tp>& __data,
     ::cuda::std::span<const ::cuda::std::size_t> __counts,

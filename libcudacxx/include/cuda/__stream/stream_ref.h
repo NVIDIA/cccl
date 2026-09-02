@@ -285,15 +285,52 @@ public:
     ::CUdevice __device{};
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     __device = ::cuda::__driver::__streamGetDevice(__stream);
-#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+#  elif _CCCL_CTK_AT_LEAST(12, 5) // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 5) vvv
     {
-      ::CUcontext __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
-      __ensure_current_context __setter(__stream_ctx);
+      // cuStreamGetCtx() returns CUDA_ERROR_NOT_SUPPORTED for a stream that cuGreenCtxStreamCreate()
+      // made. cuStreamGetCtx_v2() supports such a stream, and always gives a usable device context.
+      const auto _ = __ensure_current_context{::cuda::__driver::__streamGetCtx_v2(__stream).__ctx_device_};
+
       __device = ::cuda::__driver::__ctxGetDevice();
     }
-#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+#  else // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^ / vvv _CCCL_CTK_BELOW(12, 5) vvv
+    {
+      const auto _ = __ensure_current_context{::cuda::__driver::__streamGetCtx(__stream)};
+
+      __device = ::cuda::__driver::__ctxGetDevice();
+    }
+#  endif // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^
     return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
   }
+
+  // The whole _CCCL_UNREACHABLE() thing was added for MSVC, yet now it complains the
+  // _CCCL_UNREACHABLE() is in fact not reachable. Incredible.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
+  [[nodiscard]] _CCCL_HOST_API __logical_device_ref __logical_device() const
+  {
+#  if _CCCL_CTK_AT_LEAST(12, 5)
+    const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
+
+    // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
+    // the stream, not the one you would get from cuCtxFromGreenCtx(green).
+    //
+    // So the outer context of the green context must be recovered separately to match what
+    // __logical_device_ref{device_ref, CUgreenCtx} would store.
+    switch (__ctx.__ctx_kind_)
+    {
+      case ::cuda::__driver::__ctx_from_stream::__kind::__green:
+        return {this->device(), __ctx.__ctx_green_};
+      case ::cuda::__driver::__ctx_from_stream::__kind::__device:
+        return {this->device(), __ctx.__ctx_device_};
+    }
+    _CCCL_UNREACHABLE();
+#  endif // ^^^ _CCCL_AT_LEAST(12, 5) ^^^
+    return __logical_device_ref{this->device()};
+  }
+
+  _CCCL_DIAG_POP
 
   //! @brief Queries the \c stream_ref for itself. This makes \c stream_ref usable in places where we expect an
   //! environment with a \c get_stream_t query

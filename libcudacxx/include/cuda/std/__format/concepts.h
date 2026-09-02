@@ -50,7 +50,7 @@ _CCCL_CONCEPT __fmt_char_type = same_as<_CharT, char>
 // (Note testing for (w)format_context would be a valid choice, but requires
 // selecting the proper one depending on the type of _CharT.)
 template <class _CharT>
-using __fmt_iter_for _CCCL_NODEBUG_ALIAS = _CharT*;
+using __fmt_iter_for _CCCL_NODEBUG = _CharT*;
 
 template <class _Tp, class _Context, class _Formatter, class = void>
 inline constexpr bool __formattable_with_impl_v = false;
