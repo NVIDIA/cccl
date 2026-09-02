@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Pull Windows container E2E
+
+on:
+  push:
+    branches:
+      - codex/publish-windows-containers-e2e
+
+permissions: {}
+
+jobs:
+  pull:
+    name: Pull with read-only package permission
+    runs-on: windows-2022
+    timeout-minutes: 60
+    permissions:
+      packages: read
+    env:
+      IMAGE: ghcr.io/nvidia/cccl-windows-containers:26.10-cuda13.3-cl14.29-windows2022
+    steps:
+      - name: Ensure Docker Engine is running
+        shell: powershell
+        run: |
+          $dockerState = Get-Service -Name docker
+          if ($dockerState.Status -ne 'Running') {
+            Start-Service -Name docker
+          }
+
+      - name: Log in to GHCR
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Pull published image
+        shell: powershell
+        run: |
+          docker pull ${env:IMAGE}
+          docker image inspect ${env:IMAGE} --format '{{json .RepoDigests}}'

@@ -20,9 +20,7 @@ defaults:
     shell: bash --noprofile --norc -euo pipefail {0}
 
 on:
-  push:
-    branches:
-      - codex/publish-windows-containers-e2e
+  workflow_dispatch:
 
 permissions: {}
 
