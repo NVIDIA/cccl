@@ -54,6 +54,7 @@ projects:
     lite_dependencies: [c2h]
     full_dependencies: [libcudacxx_public]
     include_regexes: ["libcudacxx/"]
+    exclude_regexes: ["^libcudacxx/LICENSE\\.TXT$"]
     exclude_project_files: [libcudacxx_public]
 
   cub_public:
@@ -68,6 +69,7 @@ projects:
     lite_dependencies: [c2h, nvbench_helper]
     full_dependencies: [cub_public]
     include_regexes: ["cub/"]
+    exclude_regexes: ["^cub/LICENSE\\.TXT$"]
     exclude_project_files: [cub_public]
 
   thrust_public:
@@ -82,6 +84,7 @@ projects:
     lite_dependencies: [nvbench_helper]
     full_dependencies: [thrust_public]
     include_regexes: ["thrust/"]
+    exclude_regexes: ["^thrust/LICENSE$"]
     exclude_project_files: [thrust_public]
 
   cudax_public:
@@ -169,6 +172,25 @@ projects:
     include_regexes:
     - "python/cuda_cccl/"
     - "python/cuda_stf/"
+    - "pyproject.toml"
+    exclude_regexes: []
+
+  cuda_coop_python:
+    name: "cuda.coop Python"
+    matrix_project: "cuda_coop_python"
+    # The wheel bundles the public libcudacxx, CUB, and Thrust headers and
+    # licenses used by BlockReduce providers, so changes to those inputs need
+    # the focused lane.
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+    - "python/cuda_coop/"
+    - "ci/build_cuda_coop_python\\.sh"
+    - "ci/test_cuda_coop_python\\.sh"
+    - "^LICENSE$"
+    - "^cub/LICENSE\\.TXT$"
+    - "^libcudacxx/LICENSE\\.TXT$"
+    - "^thrust/LICENSE$"
     - "pyproject.toml"
     exclude_regexes: []
 
@@ -286,4 +308,3 @@ ignore_regexes:
   - 'ci/pytorch/'
   - 'ci/rapids/'
   - 'docs/'
-  - 'LICENSE'
