@@ -35,6 +35,7 @@ except ImportError:
     USING_V2 = False
 
 from ._odr_helpers import create_stateful_op_void_ptr_wrapper
+from ._target_cc import get_target_cc
 from ._utils import sanitize_identifier
 from ._utils.protocols import (
     get_data_pointer,
@@ -81,7 +82,7 @@ def _sanitize_extracted_llvm_ir(text_ir: str) -> str:
     return text_ir
 
 
-def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
+def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig, cc=None) -> bytes:
     """Compile a device op to LLVM bitcode (.bc) bytes via numba-cuda-mlir.
 
     Used on the v2 (HostJIT) backend, which prefers LLVM bitcode over NVRTC
@@ -93,13 +94,16 @@ def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
     libnvvm; see ``_mlir.compile_to_llvm_ir``) and turn that textual IR into
     bitcode with llvmlite.  The C-ABI wrapper is emitted under the exact symbol
     ``wrapped_op.__name__`` that CUB's PTX references by name.
+
+    ``cc`` is the target compute capability; passing it keeps compilation from
+    having to query the current device.
     """
     import os
 
     import llvmlite.binding as llvm
 
     target_name = wrapped_op.__name__
-    text_ir = _mlir.compile_to_llvm_ir(wrapped_op, wrapper_sig, target_name)
+    text_ir = _mlir.compile_to_llvm_ir(wrapped_op, wrapper_sig, target_name, cc)
 
     debug_dir = os.environ.get("CCCL_JIT_DEBUG")
     if debug_dir:
@@ -746,6 +750,7 @@ def _infer_return_type_impl(py_func, input_types):
         device=True,
         abi_info={"abi_name": abi_name},
         output="ltoir",
+        cc=get_target_cc(),
     )
     return _numba_type_to_type_descriptor(return_type)
 
@@ -763,10 +768,10 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
         cachable_op: CachableFunction wrapper around the operator
         input_types_tuple: Tuple of input TypeDescriptors
         output_type: Output TypeDescriptor
-        cc: Target compute capability ``(major, minor)`` for the LTO-IR, or None
-            to use Numba's configured default PTX compute capability
-            (``config.CUDA_DEFAULT_PTX_CC``). Part of the cache key so the same
-            operator compiled for different arches does not collide.
+        cc: Target compute capability ``(major, minor)`` for the device code, or
+            None to target the current device (which requires a GPU to be
+            present). Part of the cache key so the same operator compiled for
+            different arches does not collide.
     """
     from ._bindings import Op, OpKind
     from ._odr_helpers import create_op_void_ptr_wrapper
@@ -794,7 +799,7 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
 
     if USING_V2:
         code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
+            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig, cc),
             kind="llvm_ir",
         )
     else:
@@ -828,8 +833,6 @@ def compile_op(op, input_types, output_type=None):
     from ._caching import CachableFunction
 
     cachable_op = CachableFunction(op)
-    from ._target_cc import get_target_cc
-
     return _compile_op_impl(
         cachable_op, tuple(input_types), output_type, get_target_cc()
     )
@@ -1145,12 +1148,12 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
 
     if USING_V2:
         code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
+            op_bytes=_compile_op_to_llvm_bitcode(
+                wrapped_op, wrapper_sig, get_target_cc()
+            ),
             kind="llvm_ir",
         )
     else:
-        from ._target_cc import get_target_cc
-
         ltoir, _ = _mlir.cuda.compile(
             wrapped_op,
             sig=wrapper_sig,
