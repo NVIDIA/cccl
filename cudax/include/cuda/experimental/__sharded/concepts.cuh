@@ -1,0 +1,327 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+/**
+ * @file
+ * @brief Concepts for sharded structures: `sharded_view`, `owning_sharded`,
+ *        per-shard environments, self-binding, and per-call environments.
+ *
+ * The design separates three things with three different lifecycles:
+ *
+ * 1. **The view** (`sharded_view`): plain data describing what the structure
+ *    is — for each shard, a contiguous element range, its *region* in the
+ *    global index space (offset + size), and an equality-comparable *place*
+ *    identity saying where the bytes live. A view owns no elements and holds
+ *    no execution resources (span/mdspan semantics: no capacity, no
+ *    allocation, no growth). Views are what interop, inspection and
+ *    transport consume.
+ * 2. **The per-shard environments** (`sharded_env`, `sharded_env_range`):
+ *    standard queryable environments supplying, for shard `i`, the stream to
+ *    order work on (`cuda::get_stream`, mandatory) and — for algorithms that
+ *    need scratch — a memory resource (`cuda::mr::get_memory_resource`).
+ *    Environments are either passed explicitly alongside a view, or derived
+ *    from structures that carry their own binding (`self_bound` /
+ *    `default_envs`, in the spirit of `std::execution`'s `get_env`).
+ * 3. **The per-call environment** ("call env"): resources of the scope where
+ *    any cross-shard step runs — a result/join stream (its presence selects
+ *    the asynchronous contract), a host-accessible staging resource, and the
+ *    synchronization policy (`get_sync_policy`).
+ *
+ * Semantic guarantees of `sharded_view` (checked by `validate()`, not
+ * expressible in the concept): shard regions are pairwise disjoint, ordered
+ * by global offset, and tile `[0, total extent)` exactly; empty shards are
+ * permitted. Algorithms such as scan and adjacent_difference rely on these.
+ *
+ * Deliberate v1 simplifications (recorded for review): descriptor and
+ * structure access are member/field-structural (`.data`, `.size`,
+ * `.global_offset`, `.place` on descriptors; `.num_shards()`, `.shard(i)` on
+ * structures) rather than customization-point objects. Foreign structures
+ * participate by exposing this shape — `basic_shard_view` is the ready-made
+ * portable descriptor value type — or through a thin wrapper. Lifting the
+ * access layer to CPOs is a mechanical follow-up if a foreign type ever
+ * cannot provide the shape.
+ */
+
+#pragma once
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__utility/declval.h>
+
+#include <cstddef>
+#include <stdexcept>
+#include <string>
+
+// NOLINTBEGIN(bugprone-reserved-identifier)
+
+namespace cuda::experimental::sharded
+{
+
+// ===========================================================================
+// Helper unary concepts (the C++17 emulation needs named unary concepts for
+// _Satisfies; see __multi_gpu/concepts.h for the precedent)
+// ===========================================================================
+
+template <class _Tp>
+_CCCL_CONCEPT __convertible_to_size = ::cuda::std::convertible_to<_Tp, ::std::size_t>;
+
+template <class _Tp>
+_CCCL_CONCEPT __convertible_to_stream_ref = ::cuda::std::convertible_to<_Tp, ::cuda::stream_ref>;
+
+template <class _Tp>
+_CCCL_CONCEPT __shard_data_pointer = ::cuda::std::is_pointer_v<::cuda::std::remove_cvref_t<_Tp>>;
+
+template <class _Tp>
+_CCCL_CONCEPT __equality_comparable_place = ::cuda::std::equality_comparable<::cuda::std::remove_cvref_t<_Tp>>;
+
+// ===========================================================================
+// Shard descriptor
+// ===========================================================================
+
+//! @brief A shard descriptor: one contiguous, placed piece of a sharded
+//! structure, as plain data.
+//!
+//! Requirements (field/member-structural): `data` (pointer to elements),
+//! `size` (element count), `global_offset` (first global index covered),
+//! `place` (equality-comparable place identity — any type; our containers
+//! use `data_place`, foreign models bring their own).
+template <class _Sd>
+_CCCL_CONCEPT shard_descriptor = _CCCL_REQUIRES_EXPR((_Sd), const _Sd& __d)(
+  _Satisfies(__shard_data_pointer) __d.data,
+  _Satisfies(__convertible_to_size) __d.size,
+  _Satisfies(__convertible_to_size) __d.global_offset,
+  _Satisfies(__equality_comparable_place) __d.place);
+
+//! @brief Element type of a shard descriptor.
+template <class _Sd>
+using shard_element_t = ::cuda::std::remove_pointer_t<::cuda::std::remove_cvref_t<decltype(_Sd::data)>>;
+
+//! @brief Ready-made portable shard descriptor value type.
+//!
+//! Foreign structures that do not already expose descriptor-shaped shards can
+//! return this from their `shard(i)` accessor. `_PlaceId` is any
+//! equality-comparable identity (`int` device ordinal, a `{device, domain}`
+//! pair, a rank, ...).
+template <class _Tp, class _PlaceId = int>
+struct basic_shard_view
+{
+  _Tp* data                  = nullptr; //!< pointer to the shard's elements
+  ::std::size_t size          = 0; //!< number of elements
+  ::std::size_t global_offset = 0; //!< first global index covered
+  _PlaceId place{}; //!< equality-comparable place identity
+};
+
+// ===========================================================================
+// Sharded view (the mapping tier)
+// ===========================================================================
+
+//! @brief A sharded view: an indexed collection of shard descriptors over a
+//! 1-D global index space.
+//!
+//! Syntactic requirements: `num_shards()` and `shard(i)` yielding a
+//! `shard_descriptor`. Semantic guarantees (see `validate()`): regions
+//! pairwise disjoint, ordered by `global_offset`, tiling `[0, extent)`
+//! exactly; view semantics (no element ownership through this interface).
+template <class _S>
+_CCCL_CONCEPT sharded_view = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
+  _Satisfies(__convertible_to_size) __s.num_shards(),
+  requires(shard_descriptor<::cuda::std::remove_cvref_t<decltype(__s.shard(::std::size_t{0}))>>));
+
+//! @brief Descriptor type of a sharded view.
+template <class _S>
+using shard_descriptor_t = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<const _S&>().shard(::std::size_t{0}))>;
+
+template <class _Tp>
+_CCCL_CONCEPT __has_capacity_field = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __d)(
+  _Satisfies(__convertible_to_size) __d.capacity);
+
+//! @brief An owning sharded structure: a `sharded_view` whose shards
+//! additionally expose `capacity` (allocated element count, >= size).
+//!
+//! This is the home of the size-mutating algorithm family (`copy_if`,
+//! `unique`, sort): shrinking a shard's logical size and re-tiling the
+//! global offsets are container-metadata operations that a non-owning view
+//! must not (and cannot) express.
+template <class _S>
+_CCCL_CONCEPT owning_sharded = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
+  requires(sharded_view<_S>),
+  requires(__has_capacity_field<::cuda::std::remove_cvref_t<decltype(__s.shard(::std::size_t{0}))>>));
+
+//! @brief Check the `sharded_view` semantic guarantees at runtime (debug
+//! aid; concepts cannot express semantics).
+//!
+//! Verifies: descriptors ordered by `global_offset`, regions disjoint and
+//! exactly tiling `[0, extent)` where `extent` is the last region's end.
+//! Empty shards are permitted anywhere.
+_CCCL_TEMPLATE(class _S)
+_CCCL_REQUIRES(sharded_view<_S>)
+[[nodiscard]] bool validate(const _S& __s)
+{
+  const ::std::size_t __n = static_cast<::std::size_t>(__s.num_shards());
+  ::std::size_t __next    = 0;
+  for (::std::size_t __i = 0; __i < __n; ++__i)
+  {
+    const auto& __d = __s.shard(__i);
+    if (static_cast<::std::size_t>(__d.global_offset) != __next)
+    {
+      return false; // gap, overlap, or out-of-order region
+    }
+    __next += static_cast<::std::size_t>(__d.size);
+  }
+  return true;
+}
+
+// ===========================================================================
+// Per-shard environments (the binding tier)
+// ===========================================================================
+
+//! @brief A per-shard environment: anything the `cuda::get_stream`
+//! customization point can extract a stream from (a `.stream()` /
+//! `.get_stream()` member, a `query(get_stream_t)` env, or something
+//! convertible to `stream_ref`).
+template <class _Env>
+_CCCL_CONCEPT sharded_env = _CCCL_REQUIRES_EXPR((_Env), const _Env& __e)(
+  _Satisfies(__convertible_to_stream_ref) ::cuda::get_stream(__e));
+
+template <class _Tp>
+_CCCL_CONCEPT __not_void = !::cuda::std::is_void_v<_Tp>;
+
+//! @brief A per-shard environment that can also allocate: additionally
+//! answers `cuda::mr::get_memory_resource`. Required by scratch-bearing
+//! algorithms (reduce, scan, histogram, ...); the map family needs only
+//! `sharded_env`.
+template <class _Env>
+_CCCL_CONCEPT sharded_alloc_env = _CCCL_REQUIRES_EXPR((_Env), const _Env& __e)(
+  requires(sharded_env<_Env>),
+  _Satisfies(__not_void) ::cuda::mr::get_memory_resource(__e));
+
+//! @brief An indexed family of per-shard environments: `size()` and
+//! `operator[](i)` yielding a `sharded_env`. `envs[i]` binds shard `i`.
+template <class _Range>
+_CCCL_CONCEPT sharded_env_range = _CCCL_REQUIRES_EXPR((_Range), const _Range& __r)(
+  _Satisfies(__convertible_to_size) __r.size(),
+  requires(sharded_env<::cuda::std::remove_cvref_t<decltype(__r[::std::size_t{0}])>>));
+
+//! @brief As `sharded_env_range`, with allocating environments.
+template <class _Range>
+_CCCL_CONCEPT sharded_alloc_env_range = _CCCL_REQUIRES_EXPR((_Range), const _Range& __r)(
+  _Satisfies(__convertible_to_size) __r.size(),
+  requires(sharded_alloc_env<::cuda::std::remove_cvref_t<decltype(__r[::std::size_t{0}])>>));
+
+//! @brief A self-bound sharded structure: a `sharded_view` for which
+//! `default_envs(s)` (found by argument-dependent lookup) yields a
+//! `sharded_env_range` with one environment per shard.
+//!
+//! This is an *optional* capability in the spirit of `std::execution`'s
+//! `get_env`: the view concept never stores environments; types built by a
+//! provider (containers whose shards recorded their streams and places at
+//! construction) can answer the query anyway. Pure transported views do not
+//! model it and are used through the explicit-environment overloads.
+template <class _S>
+_CCCL_CONCEPT self_bound = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
+  requires(sharded_view<_S>),
+  requires(sharded_env_range<::cuda::std::remove_cvref_t<decltype(default_envs(__s))>>));
+
+// ===========================================================================
+// Per-call environment (the combine-scope tier)
+// ===========================================================================
+
+//! @brief Synchronization policy carried by a per-call environment.
+enum class sync_policy
+{
+  allow, //!< best effort: the call may synchronize with the host where the
+         //!< algorithm's documented contract says so
+  forbid //!< any would-be host synchronization throws `std::runtime_error`
+         //!< *before* the blocking call (the capture-guard discipline)
+};
+
+//! @brief Query tag for the synchronization policy of a per-call
+//! environment: `env.query(get_sync_policy_t{}) -> sync_policy`.
+struct get_sync_policy_t
+{
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, get_sync_policy_t>)
+  [[nodiscard]] constexpr sync_policy operator()(const _Env& __env) const noexcept
+  {
+    return __env.query(*this);
+  }
+};
+
+_CCCL_GLOBAL_CONSTANT get_sync_policy_t get_sync_policy{};
+
+//! @brief The synchronization policy of a per-call environment;
+//! `sync_policy::allow` when the environment does not carry one.
+template <class _CallEnv>
+[[nodiscard]] constexpr sync_policy query_sync_policy(const _CallEnv& __env) noexcept
+{
+  if constexpr (::cuda::std::execution::__queryable_with<_CallEnv, get_sync_policy_t>)
+  {
+    return __env.query(get_sync_policy_t{});
+  }
+  else
+  {
+    (void) __env;
+    return sync_policy::allow;
+  }
+}
+
+//! @brief Does this per-call environment select the asynchronous contract?
+//!
+//! Presence of a stream (via `cuda::get_stream`) selects it: the call is
+//! then ordered against that stream, returns after enqueue, and performs no
+//! host synchronization (for the operations whose documented contract offers
+//! the asynchronous form).
+template <class _CallEnv>
+_CCCL_CONCEPT async_call_env = sharded_env<_CallEnv>;
+
+//! @brief Guard for the `sync_policy::forbid` contract: throw before a
+//! would-be host synchronization, leaving all state valid.
+//!
+//! Every internal host-blocking site of the algorithm tier routes through
+//! this (the `check_not_capturing` discipline, generalized). Amortized state
+//! warm-up (handle/plan creation) is exempt by contract: warm up before
+//! entering a no-sync region.
+template <class _CallEnv>
+void require_sync_allowed(const _CallEnv& __env, const char* __what)
+{
+  if (query_sync_policy(__env) == sync_policy::forbid)
+  {
+    throw ::std::runtime_error(::std::string(__what)
+                               + ": operation would synchronize with the host, but the call "
+                                 "environment carries sync_policy::forbid");
+  }
+}
+
+//! @brief An empty per-call environment: synchronous contract, best-effort
+//! policy. The default for the convenience overloads.
+using default_call_env = ::cuda::std::execution::env<>;
+
+} // namespace cuda::experimental::sharded
+
+// NOLINTEND(bugprone-reserved-identifier)
