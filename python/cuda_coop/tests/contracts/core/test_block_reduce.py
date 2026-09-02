@@ -223,13 +223,23 @@ def test_static_valid_items_are_checked_against_block(valid_items) -> None:
 
 @pytest.mark.parametrize("algorithm", (True, "nondeterministic", "striped"))
 def test_only_supported_deterministic_algorithms_are_accepted(algorithm) -> None:
-    with pytest.raises(ValueError, match="BlockReduce algorithm"):
+    with pytest.raises(ValueError, match=r"cuda\.coop reduction algorithm"):
         normalize_block_reduce_algorithm(algorithm)
 
 
 def test_python_callbacks_are_not_portable_operators() -> None:
-    with pytest.raises(ValueError, match="block reduction operator"):
+    with pytest.raises(ValueError, match=r"cuda\.coop\.reduce binary_op"):
         normalize_block_reduce_operator(lambda left, right: left + right)
+
+
+def test_sum_diagnostic_uses_the_python_api_name() -> None:
+    with pytest.raises(ValueError, match=r"cuda\.coop\.sum requires"):
+        make_block_reduce_spec(
+            dtype="int32",
+            block_dim=32,
+            operation="sum",
+            binary_op="max",
+        )
 
 
 def test_block_spec_normalizes_dimensions_and_selectors() -> None:

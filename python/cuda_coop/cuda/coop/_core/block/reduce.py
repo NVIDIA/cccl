@@ -77,7 +77,7 @@ def normalize_block_reduce_operator(value: Any) -> BlockReduceOperator:
     except (KeyError, TypeError):
         choices = ", ".join(operator.value for operator in BlockReduceOperator)
         raise ValueError(
-            f"unsupported block reduction operator {value!r}; expected one of: "
+            f"unsupported cuda.coop.reduce binary_op {value!r}; expected one of: "
             f"{choices}"
         ) from None
 
@@ -97,7 +97,7 @@ def normalize_block_reduce_algorithm(value: Any) -> BlockReduceAlgorithm:
     except (TypeError, ValueError):
         choices = ", ".join(algorithm.value for algorithm in BlockReduceAlgorithm)
         raise ValueError(
-            f"unsupported CUB BlockReduce algorithm {value!r}; expected one of: "
+            f"unsupported cuda.coop reduction algorithm {value!r}; expected one of: "
             f"{choices}"
         ) from None
 
@@ -130,14 +130,14 @@ class BlockReduceSpec:
             "block_dim",
             normalize_thread_dim(
                 self.block_dim,
-                scope="BlockReduceSpec",
+                scope="cuda.coop reduction",
                 label="block",
             ),
         )
         if self.operation is BlockReduceOperation.SUM and (
             self.binary_op is not BlockReduceOperator.SUM
         ):
-            raise ValueError("BlockReduce Sum requires the sum operator")
+            raise ValueError("cuda.coop.sum requires the sum operator")
         if not isinstance(self.valid_items, bool):
             raise TypeError("valid_items must describe whether an argument is present")
 
@@ -184,7 +184,7 @@ def make_block_reduce_spec(
     if operation is BlockReduceOperation.SUM and (
         normalized_operator is not BlockReduceOperator.SUM
     ):
-        raise ValueError("BlockReduce Sum requires the sum operator")
+        raise ValueError("cuda.coop.sum requires the sum operator")
     return BlockReduceSpec(
         dtype=dtype,
         block_dim=normalize_thread_dim(

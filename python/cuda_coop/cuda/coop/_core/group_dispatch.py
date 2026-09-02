@@ -101,7 +101,7 @@ class GroupReduceSemantics:
         if self.operation is GroupReduceOperation.SUM and (
             self.binary_op is not GroupReduceOperator.SUM
         ):
-            raise ValueError("group sum requires the sum operator")
+            raise ValueError("cuda.coop.sum requires the sum operator")
 
     @property
     def has_valid_items(self) -> bool:

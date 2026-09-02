@@ -335,7 +335,7 @@ def test_root_accepts_a_structural_compiler_integer() -> None:
 
 def test_root_rejects_callbacks_and_nondeterministic_algorithm() -> None:
     block = root_api.this_block()
-    with pytest.raises(ValueError, match="block reduction operator"):
+    with pytest.raises(ValueError, match=r"cuda\.coop\.reduce binary_op"):
         root_api.reduce(block, 1, binary_op=lambda left, right: left + right)
-    with pytest.raises(ValueError, match="BlockReduce algorithm"):
+    with pytest.raises(ValueError, match=r"cuda\.coop reduction algorithm"):
         root_api.sum(block, 1, algorithm="warp_reductions_nondeterministic")
