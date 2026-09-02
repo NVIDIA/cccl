@@ -49,6 +49,7 @@ from numba_cuda_mlir.lowering_utilities import (
 # --- Data models ----------------------------------------------------------------
 from numba_cuda_mlir.models import PrimitiveModel, register_model
 from numba_cuda_mlir.numba_cuda.core import errors
+from numba_cuda_mlir.numba_cuda.core.compiler_lock import global_compiler_lock
 from numba_cuda_mlir.numba_cuda.extending import as_numba_type, typeof_impl
 from numba_cuda_mlir.numba_cuda.np import numpy_support
 from numba_cuda_mlir.numba_cuda.typeconv import Conversion
@@ -166,8 +167,15 @@ def refresh_contexts():
     model, attribute/getitem lowering, casts) would otherwise not be picked up,
     surfacing as ``Untyped global name '<Struct>'`` the next time an operator
     references it.  Call this once a new struct type has finished registering.
+
+    Refreshing re-reads the registries into the contexts, passing through states
+    where an entry another thread is looking up has been removed and not yet
+    reinserted.  Hold the compiler lock, which the backend also holds while
+    typing and lowering, so nothing can be doing either meanwhile.  The lock is
+    reentrant, so refreshing from inside a compilation stays safe.
     """
-    refresh_registries()
+    with global_compiler_lock:
+        refresh_registries()
 
 
 def from_numpy_dtype(dtype):
