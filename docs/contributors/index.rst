@@ -65,6 +65,8 @@ Making Changes
 
       git commit -m "Brief description of the change"
 
+   If you are a member of the NVIDIA GitHub enterprise, please sign your commits.
+
 Developer Guides
 ~~~~~~~~~~~~~~~~~
 
@@ -113,108 +115,11 @@ configuring, building, and testing directly with ``cmake``/``ctest``. See
 :ref:`infra-cmake-preset-reference` for the full preset reference, including how to list presets and how
 preset build output is laid out on disk.
 
-Using CMake Presets via VS Code GUI extension (Recommended when using DevContainers)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+See :doc:`how_tos/vscode_cmake_tools` for the recommended, GUI-driven way to use CMake Presets from VS
+Code when working inside a Dev Container.
 
-The recommended way to use CMake Presets is via the VS Code extension `CMake Tools
-<https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools>`_, already included in
-`CCCL's DevContainers <https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md>`_. As soon as
-you install the extension you would be able to see the sidebar menu below.
-
-.. image:: https://raw.githubusercontent.com/NVIDIA/cccl/main/.devcontainer/img/cmaketools_sidebar.png
-   :alt: cmaketools sidebar
-
-You can specify the desired CMake Preset by clicking the "Select Configure Preset" button under the
-"Configure" node (see image below).
-
-.. image:: https://raw.githubusercontent.com/NVIDIA/cccl/main/.devcontainer/img/cmaketools_presets.png
-   :alt: cmaketools presets
-
-After that you can select the default build target from the "Build" node. As soon as you expand it, a
-list will appear with all the available targets that are included within the preset you selected. For
-example if you had selected the ``all-dev`` preset VS Code will display all the available targets we
-have in cccl.
-
-.. image:: https://raw.githubusercontent.com/NVIDIA/cccl/main/.devcontainer/img/cmaketools_targets.png
-   :alt: cmaketools targets
-
-You can build the selected target by pressing the gear button
-(|gear|) at the bottom of the VS Code window.
-
-Alternatively you can select the desired target from either the "Debug" or "Launch" drop down menu
-(for debugging or running correspondingly). In that case after you select the target and either press
-"Run" (|run|) or "Debug" (|debug|) the target will build on its own before running without the user
-having to build it explicitly from the gear button.
-
-.. |gear| image:: https://raw.githubusercontent.com/NVIDIA/cccl/main/.devcontainer/img/build_button.png
-.. |run| image:: https://raw.githubusercontent.com/NVIDIA/cccl/main/.devcontainer/img/run.png
-.. |debug| image:: https://raw.githubusercontent.com/NVIDIA/cccl/main/.devcontainer/img/debug.png
-
-----
-
-We encourage users who want to debug device code to install the `Nsight Visual Studio Code Edition
-extension <https://marketplace.visualstudio.com/items?itemName=NVIDIA.nsight-vscode-edition>`_ that
-enables the VS Code frontend for ``cuda-gdb``. To use it you should launch from the sidebar menu instead
-of pressing the "Debug" button from the bottom menu.
-
-.. image:: https://raw.githubusercontent.com/NVIDIA/cccl/main/.devcontainer/img/nsight.png
-   :alt: nsight
-
-Creating a Pull Request
---------------------------
-
-#. Push changes to your fork
-#. Create a pull request targeting the ``main`` branch of the original CCCL repository. Refer to
-   `GitHub's documentation
-   <https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests>`_
-   for more information on creating a pull request.
-#. Describe the purpose and context of the changes in the pull request description.
-
-Documentation Preview
-~~~~~~~~~~~~~~~~~~~~~~~
-
-Documentation previews allow reviewers to see how changes will appear on the live documentation site
-before merging. Previews are automatically generated for all pull requests and updated with every
-commit. To skip building documentation for a PR, include ``[skip-docs]`` in your commit message.
-
-The preview URL will be posted as a comment on your PR and automatically cleaned up when the PR is
-closed.
-
-Checking for Performance Regressions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Performance stability is a key goal for CCCL, especially for ``Device*`` algorithms in CUB. When
-modifying any functionality that could impact these algorithms, contributors are encouraged to verify
-that no performance regressions occur.
-
-This verification is a two-step process:
-
-#. Determine whether your changes affect the generated SASS code (details on how to do this are
-   provided below).
-#. If the generated SASS code changes, run the benchmarks (see :doc:`CUB Benchmarks
-   </cub/benchmarking>`) to quantify potential performance implications.
-
-**Steps to check whether your changes generate different SASS code:**
-
-#. Identify the ``Device*`` algorithm(s) that may be affected by the change. This isn't always
-   straightforward, and you will need to confirm whether any of the CUB algorithms depend on components
-   modified by your changes. If your changes affect only certain GPU architectures, make sure those
-   architectures are included in the list of architectures used during compilation (for example, by
-   specifying them with the ``-arch`` flag when using the build scripts, or with
-   ``-DCMAKE_CUDA_ARCHITECTURES`` when building with CMake).
-#. Navigate to the build directory, compile the benchmarks for the specific ``Device*`` algorithm(s)
-   identified in step 1, and dump the SASS code. For example: ``ninja cub.bench.radix_sort.keys.base &&
-   cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt > ./radix_sort.keys_after.sass``.
-#. Check out the ``main`` branch to compare against the baseline SASS code:
-   ``git checkout $(git merge-base HEAD upstream/main)``
-#. Dump the SASS code emitted on the ``main`` branch. For example: ``ninja
-   cub.bench.radix_sort.keys.base && cuobjdump -sass ./bin/cub.bench.radix_sort.keys.base |c++filt >
-   ./radix_sort.keys_before.sass``.
-#. Check whether there are differences in the generated SASS output: ``git diff --text --no-index
-   --word-diff radix_sort.keys_before.sass radix_sort.keys_after.sass``
-
-Code Formatting (pre-commit hooks)
--------------------------------------
+Pre-commit hooks (code formatting, etc.)
+----------------------------------------
 
 CCCL uses `pre-commit <https://pre-commit.com/>`_ to execute all code linters and formatters. These
 tools ensure a consistent coding style throughout the project. Using pre-commit ensures that linter
@@ -224,7 +129,7 @@ enforce that committed code follows our standards.
 The linters used by CCCL are listed in ``.pre-commit-config.yaml``. For example, C++ and CUDA code is
 formatted with `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_.
 
-To use ``pre-commit``, install via ``conda`` or ``pip``:
+To enable the use of ``pre-commit``, install via ``conda`` or ``pip``:
 
 .. code-block:: bash
 
@@ -248,7 +153,7 @@ pre-commit checks on all files, execute:
 
    pre-commit run --all-files
 
-Optionally, you may set up the pre-commit hooks to run automatically when you make a git commit. This
+It is recommended to set up the pre-commit hooks to run automatically when you make a git commit. This
 can be done by running:
 
 .. code-block:: bash
@@ -260,24 +165,22 @@ Now code linters and formatters will be run each time you commit changes.
 You can skip these checks with ``git commit --no-verify`` or with the short version ``git commit -n``.
 
 Secret Scanning
-------------------
+~~~~~~~~~~~~~~~~~
 
 The ``secret-scan-trufflehog`` pre-commit hook scans staged files and installs TruffleHog on first run
 (use Git Bash on Windows). If it flags a secret, remove it before committing, or contact a maintainer if
 it's a false positive. Secrets are also scanned server-side in CI on ``main``.
 
-Continuous Integration (CI)
--------------------------------
+Creating a Pull Request
+--------------------------
 
-CCCL's CI pipeline tests across various CUDA versions, compilers, and GPU architectures. For external
-contributors, the CI pipeline will not begin until a maintainer leaves an ``/ok to test`` comment. For
-members of the NVIDIA GitHub enterprise, the CI pipeline will begin immediately. For a detailed overview
-of CCCL's CI, see :doc:`CI overview </infrastructure/ci/references/ci_overview>`.
+#. Push the local branch with your changes to your fork on GitHub:
 
-There is a CI check for pre-commit, called `pre-commit.ci <https://pre-commit.ci/>`_. This enforces
-that all linters (such as ``clang-format``) pass. If pre-commit.ci is failing, you can comment
-``pre-commit.ci autofix`` on a pull request to trigger the auto-fixer. The auto-fixer will push a commit
-to your pull request that applies changes made by pre-commit hooks.
+   .. code-block:: bash
+
+      git push origin your-feature-branch
+
+See :doc:`how_tos/creating_a_pull_request` for further instructions.
 
 Review Process
 -----------------
