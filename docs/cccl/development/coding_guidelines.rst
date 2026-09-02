@@ -10,8 +10,9 @@ General guidelines apply universally, but may be overridden by library-specific 
 General
 -------
 
-#. Always prefer entities from ``cuda::std::`` over ``std::``. They work in host and device code, work
-   with NVRTC, and help testing our implementation.
+#. Always prefer entities from ``cuda::std::`` over ``std::``
+   and other functionality or macros from the ``<cuda/...>` and ``<cuda/std/...>`` headers.
+   They work in host and device code, work with NVRTC, and help testing our implementation.
 #. Use :doc:`CCCL internal macros <macro>` over compiler/vendor-specific keywords in library implementation
    headers. E.g., use ``_CCCL_HOST_DEVICE`` instead of ``__host__ __device__``, or ``_CCCL_FORCEINLINE``
    over ``__forceinline``. Generally, prefer ``_CCCL_HOST_API``, ``_CCCL_DEVICE_API``,
