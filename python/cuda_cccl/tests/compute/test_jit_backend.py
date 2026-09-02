@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 """How cuda.compute drives the numba-cuda-mlir backend."""
 
+import subprocess
+import sys
+import textwrap
+
 import pytest
 
 from cuda.compute import _mlir
@@ -156,3 +160,32 @@ def test_operator_device_code_is_textual_llvm_ir():
     assert f"define void @{wrapper.__name__}" in text
     # Dropped so the module adopts the HostJIT module's layout when linked.
     assert "target datalayout" not in text
+
+
+def test_return_type_inference_works_without_a_prior_compile():
+    """Inferring a return type must not depend on something having compiled first.
+
+    Runs in a fresh interpreter because any earlier compilation in this process
+    would already have built the JIT backend's typing and target contexts, which
+    is what resolving the operator below needs.
+    """
+    program = textwrap.dedent(
+        """
+        from cuda.compute import _mlir
+
+        def add_one(a):
+            return a + 1
+
+        types = _mlir.types
+        # Integer width follows numba's promotion rules; the point is that the
+        # operator resolves at all.
+        assert _mlir.infer_return_type(add_one, (types.int32,)) in (
+            types.int32,
+            types.int64,
+        )
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", program], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
