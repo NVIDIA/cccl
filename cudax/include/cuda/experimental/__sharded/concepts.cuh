@@ -139,6 +139,91 @@ struct basic_shard_view
   _PlaceId place{}; //!< equality-comparable place identity
 };
 
+//! @brief A minimal owned-descriptor sharded view: a vector of
+//! `basic_shard_view` plus the structure accessors. The simplest possible
+//! model of `sharded_view` — what `make_sharded_view` returns.
+template <class _Tp, class _PlaceId = int>
+struct basic_sharded_view
+{
+  ::std::vector<basic_shard_view<_Tp, _PlaceId>> shards;
+
+  [[nodiscard]] ::std::size_t num_shards() const noexcept
+  {
+    return shards.size();
+  }
+  [[nodiscard]] const basic_shard_view<_Tp, _PlaceId>& shard(::std::size_t __i) const noexcept
+  {
+    return shards[__i];
+  }
+};
+
+//! @brief Upgrade an ordered sequence of contiguous pieces — a
+//! `vector<span<T>>` in spirit and in practice — into a sharded view.
+//!
+//! A `vector<span<T>>` is exactly the *data* of a sharded view; what it
+//! lacks are the two facts the algorithms consume beyond the bytes: each
+//! piece's position in the global index space and an equality-comparable
+//! *place* identity (defaulted to the piece index here; pass real
+//! identities through the second overload when locality matters).
+//!
+//! On offsets: under the view's ordered+tiling guarantees the offsets are
+//! *redundant* data — `offset_i` is the prefix sum of the sizes — so a bare
+//! `vector<span<T>>` carries enough information. The requirement is that
+//! regions be *obtainable*, and there are two conformance routes: models
+//! that already have offsets provide them (stored descriptor field, O(1)
+//! region queries — the containers, and structures with native ranges);
+//! models that don't go through this factory, which derives them once
+//! (one O(num_pieces) running sum at adaptation time). Storing the result
+//! in the descriptor keeps every region query O(1) on algorithm hot paths
+//! and keeps a descriptor a self-contained value — a lone shard knows
+//! where it belongs without its siblings, which is what lets descriptors
+//! travel. A no-store lazy route (per-query inference) would be strictly
+//! less efficient where it matters; if a consumer ever needs to model the
+//! concept directly without storing offsets and without adapting, an
+//! optional-offset query protocol is a compatible future extension.
+//! Users never supply offsets by hand on any route. Anything with
+//! `data()` and `size()` qualifies as a piece (`cuda::std::span`,
+//! `std::span`, ...).
+template <class _SpanLike, class _PlaceId = int>
+[[nodiscard]] auto make_sharded_view(const ::std::vector<_SpanLike>& __pieces)
+{
+  using _Tp = ::cuda::std::remove_pointer_t<decltype(::cuda::std::declval<const _SpanLike&>().data())>;
+  basic_sharded_view<_Tp, _PlaceId> __v;
+  __v.shards.reserve(__pieces.size());
+  ::std::size_t __offset = 0;
+  ::std::size_t __idx    = 0;
+  for (const auto& __p : __pieces)
+  {
+    __v.shards.push_back(
+      {__p.data(), static_cast<::std::size_t>(__p.size()), __offset, static_cast<_PlaceId>(__idx)});
+    __offset += static_cast<::std::size_t>(__p.size());
+    ++__idx;
+  }
+  return __v;
+}
+
+//! @brief As above, with caller-supplied place identities (one per piece).
+template <class _SpanLike, class _PlaceId>
+[[nodiscard]] auto
+make_sharded_view(const ::std::vector<_SpanLike>& __pieces, const ::std::vector<_PlaceId>& __places)
+{
+  using _Tp = ::cuda::std::remove_pointer_t<decltype(::cuda::std::declval<const _SpanLike&>().data())>;
+  if (__places.size() != __pieces.size())
+  {
+    throw ::std::invalid_argument("make_sharded_view: one place identity per piece required");
+  }
+  basic_sharded_view<_Tp, _PlaceId> __v;
+  __v.shards.reserve(__pieces.size());
+  ::std::size_t __offset = 0;
+  for (::std::size_t __i = 0; __i < __pieces.size(); ++__i)
+  {
+    __v.shards.push_back(
+      {__pieces[__i].data(), static_cast<::std::size_t>(__pieces[__i].size()), __offset, __places[__i]});
+    __offset += static_cast<::std::size_t>(__pieces[__i].size());
+  }
+  return __v;
+}
+
 // ===========================================================================
 // Sharded view (the mapping tier)
 // ===========================================================================

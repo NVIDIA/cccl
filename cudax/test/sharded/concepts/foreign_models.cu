@@ -25,6 +25,8 @@
  *        agree with references.
  */
 
+#include <cuda/std/span>
+
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstddef>
@@ -237,12 +239,67 @@ void test_adopted_model()
 
 } // namespace
 
+namespace
+{
+
+// "Is a vector<span> a sharded view?" — almost: it is exactly the DATA of
+// one, missing the two facts the algorithms consume beyond the bytes
+// (global offsets — the running sum, and place identities — defaulted to
+// the index). make_sharded_view computes both; the result runs the same
+// generic algorithms.
+void test_vector_of_spans()
+{
+  const ::std::size_t n0 = 120000, n1 = 80001, n = n0 + n1;
+  cudaStream_t s0, s1;
+  cuda_safe_call(cudaStreamCreate(&s0));
+  cuda_safe_call(cudaStreamCreate(&s1));
+  double *d0 = nullptr, *d1 = nullptr;
+  cuda_safe_call(cudaMalloc(&d0, n0 * sizeof(double)));
+  cuda_safe_call(cudaMalloc(&d1, n1 * sizeof(double)));
+  cuda_safe_call(cudaMemset(d0, 0, n0 * sizeof(double)));
+  cuda_safe_call(cudaMemset(d1, 0, n1 * sizeof(double)));
+
+  ::std::vector<::cuda::std::span<double>> pieces;
+  pieces.push_back({d0, n0});
+  pieces.push_back({d1, n1});
+
+  const auto view = make_sharded_view(pieces); // offsets = running sum, place = index
+  EXPECT(validate(view));
+  EXPECT(view.num_shards() == 2);
+  EXPECT(view.shard(1).global_offset == n0);
+
+  ::std::vector<foreign::raw_env> envs;
+  envs.push_back({s0});
+  envs.push_back({s1});
+
+  transform(view, envs, [] __device__(double) {
+    return 2.0;
+  });
+  transform(view, envs, times3{});
+  EXPECT(reduce(view, envs, ::cuda::std::plus<double>{}, 0.0) == 6.0 * n);
+
+  cuda_safe_call(cudaFree(d0));
+  cuda_safe_call(cudaFree(d1));
+  cuda_safe_call(cudaStreamDestroy(s0));
+  cuda_safe_call(cudaStreamDestroy(s1));
+}
+
+} // namespace
+
+static_assert(sharded_view<basic_sharded_view<double>>, "the make_sharded_view result models sharded_view");
+static_assert(
+  sharded_view<decltype(make_sharded_view(::cuda::std::declval<const ::std::vector<::cuda::std::span<float>>&>()))>,
+  "a vector<span> upgraded by make_sharded_view is a sharded view");
+static_assert(!sharded_view<::std::vector<::cuda::std::span<float>>>,
+              "a bare vector<span> is not (yet) one: no offsets, no places, no shard accessors");
+
 int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
   test_fully_foreign_model();
   test_adopted_model();
+  test_vector_of_spans();
 
   return 0;
 }
