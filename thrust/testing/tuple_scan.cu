@@ -11,6 +11,8 @@
 
 using namespace unittest;
 
+namespace
+{
 struct SumTupleFunctor
 {
   template <typename Tuple>
@@ -44,7 +46,7 @@ struct TestTupleScan
     thrust::device_vector<cuda::std::tuple<T, T>> d_input = h_input;
 
     // allocate output
-    cuda::std::tuple<T, T> zero(0, 0);
+    const cuda::std::tuple<T, T> zero(0, 0);
     thrust::host_vector<cuda::std::tuple<T, T>> h_output(n, zero);
     thrust::device_vector<cuda::std::tuple<T, T>> d_output(n, zero);
 
@@ -62,3 +64,4 @@ struct TestTupleScan
   }
 };
 VariableUnitTest<TestTupleScan, IntegralTypes> TestTupleScanInstance;
+} // namespace

@@ -17,8 +17,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
@@ -47,7 +49,7 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});
 
 template <typename T>
-static void with_comp(nvbench::state& state, nvbench::type_list<T>)
+void with_comp(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
@@ -75,3 +77,4 @@ NVBENCH_BENCH_TYPES(with_comp, NVBENCH_TYPE_AXES(fundamental_types))
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});
+} // namespace

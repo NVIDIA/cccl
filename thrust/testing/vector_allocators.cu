@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename BaseAlloc, bool PropagateOnSwap>
 class stateful_allocator : public BaseAlloc
 {
@@ -123,8 +125,8 @@ template <typename Vector>
 void TestVectorAllocatorConstructors()
 {
   using Alloc = typename Vector::allocator_type;
-  Alloc alloc1(1);
-  Alloc alloc2(2);
+  const Alloc alloc1(1);
+  const Alloc alloc2(2);
 
   Vector v1(alloc1);
   ASSERT_EQUAL(v1.get_allocator(), alloc1);
@@ -180,8 +182,8 @@ void TestVectorAllocatorPropagateOnCopyAssignment()
     cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
 
   using Alloc = typename Vector::allocator_type;
-  Alloc alloc1(1);
-  Alloc alloc2(2);
+  const Alloc alloc1(1);
+  const Alloc alloc2(2);
 
   Vector v1(10, alloc1);
   Vector v2(15, alloc2);
@@ -213,8 +215,8 @@ void TestVectorAllocatorPropagateOnMoveAssignment()
     cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
 
   using Alloc = typename Vector::allocator_type;
-  Alloc alloc1(1);
-  Alloc alloc2(2);
+  const Alloc alloc1(1);
+  const Alloc alloc2(2);
 
   {
     Vector v1(10, alloc1);
@@ -245,8 +247,8 @@ template <typename Vector>
 void TestVectorAllocatorPropagateOnSwap()
 {
   using Alloc = typename Vector::allocator_type;
-  Alloc alloc1(1);
-  Alloc alloc2(2);
+  const Alloc alloc1(1);
+  const Alloc alloc2(2);
 
   Vector v1(10, alloc1);
   Vector v2(17, alloc1);
@@ -272,3 +274,4 @@ void TestVectorAllocatorPropagateOnSwapDevice()
   TestVectorAllocatorPropagateOnSwap<device_vector_nsp>();
 }
 DECLARE_UNITTEST(TestVectorAllocatorPropagateOnSwapDevice);
+} // namespace

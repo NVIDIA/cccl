@@ -13,6 +13,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 {
   // example-begin warp-reduce-batched-overview
@@ -31,7 +33,7 @@ __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
   thread_data[1] = tid;
   thread_data[2] = tid + 1;
 
-  int result = WarpReduceBatched{temp_storage[warp_id]}.Reduce(thread_data, cuda::maximum{});
+  const int result = WarpReduceBatched{temp_storage[warp_id]}.Reduce(thread_data, cuda::maximum{});
   // results across threads: [30, 31, 32, ?, ?, ..., ?, 62, 63, 64, ?, ?, ..., ?]
   // example-end warp-reduce-batched-overview
 
@@ -50,7 +52,7 @@ CUB_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batc
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{30, 31, 32, 62, 63, 64};
+  const c2h::host_vector<int> expected{30, 31, 32, 62, 63, 64};
   REQUIRE(expected == d_out);
 }
 
@@ -93,7 +95,7 @@ CUB_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batch
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{14, 15, 16};
+  const c2h::host_vector<int> expected{14, 15, 16};
   REQUIRE(expected == d_out);
 }
 
@@ -153,7 +155,7 @@ CUB_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][redu
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
+  const c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
   REQUIRE(expected == d_out);
 }
 
@@ -214,7 +216,7 @@ CUB_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][redu
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
+  const c2h::host_vector<int> expected{0, 1, 2, 4, 5, 6};
   REQUIRE(expected == d_out);
 }
 
@@ -233,8 +235,8 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
   const int tid             = static_cast<int>(threadIdx.x);
   const int logical_warp_id = tid / logical_warp_threads;
 
-  cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
-  int result = WarpReduceBatched{temp_storage[logical_warp_id]}.Sum(inputs);
+  const cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
+  const int result = WarpReduceBatched{temp_storage[logical_warp_id]}.Sum(inputs);
   // results across threads:
   // [2, 6, 10, ?, 18, 22, 26, ?]
   // example-end warp-reduce-batched-sum
@@ -253,7 +255,7 @@ CUB_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{2, 6, 10, 18, 22, 26};
+  const c2h::host_vector<int> expected{2, 6, 10, 18, 22, 26};
   REQUIRE(expected == d_out);
 }
 
@@ -301,7 +303,7 @@ CUB_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce]
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
+  const c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
   REQUIRE(expected == d_out);
 }
 
@@ -349,6 +351,7 @@ CUB_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce]
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
+  const c2h::host_vector<int> expected{-3, -1, 1, 3, 5, 1, 3, 5, 7, 9, 5, 7, 9, 11, 13, 9, 11, 13, 15, 17};
   REQUIRE(expected == d_out);
 }
+} // namespace

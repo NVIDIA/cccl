@@ -39,7 +39,7 @@ int main()
   thrust::inclusive_scan(lengths.begin(), lengths.end(), lengths.begin());
 
   // output size is sum of the run lengths
-  int N = lengths.back();
+  const int N = lengths.back();
 
   // compute input index for each output element
   thrust::device_vector<int> indices(N);

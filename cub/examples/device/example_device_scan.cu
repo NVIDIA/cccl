@@ -33,6 +33,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 bool g_verbose = false; // Whether to display input/output to console
 
 //---------------------------------------------------------------------
@@ -78,6 +80,7 @@ int Solve(int* h_in, int* h_reference, int num_items)
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
+} // namespace
 
 /**
  * Main
@@ -137,7 +140,7 @@ int main(int argc, char** argv)
 
   // Check for correctness (and display results, if specified)
   stream.sync();
-  int compare = CompareDeviceResults(h_reference, d_out.data(), num_items, true, g_verbose);
+  const int compare = CompareDeviceResults(h_reference, d_out.data(), num_items, true, g_verbose);
   printf("\t%s", compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 

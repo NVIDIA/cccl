@@ -11,6 +11,8 @@
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #endif
 
+namespace
+{
 template <typename T>
 struct test_allocator_t
 {};
@@ -77,7 +79,7 @@ struct TestAllocatorAttachment
 
   void operator()()
   {
-    typename PolicyInfo::policy policy;
+    typename PolicyInfo::policy policy; // NOLINT(misc-const-correctness)
 
     // test correctness of attachment
     assert_correct<test_allocator_t<int>>(policy(test_allocator_t<int>()));
@@ -116,3 +118,4 @@ SimpleUnitTest<TestAllocatorAttachment,
                                    omp_par_info,
                                    tbb_par_info>>
   TestAllocatorAttachmentInstance;
+} // namespace

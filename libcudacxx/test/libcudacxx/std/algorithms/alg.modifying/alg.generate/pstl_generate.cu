@@ -32,6 +32,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T = int>
 struct gen_val
 {
@@ -46,11 +48,14 @@ struct gen_val
     return static_cast<T>(val_);
   }
 };
+} // namespace
 
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "test_pstl.h"
 
+namespace
+{
 template <class Policy, class T>
 void test_generate(const Policy& policy, c2h::device_vector<T>& output)
 {
@@ -99,7 +104,7 @@ C2H_TEST("cuda::std::generate", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_generate(policy, output);
   }
@@ -113,10 +118,11 @@ C2H_TEST("cuda::std::generate", "[parallel algorithm]", all_types)
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
     test_generate(policy, output);
   }
 }
+} // namespace

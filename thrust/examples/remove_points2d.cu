@@ -11,6 +11,8 @@
 // The x and y coordinates are stored in separate arrays
 // and a zip_iterator is used to combine them together
 
+namespace
+{
 template <typename T>
 struct is_outside_circle
 {
@@ -31,6 +33,7 @@ struct is_outside_circle
     }
   }
 };
+} // namespace
 
 int main()
 {
@@ -57,7 +60,7 @@ int main()
   std::cout << '\n';
 
   // remove points where x^2 + y^2 > 1 and determine new array sizes
-  size_t new_size =
+  const size_t new_size =
     thrust::remove_if(thrust::make_zip_iterator(x.begin(), y.begin()),
                       thrust::make_zip_iterator(x.end(), y.end()),
                       is_outside_circle<float>())

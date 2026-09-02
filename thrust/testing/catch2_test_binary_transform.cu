@@ -19,6 +19,8 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_binary_simple()
 {
@@ -54,7 +56,7 @@ TEST_CASE("BinaryDispatchExplicit", "[transform]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::transform(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
 
   CHECK(sys.is_valid());
@@ -94,7 +96,7 @@ TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform_if]", vector_list)
   Vector output{1, 2, 3};
   Vector result{5, 2, -3};
 
-  ::cuda::std::identity identity;
+  const ::cuda::std::identity identity;
 
   iter = thrust::transform_if(
     input1.begin(),
@@ -133,7 +135,7 @@ TEST_CASE("BinaryDispatchExplicit", "[transform_if]")
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::transform_if(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0, 0);
 
   CHECK(sys.is_valid());
@@ -221,12 +223,12 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform]", variable_list)
     thrust::device_vector<T> d_input1 = h_input1;
     thrust::device_vector<T> d_input2 = h_input2;
 
-    thrust::discard_iterator<> h_result = thrust::transform(
+    const thrust::discard_iterator<> h_result = thrust::transform(
       h_input1.begin(), h_input1.end(), h_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
-    thrust::discard_iterator<> d_result = thrust::transform(
+    const thrust::discard_iterator<> d_result = thrust::transform(
       d_input1.begin(), d_input1.end(), d_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));
@@ -306,7 +308,7 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform_if]", variable_li
     thrust::device_vector<T> d_input2  = h_input2;
     thrust::device_vector<T> d_stencil = h_stencil;
 
-    thrust::discard_iterator<> h_result = thrust::transform_if(
+    const thrust::discard_iterator<> h_result = thrust::transform_if(
       h_input1.begin(),
       h_input1.end(),
       h_input2.begin(),
@@ -315,7 +317,7 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform_if]", variable_li
       ::cuda::std::minus<T>(),
       is_positive());
 
-    thrust::discard_iterator<> d_result = thrust::transform_if(
+    const thrust::discard_iterator<> d_result = thrust::transform_if(
       d_input1.begin(),
       d_input1.end(),
       d_input2.begin(),
@@ -324,7 +326,7 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform_if]", variable_li
       ::cuda::std::minus<T>(),
       is_positive());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));
@@ -338,8 +340,8 @@ TEMPLATE_LIST_TEST_CASE("BinaryCountingIterator", "[transform]", generic_list)
 
   CHECK(T(n) <= unittest::truncate_to_max_representable<T>(n));
 
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+  const thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
+  const thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
 
   thrust::host_vector<T> h_result(n);
   thrust::device_vector<T> d_result(n);
@@ -413,3 +415,4 @@ TEST_CASE("Base", "[transform_n]")
     CHECK(result == (thrust::device_vector{1, 0, 9}));
   }
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

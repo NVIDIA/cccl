@@ -29,6 +29,8 @@ using key_types =
                  double>;
 using item_t = float;
 
+namespace
+{
 template <typename KeyTy, typename ItemTy, bool descending = false, bool overwrite_okay = false>
 struct TestParameters
 {
@@ -186,9 +188,9 @@ C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
 
   constexpr auto this_test_params = T();
   // We want a mix of small and large sizes because different implementations will be called
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  bool is_descending  = this_test_params.is_descending();
-  const auto order    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  const int num_items      = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+  const bool is_descending = this_test_params.is_descending();
+  const auto order         = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
 
   const int begin_bit          = 0;
   const int end_bit            = sizeof(KeyT) * 8;
@@ -199,8 +201,8 @@ C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
   static constexpr const char* unused_decomposer_retty = "";
 
   // problem descriptor: (order, TestType, item_t, is_overwrite_ok, items_present = false)
-  std::vector<KeyT> input_keys    = make_shuffled_sequence<KeyT>(num_items);
-  std::vector<KeyT> expected_keys = input_keys;
+  const std::vector<KeyT> input_keys = make_shuffled_sequence<KeyT>(num_items);
+  std::vector<KeyT> expected_keys    = input_keys;
 
   pointer_t<KeyT> input_keys_it(input_keys);
   pointer_t<KeyT> output_keys_it(num_items);
@@ -442,7 +444,7 @@ C2H_TEST("RadixSort compile/load round-trip", "[radix_sort][serialization]")
       /*is_overwrite_okay=*/false,
       &selector,
       null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_radix_sort(
@@ -469,3 +471,4 @@ C2H_TEST("RadixSort compile/load round-trip", "[radix_sort][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

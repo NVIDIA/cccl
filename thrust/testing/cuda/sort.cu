@@ -15,6 +15,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct my_less
 {
@@ -244,7 +246,7 @@ public:
   {
     // The first (num_remainder_items * remainder_item_count) are items that appear once more often than the items that
     // follow remainder_items_offset
-    std::size_t remainder_items_offset = num_remainder_items * remainder_item_count;
+    const std::size_t remainder_items_offset = num_remainder_items * remainder_item_count;
 
     UnsignedIntegralKeyT target_item_index =
       (index <= remainder_items_offset)
@@ -331,3 +333,4 @@ SimpleUnitTest<TestSortAscendingKey,
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
                                 >>
   TestSortAscendingKeyMoreTypes;
+} // namespace

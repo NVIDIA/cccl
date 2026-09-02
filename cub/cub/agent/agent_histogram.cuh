@@ -386,14 +386,14 @@ struct AgentHistogram
     if constexpr (NumActiveChannels == 1)
     {
       using AliasedVecs = VecT[vecs_per_thread];
-      WrappedVecsIteratorT d_wrapped_vecs(reinterpret_cast<VecT*>(d_native_samples + block_offset));
+      const WrappedVecsIteratorT d_wrapped_vecs(reinterpret_cast<VecT*>(d_native_samples + block_offset));
       // Load using a wrapped vec iterator
       BlockLoadVecT{temp_storage.vec_load}.Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
     }
     else
     {
       using AliasedPixels = PixelT[pixels_per_thread];
-      WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
+      const WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
       // Load using a wrapped pixel iterator
       BlockLoadPixelT{temp_storage.pixel_load}.Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
     }
@@ -423,8 +423,8 @@ struct AgentHistogram
       {
         // Load partially-full, aligned tile using the pixel iterator
         using AliasedPixels = PixelT[pixels_per_thread];
-        WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
-        int valid_pixels = valid_samples / NumChannels;
+        const WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
+        const int valid_pixels = valid_samples / NumChannels;
 
         // Load using a wrapped pixel iterator
         BlockLoadPixelT{temp_storage.pixel_load}.Load(
@@ -511,7 +511,7 @@ struct AgentHistogram
     while (tile_idx < num_tiles)
     {
       int row             = tile_idx / tiles_per_row;
-      int col             = tile_idx - (row * tiles_per_row);
+      const int col       = tile_idx - (row * tiles_per_row);
       OffsetT row_offset  = row * row_stride_samples;
       OffsetT col_offset  = (col * tile_samples);
       OffsetT tile_offset = row_offset + col_offset;

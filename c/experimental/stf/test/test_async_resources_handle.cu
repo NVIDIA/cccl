@@ -26,6 +26,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 // A device sink that is written but never read. Publishing the busy-loop
 // result here gives the loop an observable side effect, so the compiler
 // cannot optimize it away, without perturbing the result buffer.
@@ -55,8 +57,6 @@ __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
   arr[tid] = value;
 }
 
-namespace
-{
 // Submit one slow_set kernel into `ctx`, writing `value` everywhere in
 // `d_arr`. Use stf_cuda_kernel_* instead of the generic task stream API so
 // this helper is valid for both stream and graph backends.
@@ -76,12 +76,12 @@ void submit_set_kernel(stf_ctx_handle ctx, int* d_arr, int n, int value, int ite
   stf_cuda_kernel_add_dep(k, lD, STF_RW);
   stf_cuda_kernel_start(k);
 
-  int* arg_ptr = static_cast<int*>(stf_cuda_kernel_get_arg(k, 0));
+  const int* arg_ptr = static_cast<int*>(stf_cuda_kernel_get_arg(k, 0));
   REQUIRE(arg_ptr == d_arr);
   const int threads   = 128;
   const int blocks    = (n + threads - 1) / threads;
   const void* args[4] = {&arg_ptr, &n, &value, &iters};
-  cudaError_t err =
+  const cudaError_t err =
     stf_cuda_kernel_add_desc(k, reinterpret_cast<void*>(slow_set_kernel), dim3(blocks), dim3(threads), 0, 4, args);
   REQUIRE(err == cudaSuccess);
   stf_cuda_kernel_end(k);

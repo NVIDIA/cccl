@@ -22,6 +22,8 @@
 //
 // Thanks to David Coeurjolly for contributing this example
 
+namespace
+{
 // minFunctor
 // Tuple  = <seeds,seeds + k,seeds + m*k, seeds - k,
 //           seeds - m*k, seeds+ k+m*k,seeds + k-m*k,
@@ -45,14 +47,14 @@ struct voronoi_site_selector
     }
 
     // coordinates of points p and q
-    int y_q = q / m;
-    int x_q = q - y_q * m;
-    int y_p = p / m;
-    int x_p = p - y_p * m;
+    const int y_q = q / m;
+    const int x_q = q - y_q * m;
+    const int y_p = p / m;
+    const int x_p = p - y_p * m;
 
     // squared distances
-    int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
-    int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
+    const int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
+    const int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
 
     if (d_iq < d_ip)
     {
@@ -69,12 +71,12 @@ struct voronoi_site_selector
   __host__ __device__ int operator()(const Tuple& t)
   {
     // Current point and site
-    int i = cuda::std::get<9>(t);
-    int v = cuda::std::get<0>(t);
+    const int i = cuda::std::get<9>(t);
+    int v       = cuda::std::get<0>(t);
 
     // Current point coordinates
-    int y = i / m;
-    int x = i - y * m;
+    const int y = i / m;
+    const int x = i - y * m;
 
     if (x >= k)
     {
@@ -142,8 +144,8 @@ void generate_random_sites(thrust::host_vector<int>& t, int Nb, int m, int n)
 
   for (int k = 0; k < Nb; k++)
   {
-    int index = dist(rng);
-    t[index]  = index + 1;
+    const int index = dist(rng);
+    t[index]        = index + 1;
   }
 }
 
@@ -162,7 +164,7 @@ void vector_to_pgm(thrust::host_vector<int>& t, int m, int n, const char* out)
     return (71 * in_value) % 253;
   };
 
-  for (int value : t)
+  for (const int value : t)
   {
     f << to_grey_level(value) << " ";
   }
@@ -207,12 +209,13 @@ void display_time(timer& t)
 {
   std::cout << "  ( " << 1e3 * t.elapsed() << "ms )" << '\n';
 }
+} // namespace
 
 int main()
 {
-  int m = 2048; // number of rows
-  int n = 2048; // number of columns
-  int s = 1000; // number of sites
+  const int m = 2048; // number of rows
+  const int n = 2048; // number of columns
+  const int s = 1000; // number of sites
 
   timer t;
 

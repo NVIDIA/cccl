@@ -74,6 +74,8 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <class T, typename OffsetT>
 void seg_sort(nvbench::state& state,
               nvbench::type_list<T, OffsetT>,
@@ -126,10 +128,10 @@ using some_offset_types = nvbench::type_list<int32_t>;
 template <class T, typename OffsetT>
 void power_law(nvbench::state& state, nvbench::type_list<T, OffsetT> ts)
 {
-  const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  const auto segments                    = static_cast<std::size_t>(state.get_int64("Segments{io}"));
-  const bit_entropy entropy              = str_to_entropy(state.get_string("Entropy"));
-  thrust::device_vector<OffsetT> offsets = generate.power_law.segment_offsets(elements, segments);
+  const auto elements                          = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto segments                          = static_cast<std::size_t>(state.get_int64("Segments{io}"));
+  const bit_entropy entropy                    = str_to_entropy(state.get_string("Entropy"));
+  const thrust::device_vector<OffsetT> offsets = generate.power_law.segment_offsets(elements, segments);
 
   seg_sort(state, ts, offsets, entropy);
 }
@@ -150,7 +152,7 @@ void uniform(nvbench::state& state, nvbench::type_list<T, OffsetT> ts)
   const auto max_segment_size_log = static_cast<OffsetT>(std::log2(max_segment_size));
   const auto min_segment_size     = 1 << (max_segment_size_log - 1);
 
-  thrust::device_vector<OffsetT> offsets =
+  const thrust::device_vector<OffsetT> offsets =
     generate.uniform.segment_offsets(elements, min_segment_size, max_segment_size);
 
   seg_sort(state, ts, offsets, bit_entropy::_1_000);
@@ -167,3 +169,4 @@ NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(fundamental_types, some_offset_ty
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(22, 30, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(10, 18, 2));
+} // namespace

@@ -34,8 +34,10 @@ struct bench_reduce_by_key_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <class KeyT, class ValueT, class OffsetT>
-static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using reduction_op_t = ::cuda::std::plus<>;
 
@@ -130,3 +132,4 @@ NVBENCH_BENCH_TYPES(reduce_by_key, NVBENCH_TYPE_AXES(key_types, value_types, som
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});
+} // namespace

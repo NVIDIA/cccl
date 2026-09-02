@@ -29,6 +29,8 @@
 
 namespace cudax = cuda::experimental;
 
+namespace
+{
 template <class ValueType>
 __global__ void fill_sentinel_kernel(ValueType* slots, int cap, ValueType sentinel)
 {
@@ -102,11 +104,12 @@ void run_misaligned_external_storage()
   REQUIRE(cudaGetLastError() == cudaSuccess);
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
-  ref_type ref{cudax::cuco::empty_key<Key>{empty_k},
-               cudax::cuco::empty_value<Mapped>{empty_v},
-               ::cuda::std::equal_to<Key>{},
-               probing_type{},
-               span_type{slots, capacity}};
+  const ref_type ref{
+    cudax::cuco::empty_key<Key>{empty_k},
+    cudax::cuco::empty_value<Mapped>{empty_v},
+    ::cuda::std::equal_to<Key>{},
+    probing_type{},
+    span_type{slots, capacity}};
 
   insert_kernel<ref_type, Key><<<(num_keys + block - 1) / block, block>>>(ref, num_keys);
   REQUIRE(cudaGetLastError() == cudaSuccess);
@@ -136,3 +139,4 @@ C2H_TEST("fixed_capacity_map insert and contains over misaligned external storag
   run_misaligned_external_storage<::cuda::std::int32_t, ::cuda::std::int32_t>();
   run_misaligned_external_storage<::cuda::std::uint16_t, ::cuda::std::uint16_t>();
 }
+} // namespace

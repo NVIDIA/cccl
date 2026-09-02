@@ -8,6 +8,8 @@
 
 const size_t NUM_SAMPLES = 10000;
 
+namespace
+{
 template <class InputVector, class OutputVector, class Operator, class ReferenceOperator>
 void TestBinaryFunctional()
 {
@@ -84,3 +86,4 @@ DECLARE_BINARY_ARITHMETIC_FUNCTIONAL_UNITTEST(multiplies, Multiplies);
 DECLARE_BINARY_ARITHMETIC_FUNCTIONAL_UNITTEST(divides, Divides);
 
 DECLARE_BINARY_INTEGER_ARITHMETIC_FUNCTIONAL_UNITTEST(modulus, Modulus);
+} // namespace

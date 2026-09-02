@@ -25,13 +25,13 @@ TEST_CASE("fill_bytes mdspan documentation example", "[fill_bytes][example]")
 {
   // example-begin fill-bytes-mdspan
   using extents_t = cuda::std::dims<2>;
-  extents_t extents{2, 3};
+  const extents_t extents{2, 3};
 
   thrust::device_vector<int> device_data(extents.extent(0) * extents.extent(1));
   int* dst_ptr = thrust::raw_pointer_cast(device_data.data());
-  cuda::device_mdspan<int, extents_t> dst(dst_ptr, extents);
+  const cuda::device_mdspan<int, extents_t> dst(dst_ptr, extents);
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   cuda::experimental::fill_bytes(dst, uint32_t{0xFF00FF00}, stream);
   // example-end fill-bytes-mdspan
 

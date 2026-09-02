@@ -30,6 +30,8 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -41,7 +43,7 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
-    cudax::this_block block{config};
+    const cudax::this_block block{config};
 
     T thread_data[NumItems];
     for (int i = 0; i < NumItems; ++i)
@@ -164,8 +166,8 @@ C2H_TEST("reduce/this_block Integral Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{cuda::devices[0]};
+  for (const int num_items : {1, 4})
   {
     auto reference_result =
       cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * block_size_t::value, operator_identity, reduce_op);
@@ -190,8 +192,8 @@ C2H_TEST("reduce/this_block Floating-Point Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{cuda::devices[0]};
+  for (const int num_items : {1, 4})
   {
     auto reference_result =
       cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * block_size_t::value, operator_identity, reduce_op);
@@ -211,8 +213,8 @@ C2H_TEST("reduce/this_block Broadcasted", "[reduce][this_block]", integral_type_
   c2h::device_vector<value_t> d_in(max_size * block_size_t::value);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{cuda::devices[0]};
+  for (const int num_items : {1, 4})
   {
     c2h::device_vector<value_t> d_out(block_size_t::value);
     auto reference_result =
@@ -221,3 +223,4 @@ C2H_TEST("reduce/this_block Broadcasted", "[reduce][this_block]", integral_type_
     verify_results(c2h::host_vector<value_t>(block_size_t::value, reference_result), c2h::host_vector<value_t>(d_out));
   }
 }
+} // namespace

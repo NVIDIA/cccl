@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx
 {
@@ -244,7 +246,7 @@ CUB_TEST("Block store works with caching iterators", "[store][block]", CUB_SMALL
   c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
-  cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, type> out(
+  const cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, type> out(
     thrust::raw_pointer_cast(d_output.data()));
 
   block_store<items_per_thread, threads_in_block, store_algorithm>(
@@ -286,3 +288,4 @@ CUB_TEST("Vectorized block store with different alignment cases",
   REQUIRE(d_input_ref == d_output);
 }
 #endif
+} // namespace

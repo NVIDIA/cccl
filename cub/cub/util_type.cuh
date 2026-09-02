@@ -952,13 +952,13 @@ struct BaseTraits<FLOATING_POINT, true, _UnsignedBits, T>
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
-    UnsignedBits mask = (key & HIGH_BIT) ? UnsignedBits(-1) : HIGH_BIT;
+    const UnsignedBits mask = (key & HIGH_BIT) ? UnsignedBits(-1) : HIGH_BIT;
     return key ^ mask;
   };
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
-    UnsignedBits mask = (key & HIGH_BIT) ? HIGH_BIT : UnsignedBits(-1);
+    const UnsignedBits mask = (key & HIGH_BIT) ? HIGH_BIT : UnsignedBits(-1);
     return key ^ mask;
   };
 

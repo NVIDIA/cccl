@@ -15,6 +15,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyT, typename OffsetT>
 struct my_policy_hub
 {
@@ -140,3 +142,4 @@ CUB_TEST("DispatchRadixSort::Dispatch: custom policy hub", "[keys][radix][sort][
   const auto ref_keys = radix_sort_reference(in_keys, /* is_decending */ false);
   REQUIRE(ref_keys == out_keys);
 }
+} // namespace

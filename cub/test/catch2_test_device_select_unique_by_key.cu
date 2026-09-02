@@ -14,6 +14,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T>
 inline T to_bound(const unsigned long long bound)
 {
@@ -91,6 +93,7 @@ struct index_to_value_t
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::UniqueByKey, select_unique_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+} // namespace
 
 using all_types =
   c2h::type_list<std::uint8_t,
@@ -197,8 +200,8 @@ CUB_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_uni
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  c2h::device_vector<type> reference_keys     = keys_in;
-  c2h::device_vector<val_type> reference_vals = vals_in;
+  const c2h::device_vector<type> reference_keys     = keys_in;
+  const c2h::device_vector<val_type> reference_vals = vals_in;
 
   select_unique_by_key(
     keys_in.begin(),
@@ -213,6 +216,8 @@ CUB_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_uni
   REQUIRE(reference_vals == vals_in);
 }
 
+namespace
+{
 template <typename EqualityOpT>
 struct project_first
 {
@@ -233,6 +238,7 @@ struct custom_equality_op
     return (lhs / div_val) == (rhs / div_val);
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_unique_by_key]", CUB_SMALL, all_types)
 {
@@ -311,6 +317,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_uniqu
   REQUIRE(reference_vals == vals_out);
 }
 
+namespace
+{
 template <class T>
 struct convertible_from_T
 {
@@ -330,6 +338,7 @@ struct convertible_from_T
     return val_;
   }
 };
+} // namespace
 
 CUB_TEST(
   "DeviceSelect::UniqueByKey works with a different output type", "[device][select_unique_by_key]", CUB_SMALL, types)
@@ -422,8 +431,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit 
   using index_type = std::int64_t;
 
   const std::size_t num_items = 4400000000ULL;
-  c2h::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
-  c2h::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
+  const c2h::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
+  const c2h::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
 
   auto keys_in   = cuda::transform_iterator(cuda::counting_iterator(0ULL), index_to_value_t<type>{});
   auto values_in = cuda::counting_iterator(0ULL);

@@ -17,6 +17,8 @@
 //
 // [1] http://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm
 
+namespace
+{
 // square<T> computes the square of a number f(x) -> x*x
 template <typename T>
 struct square
@@ -26,6 +28,7 @@ struct square
     return x * x;
   }
 };
+} // namespace
 
 int main()
 {
@@ -33,12 +36,12 @@ int main()
   thrust::device_vector<float> d_x = {1.0, 2.0, 3.0, 4.0};
 
   // setup arguments
-  square<float> unary_op;
-  cuda::std::plus<float> binary_op;
-  float init = 0;
+  const square<float> unary_op;
+  const cuda::std::plus<float> binary_op;
+  const float init = 0;
 
   // compute norm
-  float norm = std::sqrt(thrust::transform_reduce(d_x.begin(), d_x.end(), unary_op, init, binary_op));
+  const float norm = std::sqrt(thrust::transform_reduce(d_x.begin(), d_x.end(), unary_op, init, binary_op));
 
   std::cout << "norm is " << norm << '\n';
 

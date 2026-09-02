@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator>
 void sequence(my_system& system, ForwardIterator, ForwardIterator)
 {
@@ -14,7 +16,7 @@ void TestSequenceDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::sequence(sys, vec.begin(), vec.end());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -91,8 +93,8 @@ DECLARE_VARIABLE_UNITTEST(TestSequence);
 template <typename T>
 void TestSequenceToDiscardIterator(size_t n)
 {
-  thrust::host_vector<T> h_data(n);
-  thrust::device_vector<T> d_data(n);
+  const thrust::host_vector<T> h_data(n);
+  const thrust::device_vector<T> d_data(n);
 
   thrust::sequence(thrust::discard_iterator<thrust::device_system_tag>(),
                    thrust::discard_iterator<thrust::device_system_tag>(13),
@@ -156,3 +158,4 @@ void TestSequenceNoSizeTConversion()
   }
 }
 DECLARE_UNITTEST(TestSequenceNoSizeTConversion);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

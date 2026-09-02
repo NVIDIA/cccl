@@ -34,6 +34,8 @@
  * \tparam BLOCK_DIM_Y The thread block length in threads along the Y dimension
  * \tparam BLOCK_DIM_Z The thread block length in threads along the Z dimension
  */
+namespace
+{
 template <typename ItemItT,
           typename RunLengthsItT,
           int RUNS_PER_THREAD,
@@ -167,7 +169,7 @@ public:
     // Init the BlockRunLengthDecode and get the total decoded size of this block's tile (i.e., the
     // "decompressed" size)
     uint32_t decoded_size = 0U;
-    BlockRunLengthDecodeT run_length_decode =
+    const BlockRunLengthDecodeT run_length_decode =
       InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cuda::std::bool_constant<TEST_RUN_OFFSETS_>{});
     return decoded_size;
   }
@@ -205,7 +207,7 @@ public:
 
       // The number of decoded items that are valid within this window (aka pass) of run-length
       // decoding
-      uint32_t num_valid_items = decoded_size - decoded_window_offset;
+      const uint32_t num_valid_items = decoded_size - decoded_window_offset;
       run_length_decode.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
 
       BlockStoreDecodedItemT(temp_storage.decode.store_decoded_runs_storage)
@@ -245,7 +247,7 @@ __launch_bounds__(AgentTestBlockRunLengthDecode::BLOCK_THREADS) __global__ void 
   OffsetT num_valid_runs = (block_offset + RUNS_PER_BLOCK >= num_runs) ? (num_runs - block_offset) : RUNS_PER_BLOCK;
 
   AgentTestBlockRunLengthDecode run_length_decode_agent(temp_storage);
-  uint64_t num_decoded_items =
+  const uint64_t num_decoded_items =
     run_length_decode_agent.GetDecodedSize(d_unique_items + block_offset, d_run_lengths + block_offset, num_valid_runs);
 
   d_decoded_sizes[blockIdx.x] = num_decoded_items;
@@ -312,7 +314,7 @@ void TestAlgorithmSpecialisation()
   using ItemItT       = thrust::counting_iterator<RunItemT>;
   using RunLengthsItT = cuda::transform_iterator<ModOp, cuda::counting_iterator<RunLengthT>>;
 
-  ItemItT d_unique_items(1000U);
+  const ItemItT d_unique_items(1000U);
   RunLengthsItT d_run_lengths(cuda::counting_iterator<RunLengthT>(0), ModOp{});
 
   constexpr uint32_t num_runs   = 10000;
@@ -572,3 +574,4 @@ CUB_TEST_LIST(
                               TEST_WITH_RUN_OFFSETS,
                               DO_NOT_TEST_RELATIVE_OFFSETS>();
 }
+} // namespace

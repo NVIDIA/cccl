@@ -15,6 +15,8 @@
 //   strided_range([0, 1, 2, 3, 4, 5, 6], 3) -> [0, 3, 6]
 //   ...
 
+namespace
+{
 template <typename Iterator>
 class strided_range
 {
@@ -64,6 +66,7 @@ protected:
   Iterator last;
   difference_type stride;
 };
+} // namespace
 
 int main()
 {
@@ -85,11 +88,11 @@ int main()
   using Iterator = thrust::device_vector<int>::iterator;
 
   // create strided_range with indices [0,2,4,6]
-  strided_range<Iterator> evens(data.begin(), data.end(), 2);
+  const strided_range<Iterator> evens(data.begin(), data.end(), 2);
   std::cout << "sum of even indices: " << thrust::reduce(evens.begin(), evens.end()) << '\n';
 
   // create strided_range with indices [1,3,5,7]
-  strided_range<Iterator> odds(data.begin() + 1, data.end(), 2);
+  const strided_range<Iterator> odds(data.begin() + 1, data.end(), 2);
   std::cout << "sum of odd indices:  " << thrust::reduce(odds.begin(), odds.end()) << '\n';
 
   // set odd elements to 0 with fill()

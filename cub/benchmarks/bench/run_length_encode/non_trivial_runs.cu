@@ -37,8 +37,10 @@ struct bench_rle_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <class T, class OffsetT, class RunLengthT>
-static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
+void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT>)
 {
   using offset_t = cub::detail::choose_signed_offset_t<OffsetT>;
 
@@ -111,3 +113,4 @@ NVBENCH_BENCH_TYPES(rle, NVBENCH_TYPE_AXES(all_types, offset_types, run_length_t
   .set_type_axes_names({"T{ct}", "OffsetT{ct}", "RunLengthT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});
+} // namespace

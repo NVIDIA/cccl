@@ -10,6 +10,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 void check_status(cudaError_t status)
 {
   REQUIRE(status == cudaSuccess);
@@ -31,8 +33,8 @@ CUB_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]", CUB_SMALL)
   using mdspan_in_t  = cuda::std::mdspan<float, extents_t, cuda::std::layout_right>; // row-major
   using mdspan_out_t = cuda::std::mdspan<float, extents_t, cuda::std::layout_left>; // column-major
   // Create mdspans with different layouts
-  mdspan_in_t mdspan_in(thrust::raw_pointer_cast(d_input.data()), extents_t{});
-  mdspan_out_t mdspan_out(thrust::raw_pointer_cast(d_output.data()), extents_t{});
+  const mdspan_in_t mdspan_in(thrust::raw_pointer_cast(d_input.data()), extents_t{});
+  const mdspan_out_t mdspan_out(thrust::raw_pointer_cast(d_output.data()), extents_t{});
 
   // Determine temporary device storage requirements
   void*  d_temp_storage     = nullptr;
@@ -51,3 +53,4 @@ CUB_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]", CUB_SMALL)
   // clang-format on
   REQUIRE(d_input == d_output);
 }
+} // namespace

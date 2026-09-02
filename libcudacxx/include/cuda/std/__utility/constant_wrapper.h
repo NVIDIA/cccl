@@ -384,6 +384,9 @@ struct __constant_wrapper : __cw_operators
 
   static constexpr decltype((_Xp)) value = (_Xp);
 
+  // [const.wrap.class] mandates this signature: operator= is a constant-expression
+  // operation that yields a new constant_wrapper, so it must not return *this.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_TEMPLATE(class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Rp>)
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr decltype(__constant_wrapper<_LIBCUDACXX_AUTO_CAST(value = _Rp::value)>{})
@@ -391,6 +394,7 @@ struct __constant_wrapper : __cw_operators
   {
     return {};
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   _CCCL_HOST_DEVICE_API constexpr operator decltype(value)() const noexcept
   {

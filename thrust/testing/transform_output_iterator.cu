@@ -9,6 +9,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::transform_output_iterator from cuda::std
 void TestTransformOutputIteratorTraits()
 {
@@ -54,6 +56,7 @@ void TestTransformOutputIterator()
   thrust::sequence(input.begin(), input.end(), T{1});
 
   // construct transform_iterator
+  // NOLINTNEXTLINE(misc-const-correctness)
   thrust::transform_output_iterator<UnaryFunction, Iterator> output_iter(output.begin(), UnaryFunction());
 
   thrust::copy(input.begin(), input.end(), output_iter);
@@ -107,3 +110,4 @@ struct TestTransformOutputIteratorScan
   }
 };
 VariableUnitTest<TestTransformOutputIteratorScan, SignedIntegralTypes> TestTransformOutputIteratorScanInstance;
+} // namespace

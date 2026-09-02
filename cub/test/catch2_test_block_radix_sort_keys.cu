@@ -45,6 +45,8 @@ using shmem_config =
 
 using shmem_config_4 = c2h::enum_type_list<cudaSharedMemConfig, cudaSharedMemBankSizeFourByte>;
 
+namespace
+{
 template <class TestType>
 struct params_t
 {
@@ -114,7 +116,7 @@ CUB_TEST("Block radix sort can sort keys",
     end_bit,
     striped);
 
-  c2h::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
+  const c2h::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input` for comparison
   REQUIRE(binary_equal(d_output, h_reference, d_input));
@@ -159,8 +161,9 @@ CUB_TEST("Block radix sort can sort keys in descending order",
     end_bit,
     striped);
 
-  c2h::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
+  const c2h::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input` for comparison
   REQUIRE(binary_equal(d_output, h_reference, d_input));
 }
+} // namespace

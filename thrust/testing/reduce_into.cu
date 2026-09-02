@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct plus_mod_10
 {
@@ -45,7 +47,7 @@ void TestReduceIntoDispatchExplicit()
   thrust::device_vector<int> i;
   thrust::device_vector<int> o(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reduce_into(sys, i.begin(), i.end(), o.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -188,8 +190,8 @@ void TestReduceIntoCountingIterator()
 
   ASSERT_LEQUAL(T(n), unittest::truncate_to_max_representable<T>(n));
 
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+  const thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
+  const thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
   thrust::host_vector<T> h_result(1);
   thrust::device_vector<T> d_result(1);
 
@@ -202,3 +204,4 @@ void TestReduceIntoCountingIterator()
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
 DECLARE_GENERIC_UNITTEST(TestReduceIntoCountingIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

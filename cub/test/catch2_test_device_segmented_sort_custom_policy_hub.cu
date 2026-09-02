@@ -18,6 +18,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyT>
 struct my_policy_hub
 {
@@ -60,7 +62,7 @@ CUB_TEST("DispatchSegmentedSort::Dispatch: custom policy hub", "[segmented][sort
   using offset_t                 = int;
   constexpr bool is_overwrite_ok = false;
 
-  c2h::host_vector<key_t> h_keys_in{7, 2, 5, 1, 4, 3, 9, 8, 6, 0};
+  const c2h::host_vector<key_t> h_keys_in{7, 2, 5, 1, 4, 3, 9, 8, 6, 0};
   c2h::host_vector<offset_t> h_offsets{0, 4, 7, 10};
 
   c2h::device_vector<key_t> d_keys_in = h_keys_in;
@@ -113,3 +115,4 @@ CUB_TEST("DispatchSegmentedSort::Dispatch: custom policy hub", "[segmented][sort
   const auto& d_sorted = (d_keys.selector == 0) ? d_keys_in : d_keys_out;
   REQUIRE(d_sorted == expected);
 }
+} // namespace

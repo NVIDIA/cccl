@@ -33,6 +33,8 @@ inline constexpr int block_size = 2 * warp_size;
 template <typename T>
 using input_2d_mdspan_t = cuda::std::mdspan<T, cuda::std::dextents<int, 2>>;
 
+namespace
+{
 enum class WarpReduceBatchedMode
 {
   SingleOut,
@@ -257,8 +259,8 @@ void test_warp_reduce_batched(ReductionOp reduction_op = ReductionOp{})
 
   c2h::device_vector<T> d_output(total_batches);
 
-  input_2d_mdspan_t<T> d_input_md(thrust::raw_pointer_cast(d_input.data()), total_batches, LogicalWarpThreads);
-  cuda::std::span<T> d_output_span(thrust::raw_pointer_cast(d_output.data()), total_batches);
+  const input_2d_mdspan_t<T> d_input_md(thrust::raw_pointer_cast(d_input.data()), total_batches, LogicalWarpThreads);
+  const cuda::std::span<T> d_output_span(thrust::raw_pointer_cast(d_output.data()), total_batches);
   if constexpr (CondParticipation)
   {
     warp_reduce_batched_cond_part_kernel<Mode, SyncPhysicalWarp, Batches, LogicalWarpThreads>
@@ -285,12 +287,12 @@ void test_warp_reduce_batched(ReductionOp reduction_op = ReductionOp{})
   REQUIRE(err == cudaSuccess);
 
   // Host-side: construct mdspans once; pass to reference and verify
-  c2h::host_vector<T> h_input  = d_input;
-  c2h::host_vector<T> h_output = d_output;
+  c2h::host_vector<T> h_input        = d_input;
+  const c2h::host_vector<T> h_output = d_output;
 
   c2h::host_vector<T> h_reference(total_batches);
-  input_2d_mdspan_t<const T> h_input_md(h_input.data(), total_batches, LogicalWarpThreads);
-  cuda::std::span<T> h_reference_span(h_reference.data(), total_batches);
+  const input_2d_mdspan_t<const T> h_input_md(h_input.data(), total_batches, LogicalWarpThreads);
+  const cuda::std::span<T> h_reference_span(h_reference.data(), total_batches);
 
   compute_host_reference(h_input_md, h_reference_span, reduction_op);
 
@@ -804,3 +806,4 @@ CUB_TEST("WarpReduceBatched::ReduceToBlocked with conditional participation and 
                            cond_participation,
                            sync_physical_warp>();
 }
+} // namespace

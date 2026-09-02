@@ -9,6 +9,8 @@
 // This example demonstrates how to build a minimal custom
 // Thrust backend by intercepting for_each's dispatch.
 
+namespace
+{
 // We begin by defining a "system", which distinguishes our novel
 // backend from other Thrust backends.
 // We'll derive my_system from thrust::device_execution_policy to inherit
@@ -35,13 +37,14 @@ Iterator for_each(my_system, Iterator first, Iterator last, Function f)
   // to call the normal device version of for_each, pass thrust::device as the first parameter.
   return thrust::for_each(thrust::device, first, last, f);
 }
+} // namespace
 
 int main()
 {
   thrust::device_vector<int> vec(1);
 
   // create an instance of our system
-  my_system sys;
+  my_system sys; // NOLINT(misc-const-correctness)
 
   // To invoke our version of for_each, pass sys as the first parameter
   thrust::for_each(sys, vec.begin(), vec.end(), cuda::std::negate{});

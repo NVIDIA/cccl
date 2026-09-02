@@ -304,6 +304,8 @@ void TestTransformIfBinaryDeviceDevice()
 DECLARE_UNITTEST(TestTransformIfBinaryDeviceDevice);
 #endif
 
+namespace
+{
 void TestTransformUnaryCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -313,7 +315,7 @@ void TestTransformUnaryCudaStreams()
 
   Vector input{1, -2, 3};
   Vector output(3);
-  Vector result{-1, 2, -3};
+  const Vector result{-1, 2, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -339,7 +341,7 @@ void TestTransformBinaryCudaStreams()
   Vector input1{1, -2, 3};
   Vector input2{-4, 5, 6};
   Vector output(3);
-  Vector result{5, -7, -3};
+  const Vector result{5, -7, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -364,6 +366,7 @@ struct sum_five
          + static_cast<double>(e);
   }
 };
+} // namespace
 
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
@@ -394,6 +397,8 @@ private:
 THRUST_NAMESPACE_END
 
 // test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
+namespace
+{
 void TestTransformThrustZipIteratorUnwrapping()
 {
   constexpr int num_items = 100;
@@ -410,7 +415,7 @@ void TestTransformThrustZipIteratorUnwrapping()
     thrust::transform(z, z + num_items, result.begin(), thrust::make_zip_function(sum_five{}));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
   // SECTION("trice")
@@ -423,11 +428,12 @@ void TestTransformThrustZipIteratorUnwrapping()
                       thrust::make_zip_function(thrust::make_zip_function(thrust::make_zip_function(sum_five{}))));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
 }
 DECLARE_UNITTEST(TestTransformThrustZipIteratorUnwrapping);
+} // namespace
 
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
@@ -465,6 +471,8 @@ public:
 _CCCL_END_NAMESPACE_CUDA
 
 // test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
+namespace
+{
 void TestTransformCudaZipIteratorUnwrapping()
 {
   constexpr int num_items = 100;
@@ -481,7 +489,7 @@ void TestTransformCudaZipIteratorUnwrapping()
     thrust::transform(z, z + num_items, result.begin(), cuda::zip_function(sum_five{}));
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
   // SECTION("trice")
@@ -492,8 +500,9 @@ void TestTransformCudaZipIteratorUnwrapping()
       z, z + num_items, result.begin(), cuda::zip_function<cuda::zip_function<cuda::zip_function<sum_five>>>{});
 
     // compute reference and verify
-    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    const thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
     ASSERT_EQUAL(reference, result);
   }
 }
 DECLARE_UNITTEST(TestTransformCudaZipIteratorUnwrapping);
+} // namespace

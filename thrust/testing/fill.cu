@@ -10,6 +10,8 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestFillSimple()
 {
@@ -139,13 +141,13 @@ DECLARE_VECTOR_UNITTEST(TestFillNSimple);
 
 void TestFillNDiscardIterator()
 {
-  thrust::discard_iterator<thrust::host_system_tag> h_result =
+  const thrust::discard_iterator<thrust::host_system_tag> h_result =
     thrust::fill_n(thrust::discard_iterator<thrust::host_system_tag>(), 10, 13);
 
-  thrust::discard_iterator<thrust::device_system_tag> d_result =
+  const thrust::discard_iterator<thrust::device_system_tag> d_result =
     thrust::fill_n(thrust::discard_iterator<thrust::device_system_tag>(), 10, 13);
 
-  thrust::discard_iterator<> reference(10);
+  const thrust::discard_iterator<> reference(10);
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -346,7 +348,7 @@ void TestFillDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::fill(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -380,7 +382,7 @@ void TestFillNDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::fill_n(sys, vec.begin(), vec.size(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -405,3 +407,4 @@ void TestFillNDispatchImplicit()
 DECLARE_UNITTEST(TestFillNDispatchImplicit);
 
 _CCCL_DIAG_POP
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

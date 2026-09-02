@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T1, typename T2>
 bool are_same_type(const T1&, const T2&)
 {
@@ -24,10 +26,11 @@ void TestSelectSystemCudaToCpp()
 
   thrust::cuda::tag cuda_tag;
   thrust::cpp::tag cpp_tag;
+  // NOLINTNEXTLINE(misc-const-correctness)
   thrust::cuda_cub::cross_system<thrust::cuda::tag, thrust::cpp::tag> cuda_to_cpp(cuda_tag, cpp_tag);
 
   // select_system(cuda::tag, thrust::host_system_tag) should return cuda_to_cpp
-  bool is_cuda_to_cpp = are_same_type(cuda_to_cpp, select_system(cuda_tag, cpp_tag));
+  const bool is_cuda_to_cpp = are_same_type(cuda_to_cpp, select_system(cuda_tag, cpp_tag));
   ASSERT_EQUAL(true, is_cuda_to_cpp);
 }
 DECLARE_UNITTEST(TestSelectSystemCudaToCpp);
@@ -128,3 +131,4 @@ void TestMallocDeviceSeq()
 }
 DECLARE_UNITTEST(TestMallocDeviceSeq);
 #endif
+} // namespace

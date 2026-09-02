@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestEqualRangeOnStream()
 { // Regression test for GH issue #921 (nvbug 2173437)
   using vector_t   = typename thrust::device_vector<int>;
@@ -15,10 +17,11 @@ void TestEqualRangeOnStream()
 
   vector_t input(10);
   thrust::sequence(thrust::device, input.begin(), input.end(), 0);
-  cudaStream_t stream = nullptr;
-  result_t result     = thrust::equal_range(thrust::cuda::par.on(stream), input.begin(), input.end(), 5);
+  cudaStream_t stream   = nullptr;
+  const result_t result = thrust::equal_range(thrust::cuda::par.on(stream), input.begin(), input.end(), 5);
 
   ASSERT_EQUAL(5, ::cuda::std::distance(input.begin(), result.first));
   ASSERT_EQUAL(6, ::cuda::std::distance(input.begin(), result.second));
 }
 DECLARE_UNITTEST(TestEqualRangeOnStream);
+} // namespace

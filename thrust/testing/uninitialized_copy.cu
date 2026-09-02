@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator, typename ForwardIterator>
 ForwardIterator uninitialized_copy(my_system& system, InputIterator, InputIterator, ForwardIterator result)
 {
@@ -17,7 +19,7 @@ void TestUninitializedCopyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -53,7 +55,7 @@ void TestUninitializedCopyNDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_copy_n(sys, vec.begin(), vec.size(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -219,3 +221,4 @@ struct TestUninitializedCopyNNonPODHost
   }
 };
 DECLARE_UNITTEST(TestUninitializedCopyNNonPODHost);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

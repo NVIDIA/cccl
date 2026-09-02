@@ -34,6 +34,7 @@
  */
 
 #include <cstdio>
+#include <random>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda/std/span>
@@ -49,6 +50,8 @@ namespace cudax = cuda::experimental;
 using cudax::in;
 using cudax::out;
 
+namespace
+{
 /**
  * CUDA Kernel Device code
  *
@@ -57,13 +60,14 @@ using cudax::out;
  */
 __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B, cudax::span<float> C)
 {
-  int i = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
+  const int i = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
 
   if (i < A.size())
   {
     C[i] = A[i] + B[i] + 0.0f;
   }
 }
+} // namespace
 
 /**
  * Host main routine
@@ -72,10 +76,10 @@ int main()
 try
 {
   // A CUDA stream on which to execute the vector addition kernel
-  cudax::stream stream(cuda::devices[0]);
+  const cudax::stream stream(cuda::devices[0]);
 
   // Print the vector length to be used, and compute its size
-  int numElements = 50000;
+  const int numElements = 50000;
   printf("[Vector addition of %d elements]\n", numElements);
 
   // Allocate the host vectors
@@ -84,10 +88,12 @@ try
   cudax::vector<float> C(numElements); // output
 
   // Initialize the host input vectors
+  std::mt19937 gen{std::random_device{}()};
+  std::uniform_real_distribution<float> dist{0.0f, 1.0f};
   for (int i = 0; i < numElements; ++i)
   {
-    A[i] = static_cast<float>(rand()) / (float) RAND_MAX;
-    B[i] = static_cast<float>(rand()) / (float) RAND_MAX;
+    A[i] = dist(gen);
+    B[i] = dist(gen);
   }
 
   // Define the kernel launch parameters

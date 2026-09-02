@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename InputIteratorT>
 struct my_policy_hub
 {
@@ -75,3 +77,4 @@ CUB_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][ad
 
   REQUIRE(out_items == expected);
 }
+} // namespace

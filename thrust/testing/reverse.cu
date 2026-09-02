@@ -6,6 +6,8 @@
 
 using ReverseTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename Vector>
 void TestReverseSimple()
 {
@@ -29,7 +31,7 @@ void TestReverseDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reverse(sys, vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -68,7 +70,7 @@ void TestReverseCopySimple()
   Vector input{1, 2, 3, 4, 5};
   Vector output(8); // arm GCC is complaining about destination size
 
-  Iterator iter = thrust::reverse_copy(input.begin(), input.end(), output.begin());
+  const Iterator iter = thrust::reverse_copy(input.begin(), input.end(), output.begin());
 
   output.resize(5);
   Vector ref{5, 4, 3, 2, 1};
@@ -88,7 +90,7 @@ void TestReverseCopyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reverse_copy(sys, vec.begin(), vec.end(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -156,13 +158,13 @@ struct TestReverseCopyToDiscardIterator
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    thrust::discard_iterator<> h_result =
+    const thrust::discard_iterator<> h_result =
       thrust::reverse_copy(h_data.begin(), h_data.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> d_result =
+    const thrust::discard_iterator<> d_result =
       thrust::reverse_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -184,3 +186,4 @@ void TestReverseZippedHost()
   ASSERT_EQUAL(b, expected_b);
 }
 DECLARE_UNITTEST(TestReverseZippedHost);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

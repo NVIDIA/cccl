@@ -23,6 +23,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
 // We cover types of various sizes smaller than 16 byte
@@ -49,7 +51,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
   // Prepare verification data
-  c2h::host_vector<input_t> host_items(in_items);
+  const c2h::host_vector<input_t> host_items(in_items);
   c2h::host_vector<output_t> expected_result(num_items, thrust::no_init);
 
   // Compute verification data
@@ -70,3 +72,4 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_S
   const output_t out_sentinel = out_result[offset + num_items]; // NOLINT(bugprone-misplaced-widening-cast)
   REQUIRE(out_sentinel == out_sentinel_value);
 }
+} // namespace

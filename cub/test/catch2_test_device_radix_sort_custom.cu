@@ -21,6 +21,8 @@
 #include "cub/util_type.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, sort_keys_descending);
@@ -83,7 +85,7 @@ void from_bitset(std::bitset<bits_per_pair_t> bits, c2h::custom_type_t<Ps...>& p
   pair.val = bits.to_ullong();
 }
 
-static c2h::host_vector<key> get_striped_keys(c2h::host_vector<key> keys, int begin_bit, int end_bit)
+c2h::host_vector<key> get_striped_keys(c2h::host_vector<key> keys, int begin_bit, int end_bit)
 {
   if ((begin_bit > 0) || (end_bit < static_cast<int>(bits_per_pair_t)))
   {
@@ -119,23 +121,23 @@ get_permutation(const c2h::host_vector<key>& h_keys, bool is_descending, int beg
 static c2h::device_vector<key>
 reference_sort_keys(const c2h::device_vector<key>& d_keys, bool is_descending, int begin_bit, int end_bit)
 {
-  c2h::host_vector<key> h_keys(d_keys);
-  c2h::host_vector<std::size_t> h_permutation = get_permutation(h_keys, is_descending, begin_bit, end_bit);
+  const c2h::host_vector<key> h_keys(d_keys);
+  const c2h::host_vector<std::size_t> h_permutation = get_permutation(h_keys, is_descending, begin_bit, end_bit);
   c2h::host_vector<key> result(d_keys.size());
   thrust::gather(h_permutation.cbegin(), h_permutation.cend(), h_keys.cbegin(), result.begin());
   return result;
 }
 
-static std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_sort_pairs(
+std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_sort_pairs(
   const c2h::device_vector<key>& d_keys,
   const c2h::device_vector<value>& d_values,
   bool is_descending,
   int begin_bit,
   int end_bit)
 {
-  c2h::host_vector<key> h_keys(d_keys);
-  c2h::host_vector<value> h_values(d_values);
-  c2h::host_vector<std::size_t> h_permutation = get_permutation(h_keys, is_descending, begin_bit, end_bit);
+  const c2h::host_vector<key> h_keys(d_keys);
+  const c2h::host_vector<value> h_values(d_values);
+  const c2h::host_vector<std::size_t> h_permutation = get_permutation(h_keys, is_descending, begin_bit, end_bit);
 
   c2h::host_vector<key> result_keys(d_keys.size());
   c2h::host_vector<value> result_values(d_values.size());
@@ -262,7 +264,7 @@ CUB_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][devic
   keys.selector = action.selector();
   action.finalize();
 
-  c2h::device_vector<key>& out_keys = keys.Current() == d_keys_1 ? keys_1 : keys_2;
+  const c2h::device_vector<key>& out_keys = keys.Current() == d_keys_1 ? keys_1 : keys_2;
 
   REQUIRE(reference_keys == out_keys);
 }
@@ -302,8 +304,8 @@ CUB_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][
   values.selector = action.selector();
   action.finalize();
 
-  c2h::device_vector<key>& out_keys     = keys.Current() == d_keys_1 ? keys_1 : keys_2;
-  c2h::device_vector<value>& out_values = values.Current() == d_values_1 ? values_1 : values_2;
+  const c2h::device_vector<key>& out_keys     = keys.Current() == d_keys_1 ? keys_1 : keys_2;
+  const c2h::device_vector<value>& out_values = values.Current() == d_values_1 ? values_1 : values_2;
 
   REQUIRE(reference_keys.first == out_keys);
   REQUIRE(reference_keys.second == out_values);
@@ -425,7 +427,7 @@ CUB_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
   keys.selector = action.selector();
   action.finalize();
 
-  c2h::device_vector<key>& out_keys = keys.Current() == d_keys_1 ? keys_1 : keys_2;
+  const c2h::device_vector<key>& out_keys = keys.Current() == d_keys_1 ? keys_1 : keys_2;
 
   REQUIRE(reference_keys == out_keys);
 }
@@ -466,8 +468,8 @@ CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
   values.selector = action.selector();
   action.finalize();
 
-  c2h::device_vector<key>& out_keys     = keys.Current() == d_keys_1 ? keys_1 : keys_2;
-  c2h::device_vector<value>& out_values = values.Current() == d_values_1 ? values_1 : values_2;
+  const c2h::device_vector<key>& out_keys     = keys.Current() == d_keys_1 ? keys_1 : keys_2;
+  const c2h::device_vector<value>& out_values = values.Current() == d_values_1 ? values_1 : values_2;
 
   REQUIRE(reference_keys.first == out_keys);
   REQUIRE(reference_keys.second == out_values);
@@ -543,7 +545,7 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     // 3) Sort keys
     cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -585,7 +587,7 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
 
     cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -635,7 +637,7 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     cub::DeviceRadixSort::SortPairs(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -644,7 +646,7 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {+3.7f, 5} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
+    const c2h::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
     // example-end pairs
 
     REQUIRE(expected_keys == keys_out);
@@ -688,7 +690,7 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -697,7 +699,7 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {-2.5f, 5} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
+    const c2h::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
     // example-end pairs-descending
 
     REQUIRE(expected_keys == keys_out);
@@ -738,10 +740,10 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t>& current = //
+    const c2h::device_vector<custom_t>& current = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -785,10 +787,10 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t>& current = //
+    const c2h::device_vector<custom_t>& current = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -839,13 +841,13 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t>& current_keys = //
+    const c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<int>& current_vals = //
+    const c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -854,7 +856,7 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {+3.7f, 5} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
+    const c2h::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
     // example-end pairs-db
 
     REQUIRE(expected_keys == current_keys);
@@ -901,13 +903,13 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{});
 
-    c2h::device_vector<custom_t>& current_keys = //
+    const c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<int>& current_vals = //
+    const c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -916,7 +918,7 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {-2.5f, 5} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
+    const c2h::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
     // example-end pairs-descending-db
 
     REQUIRE(expected_keys == current_keys);
@@ -972,7 +974,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     cub::DeviceRadixSort::SortKeys(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
@@ -1024,7 +1026,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     cub::DeviceRadixSort::SortKeysDescending(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
@@ -1102,12 +1104,12 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       begin_bit,
       end_bit);
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1};
+    const c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-bits
 
     REQUIRE(expected_keys == keys_out);
@@ -1183,12 +1185,12 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       begin_bit,
       end_bit);
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1};
+    const c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-descending-bits
 
     REQUIRE(expected_keys == keys_out);
@@ -1247,10 +1249,10 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     cub::DeviceRadixSort::SortKeys(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    c2h::device_vector<custom_t>& current_keys = //
+    const c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
@@ -1308,10 +1310,10 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     cub::DeviceRadixSort::SortKeysDescending(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    c2h::device_vector<custom_t>& current_keys = //
+    const c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<custom_t> expected_output = {
+    const c2h::device_vector<custom_t> expected_output = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
@@ -1374,18 +1376,18 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     cub::DeviceRadixSort::SortPairs(
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    c2h::device_vector<custom_t>& current_keys = //
+    const c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<int>& current_vals = //
+    const c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1};
+    const c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-bits-db
 
     REQUIRE(expected_keys == current_keys);
@@ -1447,18 +1449,18 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    c2h::device_vector<custom_t>& current_keys = //
+    const c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    c2h::device_vector<int>& current_vals = //
+    const c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    c2h::device_vector<custom_t> expected_keys = {
+    const c2h::device_vector<custom_t> expected_keys = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
 
-    c2h::device_vector<int> expected_vals = {0, 1};
+    const c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-descending-bits-db
 
     REQUIRE(expected_keys == current_keys);
@@ -1466,3 +1468,4 @@ CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
   }
 }
 #endif
+} // namespace

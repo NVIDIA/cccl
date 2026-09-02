@@ -18,6 +18,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename LengthT, typename KeyT>
 struct my_policy_hub
 {
@@ -82,3 +84,4 @@ CUB_TEST("DeviceRleDispatch::Dispatch: custom policy hub", "[device][run_length_
   CHECK(d_offsets == expected_offsets);
   CHECK(d_lengths == expected_lengths);
 }
+} // namespace

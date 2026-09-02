@@ -46,6 +46,8 @@ using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing,
 
 constexpr int payload_offset = 7;
 
+namespace
+{
 template <class Pair>
 struct duplicate_iota_pair
 {
@@ -108,7 +110,7 @@ C2H_TEST(
   constexpr key_type key_sentinel      = key_type{-1};
   constexpr mapped_type value_sentinel = mapped_type{-1};
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,
@@ -158,3 +160,4 @@ C2H_TEST(
   REQUIRE(cleared_keys_end == keys.begin());
   REQUIRE(cleared_values_end == values.begin());
 }
+} // namespace

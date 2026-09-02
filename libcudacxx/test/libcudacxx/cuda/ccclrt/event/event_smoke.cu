@@ -16,8 +16,8 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-namespace
-{
+// Extends the shared ::test namespace; an anonymous one would make every ::test name ambiguous.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 namespace test
 {
 cuda::event_ref fn_takes_event_ref(cuda::event_ref ref)
@@ -33,19 +33,19 @@ void test_event_uses_explicit_device_when_current_device_differs()
     return;
   }
 
-  cuda::device_ref current_device{0};
+  const cuda::device_ref current_device{0};
   cuda::device_ref explicit_device{1};
 
-  cuda::stream explicit_device_stream{explicit_device};
+  const cuda::stream explicit_device_stream{explicit_device};
   CCCLRT_REQUIRE(explicit_device_stream.device() == explicit_device);
 
   Event ev = [&]() {
-    cuda::__ensure_current_context guard(current_device);
+    const cuda::__ensure_current_context guard(current_device);
     return Event(explicit_device);
   }();
 
   {
-    cuda::__ensure_current_context guard(current_device);
+    const cuda::__ensure_current_context guard(current_device);
     ev.record(explicit_device_stream);
     ev.sync();
     CCCLRT_REQUIRE(ev.is_done());
@@ -54,7 +54,7 @@ void test_event_uses_explicit_device_when_current_device_differs()
   explicit_device_stream.sync();
 }
 } // namespace test
-} // namespace
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 static_assert(!::cuda::std::is_default_constructible_v<cuda::event_ref>);
 static_assert(!::cuda::std::is_default_constructible_v<cuda::event>);
@@ -62,25 +62,25 @@ static_assert(!::cuda::std::is_default_constructible_v<cuda::timed_event>);
 
 C2H_CCCLRT_TEST("can construct an event_ref from a cudaEvent_t", "[event]")
 {
-  cuda::__ensure_current_context guard(cuda::device_ref{0});
+  const cuda::__ensure_current_context guard(cuda::device_ref{0});
   ::cudaEvent_t ev;
   CCCLRT_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
-  cuda::event_ref ref(ev);
+  const cuda::event_ref ref(ev);
   CCCLRT_REQUIRE(ref.get() == ev);
   CCCLRT_REQUIRE(!!ref);
   // test implicit conversion from cudaEvent_t:
-  cuda::event_ref ref2 = ::test::fn_takes_event_ref(ev);
+  const cuda::event_ref ref2 = ::test::fn_takes_event_ref(ev);
   CCCLRT_REQUIRE(ref2.get() == ev);
   CCCLRT_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
   // test an empty event_ref:
-  cuda::event_ref ref3(::cudaEvent_t{});
+  const cuda::event_ref ref3(::cudaEvent_t{});
   CCCLRT_REQUIRE(ref3.get() == ::cudaEvent_t{});
   CCCLRT_REQUIRE(!ref3);
 }
 
 C2H_CCCLRT_TEST("can copy construct an event_ref and compare for equality", "[event]")
 {
-  cuda::__ensure_current_context guard(cuda::device_ref{0});
+  const cuda::__ensure_current_context guard(cuda::device_ref{0});
   ::cudaEvent_t ev;
   CCCLRT_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
   const cuda::event_ref ref(ev);
@@ -101,13 +101,13 @@ C2H_CCCLRT_TEST("can copy construct an event_ref and compare for equality", "[ev
 
 C2H_CCCLRT_TEST("can use event_ref to record and wait on an event", "[event]")
 {
-  cuda::__ensure_current_context guard(cuda::device_ref{0});
+  const cuda::__ensure_current_context guard(cuda::device_ref{0});
   ::cudaEvent_t ev;
   CCCLRT_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
   const cuda::event_ref ref(ev);
 
   test::pinned<int> i(0);
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   ::test::launch_kernel_single_thread(stream, ::test::assign_42{}, i.get());
   ref.record(stream);
   ref.sync();
@@ -120,17 +120,17 @@ C2H_CCCLRT_TEST("can use event_ref to record and wait on an event", "[event]")
 
 C2H_CCCLRT_TEST("can construct an event with a stream_ref", "[event]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::event ev(static_cast<cuda::stream_ref>(stream));
+  const cuda::stream stream{cuda::device_ref{0}};
+  const cuda::event ev(static_cast<cuda::stream_ref>(stream));
   CCCLRT_REQUIRE(ev.get() != ::cudaEvent_t{});
 }
 
 C2H_CCCLRT_TEST("can construct an event with a device_ref", "[event]")
 {
-  cuda::device_ref device{0};
-  cuda::event ev(device);
+  const cuda::device_ref device{0};
+  const cuda::event ev(device);
   CCCLRT_REQUIRE(ev.get() != ::cudaEvent_t{});
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
   ev.record(stream);
   ev.sync();
   CCCLRT_REQUIRE(ev.is_done());
@@ -149,11 +149,11 @@ C2H_CCCLRT_TEST("can wait on an event from another device", "[event][multi_gpu]"
     return;
   }
 
-  cuda::device_ref event_device{0};
-  cuda::device_ref waiter_device{1};
+  const cuda::device_ref event_device{0};
+  const cuda::device_ref waiter_device{1};
 
-  cuda::stream event_stream{event_device};
-  cuda::stream waiter_stream{waiter_device};
+  const cuda::stream event_stream{event_device};
+  const cuda::stream waiter_stream{waiter_device};
 
   cuda::atomic<int> gate = 0;
   bool waiter_ran        = false;
@@ -162,10 +162,10 @@ C2H_CCCLRT_TEST("can wait on an event from another device", "[event][multi_gpu]"
     while (gate != 1)
       ;
   });
-  cuda::event ev(event_stream);
+  const cuda::event ev(event_stream);
 
   {
-    cuda::__ensure_current_context guard(event_device);
+    const cuda::__ensure_current_context guard(event_device);
     waiter_stream.wait(ev);
     cuda::host_launch(waiter_stream, [&waiter_ran]() {
       waiter_ran = true;
@@ -184,10 +184,10 @@ C2H_CCCLRT_TEST("can wait on an event from another device", "[event][multi_gpu]"
 
 C2H_CCCLRT_TEST("can wait on an event", "[event]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   ::test::pinned<int> i(0);
   ::test::launch_kernel_single_thread(stream, ::test::assign_42{}, i.get());
-  cuda::event ev(stream);
+  const cuda::event ev(stream);
   ev.sync();
   CCCLRT_REQUIRE(ev.is_done());
   CCCLRT_REQUIRE(*i == 42);
@@ -196,11 +196,11 @@ C2H_CCCLRT_TEST("can wait on an event", "[event]")
 
 C2H_CCCLRT_TEST("can take the difference of two timed_event objects", "[event]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   ::test::pinned<int> i(0);
-  cuda::timed_event start(stream);
+  const cuda::timed_event start(stream);
   ::test::launch_kernel_single_thread(stream, ::test::assign_42{}, i.get());
-  cuda::timed_event end(stream);
+  const cuda::timed_event end(stream);
   end.sync();
   CCCLRT_REQUIRE(end.is_done());
   CCCLRT_REQUIRE(*i == 42);
@@ -213,12 +213,12 @@ C2H_CCCLRT_TEST("can take the difference of two timed_event objects", "[event]")
 C2H_CCCLRT_TEST("can observe the event in not ready state", "[event]")
 {
   ::test::pinned<int> i(0);
-  ::cuda::atomic_ref atomic_i(*i);
+  ::cuda::atomic_ref atomic_i(*i); // NOLINT(misc-const-correctness)
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   ::test::launch_kernel_single_thread(stream, ::test::spin_until_80{}, i.get());
-  cuda::event ev(stream);
+  const cuda::event ev(stream);
   CCCLRT_REQUIRE(!ev.is_done());
   atomic_i.store(80);
   ev.sync();

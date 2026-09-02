@@ -8,6 +8,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename Vector>
 void TestMergeSimple()
 {
@@ -34,7 +36,7 @@ void TestMergeDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::merge(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -111,7 +113,7 @@ void TestMergeToDiscardIterator(size_t n)
   const auto h_result = thrust::merge(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), thrust::make_discard_iterator());
   const auto d_result = thrust::merge(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -143,3 +145,4 @@ void TestMergeDescending(size_t n)
   ASSERT_EQUAL(d_end == d_result.end(), true);
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeDescending);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

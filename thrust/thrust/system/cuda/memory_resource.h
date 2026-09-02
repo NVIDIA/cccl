@@ -43,7 +43,7 @@ public:
   Pointer do_allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     void* ret;
-    cudaError_t status = Alloc(&ret, bytes);
+    const cudaError_t status = Alloc(&ret, bytes);
 
     if (status != cudaSuccess)
     {

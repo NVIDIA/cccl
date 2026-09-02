@@ -35,6 +35,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 bool g_verbose = false; // Whether to display input/output to console
 
 //---------------------------------------------------------------------
@@ -107,6 +109,7 @@ int Solve(int* h_in, unsigned char* h_flags, int* h_reference, int num_items)
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
+} // namespace
 
 /**
  * Main

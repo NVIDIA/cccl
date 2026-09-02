@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename ExecutionPolicy, typename Iterator, typename T, typename Iterator2>
 __global__ void reduce_kernel(ExecutionPolicy exec, Iterator first, Iterator last, T init, Iterator2 result)
 {
@@ -105,7 +107,7 @@ void TestReduceLargeInput()
   using OffsetT           = std::size_t;
   const OffsetT num_items = 1ull << 32;
 
-  cuda::constant_iterator<T> d_data(T{1});
+  const cuda::constant_iterator<T> d_data(T{1});
   thrust::device_vector<T> d_result(1);
 
   reduce_kernel<<<1, 1>>>(thrust::device, d_data, d_data + num_items, T{}, d_result.begin());
@@ -116,3 +118,4 @@ void TestReduceLargeInput()
 }
 DECLARE_UNITTEST(TestReduceLargeInput);
 #endif
+} // namespace

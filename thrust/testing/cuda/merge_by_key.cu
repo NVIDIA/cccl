@@ -86,10 +86,12 @@ void TestMergeByKeyDeviceDevice()
 DECLARE_UNITTEST(TestMergeByKeyDeviceDevice);
 #endif
 
+namespace
+{
 void TestMergeByKeyCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a_key = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
   auto a_val = cuda::make_device_buffer<int>(stream, device, {13, 7, 42});
@@ -117,3 +119,4 @@ void TestMergeByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_val, {13, 42, 7, 42, 7, 42, 13});
 }
 DECLARE_UNITTEST(TestMergeByKeyCudaStreams);
+} // namespace

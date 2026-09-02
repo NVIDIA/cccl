@@ -16,12 +16,15 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_reduce_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_reduce_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Max, device_segmented_reduce_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMin, device_segmented_reduce_argmin);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_reduce_argmax);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -37,7 +40,7 @@ namespace stdexec = cuda::std::execution;
 
 CUB_TEST_CASE("Device segmented reduce works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -47,13 +50,13 @@ CUB_TEST_CASE("Device segmented reduce works with default environment", "[segmen
           == cub::DeviceSegmentedReduce::Reduce(
             d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0));
 
-  thrust::device_vector<int> expected{26, 12, 3};
+  const thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST_CASE("Device segmented sum works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -63,13 +66,13 @@ CUB_TEST_CASE("Device segmented sum works with default environment", "[segmented
     cudaSuccess
     == cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
-  thrust::device_vector<int> expected{26, 12, 3};
+  const thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST_CASE("Device segmented min works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -79,13 +82,13 @@ CUB_TEST_CASE("Device segmented min works with default environment", "[segmented
     cudaSuccess
     == cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
-  thrust::device_vector<int> expected{5, 0, 1};
+  const thrust::device_vector<int> expected{5, 0, 1};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST_CASE("Device segmented max works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -95,13 +98,13 @@ CUB_TEST_CASE("Device segmented max works with default environment", "[segmented
     cudaSuccess
     == cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
 
-  thrust::device_vector<int> expected{8, 9, 2};
+  const thrust::device_vector<int> expected{8, 9, 2};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST_CASE("Device segmented argmin works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -122,7 +125,7 @@ CUB_TEST_CASE("Device segmented argmin works with default environment", "[segmen
 
 CUB_TEST_CASE("Device segmented argmax works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -145,8 +148,8 @@ CUB_TEST_CASE("Device fixed-size segmented reduce works with default environment
               "[segmented_reduce][device]",
               CUB_SMALL)
 {
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
@@ -154,46 +157,46 @@ CUB_TEST_CASE("Device fixed-size segmented reduce works with default environment
           == cub::DeviceSegmentedReduce::Reduce(
             d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0));
 
-  thrust::device_vector<int> expected{21, 8};
+  const thrust::device_vector<int> expected{21, 8};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST_CASE("Device fixed-size segmented sum works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
   REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
-  thrust::device_vector<int> expected{21, 8};
+  const thrust::device_vector<int> expected{21, 8};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST_CASE("Device fixed-size segmented min works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
   REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
-  thrust::device_vector<int> expected{6, 0};
+  const thrust::device_vector<int> expected{6, 0};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST_CASE("Device fixed-size segmented max works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
 
   REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
-  thrust::device_vector<int> expected{8, 5};
+  const thrust::device_vector<int> expected{8, 5};
   REQUIRE(d_out == expected);
 }
 
@@ -201,14 +204,14 @@ CUB_TEST_CASE("Device fixed-size segmented argmin works with default environment
               "[segmented_reduce][device]",
               CUB_SMALL)
 {
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
 
   REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
-  thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
+  const thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
   REQUIRE(d_out == expected);
 }
 
@@ -216,14 +219,14 @@ CUB_TEST_CASE("Device fixed-size segmented argmax works with default environment
               "[segmented_reduce][device]",
               CUB_SMALL)
 {
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
 
   REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
-  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
+  const thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
   REQUIRE(d_out == expected);
 }
 
@@ -231,7 +234,7 @@ CUB_TEST_CASE("Device fixed-size segmented argmax works with default environment
 
 CUB_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -256,13 +259,13 @@ CUB_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]
   device_segmented_reduce(
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, env);
 
-  thrust::device_vector<int> expected{26, 12, 3};
+  const thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST("Device segmented sum uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -278,13 +281,13 @@ CUB_TEST("Device segmented sum uses environment", "[segmented_reduce][device]", 
 
   device_segmented_reduce_sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<int> expected{26, 12, 3};
+  const thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST("Device segmented min uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -300,13 +303,13 @@ CUB_TEST("Device segmented min uses environment", "[segmented_reduce][device]", 
 
   device_segmented_reduce_min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<int> expected{5, 0, 1};
+  const thrust::device_vector<int> expected{5, 0, 1};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST("Device segmented max uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -322,13 +325,13 @@ CUB_TEST("Device segmented max uses environment", "[segmented_reduce][device]", 
 
   device_segmented_reduce_max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<int> expected{8, 9, 2};
+  const thrust::device_vector<int> expected{8, 9, 2};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -344,13 +347,13 @@ CUB_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]
 
   device_segmented_reduce_argmin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{3, 5}, {1, 0}, {0, 1}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{{3, 5}, {1, 0}, {0, 1}};
   REQUIRE(d_out == expected);
 }
 
 CUB_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
@@ -366,10 +369,12 @@ CUB_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]
 
   device_segmented_reduce_argmax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {2, 9}, {1, 2}};
+  const thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {2, 9}, {1, 2}};
   REQUIRE(d_out == expected);
 }
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct segmented_reduce_tuning
 {
@@ -392,21 +397,21 @@ CUB_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][devic
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
   thrust::device_vector<int> d_out(3);
   thrust::device_vector<unsigned int> d_block_size(1);
 
-  block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
 
   device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, reduce_op, 0, env);
 
-  thrust::device_vector<int> expected{26, 12, 3};
+  const thrust::device_vector<int> expected{26, 12, 3};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -415,19 +420,19 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Reduce can be tuned", "[segmented_re
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
   thrust::device_vector<int> d_out(2);
   thrust::device_vector<unsigned int> d_block_size(1);
 
-  block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_extracting_op<::cuda::std::plus<>> reduce_op{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto env = cuda::execution::tune(segmented_reduce_tuning<target_block_size>{});
 
   device_segmented_reduce(d_in.begin(), d_out.begin(), num_segments, segment_size, reduce_op, 0, env);
 
-  thrust::device_vector<int> expected{21, 8};
+  const thrust::device_vector<int> expected{21, 8};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -436,7 +441,7 @@ CUB_TEST("DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]"
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_out(3);
@@ -450,7 +455,7 @@ CUB_TEST("DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]"
 
   device_segmented_reduce_sum(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<int> expected{4, 3, 2};
+  const thrust::device_vector<int> expected{4, 3, 2};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -459,8 +464,8 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduc
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_out(2);
   thrust::device_vector<unsigned int> d_block_size(1);
 
@@ -472,7 +477,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduc
 
   device_segmented_reduce_sum(d_in, d_out.begin(), num_segments, segment_size, env);
 
-  thrust::device_vector<int> expected{3, 3};
+  const thrust::device_vector<int> expected{3, 3};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -481,7 +486,7 @@ CUB_TEST("DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]"
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_out(3);
@@ -492,7 +497,7 @@ CUB_TEST("DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]"
 
   device_segmented_reduce_min(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<int> expected{1, 1, 1};
+  const thrust::device_vector<int> expected{1, 1, 1};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -501,8 +506,8 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Min can be tuned", "[segmented_reduc
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_out(2);
   thrust::device_vector<unsigned int> d_block_size(1);
 
@@ -511,7 +516,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Min can be tuned", "[segmented_reduc
 
   device_segmented_reduce_min(d_in, d_out.begin(), num_segments, segment_size, env);
 
-  thrust::device_vector<int> expected{1, 1};
+  const thrust::device_vector<int> expected{1, 1};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -520,7 +525,7 @@ CUB_TEST("DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]"
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_out(3);
@@ -531,7 +536,7 @@ CUB_TEST("DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]"
 
   device_segmented_reduce_max(d_in, d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::device_vector<int> expected{1, 1, 1};
+  const thrust::device_vector<int> expected{1, 1, 1};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -540,8 +545,8 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Max can be tuned", "[segmented_reduc
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<int> d_out(2);
   thrust::device_vector<unsigned int> d_block_size(1);
 
@@ -550,7 +555,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::Max can be tuned", "[segmented_reduc
 
   device_segmented_reduce_max(d_in, d_out.begin(), num_segments, segment_size, env);
 
-  thrust::device_vector<int> expected{1, 1};
+  const thrust::device_vector<int> expected{1, 1};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -559,7 +564,7 @@ CUB_TEST("DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][devic
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
@@ -583,8 +588,8 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_re
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
   thrust::device_vector<unsigned int> d_block_size(1);
 
@@ -593,7 +598,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_re
 
   device_segmented_reduce_argmin(d_in, d_out.begin(), num_segments, segment_size, env);
 
-  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 1}, {0, 1}};
+  const thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 1}, {0, 1}};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -602,7 +607,7 @@ CUB_TEST("DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][devic
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments                     = 3;
+  const int num_segments               = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
   auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
@@ -626,8 +631,8 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_re
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
-  int num_segments = 2;
-  int segment_size = 3;
+  const int num_segments = 2;
+  const int segment_size = 3;
   thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
   thrust::device_vector<unsigned int> d_block_size(1);
 
@@ -636,7 +641,7 @@ CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_re
 
   device_segmented_reduce_argmax(d_in, d_out.begin(), num_segments, segment_size, env);
 
-  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 1}, {0, 1}};
+  const thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 1}, {0, 1}};
   REQUIRE(d_out == expected);
   REQUIRE(d_block_size[0] == target_block_size);
 }
@@ -725,3 +730,4 @@ CUB_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]", 
        ", .threads_per_warp = 1, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

@@ -26,6 +26,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, transform_many_stable);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
@@ -281,7 +283,7 @@ CUB_TEST("DeviceTransform::Transform non-default constructible types", "[device]
 
   transform_many(cuda::std::make_tuple(input.begin()), result.begin(), num_items, cuda::std::identity{});
 
-  c2h::host_vector<type> reference_h(num_items, non_default_constructible{42});
+  const c2h::host_vector<type> reference_h(num_items, non_default_constructible{42});
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
 }
 
@@ -382,7 +384,7 @@ CUB_TEST("DeviceTransform::Generate", "[device][transform]", CUB_SMALL)
   generate(result.begin(), num_items, give_me_five{});
 
   // compute reference and verify
-  c2h::device_vector<int> reference(num_items, 5);
+  const c2h::device_vector<int> reference(num_items, 5);
   REQUIRE(reference == result);
 }
 
@@ -393,7 +395,7 @@ CUB_TEST("DeviceTransform::Fill", "[device][transform]", CUB_SMALL)
   fill(result.begin(), num_items, 5);
 
   // compute reference and verify
-  c2h::device_vector<int> reference(num_items, 5);
+  const c2h::device_vector<int> reference(num_items, 5);
   REQUIRE(reference == result);
 }
 
@@ -401,8 +403,8 @@ CUB_TEST("DeviceTransform::Transform fancy input iterator types", "[device][tran
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::counting_iterator<type> a{0};
-  cuda::counting_iterator<type> b{10};
+  const cuda::counting_iterator<type> a{0};
+  const cuda::counting_iterator<type> b{10};
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
   transform_many(cuda::std::make_tuple(a, b), result.begin(), num_items, cuda::std::plus<type>{});
@@ -455,7 +457,7 @@ CUB_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][tra
 {
   using type          = unsigned; // overflow is defined
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::counting_iterator<type> a{0};
+  const cuda::counting_iterator<type> a{0};
   c2h::device_vector<type> b(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), b);
 
@@ -608,6 +610,7 @@ CUB_TEST("DeviceTransform::Transform buffer start alignment",
   thrust::tabulate(reference.begin() + offset_r, reference.end(), (_1 + offset_a) * 2 + offset_b + num_items);
   REQUIRE(reference == result);
 }
+} // namespace
 
 namespace Catch
 {
@@ -653,7 +656,7 @@ CUB_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform
 {
   using thrust::placeholders::_1;
 
-  int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
+  const int num_items = std::numeric_limits<std::uint16_t>::max() - 1;
   c2h::device_vector<std::uint16_t> input(num_items);
   c2h::device_vector<std::uint16_t> output(num_items);
   thrust::sequence(input.begin(), input.end());
@@ -669,6 +672,8 @@ CUB_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform
 }
 
 // See discussion on: https://github.com/NVIDIA/cccl/pull/4815
+namespace
+{
 struct A
 {
   int value;
@@ -709,6 +714,7 @@ struct BtoC
     return C{-b.value};
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform function/output_iter return type not convertible", "[device][transform]", CUB_SMALL)
 {
@@ -721,11 +727,24 @@ CUB_TEST("DeviceTransform::Transform function/output_iter return type not conver
   auto out_it = cuda::transform_output_iterator(output.begin(), BtoC{});
   transform_many(input.begin(), out_it, num_items, AtoB{});
 
-  c2h::device_vector<C> reference(num_items, C{-43});
+  const c2h::device_vector<C> reference(num_items, C{-43});
   CHECK(output == reference);
 }
 
-__global__ void unrelated_kernel()
+// We can't wrap this in an anon namespace because clang-tidy then errors with:
+//
+// /cub/test/catch2_test_device_transform.cu:739:25: error: variable
+// '(anonymous namespace)::dsmem' has internal linkage but is not defined
+// [clang-diagnostic-undefined-internal,-warnings-as-errors]
+//
+//   739 |   extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
+//       |                         ^
+// /home/coder/cccl/cub/test/catch2_test_device_transform.cu:741:17: note: used here
+//   741 |   asm("" : "+r"(dsmem[0]));
+//       |                 ^
+//
+// Which is obviously a bug. So instead go with middle ground and make it static
+static __global__ void unrelated_kernel() // NOLINT(misc-use-anonymous-namespace)
 {
   __shared__ int ssmem; // 4 bytes
   extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
@@ -744,6 +763,8 @@ CUB_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
+namespace
+{
 template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
@@ -780,6 +801,7 @@ void fill_pdl(T* data, size_t n, T value)
     blocks, threads_per_block, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
     .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]", CUB_SMALL)
 {

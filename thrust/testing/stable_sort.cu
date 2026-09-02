@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename RandomAccessIterator>
 void stable_sort(my_system& system, RandomAccessIterator, RandomAccessIterator)
 {
@@ -14,7 +16,7 @@ void TestStableSortDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_sort(sys, vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -135,3 +137,4 @@ void TestStableSortWithIndirection()
   ASSERT_EQUAL(data, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortWithIndirection);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

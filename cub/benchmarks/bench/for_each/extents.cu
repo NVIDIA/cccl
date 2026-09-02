@@ -8,6 +8,8 @@
 
 #include <nvbench_helper.cuh>
 
+namespace
+{
 template <typename T, typename OffsetT>
 struct op_t
 {
@@ -47,8 +49,8 @@ void for_each_in_extents(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   auto elements_1D = ::cuda::isqrt(elements);
   ext_t ext{elements_1D, elements_1D};
-  cuda::std::mdspan<T, ext_t> temp_in{d_in, ext};
-  cuda::std::mdspan<T, ext_t> temp_out{d_out, ext};
+  const cuda::std::mdspan<T, ext_t> temp_in{d_in, ext};
+  const cuda::std::mdspan<T, ext_t> temp_out{d_out, ext};
   op_t<T, OffsetT> op{temp_in, temp_out};
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -63,3 +65,4 @@ NVBENCH_BENCH_TYPES(for_each_in_extents, NVBENCH_TYPE_AXES(fundamental_types, of
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct my_policy_hub
 {
@@ -43,7 +45,7 @@ CUB_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]", CUB_SMAL
   c2h::gen(C2H_SEED(1), in_items);
 
   c2h::host_vector<value_t> expected(num_items);
-  c2h::host_vector<value_t> host_items(in_items);
+  const c2h::host_vector<value_t> host_items(in_items);
   compute_inclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected.begin(), scan_op_t{}, value_t{});
 
   using policy_hub_t = my_policy_hub<value_t, value_t, accum_t, offset_t, scan_op_t>;
@@ -72,3 +74,4 @@ CUB_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]", CUB_SMAL
 
   REQUIRE(out_items == expected);
 }
+} // namespace

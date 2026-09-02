@@ -8,6 +8,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct plus_mod_10
 {
@@ -43,7 +45,7 @@ void TestReduceDispatchExplicit()
 {
   thrust::device_vector<int> vec;
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reduce(sys, vec.begin(), vec.end());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -60,7 +62,7 @@ void TestReduceDispatchImplicit()
 {
   thrust::device_vector<int> vec;
 
-  int result = thrust::reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
+  const int result = thrust::reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
   ASSERT_EQUAL(13, result);
 }
@@ -152,7 +154,7 @@ void TestReduceWithIndirection()
 
   Vector table{0, 1, 2, 0, 1, 2};
 
-  T result = thrust::reduce(data.begin(), data.end(), T(0), plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
+  const T result = thrust::reduce(data.begin(), data.end(), T(0), plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
 
   ASSERT_EQUAL(result, T(1));
 }
@@ -165,8 +167,8 @@ void TestReduceCountingIterator()
 
   ASSERT_LEQUAL(T(n), unittest::truncate_to_max_representable<T>(n));
 
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+  const thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
+  const thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
 
   T init = unittest::random_integer<T>();
 
@@ -180,11 +182,11 @@ DECLARE_GENERIC_UNITTEST(TestReduceCountingIterator);
 
 void TestReduceWithBigIndexesHelper(int magnitude)
 {
-  cuda::constant_iterator<long long> begin(1);
-  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
+  const cuda::constant_iterator<long long> begin(1);
+  const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  long long result = thrust::reduce(thrust::device, begin, end);
+  const long long result = thrust::reduce(thrust::device, begin, end);
 
   ASSERT_EQUAL(result, 1ll << magnitude);
 }
@@ -199,3 +201,4 @@ void TestReduceWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestReduceWithBigIndexes);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

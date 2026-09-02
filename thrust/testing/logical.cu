@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestAllOf()
 {
@@ -35,7 +37,7 @@ void TestAllOfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::all_of(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -90,7 +92,7 @@ void TestAnyOfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::any_of(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -145,7 +147,7 @@ void TestNoneOfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::none_of(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -168,3 +170,4 @@ void TestNoneOfDispatchImplicit()
   ASSERT_EQUAL(13, vec.front());
 }
 DECLARE_UNITTEST(TestNoneOfDispatchImplicit);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

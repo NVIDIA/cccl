@@ -29,6 +29,8 @@ using namespace cub;
 // Globals
 //---------------------------------------------------------------------
 
+namespace
+{
 // Whether to display input/output to console
 bool g_verbose = false;
 
@@ -62,6 +64,7 @@ thrust::host_vector<float> sort_unordered_results(thrust::host_vector<float> h_r
   thrust::sort(h_res_keys.begin(), h_res_keys.end());
   return h_res_keys;
 }
+} // namespace
 
 //---------------------------------------------------------------------
 // Main
@@ -111,7 +114,7 @@ int main(int argc, char** argv)
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   CubDebugExit(cudaStreamCreate(&stream));
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};

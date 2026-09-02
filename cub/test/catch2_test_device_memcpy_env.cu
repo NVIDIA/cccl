@@ -21,7 +21,10 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, device_memcpy_batched);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -31,6 +34,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, device_memcpy_batched);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <typename T>
 struct index_to_ptr
 {
@@ -60,9 +65,9 @@ CUB_TEST_CASE("DeviceMemcpy::Batched works with default environment", "[memcpy][
   auto d_dst     = c2h::device_vector<int>(6);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
-  int num_buffers = 3;
+  const int num_buffers = 3;
 
-  cuda::counting_iterator<int> iota(0);
+  const cuda::counting_iterator<int> iota(0);
   auto input_it = cuda::transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = cuda::transform_iterator(
@@ -83,9 +88,9 @@ CUB_TEST("DeviceMemcpy::Batched uses environment", "[memcpy][device]", CUB_SMALL
   auto d_dst     = c2h::device_vector<int>(6, 0);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
-  int num_buffers = 3;
+  const int num_buffers = 3;
 
-  cuda::counting_iterator<int> iota(0);
+  const cuda::counting_iterator<int> iota(0);
   auto input_it = cuda::transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = cuda::transform_iterator(
@@ -110,16 +115,16 @@ CUB_TEST_CASE("DeviceMemcpy::Batched uses custom stream", "[memcpy][device]", CU
   auto d_dst     = c2h::device_vector<int>(6, 0);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
-  int num_buffers = 3;
+  const int num_buffers = 3;
 
-  cuda::counting_iterator<int> iota(0);
+  const cuda::counting_iterator<int> iota(0);
   auto input_it = cuda::transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = cuda::transform_iterator(
     iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto sizes = cuda::transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
 
-  cuda::stream custom_stream(cuda::device_ref{0});
+  const cuda::stream custom_stream(cuda::device_ref{0});
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
@@ -163,17 +168,17 @@ CUB_TEST("DeviceMemcpy::Batched can be tuned", "[memcpy][device]", CUB_SMALL, bl
   auto d_dst     = c2h::device_vector<int>(6, 0);
   auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
 
-  int num_buffers                = 3;
+  const int num_buffers          = 3;
   constexpr int bytes_per_buffer = 2 * static_cast<int>(sizeof(int));
 
-  cuda::counting_iterator<int> iota(0);
+  const cuda::counting_iterator<int> iota(0);
   auto input_it = cuda::transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = cuda::transform_iterator(
     iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
 
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_constant_iterator sizes(bytes_per_buffer, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator sizes(bytes_per_buffer, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(batch_memcpy_tuning<target_block_size>{});
 
@@ -276,3 +281,4 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
        ", .bytes_per_thread = 32 } } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

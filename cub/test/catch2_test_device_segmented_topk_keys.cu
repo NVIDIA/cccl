@@ -39,6 +39,8 @@
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 struct is_minus_zero
 {
   __device__ bool operator()(float x) const
@@ -1118,7 +1120,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with large variable-size unalign
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   c2h::device_vector<key_t> keys_in_buffer(pad + num_items, thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(total_output_size, thrust::no_init);
@@ -1271,7 +1273,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
   c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);
@@ -1356,7 +1358,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys leave surplus cluster CTAs idle on sm
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   c2h::device_vector<key_t> keys_in_buffer(pad + num_items, thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(total_output_size, thrust::no_init);
@@ -1455,7 +1457,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with fixed-size segments and per
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare input & output. Input segments are fixed-size (strided); output segments are compacted (variable).
   c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
@@ -1553,7 +1555,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
   c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);
@@ -2196,3 +2198,4 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys treats zero segments as no work (determinis
   REQUIRE(keys_out == thrust::device_vector<int>(k, sentinel));
 }
 #endif // TEST_TYPES == 0 && TEST_LAUNCH == 0
+} // namespace

@@ -25,6 +25,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -124,14 +126,14 @@ CUB_TEST("DeviceSelect::If does not change input", "[device][select_if]", CUB_SM
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
 
@@ -148,7 +150,7 @@ CUB_TEST("DeviceSelect::If is stable", "[device][select_if]", CUB_SMALL)
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -228,26 +230,26 @@ CUB_TEST("DeviceSelect::If works with user provided memory and environment", "[d
 
   SECTION("DeviceSelect::If works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_select_if(stream.get());
   }
 
   SECTION("DeviceSelect::If works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_select_if(stream);
   }
 
   SECTION("DeviceSelect::If works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_select_if(stream_ref);
   }
 
   SECTION("DeviceSelect::If works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_select_if(env);
   }
 
@@ -259,7 +261,7 @@ CUB_TEST("DeviceSelect::If works with user provided memory and environment", "[d
 
   SECTION("DeviceSelect::If works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_select_if(policy);
   }
@@ -317,26 +319,26 @@ CUB_TEST("DeviceSelect::If works in place with user provided memory and environm
 
   SECTION("DeviceSelect::If works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_select_if(stream.get());
   }
 
   SECTION("DeviceSelect::If works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_select_if(stream);
   }
 
   SECTION("DeviceSelect::If works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_select_if(stream_ref);
   }
 
   SECTION("DeviceSelect::If works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_select_if(env);
   }
 
@@ -348,7 +350,7 @@ CUB_TEST("DeviceSelect::If works in place with user provided memory and environm
 
   SECTION("DeviceSelect::If works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_select_if(policy);
   }
@@ -365,7 +367,7 @@ CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMA
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -388,7 +390,7 @@ CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", CUB_SMAL
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -411,7 +413,7 @@ CUB_TEST("DeviceSelect::If works in place", "[device][select_if]", CUB_SMALL, ty
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -458,7 +460,7 @@ CUB_TEST("DeviceSelect::If works with a different output type", "[device][select
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -482,7 +484,7 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
       offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
@@ -501,15 +503,15 @@ try
 
   // Run test
   constexpr offset_t match_every_nth = 1000000;
-  offset_t expected_num_copied       = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
+  const offset_t expected_num_copied = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
   c2h::device_vector<type> out(expected_num_copied);
   select_if(
     in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
-  auto expected_out_it     = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
-  bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
+  auto expected_out_it = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
 catch (std::bad_alloc&)
@@ -529,7 +531,7 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
       offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions
@@ -559,7 +561,7 @@ try
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == num_items);
-  bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), in);
+  const bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), in);
   REQUIRE(all_results_correct == true);
 }
 catch (std::bad_alloc&)
@@ -593,3 +595,4 @@ CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", CUB_SMA
   REQUIRE(num_selected_out == c2h::device_vector<int>{1000, 1000});
   REQUIRE(out == expected);
 }
+} // namespace

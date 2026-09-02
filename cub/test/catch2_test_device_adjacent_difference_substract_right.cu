@@ -16,6 +16,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRight, adjacent_difference_subtract_right);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRightCopy, adjacent_difference_subtract_right_copy);
 
@@ -67,7 +69,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
   c2h::device_vector<type> in(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
   adjacent_difference_subtract_right_copy(in.begin(), cuda::discard_iterator(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
@@ -110,7 +112,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight works with user provided memor
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items, thrust::default_init);
-  c2h::device_vector<type> out(num_items, thrust::default_init);
+  const c2h::device_vector<type> out(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), in);
 
   c2h::host_vector<type> h_in = in;
@@ -154,26 +156,26 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight works with user provided memor
 
   SECTION("DeviceAdjacentDifference::SubtractRight works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_subtract_right(stream.get());
   }
 
   SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_subtract_right(stream);
   }
 
   SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_subtract_right(stream_ref);
   }
 
   SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_subtract_right(env);
   }
 
@@ -185,7 +187,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRight works with user provided memor
 
   SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_subtract_right(policy);
   }
@@ -199,7 +201,7 @@ CUB_TEST(
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
-  c2h::device_vector<type> out(num_items);
+  const c2h::device_vector<type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
   c2h::host_vector<type> h_in = in;
@@ -267,26 +269,26 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with user provided m
 
   SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_subtract_right_copy(stream.get());
   }
 
   SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_subtract_right_copy(stream);
   }
 
   SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_subtract_right_copy(stream_ref);
   }
 
   SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_subtract_right_copy(env);
   }
 
@@ -298,7 +300,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with user provided m
 
   SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_subtract_right_copy(policy);
   }
@@ -544,3 +546,4 @@ CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy uses right number of invoc
 
   REQUIRE(counts.front() == static_cast<unsigned long long>(num_items - 1));
 }
+} // namespace

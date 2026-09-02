@@ -66,12 +66,10 @@
   }                                                                                                               \
   /**/
 
-#define KNOWN_FAILURE_WITH_FILE_AND_LINE(FILE_, LINE_) \
-  {                                                    \
-    unittest::UnitTestKnownFailure f;                  \
-    f << "[" << FILE_ ":" << LINE_ << "]";             \
-    throw f;                                           \
-  }                                                    \
+#define KNOWN_FAILURE_WITH_FILE_AND_LINE(FILE_, LINE_)                          \
+  {                                                                             \
+    throw unittest::UnitTestKnownFailure{} << "[" << FILE_ ":" << LINE_ << "]"; \
+  }                                                                             \
   /**/
 
 #define ASSERT_EQUAL(X, Y)           ASSERT_EQUAL_WITH_FILE_AND_LINE((X), (Y), __FILE__, __LINE__)
@@ -121,23 +119,19 @@ void assert_equal(T1 a, T2 b, const std::string& filename = "unknown", int linen
 {
   if (!(a == b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << "values are not equal: " << a << " " << b;
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << "values are not equal: " << a << " " << b << " [type='"
+      << type_name<T1>() << "']";
   }
 }
 
-void assert_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a == b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << "values are not equal: " << int(a) << " " << int(b);
-    f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << "values are not equal: " << int(a) << " " << int(b) << " [type='"
+      << type_name<char>() << "']";
   }
 }
 
@@ -147,11 +141,9 @@ void assert_equal_quiet(const T1& a, const T2& b, const std::string& filename = 
 {
   if (!(a == b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << "values are not equal";
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << "values are not equal"
+      << " [type='" << type_name<T1>() << "']";
   }
 }
 
@@ -162,23 +154,19 @@ void assert_not_equal(T1 a, T2 b, const std::string& filename = "unknown", int l
 {
   if (a == b)
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << "values are equal: " << a << " " << b;
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << "values are equal: " << a << " " << b << " [type='"
+      << type_name<T1>() << "']";
   }
 }
 
-void assert_not_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_not_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (a == b)
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << "values are equal: " << int(a) << " " << int(b);
-    f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << "values are equal: " << int(a) << " " << int(b) << " [type='"
+      << type_name<char>() << "']";
   }
 }
 
@@ -188,11 +176,8 @@ void assert_not_equal_quiet(const T1& a, const T2& b, const std::string& filenam
 {
   if (a == b)
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << "values are equal";
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << "values are equal" << " [type='" << type_name<T1>() << "']";
   }
 }
 
@@ -201,23 +186,19 @@ void assert_less(T1 a, T2 b, const std::string& filename = "unknown", int lineno
 {
   if (!(a < b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << a << " is greater or equal to " << b;
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << a << " is greater or equal to " << b << " [type='"
+      << type_name<T1>() << "']";
   }
 }
 
-void assert_less(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_less(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a < b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << int(a) << " is greater than or equal to " << int(b);
-    f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << int(a) << " is greater than or equal to " << int(b) << " [type='"
+      << type_name<char>() << "']";
   }
 }
 
@@ -226,23 +207,19 @@ void assert_greater(T1 a, T2 b, const std::string& filename = "unknown", int lin
 {
   if (!(a > b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << a << " is less than or equal to " << b;
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << a << " is less than or equal to " << b << " [type='"
+      << type_name<T1>() << "']";
   }
 }
 
-void assert_greater(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_greater(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a > b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << int(a) << " is less than or equal to " << int(b);
-    f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << int(a) << " is less than or equal to " << int(b) << " [type='"
+      << type_name<char>() << "']";
   }
 }
 
@@ -251,23 +228,19 @@ void assert_lequal(T1 a, T2 b, const std::string& filename = "unknown", int line
 {
   if (!(a <= b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << a << " is greater than " << b;
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << a << " is greater than " << b << " [type='" << type_name<T1>()
+      << "']";
   }
 }
 
-void assert_lequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_lequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a <= b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << int(a) << " is greater than " << int(b);
-    f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << int(a) << " is greater than " << int(b) << " [type='"
+      << type_name<char>() << "']";
   }
 }
 
@@ -276,28 +249,24 @@ void assert_gequal(T1 a, T2 b, const std::string& filename = "unknown", int line
 {
   if (!(a >= b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << a << " is less than " << b;
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << a << " is less than " << b << " [type='" << type_name<T1>()
+      << "']";
   }
 }
 
-void assert_gequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_gequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a >= b))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << int(a) << " is less than " << int(b);
-    f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] " << int(a) << " is less than " << int(b) << " [type='"
+      << type_name<char>() << "']";
   }
 }
 
 // will catch everything implicitly convertible to a double
-bool almost_equal(double a, double b, double a_tol, double r_tol)
+inline bool almost_equal(double a, double b, double a_tol, double r_tol)
 {
   if (std::abs(a - b) > r_tol * (std::abs(a) + std::abs(b)) + a_tol)
   {
@@ -309,8 +278,6 @@ bool almost_equal(double a, double b, double a_tol, double r_tol)
   }
 }
 
-namespace
-{ // anonymous namespace
 template <typename>
 struct is_complex : public THRUST_NS_QUALIFIER::false_type
 {};
@@ -322,7 +289,6 @@ struct is_complex<THRUST_NS_QUALIFIER::complex<T>> : public THRUST_NS_QUALIFIER:
 template <typename T>
 struct is_complex<std::complex<T>> : public THRUST_NS_QUALIFIER::true_type
 {};
-} // namespace
 
 template <typename T1, typename T2>
 inline ::cuda::std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value, bool>
@@ -343,11 +309,9 @@ void assert_almost_equal(
 {
   if (!almost_equal(a, b, a_tol, r_tol))
   {
-    unittest::UnitTestFailure f;
-    f << "[" << filename << ":" << lineno << "] ";
-    f << "values are not approximately equal: " << a << " " << b;
-    f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw unittest::UnitTestFailure{}
+      << "[" << filename << ":" << lineno << "] "
+      << "values are not approximately equal: " << a << " " << b << " [type='" << type_name<T1>() << "']";
   }
 }
 
@@ -411,10 +375,10 @@ void assert_equal(
 
   bool failure = false;
 
-  difference_type length1 = ::cuda::std::distance(first1, last1);
-  difference_type length2 = ::cuda::std::distance(first2, last2);
+  const difference_type length1 = ::cuda::std::distance(first1, last1);
+  const difference_type length2 = ::cuda::std::distance(first2, last2);
 
-  difference_type min_length = ::cuda::std::min(length1, length2);
+  const difference_type min_length = ::cuda::std::min(length1, length2);
 
   unittest::UnitTestFailure f;
   f << "[" << filename << ":" << lineno << "] ";
@@ -470,7 +434,8 @@ void assert_equal(
 
   if (failure)
   {
-    throw f;
+    // f accumulates across the loop above, so it cannot be built as a single temporary.
+    throw std::move(f);
   }
 }
 
@@ -517,7 +482,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::host_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_equal(A, B_host, filename, lineno);
 }
 
@@ -527,7 +492,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::device_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
   assert_equal(A_host, B, filename, lineno);
 }
 
@@ -537,8 +502,8 @@ void assert_equal(const THRUST_NS_QUALIFIER::device_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
-  THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
   assert_equal(A_host, B_host, filename, lineno);
 }
 
@@ -575,7 +540,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::device_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
   assert_equal(A_host, B, filename, lineno);
 }
 
@@ -585,7 +550,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::universal_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_equal(A, B_host, filename, lineno);
 }
 
@@ -619,7 +584,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_almost_equal(A, B_host, filename, lineno, a_tol, r_tol);
 }
 
@@ -632,7 +597,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
   assert_almost_equal(A_host, B, filename, lineno, a_tol, r_tol);
 }
 
@@ -645,8 +610,8 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
-  THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
   assert_almost_equal(A_host, B_host, filename, lineno, a_tol, r_tol);
 }
 
@@ -695,7 +660,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
   assert_almost_equal(A_host, B, filename, lineno, a_tol, r_tol);
 }
 
@@ -708,7 +673,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_almost_equal(A, B_host, filename, lineno, a_tol, r_tol);
 }
 
@@ -732,36 +697,27 @@ enum threw_status
   threw_right_type
 };
 
-void check_assert_throws(
+inline void check_assert_throws(
   threw_status s, std::string const& exception_name, std::string const& file_name = "unknown", int line_number = -1)
 {
   switch (s)
   {
-    case did_not_throw: {
-      unittest::UnitTestFailure f;
-      f << "[" << file_name << ":" << line_number << "] did not throw anything";
-      throw f;
-    }
-    case threw_wrong_type: {
-      unittest::UnitTestFailure f;
-      f << "[" << file_name << ":" << line_number << "] did not throw an "
+    case did_not_throw:
+      throw unittest::UnitTestFailure{} << "[" << file_name << ":" << line_number << "] did not throw anything";
+    case threw_wrong_type:
+      throw unittest::UnitTestFailure{}
+        << "[" << file_name << ":" << line_number << "] did not throw an "
         << "object of type " << exception_name;
-      throw f;
-    }
-    case threw_right_type_but_wrong_value: {
-      unittest::UnitTestFailure f;
-      f << "[" << file_name << ":" << line_number << "] threw an object of the "
+    case threw_right_type_but_wrong_value:
+      throw unittest::UnitTestFailure{}
+        << "[" << file_name << ":" << line_number << "] threw an object of the "
         << "correct type (" << exception_name << ") but wrong value";
-      throw f;
-    }
     case threw_right_type:
       break;
-    default: {
-      unittest::UnitTestFailure f;
-      f << "[" << file_name << ":" << line_number << "] encountered an "
+    default:
+      throw unittest::UnitTestFailure{}
+        << "[" << file_name << ":" << line_number << "] encountered an "
         << "unknown error";
-      throw f;
-    }
   }
 }
 }; // end namespace unittest

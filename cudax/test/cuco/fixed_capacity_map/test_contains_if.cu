@@ -39,6 +39,8 @@ using cg_sizes      = c2h::type_list<int_c<1>, int_c<2>>;
 using bucket_sizes  = c2h::type_list<int_c<1>, int_c<2>>;
 using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing, 1 = double hashing
 
+namespace
+{
 template <class Pair>
 struct iota_pair
 {
@@ -119,7 +121,7 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
   constexpr int num_queries             = 2 * num_present;
   constexpr key_type empty_key_sentinel = key_type{-1};
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr           = ::cuda::device_default_memory_pool(stream.device());
   const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
 
@@ -176,3 +178,4 @@ C2H_TEST("fixed_capacity_map contains_if", "[container]", key_types, cg_sizes, b
 
   REQUIRE(::cuda::std::all_of(policy, results.begin(), results.end(), equals_value{unchanged_value}));
 }
+} // namespace

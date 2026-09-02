@@ -12,6 +12,8 @@
 //
 // http://en.wikipedia.org/wiki/Lexicographical_order
 
+namespace
+{
 template <typename KeyVector, typename PermutationVector>
 void update_permutation(KeyVector& keys, PermutationVector& permutation)
 {
@@ -48,10 +50,11 @@ thrust::host_vector<int> random_vector(size_t N)
 
   return vec;
 }
+} // namespace
 
 int main()
 {
-  size_t N = 20;
+  const size_t N = 20;
 
   // generate three arrays of random values
   thrust::device_vector<int> upper  = random_vector(N);

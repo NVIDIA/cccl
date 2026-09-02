@@ -21,6 +21,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairsCopy, sort_pairs_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortPairs, stable_sort_pairs);
@@ -46,7 +48,7 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works with iterators", "[merge][sort][de
 
   // Verify results
   auto keys_expected_it = keys_counting_it;
-  bool keys_equal       = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  const bool keys_equal = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
   REQUIRE(keys_equal == true);
 }
 
@@ -91,7 +93,7 @@ CUB_TEST("DeviceMergeSort::SortKeys works with iterators", "[merge][sort][device
   // Verify results
   auto keys_counting_it = cuda::counting_iterator(key_t{});
   auto keys_expected_it = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
-  bool keys_equal       = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  const bool keys_equal = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   REQUIRE(keys_equal == true);
 }
 
@@ -112,7 +114,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works with iterators", "[merge][sort][
   // Verify results
   auto keys_counting_it = cuda::counting_iterator(key_t{});
   auto keys_expected_it = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
-  bool keys_equal       = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  const bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   REQUIRE(keys_equal == true);
 }
 
@@ -136,8 +138,9 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][d
   // Verify results
   auto keys_expected_it   = key_counting_it;
   auto values_expected_it = cuda::std::make_reverse_iterator(values_in + num_items);
-  bool keys_equal         = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
-  bool values_equal = thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
+  const bool keys_equal   = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  const bool values_equal =
+    thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
@@ -164,8 +167,8 @@ CUB_TEST("DeviceMergeSort::SortPairs works with iterators", "[merge][sort][devic
   auto keys_counting_it   = cuda::counting_iterator(key_t{});
   auto keys_expected_it   = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
   auto values_expected_it = cuda::counting_iterator(data_t{});
-  bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
-  bool values_equal =
+  const bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  const bool values_equal =
     thrust::equal(c2h::device_policy, values_in_out.cbegin(), values_in_out.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
@@ -193,9 +196,10 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works with iterators", "[merge][sort]
   auto keys_counting_it   = cuda::counting_iterator(key_t{});
   auto keys_expected_it   = cuda::std::make_reverse_iterator(keys_counting_it + num_items);
   auto values_expected_it = cuda::counting_iterator(data_t{});
-  bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
-  bool values_equal =
+  const bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  const bool values_equal =
     thrust::equal(c2h::device_policy, values_in_out.cbegin(), values_in_out.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
+} // namespace

@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct my_policy_hub
 {
@@ -89,3 +91,4 @@ CUB_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][re
 
   REQUIRE(out_result == expected_result);
 }
+} // namespace

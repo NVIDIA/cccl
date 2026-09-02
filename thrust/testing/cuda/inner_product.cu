@@ -50,6 +50,8 @@ void TestInnerProductDeviceDevice()
 DECLARE_UNITTEST(TestInnerProductDeviceDevice);
 #endif
 
+namespace
+{
 void TestInnerProductCudaStreams()
 {
   thrust::device_vector<int> v1 = {1, -2, 3};
@@ -58,10 +60,11 @@ void TestInnerProductCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  int init   = 3;
-  int result = thrust::inner_product(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), init);
+  const int init   = 3;
+  const int result = thrust::inner_product(thrust::cuda::par.on(s), v1.begin(), v1.end(), v2.begin(), init);
   ASSERT_EQUAL(result, 7);
 
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestInnerProductCudaStreams);
+} // namespace

@@ -34,6 +34,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct plus_one
 {
@@ -95,7 +97,7 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_transform_reduce(policy, input1.begin());
     test_transform_reduce(policy, ::cuda::counting_iterator<int>{1});
@@ -111,7 +113,7 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
@@ -119,3 +121,4 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
     test_transform_reduce(policy, ::cuda::counting_iterator<int>{1});
   }
 }
+} // namespace

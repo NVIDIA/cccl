@@ -5,6 +5,8 @@
 #include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct is_even
 {
@@ -133,11 +135,11 @@ void TestCopyIfCudaStreams(ExecutionPolicy policy)
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), is_even<int>());
+  const Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), is_even<int>());
 
   ASSERT_EQUAL(end - result.begin(), 2);
   result.resize(end - result.begin());
-  Vector ref{2, 2};
+  const Vector ref{2, 2};
   ASSERT_EQUAL(result, ref);
 
   cudaStreamDestroy(s);
@@ -265,13 +267,13 @@ void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end =
+  const Vector::iterator end =
     thrust::copy_if(policy.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(end - result.begin(), 2);
   result.resize(end - result.begin());
 
-  Vector ref{2, 2};
+  const Vector ref{2, 2};
   ASSERT_EQUAL(result, ref);
 
   cudaStreamDestroy(s);
@@ -294,25 +296,25 @@ void TestCopyIfWithMagnitude(int magnitude)
   using offset_t = std::size_t;
 
   // Prepare input
-  offset_t num_items = offset_t{1ull} << magnitude;
-  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  const offset_t num_items = offset_t{1ull} << magnitude;
+  const thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + static_cast<std::ptrdiff_t>(num_items);
   ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
 
   // Run algorithm on large number of items
-  offset_t match_every_nth     = 1000000;
-  offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
+  const offset_t match_every_nth     = 1000000;
+  const offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
   thrust::device_vector<offset_t> copied_out(expected_num_copied);
   auto selected_out_end = thrust::copy_if(begin, end, copied_out.begin(), mod_n<offset_t>{match_every_nth});
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
+  const offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
   ASSERT_EQUAL(num_selected_out, expected_num_copied);
   copied_out.resize(expected_num_copied);
 
   // Ensure selected items are correct
-  auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
-  bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
+  auto expected_out_it           = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+  const bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
   ASSERT_EQUAL(all_results_correct, true);
 }
 
@@ -330,26 +332,26 @@ void TestCopyIfStencilWithMagnitude(int magnitude)
   using offset_t = std::size_t;
 
   // Prepare input
-  offset_t num_items = offset_t{1ull} << magnitude;
-  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  const offset_t num_items = offset_t{1ull} << magnitude;
+  const thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + static_cast<std::ptrdiff_t>(num_items);
-  thrust::counting_iterator<offset_t> stencil(offset_t{0});
+  const thrust::counting_iterator<offset_t> stencil(offset_t{0});
   ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
 
   // Run algorithm on large number of items
-  offset_t match_every_nth     = 1000000;
-  offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
+  const offset_t match_every_nth     = 1000000;
+  const offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
   thrust::device_vector<offset_t> copied_out(expected_num_copied);
   auto selected_out_end = thrust::copy_if(begin, end, stencil, copied_out.begin(), mod_n<offset_t>{match_every_nth});
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
+  const offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
   ASSERT_EQUAL(num_selected_out, expected_num_copied);
   copied_out.resize(expected_num_copied);
 
   // Ensure selected items are correct
-  auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
-  bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
+  auto expected_out_it           = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+  const bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
   ASSERT_EQUAL(all_results_correct, true);
 }
 
@@ -361,3 +363,4 @@ void TestCopyIfStencilWithLargeNumberOfItems()
   TestCopyIfStencilWithMagnitude(33);
 }
 DECLARE_UNITTEST(TestCopyIfStencilWithLargeNumberOfItems);
+} // namespace

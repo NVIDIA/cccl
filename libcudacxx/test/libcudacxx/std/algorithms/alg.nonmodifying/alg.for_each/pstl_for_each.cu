@@ -29,6 +29,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 struct mark_present_for_each
 {
   bool* ptr_;
@@ -42,7 +44,7 @@ struct mark_present_for_each
 template <class Policy>
 void test_for_each(const Policy& policy, thrust::device_vector<bool>& res)
 {
-  mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
+  const mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
   { // empty should not access anything
     cuda::std::for_each(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), fn);
@@ -73,7 +75,7 @@ C2H_TEST("cuda::std::for_each", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_for_each(policy, res);
   }
@@ -87,10 +89,11 @@ C2H_TEST("cuda::std::for_each", "[parallel algorithm]")
 
   SECTION("with provided stream and memory_resource")
   {
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
     test_for_each(policy, res);
   }
 }
+} // namespace

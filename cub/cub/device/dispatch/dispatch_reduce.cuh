@@ -372,16 +372,16 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
       return error;
     }
 
-    int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
+    const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
 
     // Even-share work distribution
-    int max_blocks = reduce_device_occupancy * detail::subscription_factor;
+    const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
     GridEvenShare<OffsetT> even_share;
     even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
 
     // Temporary storage allocation requirements
-    void* allocations[1]       = {};
-    size_t allocation_sizes[1] = {
+    void* allocations[1]             = {};
+    const size_t allocation_sizes[1] = {
       max_blocks * kernel_source.AccumSize() // bytes needed for privatized block
                                              // reductions
     };
@@ -402,10 +402,10 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce") DispatchRe
     }
 
     // Alias the allocation for the privatized per-block reductions
-    AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+    AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]); // NOLINT(misc-const-correctness)
 
     // Get grid size for device_reduce_sweep_kernel
-    int reduce_grid_size = even_share.grid_size;
+    const int reduce_grid_size = even_share.grid_size;
 
     // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -723,6 +723,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   const int reduce_device_occupancy = sm_occupancy * sm_count;
   const int max_blocks              = reduce_device_occupancy * detail::subscription_factor;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   [[maybe_unused]] AccumT* d_block_reductions = nullptr; // buffer for per-block aggregates for the two-phase code path
   if constexpr (!StableReductionOrder)
   {
@@ -735,8 +736,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
   else
   {
     // Temporary storage allocation requirements
-    void* allocations[1]       = {};
-    size_t allocation_sizes[1] = {
+    void* allocations[1]             = {};
+    const size_t allocation_sizes[1] = {
       max_blocks * kernel_source.AccumSize() // bytes needed for privatized block reductions
     };
 
@@ -758,7 +759,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_regular_size_reduce(
     d_block_reductions = static_cast<AccumT*>(allocations[0]);
   }
 
-  GridEvenShare<offset_t> even_share;
+  GridEvenShare<offset_t> even_share; // NOLINT(misc-const-correctness)
   if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
   {
     const auto tile_size = active_policy.multi_tile.threads_per_block * active_policy.multi_tile.items_per_thread;
@@ -981,7 +982,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // Older nvcc versions eagerly instantiate discarded statements in generic lambdas, so perform this conversion here.
   // Both suppressions are needed for "never referenced" and "set but never used" diagnostics across supported nvcc
   // and MSVC combinations.
-  [[maybe_unused]] offset_t offset_num_items{};
+  [[maybe_unused]] offset_t offset_num_items{}; // NOLINT(misc-const-correctness)
   if constexpr (StableReductionOrder && !::cuda::args::__traits<OffsetT>::is_deferred)
   {
     offset_num_items = static_cast<offset_t>(num_items);

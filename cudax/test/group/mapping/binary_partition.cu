@@ -60,7 +60,7 @@ __device__ void test_binary_partition(Config config)
     // Test constructor from pred_fn.
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
-      cudax::binary_partition mapping{Pred{}};
+      const cudax::binary_partition mapping{Pred{}};
     }
 
     // Test map(...).
@@ -101,7 +101,7 @@ __device__ void test_binary_partition(Config config)
     // Test constructor from pred_fn.
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
-      cudax::binary_partition mapping{Pred{}};
+      const cudax::binary_partition mapping{Pred{}};
     }
 
     // Test map(...).
@@ -142,7 +142,7 @@ __device__ void test_binary_partition(Config config)
     // Test constructor from pred_fn.
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Pred>);
-      cudax::binary_partition mapping{Pred{}};
+      const cudax::binary_partition mapping{Pred{}};
     }
 
     // Test map(...).

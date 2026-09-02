@@ -10,6 +10,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename Vector>
 void TestMergeByKeySimple()
 {
@@ -60,7 +62,7 @@ void TestMergeByKeyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::merge_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
@@ -321,3 +323,4 @@ void TestMergeByKeyFromCuDFDremel()
   ASSERT_EQUAL(reference_def_level, def_level);
 }
 DECLARE_UNITTEST(TestMergeByKeyFromCuDFDremel);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

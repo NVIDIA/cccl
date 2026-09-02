@@ -15,6 +15,8 @@
 
 namespace ex = ::cuda::experimental::execution;
 
+namespace
+{
 struct not_a_receiver
 {};
 
@@ -84,3 +86,4 @@ C2H_TEST("tests for the sender concepts", "[concepts]")
   static_assert(!ex::sender_in<read_env_t, ex::env<>>);
   static_assert(ex::sender_in<read_env_t, ex::prop<ex::get_scheduler_t, dummy_scheduler<>>>);
 }
+} // namespace

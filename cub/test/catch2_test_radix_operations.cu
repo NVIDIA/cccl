@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <typename KeyT>
 struct fundamental_extractor_t
 {
@@ -101,8 +103,8 @@ CUB_TEST("Radix operations extract digits from fundamental types", "[radix][oper
       std::uint32_t digit = extractor.Digit(val);
       std::memcpy(output_buffer, &digit, sizeof(std::uint32_t));
 
-      digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
-      digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
+      const digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
+      const digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
 
       REQUIRE(reference == result);
     }
@@ -272,8 +274,8 @@ void test_tuple()
       std::uint32_t digit = extractor.Digit(tpl);
       std::memcpy(output_buffer, &digit, sizeof(std::uint32_t));
 
-      digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
-      digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
+      const digit_bits_t result    = buffer_to_digit_bits(output_buffer, 0, num_bits);
+      const digit_bits_t reference = buffer_to_digit_bits(input_buffer, current_bit, num_bits);
 
       // Provides readable error messages:
       //  00000000000000000000000000000000
@@ -406,11 +408,11 @@ CUB_TEST(
   using traits       = cub::detail::radix::traits_t<key_t>;
   using decomposer_t = cub::detail::identity_decomposer_t;
 
-  c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
-  c2h::host_vector<char> input_buffer_mem(sizeof(key_t));
+  const c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
+  const c2h::host_vector<char> input_buffer_mem(sizeof(key_t));
 
-  key_t ref = cuda::std::numeric_limits<key_t>::lowest();
-  key_t val = traits::min_raw_binary_key(decomposer_t{});
+  const key_t ref = cuda::std::numeric_limits<key_t>::lowest();
+  const key_t val = traits::min_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
@@ -430,7 +432,7 @@ CUB_TEST("Radix operations infere minimal value for pair types",
   tpl_t ref;
   tpl_to_min(ref);
 
-  tpl_t val = traits::min_raw_binary_key(decomposer_t{});
+  const tpl_t val = traits::min_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
@@ -446,8 +448,8 @@ CUB_TEST(
   using traits       = cub::detail::radix::traits_t<key_t>;
   using decomposer_t = cub::detail::identity_decomposer_t;
 
-  key_t ref = cuda::std::numeric_limits<key_t>::max();
-  key_t val = traits::max_raw_binary_key(decomposer_t{});
+  const key_t ref = cuda::std::numeric_limits<key_t>::max();
+  const key_t val = traits::max_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
@@ -467,7 +469,7 @@ CUB_TEST("Radix operations infere maximal value for pair types",
   tpl_t ref;
   tpl_to_max(ref);
 
-  tpl_t val = traits::max_raw_binary_key(decomposer_t{});
+  const tpl_t val = traits::max_raw_binary_key(decomposer_t{});
 
   REQUIRE(ref == val);
 }
@@ -517,7 +519,7 @@ CUB_TEST("Radix operations reorder values for pair types",
   REQUIRE(l_2 == cuda::std::numeric_limits<T2>::lowest());
 
   {
-    tpl_t ref{T1{0}, T2{0}};
+    const tpl_t ref{T1{0}, T2{0}};
     const tpl_t unordered_val = tpl_t{l_1, l_2};
     const tpl_t ordered_val   = conversion_policy::to_bit_ordered(decomposer_t{}, unordered_val);
 
@@ -586,8 +588,8 @@ CUB_TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations
   using decomposer_t      = fp_aggregate_decomposer_t;
   using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
 
-  fp_aggregate_t negative{-0.0, -0.0f};
-  fp_aggregate_t positive{+0.0, +0.0f};
+  const fp_aggregate_t negative{-0.0, -0.0f};
+  const fp_aggregate_t positive{+0.0, +0.0f};
   fp_aggregate_t ordered_negative = conversion_policy::to_bit_ordered(decomposer_t{}, negative);
   fp_aggregate_t ordered_positibe = conversion_policy::to_bit_ordered(decomposer_t{}, positive);
 
@@ -651,3 +653,4 @@ CUB_TEST_CASE("Radix operations allow fields permutation", "[radix][operations]"
     }
   }
 }
+} // namespace

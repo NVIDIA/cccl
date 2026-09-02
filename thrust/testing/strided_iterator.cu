@@ -19,6 +19,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestReadingStridedIterator()
 {
   thrust::host_vector<int> v(21);
@@ -93,3 +95,4 @@ void TestWritingStridedIteratorToStructMember()
 DECLARE_UNITTEST(TestWritingStridedIteratorToStructMember);
 
 _CCCL_DIAG_POP
+} // namespace

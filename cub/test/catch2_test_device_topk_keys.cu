@@ -22,6 +22,8 @@
 #include "cuda/__iterator/tabulate_output_iterator.h"
 #include <c2h/extended_types.h>
 
+namespace
+{
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -310,3 +312,4 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
+} // namespace

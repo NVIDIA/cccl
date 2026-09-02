@@ -24,6 +24,8 @@
 
 using BuildResultT = cccl_device_three_way_partition_build_result_t;
 
+namespace
+{
 struct three_way_partition_cleanup
 {
   CUresult operator()(BuildResultT* build_data) const noexcept
@@ -206,7 +208,7 @@ template <typename OperationT,
 three_way_partition_result_t<KeyT>
 c_parallel_partition(OperationT first_selector, OperationT second_selector, const std::vector<KeyT>& input)
 {
-  std::size_t num_items = input.size();
+  const std::size_t num_items = input.size();
 
   pointer_t<KeyT> input_ptr(input);
   pointer_t<KeyT> first_part_output_ptr(num_items);
@@ -311,8 +313,8 @@ C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]"
   using num_selected_t = T::NumSelectedT;
 
   auto [less_op_src, greater_or_equal_op_src] = get_three_way_partition_ops(get_type_info<key_t>().type, 21);
-  operation_t less_op                         = make_operation("less_op", less_op_src);
-  operation_t greater_or_equal_op             = make_operation("greater_op", greater_or_equal_op_src);
+  const operation_t less_op                   = make_operation("less_op", less_op_src);
+  const operation_t greater_or_equal_op       = make_operation("greater_op", greater_or_equal_op_src);
 
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
   const std::vector<int> input_int = generate<int>(num_items);
@@ -382,8 +384,8 @@ C2H_TEST("ThreeWayPartition works with stateful operations", "[three_way_partiti
   using key_t          = int;
   using num_selected_t = int;
 
-  selector_state_t op_state                      = {21};
-  stateful_operation_t<selector_state_t> less_op = make_operation(
+  const selector_state_t op_state                      = {21};
+  const stateful_operation_t<selector_state_t> less_op = make_operation(
     "less_op",
     R"(struct selector_state_t { int comparison_value; };
 extern "C" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {
@@ -392,7 +394,7 @@ extern "C" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) 
   *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;
 })",
     op_state);
-  stateful_operation_t<selector_state_t> greater_or_equal_op = make_operation(
+  const stateful_operation_t<selector_state_t> greater_or_equal_op = make_operation(
     "greater_or_equal_op",
     R"(struct selector_state_t { int comparison_value; };
 extern "C" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {
@@ -465,7 +467,7 @@ C2H_TEST("ThreeWayPartition works with custom types", "[three_way_partition]")
 
   const int comparison_value = 21;
 
-  operation_t less_op = make_operation(
+  const operation_t less_op = make_operation(
     "less_op",
     std::format(R"(struct pair_type {{ int a; size_t b; }};
 extern "C" __device__ void less_op(void* x_ptr, void* out_ptr) {{
@@ -474,7 +476,7 @@ extern "C" __device__ void less_op(void* x_ptr, void* out_ptr) {{
   *out = x->a < {0};
 }})",
                 comparison_value));
-  operation_t greater_or_equal_op = make_operation(
+  const operation_t greater_or_equal_op = make_operation(
     "greater_or_equal_op",
     std::format(R"(struct pair_type {{ int a; size_t b; }};
 extern "C" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{
@@ -508,11 +510,11 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
 
   const std::size_t num_items    = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
   const std::vector<key_t> input = generate<key_t>(num_items);
-  pointer_t<key_t> input_ptr(input);
-  pointer_t<key_t> first_part_output_ptr(num_items);
-  pointer_t<key_t> second_part_output_ptr(num_items);
-  pointer_t<key_t> unselected_output_ptr(num_items);
-  pointer_t<num_selected_t> num_selected_output_ptr(2);
+  const pointer_t<key_t> input_ptr(input);
+  const pointer_t<key_t> first_part_output_ptr(num_items);
+  const pointer_t<key_t> second_part_output_ptr(num_items);
+  const pointer_t<key_t> unselected_output_ptr(num_items);
+  const pointer_t<num_selected_t> num_selected_output_ptr(2);
 
   iterator_t<key_t, random_access_iterator_state_t<key_t>> input_it =
     make_random_access_iterator<key_t>(iterator_kind::INPUT, "int", "in");
@@ -693,7 +695,7 @@ C2H_TEST("ThreeWayPartition compile/load round-trip", "[three_way_partition][ser
       second_op,
       n,
       null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_three_way_partition(
@@ -769,3 +771,4 @@ C2H_TEST("ThreeWayPartition compile rejects mismatched custom ops", "[three_way_
       nullptr));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

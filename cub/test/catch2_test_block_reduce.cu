@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <cub::BlockReduceAlgorithm Algorithm,
           int ItemsPerThread,
           int BlockDimX,
@@ -54,7 +56,7 @@ template <cub::BlockReduceAlgorithm Algorithm,
           class ActionT>
 void block_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT action)
 {
-  dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
+  const dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
 
   block_reduce_kernel<Algorithm, ItemsPerThread, BlockDimX, BlockDimY, BlockDimZ, T, ActionT><<<1, block_dims>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), static_cast<int>(in.size()), action);
@@ -153,7 +155,7 @@ CUB_TEST("Block reduce works with sum",
   c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
-  c2h::host_vector<type> h_reference(
+  const c2h::host_vector<type> h_reference(
     1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type& lhs, const type& rhs) {
       return static_cast<type>(lhs + rhs);
     }));
@@ -185,7 +187,7 @@ CUB_TEST("Block reduce works with sum in partial tiles",
   c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
-  std::vector<type> h_reference(
+  const std::vector<type> h_reference(
     1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type& lhs, const type& rhs) {
       return static_cast<type>(lhs + rhs);
     }));
@@ -217,7 +219,7 @@ CUB_TEST("Block reduce works with custom op",
   c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
-  c2h::host_vector<type> h_reference(
+  const c2h::host_vector<type> h_reference(
     1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type& lhs, const type& rhs) {
       return std::max(lhs, rhs);
     }));
@@ -249,7 +251,7 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
   c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
-  c2h::host_vector<type> h_reference(
+  const c2h::host_vector<type> h_reference(
     1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type& lhs, const type& rhs) {
       return std::max(lhs, rhs);
     }));
@@ -281,7 +283,7 @@ CUB_TEST("Block reduce works with custom types", "[reduce][block]", CUB_SMALL, b
   c2h::gen(C2H_SEED(10), d_in, cuda::std::numeric_limits<type>::min());
 
   c2h::host_vector<type> h_in = d_in;
-  c2h::host_vector<type> h_reference(
+  const c2h::host_vector<type> h_reference(
     1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type& lhs, const type& rhs) {
       return static_cast<type>(lhs + rhs);
     }));
@@ -310,7 +312,7 @@ CUB_TEST(
   c2h::gen(C2H_SEED(10), d_in);
 
   c2h::host_vector<type> h_in = d_in;
-  c2h::host_vector<type> h_reference(
+  const c2h::host_vector<type> h_reference(
     1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type& lhs, const type& rhs) {
       return static_cast<type>(lhs + rhs);
     }));
@@ -320,3 +322,4 @@ CUB_TEST(
 
   REQUIRE(h_reference == d_out);
 }
+} // namespace

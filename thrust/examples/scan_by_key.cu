@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+namespace
+{
 // BinaryPredicate for the head flag segment representation
 // equivalent to cuda::std::not_fn(thrust::project2nd<int,int>()));
 template <typename HeadFlagType>
@@ -24,6 +26,7 @@ void print(const Vector& v)
   }
   std::cout << '\n';
 }
+} // namespace
 
 int main()
 {
@@ -31,7 +34,7 @@ int main()
   int flags[]  = {1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0}; // segments represented with head flags
   int values[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}; // values corresponding to each key
 
-  int N = sizeof(keys) / sizeof(int); // number of elements
+  const int N = sizeof(keys) / sizeof(int); // number of elements
 
   // copy input data to device
   thrust::device_vector<int> d_keys(keys, keys + N);

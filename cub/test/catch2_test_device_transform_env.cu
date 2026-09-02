@@ -15,6 +15,8 @@
 
 using namespace thrust::placeholders;
 
+namespace
+{
 struct stream_convertible
 {
   cudaStream_t stream;
@@ -67,7 +69,7 @@ template <typename F>
 void check_graph_nodes_with_different_streams(F call_cub_api)
 {
   // create stream and begin capture
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   // REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
   REQUIRE(cudaStreamBeginCapture(stream.get(), cudaStreamCaptureModeGlobal) == cudaSuccess);
 
@@ -135,8 +137,8 @@ CUB_TEST("DeviceTransform::Transform custom stream", "[device][transform]", CUB_
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::constant_iterator<type> a{13};
-  cuda::counting_iterator<type> b{42};
+  const cuda::constant_iterator<type> a{13};
+  const cuda::counting_iterator<type> b{42};
   c2h::device_vector<type> result(num_items, thrust::no_init);
 
   check_graph_nodes_with_different_streams([&](auto streamish) {
@@ -203,8 +205,8 @@ CUB_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]", CU
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::constant_iterator<type> a{13};
-  cuda::counting_iterator<type> b{42};
+  const cuda::constant_iterator<type> a{13};
+  const cuda::counting_iterator<type> b{42};
   c2h::device_vector<type> result(num_items, 1337);
 
   check_graph_nodes_with_different_streams([&](auto streamish) {
@@ -235,8 +237,8 @@ CUB_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
-  cuda::constant_iterator<type> a{13};
-  cuda::counting_iterator<type> b{42};
+  const cuda::constant_iterator<type> a{13};
+  const cuda::counting_iterator<type> b{42};
   c2h::device_vector<type> result(num_items, thrust::no_init);
 
   check_graph_nodes_with_different_streams([&](auto streamish) {
@@ -276,7 +278,7 @@ CUB_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]", CUB_SMAL
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
-  c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
+  const c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
   REQUIRE(result == expected);
 }
 
@@ -284,13 +286,13 @@ CUB_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(my_policy_selector{})};
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   stream.sync();
 
-  c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
+  const c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
   REQUIRE(result == expected);
 }
 
@@ -382,3 +384,4 @@ CUB_TEST("Test TransformPolicy properties", "[transform][device]", CUB_SMALL)
        ", .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1, .store_vec_size = 0 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
+} // namespace

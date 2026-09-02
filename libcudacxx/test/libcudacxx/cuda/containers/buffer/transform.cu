@@ -33,7 +33,7 @@ C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_tran
   using type          = int;
   const int num_items = 1 << 24;
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   cuda::device_buffer<type> a{stream, resource, num_items, cuda::no_init};
@@ -65,6 +65,8 @@ C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_tran
   REQUIRE(reference_h == result_h);
 }
 
+namespace
+{
 struct add_kernel
 {
   template <typename T>
@@ -80,7 +82,7 @@ struct add_kernel
 
 C2H_CCCLRT_TEST("cuda::buffer launch transform", "[container][buffer]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -100,3 +102,4 @@ C2H_CCCLRT_TEST("cuda::buffer launch transform", "[container][buffer]")
     REQUIRE(host_result[i] == array[i] + 1);
   }
 }
+} // namespace

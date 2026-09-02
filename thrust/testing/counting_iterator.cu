@@ -32,6 +32,8 @@ static_assert(diff_type_is<__uint128_t, ptrdiff_t>);
 static_assert(diff_type_is<float, ptrdiff_t>);
 static_assert(diff_type_is<double, ptrdiff_t>);
 
+namespace
+{
 struct custom_int
 {
   _CCCL_HOST_DEVICE custom_int(int) {}
@@ -73,25 +75,25 @@ DECLARE_UNITTEST(TestCountingIteratorTraits);
 template <typename T>
 void TestCountingDefaultConstructor()
 {
-  thrust::counting_iterator<T> iter0;
+  const thrust::counting_iterator<T> iter0;
   ASSERT_EQUAL(*iter0, T{});
 }
 DECLARE_GENERIC_UNITTEST(TestCountingDefaultConstructor);
 
 void TestCountingIteratorCopyConstructor()
 {
-  thrust::counting_iterator<int> iter0(100);
+  const thrust::counting_iterator<int> iter0(100);
 
-  thrust::counting_iterator<int> iter1(iter0);
+  const thrust::counting_iterator<int> iter1(iter0);
 
   ASSERT_EQUAL_QUIET(iter0, iter1);
   ASSERT_EQUAL(*iter0, *iter1);
 
   // construct from related space
-  thrust::counting_iterator<int, thrust::host_system_tag> h_iter = iter0;
+  const thrust::counting_iterator<int, thrust::host_system_tag> h_iter = iter0;
   ASSERT_EQUAL(*iter0, *h_iter);
 
-  thrust::counting_iterator<int, thrust::device_system_tag> d_iter = iter0;
+  const thrust::counting_iterator<int, thrust::device_system_tag> d_iter = iter0;
   ASSERT_EQUAL(*iter0, *d_iter);
 }
 DECLARE_UNITTEST(TestCountingIteratorCopyConstructor);
@@ -232,8 +234,8 @@ DECLARE_UNITTEST(TestCountingIteratorDistance);
 
 void TestCountingIteratorUnsignedType()
 {
-  thrust::counting_iterator<unsigned int> iter0(0);
-  thrust::counting_iterator<unsigned int> iter1(5);
+  const thrust::counting_iterator<unsigned int> iter0(0);
+  const thrust::counting_iterator<unsigned int> iter1(5);
 
   ASSERT_EQUAL(iter1 - iter0, 5);
   ASSERT_EQUAL(iter0 - iter1, -5);
@@ -245,7 +247,7 @@ DECLARE_UNITTEST(TestCountingIteratorUnsignedType);
 
 void TestCountingIteratorLowerBound()
 {
-  size_t n       = 10000;
+  const size_t n = 10000;
   const size_t M = 100;
 
   thrust::host_vector<unsigned int> h_data = unittest::random_integers<unsigned int>(n);
@@ -258,8 +260,8 @@ void TestCountingIteratorLowerBound()
 
   thrust::device_vector<unsigned int> d_data = h_data;
 
-  thrust::counting_iterator<unsigned int> search_begin(0);
-  thrust::counting_iterator<unsigned int> search_end(M);
+  const thrust::counting_iterator<unsigned int> search_begin(0);
+  const thrust::counting_iterator<unsigned int> search_end(M);
 
   thrust::host_vector<unsigned int> h_result(M);
   thrust::device_vector<unsigned int> d_result(M);
@@ -277,10 +279,10 @@ void TestCountingIteratorDifference()
   using Iterator   = thrust::counting_iterator<std::uint64_t>;
   using Difference = thrust::detail::it_difference_t<Iterator>;
 
-  Difference diff = std::numeric_limits<std::uint32_t>::max() + 1; // NOLINT(bugprone-misplaced-widening-cast)
+  const Difference diff = std::numeric_limits<std::uint32_t>::max() + 1; // NOLINT(bugprone-misplaced-widening-cast)
 
-  Iterator first(0);
-  Iterator last = first + diff;
+  const Iterator first(0);
+  const Iterator last = first + diff;
 
   ASSERT_EQUAL(diff, last - first);
 }
@@ -353,9 +355,10 @@ _CCCL_DIAG_POP
 // MSVC C4244 (implicit float-to-integer conversion) without suppression.
 void TestCountingIteratorFloatDistanceTo()
 {
-  thrust::counting_iterator<float> iter1(0);
-  thrust::counting_iterator<float> iter2(5);
+  const thrust::counting_iterator<float> iter1(0);
+  const thrust::counting_iterator<float> iter2(5);
 
   ASSERT_EQUAL(iter2 - iter1, 5);
 }
 DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);
+} // namespace

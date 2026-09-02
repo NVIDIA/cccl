@@ -15,10 +15,12 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void fill_kernel(int cnt, double* data, double value)
 {
-  int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
-  int nthreads = static_cast<int>(gridDim.x * blockDim.x);
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int i = tid; i < cnt; i += nthreads)
   {
@@ -32,7 +34,7 @@ struct verify_args
   bool* passed;
 };
 
-static void verify_callback(stf_host_launch_deps_handle deps)
+void verify_callback(stf_host_launch_deps_handle deps)
 {
   auto* v = static_cast<verify_args*>(stf_host_launch_deps_get_user_data(deps));
 
@@ -261,3 +263,4 @@ C2H_TEST("host_launch inside a stackable nested graph scope", "[host_launch][sta
 
   REQUIRE(cudaFreeHost(host_data) == cudaSuccess);
 }
+} // namespace

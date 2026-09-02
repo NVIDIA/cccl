@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::reverse_iterator from cuda::std
 void TestReverseIteratorTraits()
 {
@@ -39,16 +41,16 @@ void TestReverseIteratorCopyConstructor()
 {
   thrust::host_vector<int> h_v(1, 13);
 
-  thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter0(h_v.end());
-  thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter1(h_iter0);
+  const thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter0(h_v.end());
+  const thrust::reverse_iterator<thrust::host_vector<int>::iterator> h_iter1(h_iter0);
 
   ASSERT_EQUAL_QUIET(h_iter0, h_iter1);
   ASSERT_EQUAL(*h_iter0, *h_iter1);
 
   thrust::device_vector<int> d_v(1, 13);
 
-  thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter2(d_v.end());
-  thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter3(d_iter2);
+  const thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter2(d_v.end());
+  const thrust::reverse_iterator<thrust::device_vector<int>::iterator> d_iter3(d_iter2);
 
   ASSERT_EQUAL_QUIET(d_iter2, d_iter3);
   ASSERT_EQUAL(*d_iter2, *d_iter3);
@@ -154,3 +156,4 @@ struct TestReverseIteratorExclusiveScan
   }
 };
 VariableUnitTest<TestReverseIteratorExclusiveScan, IntegralTypes> TestReverseIteratorExclusiveScanInstance;
+} // namespace

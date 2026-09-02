@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestFindSimple()
 {
@@ -32,7 +34,7 @@ void TestFindDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -84,7 +86,7 @@ void TestFindIfDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -136,7 +138,7 @@ void TestFindIfNotDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::find_if_not(sys, vec.begin(), vec.end(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -242,8 +244,8 @@ VariableUnitTest<TestFindIfNot, SignedIntegralTypes> TestFindIfNotInstance;
 
 void TestFindWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   cuda::std::intmax_t distance_low_value = ::cuda::std::distance(begin, thrust::find(thrust::device, begin, end, 17));
@@ -266,8 +268,6 @@ void TestFindWithBigIndexes()
 DECLARE_UNITTEST(TestFindWithBigIndexes);
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
-namespace
-{
 class Weird
 {
   int value;
@@ -282,7 +282,6 @@ public:
     return x == y.value;
   }
 };
-} // namespace
 
 void TestFindAsymmetricEquality()
 { // Regression test for NVIDIA/thrust#1229
@@ -294,3 +293,4 @@ void TestFindAsymmetricEquality()
   ASSERT_EQUAL(result - dv.begin(), 333);
 }
 DECLARE_UNITTEST(TestFindAsymmetricEquality);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

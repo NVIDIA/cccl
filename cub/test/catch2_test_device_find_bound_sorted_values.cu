@@ -15,6 +15,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBoundSortedValues, lower_bound_sorted_values);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBoundSortedValues, upper_bound_sorted_values);
 
@@ -63,9 +65,9 @@ void test_sorted(Variant variant,
           thrust::raw_pointer_cast(offsets_d.data()),
           compare_op);
 
-  c2h::host_vector<Value> range_h    = range_d;
-  c2h::host_vector<Value> values_h   = values_d;
-  c2h::host_vector<Result> offsets_h = offsets_d;
+  c2h::host_vector<Value> range_h          = range_d;
+  c2h::host_vector<Value> values_h         = values_d;
+  const c2h::host_vector<Result> offsets_h = offsets_d;
 
   c2h::host_vector<Result> offsets_ref(values_num_items);
   for (auto i = 0u; i < values_num_items; ++i)
@@ -119,9 +121,9 @@ CUB_TEST("DeviceFind::LowerBoundSortedValues works with a transform output itera
     offsets_out,
     cuda::std::less<value_type>{});
 
-  c2h::host_vector<value_type> range_h  = range_d;
-  c2h::host_vector<value_type> values_h = values_d;
-  c2h::host_vector<Result> offsets_h    = offsets_d;
+  c2h::host_vector<value_type> range_h     = range_d;
+  c2h::host_vector<value_type> values_h    = values_d;
+  const c2h::host_vector<Result> offsets_h = offsets_d;
 
   c2h::host_vector<Result> offsets_ref(values_num_items);
   for (auto i = 0u; i < values_num_items; ++i)
@@ -228,3 +230,4 @@ CUB_TEST("DeviceFind::UpperBoundSortedValues really large input",
     SUCCEED("allocation failure is not a test failure");
   }
 }
+} // namespace

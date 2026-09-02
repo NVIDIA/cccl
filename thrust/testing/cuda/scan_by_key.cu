@@ -129,6 +129,8 @@ void TestScanByKeyDeviceDevice()
 DECLARE_UNITTEST(TestScanByKeyDeviceDevice);
 #endif
 
+namespace
+{
 void TestInclusiveScanByKeyCudaStreams()
 {
   using Vector   = thrust::device_vector<int>;
@@ -143,7 +145,7 @@ void TestInclusiveScanByKeyCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Iterator iter =
+  const Iterator iter =
     thrust::inclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
   cudaStreamSynchronize(s);
 
@@ -190,7 +192,7 @@ void TestExclusiveScanByKeyCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Iterator iter =
+  const Iterator iter =
     thrust::exclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin());
   cudaStreamSynchronize(s);
 
@@ -227,3 +229,4 @@ void TestExclusiveScanByKeyCudaStreams()
   ASSERT_EQUAL(output, ref);
 }
 DECLARE_UNITTEST(TestExclusiveScanByKeyCudaStreams);
+} // namespace

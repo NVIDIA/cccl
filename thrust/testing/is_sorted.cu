@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestIsSortedSimple()
 {
@@ -73,7 +75,7 @@ void TestIsSortedDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::is_sorted(sys, vec.begin(), vec.end());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -96,3 +98,4 @@ void TestIsSortedDispatchImplicit()
   ASSERT_EQUAL(13, vec.front());
 }
 DECLARE_UNITTEST(TestIsSortedDispatchImplicit);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

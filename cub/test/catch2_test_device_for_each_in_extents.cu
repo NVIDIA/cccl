@@ -20,6 +20,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_extents);
 
 /***********************************************************************************************************************
@@ -27,7 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_exte
  **********************************************************************************************************************/
 
 template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
-static void fill_linear_impl(
+void fill_linear_impl(
   c2h::host_vector<T>& vector, [[maybe_unused]] const ExtentType& ext, size_t& pos, IndicesType... indices)
 {
   if constexpr (Rank == ExtentType::rank())
@@ -45,7 +47,7 @@ static void fill_linear_impl(
 }
 
 template <typename T, typename IndexType, size_t... Extents>
-static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
+void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
 {
   size_t pos = 0;
   fill_linear_impl(vector, ext, pos);
@@ -135,7 +137,7 @@ CUB_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][devic
   CAPTURE(c2h::type_name<index_type>());
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
 // MSVC error: C3546: '...': there are no parameter packs available to expand in
 //             make_tuple_types.h:__make_tuple_types_flat
@@ -153,14 +155,14 @@ CUB_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][
   auto X                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Y                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Z                              = GENERATE_COPY(take(3, random(2, 10)));
-  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
+  const cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
 #if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
@@ -201,3 +203,4 @@ CUB_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]", CUB_SMALL)
     static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
   REQUIRE(num_of_once_marked_items == num_items);
 }
+} // namespace

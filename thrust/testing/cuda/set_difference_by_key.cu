@@ -87,10 +87,12 @@ void TestSetDifferenceByKeyDeviceDevice()
 DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceDevice);
 #endif
 
+namespace
+{
 void TestSetDifferenceByKeyCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 2, 4, 5});
   auto b_key      = cuda::make_device_buffer<int>(stream, device, cuda::std::initializer_list<int>{0, 3, 3, 4, 6});
@@ -116,3 +118,4 @@ void TestSetDifferenceByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 DECLARE_UNITTEST(TestSetDifferenceByKeyCudaStreams);
+} // namespace

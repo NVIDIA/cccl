@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin find-if-predicate
 struct is_greater_than_t
 {
@@ -32,10 +34,10 @@ CUB_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]", CUB_S
   constexpr int num_items         = 8;
   thrust::device_vector<int> d_in = {0, 1, 2, 3, 4, 5, 6, 7};
   thrust::device_vector<int> d_out(1);
-  is_greater_than_t predicate{4};
+  const is_greater_than_t predicate{4};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFind::FindIf(d_in.begin(), d_out.begin(), predicate, num_items, stream_ref);
   if (error != cudaSuccess)
@@ -43,7 +45,7 @@ CUB_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]", CUB_S
     std::cerr << "cub::DeviceFind::FindIf failed with status: " << error << '\n';
   }
 
-  int expected = 5;
+  const int expected = 5;
   // example-end find-if-env
   stream.sync();
 
@@ -58,8 +60,8 @@ CUB_TEST("cub::DeviceFind::LowerBound accepts env with stream", "[find][env]", C
   thrust::device_vector<int> d_values = {1, 3, 5, 7};
   thrust::device_vector<int> d_output(4);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFind::LowerBound(
     d_range.begin(),
@@ -74,7 +76,7 @@ CUB_TEST("cub::DeviceFind::LowerBound accepts env with stream", "[find][env]", C
     std::cerr << "cub::DeviceFind::LowerBound failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected = {1, 2, 3, 4};
+  const thrust::device_vector<int> expected = {1, 2, 3, 4};
   // example-end lower-bound-env
   stream.sync();
 
@@ -89,8 +91,8 @@ CUB_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]", C
   thrust::device_vector<int> d_values = {1, 3, 5, 7};
   thrust::device_vector<int> d_output(4);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFind::UpperBound(
     d_range.begin(),
@@ -105,7 +107,7 @@ CUB_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]", C
     std::cerr << "cub::DeviceFind::UpperBound failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected = {1, 2, 3, 4};
+  const thrust::device_vector<int> expected = {1, 2, 3, 4};
   // example-end upper-bound-env
   stream.sync();
 
@@ -155,3 +157,4 @@ CUB_TEST("cub::DeviceFind::FindIf accepts a custom policy selector", "[find][env
 }
 
 #endif // _CCCL_STD_VER >= 2020
+} // namespace

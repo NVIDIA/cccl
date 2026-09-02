@@ -22,6 +22,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 enum class MyCoopAlgScratch
 {
   none,
@@ -266,9 +268,10 @@ struct TestKernel
 C2H_TEST("scratch", "[scratch]")
 {
   const auto device = cuda::devices[0];
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
   cuda::launch(stream, config, TestKernel{});
   stream.sync();
 }
+} // namespace

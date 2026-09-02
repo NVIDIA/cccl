@@ -9,6 +9,8 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
+namespace
+{
 template <typename Iterator1, typename Iterator2>
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 __global__
@@ -47,9 +49,9 @@ void TestDeviceDereferenceDevicePtr()
   thrust::device_vector<int> input = unittest::random_integers<int>(100);
   thrust::device_vector<int> output(input.size(), 0);
 
-  thrust::device_ptr<int> _first1 = &input[0];
-  thrust::device_ptr<int> _last1  = _first1 + static_cast<std::ptrdiff_t>(input.size());
-  thrust::device_ptr<int> _first2 = &output[0];
+  const thrust::device_ptr<int> _first1 = &input[0];
+  const thrust::device_ptr<int> _last1  = _first1 + static_cast<std::ptrdiff_t>(input.size());
+  const thrust::device_ptr<int> _first2 = &output[0];
 
   simple_copy(_first1, _last1, _first2);
 
@@ -98,22 +100,22 @@ DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
 
 void TestDeviceDereferenceCountingIterator()
 {
-  thrust::counting_iterator<int> first(1);
-  thrust::counting_iterator<int> last(6);
+  const thrust::counting_iterator<int> first(1);
+  const thrust::counting_iterator<int> last(6);
 
   thrust::device_vector<int> output(5);
 
   simple_copy(first, last, output.begin());
 
-  thrust::device_vector<int> ref{1, 2, 3, 4, 5};
+  const thrust::device_vector<int> ref{1, 2, 3, 4, 5};
   ASSERT_EQUAL(output, ref);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceCountingIterator);
 
 void TestDeviceDereferenceTransformedCountingIterator()
 {
-  thrust::counting_iterator<int> first(1);
-  thrust::counting_iterator<int> last(6);
+  const thrust::counting_iterator<int> first(1);
+  const thrust::counting_iterator<int> last(6);
 
   thrust::device_vector<int> output(5);
 
@@ -121,9 +123,10 @@ void TestDeviceDereferenceTransformedCountingIterator()
               thrust::make_transform_iterator(last, ::cuda::std::negate<int>()),
               output.begin());
 
-  thrust::device_vector<int> ref{-1, -2, -3, -4, -5};
+  const thrust::device_vector<int> ref{-1, -2, -3, -4, -5};
   ASSERT_EQUAL(output, ref);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformedCountingIterator);
 
 _CCCL_DIAG_POP
+} // namespace

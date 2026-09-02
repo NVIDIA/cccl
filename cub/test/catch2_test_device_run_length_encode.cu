@@ -21,6 +21,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -241,8 +243,8 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
   c2h::device_vector<type> reference_unique(num_items);
   thrust::sequence(c2h::device_policy, reference_unique.begin(), reference_unique.end(), type{}); // [0, 1, 2, ...,
                                                                                                   // num_items -1]
-  c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
-  c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
+  const c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
+  const c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
 
   REQUIRE(out_unique == reference_unique);
   REQUIRE(out_counts == reference_counts);
@@ -261,9 +263,9 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_len
 
   run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
-  c2h::device_vector<type> reference_unique(1, type{1}); // [1]
-  c2h::device_vector<int> reference_counts(1, num_items); // [num_items]
-  c2h::device_vector<int> reference_num_runs(1, 1); // [1]
+  const c2h::device_vector<type> reference_unique(1, type{1}); // [1]
+  const c2h::device_vector<int> reference_counts(1, num_items); // [num_items]
+  const c2h::device_vector<int> reference_num_runs(1, 1); // [1]
 
   REQUIRE(out_unique == reference_unique);
   REQUIRE(out_counts == reference_counts);
@@ -375,8 +377,8 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
 
   run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
-  c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
-  c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
+  const c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
+  const c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
 
   // turn the NaN into something else to make it comparable
   out_unique.front()       = 42.0;
@@ -407,9 +409,9 @@ CUB_TEST("DeviceRunLengthEncode::Encode works with non-default constructible ite
 
   run_length_encode(custom_it, out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
-  c2h::device_vector<type> reference_unique{custom_it, custom_it + num_items};
-  c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
-  c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
+  const c2h::device_vector<type> reference_unique{custom_it, custom_it + num_items};
+  const c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
+  const c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
 
   REQUIRE(out_unique == reference_unique);
   REQUIRE(out_counts == reference_counts);
@@ -519,8 +521,8 @@ try
     static_cast<offset_type>(num_items));
 
   // Expected results
-  c2h::device_vector<item_t> expected_uniques{item_t{3}, item_t{42}};
-  c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
+  const c2h::device_vector<item_t> expected_uniques{item_t{3}, item_t{42}};
+  const c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
 
   // Verify result
   REQUIRE(out_num_runs[0] == num_uniques);
@@ -744,3 +746,4 @@ CUB_TEST("DeviceRunLengthEncode::Encode selects the last key among equal negativ
   REQUIRE(out_bits == ref_bits);
   REQUIRE(c2h::host_vector<int>(d_counts) == ref_counts);
 }
+} // namespace

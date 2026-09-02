@@ -19,6 +19,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
@@ -300,7 +302,7 @@ CUB_TEST("Device scan works complex accumulator types", "[scan][device]", CUB_SM
 {
   constexpr int num_items = 2 * 1024 * 1024;
 
-  custom_accumulator_t init{};
+  const custom_accumulator_t init{};
 
   c2h::device_vector<custom_input_t> d_input(static_cast<size_t>(num_items), custom_input_t{1});
   c2h::device_vector<custom_output_t> d_output{static_cast<size_t>(num_items), custom_output_t{nullptr, 0}};
@@ -320,3 +322,4 @@ CUB_TEST("Device scan works complex accumulator types", "[scan][device]", CUB_SM
 
   REQUIRE(d_ok_count[0] == num_items);
 }
+} // namespace

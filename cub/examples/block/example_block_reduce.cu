@@ -28,6 +28,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 /// Verbose output
 bool g_verbose = false;
 
@@ -62,13 +64,13 @@ __global__ void BlockReduceKernel(int* d_in, // Tile of input
   LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_in, data);
 
   // Start cycle timer
-  clock_t start = clock();
+  const clock_t start = clock();
 
   // Compute sum
-  int aggregate = BlockReduceT(temp_storage).Sum(data);
+  const int aggregate = BlockReduceT(temp_storage).Sum(data);
 
   // Stop cycle timer
-  clock_t stop = clock();
+  const clock_t stop = clock();
 
   // Store aggregate and elapsed clocks
   if (threadIdx.x == 0)
@@ -108,8 +110,8 @@ void Test()
   constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Allocate host arrays
-  int* h_in  = new int[TILE_SIZE];
-  int* h_gpu = new int[TILE_SIZE + 1];
+  int* h_in        = new int[TILE_SIZE];
+  const int* h_gpu = new int[TILE_SIZE + 1];
 
   // Initialize problem and reference output on host
   int h_aggregate = Initialize(h_in, TILE_SIZE);
@@ -156,7 +158,7 @@ void Test()
 
   // Check total aggregate
   printf("\tAggregate: ");
-  int compare = CompareDeviceResults(&h_aggregate, d_out, 1, g_verbose, g_verbose);
+  const int compare = CompareDeviceResults(&h_aggregate, d_out, 1, g_verbose, g_verbose);
   printf("%s\n", compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
@@ -190,10 +192,10 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
-  float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
-  float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
-  float avg_clocks_per_item = avg_clocks / TILE_SIZE;
+  const float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
+  const float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  const float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
+  const float avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockReduce::Sum clocks: %.3f\n", avg_clocks);
   printf("\tAverage BlockReduce::Sum clocks per item: %.3f\n", avg_clocks_per_item);
@@ -222,6 +224,7 @@ void Test()
     cudaFree(d_elapsed);
   }
 }
+} // namespace
 
 /**
  * Main

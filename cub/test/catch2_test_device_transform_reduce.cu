@@ -13,6 +13,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -41,7 +43,7 @@ CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", CUB_
 
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
-  item_t init{42};
+  const item_t init{42};
   c2h::device_vector<item_t> out(1);
   c2h::device_vector<item_t> in(num_items + 1);
   c2h::gen(C2H_SEED(2), in);
@@ -212,3 +214,4 @@ CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[r
   REQUIRE(expected == actual.a);
   REQUIRE(expected == actual.b);
 }
+} // namespace

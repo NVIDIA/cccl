@@ -32,6 +32,8 @@ struct policy_selector_t
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <class T, class OffsetT>
 void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
@@ -91,3 +93,4 @@ NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, offset_types))
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   // 2^32 exceeds INT32_MAX to cover the code paths for problem sizes that exceed a single 32-bit chunk
   .add_int64_power_of_two_axis("Elements{io}", {16, 20, 24, 28, 32});
+} // namespace

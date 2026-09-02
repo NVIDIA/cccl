@@ -25,6 +25,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairsCopy, sort_pairs_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortPairs, stable_sort_pairs);
@@ -164,7 +166,7 @@ public:
   {
     // The first (num_remainder_items * remainder_item_count) are items that appear once more often than the items that
     // follow remainder_items_offset
-    std::size_t remainder_items_offset = num_remainder_items * remainder_item_count;
+    const std::size_t remainder_items_offset = num_remainder_items * remainder_item_count;
 
     UnsignedIntegralKeyT target_item_index =
       (index <= remainder_items_offset)
@@ -217,9 +219,9 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works",
     thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  auto key_ranks_it     = cuda::counting_iterator(offset_t{});
-  auto keys_expected_it = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
-  bool results_equal    = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  auto key_ranks_it        = cuda::counting_iterator(offset_t{});
+  auto keys_expected_it    = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  const bool results_equal = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
   REQUIRE(results_equal == true);
 }
 
@@ -243,7 +245,8 @@ CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", CUB_SMALL, 
   // Verify results
   auto key_ranks_it     = cuda::counting_iterator(offset_t{});
   auto keys_expected_it = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
-  bool results_equal    = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  const bool results_equal =
+    thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   REQUIRE(results_equal == true);
 }
 
@@ -333,8 +336,9 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works",
   auto key_ranks_it       = cuda::counting_iterator(offset_t{});
   auto keys_expected_it   = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   auto values_expected_it = cuda::counting_iterator(offset_t{});
-  bool keys_equal         = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
-  bool values_equal = thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
+  const bool keys_equal   = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  const bool values_equal =
+    thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
@@ -363,8 +367,8 @@ CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", CUB_SMALL,
   auto key_ranks_it       = cuda::counting_iterator(offset_t{});
   auto keys_expected_it   = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   auto values_expected_it = cuda::counting_iterator(offset_t{});
-  bool keys_equal   = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
-  bool values_equal = thrust::equal(c2h::device_policy, key_ranks.cbegin(), key_ranks.cend(), values_expected_it);
+  const bool keys_equal = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  const bool values_equal = thrust::equal(c2h::device_policy, key_ranks.cbegin(), key_ranks.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
@@ -419,7 +423,7 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   auto num_items_ull = std::min(static_cast<std::size_t>(cuda::std::numeric_limits<offset_t>::max()) - 1,
                                 cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items = static_cast<offset_t>(num_items_ull);
+  const offset_t num_items = static_cast<offset_t>(num_items_ull);
 
   SECTION("Random")
   {
@@ -463,7 +467,7 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       // Perform comparison
       auto expected_result_it =
         cuda::transform_iterator(cuda::counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
-      bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.begin());
+      const bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.begin());
       REQUIRE(is_correct == true);
     }
     catch (std::bad_alloc& e)
@@ -491,7 +495,7 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       // Perform comparison
       auto expected_result_it =
         cuda::transform_iterator(cuda::counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
-      bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.cbegin());
+      const bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.cbegin());
       REQUIRE(is_correct == true);
     }
     catch (std::bad_alloc& e)
@@ -502,3 +506,4 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
     }
   }
 }
+} // namespace

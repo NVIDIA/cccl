@@ -62,6 +62,8 @@ void TestGatherDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherDeviceDevice);
 #endif
 
+namespace
+{
 void TestGatherCudaStreams()
 {
   thrust::device_vector<int> map = {6, 2, 1, 7, 2}; // gather indices
@@ -74,7 +76,7 @@ void TestGatherCudaStreams()
   thrust::gather(thrust::cuda::par.on(s), map.begin(), map.end(), src.begin(), dst.begin());
   cudaStreamSynchronize(s);
 
-  thrust::device_vector<int> ref = {6, 2, 1, 7, 2}; // destination vector
+  const thrust::device_vector<int> ref = {6, 2, 1, 7, 2}; // destination vector
 
   ASSERT_EQUAL(dst, ref);
   cudaStreamDestroy(s);
@@ -194,9 +196,10 @@ void TestGatherIfCudaStreams()
   thrust::gather_if(thrust::cuda::par.on(s), map.begin(), map.end(), flg.begin(), src.begin(), dst.begin());
   cudaStreamSynchronize(s);
 
-  thrust::device_vector<int> ref{0, 2, 0, 7, 0}; // destination vector
+  const thrust::device_vector<int> ref{0, 2, 0, 7, 0}; // destination vector
 
   ASSERT_EQUAL(dst, ref);
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestGatherIfCudaStreams);
+} // namespace

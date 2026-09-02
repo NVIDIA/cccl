@@ -15,6 +15,8 @@
 
 #include "test_macros.h"
 
+namespace
+{
 template <class T>
 TEST_DEVICE_FUNC T foo(const T& x)
 {
@@ -42,7 +44,7 @@ __global__ void arch_specific_kernel_mock_do_not_launch()
   }
   if (cuda::device::current_arch_traits().redux_intrinisic)
   {
-    [[maybe_unused]] int dummy1 = 0, dummy2 = 0;
+    [[maybe_unused]] int dummy1 = 0, dummy2 = 0; // NOLINT(misc-const-correctness)
     asm volatile("redux.sync.add.s32 %0, %1, 0xffffffff;" : "=r"(dummy1) : "r"(dummy2));
   }
   if (cuda::device::current_arch_traits().cp_async_supported)
@@ -183,3 +185,4 @@ C2H_CCCLRT_TEST("Traits", "[device]")
                    == dev.attribute(cuda::device_attributes::max_shared_memory_per_block_optin));
   }
 }
+} // namespace

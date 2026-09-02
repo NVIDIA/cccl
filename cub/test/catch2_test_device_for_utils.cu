@@ -7,6 +7,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T>
 struct value_t
 {
@@ -81,3 +83,4 @@ CUB_TEST("Device for utils correctly detect value overloads", "[for][device]", C
   // conversions do not work ;(
   STATIC_REQUIRE(cub::detail::for_each::has_unique_value_overload<char, value_t<int>>::value);
 }
+} // namespace

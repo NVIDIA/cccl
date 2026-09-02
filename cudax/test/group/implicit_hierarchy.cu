@@ -18,6 +18,8 @@
 
 #include "group_testing.cuh"
 
+namespace
+{
 template <bool V>
 struct Is1D_t : cuda::std::bool_constant<V>
 {};
@@ -98,3 +100,4 @@ C2H_TEST("Implicit Hierarchy", "[group][implicit_hierarchy]")
 
   stream.sync();
 }
+} // namespace

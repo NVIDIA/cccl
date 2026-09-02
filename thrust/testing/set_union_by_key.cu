@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator1,
           typename InputIterator2,
           typename InputIterator3,
@@ -30,7 +32,7 @@ void TestSetUnionByKeyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_union_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
@@ -88,7 +90,7 @@ void TestSetUnionByKeySimple()
   Vector ref_key{0, 2, 3, 3, 4}, ref_val{0, 0, 1, 1, 0};
   Vector result_key(5), result_val(5);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_union_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_union_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -111,12 +113,11 @@ void TestSetUnionByKey(const size_t n)
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
 
-  size_t denominators[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-  size_t num_denominators = sizeof(denominators) / sizeof(size_t);
+  const size_t denominators[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  for (size_t i = 0; i < num_denominators; ++i)
+  for (const size_t denominator : denominators)
   {
-    size_t size_a = n / denominators[i];
+    const size_t size_a = n / denominator;
 
     thrust::host_vector<T> h_a_keys(random_keys.begin(), random_keys.begin() + size_a);
     thrust::host_vector<T> h_b_keys(random_keys.begin() + size_a, random_keys.end());
@@ -133,7 +134,7 @@ void TestSetUnionByKey(const size_t n)
     thrust::device_vector<T> d_a_vals = h_a_vals;
     thrust::device_vector<T> d_b_vals = h_b_vals;
 
-    size_t max_size = h_a_keys.size() + h_b_keys.size();
+    const size_t max_size = h_a_keys.size() + h_b_keys.size();
 
     thrust::host_vector<T> h_result_keys(max_size);
     thrust::host_vector<T> h_result_vals(max_size);
@@ -178,7 +179,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetUnionByKey);
 template <typename T>
 void TestSetUnionByKeyEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h_a_key = temp;
   thrust::sort(h_a_key.begin(), h_a_key.end());
@@ -193,7 +194,7 @@ void TestSetUnionByKeyEquivalentRanges(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  size_t max_size = h_a_key.size() + h_b_key.size();
+  const size_t max_size = h_a_key.size() + h_b_key.size();
 
   thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
   thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
@@ -259,7 +260,7 @@ void TestSetUnionByKeyMultiset(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  size_t max_size = h_a_key.size() + h_b_key.size();
+  const size_t max_size = h_a_key.size() + h_b_key.size();
   thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
   thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
 
@@ -295,3 +296,4 @@ void TestSetUnionByKeyMultiset(const size_t n)
   ASSERT_EQUAL(h_result_val, d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionByKeyMultiset);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

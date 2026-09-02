@@ -3,17 +3,19 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T, unsigned int N>
 void _TestStableSortWithLargeKeys()
 {
-  size_t n = (128 * 1024) / sizeof(FixedVector<T, N>);
+  const size_t n = (128 * 1024) / sizeof(FixedVector<T, N>);
 
   thrust::host_vector<FixedVector<T, N>> h_keys(n);
 
+  const thrust::host_vector<T> values = unittest::random_integers<T>(n);
   for (size_t i = 0; i < n; i++)
   {
-    // XXX Use proper random number generation facility.
-    h_keys[i] = FixedVector<T, N>(rand());
+    h_keys[i] = FixedVector<T, N>(values[i]);
   }
 
   thrust::device_vector<FixedVector<T, N>> d_keys = h_keys;
@@ -31,3 +33,4 @@ void TestStableSortWithLargeKeys()
   _TestStableSortWithLargeKeys<int, 128>();
 }
 DECLARE_UNITTEST(TestStableSortWithLargeKeys);
+} // namespace

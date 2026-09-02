@@ -16,6 +16,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename OutItT>
 struct host_write_op
 {
@@ -127,7 +129,7 @@ void TestTabulateOutputIterator()
                                                  device_write_first_op<it_t>>::type;
 
   // Construct tabulate_output_iterator
-  op_t op{output.begin()};
+  const op_t op{output.begin()};
   auto tabulate_out_it = thrust::make_tabulate_output_iterator(op);
 
   // Prepare input
@@ -160,7 +162,7 @@ void TestTabulateOutputIterator()
   using op_t     = host_write_op<vec_it_t>;
 
   vector_t out(4, 42);
-  thrust::tabulate_output_iterator<op_t> tabulate_out_it{op_t{out.begin()}};
+  thrust::tabulate_output_iterator<op_t> tabulate_out_it{op_t{out.begin()}}; // NOLINT(misc-const-correctness)
 
   tabulate_out_it[1] = 2;
   vector_t ref{42, 2, 42, 42};
@@ -176,3 +178,4 @@ void TestTabulateOutputIterator()
 }
 
 DECLARE_UNITTEST(TestTabulateOutputIterator);
+} // namespace

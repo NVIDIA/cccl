@@ -16,6 +16,8 @@
 //
 // Thanks to Joseph Rhoads for contributing this example
 
+namespace
+{
 // structure used to accumulate the moments and other
 // statistical properties encountered so far.
 template <typename T>
@@ -129,20 +131,21 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
   std::cout << "\n";
 }
+} // namespace
 
 int main()
 {
   using T = float;
 
   // initialize host array
-  thrust::host_vector<T> h_x{4, 7, 13, 16};
+  const thrust::host_vector<T> h_x{4, 7, 13, 16};
 
   // transfer to device
   thrust::device_vector<T> d_x(h_x);
 
   // setup arguments
-  summary_stats_unary_op<T> unary_op;
-  summary_stats_binary_op<T> binary_op;
+  const summary_stats_unary_op<T> unary_op;
+  const summary_stats_binary_op<T> binary_op;
   summary_stats_data<T> init;
 
   init.initialize();

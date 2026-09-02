@@ -46,6 +46,8 @@
 #include "../../common.h"
 #include "bfloat16.h"
 
+namespace
+{
 // ============================================================================
 // at::opmath_type<T> — the compute type for intermediate math
 // float for both float and BFloat16 (ATen/OpMathType.h)
@@ -114,9 +116,9 @@ __device__ __forceinline__ scalar_t aten_lerp(scalar_t self_, scalar_t end_, wei
   using opmath_t        = opmath_type<scalar_t>;
   using opmath_weight_t = opmath_type<weight_t>;
 
-  opmath_t self          = self_;
-  opmath_t end           = end_;
-  opmath_weight_t weight = weight_;
+  const opmath_t self          = self_;
+  const opmath_t end           = end_;
+  const opmath_weight_t weight = weight_;
 
   return is_lerp_weight_small(weight) ? self + weight * (end - self) : end - (end - self) * (opmath_t(1) - weight);
 }
@@ -319,7 +321,7 @@ using element_types = nvbench::type_list<float, BFloat16>;
 // ============================================================================
 
 template <typename T>
-static void many_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
+void many_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -497,7 +499,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void many_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
+void many_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -629,7 +631,7 @@ try
     // note: even though output is bool, we use d_b as output because
     // it must hold at least enough memory per element for bool (1 byte)
     // greater: native/cuda/CompareKernels.cu:69
-    CompareFunctor<T> comp_f(OpType::GT);
+    const CompareFunctor<T> comp_f(OpType::GT);
     transform(cuda::std::make_tuple(d_a, d_in[12]), d_b, n, comp_f, s);
   });
 }
@@ -647,7 +649,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void few_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
+void few_inputs_many_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -722,8 +724,8 @@ try
       d_a,
       n,
       [beta, threshold] __device__(T a) -> T {
-        using opmath_t = opmath_type<T>;
-        opmath_t aop   = static_cast<opmath_t>(a);
+        using opmath_t     = opmath_type<T>;
+        const opmath_t aop = static_cast<opmath_t>(a);
         return (aop * beta) > threshold ? aop : (::log1p(std::exp(aop * beta))) / beta;
       },
       s);
@@ -758,8 +760,8 @@ try
       d_b,
       n,
       [negcoef, poscoef, negiptcoef] __device__(T a) -> T {
-        using opmath_t = opmath_type<T>;
-        opmath_t aop   = static_cast<opmath_t>(a);
+        using opmath_t     = opmath_type<T>;
+        const opmath_t aop = static_cast<opmath_t>(a);
         return aop > 0 ? aop * poscoef : std::expm1(aop * negiptcoef) * negcoef;
       },
       s);
@@ -805,7 +807,7 @@ catch (const std::bad_alloc&)
 // ============================================================================
 
 template <typename T>
-static void few_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
+void few_inputs_few_instructions(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -909,8 +911,8 @@ try
       d_b,
       n,
       [negval] __device__(T a) -> T {
-        using opmath_t = opmath_type<T>;
-        opmath_t aop   = static_cast<opmath_t>(a);
+        using opmath_t     = opmath_type<T>;
+        const opmath_t aop = static_cast<opmath_t>(a);
         return aop > opmath_t(0) ? aop : aop * negval;
       },
       s);
@@ -921,8 +923,8 @@ try
       d_a,
       n,
       [zero, one_sixth, three, six] __device__(T self_val) -> T {
-        using opmath_t = opmath_type<T>;
-        opmath_t x     = static_cast<opmath_t>(self_val);
+        using opmath_t   = opmath_type<T>;
+        const opmath_t x = static_cast<opmath_t>(self_val);
         return x * cuda::std::min(cuda::std::max(x + three, zero), six) * one_sixth;
       },
       s);
@@ -943,14 +945,14 @@ try
       d_a,
       n,
       [zero, one_sixth, three, six] __device__(T self_val) -> T {
-        using opmath_t = opmath_type<T>;
-        opmath_t x     = static_cast<opmath_t>(self_val);
+        using opmath_t   = opmath_type<T>;
+        const opmath_t x = static_cast<opmath_t>(self_val);
         return cuda::std::min<opmath_t>(cuda::std::max<opmath_t>(x + three, zero), six) * one_sixth;
       },
       s);
 
     // gt(scalar=0): native/cuda/CompareKernels.cu:47
-    CompareFunctor<T> comp_f(OpType::GT);
+    const CompareFunctor<T> comp_f(OpType::GT);
     transform(
       d_a,
       d_b,
@@ -965,6 +967,7 @@ catch (const std::bad_alloc&)
 {
   state.skip("Skipping: out of memory.");
 }
+} // namespace
 
 NVBENCH_BENCH_TYPES(many_inputs_many_instructions, NVBENCH_TYPE_AXES(element_types))
   .set_name("many_inputs_many_instructions")

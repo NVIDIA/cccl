@@ -2,6 +2,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestLog2()
 {
   static_assert(thrust::random::detail::log2(1u) == 0u);
@@ -24,3 +26,4 @@ void TestLog2()
   static_assert(thrust::random::detail::log2(512u) == 9u);
 }
 DECLARE_UNITTEST(TestLog2);
+} // namespace

@@ -11,6 +11,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::transform_iterator from cuda::std
 void TestTransformIteratorTraits()
 {
@@ -54,7 +56,7 @@ void TestTransformIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
-  thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
+  const thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
 
   thrust::copy(iter, iter + 4, output.begin());
 
@@ -78,7 +80,7 @@ void TestMakeTransformIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
-  thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
+  const thrust::transform_iterator<UnaryFunction, Iterator> iter(input.begin(), UnaryFunction());
 
   thrust::copy(thrust::make_transform_iterator(input.begin(), UnaryFunction()),
                thrust::make_transform_iterator(input.end(), UnaryFunction()),
@@ -252,3 +254,4 @@ void TestTransformIteratorIdentity()
 }
 
 DECLARE_UNITTEST(TestTransformIteratorIdentity);
+} // namespace

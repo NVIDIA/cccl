@@ -10,6 +10,8 @@
 #include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
+namespace
+{
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
           int LOGICAL_WARP_THREADS,
           int ITEMS_PER_THREAD,
@@ -29,7 +31,7 @@ __global__ void warp_load_kernel(InputIteratorT input_iterator, ActionT action, 
   const int linear_tid = static_cast<int>(threadIdx.x);
 
   const int warp_id = linear_tid / LOGICAL_WARP_THREADS;
-  warp_load_t load(storage[warp_id]);
+  warp_load_t load(storage[warp_id]); // NOLINT(misc-const-correctness)
 
   // Test WarpLoad specialization
   T reg[ITEMS_PER_THREAD];
@@ -364,3 +366,4 @@ CUB_TEST("Vectorized warp load with const and non-const datatype and different a
   REQUIRE(num_errors == expected_error_count);
 }
 #endif
+} // namespace

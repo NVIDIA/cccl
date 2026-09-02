@@ -27,6 +27,8 @@
 #  include "cub_test_macros.h"
 
 // example-begin for-each-in-extents-op
+namespace
+{
 struct linear_store_3D
 {
   using data_t = cuda::std::array<int, 3>;
@@ -38,6 +40,7 @@ struct linear_store_3D
     d_output1_raw[idx] = {x, y, z};
   }
 };
+} // namespace
 // example-end for-each-in-extents-op
 
 // clang-format off
@@ -45,14 +48,14 @@ CUB_TEST("Device ForEachInExtents", "[ForEachInExtents][device]", CUB_SMALL)
 {
   // example-begin for-each-in-extents-example
   using                            data_t = cuda::std::array<int, 3>;
-  cuda::std::extents<int, 3, 2, 2> extents{};
+  const cuda::std::extents<int, 3, 2, 2> extents{};
   thrust::device_vector<data_t>    d_output1(cub::detail::size(extents), thrust::no_init);
   thrust::device_vector<data_t>    d_output2(cub::detail::size(extents), thrust::no_init);
   auto                             d_output1_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output1.data()),
                                                                           3 * 2 * 2};
   auto                             d_output2_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output2.data()),
                                                                           3 * 2 * 2};
-  thrust::host_vector<data_t>      expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
+  const thrust::host_vector<data_t>      expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
                                                {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
                                                {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
 

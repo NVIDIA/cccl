@@ -43,6 +43,8 @@ using probing_kinds = c2h::type_list<int_c<0>, int_c<1>>; // 0 = linear probing,
 // Payloads are offset from their key so a bug that returns the key instead of the mapped value is caught.
 constexpr int payload_offset = 7;
 
+namespace
+{
 template <class Pair>
 struct iota_pair
 {
@@ -124,7 +126,7 @@ C2H_TEST("fixed_capacity_map find", "[container]", key_types, cg_sizes, bucket_s
   constexpr int num_keys      = 400;
   constexpr key_type sentinel = key_type{-1};
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,
@@ -171,3 +173,4 @@ C2H_TEST("fixed_capacity_map find", "[container]", key_types, cg_sizes, bucket_s
     cleared.data() + num_keys,
     is_not_sentinel<key_type>{sentinel}));
 }
+} // namespace

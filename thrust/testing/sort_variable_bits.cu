@@ -9,6 +9,8 @@ using namespace unittest;
 using UnsignedIntegerTypes =
   unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t, unittest::uint64_t>;
 
+namespace
+{
 template <typename T>
 struct TestSortVariableBits
 {
@@ -18,7 +20,7 @@ struct TestSortVariableBits
     {
       thrust::host_vector<T> h_keys = unittest::random_integers<T>(n);
 
-      size_t mask = (1 << num_bits) - 1;
+      const size_t mask = (1 << num_bits) - 1;
       for (size_t i = 0; i < n; i++)
       {
         h_keys[i] &= mask;
@@ -38,3 +40,4 @@ struct TestSortVariableBits
   }
 };
 VariableUnitTest<TestSortVariableBits, UnsignedIntegerTypes> TestSortVariableBitsInstance;
+} // namespace

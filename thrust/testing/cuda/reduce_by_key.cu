@@ -74,6 +74,8 @@ __global__ void reduce_by_key_kernel(
 }
 #endif
 
+namespace
+{
 template <typename T>
 struct is_equal_div_10_reduce
 {
@@ -442,14 +444,14 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
   using transform_key_it = thrust::transform_iterator<div_op, counting_it>;
   using transform_val_it = thrust::transform_iterator<mod_op, counting_it>;
 
-  counting_it count_begin(0ll);
-  counting_it count_end = count_begin + num_items;
+  const counting_it count_begin(0ll);
+  const counting_it count_end = count_begin + num_items;
   ASSERT_EQUAL(static_cast<std::int64_t>(::cuda::std::distance(count_begin, count_end)), num_items);
 
-  transform_key_it keys_begin(count_begin, div_op{key_size});
-  transform_key_it keys_end(count_end, div_op{key_size});
+  const transform_key_it keys_begin(count_begin, div_op{key_size});
+  const transform_key_it keys_end(count_end, div_op{key_size});
 
-  transform_val_it values_begin(count_begin, mod_op{key_size});
+  const transform_val_it values_begin(count_begin, mod_op{key_size});
 
   thrust::device_vector<std::int64_t> output_keys(num_unique_keys);
   thrust::device_vector<std::int64_t> output_values(num_unique_keys);
@@ -519,11 +521,11 @@ void TestReduceByKeyWithCustomEqualityOp()
   ASSERT_EQUAL(error_counter[0], cuda::std::uint32_t{0});
 
   // Verify that unique keys are correct
-  bool all_keys_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), keys);
+  const bool all_keys_correct = thrust::equal(unique_out.cbegin(), unique_out.cend(), keys);
   ASSERT_EQUAL(all_keys_correct, true);
 
   // Verify that the aggregates are correct
-  bool all_values_correct = thrust::equal(aggregates_out.cbegin(), aggregates_out.cend(), values);
+  const bool all_values_correct = thrust::equal(aggregates_out.cbegin(), aggregates_out.cend(), values);
   ASSERT_EQUAL(all_values_correct, true);
 }
 
@@ -575,3 +577,4 @@ void TestReduceByKeyWithDifferentAccumulatorT()
 }
 
 DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);
+} // namespace

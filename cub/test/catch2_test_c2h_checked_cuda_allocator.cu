@@ -9,11 +9,13 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 std::size_t get_alloc_bytes()
 {
   std::size_t free_bytes{};
   std::size_t total_bytes{};
-  cudaError_t status = cudaMemGetInfo(&free_bytes, &total_bytes);
+  const cudaError_t status = cudaMemGetInfo(&free_bytes, &total_bytes);
   REQUIRE(status == cudaSuccess);
 
   // Find a size that's > free but < total, preferring to return more than total if the values are
@@ -48,3 +50,4 @@ CUB_TEST("c2h::device_policy throws when requested allocations exceed free devic
 
   thrust::detail::return_temporary_buffer(policy, buffer.first, buffer.second);
 }
+} // namespace

@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestInnerProductSimple()
 {
@@ -15,8 +17,8 @@ void TestInnerProductSimple()
   Vector v1{1, -2, 3};
   Vector v2{-4, 5, 6};
 
-  T init   = 3;
-  T result = thrust::inner_product(v1.begin(), v1.end(), v2.begin(), init);
+  const T init   = 3;
+  const T result = thrust::inner_product(v1.begin(), v1.end(), v2.begin(), init);
   ASSERT_EQUAL(result, 7);
 }
 DECLARE_VECTOR_UNITTEST(TestInnerProductSimple);
@@ -32,7 +34,7 @@ void TestInnerProductDispatchExplicit()
 {
   thrust::device_vector<int> vec;
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::inner_product(sys, vec.begin(), vec.end(), vec.begin(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -49,7 +51,7 @@ void TestInnerProductDispatchImplicit()
 {
   thrust::device_vector<int> vec;
 
-  int result = thrust::inner_product(
+  const int result = thrust::inner_product(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), thrust::retag<my_tag>(vec.begin()), 0);
 
   ASSERT_EQUAL(13, result);
@@ -65,8 +67,8 @@ void TestInnerProductWithOperator()
   Vector v2{-1, 3, 6};
 
   // compute (v1 - v2) and perform a multiplies reduction
-  T init   = 3;
-  T result = thrust::inner_product(
+  const T init   = 3;
+  const T result = thrust::inner_product(
     v1.begin(), v1.end(), v2.begin(), init, ::cuda::std::multiplies<T>(), ::cuda::std::minus<T>());
   ASSERT_EQUAL(result, 90);
 }
@@ -111,19 +113,19 @@ struct only_set_when_both_expected
 
 void TestInnerProductWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
-  *has_executed                         = false;
+  const thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
+  *has_executed                               = false;
 
-  only_set_when_both_expected fn = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
+  const only_set_when_both_expected fn = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
 
   ASSERT_EQUAL(thrust::inner_product(thrust::device, begin, end, begin, 0ll, ::cuda::std::plus<long long>(), fn),
                (1ll << magnitude));
 
-  bool has_executed_h = *has_executed;
+  const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
   ASSERT_EQUAL(has_executed_h, true);
@@ -153,3 +155,4 @@ void TestInnerProductPlaceholders()
   ASSERT_ALMOST_EQUAL(result, 200.f);
 }
 DECLARE_UNITTEST(TestInnerProductPlaceholders);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

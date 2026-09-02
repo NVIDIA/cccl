@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct saxpy_reference
 {
@@ -26,7 +28,7 @@ struct TestFunctionalPlaceholdersValue
     const size_t n = 10000;
     using T        = typename Vector::value_type;
 
-    T a(13);
+    const T a(13);
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
@@ -53,7 +55,7 @@ struct TestFunctionalPlaceholdersTransformIterator
     const size_t n = 10000;
     using T        = typename Vector::value_type;
 
-    T a(13);
+    const T a(13);
 
     Vector x = unittest::random_integers<T>(n);
     Vector y = unittest::random_integers<T>(n);
@@ -96,9 +98,9 @@ void TestFunctionalPlaceholdersSemiRegular()
 {
   using namespace thrust::placeholders;
   using Expr = decltype(_1 * _1 + _2 * _2);
-  Expr expr; // default-constructible
+  const Expr expr; // default-constructible
   ASSERT_EQUAL(expr(2, 3), 13);
-  Expr expr2 = expr; // copy-constructible
+  const Expr expr2 = expr; // copy-constructible
   ASSERT_EQUAL(expr2(2, 3), 13);
   Expr expr3;
   expr3 = expr; // copy-assignable
@@ -107,3 +109,4 @@ void TestFunctionalPlaceholdersSemiRegular()
   static_assert(::cuda::std::semiregular<Expr>);
 }
 DECLARE_UNITTEST(TestFunctionalPlaceholdersSemiRegular);
+} // namespace

@@ -30,7 +30,7 @@ CUB_TEST("FastDivMod random", "[FastDivMod][Random]", CUB_SMALL, index_types)
   constexpr auto max_value = +cuda::std::numeric_limits<index_type>::max();
   auto dividend            = GENERATE_COPY(take(20, random(+index_type{1}, max_value)));
   auto divisor             = GENERATE_COPY(take(20, random(+index_type{1}, max_value)));
-  fast_div_mod<index_type> div_mod(static_cast<index_type>(divisor));
+  fast_div_mod<index_type> div_mod(static_cast<index_type>(divisor)); // NOLINT(misc-const-correctness)
   CAPTURE(c2h::type_name<index_type>(), dividend, divisor);
   static_assert(std::is_same_v<decltype(dividend / divisor), decltype(div_mod(dividend).quotient)>,
                 "quotient type mismatch");
@@ -45,11 +45,11 @@ CUB_TEST("FastDivMod edge cases", "[FastDivMod][EdgeCases]", CUB_SMALL, index_ty
   constexpr auto max_value = cuda::std::numeric_limits<index_type>::max();
   CAPTURE(c2h::type_name<index_type>());
   // divisor/dividend == max
-  fast_div_mod<index_type> div_mod_max(max_value);
+  fast_div_mod<index_type> div_mod_max(max_value); // NOLINT(misc-const-correctness)
   REQUIRE(1 == div_mod_max(max_value).quotient);
   REQUIRE(0 == div_mod_max(max_value).remainder);
   // divisor == 10, dividend == 0
-  fast_div_mod<index_type> div_mod_min(10);
+  fast_div_mod<index_type> div_mod_min(10); // NOLINT(misc-const-correctness)
   REQUIRE(0 == div_mod_min(0).quotient);
   REQUIRE(0 == div_mod_min(0).remainder);
 }

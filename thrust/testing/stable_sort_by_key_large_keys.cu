@@ -3,10 +3,12 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <unsigned int N>
 void _TestStableSortByKeyWithLargeKeys()
 {
-  size_t n = (128 * 1024) / sizeof(FixedVector<int, N>);
+  const size_t n = (128 * 1024) / sizeof(FixedVector<int, N>);
 
   thrust::host_vector<FixedVector<int, N>> h_keys(n);
   thrust::host_vector<unsigned int> h_vals(n);
@@ -36,3 +38,4 @@ void TestStableSortByKeyWithLargeKeys()
   _TestStableSortByKeyWithLargeKeys<16>();
 }
 DECLARE_UNITTEST(TestStableSortByKeyWithLargeKeys);
+} // namespace

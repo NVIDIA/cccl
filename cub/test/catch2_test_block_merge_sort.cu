@@ -20,6 +20,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 struct CustomLess
 {
   template <typename DataType>
@@ -587,3 +589,4 @@ CUB_TEST("Block merge sort is stable", "[merge sort][block]", CUB_SMALL, threads
 
   REQUIRE(h_reference == d_keys);
 }
+} // namespace

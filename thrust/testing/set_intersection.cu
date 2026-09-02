@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator set_intersection(
   my_system& system, InputIterator1, InputIterator1, InputIterator2, InputIterator2, OutputIterator result)
@@ -19,7 +21,7 @@ void TestSetIntersectionDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_intersection(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -59,7 +61,7 @@ void TestSetIntersectionSimple()
 
   Vector result(2);
 
-  Iterator end = thrust::set_intersection(a.begin(), a.end(), b.begin(), b.end(), result.begin());
+  const Iterator end = thrust::set_intersection(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
   ASSERT_EQUAL(ref, result);
@@ -69,8 +71,8 @@ DECLARE_VECTOR_UNITTEST(TestSetIntersectionSimple);
 template <typename T>
 void TestSetIntersection(const size_t n)
 {
-  size_t sizes[]   = {0, 1, n / 2, n, n + 1, 2 * n};
-  size_t num_sizes = sizeof(sizes) / sizeof(size_t);
+  size_t sizes[]         = {0, 1, n / 2, n, n + 1, 2 * n};
+  const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
 
   thrust::host_vector<T> random =
     unittest::random_integers<unittest::int8_t>(n + *thrust::max_element(sizes, sizes + num_sizes));
@@ -84,10 +86,8 @@ void TestSetIntersection(const size_t n)
   thrust::device_vector<T> d_a = h_a;
   thrust::device_vector<T> d_b = h_b;
 
-  for (size_t i = 0; i < num_sizes; i++)
+  for (const size_t size : sizes)
   {
-    size_t size = sizes[i];
-
     thrust::host_vector<T> h_result(n + size);
     thrust::device_vector<T> d_result(n + size);
 
@@ -122,7 +122,7 @@ void TestSetIntersectionToDiscardIterator(const size_t n)
   thrust::discard_iterator<> d_result;
 
   thrust::host_vector<T> h_reference(n);
-  typename thrust::host_vector<T>::iterator h_end =
+  const typename thrust::host_vector<T>::iterator h_end =
     thrust::set_intersection(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), h_reference.begin());
   h_reference.erase(h_end, h_reference.end());
 
@@ -130,7 +130,7 @@ void TestSetIntersectionToDiscardIterator(const size_t n)
 
   d_result = thrust::set_intersection(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(h_reference.size());
+  const thrust::discard_iterator<> reference(h_reference.size());
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -140,8 +140,8 @@ DECLARE_VARIABLE_UNITTEST(TestSetIntersectionToDiscardIterator);
 template <typename T>
 void TestSetIntersectionEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
-  thrust::host_vector<T> h_a  = temp;
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_a        = temp;
   thrust::sort(h_a.begin(), h_a.end());
   thrust::host_vector<T> h_b = h_a;
 
@@ -209,10 +209,10 @@ DECLARE_VARIABLE_UNITTEST(TestSetIntersectionMultiset);
 #if !_CCCL_COMPILER(MSVC)
 void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin1(0);
-  thrust::counting_iterator<long long> begin2 = begin1 + (1ll << magnitude);
-  thrust::counting_iterator<long long> end1   = begin2 + 1;
-  thrust::counting_iterator<long long> end2   = begin2 + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin1(0);
+  const thrust::counting_iterator<long long> begin2 = begin1 + (1ll << magnitude);
+  const thrust::counting_iterator<long long> end1   = begin2 + 1;
+  const thrust::counting_iterator<long long> end2   = begin2 + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin2, end1), 1);
 
   thrust::device_vector<long long> result;
@@ -236,3 +236,4 @@ void TestSetDifferenceWithBigIndexes()
 }
 DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 #endif
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <class Vector>
 struct TestVectorRangeInsertSimple
 {
@@ -118,7 +120,7 @@ struct TestVectorRangeInsert
     }
 
     // choose insertion position at random
-    size_t position = n > 0 ? (size_t) h_src[n + 2] % n : 0;
+    const size_t position = n > 0 ? (size_t) h_src[n + 2] % n : 0;
 
     // insert on host
     h_dst.insert(h_dst.begin() + position, h_src.begin() + begin, h_src.begin() + end);
@@ -234,10 +236,10 @@ struct TestVectorFillInsert
     thrust::device_vector<T> d_dst = h_dst;
 
     // choose insertion position at random
-    size_t position = n > 0 ? (size_t) h_dst[n] % n : 0;
+    const size_t position = n > 0 ? (size_t) h_dst[n] % n : 0;
 
     // choose insertion size at random
-    size_t insertion_size = n > 0 ? (size_t) h_dst[n] % n : 13;
+    const size_t insertion_size = n > 0 ? (size_t) h_dst[n] % n : 13;
 
     // insert on host
     h_dst.insert(h_dst.begin() + position, insertion_size, 13);
@@ -249,3 +251,4 @@ struct TestVectorFillInsert
   }
 }; // end TestVectorFillInsert
 VariableUnitTest<TestVectorFillInsert, IntegralTypes> TestVectorFillInsertInstance;
+} // namespace

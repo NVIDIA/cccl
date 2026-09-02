@@ -31,6 +31,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wself-move")
 #endif // _CCCL_COMPILER(GCC, >=, 13)
 _CCCL_DIAG_SUPPRESS_CLANG("-Wself-move")
 
+namespace
+{
 struct do_not_construct
 {
   do_not_construct()
@@ -247,7 +249,7 @@ C2H_TEST("uninitialized_buffer is usable with cudax::launch", "[container]")
       cuda::device_default_memory_pool(cuda::device_ref{0}), 1024};
     auto configuration = cuda::make_config(cuda::grid_dims(grid_size), cuda::block_dims<256>());
 
-    cudax::stream stream{cuda::device_ref{0}};
+    const cudax::stream stream{cuda::device_ref{0}};
 
     cudax::launch(stream, configuration, kernel, buffer);
   }
@@ -259,7 +261,7 @@ C2H_TEST("uninitialized_buffer is usable with cudax::launch", "[container]")
       cuda::device_default_memory_pool(cuda::device_ref{0}), 1024};
     auto configuration = cuda::make_config(cuda::grid_dims(grid_size), cuda::block_dims<256>());
 
-    cudax::stream stream{cuda::device_ref{0}};
+    const cudax::stream stream{cuda::device_ref{0}};
 
     cudax::launch(stream, configuration, const_kernel, buffer);
   }
@@ -299,7 +301,8 @@ C2H_TEST("uninitialized_buffer's memory resource does not dangle", "[container]"
   {
     CHECK(test_device_memory_pool_ref::count == 0);
 
-    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> src_buffer{test_device_memory_pool_ref{}, 1024};
+    const cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> src_buffer{
+      test_device_memory_pool_ref{}, 1024};
 
     CHECK(test_device_memory_pool_ref::count == 1);
 
@@ -312,3 +315,4 @@ C2H_TEST("uninitialized_buffer's memory resource does not dangle", "[container]"
 
   CHECK(test_device_memory_pool_ref::count == 1);
 }
+} // namespace

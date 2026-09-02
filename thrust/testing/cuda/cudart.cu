@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 void TestCudaMallocResultAligned(const std::size_t n)
 {
@@ -14,3 +16,4 @@ void TestCudaMallocResultAligned(const std::size_t n)
   ASSERT_EQUAL(true, ::cuda::std::is_sufficiently_aligned<alignof(T)>(ptr));
 }
 DECLARE_VARIABLE_UNITTEST(TestCudaMallocResultAligned);
+} // namespace

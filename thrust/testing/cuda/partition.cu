@@ -6,6 +6,8 @@
 #include "thrust/detail/raw_pointer_cast.h"
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct is_even
 {
@@ -706,7 +708,7 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
+  const Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
 
   Vector ref(5);
   ref[0] = 2;
@@ -732,3 +734,4 @@ void TestPartitionCudaStreamsNoSync()
   TestPartitionCudaStreams(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestPartitionCudaStreamsNoSync);
+} // namespace

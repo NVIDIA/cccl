@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct less_div_10
 {
@@ -247,3 +249,4 @@ void TestMergeSortKeyValue([[maybe_unused]] size_t n)
 #endif
 }
 DECLARE_VARIABLE_UNITTEST(TestMergeSortKeyValue);
+} // namespace

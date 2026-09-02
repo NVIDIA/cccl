@@ -2,6 +2,8 @@
 #include <thrust/mismatch.h>
 
 #include <unittest/unittest.h>
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestMismatchSimple()
 {
@@ -122,7 +124,7 @@ void TestMismatchDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::mismatch(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -146,3 +148,4 @@ void TestMismatchDispatchImplicit()
   ASSERT_EQUAL(13, vec.front());
 }
 DECLARE_UNITTEST(TestMismatchDispatchImplicit);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

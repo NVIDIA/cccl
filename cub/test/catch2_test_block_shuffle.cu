@@ -16,6 +16,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int BlockDimX, int BlockDimY, int BlockDimZ, int ItemsPerThread, class T, class ActionT>
 __global__ void block_shuffle_kernel(T* data, ActionT action)
 {
@@ -145,7 +147,7 @@ struct down_with_prefix_op_t
 template <int ItemsPerThread, int BlockDimX, int BlockDimY, int BlockDimZ, class T, class ActionT>
 void block_shuffle(c2h::device_vector<T>& data, ActionT action)
 {
-  dim3 block(BlockDimX, BlockDimY, BlockDimZ);
+  const dim3 block(BlockDimX, BlockDimY, BlockDimZ);
   block_shuffle_kernel<BlockDimX, BlockDimY, BlockDimZ, ItemsPerThread>
     <<<1, block>>>(thrust::raw_pointer_cast(data.data()), action);
 
@@ -218,7 +220,7 @@ CUB_TEST(
   c2h::device_vector<type> d_data(params::tile_size);
   c2h::gen(C2H_SEED(10), d_data);
 
-  c2h::device_vector<type> d_ref = d_data;
+  const c2h::device_vector<type> d_ref = d_data;
 
   const unsigned int distance = GENERATE_COPY(take(4, random(0, params::tile_size - 1)));
 
@@ -328,3 +330,4 @@ CUB_TEST("Block shuffle down works when prefix is required",
   REQUIRE(d_ref == d_data);
   REQUIRE(d_prefix_ref == d_prefix);
 }
+} // namespace

@@ -21,6 +21,8 @@
 
 #include "test_macros.h"
 
+namespace
+{
 template <class T, class View>
 struct TestKernel
 {
@@ -100,9 +102,10 @@ void test_span(cuda::stream_ref stream)
 
 C2H_TEST("Dynamic shared memory option", "[launch]")
 {
-  cuda::device_ref device = cuda::devices[0];
-  cuda::stream stream{device};
+  const cuda::device_ref device = cuda::devices[0];
+  const cuda::stream stream{device};
 
   test_ref(stream);
   test_span(stream);
 }
+} // namespace

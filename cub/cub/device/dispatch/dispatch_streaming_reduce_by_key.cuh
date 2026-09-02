@@ -144,8 +144,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
   {
-    global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
-    global_offset_t current_num_items =
+    const global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
+    const global_offset_t current_num_items =
       (partition_idx + 1 == num_partitions) ? (num_items - current_partition_offset) : capped_num_items_per_invocation;
 
     const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
@@ -215,7 +215,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       const bool is_first_partition = (partition_idx == 0);
       const bool is_last_partition  = (partition_idx + 1 == num_partitions);
       const int buffer_selector     = partition_idx % 2;
-      streaming_context_t streaming_context{
+      const streaming_context_t streaming_context{
         is_first_partition,
         is_last_partition,
         is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,

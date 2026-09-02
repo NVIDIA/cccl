@@ -33,8 +33,6 @@ struct some_object
 private:
   T m_data;
 };
-} // namespace
-
 template <typename T>
 void TestUniversalAllocateUnique()
 {
@@ -173,3 +171,4 @@ void TestUniversalStdVector(std::size_t const n)
   ASSERT_EQUAL(host, universal);
 }
 DECLARE_VARIABLE_UNITTEST(TestUniversalStdVector);
+} // namespace

@@ -12,6 +12,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 
 #if TEST_TYPES == 0
@@ -45,7 +47,7 @@ CUB_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][devi
   const bool sort_descending = GENERATE(ascending, descending);
   const bool sort_buffer     = GENERATE(pointers, double_buffer);
 
-  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr);
+  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr); // NOLINT(misc-const-correctness)
   cub::DoubleBuffer<ValueT> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
@@ -83,7 +85,7 @@ CUB_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
   c2h::device_vector<int> offsets(num_segments + 1, int{});
   const int* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr);
+  cub::DoubleBuffer<KeyT> keys_buffer(nullptr, nullptr); // NOLINT(misc-const-correctness)
   cub::DoubleBuffer<ValueT> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
@@ -218,7 +220,7 @@ try
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
   constexpr auto max_histo_size = 250;
-  segmented_verification_helper<key_t> verification_helper{max_histo_size};
+  segmented_verification_helper<key_t> verification_helper{max_histo_size}; // NOLINT(misc-const-correctness)
   verification_helper.prepare_input_data(in_keys);
   thrust::copy(in_keys.cbegin(), in_keys.cend(), in_values.begin());
 
@@ -306,3 +308,4 @@ catch (std::bad_alloc& e)
 }
 
 #endif // TEST_TYPES == 0
+} // namespace

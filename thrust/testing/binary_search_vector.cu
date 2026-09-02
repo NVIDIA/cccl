@@ -11,6 +11,8 @@
 // Vector Functions //
 //////////////////////
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // convert xxx_vector<T1> to xxx_vector<T2>
 template <class ExampleVector, typename NewType>
 struct vector_like
@@ -36,12 +38,12 @@ void TestVectorLowerBoundSimple()
   IntVector integral_output(10);
   thrust::lower_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
-  typename IntVector::iterator output_end =
+  const typename IntVector::iterator output_end =
     thrust::lower_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
   ASSERT_EQUAL((output_end - integral_output.begin()), 10);
 
-  IntVector ref{0, 1, 1, 2, 2, 2, 3, 3, 4, 5};
+  const IntVector ref{0, 1, 1, 2, 2, 2, 3, 3, 4, 5};
   ASSERT_EQUAL(integral_output, ref);
 
   //    // test with iterator output type
@@ -74,7 +76,7 @@ void TestVectorLowerBoundDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::lower_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -116,12 +118,12 @@ void TestVectorUpperBoundSimple()
 
   // test with integral output type
   IntVector integral_output(10);
-  typename IntVector::iterator output_end =
+  const typename IntVector::iterator output_end =
     thrust::upper_bound(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
   ASSERT_EQUAL((output_end - integral_output.begin()), 10);
 
-  IntVector ref{1, 1, 2, 2, 2, 3, 3, 4, 5, 5};
+  const IntVector ref{1, 1, 2, 2, 2, 3, 3, 4, 5, 5};
   ASSERT_EQUAL(integral_output, ref);
 
   //    // test with iterator output type
@@ -154,7 +156,7 @@ void TestVectorUpperBoundDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::upper_bound(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -197,22 +199,22 @@ void TestVectorBinarySearchSimple()
 
   // test with boolean output type
   BoolVector bool_output(10);
-  typename BoolVector::iterator bool_output_end =
+  const typename BoolVector::iterator bool_output_end =
     thrust::binary_search(vec.begin(), vec.end(), input.begin(), input.end(), bool_output.begin());
 
   ASSERT_EQUAL((bool_output_end - bool_output.begin()), 10);
 
-  BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
+  const BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
   ASSERT_EQUAL(bool_output, bool_ref);
 
   // test with integral output type
   IntVector integral_output(10, 2);
-  typename IntVector::iterator int_output_end =
+  const typename IntVector::iterator int_output_end =
     thrust::binary_search(vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin());
 
   ASSERT_EQUAL((int_output_end - integral_output.begin()), 10);
 
-  IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
+  const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
   ASSERT_EQUAL(integral_output, int_ref);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchSimple);
@@ -229,7 +231,7 @@ void TestVectorBinarySearchDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::binary_search(sys, vec.begin(), vec.end(), vec.begin(), vec.end(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -343,12 +345,12 @@ struct TestVectorLowerBoundDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> h_result =
+    const thrust::discard_iterator<> h_result =
       thrust::lower_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), thrust::make_discard_iterator());
-    thrust::discard_iterator<> d_result =
+    const thrust::discard_iterator<> d_result =
       thrust::lower_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -368,12 +370,12 @@ struct TestVectorUpperBoundDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> h_result =
+    const thrust::discard_iterator<> h_result =
       thrust::upper_bound(h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), thrust::make_discard_iterator());
-    thrust::discard_iterator<> d_result =
+    const thrust::discard_iterator<> d_result =
       thrust::upper_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -393,12 +395,12 @@ struct TestVectorBinarySearchDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(2 * n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> h_result = thrust::binary_search(
+    const thrust::discard_iterator<> h_result = thrust::binary_search(
       h_vec.begin(), h_vec.end(), h_input.begin(), h_input.end(), thrust::make_discard_iterator());
-    thrust::discard_iterator<> d_result = thrust::binary_search(
+    const thrust::discard_iterator<> d_result = thrust::binary_search(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
+    const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -406,3 +408,4 @@ struct TestVectorBinarySearchDiscardIterator
 };
 VariableUnitTest<TestVectorBinarySearchDiscardIterator, SignedIntegralTypes>
   TestVectorBinarySearchDiscardIteratorInstance;
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

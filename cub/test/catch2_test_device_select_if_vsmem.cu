@@ -13,6 +13,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
 using types = c2h::type_list<
@@ -46,7 +48,7 @@ CUB_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]",
   c2h::gen(C2H_SEED(2), in);
 
   // Just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Run test
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -60,3 +62,4 @@ CUB_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]",
   reference.resize(num_selected_out[0]);
   REQUIRE(reference == out);
 }
+} // namespace

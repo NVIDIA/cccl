@@ -12,12 +12,14 @@ static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 #endif // __cpp_lib_concepts
 static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 
+namespace
+{
 void TestDevicePointerManipulation()
 {
   thrust::device_vector<int> data(5);
 
   thrust::device_ptr<int> begin(&data[0]);
-  thrust::device_ptr<int> end(&data[0] + 5);
+  const thrust::device_ptr<int> end(&data[0] + 5);
 
   ASSERT_EQUAL(end - begin, 5);
 
@@ -64,11 +66,11 @@ void TestMakeDevicePointer()
 
   T* raw_ptr = nullptr;
 
-  thrust::device_ptr<T> p0 = thrust::device_pointer_cast(raw_ptr);
+  const thrust::device_ptr<T> p0 = thrust::device_pointer_cast(raw_ptr);
 
   ASSERT_EQUAL(thrust::raw_pointer_cast(p0), raw_ptr);
 
-  thrust::device_ptr<T> p1 = thrust::device_pointer_cast(p0);
+  const thrust::device_ptr<T> p1 = thrust::device_pointer_cast(p0);
 
   ASSERT_EQUAL(p0, p1);
 }
@@ -117,7 +119,7 @@ DECLARE_GENERIC_UNITTEST(TestDevicePointerNullptrCompatibility);
 template <typename T>
 void TestDevicePointerBoolConversion()
 {
-  thrust::device_ptr<T> p0(nullptr);
+  const thrust::device_ptr<T> p0(nullptr);
   auto const b = bool(p0);
 
   ASSERT_EQUAL_QUIET(false, b);
@@ -133,8 +135,8 @@ void TestDevicePointerCompare()
   { // test same element type
     using device_ptr = thrust::device_ptr<T1>;
 
-    device_ptr ptr1 = v1.data();
-    device_ptr ptr2 = ptr1 + 1;
+    const device_ptr ptr1 = v1.data();
+    const device_ptr ptr2 = ptr1 + 1;
 
     // Equality
     ASSERT_EQUAL(true, (ptr1 == ptr1));
@@ -171,8 +173,8 @@ void TestDevicePointerCompare()
       thrust::pointer<T1, thrust::device_system_tag, thrust::tagged_reference<T1, thrust::device_system_tag>>;
     static_assert(!::cuda::std::is_same_v<device_ptr, other_ptr>);
 
-    device_ptr ptr1 = v1.data();
-    other_ptr ptr2{other_ptr{thrust::raw_pointer_cast(ptr1 + 1)}};
+    const device_ptr ptr1 = v1.data();
+    const other_ptr ptr2{other_ptr{thrust::raw_pointer_cast(ptr1 + 1)}};
 
     // Equality
     ASSERT_EQUAL(true, (ptr1 == ptr1));
@@ -280,3 +282,4 @@ static_assert(
 static_assert(
   cuda::std::is_same_v<cuda::std::allocator_traits<device_char_allocator>::void_pointer, thrust::device_ptr<void>>,
   "allocator_traits::void_pointer should be device_ptr<void> for device_ptr-based allocators");
+} // namespace

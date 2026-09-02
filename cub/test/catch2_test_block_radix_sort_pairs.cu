@@ -48,6 +48,8 @@ using shmem_config =
 
 using shmem_config_4 = c2h::enum_type_list<cudaSharedMemConfig, cudaSharedMemBankSizeFourByte>;
 
+namespace
+{
 template <class TestType>
 struct params_t
 {
@@ -123,7 +125,7 @@ CUB_TEST("Block radix sort can sort pairs",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison
@@ -176,7 +178,7 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison
@@ -229,7 +231,7 @@ CUB_TEST("Block radix sort can sort mixed pairs",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison
@@ -282,10 +284,11 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
+  const std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
     radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input_*` for comparison
   REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
   REQUIRE(d_output_values == h_reference.second);
 }
+} // namespace

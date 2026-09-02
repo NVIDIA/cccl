@@ -35,6 +35,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 bool g_verbose = false; // Whether to display input/output to console
 
 //---------------------------------------------------------------------
@@ -72,7 +74,7 @@ std::ostream& operator<<(std::ostream& os, const Pair<Key, Value>& val)
 template <typename Key, typename Value>
 void Initialize(Key* h_keys, Value* h_values, int num_items, int max_key)
 {
-  float scale = float(max_key) / float(UINT_MAX);
+  const float scale = float(max_key) / float(UINT_MAX);
   for (int i = 0; i < num_items; ++i)
   {
     Key sample;
@@ -160,6 +162,7 @@ int Solve(Key* h_keys, Value* h_values, int num_items, int* h_offsets_reference,
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
+} // namespace
 
 /**
  * Main

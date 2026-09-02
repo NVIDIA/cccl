@@ -7,6 +7,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <std::uint32_t NumItems,
           std::uint32_t MaxItemValue,
           cub::detail::batch_memcpy::prefer_power_of_two_bits_option PreferPowerOfTwoBits>
@@ -105,3 +107,4 @@ CUB_TEST(
   // Result verification
   REQUIRE(reference_counters == counts_out);
 }
+} // namespace

@@ -4,16 +4,18 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Allocator>
 void test_implementation(Allocator alloc)
 {
   using Traits = typename cuda::std::allocator_traits<Allocator>;
   using Ptr    = typename Allocator::pointer;
 
-  Ptr p = Traits::allocate(alloc, 123);
+  const Ptr p = Traits::allocate(alloc, 123);
   Traits::deallocate(alloc, p, 123);
 
-  Ptr p2 = Traits::allocate(alloc, 123);
+  const Ptr p2 = Traits::allocate(alloc, 123);
   ASSERT_EQUAL(p, p2);
 }
 
@@ -22,3 +24,4 @@ void TestSingleDeviceTLSCachingAllocator()
   test_implementation(thrust::detail::single_device_tls_caching_allocator());
 };
 DECLARE_UNITTEST(TestSingleDeviceTLSCachingAllocator);
+} // namespace

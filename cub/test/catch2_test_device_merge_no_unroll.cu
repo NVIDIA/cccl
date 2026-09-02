@@ -21,6 +21,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
 
@@ -95,3 +97,4 @@ CUB_TEST("DeviceMerge::MergeKeys large key types",
               == cudaSuccess);
     });
 }
+} // namespace

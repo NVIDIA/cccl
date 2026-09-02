@@ -13,6 +13,8 @@
 
 using namespace unittest;
 
+namespace
+{
 struct SumThree
 {
   template <typename T1, typename T2, typename T3>
@@ -92,7 +94,7 @@ struct TestZipFunctionMixed
     thrust::device_vector<uint32_t> vecA{0, 0, 2, 0};
     thrust::device_vector<uint32_t> vecB{0, 2, 2, 2};
     thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
-    thrust::device_vector<float> expected{88.0f, 89.0f};
+    const thrust::device_vector<float> expected{88.0f, 89.0f};
 
     auto inputKeyItBegin =
       thrust::make_zip_iterator(thrust::make_zip_iterator(vecA.begin(), vecB.begin()), vecC.begin());
@@ -132,7 +134,7 @@ struct TestNestedZipFunction
     thrust::device_vector<int> PY{0, 1, 2, 2};
     thrust::device_vector<uint32_t> SS{0, 1, 2};
     thrust::device_vector<uint32_t> ST{1, 2, 3};
-    thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
+    const thrust::device_vector<float> vecC{88.0f, 88.0f, 89.0f, 89.0f};
 
     auto segIt = thrust::make_zip_iterator(
       thrust::make_zip_iterator(thrust::make_permutation_iterator(PX.begin(), SS.begin()),
@@ -142,7 +144,7 @@ struct TestNestedZipFunction
     auto idAndSegIt = thrust::make_zip_iterator(thrust::make_counting_iterator(0u), segIt);
 
     thrust::device_vector<bool> isMH{false, false, false};
-    thrust::device_vector<bool> expected{false, false, true};
+    const thrust::device_vector<bool> expected{false, false, true};
     thrust::transform(
       idAndSegIt, idAndSegIt + static_cast<std::ptrdiff_t>(SS.size()), isMH.begin(), NestedFunctionCall{});
     ASSERT_EQUAL(isMH, expected);
@@ -174,3 +176,4 @@ struct TestNestedZipFunction2
   }
 };
 SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
+} // namespace

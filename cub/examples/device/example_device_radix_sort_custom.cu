@@ -18,6 +18,8 @@
 
 #include "cub/block/radix_rank_sort_operations.cuh"
 
+namespace
+{
 struct custom_t
 {
   std::uint16_t i;
@@ -39,6 +41,7 @@ std::bitset<64> to_binary_representation(custom_t value)
   memcpy(&bits, &value, sizeof(custom_t));
   return std::bitset<64>{bits};
 }
+} // namespace
 
 int main()
 {
@@ -54,7 +57,7 @@ int main()
   std::cout << "The `custom_t{65535, -4.2f}` has the following binary representation:\n\n";
 
   auto print_segment = [](std::string msg, std::size_t segment_size, char filler = '-') {
-    std::string spaces((segment_size - msg.size()) / 2 - 1, filler);
+    const std::string spaces((segment_size - msg.size()) / 2 - 1, filler);
     std::cout << '<' << spaces << msg << spaces << '>';
   };
 
@@ -71,7 +74,7 @@ int main()
   print_segment(" short -", 16);
   std::cout << '\n';
 
-  custom_t the_answer{65535, -4.2f};
+  const custom_t the_answer{65535, -4.2f};
   std::cout << '\t' << to_binary_representation(the_answer);
   std::cout << "\n\t";
   print_segment(" <----  higher bits  /  lower bits  ----> ", 64, ' ');
@@ -185,7 +188,7 @@ int main()
   thrust::device_vector<custom_t> in = {{4, +2.5f}, {0, -2.5f}, {3, +1.1f}, {1, +0.0f}, {2, -0.0f}, {5, +3.7f}};
 
   std::cout << "in:\n";
-  for (custom_t key : in)
+  for (const custom_t key : in)
   {
     std::cout << "\t{.i = " << key.i << ", .f = " << key.f << "},\n";
   }
@@ -221,7 +224,7 @@ int main()
   std::cout << "\t                               decomposer_t{});\n\n";
 
   std::cout << "out:\n";
-  for (custom_t key : out)
+  for (const custom_t key : out)
   {
     std::cout << "\t{.i = " << key.i << ", .f = " << key.f << "},\n";
   }

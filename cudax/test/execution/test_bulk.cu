@@ -74,8 +74,6 @@ struct ignore_lvalue_ref
     // Do nothing, just ignore the value
   }
 };
-} // anonymous namespace
-
 void bulk_returns_a_sender()
 {
   auto sndr = ex::bulk(ex::just(19), ex::par, 8, [] _CCCL_HOST_DEVICE(int, int) {});
@@ -177,9 +175,9 @@ void bulk_keeps_error_types_from_input_sender()
 {
 #if !_CCCL_COMPILER(MSVC)
   constexpr int n = 42;
-  dummy_scheduler sched1{};
-  error_scheduler<ex::exception_ptr> sched2{};
-  error_scheduler<int> sched3{43};
+  const dummy_scheduler sched1{};
+  const error_scheduler<ex::exception_ptr> sched2{};
+  const error_scheduler<int> sched3{43};
 
   // MSVCBUG https://developercommunity.visualstudio.com/t/noexcept-expression-in-lambda-template-n/10718680
   check_error_types<>(ex::just() //
@@ -207,9 +205,9 @@ void bulk_keeps_error_types_from_input_sender()
 void bulk_chunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
-  dummy_scheduler sched1{};
-  error_scheduler<ex::exception_ptr> sched2{};
-  error_scheduler<int> sched3{43};
+  const dummy_scheduler sched1{};
+  const error_scheduler<ex::exception_ptr> sched2{};
+  const error_scheduler<int> sched3{43};
 
   check_error_types<>(ex::just() //
                       | ex::continues_on(sched1) //
@@ -235,9 +233,9 @@ void bulk_chunked_keeps_error_types_from_input_sender()
 void bulk_unchunked_keeps_error_types_from_input_sender()
 {
   constexpr int n = 42;
-  dummy_scheduler sched1{};
-  error_scheduler<ex::exception_ptr> sched2{};
-  error_scheduler<int> sched3{43};
+  const dummy_scheduler sched1{};
+  const error_scheduler<ex::exception_ptr> sched2{};
+  const error_scheduler<int> sched3{43};
 
   check_error_types<>(ex::just() //
                       | ex::continues_on(sched1) //
@@ -271,7 +269,7 @@ void bulk_can_be_used_with_a_function()
   auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter1});
   ex::start(op);
 
-  for (int i : counter1)
+  for (const int i : counter1)
   {
     CHECK(i == 1);
   }
@@ -315,14 +313,14 @@ void bulk_can_be_used_with_a_function_object()
 {
   constexpr int n = 9;
   int counter[n]{0};
-  function_object_t<int> fn{counter};
+  function_object_t<int> fn{counter}; // NOLINT(misc-const-correctness)
 
   auto sndr = ex::just() //
             | ex::bulk(ex::par, n, fn);
   auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
-  for (int i : counter)
+  for (const int i : counter)
   {
     CHECK(i == 1);
   }
@@ -332,7 +330,7 @@ void bulk_chunked_can_be_used_with_a_function_object()
 {
   constexpr int n = 9;
   int counter[n]{0};
-  function_object_range_t<int> fn{counter};
+  function_object_range_t<int> fn{counter}; // NOLINT(misc-const-correctness)
 
   auto sndr = ex::just() //
             | ex::bulk_chunked(ex::par, n, fn);
@@ -349,7 +347,7 @@ void bulk_unchunked_can_be_used_with_a_function_object()
 {
   constexpr int n = 9;
   int counter[n]{0};
-  function_object_t<int> fn{counter};
+  function_object_t<int> fn{counter}; // NOLINT(misc-const-correctness)
 
   auto sndr = ex::just() //
             | ex::bulk_unchunked(ex::par, n, fn);
@@ -479,7 +477,7 @@ void bulk_forwards_values()
   auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number, &counter});
   ex::start(op);
 
-  for (int i : counter)
+  for (const int i : counter)
   {
     CHECK(i == 1);
   }
@@ -757,6 +755,7 @@ void default_bulk_unchunked_works_with_non_default_constructible_types()
          | ex::bulk_unchunked(ex::par, 1, [] _CCCL_HOST_DEVICE(int, ignore_lvalue_ref) {});
   ex::sync_wait(cuda::std::move(s));
 }
+} // namespace
 
 #if _CCCL_HOST_COMPILATION()
 // TODO: modify these tests to work on device as well

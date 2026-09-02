@@ -10,11 +10,14 @@
 template <>
 inline constexpr bool thrust::detail::is_proxy_reference_v<std::vector<bool>::reference> = true;
 
+namespace
+{
 void TestRawReferenceCast()
 {
   using ::cuda::std::is_same_v;
 
   {
+    // NOLINTNEXTLINE(misc-const-correctness): the non-const overload is under test
     [[maybe_unused]] int i        = 42;
     [[maybe_unused]] const int ci = 42;
     static_assert(is_same_v<decltype(thrust::raw_reference_cast(i)), int&>);
@@ -53,8 +56,9 @@ void TestRawReferenceCast()
 
   // proxy references
   {
-    [[maybe_unused]] std::vector<bool> vb;
+    [[maybe_unused]] std::vector<bool> vb; // NOLINT(misc-const-correctness)
     static_assert(is_same_v<decltype(thrust::raw_reference_cast(vb[0])), std::vector<bool>::reference>);
   }
 }
 DECLARE_UNITTEST(TestRawReferenceCast);
+} // namespace

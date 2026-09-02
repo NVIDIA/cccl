@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct is_even
 {
@@ -71,7 +73,7 @@ void TestIsPartitionedDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::is_partitioned(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -94,3 +96,4 @@ void TestIsPartitionedDispatchImplicit()
   ASSERT_EQUAL(13, vec.front());
 }
 DECLARE_UNITTEST(TestIsPartitionedDispatchImplicit);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -24,6 +24,8 @@ namespace cg = cooperative_groups;
 
 using size_t3 = cuda::vector_type_t<cuda::std::size_t, 3>;
 
+namespace
+{
 struct basic_test_single_dim
 {
   static constexpr int block_size = 256;
@@ -388,24 +390,24 @@ __global__ void examples_kernel(Hierarchy hierarchy)
     CCCLRT_REQUIRE_DEVICE(block_index_in_grid == blockIdx);
   }
   {
-    int thread_rank_in_block = cuda::gpu_thread.rank(cuda::block, hierarchy);
-    int block_rank_in_grid   = cuda::block.rank(cuda::grid, hierarchy);
+    const int thread_rank_in_block = cuda::gpu_thread.rank(cuda::block, hierarchy);
+    const int block_rank_in_grid   = cuda::block.rank(cuda::grid, hierarchy);
   }
   {
     // Can be called with the instances of level types
-    int num_threads_in_block = static_cast<int>(cuda::gpu_thread.count(cuda::block));
-    int num_blocks_in_grid   = static_cast<int>(cuda::block.count(cuda::grid));
+    const int num_threads_in_block = static_cast<int>(cuda::gpu_thread.count(cuda::block));
+    const int num_blocks_in_grid   = static_cast<int>(cuda::block.count(cuda::grid));
 
     // Or using the level types as template arguments
-    int num_threads_in_grid = static_cast<int>(cuda::gpu_thread.count(cuda::grid));
+    const int num_threads_in_grid = static_cast<int>(cuda::gpu_thread.count(cuda::grid));
   }
   {
     // Can be called with the instances of level types
-    int thread_rank_in_block = static_cast<int>(cuda::gpu_thread.rank(cuda::block));
-    int block_rank_in_grid   = static_cast<int>(cuda::block.rank(cuda::grid));
+    const int thread_rank_in_block = static_cast<int>(cuda::gpu_thread.rank(cuda::block));
+    const int block_rank_in_grid   = static_cast<int>(cuda::block.rank(cuda::grid));
 
     // Or using the level types as template arguments
-    int thread_rank_in_grid = static_cast<int>(cuda::gpu_thread.rank(cuda::grid));
+    const int thread_rank_in_grid = static_cast<int>(cuda::gpu_thread.rank(cuda::grid));
   }
   {
     // Can be called with the instances of level types
@@ -507,7 +509,7 @@ C2H_TEST("Trivially constructable", "[hierarchy]")
 
 C2H_TEST("cuda::distribute", "[hierarchy]")
 {
-  unsigned numElements          = 50000;
+  const unsigned numElements    = 50000;
   constexpr int threadsPerBlock = 256;
   auto config                   = cuda::distribute<threadsPerBlock>(static_cast<int>(numElements));
 
@@ -565,3 +567,4 @@ C2H_TEST("hierarchy merge", "[hierarchy]")
     static_assert(cuda::cluster.count(cuda::grid, with_grid_cluster_replaced) == 7);
   }
 }
+} // namespace

@@ -33,6 +33,8 @@ constexpr int block_size   = 128;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -44,7 +46,7 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
-    cudax::this_grid grid{config};
+    const cudax::this_grid grid{config};
 
     T thread_data[NumItems];
     for (int i = 0; i < NumItems; ++i)
@@ -174,8 +176,8 @@ C2H_TEST("reduce/this_grid Integral Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{device};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{device};
+  for (const int num_items : {1, 4})
   {
     auto reference_result = cuda::std::accumulate(
       h_in.begin(),
@@ -206,8 +208,8 @@ C2H_TEST(
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{device};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{device};
+  for (const int num_items : {1, 4})
   {
     auto reference_result = cuda::std::accumulate(
       h_in.begin(),
@@ -236,8 +238,8 @@ C2H_TEST("reduce/this_grid Broadcasted", "[reduce][this_grid]", integral_type_li
   c2h::device_vector<value_t> d_in(max_size * grid_size_t::value * cluster_size * block_size);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{device};
-  for (int num_items : {1, 4})
+  const cuda::stream stream{device};
+  for (const int num_items : {1, 4})
   {
     c2h::device_vector<value_t> d_out(grid_size_t::value * cluster_size * block_size);
     auto reference_result = cuda::std::accumulate(
@@ -250,3 +252,4 @@ C2H_TEST("reduce/this_grid Broadcasted", "[reduce][this_grid]", integral_type_li
                    c2h::host_vector<value_t>(d_out));
   }
 }
+} // namespace

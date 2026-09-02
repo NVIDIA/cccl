@@ -23,12 +23,21 @@ public:
   }
 
   template <typename T>
-  UnitTestException& operator<<(const T& t)
+  UnitTestException& operator<<(const T& t) &
   {
     std::ostringstream oss;
     oss << t;
     message += oss.str();
     return *this;
+  }
+
+  // The rvalue overload returns by value so that `throw UnitTestException{} << ...` throws an
+  // anonymous temporary instead of an lvalue reference.
+  template <typename T>
+  UnitTestException operator<<(const T& t) &&
+  {
+    *this << t;
+    return std::move(*this);
   }
 };
 
@@ -39,6 +48,20 @@ public:
   UnitTestError(const std::string& msg)
       : UnitTestException(msg)
   {}
+
+  template <typename T>
+  UnitTestError& operator<<(const T& t) &
+  {
+    UnitTestException::operator<<(t);
+    return *this;
+  }
+
+  template <typename T>
+  UnitTestError operator<<(const T& t) &&
+  {
+    UnitTestException::operator<<(t);
+    return std::move(*this);
+  }
 };
 
 class UnitTestFailure : public UnitTestException
@@ -48,6 +71,20 @@ public:
   UnitTestFailure(const std::string& msg)
       : UnitTestException(msg)
   {}
+
+  template <typename T>
+  UnitTestFailure& operator<<(const T& t) &
+  {
+    UnitTestException::operator<<(t);
+    return *this;
+  }
+
+  template <typename T>
+  UnitTestFailure operator<<(const T& t) &&
+  {
+    UnitTestException::operator<<(t);
+    return std::move(*this);
+  }
 };
 
 class UnitTestKnownFailure : public UnitTestException
@@ -57,5 +94,19 @@ public:
   UnitTestKnownFailure(const std::string& msg)
       : UnitTestException(msg)
   {}
+
+  template <typename T>
+  UnitTestKnownFailure& operator<<(const T& t) &
+  {
+    UnitTestException::operator<<(t);
+    return *this;
+  }
+
+  template <typename T>
+  UnitTestKnownFailure operator<<(const T& t) &&
+  {
+    UnitTestException::operator<<(t);
+    return std::move(*this);
+  }
 };
 } // end namespace unittest

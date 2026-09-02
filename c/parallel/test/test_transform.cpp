@@ -12,6 +12,8 @@
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 
+namespace
+{
 using BuildResultT = cccl_device_transform_build_result_t;
 
 struct transform_cleanup
@@ -184,7 +186,7 @@ C2H_TEST("Transform works with misaligned input with integral types", "[transfor
   operation_t op              = make_operation("op", get_unary_op(get_type_info<T>().type));
   const std::vector<T> input  = generate<T>(num_items + 1);
   const std::vector<T> output(num_items, 0);
-  pointer_t<T> input_ptr_aligned(input);
+  const pointer_t<T> input_ptr_aligned(input);
   pointer_t<T> input_ptr = input;
   input_ptr.ptr += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
   input_ptr.size -= 1;
@@ -214,7 +216,7 @@ C2H_TEST("Transform works with misaligned output with integral types", "[transfo
   const std::vector<T> input  = generate<T>(num_items);
   const std::vector<T> output(num_items + 1, 0);
   pointer_t<T> input_ptr(input);
-  pointer_t<T> output_ptr_aligned(output);
+  const pointer_t<T> output_ptr_aligned(output);
   pointer_t<T> output_ptr = output;
   output_ptr.ptr += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
   output_ptr.size -= 1;
@@ -240,7 +242,7 @@ C2H_TEST("Transform works with integral types with well-known operations", "[tra
   using T = c2h::get<0, TestType>;
 
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
-  cccl_op_t op                = make_well_known_unary_operation();
+  const cccl_op_t op          = make_well_known_unary_operation();
   const std::vector<T> input  = generate<T>(num_items);
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
@@ -363,7 +365,7 @@ extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
 })");
   const std::vector<int> input = generate<int>(num_items);
   std::vector<pair> expected(num_items);
-  std::vector<pair> output(num_items);
+  const std::vector<pair> output(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
     expected[i] = {short(input[i]), size_t(input[i])};
@@ -415,7 +417,7 @@ extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
 })");
 
   std::vector<unary_storage_in> input(num_items);
-  std::vector<unary_storage_out> output(num_items);
+  const std::vector<unary_storage_out> output(num_items);
   std::vector<unary_storage_out> expected(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
@@ -452,7 +454,7 @@ extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
-  std::vector<pair> output(num_items);
+  const std::vector<pair> output(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
     input[i] = pair{a[i], b[i]};
@@ -494,7 +496,7 @@ extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
-  std::vector<pair> output(num_items);
+  const std::vector<pair> output(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
     input[i] = pair{a[i], b[i]};
@@ -554,7 +556,7 @@ C2H_TEST("Transform works with output iterators", "[transform]")
     make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   const std::vector<int> input = generate<int>(num_items);
   pointer_t<int> input_it(input);
-  pointer_t<int> inner_output_it(num_items);
+  const pointer_t<int> inner_output_it(num_items);
   output_it.state.data = inner_output_it.ptr;
 
   auto& build_cache    = get_cache<Transform_OutputIterators_Fixture_Tag>();
@@ -649,7 +651,7 @@ extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {
 
   std::vector<binary_storage_in1> input1(num_items);
   std::vector<binary_storage_in2> input2(num_items);
-  std::vector<binary_storage_out> output(num_items);
+  const std::vector<binary_storage_out> output(num_items);
   std::vector<binary_storage_out> expected(num_items);
   for (std::size_t i = 0; i < num_items; ++i)
   {
@@ -758,7 +760,7 @@ C2H_TEST("Transform works with C++ source operations", "[transform]")
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source instead of LTO-IR
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     extern "C" __device__ void op(void* input, void* output) {
       int* in = (int*)input;
       int* out = (int*)output;
@@ -773,7 +775,7 @@ C2H_TEST("Transform works with C++ source operations", "[transform]")
   pointer_t<T> output_ptr(num_items);
 
   // Test key including flag that this uses C++ source
-  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
+  const std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
 
   auto& cache = fixture<transform_build_cache_t, Transform_IntegralTypes_Fixture_Tag>::get_or_create().get_value();
   std::optional<transform_build_cache_t> cache_opt = cache;
@@ -795,7 +797,7 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
   const std::size_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source that uses the identity function from header
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     #include "test_identity.h"
     extern "C" __device__ void op(void* input, void* output) {
       int* in = (int*)input;
@@ -859,7 +861,7 @@ C2H_TEST("Transform works with stateful unary operators", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
   const std::vector<int> host_counter{0};
-  pointer_t<int> counter(host_counter);
+  const pointer_t<int> counter(host_counter);
   stateful_operation_t<transform_stateful_counter_state_t> op = make_operation(
     "op",
     R"(struct transform_stateful_counter_state_t { int* d_counter; };
@@ -877,7 +879,7 @@ extern "C" __device__ void op(void* state_ptr, void* x_ptr, void* out_ptr) {
   pointer_t<int> output_ptr(output);
 
   std::optional<transform_build_cache_t> build_cache = std::nullopt;
-  std::optional<std::string> test_key                = std::nullopt;
+  const std::optional<std::string> test_key          = std::nullopt;
 
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
@@ -901,7 +903,7 @@ C2H_TEST("Transform build result has serialization metadata populated", "[transf
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_unary_operation();
+  const cccl_op_t op = make_well_known_unary_operation();
   pointer_t<T> in(1);
   pointer_t<T> out(1);
 
@@ -938,7 +940,7 @@ C2H_TEST("Transform compile/load round-trip", "[transform][serialization]")
   constexpr int device_id = 0;
   const auto& build_info  = BuildInformation<device_id>::init();
 
-  cccl_op_t op = make_well_known_unary_operation();
+  const cccl_op_t op = make_well_known_unary_operation();
   pointer_t<T> dummy_in(1);
   pointer_t<T> dummy_out(1);
 
@@ -985,3 +987,4 @@ C2H_TEST("Transform compile/load round-trip", "[transform][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

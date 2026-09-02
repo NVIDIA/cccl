@@ -20,6 +20,8 @@
 
 // Scalar ops the user passes to Transform. Sub-4-byte input types compute in float and cast back,
 // matching the tile substitutes below.
+namespace
+{
 template <class T>
 __host__ __device__ float to_f(T v)
 {
@@ -36,7 +38,7 @@ struct relu_op
   template <class T>
   __host__ __device__ T operator()(T v) const
   {
-    float f = to_f(v);
+    const float f = to_f(v);
     return from_f<T>(f > 0.0f ? f : 0.0f);
   }
 };
@@ -45,7 +47,7 @@ struct sigmoid_op
   template <class T>
   __host__ __device__ T operator()(T v) const
   {
-    float f = to_f(v);
+    const float f = to_f(v);
     return from_f<T>(1.0f / (1.0f + ::cuda::std::exp(-f)));
   }
 };
@@ -63,7 +65,7 @@ struct gelu_op
   __host__ __device__ T operator()(T v) const
   {
     constexpr float k0 = 0.7978845608028654f, k1 = 0.044715f;
-    float f = to_f(v);
+    const float f = to_f(v);
     return from_f<T>(0.5f * f * (1.0f + ::cuda::std::tanh(k0 * (f + k1 * f * f * f))));
   }
 };
@@ -148,6 +150,7 @@ struct binary_fmax
     return a > b ? a : b;
   }
 };
+} // namespace
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 namespace ct = ::cuda::tiles;
@@ -415,8 +418,10 @@ using element_types = nvbench::type_list<
   nvbench::float32_t>;
 #endif
 
+namespace
+{
 template <typename Op, typename T>
-static void run_unary(nvbench::state& state)
+void run_unary(nvbench::state& state)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -434,7 +439,7 @@ catch (const std::bad_alloc&)
 }
 
 template <typename Op, typename T>
-static void run_binary(nvbench::state& state)
+void run_binary(nvbench::state& state)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -454,15 +459,15 @@ catch (const std::bad_alloc&)
 
 inline auto pt_sizes = nvbench::range(16, 32, 4);
 
-#define UNARY_BENCH(name, op)                                            \
-  template <typename T>                                                  \
-  static void name##_bench(nvbench::state& state, nvbench::type_list<T>) \
-  {                                                                      \
-    run_unary<op, T>(state);                                             \
-  }                                                                      \
-  NVBENCH_BENCH_TYPES(name##_bench, NVBENCH_TYPE_AXES(element_types))    \
-    .set_name("tile_" #name)                                             \
-    .set_type_axes_names({"T{ct}"})                                      \
+#define UNARY_BENCH(name, op)                                         \
+  template <typename T>                                               \
+  void name##_bench(nvbench::state& state, nvbench::type_list<T>)     \
+  {                                                                   \
+    run_unary<op, T>(state);                                          \
+  }                                                                   \
+  NVBENCH_BENCH_TYPES(name##_bench, NVBENCH_TYPE_AXES(element_types)) \
+    .set_name("tile_" #name)                                          \
+    .set_type_axes_names({"T{ct}"})                                   \
     .add_int64_power_of_two_axis("Elements{io}", pt_sizes)
 
 UNARY_BENCH(relu, relu_op);
@@ -472,15 +477,15 @@ UNARY_BENCH(gelu, gelu_op);
 UNARY_BENCH(sin, sin_op);
 UNARY_BENCH(exp, exp_op);
 
-#define BINARY_BENCH(name, op)                                           \
-  template <typename T>                                                  \
-  static void name##_bench(nvbench::state& state, nvbench::type_list<T>) \
-  {                                                                      \
-    run_binary<op, T>(state);                                            \
-  }                                                                      \
-  NVBENCH_BENCH_TYPES(name##_bench, NVBENCH_TYPE_AXES(element_types))    \
-    .set_name("tile_pt_" #name)                                          \
-    .set_type_axes_names({"T{ct}"})                                      \
+#define BINARY_BENCH(name, op)                                        \
+  template <typename T>                                               \
+  void name##_bench(nvbench::state& state, nvbench::type_list<T>)     \
+  {                                                                   \
+    run_binary<op, T>(state);                                         \
+  }                                                                   \
+  NVBENCH_BENCH_TYPES(name##_bench, NVBENCH_TYPE_AXES(element_types)) \
+    .set_name("tile_pt_" #name)                                       \
+    .set_type_axes_names({"T{ct}"})                                   \
     .add_int64_power_of_two_axis("Elements{io}", pt_sizes)
 
 BINARY_BENCH(add, binary_add);
@@ -491,3 +496,4 @@ BINARY_BENCH(le, binary_le);
 BINARY_BENCH(ge, binary_ge);
 BINARY_BENCH(fmin, binary_fmin);
 BINARY_BENCH(fmax, binary_fmax);
+} // namespace

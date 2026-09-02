@@ -16,7 +16,7 @@
 
 C2H_CCCLRT_TEST("1d Copy", "[algorithm]")
 {
-  cuda::stream _stream{cuda::device_ref{0}};
+  const cuda::stream _stream{cuda::device_ref{0}};
 
   SECTION("Device resource")
   {
@@ -196,7 +196,7 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
     return;
   }
 
-  cuda::device_ref source_device{0};
+  const cuda::device_ref source_device{0};
   auto peers = source_device.peers();
   // This test exercises direct peer memory access; non-peer topologies have no legal device-to-device path to cover.
   if (peers.empty())
@@ -204,7 +204,7 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
     return;
   }
 
-  cuda::device_ref destination_device = peers.front();
+  const cuda::device_ref destination_device = peers.front();
   // Device buffers are allocated from stream-ordered memory pools.
   if (!source_device.attribute(cuda::device_attributes::memory_pools_supported)
       || !destination_device.attribute(cuda::device_attributes::memory_pools_supported))
@@ -212,8 +212,8 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
     return;
   }
 
-  cuda::stream source_stream{source_device};
-  cuda::stream destination_stream{destination_device};
+  const cuda::stream source_stream{source_device};
+  const cuda::stream destination_stream{destination_device};
   cuda::device_memory_pool source_pool{source_device};
   cuda::device_memory_pool destination_pool{destination_device};
   source_pool.enable_access_from(destination_device);
@@ -221,7 +221,7 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
   auto source_resource      = source_pool.as_ref();
   auto destination_resource = destination_pool.as_ref();
 
-  int expected = get_expected_value(fill_byte);
+  const int expected = get_expected_value(fill_byte);
   int result{};
 
   {
@@ -234,7 +234,7 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
     host_dst.get_unsynchronized(0) = 0;
 
     {
-      cuda::__ensure_current_context guard(source_device);
+      const cuda::__ensure_current_context guard(source_device);
       cuda::copy_bytes(source_stream, host_src, src);
     }
     source_stream.sync();
@@ -244,7 +244,7 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
     config.dst_location_hint = destination_device;
 
     {
-      cuda::__ensure_current_context guard(destination_device);
+      const cuda::__ensure_current_context guard(destination_device);
       cuda::copy_bytes(destination_stream, src, dst, config);
       cuda::copy_bytes(destination_stream, dst, host_dst);
     }
@@ -257,6 +257,8 @@ C2H_CCCLRT_TEST("copy_bytes can copy between peer device buffers", "[algorithm][
   CCCLRT_REQUIRE(result == expected);
 }
 
+namespace
+{
 template <typename SrcLayout = cuda::std::layout_right,
           typename DstLayout = SrcLayout,
           typename SrcExtents,
@@ -296,7 +298,7 @@ void test_mdspan_copy_bytes(
 
 C2H_CCCLRT_TEST("Mdspan copy", "[algorithm]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("Different extents")
   {
@@ -318,7 +320,7 @@ C2H_CCCLRT_TEST("Mdspan copy", "[algorithm]")
 
 C2H_CCCLRT_TEST("Non exhaustive mdspan copy_bytes", "[algorithm]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   {
     auto fake_strided_mdspan = create_fake_strided_mdspan();
 
@@ -332,3 +334,4 @@ C2H_CCCLRT_TEST("Non exhaustive mdspan copy_bytes", "[algorithm]")
     }
   }
 }
+} // namespace

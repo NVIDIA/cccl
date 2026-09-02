@@ -63,7 +63,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API inline _Tp* get_device_address(_Tp& __device_object, device_ref __device)
 {
-  __ensure_current_context __ctx{__device};
+  const __ensure_current_context __ctx{__device};
   void* __device_ptr{};
   _CCCL_TRY_CUDA_API(::cudaGetSymbolAddress,
                      "failed to call cudaGetSymbolAddress in cuda::get_device_address",

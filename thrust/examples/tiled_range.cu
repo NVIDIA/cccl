@@ -15,6 +15,8 @@
 //   tiled_range([0, 1, 2, 3], 3) -> [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
 //   ...
 
+namespace
+{
 template <typename Iterator>
 class tiled_range
 {
@@ -64,6 +66,7 @@ protected:
   Iterator last;
   difference_type tiles;
 };
+} // namespace
 
 int main()
 {
@@ -77,13 +80,13 @@ int main()
   using Iterator = thrust::device_vector<int>::iterator;
 
   // create tiled_range with two tiles
-  tiled_range<Iterator> two(data.begin(), data.end(), 2);
+  const tiled_range<Iterator> two(data.begin(), data.end(), 2);
   std::cout << "two tiles:   ";
   thrust::copy(two.begin(), two.end(), std::ostream_iterator<int>(std::cout, " "));
   std::cout << '\n';
 
   // create tiled_range with three tiles
-  tiled_range<Iterator> three(data.begin(), data.end(), 3);
+  const tiled_range<Iterator> three(data.begin(), data.end(), 3);
   std::cout << "three tiles: ";
   thrust::copy(three.begin(), three.end(), std::ostream_iterator<int>(std::cout, " "));
   std::cout << '\n';

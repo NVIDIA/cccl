@@ -20,6 +20,8 @@
 // [1] http://en.wikipedia.org/wiki/Moving_average#Simple_moving_average
 // [2] http://en.wikipedia.org/wiki/Kahan_summation_algorithm
 
+namespace
+{
 // compute the difference of two positions in the cumumulative sum and
 // divide by the SMA window size w.
 template <typename T>
@@ -57,14 +59,15 @@ void simple_moving_average(const InputVector& data, size_t w, OutputVector& outp
   // compute moving averages from cumulative sum
   thrust::transform(temp.begin() + w, temp.end(), temp.begin(), output.begin(), minus_and_divide<T>(T(w)));
 }
+} // namespace
 
 int main()
 {
   // length of data series
-  size_t n = 30;
+  const size_t n = 30;
 
   // window size of the moving average
-  size_t w = 4;
+  const size_t w = 4;
 
   // generate random data series
   thrust::host_vector<float> host_data(n);
@@ -74,7 +77,7 @@ int main()
   {
     e = static_cast<float>(dist(rng));
   }
-  thrust::device_vector<float> data = host_data;
+  const thrust::device_vector<float> data = host_data;
 
   // allocate storage for averages
   thrust::device_vector<float> averages(data.size() - (w - 1));

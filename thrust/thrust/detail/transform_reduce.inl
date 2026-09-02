@@ -60,7 +60,7 @@ OutputType transform_reduce(
 
   using System = typename thrust::iterator_system<InputIterator>::type;
 
-  System system;
+  System system; // NOLINT(misc-const-correctness): select_system requires a mutable lvalue
 
   return thrust::transform_reduce(select_system(system), first, last, unary_op, init, binary_op);
 } // end transform_reduce()

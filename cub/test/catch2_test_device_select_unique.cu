@@ -18,6 +18,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 struct fake_equal_to
 {
   template <class T, class U>
@@ -74,6 +76,7 @@ inline c2h::custom_type_t<c2h::equal_comparable_t> to_bound(const unsigned long 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Unique, select_unique);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+} // namespace
 
 using all_types =
   c2h::type_list<std::uint8_t,
@@ -182,7 +185,7 @@ CUB_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   // test overload without predicate
   select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
@@ -280,26 +283,26 @@ CUB_TEST(
 
   SECTION("DeviceSelect::Unique works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_unique(stream.get());
   }
 
   SECTION("DeviceSelect::Unique works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_unique(stream);
   }
 
   SECTION("DeviceSelect::Unique works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_unique(stream_ref);
   }
 
   SECTION("DeviceSelect::Unique works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_unique(env);
   }
 
@@ -311,7 +314,7 @@ CUB_TEST(
 
   SECTION("DeviceSelect::Unique works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_unique(policy);
   }
@@ -385,6 +388,8 @@ CUB_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", 
   REQUIRE(reference == out);
 }
 
+namespace
+{
 template <class T>
 struct convertible_from_T
 {
@@ -404,6 +409,7 @@ struct convertible_from_T
     return val_;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][select_unique]", CUB_SMALL, types)
 {
@@ -521,7 +527,7 @@ try
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
   constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values({
       offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
       offset_t{2} * max_partition_size, // 2 partitions

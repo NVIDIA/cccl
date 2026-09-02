@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Vector>
 void TestSetIntersectionByKeyDescendingSimple()
 {
@@ -16,7 +18,7 @@ void TestSetIntersectionByKeyDescendingSimple()
   Vector ref_key{4, 0}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -85,3 +87,4 @@ void TestSetIntersectionByKeyDescending(const size_t n)
   ASSERT_EQUAL(h_result_val, d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetIntersectionByKeyDescending);
+} // namespace

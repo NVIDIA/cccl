@@ -45,8 +45,6 @@ TEST_DEVICE_FUNC inline void ccclrt_require_impl(
   }
 }
 
-namespace
-{
 namespace test
 {
 template <typename T1, typename T2>
@@ -64,13 +62,13 @@ private:
 public:
   explicit _malloc_pinned(std::size_t size)
   {
-    cuda::__ensure_current_context guard(cuda::device_ref{0});
+    const cuda::__ensure_current_context guard(cuda::device_ref{0});
     _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()
   {
-    cuda::__ensure_current_context guard(cuda::device_ref{0});
+    const cuda::__ensure_current_context guard(cuda::device_ref{0});
     [[maybe_unused]] auto status = ::cudaFreeHost(pv);
   }
 
@@ -145,7 +143,7 @@ struct atomic_add_one
 {
   TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_add(1);
   }
 };
@@ -154,7 +152,7 @@ struct atomic_sub_one
 {
   TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_sub(1);
   }
 };
@@ -163,7 +161,7 @@ struct spin_until_80
 {
   TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     while (atomic_pi.load() != 80)
       ;
   }
@@ -183,10 +181,9 @@ static __global__ void kernel_launcher(Fn fn, Args... args)
 template <class Fn, class... Args>
 void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
 {
-  cuda::__ensure_current_context guard(stream);
+  const cuda::__ensure_current_context guard(stream);
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);
   assert(cudaGetLastError() == cudaSuccess);
 }
 } // namespace test
-} // namespace
 #endif // __COMMON_UTILITY_H__

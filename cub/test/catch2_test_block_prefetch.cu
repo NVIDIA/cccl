@@ -35,6 +35,8 @@ CUB_TEST("can_prefetch_from accepts contiguous iterators and rejects explicit ca
     cub::detail::can_prefetch_from<cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_CS, int>>);
 }
 
+namespace
+{
 // Prefetch the tile, then copy it through so the launch has an observable result.
 template <typename T, int ThreadsInBlock, cub::detail::LoadPrefetch Level, int Stride, typename InputIteratorT>
 __global__ void block_prefetch_kernel(InputIteratorT input, T* output, int num_items)
@@ -114,7 +116,8 @@ CUB_TEST("BlockPrefetch is a no-op for CacheModifiedInputIterator", "[prefetch][
   c2h::gen(C2H_SEED(2), d_input);
 
   // can_prefetch_from<CMI> is false, so Prefetch must compile out to nothing; the copy still reads through the CMI.
-  cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_CS, type> in(thrust::raw_pointer_cast(d_input.data()));
+  const cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_CS, type> in(
+    thrust::raw_pointer_cast(d_input.data()));
   test_block_prefetch<type, threads_in_block, level>(d_input, in);
 }
 
@@ -135,7 +138,7 @@ CUB_TEST("BlockPrefetch works with thrust vector iterators", "[prefetch][block]"
   STATIC_REQUIRE(cub::detail::can_prefetch_from<decltype(d_input.cbegin())>);
   test_block_prefetch<type, threads_in_block, level>(d_input, d_input.cbegin());
 
-  thrust::universal_vector<type> universal_input(d_input.begin(), d_input.end());
+  const thrust::universal_vector<type> universal_input(d_input.begin(), d_input.end());
   STATIC_REQUIRE(cub::detail::can_prefetch_from<decltype(universal_input.cbegin())>);
   test_block_prefetch<type, threads_in_block, level>(d_input, universal_input.cbegin());
 }
@@ -154,7 +157,7 @@ CUB_TEST("BlockPrefetch works with cuda::buffer iterators", "[prefetch][block]",
   c2h::gen(C2H_SEED(2), d_input);
 
   // Managed memory is host- and device-accessible, so the buffer can be filled from the host and read in the kernel.
-  cuda::mr::legacy_managed_memory_resource mr;
+  cuda::mr::legacy_managed_memory_resource mr; // NOLINT(misc-const-correctness)
   auto buf =
     cuda::make_buffer<type>(cuda::stream_ref{cudaStream_t{}}, mr, static_cast<size_t>(num_items), cuda::no_init);
   REQUIRE(cudaSuccess
@@ -184,7 +187,7 @@ CUB_TEST("BlockPrefetch handles unaligned tile bases", "[prefetch][block]", CUB_
 
   // Prefetch/copy the sub-range that starts at an unaligned offset into the allocation.
   auto* start = thrust::raw_pointer_cast(d_storage.data()) + offset;
-  c2h::device_vector<type> d_input(d_storage.begin() + offset, d_storage.end());
+  const c2h::device_vector<type> d_input(d_storage.begin() + offset, d_storage.end());
 
   test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::bulk_l2>(d_input, start);
 }
@@ -204,3 +207,4 @@ CUB_TEST("BlockPrefetch honors a non-default stride", "[prefetch][block]", CUB_S
   test_block_prefetch<type, threads_in_block, cub::detail::LoadPrefetch::l2, 256>(
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
+} // namespace

@@ -24,6 +24,8 @@ constexpr int num_seeds = 3;
  * Thread Scan Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NumItems, typename In, typename Out, typename Accum, typename ScanOperator>
 __global__ void thread_scan_inclusive_partial_kernel(
   In d_in, Out d_out, ScanOperator scan_operator, int valid_items, Accum prefix, bool apply_prefix, Accum filler)
@@ -179,7 +181,7 @@ CUB_TEST("ThreadScanInclusive Integral Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, static_cast<output_t>(filler));
 
   compute_inclusive_scan_reference(
@@ -240,7 +242,7 @@ CUB_TEST("ThreadScanInclusive Floating-Point Type Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
 
   compute_inclusive_scan_reference(
@@ -297,7 +299,7 @@ CUB_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
   c2h::device_vector<value_t> d_in(num_items, thrust::no_init);
   c2h::device_vector<output_t> d_out(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   c2h::host_vector<output_t> reference_result(num_items, filler);
 
   compute_inclusive_scan_reference(
@@ -328,8 +330,8 @@ CUB_TEST("ThreadScanInclusive Container Tests", "[scan][thread]", CUB_SMALL)
   c2h::device_vector<int> d_out(max_size, thrust::no_init);
   using dist_param = dist_interval<int, cuda::std::plus<>, max_size>;
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<int> h_in = d_in;
-  const int valid_items      = GENERATE_COPY(
+  const c2h::host_vector<int> h_in = d_in;
+  const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, max_size - 1))),
     take(1, random(max_size + 2, cuda::std::numeric_limits<int>::max())),
     values({1, max_size, max_size + 1}));
@@ -416,3 +418,4 @@ CUB_TEST("ThreadScanInclusive Invalid Test", "[scan][thread]", CUB_SMALL)
   REQUIRE(error_flag.front() == false);
   REQUIRE(reference_result == d_out);
 }
+} // namespace

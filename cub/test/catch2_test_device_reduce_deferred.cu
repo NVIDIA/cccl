@@ -34,6 +34,8 @@
 #include "cub_test_macros.h"
 #include <c2h/generators.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
@@ -226,6 +228,7 @@ struct select_then_reduce_t
       stream);
   }
 };
+} // namespace
 
 using count_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 
@@ -504,8 +507,8 @@ CUB_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-  cuda::stream producer{cuda::devices[current_device]};
-  cuda::stream consumer{cuda::devices[current_device]};
+  const cuda::stream producer{cuda::devices[current_device]};
+  const cuda::stream consumer{cuda::devices[current_device]};
 
   const auto d_input = cuda::counting_iterator<value_t>{value_t{0}};
   c2h::device_vector<value_t> selected_items(capacity, value_t{capacity + 1});

@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyT, typename OffsetT>
 struct my_policy_hub
 {
@@ -159,3 +161,4 @@ CUB_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segm
   const auto& d_sorted = (d_keys.selector == 0) ? in_keys : out_keys;
   REQUIRE(d_sorted == ref_keys);
 }
+} // namespace

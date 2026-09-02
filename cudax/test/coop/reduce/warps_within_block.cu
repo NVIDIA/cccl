@@ -34,6 +34,8 @@ constexpr int warp_size       = 32;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -45,13 +47,13 @@ struct ReduceKernel
     T* __restrict__ d_out,
     RedOp red_op)
   {
-    cudax::this_block block{config};
+    const cudax::this_block block{config};
 
     using Barriers = cuda::barrier<cuda::thread_scope_block>[1];
     __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
-    cudax::group group{
+    const cudax::group group{
       cuda::warp, block, cudax::group_by<nwarps_in_group, false>{}, cudax::barrier_synchronizer{barriers}};
 
     // All threads that are not part of the groups should exit early.
@@ -179,7 +181,7 @@ C2H_TEST("reduce/warps_within_block Integral Type Tests",
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result = cuda::std::accumulate(
@@ -201,7 +203,7 @@ C2H_TEST(
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     auto reference_result = cuda::std::accumulate(
@@ -221,7 +223,7 @@ C2H_TEST("reduce/warps_within_block Broadcasted", "[reduce][warps_within_block]"
   c2h::device_vector<value_t> d_in(max_size * nwarps_in_group * warp_size);
   c2h::gen(C2H_SEED(num_seeds), d_in, cuda::std::numeric_limits<value_t>::min());
   c2h::host_vector<value_t> h_in = d_in;
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   for (int num_items = 1; num_items <= max_size; ++num_items)
   {
     c2h::device_vector<value_t> d_out(nwarps_in_group * warp_size);
@@ -232,3 +234,4 @@ C2H_TEST("reduce/warps_within_block Broadcasted", "[reduce][warps_within_block]"
                    c2h::host_vector<value_t>(d_out));
   }
 }
+} // namespace

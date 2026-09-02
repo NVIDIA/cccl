@@ -40,6 +40,8 @@
 
 #include "../../policy_selector.h"
 
+namespace
+{
 namespace impl
 {
 /* Denote epsilon, the identity element, be an empty sequence, and consider
@@ -83,21 +85,21 @@ inline ZpT __host__ __device__ Zp_add(ZpT v1, ZpT v2, cuda::fast_mod_div<WideT> 
 
 inline MatT __host__ __device__ Zp_matmul(MatT v1, MatT v2, cuda::fast_mod_div<WideT> m_p)
 {
-  ZpT _1_00_2_00 = Zp_mul(v1[0], v2[0], m_p);
-  ZpT _1_01_2_10 = Zp_mul(v1[1], v2[2], m_p);
-  ZpT _r_00      = Zp_add(_1_00_2_00, _1_01_2_10, m_p);
+  const ZpT _1_00_2_00 = Zp_mul(v1[0], v2[0], m_p);
+  const ZpT _1_01_2_10 = Zp_mul(v1[1], v2[2], m_p);
+  const ZpT _r_00      = Zp_add(_1_00_2_00, _1_01_2_10, m_p);
 
-  ZpT _1_00_2_01 = Zp_mul(v1[0], v2[1], m_p);
-  ZpT _1_01_2_11 = Zp_mul(v1[1], v2[3], m_p);
-  ZpT _r_01      = Zp_add(_1_00_2_01, _1_01_2_11, m_p);
+  const ZpT _1_00_2_01 = Zp_mul(v1[0], v2[1], m_p);
+  const ZpT _1_01_2_11 = Zp_mul(v1[1], v2[3], m_p);
+  const ZpT _r_01      = Zp_add(_1_00_2_01, _1_01_2_11, m_p);
 
-  ZpT _1_10_2_00 = Zp_mul(v1[2], v2[0], m_p);
-  ZpT _1_11_2_10 = Zp_mul(v1[3], v2[2], m_p);
-  ZpT _r_10      = Zp_add(_1_10_2_00, _1_11_2_10, m_p);
+  const ZpT _1_10_2_00 = Zp_mul(v1[2], v2[0], m_p);
+  const ZpT _1_11_2_10 = Zp_mul(v1[3], v2[2], m_p);
+  const ZpT _r_10      = Zp_add(_1_10_2_00, _1_11_2_10, m_p);
 
-  ZpT _1_10_2_01 = Zp_mul(v1[2], v2[1], m_p);
-  ZpT _1_11_2_11 = Zp_mul(v1[3], v2[3], m_p);
-  ZpT _r_11      = Zp_add(_1_10_2_01, _1_11_2_11, m_p);
+  const ZpT _1_10_2_01 = Zp_mul(v1[2], v2[1], m_p);
+  const ZpT _1_11_2_11 = Zp_mul(v1[3], v2[3], m_p);
+  const ZpT _r_11      = Zp_add(_1_10_2_01, _1_11_2_11, m_p);
 
   return {_r_00, _r_01, _r_10, _r_11};
 }
@@ -275,10 +277,10 @@ template <typename InputT, typename OutputT>
 
   return true;
 }
-}; // namespace impl
+} // namespace impl
 
 template <typename BitsetT, typename OffsetT>
-static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, OffsetT>)
+void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, OffsetT>)
 {
   using op_t         = impl::RabinKarpOp;
   using input_t      = BitsetT;
@@ -345,3 +347,4 @@ NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(type_list, offset_types))
   .set_type_axes_names({"BitsetT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_axis("Modulus", {2725841});
+} // namespace

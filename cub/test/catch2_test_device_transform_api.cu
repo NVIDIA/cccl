@@ -10,6 +10,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_many_many_api()
 {
@@ -179,7 +181,7 @@ CUB_TEST("DeviceTransform::Transform legacy size-query is unambiguous", "[device
   size_t temp_storage_bytes = 0;
   int* d_in                 = nullptr;
   int* d_out                = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(d_temp_storage, temp_storage_bytes, d_in, d_out, n, transform_noop_t{}));
@@ -190,7 +192,7 @@ CUB_TEST("DeviceTransform::Generate legacy size-query is unambiguous", "[device_
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   int* d_out                = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(
     cudaSuccess == cub::DeviceTransform::Generate(d_temp_storage, temp_storage_bytes, d_out, n, generate_zero_t{}));
@@ -201,8 +203,8 @@ CUB_TEST("DeviceTransform::Fill legacy size-query is unambiguous", "[device_tran
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   int* d_out                = nullptr;
-  int n                     = 0;
-  int value                 = 0;
+  const int n               = 0;
+  const int value           = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceTransform::Fill(d_temp_storage, temp_storage_bytes, d_out, n, value));
 }
@@ -213,7 +215,7 @@ CUB_TEST("DeviceTransform::TransformIf legacy size-query is unambiguous", "[devi
   size_t temp_storage_bytes = 0;
   int* d_in                 = nullptr;
   int* d_out                = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::TransformIf(
@@ -228,7 +230,7 @@ CUB_TEST("DeviceTransform::TransformStableArgumentAddresses legacy size-query is
   size_t temp_storage_bytes = 0;
   int* d_in                 = nullptr;
   int* d_out                = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::TransformStableArgumentAddresses(
@@ -237,3 +239,4 @@ CUB_TEST("DeviceTransform::TransformStableArgumentAddresses legacy size-query is
 
 // todo(giannis): guards for tuple-input variants (Transform many->many, TransformIf many->one,
 // TransformStableArgumentAddresses many->one) — these need cuda::std::tuple setup; defer.
+} // namespace

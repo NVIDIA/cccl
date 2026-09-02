@@ -76,6 +76,8 @@ void TestReverseCopyDeviceDevice()
 DECLARE_UNITTEST(TestReverseCopyDeviceDevice);
 #endif
 
+namespace
+{
 void TestReverseCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -88,7 +90,7 @@ void TestReverseCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  Vector ref{5, 4, 3, 2, 1};
+  const Vector ref{5, 4, 3, 2, 1};
 
   ASSERT_EQUAL(ref, data);
 
@@ -110,10 +112,11 @@ void TestReverseCopyCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  Vector ref{5, 4, 3, 2, 1};
+  const Vector ref{5, 4, 3, 2, 1};
 
   ASSERT_EQUAL(ref, result);
 
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestReverseCopyCudaStreams);
+} // namespace

@@ -25,8 +25,6 @@
 
 #include "testing.cuh"
 
-namespace
-{
 namespace test
 {
 constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
@@ -39,13 +37,13 @@ private:
 public:
   explicit _malloc_pinned(std::size_t size)
   {
-    cuda::__ensure_current_context guard(cuda::device_ref{0});
+    const cuda::__ensure_current_context guard(cuda::device_ref{0});
     _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()
   {
-    cuda::__ensure_current_context guard(cuda::device_ref{0});
+    const cuda::__ensure_current_context guard(cuda::device_ref{0});
     [[maybe_unused]] auto status = ::cudaFreeHost(pv);
   }
 
@@ -118,7 +116,7 @@ struct atomic_add_one
 {
   __device__ void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_add(1);
   }
 };
@@ -127,7 +125,7 @@ struct atomic_sub_one
 {
   __device__ void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     atomic_pi.fetch_sub(1);
   }
 };
@@ -136,7 +134,7 @@ struct spin_until_80
 {
   __device__ void operator()(int* pi) const noexcept
   {
-    cuda::atomic_ref atomic_pi(*pi);
+    const cuda::atomic_ref atomic_pi(*pi);
     while (atomic_pi.load() != 80)
       ;
   }
@@ -147,5 +145,4 @@ struct empty_kernel
   __device__ void operator()() const noexcept {}
 };
 } // namespace test
-} // namespace
 #endif // __COMMON_UTILITY_H__

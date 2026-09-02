@@ -61,6 +61,8 @@ void TestTabulateDeviceDevice()
 DECLARE_UNITTEST(TestTabulateDeviceDevice);
 #endif
 
+namespace
+{
 void TestTabulateCudaStreams()
 {
   using namespace thrust::placeholders;
@@ -93,3 +95,4 @@ void TestTabulateCudaStreams()
   cudaStreamSynchronize(s);
 }
 DECLARE_UNITTEST(TestTabulateCudaStreams);
+} // namespace

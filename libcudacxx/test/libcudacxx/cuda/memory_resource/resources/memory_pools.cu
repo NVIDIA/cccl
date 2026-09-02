@@ -31,6 +31,8 @@
 
 // check if pinned and managed pools are supported
 
+namespace
+{
 template <typename PoolType>
 void pool_static_asserts()
 {
@@ -90,7 +92,7 @@ PoolType construct_pool(cuda::memory_pool_properties props = {})
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 }
 
-static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
+bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
   size_t release_threshold = expected_threshold + 1337; // use something different than the expected threshold
   _CCCL_TRY_CUDA_API(
@@ -102,7 +104,7 @@ static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected
   return release_threshold == expected_threshold;
 }
 
-static bool ensure_disable_reuse(::cudaMemPool_t pool)
+bool ensure_disable_reuse(::cudaMemPool_t pool)
 {
   int disable_reuse = 0;
   _CCCL_TRY_CUDA_API(
@@ -115,7 +117,7 @@ static bool ensure_disable_reuse(::cudaMemPool_t pool)
   return disable_reuse != 0;
 }
 
-static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocationHandleType allocation_handle)
+bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocationHandleType allocation_handle)
 {
   size_t handle              = 0;
   const ::cudaError_t status = ::cudaMemPoolExportToShareableHandle(&handle, pool, allocation_handle, 0);
@@ -220,7 +222,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
   SECTION("Construct from device id")
   {
-    memory_pool from_device = construct_pool<memory_pool>();
+    const memory_pool from_device = construct_pool<memory_pool>();
 
     ::cudaMemPool_t get = from_device.get();
     CHECK(get != current_default_pool);
@@ -242,8 +244,8 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
   SECTION("Construct with empty properties")
   {
-    cuda::memory_pool_properties props{};
-    memory_pool from_defaulted_properties = construct_pool<memory_pool>(props);
+    const cuda::memory_pool_properties props{};
+    const memory_pool from_defaulted_properties = construct_pool<memory_pool>(props);
 
     ::cudaMemPool_t get = from_defaulted_properties.get();
     CHECK(get != current_default_pool);
@@ -264,8 +266,8 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
   SECTION("Construct with initial pool size")
   {
-    cuda::memory_pool_properties props = {20, 42};
-    memory_pool with_threshold         = construct_pool<memory_pool>(props);
+    const cuda::memory_pool_properties props = {20, 42};
+    const memory_pool with_threshold         = construct_pool<memory_pool>(props);
 
     ::cudaMemPool_t get = with_threshold.get();
     CHECK(get != current_default_pool);
@@ -317,7 +319,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
     ::cudaMemPool_t new_pool{};
     _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &new_pool, &pool_properties);
 
-    memory_pool from_handle = memory_pool::from_native_handle(new_pool);
+    const memory_pool from_handle = memory_pool::from_native_handle(new_pool);
     CHECK(from_handle.get() == new_pool);
   }
 }
@@ -327,8 +329,8 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
   using memory_pool = TestType;
   test::skip_if_unsupported_memory_pool<memory_pool>();
 
-  int current_device = 0;
-  cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
+  const int current_device = 0;
+  const cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
 
   int driver_version = 0;
   {
@@ -357,7 +359,7 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
     else
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
     {
-      memory_pool with_max_pool_size = construct_pool<memory_pool>(props);
+      const memory_pool with_max_pool_size = construct_pool<memory_pool>(props);
 
       ::cudaMemPool_t get = with_max_pool_size.get();
       CHECK(get != current_default_pool);
@@ -392,7 +394,7 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
         ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, stream);
       // make an allocation larger than the max pool size
       // NOTE: currently cuda driver rounds up max size to 32MB. So we need to allocate 32MB + 1 byte.
-      cudaError_t status = ::cudaMallocAsync(&ptr, 33 << 20, get, stream);
+      const cudaError_t status = ::cudaMallocAsync(&ptr, 33 << 20, get, stream);
       CHECK(status == cudaErrorMemoryAllocation);
       CHECK(ptr == nullptr);
     }
@@ -435,9 +437,9 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool comparison", "[memory_resource]", TEST_
                        current_device);
   }
 
-  memory_pool first = construct_pool<memory_pool>();
+  const memory_pool first = construct_pool<memory_pool>();
   { // comparison against a plain device_memory_pool
-    memory_pool second = construct_pool<memory_pool>();
+    const memory_pool second = construct_pool<memory_pool>();
     CHECK(first == first);
     CHECK(first != second);
   }
@@ -465,13 +467,13 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     { // cudaMemPoolReuseFollowEventDependencies
       // Get the attribute value
-      bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
+      const bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
 
       // Set it to the opposite
       pool.set_attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies, !attr);
 
       // Retrieve again and verify it was changed
-      bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
+      const bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_follow_event_dependencies);
       CHECK(attr == !new_attr);
 
       // Set it back
@@ -480,13 +482,13 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     { // cudaMemPoolReuseAllowOpportunistic
       // Get the attribute value
-      bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_opportunistic);
+      const bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_opportunistic);
 
       // Set it to the opposite
       pool.set_attribute(cuda::memory_pool_attributes::reuse_allow_opportunistic, !attr);
 
       // Retrieve again and verify it was changed
-      bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_opportunistic);
+      const bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_opportunistic);
       CHECK(attr == !new_attr);
 
       // Set it back
@@ -495,13 +497,13 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     { // cudaMemPoolReuseAllowInternalDependencies
       // Get the attribute value
-      bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_internal_dependencies);
+      const bool attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_internal_dependencies);
 
       // Set it to the opposite
       pool.set_attribute(cuda::memory_pool_attributes::reuse_allow_internal_dependencies, !attr);
 
       // Retrieve again and verify it was changed
-      bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_internal_dependencies);
+      const bool new_attr = pool.attribute(cuda::memory_pool_attributes::reuse_allow_internal_dependencies);
       CHECK(attr == !new_attr);
 
       // Set it back
@@ -510,13 +512,13 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     { // cudaMemPoolAttrReleaseThreshold
       // Get the attribute value
-      size_t attr = pool.attribute(cuda::memory_pool_attributes::release_threshold);
+      const size_t attr = pool.attribute(cuda::memory_pool_attributes::release_threshold);
 
       // Set it to something else
       pool.set_attribute(cuda::memory_pool_attributes::release_threshold, 2 * attr);
 
       // Retrieve again and verify it was changed
-      size_t new_attr = pool.attribute(cuda::memory_pool_attributes::release_threshold);
+      const size_t new_attr = pool.attribute(cuda::memory_pool_attributes::release_threshold);
       CHECK(new_attr == 2 * attr);
 
       // Set it back
@@ -525,7 +527,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     // prime the pool to a given size
     memory_resource resource{pool};
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
 
     // Allocate a buffer to prime
     auto* ptr = resource.allocate(stream, 256 * sizeof(int));
@@ -533,13 +535,13 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     { // cudaMemPoolAttrReservedMemHigh
       // Get the attribute value
-      size_t attr = pool.attribute(cuda::memory_pool_attributes::reserved_mem_high);
+      const size_t attr = pool.attribute(cuda::memory_pool_attributes::reserved_mem_high);
 
       // Set it to zero as everything else is illegal
       pool.set_attribute(cuda::memory_pool_attributes::reserved_mem_high, 0);
 
       // Retrieve again and verify it was changed, which it wasn't...
-      size_t new_attr = pool.attribute(cuda::memory_pool_attributes::reserved_mem_high);
+      const size_t new_attr = pool.attribute(cuda::memory_pool_attributes::reserved_mem_high);
       CHECK(new_attr == attr);
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -562,13 +564,13 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     { // cudaMemPoolAttrUsedMemHigh
       // Get the attribute value
-      size_t attr = pool.attribute(cuda::memory_pool_attributes::used_mem_high);
+      const size_t attr = pool.attribute(cuda::memory_pool_attributes::used_mem_high);
 
       // Set it to zero as everything else is illegal
       pool.set_attribute(cuda::memory_pool_attributes::used_mem_high, 0);
 
       // Retrieve again and verify it was changed, which it wasn't...
-      size_t new_attr = pool.attribute(cuda::memory_pool_attributes::used_mem_high);
+      const size_t new_attr = pool.attribute(cuda::memory_pool_attributes::used_mem_high);
       CHECK(new_attr == attr);
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -596,14 +598,14 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     { // cudaMemPoolAttrReservedMemCurrent
       // Get the attribute value
-      size_t attr = pool.attribute(cuda::memory_pool_attributes::reserved_mem_current);
+      const size_t attr = pool.attribute(cuda::memory_pool_attributes::reserved_mem_current);
       CHECK(attr >= 2048 * sizeof(int));
       // cudaMemPoolAttrReservedMemCurrent cannot be set
     }
 
     { // cudaMemPoolAttrUsedMemCurrent
       // Get the attribute value
-      size_t attr = pool.attribute(cuda::memory_pool_attributes::used_mem_current);
+      const size_t attr = pool.attribute(cuda::memory_pool_attributes::used_mem_current);
       CHECK(attr == 2048 * sizeof(int));
       // cudaMemPoolAttrUsedMemCurrent cannot be set
     }
@@ -623,7 +625,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     // prime the pool to a given size
     memory_resource resource{pool};
-    cuda::stream stream{cuda::device_ref{0}};
+    const cuda::stream stream{cuda::device_ref{0}};
 
     // Allocate 2 buffers
     auto* ptr1 = resource.allocate(stream, 2048 * sizeof(int));
@@ -735,8 +737,8 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
   {
     return;
   }
-  cuda::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
-  cuda::device_memory_pool with_allocation_handle = cuda::device_memory_pool(cuda::device_ref{0}, props);
+  const cuda::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
+  const cuda::device_memory_pool with_allocation_handle = cuda::device_memory_pool(cuda::device_ref{0}, props);
 
   ::cudaMemPool_t current_default_pool{};
   {
@@ -771,8 +773,8 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
   {
     return;
   }
-  cuda::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
-  cuda::pinned_memory_pool with_allocation_handle = cuda::pinned_memory_pool(0, props);
+  const cuda::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
+  const cuda::pinned_memory_pool with_allocation_handle = cuda::pinned_memory_pool(0, props);
 
   ::cudaMemPool_t get = with_allocation_handle.get();
   CHECK(get != cuda::pinned_default_memory_pool().get());
@@ -799,14 +801,14 @@ C2H_CCCLRT_TEST("device_memory_pool conversion to resource_ref", "[memory_resour
 {
   test::skip_if_unsupported_memory_pool<cuda::device_memory_pool>();
 
-  int current_device = 0;
-  cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
+  const int current_device = 0;
+  const cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
 
   cuda::device_memory_pool pool{cuda::device_ref{0}};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref1 = pool.as_ref();
+  const cuda::mr::resource_ref<cuda::mr::device_accessible> ref1 = pool.as_ref();
 
-  cuda::device_memory_pool_ref pool_ref                    = pool.as_ref();
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref2 = pool_ref;
+  cuda::device_memory_pool_ref pool_ref                          = pool.as_ref();
+  const cuda::mr::resource_ref<cuda::mr::device_accessible> ref2 = pool_ref;
   CHECK((ref1 == ref2));
 }
 
@@ -851,32 +853,32 @@ C2H_CCCLRT_TEST("pinned_memory_pool conversion to resource_ref", "[memory_resour
 {
   test::skip_if_unsupported_memory_pool<cuda::pinned_memory_pool>();
 
-  int current_device = 0;
-  cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
+  const int current_device = 0;
+  const cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
 
   cuda::pinned_memory_pool pool{0};
 
   { // host device accessible
-    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref1 = pool.as_ref();
+    const cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref1 = pool.as_ref();
 
-    cuda::pinned_memory_pool_ref pool_ref                                               = pool.as_ref();
-    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref2 = pool_ref;
+    cuda::pinned_memory_pool_ref pool_ref                                                     = pool.as_ref();
+    const cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref2 = pool_ref;
     CHECK((ref1 == ref2));
   }
 
   { // host  accessible
-    cuda::mr::resource_ref<cuda::mr::host_accessible> ref1 = pool.as_ref();
+    const cuda::mr::resource_ref<cuda::mr::host_accessible> ref1 = pool.as_ref();
 
-    cuda::pinned_memory_pool_ref pool_ref                  = pool.as_ref();
-    cuda::mr::resource_ref<cuda::mr::host_accessible> ref2 = pool_ref;
+    cuda::pinned_memory_pool_ref pool_ref                        = pool.as_ref();
+    const cuda::mr::resource_ref<cuda::mr::host_accessible> ref2 = pool_ref;
     CHECK((ref1 == ref2));
   }
 
   { // device accessible
-    cuda::mr::resource_ref<cuda::mr::device_accessible> ref1 = pool.as_ref();
+    const cuda::mr::resource_ref<cuda::mr::device_accessible> ref1 = pool.as_ref();
 
-    cuda::pinned_memory_pool_ref pool_ref                    = pool.as_ref();
-    cuda::mr::resource_ref<cuda::mr::device_accessible> ref2 = pool_ref;
+    cuda::pinned_memory_pool_ref pool_ref                          = pool.as_ref();
+    const cuda::mr::resource_ref<cuda::mr::device_accessible> ref2 = pool_ref;
     CHECK((ref1 == ref2));
   }
 }
@@ -886,14 +888,14 @@ C2H_CCCLRT_TEST("pinned_memory_pool conversion to resource_ref", "[memory_resour
 
 C2H_CCCLRT_TEST("device_memory_pool no_init constructor", "[memory_resource]")
 {
-  cuda::device_memory_pool pool(cuda::no_init);
+  const cuda::device_memory_pool pool(cuda::no_init);
   CHECK(pool.get() == nullptr);
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
 C2H_CCCLRT_TEST("pinned_memory_pool no_init constructor", "[memory_resource]")
 {
-  cuda::pinned_memory_pool pool(cuda::no_init);
+  const cuda::pinned_memory_pool pool(cuda::no_init);
   CHECK(pool.get() == nullptr);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
@@ -905,3 +907,4 @@ C2H_CCCLRT_TEST("managed_memory_pool no_init constructor", "[memory_resource]")
   CHECK(pool.get() == nullptr);
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+} // namespace

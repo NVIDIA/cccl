@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <class Vector>
 void TestVectorManipulation(size_t n)
 {
@@ -42,7 +44,7 @@ void TestVectorManipulation(size_t n)
   ASSERT_EQUAL((tail == std::vector<T>(20, T(11))), true);
 
   // shrinking a vector should not invalidate iterators
-  Iterator first = vec1.begin();
+  const Iterator first = vec1.begin();
   vec1.resize(10);
   ASSERT_EQUAL_QUIET(first, vec1.begin());
 
@@ -99,3 +101,4 @@ void TestVectorManipulationDevice(size_t n)
   TestVectorManipulation<thrust::device_vector<T>>(n);
 }
 DECLARE_VARIABLE_UNITTEST(TestVectorManipulationDevice);
+} // namespace

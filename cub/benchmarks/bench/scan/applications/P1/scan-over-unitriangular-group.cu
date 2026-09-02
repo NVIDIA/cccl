@@ -39,6 +39,8 @@
 
 #include "../../policy_selector.h"
 
+namespace
+{
 namespace impl
 {
 template <typename T>
@@ -96,7 +98,7 @@ bool validation(const thrust::device_vector<TupleT>& input,
 
   return h_reference == h_output;
 }
-}; // namespace impl
+} // namespace impl
 
 template <typename T, typename OffsetT>
 void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
@@ -152,6 +154,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // for validation use (recommended for integral types and smallish input sizes)
   // assert(impl::validation(input, output, op_t{}, bench_stream));
 }
+} // namespace
 
 #ifdef TUNE_T
 using bench_types = nvbench::type_list<TUNE_T>;

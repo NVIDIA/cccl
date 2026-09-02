@@ -12,6 +12,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 
 // Generic counts, deliberately including non-multiples of the 16-byte vectorized store width, to exercise the scalar
@@ -113,3 +115,4 @@ CUB_TEST("DeviceTransform::Transform tunable narrower store_vec_size", "[device]
   REQUIRE(reference_h == result);
 }
 #endif // TEST_LAUNCH == 0
+} // namespace

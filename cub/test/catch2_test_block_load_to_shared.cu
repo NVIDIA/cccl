@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 enum struct test_mode
 {
   single_copy,
@@ -37,10 +39,11 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   constexpr int buffer_align             = cub::detail::LoadToSharedBufferAlignBytes<input_t>();
   constexpr int buffer_size              = cub::detail::LoadToSharedBufferSizeBytes<input_t>(max_num_items_first_copy);
   alignas(buffer_align) __shared__ char buffer[num_buffers][buffer_size];
-  cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
-  cuda::std::span<char> dst_buff{buffer[0]};
+  const cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
+  const cuda::std::span<char> dst_buff{buffer[0]};
   const int num_items_first_copy = cuda::std::min(num_items, max_num_items_first_copy);
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items_first_copy));
   if constexpr (Mode == test_mode::single_copy || Mode == test_mode::multi_copy_multi_phase
                 || Mode == test_mode::multi_copy_multi_barrier)
@@ -54,8 +57,8 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   }
   else if constexpr (Mode == test_mode::multi_copy_single_phase)
   {
-    cuda::std::span<char> dst_buff2{buffer[1]};
-    cuda::std::span<input_t> dst2 = block_load2sh.CopyAsync(dst_buff2, src.subspan(num_items_first_copy));
+    const cuda::std::span<char> dst_buff2{buffer[1]};
+    const cuda::std::span<input_t> dst2 = block_load2sh.CopyAsync(dst_buff2, src.subspan(num_items_first_copy));
 
     block_load2sh.CommitAndWait();
 
@@ -85,7 +88,7 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
     // Reuse TempStorage
     block_load2sh_t second_block_load2sh{storage};
 
-    cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
+    const cuda::std::span<input_t> dst = second_block_load2sh.CopyAsync(dst_buff, src.subspan(num_items_first_copy));
 
     second_block_load2sh.CommitAndWait();
 
@@ -138,10 +141,10 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
 
   constexpr int ThreadsInBlock = ThreadsInBlockX * ThreadsInBlockY * ThreadsInBlockZ;
 
-  cuda::std::span<input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
-  cuda::std::span<char> dst_buff{smem_buff, cuda::std::size_t{cuda::ptx::get_sreg_dynamic_smem_size()}};
+  const cuda::std::span<input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
+  const cuda::std::span<char> dst_buff{smem_buff, cuda::std::size_t{cuda::ptx::get_sreg_dynamic_smem_size()}};
 
-  cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items));
+  const cuda::std::span<input_t> dst = block_load2sh.CopyAsync(dst_buff, src.first(num_items));
 
   // also test separate Commit and Wait calls with token passing here
   auto token = block_load2sh.Commit();
@@ -278,3 +281,4 @@ CUB_TEST("Block load to shared works with const and non-const datatype and diffe
     d_input_ref, thrust::raw_pointer_cast(d_input.data()) + offset_for_elements);
 }
 #endif
+} // namespace

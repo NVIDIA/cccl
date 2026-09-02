@@ -33,6 +33,8 @@ namespace cudax = cuda::experimental;
 constexpr int empty_key   = -1;
 constexpr int empty_value = -1;
 
+namespace
+{
 // Constructing a map with an erased-key sentinel must keep insert and contains correct (no key ever
 // collides with the empty or erased sentinels).
 template <class _Pair>
@@ -63,7 +65,7 @@ C2H_TEST("fixed_capacity_map — empty and erased key sentinels", "[sentinel]")
     cudax::cuco::make_valid_capacity<probing, bucket>(::cuda::std::size_t{num_keys} * 2);
   using map_type = cudax::cuco::fixed_capacity_map<int, int, capacity>;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,
@@ -79,3 +81,4 @@ C2H_TEST("fixed_capacity_map — empty and erased key sentinels", "[sentinel]")
   map.contains(stream, cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, found.begin());
   REQUIRE(::thrust::all_of(::thrust::cuda::par.on(stream.get()), found.data(), found.data() + num_keys, is_nonzero{}));
 }
+} // namespace

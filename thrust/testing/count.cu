@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestCountSimple()
 {
@@ -20,8 +22,8 @@ void TestCount(const size_t n)
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  size_t cpu_result = thrust::count(h_data.begin(), h_data.end(), T(5));
-  size_t gpu_result = thrust::count(d_data.begin(), d_data.end(), T(5));
+  const size_t cpu_result = thrust::count(h_data.begin(), h_data.end(), T(5));
+  const size_t gpu_result = thrust::count(d_data.begin(), d_data.end(), T(5));
 
   ASSERT_EQUAL(cpu_result, gpu_result);
 }
@@ -53,8 +55,8 @@ void TestCountIf(const size_t n)
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  size_t cpu_result = thrust::count_if(h_data.begin(), h_data.end(), greater_than_five<T>());
-  size_t gpu_result = thrust::count_if(d_data.begin(), d_data.end(), greater_than_five<T>());
+  const size_t cpu_result = thrust::count_if(h_data.begin(), h_data.end(), greater_than_five<T>());
+  const size_t gpu_result = thrust::count_if(d_data.begin(), d_data.end(), greater_than_five<T>());
 
   ASSERT_EQUAL(cpu_result, gpu_result);
 }
@@ -82,7 +84,7 @@ void TestCountDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::count(sys, vec.begin(), vec.end(), 13);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -107,11 +109,11 @@ DECLARE_UNITTEST(TestCountDispatchImplicit);
 
 void TestCountWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  long long result = thrust::count(thrust::device, begin, end, (1ll << magnitude) - 17);
+  const long long result = thrust::count(thrust::device, begin, end, (1ll << magnitude) - 17);
 
   ASSERT_EQUAL(result, 1);
 }
@@ -126,3 +128,4 @@ void TestCountWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestCountWithBigIndexes);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Vector>
 void TestSetDifferenceByKeyDescendingSimple()
 {
@@ -17,7 +19,7 @@ void TestSetDifferenceByKeyDescendingSimple()
 
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -91,3 +93,4 @@ void TestSetDifferenceByKeyDescending(const size_t n)
   ASSERT_EQUAL(h_result_val, d_result_val);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKeyDescending);
+} // namespace

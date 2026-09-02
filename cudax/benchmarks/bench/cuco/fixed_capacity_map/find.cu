@@ -28,6 +28,8 @@
 namespace cudax = cuda::experimental;
 namespace bench = cudax::cuco::benchmark;
 
+namespace
+{
 /**
  * @brief A benchmark evaluating `cudax::cuco::fixed_capacity_map::find_async` performance.
  */
@@ -48,7 +50,7 @@ void fixed_capacity_map_find(nvbench::state& state, nvbench::type_list<Key, Valu
     const auto matching_rate = state.get_float64("MatchingRate");
 
     const auto device = cuda::device_ref{0};
-    cuda::stream stream{device};
+    const cuda::stream stream{device};
     const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
     const auto exec_policy                = thrust::cuda::par_nosync.on(stream.get());
 
@@ -106,3 +108,4 @@ NVBENCH_BENCH_TYPES(fixed_capacity_map_find,
   .add_int64_axis("NumInputs", {bench::defaults::n})
   .add_float64_axis("Occupancy", {bench::defaults::occupancy})
   .add_float64_axis("MatchingRate", bench::defaults::matching_rate_range);
+} // namespace

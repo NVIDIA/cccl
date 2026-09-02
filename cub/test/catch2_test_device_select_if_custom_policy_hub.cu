@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class InputT>
 struct my_policy_hub
 {
@@ -98,3 +100,4 @@ CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]",
   expected.resize(num_selected);
   REQUIRE(h_out == expected);
 }
+} // namespace

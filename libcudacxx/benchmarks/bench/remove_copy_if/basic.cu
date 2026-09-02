@@ -16,6 +16,8 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 struct is_even
 {
   template <class T>
@@ -26,7 +28,7 @@ struct is_even
 };
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -50,3 +52,4 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+} // namespace

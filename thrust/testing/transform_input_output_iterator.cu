@@ -15,6 +15,8 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
+namespace
+{
 // ensure that we properly support thrust::transform_input_output_iterator from cuda::std
 void TestTransformInputOutputIteratorTraits()
 {
@@ -62,6 +64,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
   thrust::sequence(input.begin(), input.end(), 1);
 
   // construct transform_iterator
+  // NOLINTNEXTLINE(misc-const-correctness)
   thrust::transform_input_output_iterator<InputFunction, OutputFunction, Iterator> transform_iter(
     squared.begin(), InputFunction(), OutputFunction());
 
@@ -142,3 +145,4 @@ struct TestTransformInputOutputIteratorScan
   }
 };
 VariableUnitTest<TestTransformInputOutputIteratorScan, IntegralTypes> TestTransformInputOutputIteratorScanInstance;
+} // namespace

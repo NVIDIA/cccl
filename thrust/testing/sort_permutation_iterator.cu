@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Iterator>
 class strided_range
 {
@@ -63,7 +65,7 @@ void TestSortPermutationIterator()
 
   Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
 
-  strided_range<Iterator> S(A.begin(), A.end(), 2);
+  const strided_range<Iterator> S(A.begin(), A.end(), 2);
 
   thrust::sort(S.begin(), S.end());
 
@@ -79,7 +81,7 @@ void TestStableSortPermutationIterator()
 
   Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
 
-  strided_range<Iterator> S(A.begin(), A.end(), 2);
+  const strided_range<Iterator> S(A.begin(), A.end(), 2);
 
   thrust::stable_sort(S.begin(), S.end());
 
@@ -96,8 +98,8 @@ void TestSortByKeyPermutationIterator()
   Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
   Vector B{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  strided_range<Iterator> S(A.begin(), A.end(), 2);
-  strided_range<Iterator> T(B.begin(), B.end(), 2);
+  const strided_range<Iterator> S(A.begin(), A.end(), 2);
+  const strided_range<Iterator> T(B.begin(), B.end(), 2);
 
   thrust::sort_by_key(S.begin(), S.end(), T.begin());
 
@@ -117,8 +119,8 @@ void TestStableSortByKeyPermutationIterator()
   Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
   Vector B{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  strided_range<Iterator> S(A.begin(), A.end(), 2);
-  strided_range<Iterator> T(B.begin(), B.end(), 2);
+  const strided_range<Iterator> S(A.begin(), A.end(), 2);
+  const strided_range<Iterator> T(B.begin(), B.end(), 2);
 
   thrust::stable_sort_by_key(S.begin(), S.end(), T.begin());
 
@@ -129,3 +131,4 @@ void TestStableSortByKeyPermutationIterator()
   ASSERT_EQUAL(B, ref_B);
 }
 DECLARE_VECTOR_UNITTEST(TestStableSortByKeyPermutationIterator);
+} // namespace

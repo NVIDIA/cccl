@@ -21,6 +21,8 @@
 #include "cub/util_type.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -91,8 +93,8 @@ CUB_TEST("Device three-way partition can handle empty problems", "[partition][de
   c2h::device_vector<type> num_selected_out{42, 42};
   type* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  less_than_t<type> le(type{0});
-  greater_or_equal_t<type> ge(type{1});
+  const less_than_t<type> le(type{0});
+  const greater_or_equal_t<type> ge(type{1});
 
   partition(in, d_first_part_out, d_second_part_out, d_unselected_out, d_num_selected_out, num_items, le, ge);
   REQUIRE(num_selected_out[0] == 0);
@@ -215,8 +217,8 @@ CUB_TEST("Device three-way partition is stable", "[partition][device]", CUB_SMAL
 
   pair_type first_val_of_second_part = cuda::std::make_pair(static_cast<type>(2 * num_items / 3), std::uint32_t{});
 
-  less_than_t<pair_type> le(first_unselected_val);
-  greater_or_equal_t<pair_type> ge(first_val_of_second_part);
+  const less_than_t<pair_type> le(first_unselected_val);
+  const greater_or_equal_t<pair_type> ge(first_val_of_second_part);
 
   auto cub_result    = cub_partition(le, ge, in);
   auto thrust_result = thrust_partition(le, ge, in);
@@ -232,11 +234,11 @@ CUB_TEST("Device three-way partition handles empty first part", "[partition][dev
   c2h::device_vector<type> in(num_items);
   thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
-  type first_unselected_val     = type{0};
-  type first_val_of_second_part = static_cast<type>(num_items / 2);
+  const type first_unselected_val     = type{0};
+  const type first_val_of_second_part = static_cast<type>(num_items / 2);
 
-  less_than_t<type> le(first_unselected_val);
-  greater_or_equal_t<type> ge(first_val_of_second_part);
+  const less_than_t<type> le(first_unselected_val);
+  const greater_or_equal_t<type> ge(first_val_of_second_part);
 
   auto cub_result    = cub_partition(le, ge, in);
   auto thrust_result = thrust_partition(le, ge, in);
@@ -253,11 +255,11 @@ CUB_TEST("Device three-way partition handles empty second part", "[partition][de
   c2h::device_vector<type> in(num_items);
   thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
-  type first_unselected_val     = static_cast<type>(num_items / 2);
-  type first_val_of_second_part = type{0}; // empty set for unsigned types
+  const type first_unselected_val     = static_cast<type>(num_items / 2);
+  const type first_val_of_second_part = type{0}; // empty set for unsigned types
 
-  less_than_t<type> le(first_unselected_val);
-  greater_or_equal_t<type> ge(first_val_of_second_part);
+  const less_than_t<type> le(first_unselected_val);
+  const greater_or_equal_t<type> ge(first_val_of_second_part);
 
   auto cub_result    = cub_partition(ge, le, in);
   auto thrust_result = thrust_partition(ge, le, in);
@@ -274,10 +276,10 @@ CUB_TEST("Device three-way partition handles empty unselected part", "[partition
   c2h::device_vector<type> in(num_items);
   thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
-  type first_unselected_val = static_cast<type>(num_items / 2);
+  const type first_unselected_val = static_cast<type>(num_items / 2);
 
-  less_than_t<type> le(first_unselected_val);
-  greater_or_equal_t<type> ge(first_unselected_val);
+  const less_than_t<type> le(first_unselected_val);
+  const greater_or_equal_t<type> ge(first_unselected_val);
 
   auto cub_result    = cub_partition(le, ge, in);
   auto thrust_result = thrust_partition(le, ge, in);
@@ -294,9 +296,9 @@ CUB_TEST("Device three-way partition handles only unselected items", "[partition
   c2h::device_vector<type> in(num_items);
   thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
-  type first_unselected_val = type{0};
+  const type first_unselected_val = type{0};
 
-  less_than_t<type> le(first_unselected_val);
+  const less_than_t<type> le(first_unselected_val);
 
   auto cub_result    = cub_partition(le, le, in);
   auto thrust_result = thrust_partition(le, le, in);
@@ -315,9 +317,9 @@ CUB_TEST("Device three-way partition handles reverse iterator", "[partition][dev
   const int num_items_in_first_part = num_items / 3;
   const int num_unselected_items    = 2 * num_items / 3;
 
-  type first_part_val{0};
-  type second_part_val{1};
-  type unselected_part_val{2};
+  const type first_part_val{0};
+  const type second_part_val{1};
+  const type unselected_part_val{2};
 
   c2h::device_vector<type> in(num_items, second_part_val);
   thrust::fill_n(c2h::device_policy, in.begin(), num_items_in_first_part, first_part_val);
@@ -327,8 +329,8 @@ CUB_TEST("Device three-way partition handles reverse iterator", "[partition][dev
 
   c2h::device_vector<type> first_and_unselected_part(num_items);
 
-  cuda::equal_to_value<type> first_selector{first_part_val};
-  cuda::equal_to_value<type> second_selector{second_part_val};
+  const cuda::equal_to_value<type> first_selector{first_part_val};
+  const cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 
@@ -367,14 +369,14 @@ CUB_TEST("Device three-way partition handles single output", "[partition][device
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items          = GENERATE_COPY(take(10, random(1, 1000000)));
-  int num_items_in_first_part  = num_items / 3;
-  int num_unselected_items     = 2 * num_items / 3;
-  int num_items_in_second_part = num_items - num_items_in_first_part - num_unselected_items;
+  const int num_items                = GENERATE_COPY(take(10, random(1, 1000000)));
+  const int num_items_in_first_part  = num_items / 3;
+  const int num_unselected_items     = 2 * num_items / 3;
+  const int num_items_in_second_part = num_items - num_items_in_first_part - num_unselected_items;
 
-  type first_part_val{0};
-  type second_part_val{1};
-  type unselected_part_val{2};
+  const type first_part_val{0};
+  const type second_part_val{1};
+  const type unselected_part_val{2};
 
   c2h::device_vector<type> in(num_items, second_part_val);
   thrust::fill_n(c2h::device_policy, in.begin(), num_items_in_first_part, first_part_val);
@@ -384,8 +386,8 @@ CUB_TEST("Device three-way partition handles single output", "[partition][device
 
   c2h::device_vector<type> output(num_items);
 
-  cuda::equal_to_value<type> first_selector{first_part_val};
-  cuda::equal_to_value<type> second_selector{second_part_val};
+  const cuda::equal_to_value<type> first_selector{first_part_val};
+  const cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 
@@ -440,9 +442,9 @@ try
   auto first_selector  = mod_equal_to<offset_t>{3, 0};
   auto second_selector = mod_equal_to<offset_t>{3, 1};
 
-  offset_t expected_first  = num_items / offset_t{3} + (num_items % offset_t{3} >= 1);
-  offset_t expected_second = num_items / offset_t{3} + (num_items % offset_t{3} >= 2);
-  offset_t expected_third  = num_items / offset_t{3};
+  const offset_t expected_first  = num_items / offset_t{3} + (num_items % offset_t{3} >= 1);
+  const offset_t expected_second = num_items / offset_t{3} + (num_items % offset_t{3} >= 2);
+  const offset_t expected_third  = num_items / offset_t{3};
 
   auto expected_first_it  = cuda::transform_iterator(in, multiply_and_add<offset_t>{3, 0});
   auto expected_second_it = cuda::transform_iterator(in, multiply_and_add<offset_t>{3, 1});
@@ -476,3 +478,4 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
   SUCCEED("exceeding memory is not a failure");
 }
+} // namespace

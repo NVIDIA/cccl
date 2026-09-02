@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator1, typename ForwardIterator2>
 ForwardIterator2 swap_ranges(my_system& system, ForwardIterator1, ForwardIterator1, ForwardIterator2 first2)
 {
@@ -16,7 +18,7 @@ void TestSwapRangesDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::swap_ranges(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -60,8 +62,8 @@ DECLARE_VECTOR_UNITTEST(TestSwapRangesSimple);
 template <typename T>
 void TestSwapRanges(const size_t n)
 {
-  thrust::host_vector<T> a1 = unittest::random_integers<T>(n);
-  thrust::host_vector<T> a2 = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> a1 = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> a2 = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h1   = a1;
   thrust::host_vector<T> h2   = a2;
@@ -192,3 +194,4 @@ void TestSwapRangesUserSwap()
   ASSERT_EQUAL_QUIET(ref, d_B[2]);
 }
 DECLARE_UNITTEST(TestSwapRangesUserSwap);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

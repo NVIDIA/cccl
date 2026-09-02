@@ -7,6 +7,8 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct return_value
 {
@@ -30,9 +32,9 @@ void TestGenerateSimple()
 
   Vector result(5);
 
-  T value = 13;
+  const T value = 13;
 
-  return_value<T> f(value);
+  const return_value<T> f(value);
 
   thrust::generate(result.begin(), result.end(), f);
 
@@ -51,7 +53,7 @@ void TestGenerateDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::generate(sys, vec.begin(), vec.end(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -81,7 +83,7 @@ void TestGenerate(const size_t n)
   thrust::device_vector<T> d_result(n);
 
   T value = 13;
-  return_value<T> f(value);
+  const return_value<T> f(value);
 
   thrust::generate(h_result.begin(), h_result.end(), f);
   thrust::generate(d_result.begin(), d_result.end(), f);
@@ -94,12 +96,12 @@ template <typename T>
 void TestGenerateToDiscardIterator(const size_t)
 {
   T value = 13;
-  return_value<T> f(value);
+  const return_value<T> f(value);
 
-  thrust::discard_iterator<thrust::host_system_tag> h_first;
+  thrust::discard_iterator<thrust::host_system_tag> h_first; // NOLINT(misc-const-correctness)
   thrust::generate(h_first, h_first + 10, f);
 
-  thrust::discard_iterator<thrust::device_system_tag> d_first;
+  thrust::discard_iterator<thrust::device_system_tag> d_first; // NOLINT(misc-const-correctness)
   thrust::generate(d_first, d_first + 10, f);
 
   // there's nothing to actually check except that it compiles
@@ -113,9 +115,9 @@ void TestGenerateNSimple()
 
   Vector result(5);
 
-  T value = 13;
+  const T value = 13;
 
-  return_value<T> f(value);
+  const return_value<T> f(value);
 
   thrust::generate_n(result.begin(), result.size(), f);
 
@@ -135,7 +137,7 @@ void TestGenerateNDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::generate_n(sys, vec.begin(), vec.size(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -163,15 +165,15 @@ template <typename T>
 void TestGenerateNToDiscardIterator(const size_t n)
 {
   T value = 13;
-  return_value<T> f(value);
+  const return_value<T> f(value);
 
-  thrust::discard_iterator<thrust::host_system_tag> h_result =
+  const thrust::discard_iterator<thrust::host_system_tag> h_result =
     thrust::generate_n(thrust::discard_iterator<thrust::host_system_tag>(), n, f);
 
-  thrust::discard_iterator<thrust::device_system_tag> d_result =
+  const thrust::discard_iterator<thrust::device_system_tag> d_result =
     thrust::generate_n(thrust::discard_iterator<thrust::device_system_tag>(), n, f);
 
-  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
+  const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);
@@ -213,3 +215,4 @@ void TestGenerateTuple()
 DECLARE_UNITTEST(TestGenerateTuple);
 
 _CCCL_DIAG_POP
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

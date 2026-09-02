@@ -21,6 +21,8 @@
 #include "test_util.h"
 #include <cccl/c/for.h>
 
+namespace
+{
 using BuildResultT = cccl_device_for_build_result_t;
 
 struct for_each_cleanup
@@ -81,7 +83,7 @@ void for_each_pointer_input(pointer_t<T>& input_ptr, uint64_t num_items, cccl_op
 void for_each_uncached(cccl_iterator_t input, uint64_t num_items, cccl_op_t op)
 {
   std::optional<for_each_build_cache_t> no_cache = std::nullopt;
-  std::optional<std::string> no_key              = std::nullopt;
+  const std::optional<std::string> no_key        = std::nullopt;
 
   for_each(input, num_items, op, no_cache, no_key);
 }
@@ -148,8 +150,8 @@ struct invocation_counter_state_t
 C2H_TEST("for_each works with stateful operators", "[for_each]")
 {
   const int num_items = 1 << 12;
-  pointer_t<int> counter(1);
-  invocation_counter_state_t op_state                 = {counter.ptr};
+  const pointer_t<int> counter(1);
+  const invocation_counter_state_t op_state           = {counter.ptr};
   stateful_operation_t<invocation_counter_state_t> op = make_operation(
     "op",
     R"XXX(
@@ -161,7 +163,7 @@ extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
 )XXX",
     op_state);
 
-  std::vector<int> input(num_items, 1);
+  const std::vector<int> input(num_items, 1);
   pointer_t<int> input_ptr(input);
 
   for_each_uncached(input_ptr, num_items, op);
@@ -180,8 +182,8 @@ struct large_state_t
 C2H_TEST("for_each works with large stateful operators", "[for_each]")
 {
   const int num_items = 1 << 12;
-  pointer_t<int> counter(1);
-  large_state_t op_state                 = {1, counter.ptr, 2, 3, 4};
+  const pointer_t<int> counter(1);
+  const large_state_t op_state           = {1, counter.ptr, 2, 3, 4};
   stateful_operation_t<large_state_t> op = make_operation(
     "op",
     R"XXX(
@@ -198,7 +200,7 @@ extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
 )XXX",
     op_state);
 
-  std::vector<int> input(num_items, 1);
+  const std::vector<int> input(num_items, 1);
   pointer_t<int> input_ptr(input);
 
   for_each_uncached(input_ptr, num_items, op);
@@ -214,7 +216,7 @@ C2H_TEST("for works with C++ source operations", "[for]")
   const uint64_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source instead of LTO-IR
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     extern "C" __device__ void op(void* a) {
       int* ia = (int*)a;
       *ia = *ia + 1;
@@ -227,7 +229,7 @@ C2H_TEST("for works with C++ source operations", "[for]")
   pointer_t<T> input_ptr(input);
 
   // Test key including flag that this uses C++ source
-  std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
+  const std::optional<std::string> test_key = std::format("cpp_source_test_{}_{}", num_items, typeid(T).name());
 
   auto& cache = fixture<for_each_build_cache_t, DeviceFor_Pointer_Fixture_Tag>::get_or_create().get_value();
   std::optional<for_each_build_cache_t> cache_opt = cache;
@@ -248,7 +250,7 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
   const uint64_t num_items = GENERATE(42, 1337, 42000);
 
   // Create operation from C++ source that uses the identity function from header
-  std::string cpp_source = R"(
+  const std::string cpp_source = R"(
     #include "test_identity.h"
     extern "C" __device__ void op(void* a) {
       int* ia = (int*)a;
@@ -259,7 +261,7 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
 
   operation_t op = make_cpp_operation("op", cpp_source);
 
-  std::vector<T> input(num_items, T(1));
+  const std::vector<T> input(num_items, T(1));
   pointer_t<T> input_ptr(input);
 
   // Test _ex version with custom build configuration
@@ -425,9 +427,9 @@ C2H_TEST("For link_ltoir round-trip", "[for][serialization]")
   CHECK(build.library == nullptr);
 
   // Compile the operator LTOIR separately (user-supplied blob).
-  operation_t op_full = make_operation("op", get_for_op(get_type_info<T>().type));
-  const void* op_blob = op_full.code.data();
-  size_t op_size      = op_full.code.size();
+  operation_t op_full  = make_operation("op", get_for_op(get_type_info<T>().type));
+  const void* op_blob  = op_full.code.data();
+  const size_t op_size = op_full.code.size();
 
   REQUIRE(CUDA_SUCCESS == cccl_device_for_link_ltoir(&build, &op_blob, &op_size, 1));
   REQUIRE((build.payload != nullptr && build.payload_kind == CCCL_PAYLOAD_CUBIN));
@@ -437,7 +439,7 @@ C2H_TEST("For link_ltoir round-trip", "[for][serialization]")
   REQUIRE(build.library != nullptr);
   CHECK(build.static_kernel != nullptr);
 
-  cccl_op_t op_run = op_full;
+  const cccl_op_t op_run = op_full;
   REQUIRE(CUDA_SUCCESS == cccl_device_for(build, input_ptr, n, op_run, CU_STREAM_LEGACY));
 
   std::vector<T> output(n);
@@ -449,6 +451,7 @@ C2H_TEST("For link_ltoir round-trip", "[for][serialization]")
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace
 
 // TODO:
 /*

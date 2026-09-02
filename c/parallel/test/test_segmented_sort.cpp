@@ -31,6 +31,8 @@ using BuildResultT = cccl_device_segmented_sort_build_result_t;
 
 using SizeT = ptrdiff_t;
 
+namespace
+{
 struct segmented_sort_cleanup
 {
   CUresult operator()(BuildResultT* build_data) const noexcept
@@ -216,7 +218,7 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   std::transform(host_keys_int.begin(), host_keys_int.end(), host_keys.begin(), [](int val) {
     return static_cast<key_t>(val);
   });
-  std::vector<key_t> host_keys_out(n_elems);
+  const std::vector<key_t> host_keys_out(n_elems);
 
   REQUIRE(host_keys.size() == n_elems);
   REQUIRE(host_keys_out.size() == n_elems);
@@ -308,8 +310,8 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   std::vector<key_t> expected_keys = host_keys;
   for (std::size_t i = 0; i < n_segments; ++i)
   {
-    std::size_t segment_start = i * segment_size;
-    std::size_t segment_end   = segment_start + segment_size;
+    const std::size_t segment_start = i * segment_size;
+    const std::size_t segment_end   = segment_start + segment_size;
     if (is_descending)
     {
       std::sort(expected_keys.begin() + segment_start, expected_keys.begin() + segment_end, std::greater<key_t>());
@@ -352,8 +354,8 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
     return static_cast<item_t>(val);
   });
 
-  std::vector<key_t> host_keys_out(n_elems);
-  std::vector<item_t> host_values_out(n_elems);
+  const std::vector<key_t> host_keys_out(n_elems);
+  const std::vector<item_t> host_values_out(n_elems);
 
   REQUIRE(host_keys.size() == n_elems);
   REQUIRE(host_values.size() == n_elems);
@@ -417,8 +419,8 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
 
   for (std::size_t i = 0; i < n_segments; ++i)
   {
-    std::size_t segment_start = i * segment_size;
-    std::size_t segment_end   = segment_start + segment_size;
+    const std::size_t segment_start = i * segment_size;
+    const std::size_t segment_end   = segment_start + segment_size;
 
     if (is_descending)
     {
@@ -617,7 +619,7 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   }
   REQUIRE(segment_sizes.size() == n_segments);
 
-  std::size_t n_elems = std::accumulate(segment_sizes.begin(), segment_sizes.end(), 0ULL);
+  const std::size_t n_elems = std::accumulate(segment_sizes.begin(), segment_sizes.end(), 0ULL);
 
   std::vector<int> host_keys_int = generate<int>(n_elems);
   std::vector<key_t> host_keys(n_elems);
@@ -631,8 +633,8 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   std::transform(host_values_int.begin(), host_values_int.end(), host_values.begin(), [](int val) {
     return static_cast<item_t>(val);
   });
-  std::vector<key_t> host_keys_out(n_elems);
-  std::vector<item_t> host_values_out(n_elems);
+  const std::vector<key_t> host_keys_out(n_elems);
+  const std::vector<item_t> host_values_out(n_elems);
 
   pointer_t<key_t> keys_in_ptr(host_keys);
   pointer_t<key_t> keys_out_ptr(host_keys_out);
@@ -690,8 +692,8 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
 
   for (std::size_t i = 0; i < n_segments; ++i)
   {
-    std::size_t segment_start = start_offsets[i];
-    std::size_t segment_end   = end_offsets[i];
+    const std::size_t segment_start = start_offsets[i];
+    const std::size_t segment_end   = end_offsets[i];
 
     if (is_descending)
     {
@@ -851,7 +853,7 @@ C2H_TEST("SegmentedSort compile/load round-trip", "[segmented_sort][serializatio
       /*is_overwrite_okay=*/false,
       &selector,
       null_stream));
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_segmented_sort(
@@ -879,3 +881,4 @@ C2H_TEST("SegmentedSort compile/load round-trip", "[segmented_sort][serializatio
   REQUIRE(CUDA_SUCCESS == cccl_device_segmented_sort_cleanup(&build));
 }
 #endif // CCCL_C_PARALLEL_V2
+} // namespace

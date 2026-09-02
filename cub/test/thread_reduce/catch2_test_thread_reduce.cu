@@ -25,6 +25,8 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__ d_out, ReduceOperator reduce_operator)
 {
@@ -60,7 +62,7 @@ __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperato
   {
     thread_data[i] = d_in[i];
   }
-  cuda::std::span<T, NUM_ITEMS> span(thread_data);
+  const cuda::std::span<T, NUM_ITEMS> span(thread_data);
   *d_out = cub::ThreadReduce(span, reduce_operator);
 }
 
@@ -75,7 +77,7 @@ __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOpera
     thread_data[i] = d_in[i];
   }
   using Extent = cuda::std::extents<int, NUM_ITEMS>;
-  cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
+  const cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NUM_ITEMS>{});
   *d_out = cub::ThreadReduce(mdspan, reduce_operator);
 }
 
@@ -359,3 +361,4 @@ CUB_TEST("ThreadReduce Container Tests", "[reduce][thread]", CUB_SMALL)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 }
+} // namespace

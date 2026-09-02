@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Vector>
 void TestSetDifferenceDescendingSimple()
 {
@@ -15,7 +17,7 @@ void TestSetDifferenceDescendingSimple()
   Vector ref{5, 2};
   Vector result(2);
 
-  Iterator end =
+  const Iterator end =
     thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
@@ -54,3 +56,4 @@ void TestSetDifferenceDescending(const size_t n)
   ASSERT_EQUAL(h_result, d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifferenceDescending);
+} // namespace

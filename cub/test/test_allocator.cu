@@ -31,6 +31,8 @@ using namespace cub;
 // This kernel does very bad things that violate the CUDA programming model, but
 // is okay for the tests here. Do not use this pattern in production code.
 
+namespace
+{
 // Once launched, this kernel will block the stream until `flag` updates to non-zero.
 __global__ void block_stream(const volatile cuda::std::int32_t* flag)
 {
@@ -75,6 +77,7 @@ private:
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
+} // namespace
 
 /**
  * Main
@@ -385,7 +388,7 @@ int main(int argc, char** argv)
     //
 
     // Allocate 768 bytes on the next gpu
-    int next_gpu = (initial_gpu + 1) % num_gpus;
+    const int next_gpu = (initial_gpu + 1) % num_gpus;
     char* d_768B_2;
     CubDebugExit(allocator.DeviceAllocate(next_gpu, (void**) &d_768B_2, 768));
 
@@ -469,7 +472,7 @@ int main(int argc, char** argv)
     cub::detail::EmptyKernel<void><<<1, 32>>>();
   }
   gpu_timer.Stop();
-  float cuda_empty_elapsed_millis = gpu_timer.ElapsedMillis();
+  const float cuda_empty_elapsed_millis = gpu_timer.ElapsedMillis();
 
   // CUDA
   gpu_timer.Start();

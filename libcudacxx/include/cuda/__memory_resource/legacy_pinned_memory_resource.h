@@ -68,7 +68,7 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Invalid alignment passed to legacy_pinned_memory_resource::allocate_sync.");
     }
 
-    ::cuda::__ensure_current_context __guard(__device_);
+    const ::cuda::__ensure_current_context __guard(__device_);
     void* __ptr = ::cuda::__driver::__mallocHost(__bytes);
     return __ptr;
   }

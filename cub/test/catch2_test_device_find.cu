@@ -18,6 +18,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, find_if);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBound, lower_bound);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, upper_bound);
@@ -169,7 +171,7 @@ CUB_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   constexpr offset_t min_items = 1;
   constexpr offset_t max_items = 10000000; // 10M items for reasonable test time
 
-  input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
+  const input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
     take(1, random(min_items, max_items)),
@@ -322,7 +324,7 @@ void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_
   c2h::host_vector<Value> target_values_h = target_values_d;
   c2h::host_vector<Value> values_h        = values_d;
 
-  c2h::host_vector<Result> offsets_h = offsets_d;
+  const c2h::host_vector<Result> offsets_h = offsets_d;
 
   c2h::host_vector<std::ptrdiff_t> offsets_ref(offsets_h.size(), thrust::default_init);
 
@@ -382,3 +384,4 @@ CUB_TEST("DeviceFind::UpperBound really large input",
     SUCCEED("allocation failure is not a test failure");
   }
 }
+} // namespace

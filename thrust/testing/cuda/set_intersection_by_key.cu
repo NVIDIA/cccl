@@ -82,11 +82,13 @@ void TestSetIntersectionByKeyDeviceNoSync()
 DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceNoSync);
 #endif
 
+namespace
+{
 template <typename ExecutionPolicy>
 void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a_key      = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
   auto b_key      = cuda::make_device_buffer<int>(stream, device, {0, 3, 3, 4});
@@ -124,3 +126,4 @@ void TestSetIntersectionByKeyCudaStreamsNoSync()
   TestSetIntersectionByKeyCudaStreams(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestSetIntersectionByKeyCudaStreamsNoSync);
+} // namespace

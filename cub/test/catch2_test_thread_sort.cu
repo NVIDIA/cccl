@@ -11,6 +11,8 @@
 #include "cub/thread/thread_sort.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 struct CustomLess
 {
   template <typename DataType>
@@ -95,3 +97,4 @@ CUB_TEST("Test", "[thread_sort]", CUB_SMALL, value_types, items_per_thread_list)
     CHECK(host_values == out_values);
   }
 }
+} // namespace

@@ -3,12 +3,14 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestDeviceReferenceConstructorFromDeviceReference()
 {
   using T = int;
 
   thrust::device_vector<T> v(1, 0);
-  thrust::device_reference<T> ref = v[0];
+  const thrust::device_reference<T> ref = v[0];
 
   // ref equals the object at v[0]
   ASSERT_EQUAL(v[0], ref);
@@ -33,8 +35,8 @@ void TestDeviceReferenceConstructorFromDevicePointer()
   using T = int;
 
   thrust::device_vector<T> v(1, 0);
-  thrust::device_ptr<T> ptr = &v[0];
-  thrust::device_reference<T> ref(ptr);
+  const thrust::device_ptr<T> ptr = &v[0];
+  const thrust::device_reference<T> ref(ptr);
 
   // ref equals the object pointed to by ptr
   ASSERT_EQUAL(*ptr, ref);
@@ -59,8 +61,8 @@ void TestDeviceReferenceAssignmentFromDeviceReference()
   // test same types
   using T0 = int;
   thrust::device_vector<T0> v0{0, 0};
-  thrust::device_reference<T0> ref0 = v0[0];
-  thrust::device_reference<T0> ref1 = v0[1];
+  const thrust::device_reference<T0> ref0 = v0[0];
+  const thrust::device_reference<T0> ref1 = v0[1];
 
   ref0 = 13;
   ref1 = ref0;
@@ -92,7 +94,7 @@ void TestDeviceReferenceAssignmentFromDeviceReference()
   // test different types
   using T1 = float;
   thrust::device_vector<T1> v1{0.0f};
-  thrust::device_reference<T1> ref2 = v1[0];
+  const thrust::device_reference<T1> ref2 = v1[0];
 
   ref2 = ref0;
 
@@ -107,7 +109,7 @@ void TestDeviceReferenceManipulation()
   using T1 = int;
 
   thrust::device_vector<T1> v(1, 0);
-  thrust::device_ptr<T1> ptr = &v[0];
+  const thrust::device_ptr<T1> ptr = &v[0];
   thrust::device_reference<T1> ref(ptr);
 
   // reset
@@ -123,7 +125,7 @@ void TestDeviceReferenceManipulation()
   ref = 0;
 
   // test postfix increment
-  T1 x1 = ref++;
+  const T1 x1 = ref++;
   ASSERT_EQUAL(0, x1);
   ASSERT_EQUAL(1, ref);
   ASSERT_EQUAL(1, *ptr);
@@ -220,7 +222,7 @@ void TestDeviceReferenceManipulation()
   ASSERT_EQUAL(0, v[0]);
 
   // test equality of const references
-  thrust::device_reference<const T1> ref1 = v[0];
+  const thrust::device_reference<const T1> ref1 = v[0];
   ASSERT_EQUAL(true, ref1 == ref);
 }
 DECLARE_UNITTEST(TestDeviceReferenceManipulation);
@@ -230,8 +232,8 @@ void TestDeviceReferenceSwap()
   using T = int;
 
   thrust::device_vector<T> v(2);
-  thrust::device_reference<T> ref1 = v.front();
-  thrust::device_reference<T> ref2 = v.back();
+  thrust::device_reference<T> ref1       = v.front();
+  const thrust::device_reference<T> ref2 = v.back();
 
   ref1 = 7;
   ref2 = 13;
@@ -258,8 +260,8 @@ void TestDeviceReferenceCompare()
   { // test same element type
     using device_ref = thrust::device_reference<T1>;
 
-    device_ref ref1 = v1.front();
-    device_ref ref2 = v1.back();
+    const device_ref ref1 = v1.front();
+    const device_ref ref2 = v1.back();
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -286,8 +288,8 @@ void TestDeviceReferenceCompare()
     using device_ref = thrust::device_reference<T1>;
     using other_ref  = thrust::device_reference<T2>;
 
-    device_ref ref1 = v1.front();
-    other_ref ref2  = v2.back();
+    const device_ref ref1 = v1.front();
+    const other_ref ref2  = v2.back();
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -314,8 +316,8 @@ void TestDeviceReferenceCompare()
     using other_pointer = typename other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<device_ref, other_ref>);
 
-    device_ref ref1 = v1.front();
-    other_ref ref2{other_pointer{thrust::raw_pointer_cast(v1.data() + 1)}};
+    const device_ref ref1 = v1.front();
+    const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v1.data() + 1)}};
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -342,8 +344,8 @@ void TestDeviceReferenceCompare()
     using other_pointer = typename other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<device_ref, other_ref>);
 
-    device_ref ref1 = v1.front();
-    other_ref ref2{other_pointer{thrust::raw_pointer_cast(v2.data() + 1)}};
+    const device_ref ref1 = v1.front();
+    const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v2.data() + 1)}};
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -413,8 +415,8 @@ void TestTaggedReferenceCompare()
     using tagged_ref = thrust::tagged_reference<T1, thrust::device_system_tag>;
     using tagged_ptr = typename tagged_ref::pointer;
 
-    tagged_ref ref1{tagged_ptr{thrust::raw_pointer_cast(v1.data())}};
-    tagged_ref ref2{tagged_ptr{thrust::raw_pointer_cast(v1.data() + 1)}};
+    const tagged_ref ref1{tagged_ptr{thrust::raw_pointer_cast(v1.data())}};
+    const tagged_ref ref2{tagged_ptr{thrust::raw_pointer_cast(v1.data() + 1)}};
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -441,8 +443,8 @@ void TestTaggedReferenceCompare()
     using tagged_ref = thrust::device_reference<T1>;
     using other_ref  = thrust::device_reference<T2>;
 
-    tagged_ref ref1 = v1.front();
-    other_ref ref2  = v2.back();
+    const tagged_ref ref1 = v1.front();
+    const other_ref ref2  = v2.back();
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -469,8 +471,8 @@ void TestTaggedReferenceCompare()
     using other_pointer = typename other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<tagged_ref, other_ref>);
 
-    tagged_ref ref1 = v1.front();
-    other_ref ref2{other_pointer{thrust::raw_pointer_cast(v1.data() + 1)}};
+    const tagged_ref ref1 = v1.front();
+    const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v1.data() + 1)}};
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -497,8 +499,8 @@ void TestTaggedReferenceCompare()
     using other_pointer = typename other_ref::pointer;
     static_assert(!::cuda::std::is_same_v<tagged_ref, other_ref>);
 
-    tagged_ref ref1 = v1.front();
-    other_ref ref2{other_pointer{thrust::raw_pointer_cast(v2.data() + 1)}};
+    const tagged_ref ref1 = v1.front();
+    const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v2.data() + 1)}};
 
     // Equality
     ASSERT_EQUAL(true, (ref1 == ref1));
@@ -555,3 +557,4 @@ void TestTaggedReferenceCompare()
   }
 }
 DECLARE_UNITTEST(TestTaggedReferenceCompare);
+} // namespace

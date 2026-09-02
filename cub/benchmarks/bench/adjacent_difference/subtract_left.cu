@@ -23,6 +23,8 @@ struct policy_selector_t
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <class T, class OffsetT>
 void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -69,3 +71,4 @@ NVBENCH_BENCH_TYPES(left, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

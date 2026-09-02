@@ -31,6 +31,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 // Whether to display input/output to console
 bool g_verbose = false;
 
@@ -73,6 +75,7 @@ sort_unordered_results(thrust::host_vector<float> h_res_keys, thrust::host_vecto
   thrust::sort(h_pairs, h_pairs + static_cast<std::ptrdiff_t>(h_res_keys.size()));
   return ::cuda::std::make_tuple(h_res_keys, h_res_values);
 }
+} // namespace
 
 //---------------------------------------------------------------------
 // Main
@@ -104,10 +107,10 @@ int main(int argc, char** argv)
   // Allocate host arrays
   thrust::host_vector<float> h_keys_vector(num_items);
   thrust::host_vector<float> h_reference_keys_vector(k);
-  thrust::host_vector<float> h_res_keys_vector(k);
+  const thrust::host_vector<float> h_res_keys_vector(k);
   thrust::host_vector<int> h_values_vector(num_items);
   thrust::host_vector<int> h_reference_values_vector(k);
-  thrust::host_vector<int> h_res_values_vector(k);
+  const thrust::host_vector<int> h_res_values_vector(k);
 
   // Initialize problem and solution on host
   initialize(h_keys_vector.data(),
@@ -133,7 +136,7 @@ int main(int argc, char** argv)
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   CubDebugExit(cudaStreamCreate(&stream));
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};

@@ -28,6 +28,8 @@
 namespace cudax = cuda::experimental;
 namespace bench = cudax::cuco::benchmark;
 
+namespace
+{
 /**
  * @brief A benchmark evaluating `cudax::cuco::fixed_capacity_map::insert_async` performance.
  */
@@ -49,7 +51,7 @@ void fixed_capacity_map_insert(nvbench::state& state, nvbench::type_list<Key, Va
     const auto size = static_cast<cuda::std::size_t>(static_cast<double>(num_keys) / occupancy);
 
     const auto device = cuda::device_ref{0};
-    cuda::stream stream{device};
+    const cuda::stream stream{device};
     const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
     const auto exec_policy                = thrust::cuda::par_nosync.on(stream.get());
 
@@ -103,3 +105,4 @@ NVBENCH_BENCH_TYPES(fixed_capacity_map_insert,
   .add_int64_axis("NumInputs", {bench::defaults::n})
   .add_float64_axis("Occupancy", {bench::defaults::occupancy})
   .add_float64_axis("Multiplicity", bench::defaults::multiplicity_range);
+} // namespace

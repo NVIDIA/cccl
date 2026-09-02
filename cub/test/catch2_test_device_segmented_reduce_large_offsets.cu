@@ -15,6 +15,8 @@
 #include "cub_test_macros.h"
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_min);
@@ -97,7 +99,7 @@ CUB_TEST("Device reduce works with a very large number of segments", "[reduce][d
   const auto segment_index_it = cuda::counting_iterator(segment_index_t{});
 
   // Segment offsets
-  segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{
+  const segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{
     num_empty_segments, num_segments, segment_size, num_items};
   auto offsets_it = cuda::make_transform_iterator(segment_index_it, index_to_offset_op);
 
@@ -250,7 +252,7 @@ void test_fixed_size_segmented_reduce(
   const auto segment_index_it = cuda::counting_iterator(SegmentIdxT{});
 
   // Segment offsets
-  segment_index_to_offset_op<offset_t, SegmentIdxT> index_to_offset_op{0, num_segments, segment_size, num_items};
+  const segment_index_to_offset_op<offset_t, SegmentIdxT> index_to_offset_op{0, num_segments, segment_size, num_items};
   auto offsets_it = cuda::transform_iterator(segment_index_it, index_to_offset_op);
 
   CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<SegmentIdxT>(), num_segments, segment_size, num_items);
@@ -330,3 +332,4 @@ CUB_TEST("Device fixed size segmented reduce works with a very large number of s
       num_segments, compute_expected_op, device_segmented_argmax);
   }
 }
+} // namespace

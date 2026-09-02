@@ -31,6 +31,8 @@ namespace cudax = cuda::experimental;
 
 constexpr int numElements = 50000;
 
+namespace
+{
 struct generator
 {
   thrust::default_random_engine gen{};
@@ -46,11 +48,12 @@ struct generator
     return dist(gen);
   }
 };
+} // namespace
 
 int main()
 {
   // A CUDA stream on which to execute the vector addition kernel
-  cudax::stream stream{cuda::device_ref{0}};
+  const cudax::stream stream{cuda::device_ref{0}};
 
   // The execution policy we want to use to run all work on the same stream
   auto policy = thrust::cuda::par_nosync.on(stream.get());

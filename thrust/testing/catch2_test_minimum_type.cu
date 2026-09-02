@@ -17,6 +17,8 @@ inline constexpr bool mt_fails_impl<::cuda::std::void_t<mt<Ts...>>, Ts...> = fal
 template <typename... Ts>
 inline constexpr bool mt_fails = mt_fails_impl<void, Ts...>;
 
+namespace
+{
 struct A
 {};
 struct B : A
@@ -58,3 +60,4 @@ TEST_CASE("MinimumType", "[minimum_type]")
   STATIC_REQUIRE(mt_fails<int, A, B, C>);
   STATIC_REQUIRE(mt_fails<A, B, C, int>);
 }
+} // namespace

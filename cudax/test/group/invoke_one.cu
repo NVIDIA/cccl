@@ -273,8 +273,8 @@ struct TestKernel
     // Test custom groups.
     if (cuda::warp.rank(cuda::grid, config) == 0)
     {
-      cudax::this_warp warp{config};
-      cudax::group group{cuda::gpu_thread, warp, cudax::group_by<4>{}, cudax::lane_synchronizer{}};
+      const cudax::this_warp warp{config};
+      const cudax::group group{cuda::gpu_thread, warp, cudax::group_by<4>{}, cudax::lane_synchronizer{}};
 
       if (group.rank(warp) == 0)
       {

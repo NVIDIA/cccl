@@ -47,8 +47,6 @@ void add_relative_error_summary(
   summary.set_string("description", "Relative approximation error.");
   summary.set_float64("value", relative_error);
 }
-} // namespace
-
 /**
  * @brief A benchmark evaluating `cudax::cuco::hyperloglog` end-to-end performance.
  */
@@ -62,7 +60,7 @@ void hyperloglog_e2e(nvbench::state& state, nvbench::type_list<Key>)
   const auto sketch_size_kb = sketch_size_kb_type{static_cast<double>(state.get_int64("SketchSizeKB"))};
 
   const auto device = cuda::device_ref{0};
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
   const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
 
   auto items = cuda::make_device_buffer<Key>(stream, device, num_items, cuda::no_init);
@@ -99,7 +97,7 @@ void hyperloglog_add(nvbench::state& state, nvbench::type_list<Key>)
   const auto sketch_size_kb = sketch_size_kb_type{static_cast<double>(state.get_int64("SketchSizeKB"))};
 
   const auto device = cuda::device_ref{0};
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
   const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
 
   auto items = cuda::make_device_buffer<Key>(stream, device, num_items, cuda::no_init);
@@ -119,6 +117,7 @@ void hyperloglog_add(nvbench::state& state, nvbench::type_list<Key>)
     estimator.clear_async({launch.get_stream()});
   });
 }
+} // namespace
 
 NVBENCH_BENCH_TYPES(hyperloglog_e2e, NVBENCH_TYPE_AXES(bench::defaults::key_type_range))
   .set_name("hyperloglog_e2e")

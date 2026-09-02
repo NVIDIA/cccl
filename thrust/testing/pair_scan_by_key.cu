@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct make_pair_functor
 {
   template <typename T1, typename T2>
@@ -40,9 +42,9 @@ struct TestPairScanByKey
     // zip up pairs on the host
     thrust::transform(h_p1.begin(), h_p1.end(), h_p2.begin(), h_pairs.begin(), make_pair_functor());
 
-    thrust::device_vector<T> d_p1    = h_p1;
-    thrust::device_vector<T> d_p2    = h_p2;
-    thrust::device_vector<P> d_pairs = h_pairs;
+    const thrust::device_vector<T> d_p1 = h_p1;
+    const thrust::device_vector<T> d_p2 = h_p2;
+    thrust::device_vector<P> d_pairs    = h_pairs;
 
     thrust::host_vector<T> h_keys   = unittest::random_integers<bool>(n);
     thrust::device_vector<T> d_keys = h_keys;
@@ -62,3 +64,4 @@ struct TestPairScanByKey
 };
 VariableUnitTest<TestPairScanByKey, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
   TestPairScanByKeyInstance;
+} // namespace
