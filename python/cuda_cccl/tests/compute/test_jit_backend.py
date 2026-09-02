@@ -21,56 +21,42 @@ def _wrapper(a, r):
     r[0] = a[0] * 3 + 1
 
 
-def _toolkit_supported_ccs():
-    """Compute capabilities the installed CUDA toolkit can target."""
-    from cuda.bindings import nvrtc
-
-    result, archs = nvrtc.nvrtcGetSupportedArchs()
-    if result != nvrtc.nvrtcResult.NVRTC_SUCCESS:
-        pytest.fail(f"nvrtcGetSupportedArchs() failed: {result.name}")
-    return {(arch // 10, arch % 10) for arch in archs}
-
-
 @pytest.mark.parametrize("cc", [(7, 5), (8, 9), (10, 0)])
 def test_llvm_ir_extraction_supports_target_arches(cc):
     """LLVM IR is extracted for any target arch.
 
-    The gpu.module is translated directly, so the extraction does not depend on
-    which NVVM dialect the target arch would otherwise be lowered through.
-
-    An arch the toolkit predates is skipped: the arches worth covering outlive
-    any single CUDA version, and libnvvm rejects one it does not know.
+    The gpu.module is translated directly and no device code is generated, so
+    the extraction works for an arch the installed CUDA toolkit predates.
     """
-    if cc not in _toolkit_supported_ccs():
-        pytest.skip(f"CUDA toolkit cannot target sm_{cc[0]}{cc[1]}")
-
     text_ir = _mlir.compile_to_llvm_ir(
         _wrapper, _pointer_signature(), f"extract_sm_{cc[0]}{cc[1]}", cc
     )
     assert "define" in text_ir
 
 
-def test_llvm_ir_extraction_does_not_request_lto_codegen(monkeypatch):
-    """Extraction must not ask for an LTO-IR output.
+def test_llvm_ir_extraction_generates_no_device_code(monkeypatch):
+    """Extraction stops at LLVM IR rather than generating device code.
 
-    Requesting one runs a full LTO codegen whose result is discarded; the
-    optimized MLIR the extraction consumes is produced either way.
+    The generated code would be discarded, and producing it ties the extraction
+    to the target arches the installed libnvvm knows.
     """
-    import numba_cuda_mlir.compiler as backend_compiler
+    import numba_cuda_mlir.mlir_optimization as backend_optimization
 
-    recorded = {}
-    original = backend_compiler.compile_mlir
+    calls = []
+    for name in ("_compile_to_ptx", "_call_llvm70_capi"):
+        original = getattr(backend_optimization, name)
 
-    def record(pyfunc, sig, **kwargs):
-        recorded.update(kwargs)
-        return original(pyfunc, sig, **kwargs)
+        def record(*args, _original=original, _name=name, **kwargs):
+            calls.append(_name)
+            return _original(*args, **kwargs)
 
-    monkeypatch.setattr(backend_compiler, "compile_mlir", record)
+        monkeypatch.setattr(backend_optimization, name, record)
 
-    _mlir.compile_to_llvm_ir(_wrapper, _pointer_signature(), "extract_no_lto", (8, 9))
+    _mlir.compile_to_llvm_ir(
+        _wrapper, _pointer_signature(), "extract_no_codegen", (8, 9)
+    )
 
-    assert recorded.get("output") is None
-    assert recorded.get("lto") is False
+    assert calls == []
 
 
 def test_stateful_wrapper_accepts_numpy_integer_shapes():

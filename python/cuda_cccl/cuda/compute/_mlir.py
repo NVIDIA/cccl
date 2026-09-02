@@ -187,6 +187,7 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     """
     from numba_cuda_mlir import compiler as _compiler
     from numba_cuda_mlir._mlir.dialects import gpu as _gpu
+    from numba_cuda_mlir._mlir.passmanager import PassManager
     from numba_cuda_mlir.lowering_utilities import context as _ctx
     from numba_cuda_mlir.lowering_utilities.llvm_utils import (
         NVPTX64_DATALAYOUT,
@@ -194,6 +195,7 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
         dump_llvmir,
         translate_to_llvmir,
     )
+    from numba_cuda_mlir.mlir_optimization import get_base_pipeline
     from numba_cuda_mlir.optimization import run_pre_codegen_patterns
     from numba_cuda_mlir.tools import format_arch
 
@@ -201,19 +203,27 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     if cc is not None:
         target_options["chip"] = format_arch(tuple(cc))
 
-    mlir_str = _compiler.compile_mlir(
-        pyfunc,
-        sig,
-        optimized=True,
+    target_options.update(
         device=True,
         abi="c",
         abi_info={"abi_name": abi_name},
         lto=False,
-        **target_options,
     )
 
+    # Compile to MLIR and run the optimization pipeline over it directly.
+    # Asking numba-cuda-mlir for optimized MLIR instead runs its whole
+    # optimization step, which ends in a device code generation and link whose
+    # result is discarded here -- wasted work, and it makes the extraction fail
+    # for a target arch the installed libnvvm predates even though translating
+    # the gpu.module never needs one.
+    # Driving the compiler directly skips the context initialization a
+    # dispatcher performs on first use; see infer_return_type.
+    refresh_contexts()
+
     with _ctx.get_context():
-        module = mlir_ir.Module.parse(mlir_str)
+        cres = _compiler._compile_only(pyfunc, sig, target_options)
+        module = cres.metadata["mlir_module"]
+        PassManager.parse(get_base_pipeline()).run(module.operation)
         run_pre_codegen_patterns(module)
         gpu_modules = [op for op in module.body if isinstance(op, _gpu.GPUModuleOp)]
         if len(gpu_modules) != 1:
