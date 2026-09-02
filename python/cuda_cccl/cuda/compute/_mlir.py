@@ -119,7 +119,7 @@ def struct_field_position(index):
     return mlir_ir.DenseI64ArrayAttr.get([index])
 
 
-def compile_to_llvm_ir(pyfunc, sig, abi_name: str) -> str:
+def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     """Compile a device function to LLVM IR text via numba-cuda-mlir.
 
     numba-cuda-mlir's public ``cuda.compile`` only emits PTX or LTO-IR.  The v2
@@ -130,6 +130,9 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str) -> str:
     into bitcode with llvmlite.
 
     The function is emitted with a C ABI under the exact symbol ``abi_name``.
+    ``cc`` is the target compute capability as ``(major, minor)``; when omitted
+    numba-cuda-mlir falls back to querying the current device, which requires a
+    GPU to be present.
 
     Note: this is the cc < sm_100 path.  For newer architectures numba-cuda-mlir
     routes through ``libMLIRToLLVM70`` instead and does not expose LLVM IR this
@@ -145,6 +148,11 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str) -> str:
         translate_to_llvmir,
     )
     from numba_cuda_mlir.optimization import run_pre_codegen_patterns
+    from numba_cuda_mlir.tools import format_arch
+
+    target_options = {}
+    if cc is not None:
+        target_options["chip"] = format_arch(tuple(cc))
 
     mlir_str = _compiler.compile_mlir(
         pyfunc,
@@ -155,6 +163,7 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str) -> str:
         abi_info={"abi_name": abi_name},
         output="ltoir",
         lto=False,
+        **target_options,
     )
 
     with _ctx.get_context():
