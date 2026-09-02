@@ -464,7 +464,7 @@ struct WarpReduceShfl
     const int last_lane         = (AllValidLanes) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
     T reduce_value              = input;
 
-    if constexpr ((AllValidLanes || has_identity) && is_warp_redux_op_supported<ReductionOp, T>)
+    if constexpr (IS_ARCH_WARP && (AllValidLanes || has_identity) && is_warp_redux_op_supported<ReductionOp, T>)
     {
       if constexpr (!AllValidLanes)
       {
