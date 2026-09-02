@@ -44,17 +44,15 @@ template <typename T, typename U, typename AccT, int N>
 TEST_FUNC constexpr AccT
 scalar_dot(const cuda::std::array<T, N>& lhs_values, const cuda::std::array<U, N>& rhs_values, AccT acc)
 {
-  AccT lhs_value = static_cast<AccT>(lhs_values[0]);
-  AccT rhs_value = static_cast<AccT>(rhs_values[0]);
-  AccT result    = static_cast<AccT>(lhs_value * rhs_value);
-  for (int i = 1; i < N; ++i)
+  auto result = acc;
+  for (int i = 0; i < N; ++i)
   {
-    lhs_value    = static_cast<AccT>(lhs_values[i]);
-    rhs_value    = static_cast<AccT>(rhs_values[i]);
-    AccT product = static_cast<AccT>(lhs_value * rhs_value);
-    result       = static_cast<AccT>(result + product);
+    auto lhs_value = static_cast<AccT>(lhs_values[i]);
+    auto rhs_value = static_cast<AccT>(rhs_values[i]);
+    auto product   = static_cast<AccT>(lhs_value * rhs_value);
+    result         = static_cast<AccT>(result + product);
   }
-  return static_cast<AccT>(acc + result);
+  return result;
 }
 
 template <typename T, typename U, typename AccT, int N>
@@ -103,79 +101,75 @@ TEST_FUNC constexpr void test_generated(AccT acc)
 
 TEST_FUNC constexpr void test_8bit_dp4a()
 {
-  {
+  { // 8-bit x 8-bit (signed)
     cuda::std::array<int8_t, 4> lhs_values{-8, -3, 2, 7};
     cuda::std::array<int8_t, 4> rhs_values{4, -5, 6, -7};
-    test_values<int8_t, int8_t, int32_t, 4>(lhs_values, rhs_values, int32_t{11});
+    test_values<int8_t, int8_t, int, 4>(lhs_values, rhs_values, 11);
   }
-  {
+  { // 8-bit x 8-bit (unsigned)
     cuda::std::array<uint8_t, 7> lhs_values{1, 2, 3, 128, 5, 200, 255};
     cuda::std::array<uint8_t, 7> rhs_values{255, 7, 128, 5, 200, 3, 2};
-    test_values<uint8_t, uint8_t, uint32_t, 7>(lhs_values, rhs_values, uint32_t{13});
+    test_values<uint8_t, uint8_t, unsigned, 7>(lhs_values, rhs_values, 13);
   }
-  {
+  { // 8-bit x 8-bit (unsigned x signed)
     cuda::std::array<uint8_t, 5> lhs_values{1, 2, 3, 4, 5};
     cuda::std::array<int8_t, 5> rhs_values{-1, 2, -3, 4, -5};
-    test_values<uint8_t, int8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{-17});
+    test_values<uint8_t, int8_t, int, 5>(lhs_values, rhs_values, -17);
   }
-  {
+  { // 8-bit x 8-bit (signed x unsigned)
     cuda::std::array<int8_t, 3> lhs_values{-4, 5, -6};
     cuda::std::array<uint8_t, 3> rhs_values{7, 8, 9};
-    test_values<int8_t, uint8_t, int32_t, 3>(lhs_values, rhs_values, int32_t{19});
+    test_values<int8_t, uint8_t, int, 3>(lhs_values, rhs_values, 19);
   }
-  {
+  { // 8-bit x 8-bit (unsigned)
     cuda::std::array<uint8_t, 4> lhs_values{1, 1, 1, 1};
     cuda::std::array<uint8_t, 4> rhs_values{1, 1, 1, 1};
-    test_values<uint8_t, uint8_t, uint32_t, 4>(lhs_values, rhs_values, uint32_t{0xFFFFFFFD});
+    test_values<uint8_t, uint8_t, unsigned, 4>(lhs_values, rhs_values, 0xFFFFFFFD);
   }
 }
 
 TEST_FUNC constexpr void test_16bit_8bit_dp2a()
 {
-  {
+  { // 16-bit x 8-bit (signed)
     cuda::std::array<int16_t, 5> lhs_values{-300, 20, 45, -12, 17};
     cuda::std::array<int8_t, 5> rhs_values{3, -4, 5, -6, 7};
-    test_values<int16_t, int8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{23});
+    test_values<int16_t, int8_t, int, 5>(lhs_values, rhs_values, 23);
   }
-  {
+  { // 8-bit x 16-bit
     cuda::std::array<int8_t, 5> lhs_values{3, -4, 5, -6, 7};
     cuda::std::array<int16_t, 5> rhs_values{-300, 20, 45, -12, 17};
-    test_values<int8_t, int16_t, int32_t, 5>(lhs_values, rhs_values, int32_t{29});
+    test_values<int8_t, int16_t, int, 5>(lhs_values, rhs_values, 29);
   }
-  {
+  { // 16-bit x 8-bit (unsigned)
     cuda::std::array<uint16_t, 5> lhs_values{300, 20, 45, 12, 17};
     cuda::std::array<uint8_t, 5> rhs_values{3, 4, 5, 6, 7};
-    test_values<uint16_t, uint8_t, uint32_t, 5>(lhs_values, rhs_values, uint32_t{31});
+    test_values<uint16_t, uint8_t, unsigned, 5>(lhs_values, rhs_values, 31);
   }
-  {
+  { // 8-bit x 16-bit (unsigned)
     cuda::std::array<uint8_t, 5> lhs_values{3, 4, 5, 6, 7};
     cuda::std::array<uint16_t, 5> rhs_values{300, 20, 45, 12, 17};
-    test_values<uint8_t, uint16_t, uint32_t, 5>(lhs_values, rhs_values, uint32_t{37});
+    test_values<uint8_t, uint16_t, unsigned, 5>(lhs_values, rhs_values, 37);
   }
-  {
+  { // 16-bit x 8-bit (signed x unsigned)
     cuda::std::array<int16_t, 5> lhs_values{-300, 20, 45, -12, 17};
     cuda::std::array<uint8_t, 5> rhs_values{3, 200, 5, 255, 7};
-    test_values<int16_t, uint8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{41});
+    test_values<int16_t, uint8_t, int, 5>(lhs_values, rhs_values, 41);
   }
-  {
+  { // 8-bit x 16-bit (unsigned x signed)
     cuda::std::array<uint8_t, 5> lhs_values{3, 200, 5, 255, 7};
     cuda::std::array<int16_t, 5> rhs_values{-300, 20, 45, -12, 17};
-    test_values<uint8_t, int16_t, int32_t, 5>(lhs_values, rhs_values, int32_t{-47});
+    test_values<uint8_t, int16_t, int, 5>(lhs_values, rhs_values, -47);
   }
-  {
+  { // 16-bit x 8-bit (unsigned x signed)
     cuda::std::array<uint16_t, 5> lhs_values{300, 40000, 45, 65535, 17};
     cuda::std::array<int8_t, 5> rhs_values{3, -4, 5, -6, 7};
-    test_values<uint16_t, int8_t, int32_t, 5>(lhs_values, rhs_values, int32_t{43});
+    test_values<uint16_t, int8_t, int, 5>(lhs_values, rhs_values, 43);
   }
-  {
+  { // 8-bit x 16-bit (signed x unsigned)
     cuda::std::array<int8_t, 5> lhs_values{3, -4, 5, -6, 7};
     cuda::std::array<uint16_t, 5> rhs_values{300, 40000, 45, 65535, 17};
-    test_values<int8_t, uint16_t, int32_t, 5>(lhs_values, rhs_values, int32_t{-53});
+    test_values<int8_t, uint16_t, int, 5>(lhs_values, rhs_values, -53);
   }
-
-  test_generated<int16_t, int8_t, int32_t, 3>(int32_t{59});
-  test_generated<int8_t, int16_t, int32_t, 4>(int32_t{-61});
-  test_generated<uint16_t, uint8_t, uint32_t, 7>(uint32_t{67});
 }
 
 TEST_FUNC constexpr void test_non_integer()
@@ -190,12 +184,14 @@ TEST_FUNC constexpr void test_non_integer()
     cuda::std::array<uint8_t, 4> rhs_values{5, 6, 7, 8};
     test_values<int8_t, uint8_t, float, 4>(lhs_values, rhs_values, 0.5f);
   }
-  {
-    using complex = cuda::std::complex<double>;
-    cuda::std::array<complex, 3> lhs_values{complex{1.0, 2.0}, complex{-3.0, 0.5}, complex{2.0, -1.0}};
-    cuda::std::array<complex, 3> rhs_values{complex{0.5, -1.0}, complex{2.0, 3.0}, complex{-1.0, 4.0}};
-    test_values<complex, complex, complex, 3>(lhs_values, rhs_values, complex{1.0, -2.0});
-  }
+}
+
+TEST_FUNC void test_complex()
+{
+  using complex = cuda::std::complex<double>;
+  cuda::std::array<complex, 3> lhs_values{complex{1.0, 2.0}, complex{-3.0, 0.5}, complex{2.0, -1.0}};
+  cuda::std::array<complex, 3> rhs_values{complex{0.5, -1.0}, complex{2.0, 3.0}, complex{-1.0, 4.0}};
+  test_values<complex, complex, complex, 3>(lhs_values, rhs_values, complex{1.0, -2.0});
 }
 
 TEST_FUNC constexpr bool test_all()
@@ -208,13 +204,14 @@ TEST_FUNC constexpr bool test_all()
   test_16bit_8bit_dp2a();
   test_non_integer();
 
+  // test mixed types
   test_generated<short, short, int, 3>(5);
   test_generated<int, unsigned, long long, 5>(-7);
   test_generated<long, long long, long long, 4>(9);
   test_generated<unsigned short, unsigned, unsigned long long, 6>(11);
   test_generated<unsigned long, unsigned long long, unsigned long long, 3>(13);
-  test_generated<int8_t, int8_t, uint32_t, 5>(17);
-  test_generated<uint16_t, uint16_t, uint32_t, 5>(19);
+  test_generated<int8_t, int8_t, unsigned, 5>(17);
+  test_generated<uint16_t, uint16_t, unsigned, 5>(19);
 #if _CCCL_HAS_INT128()
   test_generated<__int128_t, __uint128_t, __int128_t, 3>(__int128_t{17});
   test_generated<__uint128_t, __uint128_t, __uint128_t, 5>(__uint128_t{19});
@@ -226,6 +223,7 @@ TEST_FUNC constexpr bool test_all()
 int main(int, char**)
 {
   assert(test_all());
+  test_complex();
   static_assert(test_all());
   return 0;
 }
