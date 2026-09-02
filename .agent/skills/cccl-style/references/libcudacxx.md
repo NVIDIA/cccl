@@ -4,13 +4,8 @@ Use this reference for `libcudacxx/include/**/*` and `cudax/include/**/*`.
 
 ## Naming Style
 
-- Never use reserved keywords, such as `__in`, `__out`, or `__inout` as variables, parameters, or function names.
-- Avoid single-letter template parameter names. Wrong: `_T`; correct: `_Tp`.
-
-## Class / Struct
-
-- Data member names have postfix `_`, e.g. `class __myclass { int __data_; };`.
-- Constructor parameter names should match class/struct data member names without the postfix `_`, e.g. `class __myclass { __myclass(int __data) : __data_(__data) {} };`.
+- Never use reserved keywords as variables, parameters, or function names, such as:
+  `__in`, `__out`, `__inout`, `__input`, `__output`
 
 ## Functions
 
@@ -22,22 +17,6 @@ Use this reference for `libcudacxx/include/**/*` and `cudax/include/**/*`.
 - Use the correct license:
   - `libcudacxx/include/cuda/std` files ported from LLVM libc++ use the LLVM license.
   - `libcudacxx/include/cuda/` files use Apache License v2.0 with LLVM Exceptions.
-- Headers use include guards with names derived from the uppercase full path and closing `#endif` comments repeating the guard name.
-- Right after the include guard, include:
-
-```cpp
-#include <cuda/std/detail/__config>
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-```
-
-- The last included header before code must be `<cuda/std/__cccl/prologue.h>`, and `<cuda/std/__cccl/epilogue.h>` must appear at the end of the file.
 
 ## Comments
 
