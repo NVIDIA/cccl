@@ -26,12 +26,16 @@ def _nvdisasm() -> str | None:
     return str(candidates[-1]) if candidates else None
 
 
-def test_ltoir_is_linked_into_the_final_cubin(tmp_path: Path) -> None:
+@pytest.mark.parametrize("import_form", ("root", "qualified"))
+def test_ltoir_is_linked_into_the_final_cubin(
+    import_form: str,
+    tmp_path: Path,
+) -> None:
     nvdisasm = _nvdisasm()
     if nvdisasm is None:
         pytest.skip("requires nvdisasm to inspect the final cubin")
 
-    result = compile_example(dump_dir=tmp_path)
+    result = compile_example(import_form=import_form, dump_dir=tmp_path)
     assert_compiled(result)
 
     clean_mlir_paths = sorted(tmp_path.rglob("*_clean.mlir"))

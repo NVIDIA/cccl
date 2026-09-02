@@ -44,7 +44,7 @@ examples = [
 test = [
   "mypy",
   "numpy",
-  "pytest",
+  "pytest>=8.2",
   "pytest-cov",
 ]
 

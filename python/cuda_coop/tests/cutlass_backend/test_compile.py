@@ -14,6 +14,9 @@ pytest.importorskip("cutlass.cute")
 from ._compile_support import assert_compiled, compile_example  # noqa: E402
 
 
-def test_partial_block_load_store_compiles_with_fake_tensors() -> None:
-    result = compile_example()
+@pytest.mark.parametrize("import_form", ("root", "qualified"))
+def test_partial_block_load_store_compiles_with_fake_tensors(
+    import_form: str,
+) -> None:
+    result = compile_example(import_form=import_form)
     assert_compiled(result)

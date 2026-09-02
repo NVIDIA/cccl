@@ -7,7 +7,8 @@
 kernel names its participating CUDA thread block, describes the values owned
 by each thread with :func:`~cuda.coop.ThreadData`, and applies a collective
 to that block. The initial release provides block-wide load and store
-operations.
+operations using the DIRECT algorithm. Other load/store algorithms and warp
+groups are intentionally outside this thin-slice API.
 
 The root API is backend-independent:
 
@@ -23,10 +24,11 @@ The root API is backend-independent:
    coop.store(block, destination, loaded)
 
 The compiler integration supplies launch facts such as the block dimensions;
-they are not repeated in the operation calls. A capable compiler context
-activates its backend automatically. Importing :mod:`cuda.coop.cutlass`
-provides the equivalent qualified API when code should name CUTLASS
-explicitly. See :doc:`coop_cutlass` for installation and a complete runnable
+they are not repeated in the operation calls. The common root selects CUTLASS
+only while its exact compiler environment manager is current. Importing
+:mod:`cuda.coop.cutlass` provides the equivalent qualified API when code should
+name CUTLASS explicitly; lowering still requires a compatible CUTLASS compiler
+context. See :doc:`coop_cutlass` for installation and a complete runnable
 example.
 
 CUDA thread block load and store

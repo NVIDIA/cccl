@@ -4,10 +4,13 @@ Getting Started with ``cuda.coop.cutlass``
 ===========================================
 
 The CUTLASS backend lets CUTLASS DSL kernels use the portable
-:mod:`cuda.coop` load and store operations. A compatible CUTLASS compiler
-context activates the backend automatically; the qualified
-:mod:`cuda.coop.cutlass` API selects the same implementation explicitly. The
-initial release supports CUDA 13 and is tested with CUDA Toolkit 13.3.
+:mod:`cuda.coop` load and store operations. The portable root selects CUTLASS
+only while its exact compiler environment manager is current. The qualified
+:mod:`cuda.coop.cutlass` API names the same implementation explicitly, but its
+lowering still requires a compatible CUTLASS compiler context. The
+initial release supports only the DIRECT block load/store algorithm; broader
+algorithms and warp groups are intentional follow-up work. It supports CUDA 13
+and is tested with CUDA Toolkit 13.3.
 
 Installation
 ------------

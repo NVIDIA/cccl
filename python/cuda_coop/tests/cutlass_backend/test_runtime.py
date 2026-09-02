@@ -32,10 +32,17 @@ def test_executable_partial_copy_preserves_prefix_and_tail_sentinels() -> None:
     spec.loader.exec_module(example)
 
     values = example.run_example("root")
-    artifact_paths = set(Path(_provider._ARTIFACTS.name).glob("*.ltoir"))
+    artifacts = {
+        path.name: path.read_bytes()
+        for path in Path(_provider._ARTIFACTS.name).glob("*.ltoir")
+    }
+    assert artifacts
     assert example.run_example("root") == values
-    assert set(Path(_provider._ARTIFACTS.name).glob("*.ltoir")) == artifact_paths
     assert example.run_example("qualified") == values
+    assert {
+        path.name: path.read_bytes()
+        for path in Path(_provider._ARTIFACTS.name).glob("*.ltoir")
+    } == artifacts
     assert values[: example.OUTPUT_OFFSET] == [example.SENTINEL] * (
         example.OUTPUT_OFFSET
     )

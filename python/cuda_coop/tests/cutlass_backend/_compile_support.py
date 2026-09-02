@@ -36,7 +36,7 @@ assert spec is not None and spec.loader is not None
 example = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(example)
 
-run, *_ = example.make_runner()
+run, *_ = example.make_runner(__IMPORT_FORM__)
 source = runtime.make_fake_compact_tensor(
     Int32,
     (example.INPUT_OFFSET + example.LOAD_VALID_ITEMS,),
@@ -59,15 +59,23 @@ print("COMPILED_TWICE")
 
 
 def compile_example(
-    *, dump_dir: Path | None = None
+    *,
+    import_form: str = "root",
+    dump_dir: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """Compile the example twice for SM120 in a fresh CUTLASS process."""
+    """Compile one import form twice for SM120 in a fresh CUTLASS process."""
+
+    if import_form not in {"root", "qualified"}:
+        raise ValueError("import_form must be 'root' or 'qualified'")
 
     env = os.environ.copy()
     if dump_dir is not None:
         env["CUTE_DSL_KEEP"] = "all"
         env["CUTE_DSL_DUMP_DIR"] = str(dump_dir)
-    script = _COMPILE_SCRIPT.replace("__EXAMPLE_PATH__", repr(str(EXAMPLE_PATH)))
+    script = _COMPILE_SCRIPT.replace(
+        "__EXAMPLE_PATH__",
+        repr(str(EXAMPLE_PATH)),
+    ).replace("__IMPORT_FORM__", repr(import_form))
     return subprocess.run(
         [sys.executable, "-B", "-c", script],
         check=False,
