@@ -20,7 +20,10 @@ def _minimal_cu12_requirements(package: str) -> list[str]:
     path = _PYPROJECTS[package]
     if not path.is_file():
         pytest.skip(f"{path} is not available (not running from a source checkout)")
-    data = tomllib.loads(path.read_text())
+    # Read as binary: TOML is always UTF-8, whereas decoding text applies the
+    # locale's encoding, which fails on a non-ASCII character under a C locale.
+    with path.open("rb") as f:
+        data = tomllib.load(f)
     return data["project"]["optional-dependencies"]["minimal-cu12"]
 
 
