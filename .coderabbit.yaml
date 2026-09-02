@@ -82,6 +82,8 @@ reviews:
         Focus on algorithm correctness, temporary-storage protocol, dispatch/policy selection, stream behavior,
         CUDA error handling, synchronization, memory access safety, performance regressions, and test coverage.
         Prefer comments that catch real correctness, API, compile-time, or performance risks.
+        For arch-scoped tuning/policy changes and other SM-specific optimizations or perf changes, use
+        .agent/skills/cccl-style/references/common.md (Arch/SM-Scoped Perf Changes section) as context.
 
     - path: "thrust/**/*"
       instructions: |

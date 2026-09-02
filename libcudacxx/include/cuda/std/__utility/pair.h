@@ -909,12 +909,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::pair<_Tp, _Up>>
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, ::std::pair<_Tp, _Up>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, ::std::pair<_Tp, _Up>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Up;
+  using type _CCCL_NODEBUG = _Up;
 };
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -930,12 +930,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, pair<_Tp, _Up>>
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, pair<_Tp, _Up>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, pair<_Tp, _Up>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Up;
+  using type _CCCL_NODEBUG = _Up;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -956,12 +956,12 @@ struct tuple_element<_Ip, ::cuda::std::pair<_Tp, _Up>>
 template <class _Tp, class _Up>
 struct tuple_element<0, ::cuda::std::pair<_Tp, _Up>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 template <class _Tp, class _Up>
 struct tuple_element<1, ::cuda::std::pair<_Tp, _Up>>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Up;
+  using type _CCCL_NODEBUG = _Up;
 };
 
 _CCCL_END_NAMESPACE_STD

@@ -51,7 +51,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD
 template <typename _Vp>
 struct __simd_byteswap_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -64,7 +64,7 @@ struct __simd_byteswap_generator
 template <typename _Vp>
 struct __simd_bit_reverse_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -77,7 +77,7 @@ struct __simd_bit_reverse_generator
 template <typename _Vp>
 struct __simd_bit_ceil_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -90,7 +90,7 @@ struct __simd_bit_ceil_generator
 template <typename _Vp>
 struct __simd_bit_floor_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -103,7 +103,7 @@ struct __simd_bit_floor_generator
 template <typename _Vp>
 struct __simd_has_single_bit_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = bool;
+  using __result_t _CCCL_NODEBUG = bool;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -116,7 +116,7 @@ struct __simd_has_single_bit_generator
 template <typename _Vp0, typename _Vp1>
 struct __simd_shl_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp0::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp0::value_type;
   const _Vp0& __v0_;
   const _Vp1& __v1_;
 
@@ -130,7 +130,7 @@ struct __simd_shl_generator
 template <typename _Vp0, typename _Vp1>
 struct __simd_shr_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp0::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp0::value_type;
   const _Vp0& __v0_;
   const _Vp1& __v1_;
 
@@ -144,7 +144,7 @@ struct __simd_shr_generator
 template <typename _Vp, typename _Sp>
 struct __simd_shl_scalar_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
   const _Sp __s_;
 
@@ -158,7 +158,7 @@ struct __simd_shl_scalar_generator
 template <typename _Vp, typename _Sp>
 struct __simd_shr_scalar_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
   const _Sp __s_;
 
@@ -172,7 +172,7 @@ struct __simd_shr_scalar_generator
 template <typename _Vp0, typename _Vp1>
 struct __simd_rotl_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp0::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp0::value_type;
   const _Vp0& __v0_;
   const _Vp1& __v1_;
 
@@ -187,7 +187,7 @@ struct __simd_rotl_generator
 template <typename _Vp0, typename _Vp1>
 struct __simd_rotr_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp0::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp0::value_type;
   const _Vp0& __v0_;
   const _Vp1& __v1_;
 
@@ -202,7 +202,7 @@ struct __simd_rotr_generator
 template <typename _Vp>
 struct __simd_rotl_scalar_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
   const int __s_;
 
@@ -216,7 +216,7 @@ struct __simd_rotl_scalar_generator
 template <typename _Vp>
 struct __simd_rotr_scalar_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Vp::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Vp::value_type;
   const _Vp& __v_;
   const int __s_;
 
@@ -230,7 +230,7 @@ struct __simd_rotr_scalar_generator
 template <typename _Vp, typename _Result>
 struct __simd_bit_width_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Result::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Result::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -243,7 +243,7 @@ struct __simd_bit_width_generator
 template <typename _Vp, typename _Result>
 struct __simd_countl_zero_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Result::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Result::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -256,7 +256,7 @@ struct __simd_countl_zero_generator
 template <typename _Vp, typename _Result>
 struct __simd_countl_one_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Result::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Result::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -269,7 +269,7 @@ struct __simd_countl_one_generator
 template <typename _Vp, typename _Result>
 struct __simd_countr_zero_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Result::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Result::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -282,7 +282,7 @@ struct __simd_countr_zero_generator
 template <typename _Vp, typename _Result>
 struct __simd_countr_one_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Result::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Result::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -295,7 +295,7 @@ struct __simd_countr_one_generator
 template <typename _Vp, typename _Result>
 struct __simd_popcount_generator
 {
-  using __result_t _CCCL_NODEBUG_ALIAS = typename _Result::value_type;
+  using __result_t _CCCL_NODEBUG = typename _Result::value_type;
   const _Vp& __v_;
 
   template <typename _Idx>
@@ -312,7 +312,7 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto byteswap(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_byteswap_generator<__vec_t>{__v}};
 }
 
@@ -320,7 +320,7 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto bit_reverse(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_bit_reverse_generator<__vec_t>{__v}};
 }
 
@@ -328,7 +328,7 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto bit_ceil(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_bit_ceil_generator<__vec_t>{__v}};
 }
 
@@ -336,7 +336,7 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto bit_floor(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_bit_floor_generator<__vec_t>{__v}};
 }
 
@@ -344,8 +344,8 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto has_single_bit(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS    = basic_vec<_Tp, _Abi>;
-  using __result_t _CCCL_NODEBUG_ALIAS = typename __vec_t::mask_type;
+  using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
+  using __result_t _CCCL_NODEBUG = typename __vec_t::mask_type;
   return __result_t{__simd_has_single_bit_generator<__vec_t>{__v}};
 }
 
@@ -368,8 +368,8 @@ _CCCL_REQUIRES(__simd_is_valid_shift_v<_Tp0, _Abi0, _Tp1, _Abi1>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 shl(const basic_vec<_Tp0, _Abi0>& __v, const basic_vec<_Tp1, _Abi1>& __s) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS   = basic_vec<_Tp0, _Abi0>;
-  using __shift_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp1, _Abi1>;
+  using __vec_t _CCCL_NODEBUG   = basic_vec<_Tp0, _Abi0>;
+  using __shift_t _CCCL_NODEBUG = basic_vec<_Tp1, _Abi1>;
   return __vec_t{__simd_shl_generator<__vec_t, __shift_t>{__v, __s}};
 }
 
@@ -378,8 +378,8 @@ _CCCL_REQUIRES(__simd_is_valid_shift_v<_Tp0, _Abi0, _Tp1, _Abi1>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 shr(const basic_vec<_Tp0, _Abi0>& __v, const basic_vec<_Tp1, _Abi1>& __s) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS   = basic_vec<_Tp0, _Abi0>;
-  using __shift_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp1, _Abi1>;
+  using __vec_t _CCCL_NODEBUG   = basic_vec<_Tp0, _Abi0>;
+  using __shift_t _CCCL_NODEBUG = basic_vec<_Tp1, _Abi1>;
   return __vec_t{__simd_shr_generator<__vec_t, __shift_t>{__v, __s}};
 }
 
@@ -387,7 +387,7 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Sp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Sp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto shl(const basic_vec<_Tp, _Abi>& __v, const _Sp __s) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_shl_scalar_generator<__vec_t, _Sp>{__v, __s}};
 }
 
@@ -395,7 +395,7 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi, typename _Sp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Sp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto shr(const basic_vec<_Tp, _Abi>& __v, const _Sp __s) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_shr_scalar_generator<__vec_t, _Sp>{__v, __s}};
 }
 
@@ -404,8 +404,8 @@ _CCCL_REQUIRES(__simd_is_valid_rotate_v<_Tp0, _Abi0, _Tp1, _Abi1>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 rotl(const basic_vec<_Tp0, _Abi0>& __v0, const basic_vec<_Tp1, _Abi1>& __v1) noexcept
 {
-  using __vec0_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp0, _Abi0>;
-  using __vec1_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp1, _Abi1>;
+  using __vec0_t _CCCL_NODEBUG = basic_vec<_Tp0, _Abi0>;
+  using __vec1_t _CCCL_NODEBUG = basic_vec<_Tp1, _Abi1>;
   return __vec0_t{__simd_rotl_generator<__vec0_t, __vec1_t>{__v0, __v1}};
 }
 
@@ -414,8 +414,8 @@ _CCCL_REQUIRES(__simd_is_valid_rotate_v<_Tp0, _Abi0, _Tp1, _Abi1>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 rotr(const basic_vec<_Tp0, _Abi0>& __v0, const basic_vec<_Tp1, _Abi1>& __v1) noexcept
 {
-  using __vec0_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp0, _Abi0>;
-  using __vec1_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp1, _Abi1>;
+  using __vec0_t _CCCL_NODEBUG = basic_vec<_Tp0, _Abi0>;
+  using __vec1_t _CCCL_NODEBUG = basic_vec<_Tp1, _Abi1>;
   return __vec0_t{__simd_rotr_generator<__vec0_t, __vec1_t>{__v0, __v1}};
 }
 
@@ -423,7 +423,7 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rotl(const basic_vec<_Tp, _Abi>& __v, const int __s) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_rotl_scalar_generator<__vec_t>{__v, __s}};
 }
 
@@ -431,19 +431,19 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rotr(const basic_vec<_Tp, _Abi>& __v, const int __s) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS = basic_vec<_Tp, _Abi>;
+  using __vec_t _CCCL_NODEBUG = basic_vec<_Tp, _Abi>;
   return __vec_t{__simd_rotr_scalar_generator<__vec_t>{__v, __s}};
 }
 
 template <typename _Tp, typename _Vp>
-using __simd_bit_count_result_t _CCCL_NODEBUG_ALIAS = rebind_t<make_signed_t<_Tp>, _Vp>;
+using __simd_bit_count_result_t _CCCL_NODEBUG = rebind_t<make_signed_t<_Tp>, _Vp>;
 
 _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto bit_width(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS    = basic_vec<_Tp, _Abi>;
-  using __result_t _CCCL_NODEBUG_ALIAS = __simd_bit_count_result_t<_Tp, __vec_t>;
+  using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
+  using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_bit_width_generator<__vec_t, __result_t>{__v}};
 }
 
@@ -451,8 +451,8 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto countl_zero(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS    = basic_vec<_Tp, _Abi>;
-  using __result_t _CCCL_NODEBUG_ALIAS = __simd_bit_count_result_t<_Tp, __vec_t>;
+  using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
+  using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_countl_zero_generator<__vec_t, __result_t>{__v}};
 }
 
@@ -460,8 +460,8 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto countl_one(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS    = basic_vec<_Tp, _Abi>;
-  using __result_t _CCCL_NODEBUG_ALIAS = __simd_bit_count_result_t<_Tp, __vec_t>;
+  using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
+  using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_countl_one_generator<__vec_t, __result_t>{__v}};
 }
 
@@ -469,8 +469,8 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto countr_zero(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS    = basic_vec<_Tp, _Abi>;
-  using __result_t _CCCL_NODEBUG_ALIAS = __simd_bit_count_result_t<_Tp, __vec_t>;
+  using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
+  using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_countr_zero_generator<__vec_t, __result_t>{__v}};
 }
 
@@ -478,8 +478,8 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto countr_one(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS    = basic_vec<_Tp, _Abi>;
-  using __result_t _CCCL_NODEBUG_ALIAS = __simd_bit_count_result_t<_Tp, __vec_t>;
+  using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
+  using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_countr_one_generator<__vec_t, __result_t>{__v}};
 }
 
@@ -487,8 +487,8 @@ _CCCL_TEMPLATE(typename _Tp, typename _Abi)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto popcount(const basic_vec<_Tp, _Abi>& __v) noexcept
 {
-  using __vec_t _CCCL_NODEBUG_ALIAS    = basic_vec<_Tp, _Abi>;
-  using __result_t _CCCL_NODEBUG_ALIAS = __simd_bit_count_result_t<_Tp, __vec_t>;
+  using __vec_t _CCCL_NODEBUG    = basic_vec<_Tp, _Abi>;
+  using __result_t _CCCL_NODEBUG = __simd_bit_count_result_t<_Tp, __vec_t>;
   return __result_t{__simd_popcount_generator<__vec_t, __result_t>{__v}};
 }
 

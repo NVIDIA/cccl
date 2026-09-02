@@ -69,7 +69,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4864) // nvbug5765092 latest toolchain complains about missing template
 
 template <class _Fn, class... _As>
-using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().template operator()<_As...>());
+using __meta_call_result_t _CCCL_NODEBUG = decltype(declval<_Fn>().template operator()<_As...>());
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ay, class... _As, class _Fn>
@@ -90,7 +90,7 @@ template <class _Fn>
 }
 
 template <class _Fn, class... _As>
-using __transform_expr_t _CCCL_NODEBUG_ALIAS = decltype(execution::__transform_expr<_As...>(declval<const _Fn&>()));
+using __transform_expr_t _CCCL_NODEBUG = decltype(execution::__transform_expr<_As...>(declval<const _Fn&>()));
 
 struct _IN_TRANSFORM_COMPLETION_SIGNATURES;
 struct _A_TRANSFORM_FUNCTION_RETURNED_A_TYPE_THAT_IS_NOT_A_COMPLETION_SIGNATURES_SPECIALIZATION;
@@ -102,7 +102,7 @@ template <class... _As, class _Fn>
 {
   if constexpr (__is_instantiable_with<__transform_expr_t, _Fn, _As...>)
   {
-    using __completions _CCCL_NODEBUG_ALIAS = __transform_expr_t<_Fn, _As...>;
+    using __completions _CCCL_NODEBUG = __transform_expr_t<_Fn, _As...>;
     if constexpr (__valid_completion_signatures<__completions> || __type_is_error<__completions>
                   || ::cuda::std::is_base_of_v<dependent_sender_error, __completions>)
     {

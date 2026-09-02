@@ -100,7 +100,7 @@ template <class _Tp>
 struct __is_nothrow_swappable;
 
 template <class _Tp>
-using __swap_result_t _CCCL_NODEBUG_ALIAS =
+using __swap_result_t _CCCL_NODEBUG =
   enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value
               && is_move_constructible_v<_Tp> && is_move_assignable_v<_Tp>>;
 

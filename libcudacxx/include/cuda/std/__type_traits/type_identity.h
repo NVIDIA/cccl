@@ -31,7 +31,7 @@ struct type_identity
 };
 
 template <class _Tp>
-using type_identity_t _CCCL_NODEBUG_ALIAS = typename type_identity<_Tp>::type;
+using type_identity_t _CCCL_NODEBUG = typename type_identity<_Tp>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

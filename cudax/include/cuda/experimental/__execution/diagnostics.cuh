@@ -86,17 +86,17 @@ struct _ERROR : __merror_base
   // The following aliases are to simplify error propagation
   // in the completion signatures meta-programming.
   template <class...>
-  using __call _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __call _CCCL_NODEBUG = _ERROR;
 
-  using __partitioned _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __partitioned _CCCL_NODEBUG = _ERROR;
 
   template <template <class...> class, template <class...> class>
-  using __value_types _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __value_types _CCCL_NODEBUG = _ERROR;
 
   template <template <class...> class>
-  using __error_types _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __error_types _CCCL_NODEBUG = _ERROR;
 
-  using __sends_stopped _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __sends_stopped _CCCL_NODEBUG = _ERROR;
 
   // The following operator overloads also simplify error propagation.
   _CCCL_HOST_DEVICE auto operator+() -> _ERROR;
@@ -132,7 +132,7 @@ inline constexpr bool __type_contains_error =
 #endif
 
 template <class... _Ts>
-using __type_find_error _CCCL_NODEBUG_ALIAS = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
+using __type_find_error _CCCL_NODEBUG = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
 
 template <class... _What>
 struct __not_a_sender
