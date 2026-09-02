@@ -352,6 +352,11 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
   init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
+  // MSVC yields a reference type for `decltype(d_in)` when `d_in` is ODR-used inside the by-reference-capturing lambda,
+  // which would select different kernel instantiations than the ones dispatched below.
+  // Hoisting decltype and decay-ing to make alias position independent.
+  using input_it_t = ::cuda::std::decay_t<decltype(d_in)>;
+
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
   auto kernels = [&]() {
     if constexpr (std::is_same_v<determinism_t, cuda::execution::determinism::run_to_run_t>)
@@ -365,7 +370,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
         reinterpret_cast<void*>(
           cub::detail::reduce::DeviceReduceSingleTileKernel<
             policy_t,
-            decltype(d_in),
+            input_it_t,
             decltype(d_out.begin()),
             offset_t,
             op_t,
@@ -376,7 +381,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
           cub::detail::reduce::DeviceReduceKernel<
             policy_t,
             /* StableReductionOrder */ true,
-            decltype(d_in),
+            input_it_t,
             accumulator_t*,
             offset_t,
             offset_t,
@@ -417,7 +422,7 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
         cub::detail::reduce::DeviceReduceKernel<
           policy_t,
           /* StableReductionOrder */ false,
-          decltype(d_in),
+          input_it_t,
           decltype(raw_ptr),
           offset_t,
           offset_t,
@@ -437,19 +442,19 @@ CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requir
 
       REQUIRE(cudaSuccess
               == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
+                dispatch<input_it_t, decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
                   nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
-        decltype(d_in),
+        input_it_t,
         output_it_t,
         reduction_op_t,
         init_value_t,
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, input_it_t, int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
@@ -491,6 +496,11 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
+  // MSVC yields a reference type for `decltype(d_in)` when `d_in` is ODR-used inside the by-reference-capturing lambda,
+  // which would select different kernel instantiations than the ones dispatched below.
+  // Hoisting decltype and decay-ing to make alias position independent.
+  using input_it_t = ::cuda::std::decay_t<decltype(d_in)>;
+
   [[maybe_unused]] init_value_t init = 0;
   size_t expected_bytes_allocated{};
 
@@ -505,7 +515,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
         reinterpret_cast<void*>(
           cub::detail::reduce::DeviceReduceSingleTileKernel<
             policy_t,
-            decltype(d_in),
+            input_it_t,
             decltype(d_out.begin()),
             offset_t,
             op_t,
@@ -516,7 +526,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
           cub::detail::reduce::DeviceReduceKernel<
             policy_t,
             /* StableReductionOrder */ true,
-            decltype(d_in),
+            input_it_t,
             accumulator_t*,
             offset_t,
             offset_t,
@@ -557,7 +567,7 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
         cub::detail::reduce::DeviceReduceKernel<
           policy_t,
           /* StableReductionOrder */ false,
-          decltype(d_in),
+          input_it_t,
           decltype(raw_ptr),
           offset_t,
           offset_t,
@@ -577,19 +587,19 @@ CUB_TEST("Device sum uses environment", "[reduce][device]", CUB_SMALL, requireme
 
       REQUIRE(cudaSuccess
               == cub::detail::rfa::
-                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
+                dispatch<input_it_t, decltype(d_out.begin()), offset_t, init_value_t, transform_t, accumulator_t>(
                   nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
-        decltype(d_in),
+        input_it_t,
         output_it_t,
         reduction_op_t,
         init_value_t,
         deterministic_accum_t,
         transform_t>;
       auto k2 = cub::detail::reduce::
-        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), int, reduction_op_t, deterministic_accum_t, transform_t>;
+        DeterministicDeviceReduceKernel<policy_t, input_it_t, int, reduction_op_t, deterministic_accum_t, transform_t>;
       auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
         deterministic_accum_t*,
