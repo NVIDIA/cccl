@@ -26,11 +26,11 @@ C2H_CCCLRT_TEST("locality domain memory pool of a non-localized device", "[memor
 {
   test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
 
-  SECTION("A ref with no green context yields the plain device default pool")
+  SECTION("A device-backed ref yields the plain device default pool")
   {
     for (auto dev : cuda::devices)
     {
-      const cuda::__logical_device_ref ref{dev, nullptr};
+      const cuda::__logical_device_ref ref{dev};
 
       auto& pool = cuda::__device_default_memory_pool(ref);
 
@@ -45,8 +45,8 @@ C2H_CCCLRT_TEST("locality domain memory pool of a non-localized device", "[memor
   {
     if (cuda::devices.size() > 1)
     {
-      const cuda::__logical_device_ref first{cuda::devices[0], nullptr};
-      const cuda::__logical_device_ref second{cuda::devices[1], nullptr};
+      const cuda::__logical_device_ref first{cuda::devices[0]};
+      const cuda::__logical_device_ref second{cuda::devices[1]};
 
       REQUIRE(cuda::__device_default_memory_pool(first) != cuda::__device_default_memory_pool(second));
     }
@@ -160,7 +160,9 @@ C2H_CCCLRT_TEST("locality domain memory pool", "[memory_resource][locality_domai
     {
       for (auto& domain : dev.__locality_domains())
       {
-        const cuda::__logical_device_ref rebuilt{domain.underlying_device(), domain.green_context()};
+        const auto rebuilt = (domain.kind() == cuda::__logical_device_ref::kinds::green_context)
+                             ? cuda::__logical_device_ref{domain.underlying_device(), domain.green_context()}
+                             : cuda::__logical_device_ref{domain.underlying_device()};
 
         REQUIRE(&cuda::__device_default_memory_pool(rebuilt) == &cuda::__device_default_memory_pool(domain));
       }

@@ -32,7 +32,7 @@ Examples *not* worth backporting:
 Steps
 -----
 
-#. Create a PR with the fix against ``main`` via a PR following our :doc:`contributing guidelines </cccl/contributing>`.
+#. Create a PR with the fix against ``main`` via a PR following our :doc:`contributing guidelines </contributors/index>`.
 #. Add the label ``backport branch/X.Y.x`` to the PR.
 
    - If the PR is already merged, you can still trigger a backport by commenting
