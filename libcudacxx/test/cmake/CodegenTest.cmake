@@ -657,7 +657,9 @@ function(libcudacxx_codegen_add_sass_tests)
         )
         string(
           REGEX MATCH
-          "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+([A-Z][A-Z0-9_-]*[ ]*,[ ]*)*${uppercase_check_prefix}[ ]*(,|$)"
+          # The prefix may be the final component before the directive's line
+          # ending, not just a component followed by a comma.
+          "%FILECHECK%[ ]+PREFIX_COMBINE[ ]+([A-Z][A-Z0-9_-]*[ ]*,[ ]*)*${uppercase_check_prefix}[ ]*(,|[\r\n])"
           has_combined_check_prefix
           "${uppercase_test_contents}"
         )

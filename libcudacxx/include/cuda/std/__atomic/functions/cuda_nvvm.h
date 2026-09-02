@@ -353,7 +353,7 @@ __cuda_atomic_thread_fence(__cuda_atomic_nvvm_backend __backend, memory_order __
   }
 }
 
-_CCCL_DEVICE_API void __cuda_atomic_signal_fence(__cuda_atomic_nvvm_backend, memory_order)
+_CCCL_DEVICE_API inline void __cuda_atomic_signal_fence(__cuda_atomic_nvvm_backend, memory_order)
 {
   asm volatile("" ::: "memory");
 }

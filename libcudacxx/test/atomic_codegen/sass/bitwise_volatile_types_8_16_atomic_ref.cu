@@ -71,7 +71,7 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; CAS_SUBWORD_BITWISE_NON_BLOCK: {{.*}}ATOM.E.CAS.STRONG.[[SASS_SCOPE]] PT, [[OLD:R[0-9]+]], {{\[}}[[CAS_ALIGNED_ADDR]]{{\]}}, [[EXPECTED]], {{R[0-9]+}}{{.*}}
 ; CAS_SUBWORD_BITWISE_BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; CAS_SUBWORD_BITWISE_NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
-; CAS_SUBWORD_BITWISE_CAS_COMPARE_OLD_EXPECTED-DAG: {{.*}}ISETP.NE{{.*}} [[OLD]], [[EXPECTED]], {{.*}}
+; CAS_SUBWORD_BITWISE_CAS_COMPARE_OLD_EXPECTED-DAG: {{.*}}ISETP.NE{{.*}} [[OLD]]{{(\.reuse)?}}, [[EXPECTED]]{{(\.reuse)?}}, {{.*}}
 ; CAS_SUBWORD_BITWISE_CAS_COMPARE_EXPECTED_OLD-DAG: {{.*}}ISETP.NE{{.*}} [[EXPECTED]]{{(\.reuse)?}}, [[OLD]]{{(\.reuse)?}}, {{.*}}
 ; CAS_SUBWORD_BITWISE_NON_BLOCK_ACQUIRE-DAG: {{.*}}CCTL.IVALL{{.*}}
 ; CAS_SUBWORD_BITWISE_BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
