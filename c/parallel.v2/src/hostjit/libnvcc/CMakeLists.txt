@@ -177,26 +177,25 @@ if (CUDAToolkit_FOUND)
       endif()
     endforeach()
 
-    # nvJitLink is the exception: link it *dynamically*, preferring the dynamic
-    # variant over the static one. A statically-linked nvJitLink is frozen at
-    # the build image's CTK version, which can be older than the LTO-IR (NVVM)
-    # container libnvcc's LLVM emits; nvJitLink then rejects it at runtime with
-    # "NVVM_ERROR_INVALID_INPUT in nvvmAddNVVMContainerToProgram, may need newer
-    # version of nvJitLink library". Linking dynamically resolves libnvJitLink.so
-    # from the nvidia-nvjitlink runtime package instead (auditwheel is configured
-    # to exclude it from the wheel, so the installed package supplies it), which
+    # nvJitLink is the exception: it must be linked *dynamically*. A statically
+    # linked nvJitLink is frozen at the build image's CTK version, which can be
+    # older than the LTO-IR (NVVM) container libnvcc's LLVM emits; nvJitLink
+    # then rejects it at runtime with "NVVM_ERROR_INVALID_INPUT in
+    # nvvmAddNVVMContainerToProgram, may need newer version of nvJitLink
+    # library". Linking dynamically resolves libnvJitLink.so from the
+    # nvidia-nvjitlink runtime package instead (auditwheel is configured to
+    # exclude it from the wheel, so the installed package supplies it), which
     # tracks the newest published nvJitLink and stays compatible with the
-    # container.
+    # container. There is deliberately no static fallback: it would build
+    # successfully and then fail at run time.
     if (TARGET CUDA::nvJitLink)
       target_link_libraries(libnvcc PRIVATE CUDA::nvJitLink)
-    elseif (TARGET CUDA::nvJitLink_static)
-      target_link_libraries(libnvcc PRIVATE CUDA::nvJitLink_static)
     else()
       message(
         FATAL_ERROR
-        "libnvcc needs CUDA::nvJitLink[_static] but neither variant was found "
-        "by FindCUDAToolkit. Install the full CUDA toolkit (libnvjitlink-dev "
-        "or equivalent)."
+        "libnvcc needs the shared CUDA::nvJitLink but FindCUDAToolkit did not "
+        "find it. Install the full CUDA toolkit (libnvjitlink-dev or "
+        "equivalent); the static variant is not a usable substitute."
       )
     endif()
   endif()
