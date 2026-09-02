@@ -82,125 +82,36 @@ Building and Testing
 ----------------------
 
 CCCL components are header-only libraries. This means there isn't a traditional build process for the
-library itself. However, before submitting contributions, it's a good idea to `build and run tests`_.
+library itself. However, before submitting contributions, it's a good idea to build and run tests.
 
-There are multiple options for building and running our tests. Which option you choose depends on your
-preferences and whether you are using `CCCL's DevContainers
-<https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md>`_ (highly recommended!).
+There are multiple options for building and running our tests, and which one you should reach for
+depends on your goal (fixing a single test vs. reproducing a full CI job) and whether you are using a
+:ref:`Dev Container <infra-devcontainer-launching>` (highly recommended!). See
+:ref:`infra-install-build-test` for the full breakdown of available tools.
 
-Using Manual Build Scripts
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Manual build scripts
+~~~~~~~~~~~~~~~~~~~~~~
 
-Building
-^^^^^^^^^
-
-Use the build scripts provided in the ``ci/`` directory to build tests for each component. Building
-tests does not require a GPU.
-
-.. code-block:: bash
-
-   ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
-
-- **HOST_COMPILER**: The desired host compiler (e.g., ``g++``, ``clang++``).
-- **CXX_STANDARD**: The C++ standard version (e.g., ``17``, ``20``).
-- **GPU_ARCHS**: A semicolon-separated list of CUDA GPU architectures (e.g., ``"70;85;90"``). This
-  uses the same syntax as CMake's `CUDA_ARCHITECTURES
-  <https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html#prop_tgt:CUDA_ARCHITECTURES>`_:
-
-  - ``70`` - both PTX and SASS
-  - ``70-real`` - SASS only
-  - ``70-virtual`` - PTX only
-
-**Example:**
+``ci/build_<project>.sh`` and ``ci/test_<project>.sh`` build or test a whole project (``thrust``,
+``cub``, or ``libcudacxx``) for a given host compiler, C++ standard, and GPU architecture set. These are
+the scripts our CI runs, so they reproduce a CI job exactly:
 
 .. code-block:: bash
 
    ./ci/build_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
+   ./ci/test_cub.sh  -cxx g++ -std 17 -arch "70;75;80-virtual"
 
-Testing
-^^^^^^^^
-
-Use the test scripts provided in the ``ci/`` directory to run tests for each component. These take the
-same arguments as the build scripts and will automatically build the tests if they haven't already been
-built. Running tests requires a GPU.
-
-.. code-block:: bash
-
-   ci/test_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
-
-**Example:**
-
-.. code-block:: bash
-
-   ./ci/test_cub.sh -cxx g++ -std 17 -arch "70;75;80-virtual"
+Building tests does not require a GPU; running them does. See :ref:`infra-install-build-test` for the
+full script reference, including the faster, target-scoped ``ci/util/build_and_test_targets.sh`` for
+iterating on a single test, and :ref:`infra-cmake-architecture-flags` for the ``-arch`` value syntax.
 
 Using CMake Presets
 ~~~~~~~~~~~~~~~~~~~~~
 
-`CMake Presets <https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html>`_ are a set of
-configurations defined in a JSON file that specify project-wide build details for CMake. They provide a
-standardized and sharable way to configure, build, and test projects across different platforms and
-development environments. Presets are available from CMake versions 3.19 and later.
-
-There are three kinds of Presets
-
-- Configure Presets: specify options for the ``cmake`` command,
-
-- Build Presets: specify options for the ``cmake --build`` command,
-
-- Test Presets: specify options for the ``ctest`` command.
-
-In CCCL we provide many presets to be used out of the box. You can find the complete list in our
-corresponding `CMakePresets.json <https://github.com/NVIDIA/cccl/blob/main/CMakePresets.json>`_ file.
-
-These commands can be used to get lists of the configure, build, and test presets.
-
-.. code-block:: bash
-
-   cmake --list-presets # Configure presets
-   cmake --build --list-presets # Build presets
-   ctest --list-presets # Test presets
-
-While there is a lot of overlap, there may be differences between the configure, build, and test
-presets to support various testing workflows.
-
-The ``dev`` presets are intended as a base for general development while the others are useful for
-replicating CI failures.
-
-Using CMake Presets via Command Line
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-CMake automatically generates the preset build directories. You can configure, build and test for a
-specific preset (e.g. ``thrust-cpp17``) via cmake from the root directory by appending
-``--preset=thrust-cpp17`` to the corresponding commands. For example:
-
-.. code-block:: bash
-
-   cmake --preset=thrust-cpp17
-   cmake --build --preset=thrust-cpp17
-   ctest --preset=thrust-cpp17
-
-That will create ``build/<optional devcontainer name>/thrust-cpp17/`` and build everything in there.
-The devcontainer name is inserted automatically on devcontainer builds to keep build artifacts separate
-for the different toolchains.
-
-It's also worth mentioning that additional cmake options can still be passed in and will override the
-preset settings.
-
-As a common example, the presets are currently always ``60;70;80`` for ``CMAKE_CUDA_ARCHITECTURES``,
-but this can be overridden at configure time with something like:
-
-.. code-block:: bash
-
-   cmake --preset=thrust-cpp20 "-DCMAKE_CUDA_ARCHITECTURES=89"
-
-.. note::
-
-   Either using the ``cmake`` command from within the root directory or from within the build directory
-   works, but will behave in slightly different ways. Building and running tests from the build
-   directory will compile every target and run all of the tests configured in the configure step. Doing
-   so from the root directory using the ``--preset=<test_preset>`` option will build and run a subset of
-   configured targets and tests.
+CCCL also ships `CMake Presets <https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html>`_ for
+configuring, building, and testing directly with ``cmake``/``ctest``. See
+:ref:`infra-cmake-preset-reference` for the full preset reference, including how to list presets and how
+preset build output is laid out on disk.
 
 Using CMake Presets via VS Code GUI extension (Recommended when using DevContainers)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
