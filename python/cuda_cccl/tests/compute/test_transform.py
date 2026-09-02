@@ -870,3 +870,39 @@ def test_serialize_deserialize_binary_transform_round_trip():
     loaded(d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=OpKind.PLUS, num_items=h_in1.size)
 
     np.testing.assert_array_equal(d_out.copy_to_host(), h_in1 + h_in2)
+
+
+# (input dtype, output dtype, input values) whose store depends on knowing the
+# signedness of the operator's result, of the output, or of both.
+RESULT_SIGNEDNESS_CASES = [
+    (np.int32, np.int64, [-1, -2, 7, -2147483648]),
+    (np.uint32, np.float64, [3000000000, 7]),
+    (np.uint8, np.float64, [200, 7]),
+    (np.int32, np.float64, [-1, -5]),
+    (np.float64, np.uint32, [3000000000.0, 7.0]),
+    (np.float64, np.int32, [-3.0, 2.0]),
+    (np.uint32, np.uint64, [3000000000, 7]),
+]
+
+
+@pytest.mark.parametrize("in_dtype,out_dtype,values", RESULT_SIGNEDNESS_CASES)
+def test_unary_transform_result_conversion_preserves_value(in_dtype, out_dtype, values):
+    """An operator result stored into an output of another type keeps its value.
+
+    The result is converted to the output's type before the store, so widening a
+    negative value does not zero-extend it and an unsigned value does not become
+    negative on its way to a float.
+    """
+
+    def identity(x):
+        return x
+
+    h_in = np.array(values, dtype=in_dtype)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(out_dtype))
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=identity, num_items=h_in.size
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in.astype(out_dtype))
