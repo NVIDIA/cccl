@@ -79,3 +79,24 @@ def test_stateful_wrapper_accepts_numpy_integer_shapes():
         wrapper, wrapper_signature, "numpy_shape_wrapper", (8, 9)
     )
     assert "define" in text_ir
+
+
+def test_missing_backend_error_names_the_backend(monkeypatch):
+    """Without a JIT backend the error names the package to install."""
+    import builtins
+
+    from cuda.compute import op as op_module
+
+    real_import = builtins.__import__
+
+    def block_backend(name, *args, **kwargs):
+        if name.split(".")[0] == "numba_cuda_mlir" or name.endswith("_jit"):
+            raise ModuleNotFoundError("No module named 'numba_cuda_mlir'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", block_backend)
+
+    adapter = op_module._jit_op_adapter_factory()
+
+    with pytest.raises(ImportError, match="numba-cuda-mlir"):
+        adapter(lambda x: x)

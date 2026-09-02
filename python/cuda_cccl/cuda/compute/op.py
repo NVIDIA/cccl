@@ -202,7 +202,7 @@ def _jit_op_adapter_factory():
 
             def _missing_jit_adapter(op):
                 raise ImportError(
-                    "numba-cuda is required to JIT compile Python callables"
+                    "numba-cuda-mlir is required to JIT compile Python callables"
                 )
 
             return _missing_jit_adapter
