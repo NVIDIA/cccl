@@ -44,15 +44,17 @@ template <typename T, typename U, typename AccT, int N>
 TEST_FUNC constexpr AccT
 scalar_dot(const cuda::std::array<T, N>& lhs_values, const cuda::std::array<U, N>& rhs_values, AccT acc)
 {
-  AccT result = acc;
-  for (int i = 0; i < N; ++i)
+  AccT lhs_value = static_cast<AccT>(lhs_values[0]);
+  AccT rhs_value = static_cast<AccT>(rhs_values[0]);
+  AccT result    = static_cast<AccT>(lhs_value * rhs_value);
+  for (int i = 1; i < N; ++i)
   {
-    AccT lhs_value = static_cast<AccT>(lhs_values[i]);
-    AccT rhs_value = static_cast<AccT>(rhs_values[i]);
-    AccT product   = static_cast<AccT>(lhs_value * rhs_value);
-    result         = static_cast<AccT>(result + product);
+    lhs_value    = static_cast<AccT>(lhs_values[i]);
+    rhs_value    = static_cast<AccT>(rhs_values[i]);
+    AccT product = static_cast<AccT>(lhs_value * rhs_value);
+    result       = static_cast<AccT>(result + product);
   }
-  return result;
+  return static_cast<AccT>(acc + result);
 }
 
 template <typename T, typename U, typename AccT, int N>

@@ -7,16 +7,15 @@ Defined in the ``<cuda/simd>`` header.
 
 .. code:: cuda
 
-   namespace cuda::simd {
+    namespace cuda::simd {
 
-   template <class T, class U, class Abi, class AccT>
-   [[nodiscard]] __host__ __device__ constexpr
-   AccT dot(
-     const cuda::std::simd::basic_vec<T, Abi>& lhs,
-     const cuda::std::simd::basic_vec<U, Abi>& rhs,
-     AccT init) noexcept;
+    template <class T, class U, class Abi, class AccT>
+    [[nodiscard]] __host__ __device__ constexpr
+    AccT dot(const cuda::std::simd::basic_vec<T, Abi>& lhs,
+             const cuda::std::simd::basic_vec<U, Abi>& rhs,
+             AccT                                      init) noexcept;
 
-   } // namespace cuda::simd
+    } // namespace cuda::simd
 
 The function ``cuda::simd::dot`` computes the dot product of two ``cuda::std::simd::basic_vec`` objects and adds the
 result to an accumulator.
@@ -61,7 +60,7 @@ Returns ``init`` plus the dot product of ``lhs`` and ``rhs``.
 - Packed 16-bit by 8-bit integer input vectors with compatible 32-bit integer accumulators use ``IDP2A`` on ``SM61``
   and newer device targets.
 - A compatible integer accumulator is unsigned when both inputs are unsigned and signed when either input is signed.
-- Other input and accumulator combinations use the scalar fallback.
+- Other input and accumulator combinations rely on vectorized multiplication (e.g. ``FMUL2`` with 32-bit floating-point types in ``SM100``) and addition instructions.
 
 Example
 -------
