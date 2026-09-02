@@ -126,6 +126,19 @@ struct times3
 
 void test_fully_foreign_model()
 {
+  // Exercise every member of the hand-rolled resource at runtime (the
+  // synchronous half and the comparisons are otherwise referenced only in
+  // unevaluated concept checks; strict builds promote "never referenced").
+  {
+    foreign::raw_async_mr mr;
+    void* p = mr.allocate_sync(64);
+    EXPECT(p != nullptr);
+    mr.deallocate_sync(p, 64);
+    EXPECT(mr == foreign::raw_async_mr{});
+    EXPECT(!(mr != foreign::raw_async_mr{}));
+    get_property(mr, ::cuda::mr::device_accessible{}); // property tag, empty by design
+  }
+
   // Two shards over raw buffers, two caller streams — no container anywhere.
   const ::std::size_t n0 = 300000, n1 = 200001, n = n0 + n1;
   cudaStream_t s0, s1;

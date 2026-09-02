@@ -200,6 +200,17 @@ void test_container_model(place_group& group)
 
 void test_foreign_model()
 {
+  // Exercise the self-bound foreign model at runtime (not only in the
+  // unevaluated concept checks): its ADL default_envs and env get_stream
+  // must actually work — and being referenced here also keeps strict
+  // builds honest (cudafe promotes "declared but never referenced").
+  foreign_bound_view bv;
+  bv.shards_.push_back({nullptr, 0, 0, 0});
+  bv.envs_.push_back(foreign_env{nullptr});
+  const auto foreign_envs = default_envs(bv);
+  EXPECT(foreign_envs.size() == 1);
+  EXPECT(::cuda::get_stream(foreign_envs[0]) == ::cuda::stream_ref{static_cast<cudaStream_t>(nullptr)});
+
   // Descriptors assembled by hand over nothing at all (null spans): the
   // concept machinery and validate() are pure metadata.
   foreign_view v;
