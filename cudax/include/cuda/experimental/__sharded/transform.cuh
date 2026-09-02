@@ -178,57 +178,10 @@ _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
                  sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallEnv& call_env = {})
 {
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::transform: fewer environments than shards");
-  }
-
-  constexpr bool __is_async = async_call_env<_CallEnv>;
-
-  // Fork + enqueue first, join second, so the shards run concurrently (a
-  // per-shard fork/work/join sequence would route each shard's start through
-  // the previous shard's completion via the caller's timeline).
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    const auto& s = data.shard(g);
-    if (s.size == 0)
-    {
-      continue;
-    }
-    const ::cuda::stream_ref shard_stream = ::cuda::get_stream(envs[g]);
-    if constexpr (__is_async)
-    {
-      // Fork: order this shard's work after the caller's timeline
-      __detail::__wait_stream_on(shard_stream.get(), ::cuda::get_stream(call_env).get());
-    }
-    stream_scope scope(shard_stream.get());
-    thrust::transform(thrust::cuda::par_nosync.on(shard_stream.get()), s.data, s.data + s.size, s.data, op);
+  __detail::__generic_map(data, envs, call_env, "sharded::transform", [&](const auto& d, cudaStream_t s) {
+    thrust::transform(thrust::cuda::par_nosync.on(s), d.data, d.data + d.size, d.data, op);
     cuda_safe_call(cudaGetLastError());
-  }
-  if constexpr (__is_async)
-  {
-    for (::std::size_t g = 0; g < num_shards; g++)
-    {
-      if (data.shard(g).size != 0)
-      {
-        // Join: the caller's timeline waits for this shard's work
-        __detail::__wait_stream_on(::cuda::get_stream(call_env).get(), ::cuda::get_stream(envs[g]).get());
-      }
-    }
-  }
-
-  if constexpr (!__is_async)
-  {
-    require_sync_allowed(call_env, "sharded::transform (synchronous form)");
-    for (::std::size_t g = 0; g < num_shards; g++)
-    {
-      if (data.shard(g).size != 0)
-      {
-        cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-      }
-    }
-  }
+  });
 }
 
 /**
@@ -237,7 +190,8 @@ _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallE
  */
 _CCCL_TEMPLATE(class _S, class _UnaryOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_env_range<::cuda::std::remove_cvref_t<_UnaryOp>>))
+  !sharded_env_range<::cuda::std::remove_cvref_t<_UnaryOp>>) _CCCL_AND(
+  !sharded_view<::cuda::std::remove_cvref_t<_UnaryOp>>))
 _CCCL_HOST_API void transform(_S&& data, _UnaryOp op, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);

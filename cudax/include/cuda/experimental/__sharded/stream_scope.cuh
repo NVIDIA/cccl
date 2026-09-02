@@ -53,6 +53,10 @@
 #include <cuda/__stream/stream_ref.h>
 
 #include <cuda/experimental/__places/stream_pool.cuh>
+#include <cuda/experimental/__sharded/concepts.cuh>
+
+#include <stdexcept>
+#include <string>
 
 #include <cuda_runtime.h>
 
@@ -126,6 +130,66 @@ inline void __wait_stream_on(cudaStream_t __consumer, cudaStream_t __producer)
   ::cuda::experimental::stf::cuda_safe_call(cudaEventRecord(__ev, __producer));
   ::cuda::experimental::stf::cuda_safe_call(cudaStreamWaitEvent(__consumer, __ev, 0));
   ::cuda::experimental::stf::cuda_safe_call(cudaEventDestroy(__ev));
+}
+
+//! @brief Shared driver for the concept-generic map family (no cross-shard
+//! stage): visit every non-empty shard under `stream_scope` on its
+//! environment's stream, with the per-call environment selecting the
+//! contract — stream present = asynchronous (fork all, enqueue all, join
+//! all; concurrent across shards, zero host synchronization), no stream =
+//! synchronous convenience (refused under `sync_policy::forbid`).
+//!
+//! @p __body is a host callable `(const descriptor&, cudaStream_t)` that
+//! enqueues the shard's work on the given stream.
+template <class _S, class _Envs, class _CallEnv, class _PerShard>
+_CCCL_HOST_API void
+__generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
+{
+  const ::std::size_t __num_shards = static_cast<::std::size_t>(__data.num_shards());
+  if (static_cast<::std::size_t>(__envs.size()) < __num_shards)
+  {
+    _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": fewer environments than shards");
+  }
+
+  constexpr bool __is_async = async_call_env<_CallEnv>;
+
+  for (::std::size_t __g = 0; __g < __num_shards; __g++)
+  {
+    const auto& __d = __data.shard(__g);
+    if (__d.size == 0)
+    {
+      continue;
+    }
+    const ::cuda::stream_ref __shard_stream = ::cuda::get_stream(__envs[__g]);
+    if constexpr (__is_async)
+    {
+      __wait_stream_on(__shard_stream.get(), ::cuda::get_stream(__call_env).get());
+    }
+    stream_scope __scope(__shard_stream.get());
+    __body(__d, __shard_stream.get());
+  }
+
+  if constexpr (__is_async)
+  {
+    for (::std::size_t __g = 0; __g < __num_shards; __g++)
+    {
+      if (__data.shard(__g).size != 0)
+      {
+        __wait_stream_on(::cuda::get_stream(__call_env).get(), ::cuda::get_stream(__envs[__g]).get());
+      }
+    }
+  }
+  else
+  {
+    require_sync_allowed(__call_env, __what);
+    for (::std::size_t __g = 0; __g < __num_shards; __g++)
+    {
+      if (__data.shard(__g).size != 0)
+      {
+        ::cuda::experimental::stf::cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(__envs[__g]).get()));
+      }
+    }
+  }
 }
 } // namespace __detail
 

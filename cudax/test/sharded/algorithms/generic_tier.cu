@@ -33,6 +33,22 @@ struct times2
     return v * 2;
   }
 };
+
+struct twice_index
+{
+  __host__ __device__ long long operator()(size_t i) const
+  {
+    return static_cast<long long>(2 * i);
+  }
+};
+
+struct add_index
+{
+  __host__ __device__ void operator()(long long& e, size_t i) const
+  {
+    e += static_cast<long long>(i);
+  }
+};
 } // namespace
 
 int main()
@@ -66,6 +82,38 @@ int main()
   const auto call_env    = ::cuda::std::execution::env{stream_prop};
   transform(b, times2{}, call_env); // b = 8..8n, on call_stream's timeline
   cuda_safe_call(cudaStreamSynchronize(call_stream));
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 8 * tri);
+
+  // Elementwise family, generic self-bound forms
+  const long long tri0 = (long long) (n - 1) * (long long) n / 2; // sum of 0..n-1
+  fill(b, 7LL);
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 7 * (long long) n);
+  iota(b, 0LL);
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == tri0);
+  tabulate(b, twice_index{});
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 2 * tri0);
+  for_each(b, add_index{}); // b[i] = 2i + i = 3i
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 3 * tri0);
+
+  // Elementwise family, generic explicit-envs forms
+  fill(b, envs, 1LL);
+  EXPECT(reduce(b, envs, ::cuda::std::plus<long long>{}, 0LL) == (long long) n);
+
+  // Out-of-place elementwise: zip_transform is the generic spelling (a plain
+  // `transform(in, out, op)` overload would collide with cuda::std::transform
+  // through ADL when cuda::std functors are involved — a recorded design
+  // decision, not an omission)
+  zip_transform(a, times2{}, b); // a[i] = 2 * b[i] = 2
+  EXPECT(reduce(a, ::cuda::std::plus<long long>{}, 0LL) == 2 * (long long) n);
+  zip_transform(a, ::cuda::std::plus<long long>{}, b, a); // a = b + a = 3
+  EXPECT(reduce(a, ::cuda::std::plus<long long>{}, 0LL) == 3 * (long long) n);
+
+  // Restore b for the arms below (they expect b == 8..8n trajectory continuity
+  // is not required; recompute expectations locally instead)
+  iota(group, b, 1LL);
+  transform(b, times2{});
+  transform(b, times2{});
+  transform(b, times2{}); // b = 8..8n
   EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 8 * tri);
 
   // forbid policy: the synchronous form refuses cleanly, state stays valid
