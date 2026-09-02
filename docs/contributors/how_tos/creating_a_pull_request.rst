@@ -95,4 +95,4 @@ Benchmark
 
 If non-trivial SASS changes have been detected,
 a performance comparison must be provided per impacted architecture and benchmark.
-See :doc:`CUB Benchmarks </cub/benchmarking>`) for more information on how to produce those.
+See :doc:`CUB Benchmarks </cub/benchmarking>` for more information on how to produce those.
