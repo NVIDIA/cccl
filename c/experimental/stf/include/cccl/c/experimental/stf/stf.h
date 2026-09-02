@@ -475,6 +475,21 @@ void* stf_data_place_allocate_nd(
 //! stf_cute_partition_destroy().
 typedef struct stf_cute_partition_opaque_t* stf_cute_partition_handle;
 
+//! \brief Statistics describing how a localized allocation (or a dry-run
+//! evaluation of one) distributes a tensor over data places.
+//! The estimated fraction of block-local bytes ("accuracy") is
+//! matching_samples / total_samples.
+typedef struct stf_placement_stats
+{
+  uint64_t total_bytes; //!< requested payload size in bytes
+  uint64_t vm_bytes; //!< block-rounded virtual reservation size in bytes
+  uint64_t block_size; //!< placement granularity in bytes
+  uint64_t nblocks; //!< number of placement blocks
+  uint64_t nallocs; //!< physical allocations after merging same-owner runs
+  uint64_t total_samples; //!< probes drawn by the block-owner sampler
+  uint64_t matching_samples; //!< probes agreeing with the chosen block owner
+} stf_placement_stats;
+
 //! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
 typedef enum stf_dim_policy
 {
@@ -491,6 +506,46 @@ typedef struct stf_partition_dim_spec
   int mesh_axis; //!< grid axis this dimension distributes over (ignored for STF_DIM_WHOLE)
   uint64_t block; //!< block size (STF_DIM_BLOCK_CYCLIC only)
 } stf_partition_dim_spec;
+
+//! \brief Evaluate - without allocating - how a localized allocation would
+//! distribute a tensor over the places of a grid.
+//!
+//! Runs the exact same block-owner decision procedure as the allocation path
+//! and returns the resulting statistics, so a candidate mapping can be scored
+//! (and its parameters tuned) before committing memory.
+//!
+//! \param grid      Grid of execution places (must not be NULL)
+//! \param mapper    Partition function mapping element coordinates to a place
+//! \param data_dims Extents of the tensor (dimension 0 fastest; must not be NULL)
+//! \param elemsize  Size of one element in bytes
+//! \param probes    Samples per block for the majority vote (0 = default)
+//! \param block_size Placement granularity in bytes; 0 selects the device
+//!        allocation granularity when a device is present (2 MiB otherwise)
+//! \param out_stats Filled with the resulting statistics (must not be NULL)
+//! \param bytes_per_grid_index Optional array of one entry per grid position
+//!        (length = product of the grid dims), filled with the bytes owned by
+//!        each position; pass NULL to skip
+//! \return 0 on success, non-zero on failure (diagnostic on stderr)
+int stf_placement_evaluate(
+  stf_exec_place_handle grid,
+  stf_get_executor_fn mapper,
+  const stf_dim4* data_dims,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index);
+
+//! \brief Variant of stf_placement_evaluate() for a structured partition.
+//! The tensor extents are the partition's true extents.
+int stf_placement_evaluate_partition(
+  stf_exec_place_handle grid,
+  stf_cute_partition_handle partition,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index);
 
 //! \brief Build a structured partition from a JAX-like per-dimension
 //! specification ("dimension 1, blocked over grid axis 0").

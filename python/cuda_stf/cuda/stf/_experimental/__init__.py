@@ -48,11 +48,18 @@ _LAZY_SYMBOLS = {
     "native_partition_fn": "._stf_bindings",
     "partition_fn_blocked": "._stf_bindings",
     "partition_fn_cyclic": "._stf_bindings",
+    "placement_evaluate": "._stf_bindings",
+    "placement_stats": "._stf_bindings",
     "stackable_context": "._stf_bindings",
     "DeviceArray": ".device_array",
     "TaskGraph": ".task_graph",
     "task_graph": ".task_graph",
 }
+
+#: Lazily imported SUBPACKAGES (the attribute is the module itself). The
+#: interop adapters stay opt-in: accessing ``interop`` imports only the
+#: subpackage; each adapter imports its optional runtime at first call.
+_LAZY_MODULES = frozenset({"interop"})
 
 if TYPE_CHECKING:
     from ._stf_bindings import (
@@ -73,6 +80,8 @@ if TYPE_CHECKING:
         native_partition_fn,
         partition_fn_blocked,
         partition_fn_cyclic,
+        placement_evaluate,
+        placement_stats,
         stackable_context,
     )
     from .device_array import DeviceArray
@@ -81,6 +90,10 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name: str) -> Any:
+    if name in _LAZY_MODULES:
+        value = importlib.import_module(f".{name}", __name__)
+        globals()[name] = value
+        return value
     module_name = _LAZY_SYMBOLS.get(name)
     if module_name is None:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
@@ -92,7 +105,7 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__() -> list[str]:
-    return sorted(set(globals()) | set(__all__))
+    return sorted(set(globals()) | set(__all__) | set(_LAZY_MODULES))
 
 
 __all__ = [
@@ -121,6 +134,8 @@ __all__ = [
     "native_partition_fn",
     "partition_fn_blocked",
     "partition_fn_cyclic",
+    "placement_evaluate",
+    "placement_stats",
     "paths",
     "stackable_context",
     "task_graph",
