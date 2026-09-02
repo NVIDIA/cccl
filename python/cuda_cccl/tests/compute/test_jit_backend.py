@@ -100,3 +100,34 @@ def test_missing_backend_error_names_the_backend(monkeypatch):
 
     with pytest.raises(ImportError, match="numba-cuda-mlir"):
         adapter(lambda x: x)
+
+
+@pytest.mark.parametrize(
+    "op_name, expected_prefix",
+    [("named_op", "wrapped_named_op_"), ("<lambda>", "wrapped__lambda__")],
+)
+def test_generated_wrapper_compiles_under_its_sanitized_name(op_name, expected_prefix):
+    """The wrapper source is exec'd and compiled under the sanitized symbol.
+
+    The operator's name reaches the generated source through exec and ends up as
+    the emitted symbol, so a name needing sanitization has to survive the whole
+    way.
+    """
+    from cuda.compute._odr_helpers import create_op_void_ptr_wrapper
+
+    def add(a, b):
+        return a + b
+
+    add.__name__ = op_name
+
+    signature = _mlir.types.int32(_mlir.types.int32, _mlir.types.int32)
+    wrapper, wrapper_signature = create_op_void_ptr_wrapper(add, signature)
+
+    # Two input pointers plus the result pointer.
+    assert len(wrapper_signature.args) == 3
+    assert wrapper.__name__.startswith(expected_prefix)
+
+    text_ir = _mlir.compile_to_llvm_ir(
+        wrapper, wrapper_signature, wrapper.__name__, (8, 9)
+    )
+    assert f"define void @{wrapper.__name__}" in text_ir
