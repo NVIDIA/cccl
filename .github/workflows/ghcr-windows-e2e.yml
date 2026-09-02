@@ -8,25 +8,60 @@ on:
 permissions: {}
 
 jobs:
+  preflight:
+    name: Require private package
+    permissions:
+      packages: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify package metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          package="/orgs/NVIDIA/packages/container/cccl-devcontainers-pr760-private-e2e"
+          visibility="$(gh api "$package" --jq .visibility)"
+          repository="$(gh api "$package" --jq .repository.full_name)"
+
+          echo "visibility=$visibility"
+          echo "repository=$repository"
+          test "$visibility" = "private"
+          test "$repository" = "NVIDIA/cccl"
+
   publish:
-    if: false
+    needs: preflight
     permissions:
       contents: read
       packages: write
     uses: rapidsai/devcontainers/.github/workflows/release-windows.yml@f0d3eebdef13157c4f6bd5ae8462c0194beac82f
     with:
-      repo: ghcr.io/nvidia/cccl-devcontainers-pr760-e2e
+      repo: ghcr.io/nvidia/cccl-devcontainers-pr760-private-e2e
 
-  cleanup:
-    name: Delete disposable package
+  verify:
+    name: Verify published package
+    needs: publish
     permissions:
-      packages: write
+      packages: read
     runs-on: ubuntu-latest
     steps:
-      - name: Delete package
+      - name: Verify package metadata and tags
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api \
-            --method DELETE \
-            /orgs/NVIDIA/packages/container/cccl-devcontainers-pr760-e2e
+          package="/orgs/NVIDIA/packages/container/cccl-devcontainers-pr760-private-e2e"
+          visibility="$(gh api "$package" --jq .visibility)"
+          repository="$(gh api "$package" --jq .repository.full_name)"
+          tags="$(gh api "$package/versions?per_page=100" --jq '[.[].metadata.container.tags[]]')"
+
+          echo "visibility=$visibility"
+          echo "repository=$repository"
+          echo "tag_count=$(jq length <<<"$tags")"
+          echo "windows_tag_count=$(jq '[.[] | select(endswith("-windows2022"))] | length' <<<"$tags")"
+          echo "bootstrap_tag_count=$(jq '[.[] | select(. == "bootstrap")] | length' <<<"$tags")"
+          echo "latest_tag_count=$(jq '[.[] | select(startswith("latest-"))] | length' <<<"$tags")"
+
+          test "$visibility" = "private"
+          test "$repository" = "NVIDIA/cccl"
+          test "$(jq length <<<"$tags")" -eq 29
+          test "$(jq '[.[] | select(endswith("-windows2022"))] | length' <<<"$tags")" -eq 14
+          test "$(jq '[.[] | select(. == "bootstrap")] | length' <<<"$tags")" -eq 1
+          test "$(jq '[.[] | select(startswith("latest-"))] | length' <<<"$tags")" -eq 0
