@@ -37,6 +37,7 @@
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <algorithm>
@@ -84,9 +85,10 @@ scan_impl(place_group&, sharded_array<_Tp>& data, scan_type type, _ScanOp scan_o
   const size_t num_shards = data.num_shards();
 
   // Pinned host staging for shard totals / prefixes
-  places::place_memory_resource host_mr(data_place::host());
+  // Cached pinned arena: a per-call pinned allocation costs ~1 ms and would
+  // dominate the O(P) cross-shard stage.
   const size_t host_bytes = 3 * num_shards * sizeof(_Tp);
-  _Tp* h_shard_totals     = static_cast<_Tp*>(host_mr.allocate_sync(host_bytes, alignof(_Tp)));
+  _Tp* h_shard_totals     = static_cast<_Tp*>(reserved::__pinned_staging(host_bytes));
   _Tp* h_prefixes         = h_shard_totals + num_shards;
   _Tp* h_last_elements    = h_prefixes + num_shards; // for exclusive scans
 
@@ -224,7 +226,7 @@ scan_impl(place_group&, sharded_array<_Tp>& data, scan_type type, _ScanOp scan_o
   {
     mr.deallocate_sync(ptr, bytes);
   }
-  host_mr.deallocate_sync(h_shard_totals, host_bytes, alignof(_Tp));
+  // (arena staging is cached; nothing to release)
 }
 } // namespace reserved
 

@@ -184,6 +184,9 @@ _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallE
 
   constexpr bool __is_async = async_call_env<_CallEnv>;
 
+  // Fork + enqueue first, join second, so the shards run concurrently (a
+  // per-shard fork/work/join sequence would route each shard's start through
+  // the previous shard's completion via the caller's timeline).
   for (::std::size_t g = 0; g < num_shards; g++)
   {
     const auto& s = data.shard(g);
@@ -200,10 +203,16 @@ _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallE
     stream_scope scope(shard_stream.get());
     thrust::transform(thrust::cuda::par_nosync.on(shard_stream.get()), s.data, s.data + s.size, s.data, op);
     cuda_safe_call(cudaGetLastError());
-    if constexpr (__is_async)
+  }
+  if constexpr (__is_async)
+  {
+    for (::std::size_t g = 0; g < num_shards; g++)
     {
-      // Join: the caller's timeline waits for this shard's work
-      __detail::__wait_stream_on(::cuda::get_stream(call_env).get(), shard_stream.get());
+      if (data.shard(g).size != 0)
+      {
+        // Join: the caller's timeline waits for this shard's work
+        __detail::__wait_stream_on(::cuda::get_stream(call_env).get(), ::cuda::get_stream(envs[g]).get());
+      }
     }
   }
 

@@ -40,6 +40,7 @@
 
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
+#include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 #include <cuda/experimental/__sharded/stream_scope.cuh>
 
@@ -79,9 +80,9 @@ reduce(place_group& group, const sharded_array<_Tp>& data, _ReduceOp reduce_op, 
   const size_t num_shards = data.num_shards();
 
   // Pinned host memory for the per-place partials (initialized so skipped
-  // empty shards contribute the identity)
-  places::place_memory_resource host_mr(data_place::host());
-  _Tp* h_partials = static_cast<_Tp*>(host_mr.allocate_sync(num_shards * sizeof(_Tp), alignof(_Tp)));
+  // empty shards contribute the identity). Cached arena: a per-call pinned
+  // allocation costs ~1 ms and would dominate the combine.
+  _Tp* h_partials = static_cast<_Tp*>(reserved::__pinned_staging(num_shards * sizeof(_Tp)));
   ::std::fill(h_partials, h_partials + num_shards, init_value);
 
   // Phase 1: local reduce on each shard; free the per-shard outputs only
@@ -114,7 +115,7 @@ reduce(place_group& group, const sharded_array<_Tp>& data, _ReduceOp reduce_op, 
   {
     mr.deallocate_sync(ptr, sizeof(_Tp), alignof(_Tp));
   }
-  host_mr.deallocate_sync(h_partials, num_shards * sizeof(_Tp), alignof(_Tp));
+  // (arena staging is cached; nothing to release)
 
   return result;
 }
@@ -139,6 +140,7 @@ template <typename _Tp>
 {
   return reduce(group, data, ::cuda::maximum<_Tp>{}, ::cuda::std::numeric_limits<_Tp>::lowest());
 }
+
 
 // ============================================================================
 // Concept-generic tier (pilot): any sharded_view + allocating environments
@@ -187,10 +189,23 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   }
 
   // Pinned host staging for the per-shard partials (host-accessible +
-  // async-transfer-capable). Initialized to the identity so empty shards
-  // contribute nothing.
-  places::place_memory_resource host_mr(data_place::host());
-  _Tp* h_partials = static_cast<_Tp*>(host_mr.allocate_sync(num_shards * sizeof(_Tp), alignof(_Tp)));
+  // async-transfer-capable). A per-call cudaMallocHost/cudaFreeHost pair
+  // costs close to a millisecond (page pinning), which would dominate the
+  // whole combine — the default is a cached thread-local pinned arena,
+  // overridable by a memory resource carried on the call environment.
+  constexpr bool __env_has_mr =
+    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  _Tp* h_partials = nullptr;
+  if constexpr (__env_has_mr)
+  {
+    auto __staging_mr = ::cuda::mr::get_memory_resource(call_env);
+    h_partials        = static_cast<_Tp*>(__staging_mr.allocate_sync(num_shards * sizeof(_Tp), alignof(_Tp)));
+  }
+  else
+  {
+    h_partials = static_cast<_Tp*>(reserved::__pinned_staging(num_shards * sizeof(_Tp)));
+  }
   ::std::fill(h_partials, h_partials + num_shards, init_value);
 
   // Phase 1: local reduce per shard on the shard's environment
@@ -243,7 +258,12 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
       mr.deallocate(::cuda::get_stream(envs[g]), d_outputs[g].ptr, d_outputs[g].bytes, alignof(_Tp));
     }
   }
-  host_mr.deallocate_sync(h_partials, num_shards * sizeof(_Tp), alignof(_Tp));
+  if constexpr (__env_has_mr)
+  {
+    auto __staging_mr = ::cuda::mr::get_memory_resource(call_env);
+    __staging_mr.deallocate_sync(h_partials, num_shards * sizeof(_Tp), alignof(_Tp));
+  }
+  // (arena staging is cached; nothing to release)
 
   return result;
 }
@@ -331,6 +351,11 @@ reduce_into(const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, 
   _Tp* d_partials  = static_cast<_Tp*>(scratch_mr.allocate(call_stream, num_shards * sizeof(_Tp), alignof(_Tp)));
   ::cuda::std::uint64_t mask = 0;
 
+  // Fork + enqueue first, join second: all shards' work is ordered after the
+  // caller's timeline but runs CONCURRENTLY across shards; only then does the
+  // caller's timeline wait for all of them. (Interleaving join into the fork
+  // loop would route each shard's start through the previous shard's
+  // completion and serialize the shards.)
   for (::std::size_t g = 0; g < num_shards; g++)
   {
     const auto& s = data.shard(g);
@@ -346,8 +371,14 @@ reduce_into(const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, 
     __detail::__wait_stream_on(shard_stream.get(), call_stream.get());
     stream_scope scope(shard_stream.get());
     cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_partials + g, s.size, reduce_op, init_value, env));
-    // Join: the caller's timeline waits for this shard's partial
-    __detail::__wait_stream_on(call_stream.get(), shard_stream.get());
+  }
+  for (::std::size_t g = 0; g < num_shards; g++)
+  {
+    if (((mask >> g) & 1u) != 0)
+    {
+      // Join: the caller's timeline waits for this shard's partial
+      __detail::__wait_stream_on(call_stream.get(), ::cuda::get_stream(envs[g]).get());
+    }
   }
 
   {
