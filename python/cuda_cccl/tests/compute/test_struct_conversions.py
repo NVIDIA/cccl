@@ -8,6 +8,7 @@ constructor, the tuple-to-struct cast, and the struct-to-struct cast.
 """
 
 import numpy as np
+import pytest
 from _utils.device_array import DeviceArray
 
 import cuda.compute
@@ -92,3 +93,57 @@ def test_unsigned_widening_zero_extends():
     cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=widen, num_items=h_in.size)
 
     np.testing.assert_array_equal(d_out.copy_to_host()["a"], h_in.astype(np.uint64))
+
+
+def test_nested_tuple_too_short_is_rejected():
+    """A tuple with fewer values than the nested struct's fields is an error."""
+    Inner = gpu_struct({"a": np.int32, "b": np.int32})
+    Outer = gpu_struct({"x": np.int32, "inner": Inner})
+
+    def build(x):
+        return Outer(x, (x,))
+
+    h_in = np.arange(3, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Outer.dtype)
+
+    with pytest.raises(Exception, match="tuple of size 1"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=build, num_items=h_in.size
+        )
+
+
+def test_nested_tuple_too_long_is_rejected():
+    """A tuple with more values than the nested struct's fields is an error."""
+    Inner = gpu_struct({"a": np.int32, "b": np.int32})
+    Outer = gpu_struct({"x": np.int32, "inner": Inner})
+
+    def build(x):
+        return Outer(x, (x, x, x))
+
+    h_in = np.arange(3, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Outer.dtype)
+
+    with pytest.raises(Exception, match="tuple of size 3"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=build, num_items=h_in.size
+        )
+
+
+def test_tuple_for_scalar_field_is_rejected():
+    """A tuple supplied for a scalar field is an error, not an AttributeError."""
+    Inner = gpu_struct({"a": np.int32, "b": np.int32})
+    Outer = gpu_struct({"x": np.int32, "inner": Inner})
+
+    def build(x):
+        return Outer((x, x), Inner(x, x))
+
+    h_in = np.arange(3, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Outer.dtype)
+
+    with pytest.raises(Exception, match="only a nested struct field"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=build, num_items=h_in.size
+        )

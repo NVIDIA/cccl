@@ -447,7 +447,20 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         """
         field_mlir_ty = builder.get_mlir_type(field_numba_type)
         if isinstance(value, (tuple, list)):
-            sub_field_types = list(field_numba_type._field_spec.values())
+            nested_field_spec = getattr(field_numba_type, "_field_spec", None)
+            if nested_field_spec is None:
+                raise ValueError(
+                    f"Cannot initialize a {field_numba_type} field of "
+                    f"{struct_class.__name__} from a tuple; only a nested struct "
+                    f"field accepts tuple construction"
+                )
+            sub_field_types = list(nested_field_spec.values())
+            if len(value) != len(sub_field_types):
+                raise ValueError(
+                    f"Cannot initialize the {field_numba_type} field of "
+                    f"{struct_class.__name__} from a tuple of size {len(value)}; "
+                    f"it has {len(sub_field_types)} fields"
+                )
             sub_source_types = _tuple_element_types(source_type, len(value))
             sub_values = [
                 _coerce_to_field(builder, v, s, t)
