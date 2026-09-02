@@ -21,13 +21,29 @@ def _wrapper(a, r):
     r[0] = a[0] * 3 + 1
 
 
+def _toolkit_supported_ccs():
+    """Compute capabilities the installed CUDA toolkit can target."""
+    from cuda.bindings import nvrtc
+
+    result, archs = nvrtc.nvrtcGetSupportedArchs()
+    if result != nvrtc.nvrtcResult.NVRTC_SUCCESS:
+        pytest.fail(f"nvrtcGetSupportedArchs() failed: {result.name}")
+    return {(arch // 10, arch % 10) for arch in archs}
+
+
 @pytest.mark.parametrize("cc", [(7, 5), (8, 9), (10, 0)])
 def test_llvm_ir_extraction_supports_target_arches(cc):
     """LLVM IR is extracted for any target arch.
 
     The gpu.module is translated directly, so the extraction does not depend on
     which NVVM dialect the target arch would otherwise be lowered through.
+
+    An arch the toolkit predates is skipped: the arches worth covering outlive
+    any single CUDA version, and libnvvm rejects one it does not know.
     """
+    if cc not in _toolkit_supported_ccs():
+        pytest.skip(f"CUDA toolkit cannot target sm_{cc[0]}{cc[1]}")
+
     text_ir = _mlir.compile_to_llvm_ir(
         _wrapper, _pointer_signature(), f"extract_sm_{cc[0]}{cc[1]}", cc
     )
