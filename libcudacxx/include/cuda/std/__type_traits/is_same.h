@@ -39,19 +39,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_CCCL_BUILTIN_IS_SA
 template <class _Tp, class _Up>
 inline constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME_AS(_Tp, _Up);
 
-// _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
-// is_same<A,B> and is_same<C,D> are guaranteed to be different types, but
-// _IsSame<A,B> and _IsSame<C,D> are the same type (namely, false_type).
-// Neither GCC nor Clang can mangle the __is_same builtin, so _IsSame
-// mustn't be directly used anywhere that contributes to name-mangling
-// (such as in a dependent return type).
-
-template <class _Tp, class _Up>
-using _IsSame = bool_constant<_CCCL_BUILTIN_IS_SAME_AS(_Tp, _Up)>;
-
-template <class _Tp, class _Up>
-using _IsNotSame = bool_constant<!_CCCL_BUILTIN_IS_SAME_AS(_Tp, _Up)>;
-
 #else // ^^^ _CCCL_BUILTIN_IS_SAME_AS ^^^ / vvv !_CCCL_BUILTIN_IS_SAME_AS vvv
 
 template <class _Tp, class _Up>
@@ -65,19 +52,6 @@ template <class _Tp, class _Up>
 inline constexpr bool is_same_v = false;
 template <class _Tp>
 inline constexpr bool is_same_v<_Tp, _Tp> = true;
-
-// _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
-// is_same<A,B> and is_same<C,D> are guaranteed to be different types, but
-// _IsSame<A,B> and _IsSame<C,D> are the same type (namely, false_type).
-// Neither GCC nor Clang can mangle the __is_same builtin, so _IsSame
-// mustn't be directly used anywhere that contributes to name-mangling
-// (such as in a dependent return type).
-
-template <class _Tp, class _Up>
-using _IsSame = bool_constant<is_same_v<_Tp, _Up>>;
-
-template <class _Tp, class _Up>
-using _IsNotSame = bool_constant<!is_same_v<_Tp, _Up>>;
 
 #endif // ^^^ !_CCCL_BUILTIN_IS_SAME_AS ^^^
 

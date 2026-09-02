@@ -153,6 +153,7 @@ def cpp_type_from_descriptor(type_desc) -> str | None:
         TypeEnum.UINT32: "uint32_t",
         TypeEnum.UINT64: "uint64_t",
         TypeEnum.FLOAT16: "__half",
+        TypeEnum.BFLOAT16: "__nv_bfloat16",
         TypeEnum.FLOAT32: "float",
         TypeEnum.FLOAT64: "double",
         TypeEnum.BOOLEAN: "bool",

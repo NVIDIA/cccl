@@ -230,10 +230,10 @@ _CCCL_API void __stable_sort_move(
 }
 
 template <class _Tp>
-struct __stable_sort_switch
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL unsigned __stable_sort_switch() noexcept
 {
-  static const unsigned value = 128 * is_trivially_copy_assignable_v<_Tp>;
-};
+  return 128 * is_trivially_copy_assignable_v<_Tp>;
+}
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
 _CCCL_API void __stable_sort(
@@ -258,7 +258,7 @@ _CCCL_API void __stable_sort(
       }
       return;
   }
-  if (__len <= static_cast<difference_type>(__stable_sort_switch<value_type>::value))
+  if (__len <= static_cast<difference_type>(::cuda::std::__stable_sort_switch<value_type>()))
   {
     ::cuda::std::__insertion_sort<_AlgPolicy, _Compare>(__first, __last, __comp);
     return;
@@ -292,7 +292,7 @@ _CCCL_API void __stable_sort_impl(_RandomAccessIterator __first, _RandomAccessIt
   difference_type __len = __last - __first;
   pair<value_type*, ptrdiff_t> __buf(0, 0);
   unique_ptr<value_type, __return_temporary_buffer> __h;
-  if (__len > static_cast<difference_type>(__stable_sort_switch<value_type>::value))
+  if (__len > static_cast<difference_type>(::cuda::std::__stable_sort_switch<value_type>()))
   {
     __buf = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__buf.first);

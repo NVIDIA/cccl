@@ -77,7 +77,39 @@ struct reduce_build
       input,
       output,
       op,
-      init,
+      init.type,
+      cccl_init_kind_t::CCCL_VALUE_INIT,
+      determinism,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path);
+  }
+
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_determinism_t determinism,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    void* /*init*/,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_reduce_build(
+      build_ptr,
+      input,
+      output,
+      op,
+      input.value_type, // The type is used to determine the accumulator type
+      cccl_init_kind_t::CCCL_NO_INIT,
       determinism,
       cc_major,
       cc_minor,
@@ -122,7 +154,8 @@ struct reduce_build_ex
       input,
       output,
       op,
-      init,
+      init.type,
+      cccl_init_kind_t::CCCL_VALUE_INIT,
       determinism,
       cc_major,
       cc_minor,
@@ -154,6 +187,27 @@ struct reduce_run
   }
 };
 
+struct reduce_run_no_init
+{
+  template <typename... Rest>
+  CUresult operator()(
+    cccl_device_reduce_build_result_t build,
+    void* d_temp_storage,
+    size_t* temp_storage_bytes,
+    cccl_determinism_t /*determinism*/,
+    cccl_iterator_t d_in,
+    cccl_iterator_t d_out,
+    uint64_t num_items,
+    cccl_op_t op,
+    void* /*init*/,
+    Rest... args) const noexcept
+  {
+    // The init argument is ignored for CCCL_NO_INIT builds; pass an empty value.
+    return cccl_device_reduce(
+      build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, cccl_value_t{}, args...);
+  }
+};
+
 template <typename BuildCache = reduce_build_cache_t, typename KeyT = std::string>
 void reduce(cccl_iterator_t input,
             cccl_iterator_t output,
@@ -166,6 +220,19 @@ void reduce(cccl_iterator_t input,
 {
   AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run, BuildCache, KeyT>(
     cache, lookup_key, determinism, input, output, num_items, op, init);
+}
+
+template <typename BuildCache = reduce_build_cache_t, typename KeyT = std::string>
+void reduce(cccl_iterator_t input,
+            cccl_iterator_t output,
+            uint64_t num_items,
+            cccl_op_t op,
+            cccl_determinism_t determinism,
+            std::optional<BuildCache>& cache,
+            const std::optional<KeyT>& lookup_key)
+{
+  AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run_no_init, BuildCache, KeyT>(
+    cache, lookup_key, determinism, input, output, num_items, op, nullptr);
 }
 
 // ===============
@@ -214,6 +281,30 @@ C2H_TEST("Reduce works with integral types with well-known operations", "[reduce
 
   const T output   = output_ptr[0];
   const T expected = std::accumulate(input.begin(), input.end(), init.value);
+  REQUIRE(output == expected);
+}
+
+struct Reduce_NoInitValue_Fixture_Tag;
+C2H_TEST("Reduce works with no init value", "[reduce]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  // With no init value the output is left unmodified for empty inputs, so
+  // seed it with a sentinel and check that an empty reduction preserves it.
+  const T sentinel = T{42};
+  pointer_t<T> output_ptr(std::vector<T>{sentinel});
+
+  auto& build_cache    = get_cache<Reduce_NoInitValue_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  reduce(input_ptr, output_ptr, num_items, op, CCCL_RUN_TO_RUN, build_cache, test_key);
+
+  const T output   = output_ptr[0];
+  const T expected = num_items == 0 ? sentinel : std::accumulate(input.begin() + 1, input.end(), input.front());
   REQUIRE(output == expected);
 }
 
@@ -512,6 +603,34 @@ C2H_TEST("Reduce works with floating point types", "[reduce]", floating_point_ty
   REQUIRE_APPROX_EQ(std::vector<T>{output}, std::vector<T>{expected});
 }
 
+#if _CCCL_HAS_NVBF16()
+struct Reduce_BFloat16_Fixture_Tag;
+C2H_TEST("Reduce works with bfloat16", "[reduce]")
+{
+  using T = __nv_bfloat16;
+
+  // Keep the total below 256: bfloat16 has only 8 significand bits, so larger
+  // running sums round differently between the host's sequential accumulation
+  // and the device's tree reduction order.
+  const std::size_t num_items = GENERATE(10, 42, 200);
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input(num_items, T{1});
+
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{42}};
+
+  auto& build_cache    = get_cache<Reduce_BFloat16_Fixture_Tag>();
+  const auto& test_key = make_key<T>();
+
+  reduce(input_ptr, output_ptr, num_items, op, init, CCCL_RUN_TO_RUN, build_cache, test_key);
+
+  const T output   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), init.value);
+  REQUIRE(float{output} == float{expected});
+}
+#endif // _CCCL_HAS_NVBF16()
+
 struct Reduce_CppSourceWithEx_Fixture_Tag;
 C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
 {
@@ -598,7 +717,6 @@ C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][s
   const std::vector<T> input = generate<T>(16);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(1);
-  value_t<T> init{T{0}};
 
   BuildResultT build{};
   REQUIRE(
@@ -608,7 +726,8 @@ C2H_TEST("Reduce build result has serialization metadata populated", "[reduce][s
       input_ptr,
       output_ptr,
       op,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -677,7 +796,8 @@ C2H_TEST("Reduce compile/load round-trip", "[reduce][serialization]")
       dummy_in,
       dummy_out,
       op,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -752,7 +872,8 @@ C2H_TEST("Reduce link_ltoir round-trip", "[reduce][serialization]")
       dummy_in,
       dummy_out,
       op_ko,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -827,7 +948,8 @@ C2H_TEST("Reduce serialize/deserialize round-trip (cubin)", "[reduce][serializat
       dummy_in,
       dummy_out,
       op,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
@@ -911,7 +1033,8 @@ C2H_TEST("Reduce serialize/deserialize round-trip (ltoir + link_ltoir)", "[reduc
       dummy_in,
       dummy_out,
       op_ko,
-      init,
+      get_type_info<T>(),
+      CCCL_VALUE_INIT,
       CCCL_RUN_TO_RUN,
       build_info.get_cc_major(),
       build_info.get_cc_minor(),
