@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   preflight:
-    name: Require private package
+    name: Require internal package
     permissions:
       packages: read
     runs-on: ubuntu-latest
@@ -24,7 +24,7 @@ jobs:
 
           echo "visibility=$visibility"
           echo "repository=$repository"
-          test "$visibility" = "private"
+          test "$visibility" = "internal"
           test "$repository" = "NVIDIA/cccl"
 
   publish:
@@ -59,7 +59,7 @@ jobs:
           echo "bootstrap_tag_count=$(jq '[.[] | select(. == "bootstrap")] | length' <<<"$tags")"
           echo "latest_tag_count=$(jq '[.[] | select(startswith("latest-"))] | length' <<<"$tags")"
 
-          test "$visibility" = "private"
+          test "$visibility" = "internal"
           test "$repository" = "NVIDIA/cccl"
           test "$(jq length <<<"$tags")" -eq 29
           test "$(jq '[.[] | select(endswith("-windows2022"))] | length' <<<"$tags")" -eq 14
