@@ -36,7 +36,6 @@ from ._utils.protocols import (
     get_dtype,
     get_shape,
     is_contiguous,
-    validate_and_get_stream,
 )
 
 _AXIS_RUNTIME = 0
@@ -580,60 +579,23 @@ class _DeviceCopy:
         *,
         compute_capability: Any = None,
     ):
-        source_view = _array_view(source)
-        destination_view = _array_view(destination)
-        _same_array_contract(source_view, destination_view)
+        from . import _device_copy_impl  # noqa: PLC0415
 
-        type_info = _type_info_from_view_format(source_view)
-        cc = _normalize_single_compute_capability(compute_capability)
-
-        self._build = _build_impl(type_info, cc, len(source_view.shape))
-        self._dtype_key = source_view.dtype_key
-        self._itemsize = source_view.itemsize
-        self._alignment = source_view.alignment
-        self._shape = source_view.shape
-        self._num_items = source_view.num_items
+        make_device_copy_impl = getattr(_device_copy_impl, "_make_device_copy")
+        if compute_capability is None:
+            self._impl = make_device_copy_impl(source, destination)
+        else:
+            self._impl = make_device_copy_impl(
+                source,
+                destination,
+                compute_capability=compute_capability,
+            )
 
     def __call__(self, source: Any, destination: Any, *, stream: Any = None) -> None:
-        stream_handle = validate_and_get_stream(stream)
-        source_view = _array_view(source, stream=stream_handle)
-        destination_view = _array_view(destination, stream=stream_handle)
-        _same_array_contract(source_view, destination_view)
-
-        if source_view.dtype_key != self._dtype_key:
-            raise TypeError(
-                "device copy was built for dtype "
-                f"{self._dtype_key!r}, got {source_view.dtype_key!r}"
-            )
-
-        if source_view.itemsize != self._itemsize:
-            raise TypeError(
-                "device copy was built for item size "
-                f"{self._itemsize}, got {source_view.itemsize}"
-            )
-
-        if source_view.alignment != self._alignment:
-            raise TypeError(
-                "device copy was built for alignment "
-                f"{self._alignment}, got {source_view.alignment}"
-            )
-
-        if source_view.num_items != self._num_items:
-            raise ValueError(
-                "device copy was built for "
-                f"{self._num_items} items, got {source_view.num_items}"
-            )
-
-        if source_view.shape != self._shape:
-            raise ValueError(
-                f"device copy was built for shape {self._shape!r}, "
-                f"got {source_view.shape!r}"
-            )
-
-        self._build.copy(source_view, destination_view, stream_handle)
+        self._impl(source, destination, stream=stream)
 
     def close(self) -> None:
-        self._build.close()
+        self._impl.close()
 
     def __enter__(self) -> "_DeviceCopy":
         return self
@@ -642,7 +604,10 @@ class _DeviceCopy:
         self.close()
 
     def _get_cubin(self) -> bytes:
-        return self._build._get_cubin()
+        get_cubin = getattr(self._impl, "_get_cubin", None)
+        if get_cubin is None:
+            return b""
+        return get_cubin()
 
 
 def make_device_copy(
