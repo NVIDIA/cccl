@@ -22,39 +22,20 @@
 // %FILECHECK% PREFIX_COMBINE ptx,seq_cst
 // %FILECHECK% PREFIX_COMBINE ptx,non_block,seq_cst
 // %FILECHECK% PREFIX_COMBINE ptx,release
-// %FILECHECK% PREFIX_COMBINE sm75,nvvm,halfword
-// %FILECHECK% PREFIX_COMBINE sm75,nvvm,halfword,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm75,nvvm,halfword,non_block,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm75,nvvm,halfword,release
-// %FILECHECK% PREFIX_COMBINE sm75,nvvm,byte,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm75,nvvm,byte,non_block,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm75,nvvm,byte,release
-// %FILECHECK% PREFIX_COMBINE sm80,nvvm,halfword
-// %FILECHECK% PREFIX_COMBINE sm80,nvvm,halfword,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm80,nvvm,halfword,non_block,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm80,nvvm,halfword,release
-// %FILECHECK% PREFIX_COMBINE sm80,nvvm,byte,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm80,nvvm,byte,non_block,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm80,nvvm,byte,release
-// %FILECHECK% PREFIX_COMBINE sm90,nvvm,halfword
-// %FILECHECK% PREFIX_COMBINE sm90,nvvm,halfword,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm90,nvvm,halfword,non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE not-sm100-plus,nvvm,halfword
+// %FILECHECK% PREFIX_COMBINE not-sm100-plus,nvvm,halfword,seq_cst
+// %FILECHECK% PREFIX_COMBINE not-sm100-plus,nvvm,halfword,non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE not-sm90-plus,nvvm,halfword,release
+// %FILECHECK% PREFIX_COMBINE not-sm100-plus,nvvm,byte,seq_cst
+// %FILECHECK% PREFIX_COMBINE not-sm100-plus,nvvm,byte,non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE not-sm100-plus,nvvm,byte,release
+// %FILECHECK% PREFIX_COMBINE sm100-plus,nvvm,halfword
+// %FILECHECK% PREFIX_COMBINE sm100-plus,nvvm,halfword,block
+// %FILECHECK% PREFIX_COMBINE sm100-plus,nvvm,halfword,non_block
+// %FILECHECK% PREFIX_COMBINE sm100-plus,nvvm,seq_cst
+// %FILECHECK% PREFIX_COMBINE sm100-plus,nvvm,non_block,seq_cst
+// %FILECHECK% PREFIX_COMBINE sm100-plus,nvvm,release
 // %FILECHECK% PREFIX_COMBINE sm90,nvvm,halfword,release
-// %FILECHECK% PREFIX_COMBINE sm90,nvvm,byte,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm90,nvvm,byte,non_block,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm90,nvvm,byte,release
-// %FILECHECK% PREFIX_COMBINE sm100,nvvm,halfword
-// %FILECHECK% PREFIX_COMBINE sm100,nvvm,halfword,block
-// %FILECHECK% PREFIX_COMBINE sm100,nvvm,halfword,non_block
-// %FILECHECK% PREFIX_COMBINE sm100,nvvm,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm100,nvvm,non_block,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm100,nvvm,release
-// %FILECHECK% PREFIX_COMBINE sm120,nvvm,halfword
-// %FILECHECK% PREFIX_COMBINE sm120,nvvm,halfword,block
-// %FILECHECK% PREFIX_COMBINE sm120,nvvm,halfword,non_block
-// %FILECHECK% PREFIX_COMBINE sm120,nvvm,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm120,nvvm,non_block,seq_cst
-// %FILECHECK% PREFIX_COMBINE sm120,nvvm,release
 // clang-format on
 
 #include <cuda_bf16.h>
@@ -67,60 +48,40 @@ extern "C" __device__ bool atomic_codegen_test(cuda::atomic_ref<TYPE, SCOPE>& at
   return atom.CAS(expected, desired, SUCCESS_ORDER, FAILURE_ORDER);
 }
 
+// clang-format off
 /*
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; SMXX: {{.*}}LD.E.64{{(\.SYS)?}} [[ATOM_ADDR:R[0-9]+]], {{.*}}
-; SM100_NVVM_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; SM120_NVVM_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; SM100_NVVM_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM120_NVVM_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM100_NVVM_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
-; SM120_NVVM_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
-; SM75_NVVM_HALFWORD_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM80_NVVM_HALFWORD_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM90_NVVM_HALFWORD_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM90_NVVM_HALFWORD_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
+; SM100-PLUS_NVVM_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; SM100-PLUS_NVVM_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
+; SM100-PLUS_NVVM_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
+; NOT-SM100-PLUS_NVVM_HALFWORD_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; PTX-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
 ; NVVM_BYTE-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
-; SM75_NVVM_HALFWORD-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffd, {{.*}}
-; SM80_NVVM_HALFWORD-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffd, {{.*}}
-; SM90_NVVM_HALFWORD-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffd, {{.*}}
-; SM100_NVVM_HALFWORD-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
-; SM120_NVVM_HALFWORD-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
-; SM75_NVVM_HALFWORD_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
-; SM80_NVVM_HALFWORD_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
-; SM75_NVVM_HALFWORD_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; SM80_NVVM_HALFWORD_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; NOT-SM100-PLUS_NVVM_HALFWORD-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffd, {{.*}}
+; SM100-PLUS_NVVM_HALFWORD-DAG: {{.*}}LOP3.LUT [[ALIGNED_ADDR:R[0-9]+]], [[ATOM_ADDR]]{{(\.reuse)?}}, 0xfffffffc, {{.*}}
+; NOT-SM90-PLUS_NVVM_HALFWORD_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; NOT-SM100-PLUS_NVVM_HALFWORD_NON_BLOCK_SEQ_CST-DAG: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; PTX_BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; PTX_NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; NVVM_BYTE_BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; NVVM_BYTE_NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
-; SM75_NVVM_HALFWORD: {{.*}}LD.E.SYS {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
-; SM80_NVVM_HALFWORD: {{.*}}LD.E {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
-; SM90_NVVM_HALFWORD: {{.*}}LD.E {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
-; SM100_NVVM_HALFWORD_BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
-; SM100_NVVM_HALFWORD_NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
-; SM120_NVVM_HALFWORD_BLOCK: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
-; SM120_NVVM_HALFWORD_NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
-; PTX_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; SM75_NVVM_BYTE_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; SM80_NVVM_BYTE_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
-; SM90_NVVM_BYTE_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; NOT-SM100-PLUS_NVVM_HALFWORD-DAG: {{.*}}LD.E{{(\.SYS)?}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
+; SM100-PLUS_NVVM_HALFWORD_BLOCK-DAG: {{.*}}LD.E.STRONG.{{CTA|SM}} {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
+; SM100-PLUS_NVVM_HALFWORD_NON_BLOCK-DAG: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] {{R[0-9]+}}, {{.*\[}}[[ALIGNED_ADDR]]{{(\.64)?\].*}}
 ; SM90_NVVM_HALFWORD_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; PTX_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; NOT-SM100-PLUS_NVVM_BYTE_RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
 ; PTX_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM75_NVVM_BYTE_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM80_NVVM_BYTE_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; SM90_NVVM_BYTE_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
+; NOT-SM100-PLUS_NVVM_BYTE_SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
 ; PTX_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
-; SM75_NVVM_BYTE_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
-; SM80_NVVM_BYTE_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
-; SM90_NVVM_BYTE_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
+; NOT-SM100-PLUS_NVVM_BYTE_NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}
 ; BLOCK: {{.*}}ATOM.E.CAS.STRONG.{{CTA|SM}}{{.*\[}}[[ALIGNED_ADDR]]{{\].*}}
@@ -132,3 +93,4 @@ extern "C" __device__ bool atomic_codegen_test(cuda::atomic_ref<TYPE, SCOPE>& at
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
+// clang-format on
