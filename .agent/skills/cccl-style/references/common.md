@@ -1,6 +1,6 @@
 # Common CCCL Style Guidance
 
-Read the [CCCL C++ Coding Guidelines](https://nvidia.github.io/cccl/cccl/development/coding_guidelines.html),
+Read the [CCCL C++ Coding Guidelines](https://nvidia.github.io/cccl/unstable/cccl/development/coding_guidelines.html),
 which supersede everything below.
 Then apply the guidance in this file across CCCL unless a path-specific style reference says otherwise.
 

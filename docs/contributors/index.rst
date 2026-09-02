@@ -177,9 +177,9 @@ Creating a Pull Request
 
 Push the local branch with your changes to your fork on GitHub:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      git push origin your-feature-branch
+   git push origin your-feature-branch
 
 See :doc:`how_tos/creating_a_pull_request` for further instructions.
 
