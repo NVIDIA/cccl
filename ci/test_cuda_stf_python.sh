@@ -85,3 +85,5 @@ python -m pip install \
 cd "/home/coder/cccl/python/cuda_stf/tests/"
 python -m pytest -n 6 -v stf/
 python -m pytest -n 6 -v test_examples.py
+# Packaging invariants: metadata only, so no GPU and no parallelism needed.
+python -m pytest -v test_packaging.py
