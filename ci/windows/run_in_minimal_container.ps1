@@ -74,6 +74,9 @@ $dockerArgs = @(
     '--env', "CCCL_PYTHON_USE_V2=$($env:CCCL_PYTHON_USE_V2)",
     '--env', "GITHUB_ACTIONS=$($env:GITHUB_ACTIONS)",
     '--env', 'PYTHONDONTWRITEBYTECODE=1',
+    # Tells the payload it is the isolated side, and so must prove it (see
+    # Assert-MinimalEnvironment in build_common_python.psm1).
+    '--env', 'CCCL_INSIDE_MINIMAL_CONTAINER=1',
     $image,
     'powershell.exe', '-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass',
     '-File', $payload

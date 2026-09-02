@@ -132,12 +132,42 @@ cuda_cccl_wheel_path() {
 # Brings up what every test payload needs: the lane's arguments, the cuda-toolkit
 # pin, and the interpreter. Sets py_version, ctk_mode, cuda_version and
 # cuda_major_version for the caller.
+# Proves the claim the minimal container exists to make: that nothing here but
+# Python and the wheel's declared dependencies is available. Without this the
+# isolation is merely assumed -- swap the base image for one with a toolchain and
+# every lane would keep passing while testing nothing. A no-op outside the
+# container, where a compiler and a CUDA toolkit are legitimately present.
+assert_minimal_environment() {
+    [[ "${CCCL_INSIDE_MINIMAL_CONTAINER:-}" == "1" ]] || return 0
+
+    local found=()
+    local tool
+    for tool in gcc g++ cc c++ clang clang++ nvcc; do
+        if command -v "${tool}" &> /dev/null; then
+            found+=("${tool} ($(command -v "${tool}"))")
+        fi
+    done
+    [[ -e /usr/local/cuda ]] && found+=("/usr/local/cuda")
+    [[ -n "${CUDA_HOME:-}" ]] && found+=("CUDA_HOME=${CUDA_HOME}")
+    [[ -n "${CUDA_PATH:-}" ]] && found+=("CUDA_PATH=${CUDA_PATH}")
+
+    if [[ "${#found[@]}" -ne 0 ]]; then
+        echo "ERROR: this is supposed to be a minimal environment, but it provides:" >&2
+        printf '         %s\n' "${found[@]}" >&2
+        echo "       The lane cannot tell whether cuda.compute depends only on its declared" >&2
+        echo "       pip dependencies while these are present. Check the container image." >&2
+        return 1
+    fi
+    echo "Minimal environment confirmed: no host compiler, no system CUDA toolkit."
+}
+
 python_payload_init() {
     local ci_dir
     ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=ci/util/python/common_arg_parser.sh
     source "${ci_dir}/util/python/common_arg_parser.sh"
     parse_python_args "$@"
+    assert_minimal_environment
     pin_cuda_toolkit "${ctk_mode}"
     setup_python_env "${py_version}"
 }

@@ -273,4 +273,44 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Invoke-Checked, Get-Python, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+function Assert-MinimalEnvironment {
+    <#
+    .SYNOPSIS
+        Proves the claim the minimal container exists to make: that nothing here
+        but Python and the wheel's declared dependencies is available.
+    .DESCRIPTION
+        Without this the isolation is merely assumed -- swap the base image for
+        one carrying a toolchain and every lane would keep passing while testing
+        nothing. A no-op outside the container, where a compiler and a CUDA
+        toolkit are legitimately present.
+
+        The MSVC *runtime* the payload installs is deliberately not checked: it
+        is a Windows prerequisite, not a compiler.
+    #>
+    if ($env:CCCL_INSIDE_MINIMAL_CONTAINER -ne '1') { return }
+
+    $found = @()
+    foreach ($tool in @('cl.exe', 'link.exe', 'nvcc.exe')) {
+        $cmd = Get-Command $tool -ErrorAction SilentlyContinue
+        if ($cmd) { $found += "$tool ($($cmd.Source))" }
+    }
+    if ($env:CUDA_PATH) { $found += "CUDA_PATH=$($env:CUDA_PATH)" }
+    # Guarded: Join-Path throws on a null root, and with ErrorActionPreference
+    # Stop that would mask the check it is part of.
+    if ($env:ProgramFiles) {
+        $ctkDir = Join-Path $env:ProgramFiles 'NVIDIA GPU Computing Toolkit\CUDA'
+        if (Test-Path $ctkDir) { $found += $ctkDir }
+    }
+
+    if ($found.Count -gt 0) {
+        $list = ($found | ForEach-Object { "    $_" }) -join "`n"
+        throw (
+            "This is supposed to be a minimal environment, but it provides:`n$list`n" +
+            "The lane cannot tell whether cuda.compute depends only on its declared " +
+            "pip dependencies while these are present. Check the container image."
+        )
+    }
+    Write-Host "Minimal environment confirmed: no host compiler, no system CUDA toolkit."
+}
+
+Export-ModuleMember -Function Invoke-Checked, Get-Python, Assert-MinimalEnvironment, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch

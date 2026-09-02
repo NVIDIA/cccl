@@ -24,6 +24,8 @@ $ErrorActionPreference = "Stop"
 
 Import-Module "$PSScriptRoot/build_common_python.psm1"
 
+Assert-MinimalEnvironment
+
 # Server Core ships no MSVC runtime, and every C++ Python extension used here
 # links against it -- numba's _typeconv and cccl.c.parallel.dll among them. It
 # is a Windows prerequisite rather than a packaging gap, so install it instead

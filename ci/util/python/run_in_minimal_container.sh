@@ -90,6 +90,9 @@ declare -a env_args=(
   # nvidia-container-toolkit only injects libcuda.so.1 when `compute` is
   # requested. The nvidia/cuda images set this for you; a plain image does not.
   --env "NVIDIA_DRIVER_CAPABILITIES=compute,utility"
+  # Tells the payload it is the isolated side, and so must prove it (see
+  # assert_minimal_environment in ci/pyenv_helper.sh).
+  --env "CCCL_INSIDE_MINIMAL_CONTAINER=1"
   # The workspace is bind-mounted; do not litter it with the sibling's bytecode.
   --env "PYTHONDONTWRITEBYTECODE=1"
 )
