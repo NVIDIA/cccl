@@ -26,7 +26,7 @@ from numba_cuda_mlir import cuda, types
 
 # --- Low-level lowering: MLIR builder + dialects --------------------------------
 from numba_cuda_mlir._mlir import ir as mlir_ir
-from numba_cuda_mlir._mlir.dialects import llvm
+from numba_cuda_mlir._mlir.dialects import arith, llvm
 
 # --- High-level extension API (typing) -----------------------------------------
 from numba_cuda_mlir.extending import (
@@ -74,6 +74,7 @@ __all__ = [
     "register_model",
     "llvm",
     "convert",
+    "convert_number",
     "is_complex_type",
     "get_llvm_struct_for_complex",
     "complex_to_llvm_struct",
@@ -85,6 +86,35 @@ __all__ = [
     "infer_return_type",
     "refresh_contexts",
 ]
+
+
+def convert_number(value, target_type, *, from_signed, to_signed):
+    """Convert a scalar ``value`` to ``target_type``, honouring signedness.
+
+    numba-cuda-mlir consults signedness only for integer-to-integer casts.  For
+    integer-to-float and float-to-integer it always selects the signed
+    instruction, so a large unsigned value converts to a negative one (a uint32
+    of 3e9 becomes -1.29e9) and a float too large for the signed range
+    saturates.  Emit those two conversions directly; everything else, including
+    the integer widening that already respects the flag, goes to
+    numba-cuda-mlir.
+
+    ``from_signed`` describes the source and ``to_signed`` the target; each
+    matters for the direction that reads it.
+    """
+    value_type = getattr(value, "type", None)
+    if value_type is not None and value_type != target_type:
+        if isinstance(value_type, mlir_ir.IntegerType) and isinstance(
+            target_type, mlir_ir.FloatType
+        ):
+            if not from_signed:
+                return arith.uitofp(out=target_type, in_=value)
+        elif isinstance(value_type, mlir_ir.FloatType) and isinstance(
+            target_type, mlir_ir.IntegerType
+        ):
+            if not to_signed:
+                return arith.fptoui(out=target_type, in_=value)
+    return convert(value, target_type, signed=from_signed)
 
 
 def refresh_contexts():

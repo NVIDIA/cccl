@@ -282,3 +282,37 @@ def test_operator_may_return_a_narrower_struct():
     result = d_out.copy_to_host()
     np.testing.assert_array_equal(result["a"], h_in.astype(np.int64))
     np.testing.assert_array_equal(result["b"], -h_in.astype(np.int64))
+
+
+# (field dtype, input dtype, input values) whose conversion depends on knowing
+# the signedness of the source, the target, or both.
+SIGNEDNESS_CASES = [
+    (np.float64, np.uint32, [3000000000, 7]),
+    (np.float64, np.uint8, [200, 7]),
+    (np.float64, np.int32, [-1, -5]),
+    (np.uint32, np.float64, [3000000000.0, 7.0]),
+    (np.int32, np.float64, [-3.0, 2.0]),
+    (np.uint64, np.uint32, [3000000000, 7]),
+]
+
+
+@pytest.mark.parametrize("field_dtype,input_dtype,values", SIGNEDNESS_CASES)
+def test_field_conversion_preserves_signedness(field_dtype, input_dtype, values):
+    """Packing a value into a field of another numeric type keeps its value.
+
+    Converting between an integer and a float has to select the signed or the
+    unsigned instruction; picking the wrong one turns a large unsigned value
+    negative, or saturates a float that does not fit the signed range.
+    """
+    Boxed = gpu_struct({"a": field_dtype})
+
+    def pack(x):
+        return Boxed(x)
+
+    h_in = np.array(values, dtype=input_dtype)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Boxed.dtype)
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size)
+
+    np.testing.assert_array_equal(d_out.copy_to_host()["a"], h_in.astype(field_dtype))

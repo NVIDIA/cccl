@@ -176,16 +176,29 @@ def _load_field(builder, struct_value, field_index, field_numba_type):
     return stored
 
 
-def _convert_field(value, source_type, target_mlir_ty):
+def _is_signed(numba_type):
+    """True if ``numba_type`` is a signed integer.
+
+    Floats report ``False``; only the integer conversions consult this.
+    """
+    return bool(getattr(numba_type, "signed", False))
+
+
+def _convert_field(value, source_type, target_type, target_mlir_ty):
     """Convert ``value`` into the representation stored in a field.
 
     numba-cuda-mlir lowers every integer -- signed or unsigned -- to a signless
     MLIR type, so a widening conversion zero-extends unless it is told that the
     source was signed.  Without that, storing a negative value into a wider
-    field silently turns it into a large positive one.
+    field silently turns it into a large positive one.  Converting between an
+    integer and a float needs the same information, in whichever direction
+    reads it.
     """
-    converted = _mlir.convert(
-        value, target_mlir_ty, signed=getattr(source_type, "signed", False)
+    converted = _mlir.convert_number(
+        value,
+        target_mlir_ty,
+        from_signed=_is_signed(source_type),
+        to_signed=_is_signed(target_type),
     )
     if _mlir.is_complex_type(target_mlir_ty):
         return _mlir.complex_to_llvm_struct(converted)
@@ -480,7 +493,7 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             return _pack_fields(
                 builder, _mlir.llvm.StructType(field_mlir_ty), sub_values
             )
-        return _convert_field(value, source_type, field_mlir_ty)
+        return _convert_field(value, source_type, field_numba_type, field_mlir_ty)
 
     # Constructor lowering: coerce each argument to its field type and pack into
     # the LLVM struct (replaces cgutils.create_struct_proxy).
@@ -549,7 +562,10 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         struct_mlir_ty = _mlir.llvm.StructType(builder.get_mlir_type(toty))
         field_values = [
             _convert_field(
-                elements[i], element_types[i], builder.get_mlir_type(field_type)
+                elements[i],
+                element_types[i],
+                field_type,
+                builder.get_mlir_type(field_type),
             )
             for i, field_type in enumerate(field_spec.values())
         ]
@@ -569,7 +585,7 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         for i, (from_type, to_type) in enumerate(zip(from_field_types, to_field_types)):
             elem = _load_field(builder, val, i, from_type)
             field_values.append(
-                _convert_field(elem, from_type, builder.get_mlir_type(to_type))
+                _convert_field(elem, from_type, to_type, builder.get_mlir_type(to_type))
             )
         return _pack_fields(builder, struct_mlir_ty, field_values)
 
