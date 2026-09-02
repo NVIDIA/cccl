@@ -11,6 +11,7 @@ set(
   algorithms/generic_tier.cu
   algorithms/reduce_into.cu
   algorithms/reduce_scan.cu
+  algorithms/zip_transform.cu
   algorithms/count_histogram.cu
   algorithms/compaction.cu
   graph_capture/elementwise_pipeline.cu
