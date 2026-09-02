@@ -1,12 +1,8 @@
 # Common CCCL Style Guidance
 
-Apply this guidance across CCCL unless a path-specific style reference says otherwise.
-
-## Naming Style
-
-- Macros: macro style, e.g. `MY_MACRO`.
-- Template parameters: PascalCase, e.g. `MyParameter`.
-- All other symbols: snake style, e.g. `my_variable`. The one exception is the CUB public API, which uses PascalCase.
+Read the [CCCL C++ Coding Guidelines](https://nvidia.github.io/cccl/unstable/cccl/development/coding_guidelines.html),
+which supersede everything below.
+Then apply the guidance in this file across CCCL unless a path-specific style reference says otherwise.
 
 ## Variables
 
@@ -29,7 +25,6 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 
 ## Functions
 
-- Functions must be marked `_CCCL_HOST_API`, `_CCCL_DEVICE_API`, `_CCCL_HOST_DEVICE_API`, `_CCCL_TILE_API`, or `_CCCL_API`.
 - Non-template, non-`constexpr` functions must use `inline`.
 - Most functions with a non-void return type should use `[[nodiscard]]`; functions with known side effects may be exceptions.
 - Functions that do not throw exceptions must use `noexcept`.
@@ -57,7 +52,6 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 
 ## General Guidelines
 
-- The code must reuse `cuda/` or `cuda/std` functionalities as much as possible, including macros.
 - Try to use modern C++ as much as possible. The repository supports C++17 but many more recent functionalities have been backported with functions and macros.
 
 ## Prevent Compiler Errors And Improve Compatibility
