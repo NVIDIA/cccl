@@ -9,6 +9,7 @@ permissions: {}
 
 jobs:
   publish:
+    if: false
     permissions:
       contents: read
       packages: write
@@ -18,7 +19,6 @@ jobs:
 
   verify:
     name: Verify package
-    needs: publish
     permissions:
       packages: read
     runs-on: ubuntu-latest
@@ -31,6 +31,12 @@ jobs:
           visibility="$(gh api "$package" --jq .visibility)"
           repository="$(gh api "$package" --jq .repository.full_name)"
           tags="$(gh api "$package/versions?per_page=100" --jq '[.[].metadata.container.tags[]]')"
+
+          echo "visibility=$visibility"
+          echo "repository=$repository"
+          echo "tag_count=$(jq length <<<"$tags")"
+          echo "windows_tag_count=$(jq '[.[] | select(endswith("-windows2022"))] | length' <<<"$tags")"
+          echo "latest_tag_count=$(jq '[.[] | select(startswith("latest-"))] | length' <<<"$tags")"
 
           test "$visibility" = "private"
           test "$repository" = "NVIDIA/cccl"
