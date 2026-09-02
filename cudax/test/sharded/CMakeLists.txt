@@ -1,6 +1,8 @@
 set(
   sharded_test_sources
   include_only.cu
+  stream_scope.cu
+  concepts/models.cu
   containers/sharded_array.cu
   containers/contiguous.cu
   containers/fork_join.cu
