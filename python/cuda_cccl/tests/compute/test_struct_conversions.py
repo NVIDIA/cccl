@@ -1,10 +1,11 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-"""Conversion semantics for ``gpu_struct`` fields.
+"""Field conversion and access semantics for ``gpu_struct``.
 
-Covers how values are converted as they are packed into struct fields: the
-constructor, the tuple-to-struct cast, and the struct-to-struct cast.
+Covers how values are converted as they are packed into struct fields (the
+constructor, the tuple-to-struct cast and the struct-to-struct cast) and how
+fields are selected by index.
 """
 
 import numpy as np
@@ -146,4 +147,60 @@ def test_tuple_for_scalar_field_is_rejected():
     with pytest.raises(Exception, match="only a nested struct field"):
         cuda.compute.unary_transform(
             d_in=d_in, d_out=d_out, op=build, num_items=h_in.size
+        )
+
+
+def test_constant_index_selects_the_field():
+    """``struct[i]`` with a constant index reads field ``i``."""
+    Pair = gpu_struct({"a": np.int32, "b": np.int32})
+
+    def second(s):
+        return s[1]
+
+    h_in = np.zeros(4, dtype=Pair.dtype)
+    h_in["a"] = np.arange(4)
+    h_in["b"] = np.arange(100, 104)
+
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.int32))
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=second, num_items=h_in.size)
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in["b"])
+
+
+def test_index_out_of_range_is_rejected():
+    """An out-of-range constant index is reported against the struct."""
+    Pair = gpu_struct({"a": np.int32, "b": np.int32})
+
+    def out_of_range(s):
+        return s[5]
+
+    h_in = np.zeros(4, dtype=Pair.dtype)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.int32))
+
+    with pytest.raises(Exception, match="out of range"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=out_of_range, num_items=h_in.size
+        )
+
+
+def test_runtime_index_is_rejected():
+    """A non-constant index is reported as needing a compile-time constant."""
+    Pair = gpu_struct({"a": np.int32, "b": np.int32})
+
+    def runtime_index(s):
+        total = 0
+        for i in range(2):
+            total += s[i]
+        return total
+
+    h_in = np.zeros(4, dtype=Pair.dtype)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.int64))
+
+    with pytest.raises(Exception, match="compile-time constant index"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=runtime_index, num_items=h_in.size
         )

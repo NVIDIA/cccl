@@ -340,41 +340,31 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         if not isinstance(struct_val, StructType):
             return
 
-        if isinstance(idx, (_mlir.types.IntegerLiteral)):
-            idx_val = getattr(idx, "literal_value", getattr(idx, "value", None))
-
-            if idx_val is None or not (0 <= idx_val < len(field_names_list)):
-
-                def error_impl(struct_val, idx):
-                    raise IndexError(
-                        f"Index out of range for struct with {len(field_names_list)} fields"
-                    )
-
-                return error_impl
-
-            field_name = field_names_list[idx_val]
-            exec(
-                f"def impl(struct_val, idx): return struct_val.{field_name}",
-                namespace := {},
+        if not isinstance(idx, _mlir.types.IntegerLiteral):
+            raise _mlir.errors.TypingError(
+                f"indexing {struct_class.__name__} requires a compile-time "
+                f"constant index, got {idx}"
             )
-            return namespace["impl"]
 
-        conditions = "\n".join(
-            f"    {'if' if i == 0 else 'elif'} idx == {i}: return struct_val.{name}"
-            for i, name in enumerate(field_names_list)
-        )
+        idx_val = getattr(idx, "literal_value", getattr(idx, "value", None))
+        if idx_val is None or not (0 <= idx_val < len(field_names_list)):
+            raise _mlir.errors.TypingError(
+                f"index {idx_val} is out of range for {struct_class.__name__}, "
+                f"which has {len(field_names_list)} fields"
+            )
+
+        field_name = field_names_list[idx_val]
         exec(
-            f"def impl(struct_val, idx):\n{conditions}\n    else: raise IndexError('Index out of range')",
+            f"def impl(struct_val, idx): return struct_val.{field_name}",
             namespace := {},
         )
         return namespace["impl"]
 
-    # getitem lowering: `struct[i]` with a constant index extracts field i.
-    # The overload above supplies the (literal-aware) typing; numba-cuda-mlir's
-    # getitem lowering needs a registered builder, which it looks up with the
-    # constant index normalized to int64.  Registering this builder also means
-    # the overload's generated impl (which would `raise IndexError`, something
-    # numba-cuda-mlir cannot lower) is never compiled.
+    # getitem lowering: `struct[i]` extracts field i.  Typing (the overload
+    # above) has already rejected a non-constant or out-of-range index, so the
+    # index here is a valid constant.  numba-cuda-mlir resolves getitem through
+    # a registered builder rather than by lowering the implementation the
+    # overload returns, so the extraction is done here.
     def lower_struct_getitem(builder, target, args, kwargs):
         struct_var, index = args
         # The index arrives as a plain int (static_getitem) or as an IR Var
