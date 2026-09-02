@@ -279,8 +279,8 @@ get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
 
 // min/max
 
-_CCCL_HOST_DEVICE_API constexpr auto
-get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int accum_size) -> ::cuda::std::optional<sm100_tuning_values>
+_CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int accum_size)
+  -> ::cuda::std::optional<sm100_tuning_values>
 {
   if (operation_t != op_kind_t::min && operation_t != op_kind_t::max)
   {
