@@ -230,8 +230,8 @@ if POSTGRES_AVAILABLE:
                 "DataFrame storage for PostgreSQL not yet implemented"
             )
 else:
-    # Define a dummy class when psycopg2 is not available
-    PostgreSQLStorage = None
+    # Placeholder when psycopg2 is not available; callers check for None.
+    PostgreSQLStorage = None  # type: ignore[assignment, misc]
 
 
 class DualStorageWrapper:
@@ -358,6 +358,7 @@ class DualConnectionWrapper:
 
 class Storage:
     _instance = None
+    base: DualStorageWrapper
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
