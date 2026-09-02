@@ -148,7 +148,8 @@ struct DeviceHistogramKernelSource
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
-      if (::cuda::std::cmp_greater(num_bins, ::cuda::std::numeric_limits<CommonT>::max()))
+      // The unary plus promotes plain char to int, which cuda::std::cmp_greater requires
+      if (::cuda::std::cmp_greater(num_bins, +::cuda::std::numeric_limits<CommonT>::max()))
       {
         return true;
       }

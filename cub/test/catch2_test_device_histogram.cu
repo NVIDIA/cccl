@@ -498,20 +498,21 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
   }
 }
 
-using types =
-  c2h::type_list<std::int8_t,
-                 std::uint8_t,
-                 std::int16_t,
-                 std::uint16_t,
-                 std::int32_t,
-                 std::uint32_t,
-                 std::int64_t,
-                 std::uint64_t,
+using types = c2h::type_list<
+  std::int8_t,
+  char,
+  std::uint8_t,
+  std::int16_t,
+  std::uint16_t,
+  std::int32_t,
+  std::uint32_t,
+  std::int64_t,
+  std::uint64_t,
 #if TEST_HALF_T()
-                 half_t,
+  half_t,
 #endif // TEST_HALF_T()
-                 float,
-                 double>;
+  float,
+  double>;
 
 CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMALL, types)
 {
