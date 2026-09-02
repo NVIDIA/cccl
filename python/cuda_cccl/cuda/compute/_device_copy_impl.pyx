@@ -481,6 +481,587 @@ def _layout_stride_relaxed():
     return <int>CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
 
 
+cdef:
+    # The minimum guard avoids undefined behavior when taking abs(INT64_MIN).
+    int64_t _COPY_PLAN_INT64_MIN = -0x7FFFFFFFFFFFFFFF - 1
+    int64_t _COPY_PLAN_INT64_MAX = 0x7FFFFFFFFFFFFFFF
+
+
+cdef int64_t _copy_plan_extent(object value) except? -1:
+    cdef int64_t result = <int64_t>value
+    if result < 0:
+        raise ValueError("copy plan shape extents must be non-negative")
+    return result
+
+
+cdef int64_t _copy_plan_checked_i64(object value, str message) except? -1:
+    try:
+        return <int64_t>value
+    except OverflowError:
+        raise OverflowError(message)
+
+
+cdef int64_t _copy_plan_checked_add(int64_t lhs, int64_t rhs, str message) except? -1:
+    cdef object lhs_obj = lhs
+    cdef object rhs_obj = rhs
+    return _copy_plan_checked_i64(lhs_obj + rhs_obj, message)
+
+
+cdef int64_t _copy_plan_checked_mul(int64_t lhs, int64_t rhs, str message) except? -1:
+    cdef object lhs_obj = lhs
+    cdef object rhs_obj = rhs
+    return _copy_plan_checked_i64(lhs_obj * rhs_obj, message)
+
+
+cdef int64_t _copy_plan_axis_delta(int64_t extent, int64_t stride, str message) except? -1:
+    if extent == 0:
+        return 0
+    return _copy_plan_checked_mul(extent - 1, stride, message)
+
+
+cdef int64_t _copy_plan_abs_stride(int64_t stride) except? -1:
+    if stride == _COPY_PLAN_INT64_MIN:
+        raise OverflowError("copy plan stride magnitude is too large")
+    if stride < 0:
+        return -stride
+    return stride
+
+
+cdef bint _copy_plan_abs_stride_noexcept(int64_t stride, int64_t* result) noexcept:
+    if stride == _COPY_PLAN_INT64_MIN:
+        return False
+    if stride < 0:
+        result[0] = -stride
+    else:
+        result[0] = stride
+    return True
+
+
+cdef bint _copy_plan_checked_nonnegative_add_noexcept(
+    int64_t lhs,
+    int64_t rhs,
+    int64_t* result,
+) noexcept:
+    if lhs < 0 or rhs < 0:
+        return False
+    if lhs > _COPY_PLAN_INT64_MAX - rhs:
+        return False
+    result[0] = lhs + rhs
+    return True
+
+
+cdef bint _copy_plan_checked_nonnegative_mul_noexcept(
+    int64_t lhs,
+    int64_t rhs,
+    int64_t* result,
+) noexcept:
+    if lhs < 0 or rhs < 0:
+        return False
+    if rhs != 0 and lhs > _COPY_PLAN_INT64_MAX // rhs:
+        return False
+    result[0] = lhs * rhs
+    return True
+
+
+cdef bint _copy_plan_is_unique_mapping(
+    size_t rank,
+    const int64_t* shape,
+    const int64_t* strides,
+    int64_t* axis_scratch,
+) noexcept:
+    cdef size_t axis_count = 0
+    cdef size_t i
+    cdef size_t j
+    cdef size_t axis
+    cdef size_t previous_axis
+    cdef int64_t axis_stride
+    cdef int64_t previous_stride
+    cdef int64_t extent
+    cdef int64_t covered = 1
+    cdef int64_t delta
+
+    if axis_scratch == NULL:
+        return False
+
+    for i in range(rank):
+        extent = shape[i]
+        if extent < 0:
+            return False
+        if extent <= 1:
+            continue
+
+        if not _copy_plan_abs_stride_noexcept(strides[i], &axis_stride):
+            return False
+        if axis_stride == 0:
+            return False
+
+        if i > <size_t>_COPY_PLAN_INT64_MAX:
+            return False
+        axis_scratch[axis_count] = <int64_t>i
+        axis_count += 1
+
+    for i in range(1, axis_count):
+        axis = <size_t>axis_scratch[i]
+        if not _copy_plan_abs_stride_noexcept(strides[axis], &axis_stride):
+            return False
+        j = i
+        while j > 0:
+            previous_axis = <size_t>axis_scratch[j - 1]
+            if not _copy_plan_abs_stride_noexcept(strides[previous_axis], &previous_stride):
+                return False
+            if previous_stride < axis_stride:
+                break
+            if previous_stride == axis_stride and shape[previous_axis] <= shape[axis]:
+                break
+            axis_scratch[j] = axis_scratch[j - 1]
+            j -= 1
+        axis_scratch[j] = <int64_t>axis
+
+    for i in range(axis_count):
+        axis = <size_t>axis_scratch[i]
+        if not _copy_plan_abs_stride_noexcept(strides[axis], &axis_stride):
+            return False
+        if axis_stride < covered:
+            return False
+
+        if not _copy_plan_checked_nonnegative_mul_noexcept(
+            shape[axis] - 1,
+            axis_stride,
+            &delta,
+        ):
+            return False
+        if not _copy_plan_checked_nonnegative_add_noexcept(covered, delta, &covered):
+            return False
+
+    return True
+
+
+cdef void _copy_plan_require_unique_mapping(
+    size_t rank,
+    const int64_t* shape,
+    const int64_t* strides,
+    int64_t* axis_scratch,
+    str label,
+) except *:
+    if not _copy_plan_is_unique_mapping(rank, shape, strides, axis_scratch):
+        raise ValueError(label + " mapping is not unique or uniqueness could not be proven")
+
+
+cdef int64_t* _copy_plan_alloc_int64(size_t count) except NULL:
+    cdef int64_t* result
+    if count == 0:
+        count = 1
+    result = <int64_t*>PyMem_Malloc(count * sizeof(int64_t))
+    if result == NULL:
+        raise MemoryError()
+    return result
+
+
+cdef class _DeviceCopyPlan:
+    cdef size_t _original_rank
+    cdef size_t _rank
+    cdef int64_t _elements
+    cdef int64_t _source_element_offset
+    cdef int64_t _destination_element_offset
+    cdef bint _empty
+    cdef bint _contiguous_1d
+    cdef int64_t* _original_shape
+    cdef int64_t* _original_source_strides
+    cdef int64_t* _original_destination_strides
+    cdef int64_t* _axis_order
+    cdef int64_t* _axis_scratch
+    cdef int64_t* _shape
+    cdef int64_t* _source_strides
+    cdef int64_t* _destination_strides
+
+    def __cinit__(self):
+        self._original_rank = 0
+        self._rank = 0
+        self._elements = 0
+        self._source_element_offset = 0
+        self._destination_element_offset = 0
+        self._empty = False
+        self._contiguous_1d = False
+        self._original_shape = NULL
+        self._original_source_strides = NULL
+        self._original_destination_strides = NULL
+        self._axis_order = NULL
+        self._axis_scratch = NULL
+        self._shape = NULL
+        self._source_strides = NULL
+        self._destination_strides = NULL
+
+    def __dealloc__(self):
+        if self._original_shape != NULL:
+            PyMem_Free(self._original_shape)
+        if self._original_source_strides != NULL:
+            PyMem_Free(self._original_source_strides)
+        if self._original_destination_strides != NULL:
+            PyMem_Free(self._original_destination_strides)
+        if self._axis_order != NULL:
+            PyMem_Free(self._axis_order)
+        if self._axis_scratch != NULL:
+            PyMem_Free(self._axis_scratch)
+        if self._shape != NULL:
+            PyMem_Free(self._shape)
+        if self._source_strides != NULL:
+            PyMem_Free(self._source_strides)
+        if self._destination_strides != NULL:
+            PyMem_Free(self._destination_strides)
+
+    def __init__(
+        self,
+        object shape,
+        object source_strides,
+        object destination_strides,
+        object source_element_offset=0,
+        object destination_element_offset=0,
+    ):
+        cdef Py_ssize_t shape_rank = len(shape)
+        if len(source_strides) != shape_rank:
+            raise ValueError("source strides rank must match shape rank")
+        if len(destination_strides) != shape_rank:
+            raise ValueError("destination strides rank must match shape rank")
+
+        self._original_rank = <size_t>shape_rank
+        self._source_element_offset = <int64_t>source_element_offset
+        self._destination_element_offset = <int64_t>destination_element_offset
+        self._allocate(<size_t>shape_rank)
+        self._load_original(shape, source_strides, destination_strides)
+        self._elements = self._compute_elements()
+        self._empty = self._elements == 0
+
+        self._validate_destination_unique()
+        self._validate_element_interval(
+            self._source_element_offset,
+            self._original_source_strides,
+            "source array view refers to elements before its allocation base",
+        )
+        self._validate_element_interval(
+            self._destination_element_offset,
+            self._original_destination_strides,
+            "destination array view refers to elements before its allocation base",
+        )
+        self._build_normalized()
+
+    cdef void _allocate(self, size_t rank) except *:
+        self._original_shape = _copy_plan_alloc_int64(rank)
+        self._original_source_strides = _copy_plan_alloc_int64(rank)
+        self._original_destination_strides = _copy_plan_alloc_int64(rank)
+        self._axis_order = _copy_plan_alloc_int64(rank)
+        self._axis_scratch = _copy_plan_alloc_int64(rank)
+        self._shape = _copy_plan_alloc_int64(rank)
+        self._source_strides = _copy_plan_alloc_int64(rank)
+        self._destination_strides = _copy_plan_alloc_int64(rank)
+
+    cdef void _load_original(self, object shape, object source_strides, object destination_strides) except *:
+        cdef size_t i
+        for i in range(self._original_rank):
+            self._original_shape[i] = _copy_plan_extent(shape[i])
+            self._original_source_strides[i] = <int64_t>source_strides[i]
+            self._original_destination_strides[i] = <int64_t>destination_strides[i]
+
+    cdef int64_t _compute_elements(self) except? -1:
+        cdef int64_t elements = 1
+        cdef size_t i
+        cdef int64_t extent
+        for i in range(self._original_rank):
+            extent = self._original_shape[i]
+            if extent == 0:
+                return 0
+            elements = _copy_plan_checked_mul(elements, extent, "copy plan element count is too large")
+        return elements
+
+    cdef void _validate_destination_unique(self) except *:
+        _copy_plan_require_unique_mapping(
+            self._original_rank,
+            self._original_shape,
+            self._original_destination_strides,
+            self._axis_scratch,
+            "destination",
+        )
+
+    cdef bint _is_unique_mapping(self, size_t rank, const int64_t* shape, const int64_t* strides) noexcept:
+        return _copy_plan_is_unique_mapping(rank, shape, strides, self._axis_scratch)
+
+    cdef void _validate_element_interval(
+        self,
+        int64_t element_offset,
+        const int64_t* strides,
+        str message,
+    ) except *:
+        cdef int64_t minimum = element_offset
+        cdef int64_t delta
+        cdef size_t i
+        if self._empty:
+            return
+        for i in range(self._original_rank):
+            delta = _copy_plan_axis_delta(
+                self._original_shape[i],
+                strides[i],
+                "array offset span is too large",
+            )
+            if delta < 0:
+                minimum = _copy_plan_checked_add(minimum, delta, "array offset span is too large")
+        if minimum < 0:
+            raise ValueError(message)
+
+    cdef void _build_normalized(self) except *:
+        cdef size_t i
+        cdef size_t write = 0
+        cdef int64_t extent
+        cdef int64_t source_stride
+        cdef int64_t destination_stride
+
+        if self._empty:
+            self._rank = 0
+            self._contiguous_1d = True
+            return
+
+        for i in range(self._original_rank):
+            extent = self._original_shape[i]
+            if extent == 1:
+                continue
+
+            source_stride = self._original_source_strides[i]
+            destination_stride = self._original_destination_strides[i]
+            if destination_stride < 0:
+                self._source_element_offset = _copy_plan_checked_add(
+                    self._source_element_offset,
+                    _copy_plan_axis_delta(extent, source_stride, "normalized source offset is too large"),
+                    "normalized source offset is too large",
+                )
+                self._destination_element_offset = _copy_plan_checked_add(
+                    self._destination_element_offset,
+                    _copy_plan_axis_delta(extent, destination_stride, "normalized destination offset is too large"),
+                    "normalized destination offset is too large",
+                )
+                source_stride = _copy_plan_checked_mul(source_stride, -1, "normalized source stride magnitude is too large")
+                destination_stride = _copy_plan_checked_mul(
+                    destination_stride,
+                    -1,
+                    "normalized destination stride magnitude is too large",
+                )
+
+            self._axis_order[write] = <int64_t>i
+            self._shape[write] = extent
+            self._source_strides[write] = source_stride
+            self._destination_strides[write] = destination_stride
+            write += 1
+
+        self._rank = write
+        self._sort_axes()
+        self._collapse_axes()
+        self._contiguous_1d = self._rank <= 1 and (
+            self._rank == 0
+            or (self._source_strides[0] == 1 and self._destination_strides[0] == 1)
+        )
+
+    cdef int64_t _axis_sort_key_destination(self, size_t axis) except? -1:
+        return _copy_plan_abs_stride(self._destination_strides[axis])
+
+    cdef int64_t _axis_sort_key_source(self, size_t axis) except? -1:
+        return _copy_plan_abs_stride(self._source_strides[axis])
+
+    cdef bint _axis_should_move_left(self, size_t lhs, size_t rhs) except *:
+        cdef int64_t lhs_destination = self._axis_sort_key_destination(lhs)
+        cdef int64_t rhs_destination = self._axis_sort_key_destination(rhs)
+        if lhs_destination != rhs_destination:
+            return lhs_destination < rhs_destination
+
+        cdef int64_t lhs_source = self._axis_sort_key_source(lhs)
+        cdef int64_t rhs_source = self._axis_sort_key_source(rhs)
+        if lhs_source != rhs_source:
+            return lhs_source < rhs_source
+
+        return self._axis_order[lhs] > self._axis_order[rhs]
+
+    cdef void _swap_axes(self, size_t lhs, size_t rhs) noexcept:
+        cdef int64_t temporary
+        temporary = self._axis_order[lhs]
+        self._axis_order[lhs] = self._axis_order[rhs]
+        self._axis_order[rhs] = temporary
+
+        temporary = self._shape[lhs]
+        self._shape[lhs] = self._shape[rhs]
+        self._shape[rhs] = temporary
+
+        temporary = self._source_strides[lhs]
+        self._source_strides[lhs] = self._source_strides[rhs]
+        self._source_strides[rhs] = temporary
+
+        temporary = self._destination_strides[lhs]
+        self._destination_strides[lhs] = self._destination_strides[rhs]
+        self._destination_strides[rhs] = temporary
+
+    cdef void _sort_axes(self) except *:
+        cdef size_t i
+        cdef size_t j
+        for i in range(1, self._rank):
+            j = i
+            while j > 0 and self._axis_should_move_left(j - 1, j):
+                self._swap_axes(j - 1, j)
+                j -= 1
+
+    cdef bint _can_collapse(self, size_t outer, size_t inner) except *:
+        if self._shape[outer] == 0 or self._shape[inner] == 0:
+            return True
+        return (
+            self._source_strides[outer]
+            == _copy_plan_checked_mul(
+                self._source_strides[inner],
+                self._shape[inner],
+                "source stride span is too large",
+            )
+            and self._destination_strides[outer]
+            == _copy_plan_checked_mul(
+                self._destination_strides[inner],
+                self._shape[inner],
+                "destination stride span is too large",
+            )
+        )
+
+    cdef void _collapse_axes(self) except *:
+        cdef size_t read
+        cdef size_t write = 0
+
+        for read in range(self._rank):
+            if write != 0 and self._can_collapse(write - 1, read):
+                self._shape[write - 1] = _copy_plan_checked_mul(
+                    self._shape[write - 1],
+                    self._shape[read],
+                    "collapsed extent is too large",
+                )
+                if self._axis_order[read] < self._axis_order[write - 1]:
+                    self._axis_order[write - 1] = self._axis_order[read]
+                self._source_strides[write - 1] = self._source_strides[read]
+                self._destination_strides[write - 1] = self._destination_strides[read]
+                continue
+
+            if write != read:
+                self._axis_order[write] = self._axis_order[read]
+                self._shape[write] = self._shape[read]
+                self._source_strides[write] = self._source_strides[read]
+                self._destination_strides[write] = self._destination_strides[read]
+            write += 1
+
+        self._rank = write
+
+    cdef size_t _native_rank(self) noexcept:
+        return self._rank
+
+    cdef const int64_t* _native_shape(self) noexcept:
+        return self._shape
+
+    cdef const int64_t* _native_source_strides(self) noexcept:
+        return self._source_strides
+
+    cdef const int64_t* _native_destination_strides(self) noexcept:
+        return self._destination_strides
+
+    cdef int64_t _native_source_element_offset(self) noexcept:
+        return self._source_element_offset
+
+    cdef int64_t _native_destination_element_offset(self) noexcept:
+        return self._destination_element_offset
+
+    @property
+    def original_rank(self):
+        return self._original_rank
+
+    @property
+    def rank(self):
+        return self._rank
+
+    @property
+    def elements(self):
+        return self._elements
+
+    @property
+    def source_element_offset(self):
+        return self._source_element_offset
+
+    @property
+    def destination_element_offset(self):
+        return self._destination_element_offset
+
+    @property
+    def empty(self):
+        return bool(self._empty)
+
+    @property
+    def contiguous_1d(self):
+        return bool(self._contiguous_1d)
+
+    @property
+    def original_shape(self):
+        return _int64_tuple(self._original_shape, self._original_rank)
+
+    @property
+    def original_source_strides(self):
+        return _int64_tuple(self._original_source_strides, self._original_rank)
+
+    @property
+    def original_destination_strides(self):
+        return _int64_tuple(self._original_destination_strides, self._original_rank)
+
+    @property
+    def axis_order(self):
+        return _int64_tuple(self._axis_order, self._rank)
+
+    @property
+    def shape(self):
+        return _int64_tuple(self._shape, self._rank)
+
+    @property
+    def source_strides(self):
+        return _int64_tuple(self._source_strides, self._rank)
+
+    @property
+    def destination_strides(self):
+        return _int64_tuple(self._destination_strides, self._rank)
+
+    @property
+    def original_source_unique(self):
+        return bool(self._is_unique_mapping(
+            self._original_rank,
+            self._original_shape,
+            self._original_source_strides,
+        ))
+
+    @property
+    def source_unique(self):
+        return bool(self._is_unique_mapping(
+            self._rank,
+            self._shape,
+            self._source_strides,
+        ))
+
+    @property
+    def destination_unique(self):
+        return bool(self._is_unique_mapping(
+            self._rank,
+            self._shape,
+            self._destination_strides,
+        ))
+
+
+def _make_device_copy_plan(
+    object shape,
+    object source_strides,
+    object destination_strides,
+    object source_element_offset=0,
+    object destination_element_offset=0,
+):
+    return _DeviceCopyPlan(
+        shape,
+        source_strides,
+        destination_strides,
+        source_element_offset,
+        destination_element_offset,
+    )
+
+
 cdef DLPackExchangeAPI* _dlpack_exchange_api(object obj) except? NULL:
     cdef object capsule
     cdef DLPackExchangeAPI* api
