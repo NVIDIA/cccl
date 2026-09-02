@@ -145,7 +145,7 @@ class BlockReduceSpec:
     def method_name(self) -> str:
         """Return the CUB method selected by this description."""
 
-        return "Sum" if self.operation is BlockReduceOperation.SUM else "Reduce"
+        return "Sum" if self.binary_op is BlockReduceOperator.SUM else "Reduce"
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:

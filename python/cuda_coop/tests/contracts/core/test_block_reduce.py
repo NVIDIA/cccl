@@ -212,12 +212,12 @@ def test_artifact_identity_tracks_operator_algorithm_and_valid_prefix() -> None:
 
 @pytest.mark.parametrize("valid_items", (True, 0, -1, 65, 1.5, "one"))
 def test_static_valid_items_are_checked_against_block(valid_items) -> None:
-    operation = GroupReduceSemantics(
-        dtype="int32",
-        operation="sum",
-        valid_items=ArgumentBinding.static(valid_items),
-    )
     with pytest.raises((TypeError, ValueError), match="valid_items"):
+        operation = GroupReduceSemantics(
+            dtype="int32",
+            operation="sum",
+            valid_items=ArgumentBinding.static(valid_items),
+        )
         _plan(operation, block_dim=64)
 
 

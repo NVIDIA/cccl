@@ -5,6 +5,7 @@
 """Compiler-free cooperative reduction contracts."""
 
 from ._bindings import ArgumentBinding, BindingKind
+from ._errors import CoopCompilerContextRequiredError
 from .block import (
     BlockReduceAlgorithm,
     BlockReduceOperation,
@@ -14,7 +15,7 @@ from .block import (
     normalize_block_reduce_algorithm,
     normalize_block_reduce_operator,
 )
-from .group_dispatch import (
+from .group import (
     GroupLoweringPlan,
     GroupLoweringTarget,
     GroupOperandKind,
@@ -37,7 +38,6 @@ from .group_dispatch import (
     resolve_thread_group,
 )
 from .launch import Dim3, LaunchFactOrigin, LaunchFacts
-from .root_api import CoopCompilerContextRequiredError
 from .thread_group import ThreadGroup, ThreadHierarchy, this_block
 
 __all__ = [
