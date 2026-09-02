@@ -585,6 +585,45 @@ def test_unary_transform_stateful_mixed_dtype_arrays():
     np.testing.assert_allclose(result, expected, rtol=1e-6)
 
 
+def test_unary_transform_with_device_local_array():
+    """An operator may allocate a device-local array.
+
+    Local arrays are how the heavy transform benchmark emulates register
+    pressure; they require a numpy dtype rather than a numba type object.
+    """
+    cuda_lang = pytest.importorskip("numba_cuda_mlir.cuda")
+
+    size = 4
+
+    def heavy(data):
+        reg = cuda_lang.local.array(shape=size, dtype=np.uint32)
+        reg[0] = data
+        for i in range(1, size):
+            x = reg[i - 1]
+            reg[i] = x * x + 1
+        out = data - data
+        for i in range(size):
+            out += reg[i]
+        return out
+
+    h_in = np.arange(1, 6, dtype=np.uint32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.uint32))
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=heavy, num_items=h_in.size)
+
+    expected = []
+    for value in h_in:
+        reg = [int(value)]
+        for _ in range(1, size):
+            reg.append((reg[-1] * reg[-1] + 1) % 2**32)
+        expected.append(sum(reg) % 2**32)
+
+    np.testing.assert_array_equal(
+        d_out.copy_to_host(), np.array(expected, dtype=np.uint32)
+    )
+
+
 def test_unary_transform_stateful_state_must_be_c_contiguous():
     """A Fortran-ordered multi-dimensional state array is rejected.
 
