@@ -11,7 +11,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void restrict_mdspan_test()
+TEST_FUNC void restrict_mdspan_test()
 {
   int array[] = {1, 2, 3, 4};
   using ext_t = cuda::std::extents<int, 4>;

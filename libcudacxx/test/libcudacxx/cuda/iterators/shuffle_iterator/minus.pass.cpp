@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // friend constexpr iterator operator-(iterator i, difference_type n)
 //   requires advanceable<W>;
 // friend constexpr difference_type operator-(const iterator& x, const iterator& y)
@@ -20,7 +23,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   // <iterator> - difference_type
   {

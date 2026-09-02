@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
 
   exp_x = ::cuda::std::expf(x - kln2);
   get_float_word(hx, exp_x);
-  *expt = (hx >> 23) - (0x7f + 127) + k;
+  *expt = static_cast<int>((hx >> 23) - (0x7f + 127) + k);
   set_float_word(exp_x, (hx & 0x7fffff) | ((0x7f + 127) << 23));
   return (exp_x);
 }

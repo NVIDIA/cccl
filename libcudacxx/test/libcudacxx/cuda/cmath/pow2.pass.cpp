@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <typename R>
-__host__ __device__ void constexpr test()
+TEST_FUNC void constexpr test()
 {
   using T = cuda::std::make_unsigned_t<R>;
   static_assert(cuda::std::is_same_v<R, decltype(cuda::next_power_of_two(R(0)))>);
@@ -52,7 +52,7 @@ __host__ __device__ void constexpr test()
   assert(cuda::std::has_single_bit(T(16)) == cuda::is_power_of_two(R{16}));
 }
 
-__host__ __device__ bool constexpr test()
+TEST_FUNC bool constexpr test()
 {
   test<signed char>();
   test<int>();

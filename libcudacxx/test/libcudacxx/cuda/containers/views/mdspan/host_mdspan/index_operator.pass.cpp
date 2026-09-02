@@ -27,6 +27,7 @@
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include "../ConvertibleToIntegral.h"
 #include "../CustomTestLayouts.h"
@@ -44,23 +45,19 @@ constexpr auto& access(MDS mds, int64_t i0)
 }
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
-template <class MDS,
-          class... Indices,
-          class  = cuda::std::enable_if_t<
-             cuda::std::__all<cuda::std::is_same<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Indices>()...]),
-                                                 typename MDS::reference>::value>::value,
-             int> = 0>
+template <class MDS, class... Indices>
+  requires requires(MDS mds, Indices... indices) { mds[indices...]; }
 constexpr bool check_operator_constraints(MDS m, Indices... idxs)
 {
   unused(m[idxs...]);
   return true;
 }
 #else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
-template <
-  class MDS,
-  class Index,
-  class = cuda::std::enable_if_t<cuda::std::is_same<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Index>()]),
-                                                    typename MDS::reference>::value>>
+template <class MDS,
+          class Index,
+          cuda::std::enable_if_t<cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Index>()]),
+                                                      typename MDS::reference>,
+                                 int> = 0>
 constexpr bool check_operator_constraints(MDS m, Index idx)
 {
   unused(m[idx]);
@@ -158,103 +155,82 @@ constexpr void test_layout()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, D>(7)));
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, 7>()));
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, 7, 8>()));
-  test_iteration(construct_mapping(Layout(), cuda::std::extents<char, D, D, D, D>(1, 1, 1, 1)));
+  test_iteration(construct_mapping(Layout(), cuda::std::extents<signed char, D, D, D, D>(1, 1, 1, 1)));
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));
   int data[1];
   // Check operator constraint for number of arguments
   static_assert(
-    check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0),
-    "");
+    check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0));
   static_assert(!check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0, 0),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0, 0));
 
   // Check operator constraint for convertibility of arguments to index_type
   static_assert(check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), IntType(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), IntType(0)));
   static_assert(!check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned, D>(1))), IntType(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned, D>(1))), IntType(0)));
 
   // Check operator constraint for no-throw-constructibility of index_type from arguments
-  static_assert(
-    !check_operator_constraints(
-      cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D>(1))), IntType(0)),
-    "");
+  static_assert(!check_operator_constraints(
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D>(1))), IntType(0)));
 
   // Check that mixed integrals work: note the second one tests that mdspan casts: layout_wrapping_integral does not
   // accept IntType
   static_assert(check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D, D>(1, 1))),
-                  int(0),
-                  size_t(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D, D>(1, 1))),
+    int(0),
+    size_t(0)));
   static_assert(check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
-                  unsigned(0),
-                  IntType(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))), unsigned(0), IntType(0)));
 
   constexpr bool t = true;
   constexpr bool o = false;
   static_assert(!check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
-                  unsigned(0),
-                  IntConfig<o, o, t, t>(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
+    unsigned(0),
+    IntConfig<o, o, t, t>(0)));
   static_assert(check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
-                  unsigned(0),
-                  IntConfig<o, t, t, t>(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
+    unsigned(0),
+    IntConfig<o, t, t, t>(0)));
   static_assert(check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
-                  unsigned(0),
-                  IntConfig<o, t, o, t>(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
+    unsigned(0),
+    IntConfig<o, t, o, t>(0)));
   static_assert(!check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
-                  unsigned(0),
-                  IntConfig<t, o, o, t>(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
+    unsigned(0),
+    IntConfig<t, o, o, t>(0)));
   static_assert(check_operator_constraints(
-                  cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
-                  unsigned(0),
-                  IntConfig<t, o, t, o>(0)),
-                "");
+    cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D, D>(1, 1))),
+    unsigned(0),
+    IntConfig<t, o, t, o>(0)));
 
   // layout_wrapped wouldn't quite work here the way we wrote the check
   // IntConfig has configurable conversion properties: convert from const&, convert from non-const, no-throw-ctor from
   // const&, no-throw-ctor from non-const
   if constexpr (cuda::std::is_same<Layout, cuda::std::layout_left>::value)
   {
-    static_assert(
-      !check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
-                                  cuda::std::array{IntConfig<o, o, t, t>(0)}),
-      "");
-    static_assert(
-      !check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
-                                  cuda::std::array{IntConfig<o, t, t, t>(0)}),
-      "");
-    static_assert(
-      !check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
-                                  cuda::std::array{IntConfig<t, o, o, t>(0)}),
-      "");
-    static_assert(
-      !check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
-                                  cuda::std::array{IntConfig<t, t, o, t>(0)}),
-      "");
-    static_assert(
-      check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
-                                 cuda::std::array{IntConfig<t, o, t, o>(0)}),
-      "");
-    static_assert(
-      check_operator_constraints(cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
-                                 cuda::std::array{IntConfig<t, t, t, t>(0)}),
-      "");
+    static_assert(!check_operator_constraints(
+      cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
+      cuda::std::array{IntConfig<o, o, t, t>(0)}));
+    static_assert(!check_operator_constraints(
+      cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
+      cuda::std::array{IntConfig<o, t, t, t>(0)}));
+    static_assert(!check_operator_constraints(
+      cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
+      cuda::std::array{IntConfig<t, o, o, t>(0)}));
+    static_assert(!check_operator_constraints(
+      cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
+      cuda::std::array{IntConfig<t, t, o, t>(0)}));
+    static_assert(check_operator_constraints(
+      cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
+      cuda::std::array{IntConfig<t, o, t, o>(0)}));
+    static_assert(check_operator_constraints(
+      cuda::host_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))),
+      cuda::std::array{IntConfig<t, t, t, t>(0)}));
 
     {
       cuda::std::array idx{IntConfig<o, o, t, t>(0)};

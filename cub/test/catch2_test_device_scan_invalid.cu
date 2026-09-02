@@ -16,7 +16,7 @@
 
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/vector.h>
 
@@ -35,7 +35,6 @@ using segment_offset_t = int32_t;
 using primitive_t      = uint64_t;
 using element_types    = c2h::type_list<primitive_t, segment>;
 
-static_assert(!cub::detail::is_primitive_v<segment>);
 static_assert(cub::detail::is_primitive_v<primitive_t>);
 static_assert(sizeof(primitive_t) == 2 * sizeof(segment_offset_t));
 
@@ -57,6 +56,9 @@ struct segment
   }
 };
 
+static_assert(!cub::detail::is_primitive_v<segment>);
+// static_assert(!cuda::std::is_trivially_copyable_v<segment>); // TODO(bgruber): why is this important?
+
 // cuda::std::bitcast on platforms w/o __builtin_bit_cast needs To to have a trivial default constructor which segment
 // does not have by design.
 template <typename To, typename From>
@@ -67,6 +69,7 @@ __host__ __device__ To dangerous_bit_cast(const From& from)
   memcpy(static_cast<void*>(&to), &from, sizeof(To));
   return to;
 }
+
 // Needed for data input using fancy iterators
 template <typename WrapperT>
 struct tuple_to_wrapper_op
@@ -141,7 +144,8 @@ struct merge_segments_op
 };
 
 // Expected to fail for the current implementation.
-C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]", element_types)
+CUB_TEST(
+  "Device scan avoids invalid data with all device interfaces", "[scan][device][!mayfail]", CUB_SMALL, element_types)
 {
   using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
@@ -257,9 +261,9 @@ C2H_TEST("Device scan avoids invalid data with all device interfaces", "[scan][d
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t        = output_t;
-    c2h::device_vector<init_t> d_initial_value{init_value};
-    const auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    using init_value_t  = output_t;
+    c2h::device_vector<init_value_t> d_initial_value{init_value};
+    const auto future_init_value = cub::FutureValue<init_value_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(d_in_it, d_out_it, scan_op, future_init_value, num_items);
 
     const counts h_counts = error_counts.front();

@@ -20,21 +20,21 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral<T>::value, int> = 0>
-__host__ __device__ constexpr int make_expected_digits10()
+TEST_FUNC constexpr int make_expected_digits10()
 {
   // digits * log10(2)
   return static_cast<int>((cuda::std::numeric_limits<T>::digits * 30103l) / 100000l);
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_integral<T>::value, int> = 0>
-__host__ __device__ constexpr int make_expected_digits10()
+TEST_FUNC constexpr int make_expected_digits10()
 {
   // (digits - 1) * log10(2)
   return static_cast<int>(((cuda::std::numeric_limits<T>::digits - 1) * 30103l) / 100000l);
 }
 
 template <class T, int expected = make_expected_digits10<T>()>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::digits10 == expected, "digits10 test 1");
   static_assert(cuda::std::numeric_limits<T>::is_bounded, "digits10 test 5");

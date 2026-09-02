@@ -28,9 +28,9 @@
 #include <thrust/random/detail/linear_feedback_shift_engine_wordmask.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstddef> // for size_t
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -124,7 +124,7 @@ public:
   /*! This member function produces a new random value and updates this \p linear_feedback_shift_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p linear_feedback_shift_engine's state a given number of times
    *  and discards the results.

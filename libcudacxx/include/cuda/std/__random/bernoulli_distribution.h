@@ -20,12 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ios>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -44,21 +43,23 @@ public:
   public:
     using distribution_type = bernoulli_distribution;
 
-    _CCCL_API constexpr explicit param_type(double __p = 0.5) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit param_type(double __p = 0.5) noexcept
         : __p_{__p}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr double p() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double p() const noexcept
     {
       return __p_;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__p_ == __y.__p_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -70,66 +71,66 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API constexpr bernoulli_distribution() noexcept
+  _CCCL_HOST_DEVICE_API constexpr bernoulli_distribution() noexcept
       : bernoulli_distribution{0.5}
   {}
-  _CCCL_API constexpr explicit bernoulli_distribution(double __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit bernoulli_distribution(double __p) noexcept
       : __p_{param_type(__p)}
   {}
-  _CCCL_API constexpr explicit bernoulli_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit bernoulli_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type operator()(_URng& __g) noexcept
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     return ::cuda::std::generate_canonical<double, numeric_limits<double>::digits>(__g) < __p.p();
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr double p() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double p() const noexcept
   {
     return __p_.p();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
-  [[nodiscard]] _CCCL_API constexpr result_type min() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type min() const noexcept
   {
     return false;
   }
-  [[nodiscard]] _CCCL_API constexpr result_type max() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type max() const noexcept
   {
     return true;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const bernoulli_distribution& __x, const bernoulli_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const bernoulli_distribution& __x, const bernoulli_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const bernoulli_distribution& __x)
@@ -163,7 +164,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

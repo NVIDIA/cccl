@@ -26,7 +26,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+
+#include <algorithm>
+#include <vector>
 
 namespace cuda::experimental::stf
 {
@@ -43,8 +48,6 @@ namespace cuda::experimental::stf
  *
  * @param ctx The backend context in which the task is executed. This context contains
  *            the execution stack and other execution-related information.
- * @param tsk The task to be prepared for execution. The task must be in the setup phase
- *            before calling this function.
  * @return An event_list containing all the input events and any additional events
  *         generated during the acquisition of dependencies. This list represents the
  *         prerequisites for the task to start execution.
@@ -66,7 +69,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   auto result = get_input_events();
 
   // Automatically set the appropriate context (device, SM affinity, ...)
-  pimpl->saved_place_ctx = eplace.activate();
+  pimpl->saved_place_ctx = exec_place_scope(eplace);
 
   auto& task_deps = pimpl->deps;
 
@@ -116,10 +119,42 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // Since logical data are ordered by addresses, "mergeable" deps will be
     // stored contiguously, so we can stop as soon as there is another
     // dependency
+    const auto group_first = it;
     for (auto next = ::std::next(it); next != task_deps.end() && *it == *next; ++it, ++next)
     {
       mode |= next->get_access_mode();
       it->skipped = true;
+    }
+
+    // Merging picks one surviving dependency per logical data, so a
+    // replicated dep in the group only takes effect if it survives, and the
+    // MERGED mode governs the fetch. A group that mixes a replicated place
+    // with a write-capable mode (one replica would be fetched writable,
+    // leaving the others stale) or with a different place (the surviving
+    // place would silently win) is rejected outright.
+    for (auto g = group_first;; ++g)
+    {
+      const data_place& gdp = g->get_dplace();
+      if (!gdp.is_invalid() && gdp.is_replicated())
+      {
+        if (mode != access_mode::read)
+        {
+          _CCCL_THROW(
+            ::std::invalid_argument,
+            "replicated data places only support read access (another dependency on the same logical data upgrades "
+            "the merged access mode)");
+        }
+        if (!(it->get_dplace() == gdp))
+        {
+          _CCCL_THROW(::std::invalid_argument,
+                      "conflicting data places for merged dependencies on the same logical data (one "
+                      "of them is replicated)");
+        }
+      }
+      if (g == it)
+      {
+        break;
+      }
     }
 
     /* Get of this dependency which is not skipped, and save it in a vector. We also save the equivalent merged
@@ -133,7 +168,48 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // The affine data place is set at the task level, it can be inherited
     // from the execution place, or be some composite data place set up in
     // a parallel_for construct, for example
-    const data_place& dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
+    data_place dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
+
+    // A deferred replicated place binds to THIS task's execution place: one
+    // replica per grid member, or plain affine on a scalar place. The
+    // materialized place is written back into the dep so release and grid
+    // dispatch see a concrete place.
+    if (dplace.is_replicated() && ::cuda::experimental::places::replicated_is_deferred(dplace))
+    {
+      dplace = (eplace.size() > 1) ? data_place::replicated(eplace) : eplace.affine_data_place();
+      it->set_dplace(dplace);
+    }
+
+    if (dplace.instance_count() > 1)
+    {
+      // A dependency at a replicated place resolves to one ORDINARY data
+      // instance per member place, each allocated and made valid by the
+      // unchanged per-instance path below. The dep records the first
+      // member's instance; grid dispatch resolves the other shards per
+      // sub-task. Read-only and place-consistency across merged deps were
+      // validated by the group check above.
+      _CCCL_ASSERT(mode == access_mode::read, "replicated fetches are read-only");
+      // Members with equal data places resolve to the same instance
+      // (find_instance_id is keyed by place): fetch each distinct instance
+      // exactly once.
+      ::std::vector<instance_id_t> processed;
+      processed.reserve(dplace.instance_count());
+      for (size_t r = 0; r < dplace.instance_count(); r++)
+      {
+        const data_place member = dplace.member(r);
+        const instance_id_t im  = d.find_instance_id(member);
+        if (r == 0)
+        {
+          it->set_instance_id(im);
+        }
+        if (::std::find(processed.begin(), processed.end(), im) == processed.end())
+        {
+          processed.push_back(im);
+          reserved::fetch_data(ctx, d, im, *this, mode, eplace, member, result);
+        }
+      }
+      continue;
+    }
 
     const instance_id_t instance_id =
       mode == access_mode::relaxed ? d.find_unused_instance_id(dplace) : d.find_instance_id(dplace);
@@ -156,14 +232,33 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     reserved::fetch_data(ctx, d, instance_id, *this, mode, eplace, dplace, result);
   }
 
-  // In the (rare case) where there is no data dependency for a task, the
-  // task would still depend on the entry events of the context, if any
-  if ((task_deps.size() == 0) && ctx.has_start_events())
+  // A task that ends up with no actual runtime prerequisite chained back from
+  // previous tasks must instead depend on the context's entry point. This
+  // covers two situations that need the same treatment:
+  //   * tasks whose only deps are write-mode (no input dep at all), and
+  //   * tasks reading from logical data that have no previous writer in this
+  //     context yet -- e.g. an in-capture ``token().read()`` of a token that
+  //     has not been ``.write()``-n by any task in this context. In that case
+  //     ``enforce_stf_deps_before`` returns an empty event list because there
+  //     is no prior writer/reader to chain back to, and ``fetch_data`` adds
+  //     no allocation/MSI prereqs for void-interface (token) data.
+  //
+  // Both cases are observable as ``result`` still being empty after the
+  // dependency loop above. Merging the context's start events here is the
+  // only thing tying the task back to the context's entry point.
+  //
+  // This is required for correctness when the context's user stream is
+  // participating in a CUDA graph capture: the pool stream picked for the
+  // task would otherwise never issue the ``cudaStreamWaitEvent`` that forks
+  // it into the capture, and subsequent waits from the (captured) user
+  // stream onto events recorded on that (uncaptured) pool stream would fail
+  // with ``cudaErrorStreamCaptureIsolation``.
+  if (result.size() == 0 && ctx.has_start_events())
   {
     result.merge(ctx.get_start_events());
   }
 
-  // @@@@ TODO@@@@ explain this algorithm, and why we need to go in reversed
+  // @@@@ TODO@@@@ explain this algorithm, and why we need to go in reversed
   // order because we skipped equivalent dependencies that were stored
   // contiguously after sorting.
   instance_id_t previous_instance_id = instance_id_t::invalid;
@@ -176,7 +271,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     else
     {
       assert(previous_instance_id != instance_id_t::invalid);
-      // @@@@ TODO @@@@ make a unit test to make sure we have the same instance id for different acquired_data
+      // @@@@ TODO @@@@ make a unit test to make sure we have the same instance id for different acquired_data
       // ? fprintf(stderr, "SETTING SKIPPED INSTANCE ID ... %d\n", previous_instance_id);
       it->set_instance_id(previous_instance_id);
     }
@@ -268,6 +363,24 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
     {
       // If we have a read-only task, we only need to make sure that write accesses waits for this task
       data_instance.add_write_prereq(ctx, done_prereqs);
+
+      // A dep at a replicated place read one instance PER member place:
+      // protect the others the same way (writes elsewhere must wait)
+      const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
+      if (rel_dplace.instance_count() > 1)
+      {
+        ::std::vector<instance_id_t> protected_ids{e.get_instance_id()};
+        protected_ids.reserve(rel_dplace.instance_count());
+        for (size_t r = 1; r < rel_dplace.instance_count(); r++)
+        {
+          const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
+          if (::std::find(protected_ids.begin(), protected_ids.end(), im) == protected_ids.end())
+          {
+            protected_ids.push_back(im);
+            d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
+          }
+        }
+      }
     }
     else
     {
@@ -280,7 +393,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   }
 
   // Automatically reset the context to its original configuration (device, SM affinity, ...)
-  get_exec_place().deactivate(pimpl->saved_place_ctx);
+  pimpl->saved_place_ctx = exec_place_scope();
 
   auto& dot = *ctx.get_dot();
   if (dot.is_tracing())

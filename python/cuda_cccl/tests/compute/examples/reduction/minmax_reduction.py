@@ -48,7 +48,9 @@ d_out = cp.empty(tuple(), dtype=MinMax.dtype)
 h_init = MinMax(np.inf, -np.inf)
 
 # Perform the reduction.
-cuda.compute.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
+cuda.compute.reduce_into(
+    d_in=tr_it, d_out=d_out, num_items=nelems, op=minmax_op, h_init=h_init
+)
 
 # Verify the result.
 actual = d_out.get()

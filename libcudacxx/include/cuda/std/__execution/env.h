@@ -23,7 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/derived_from.h>
-#include <cuda/std/__functional/reference_wrapper.h>
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
@@ -31,10 +31,6 @@
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <functional> // IWYU pragma: keep for ::std::reference_wrapper
-#endif // !_CCCL_COMPILER(NVRTC)
 
 //! @file env.h
 //! @brief Provides utilities for querying and managing environments, an unordered
@@ -106,7 +102,7 @@ _CCCL_API auto __query_result_()
 
 #if _CCCL_HAS_EXCEPTIONS()
 template <class _Env, class _Query, class... _Args>
-using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS =
+using __nothrow_queryable_with_t _CCCL_NODEBUG =
   enable_if_t<noexcept(::cuda::std::declval<_Env>().query(_Query{}, ::cuda::std::declval<_Args>()...))>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
@@ -125,19 +121,21 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
 
 [[nodiscard]] _CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
 {
+  size_t __result = __npos;
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
     if (*__where)
     {
-      return static_cast<size_t>(__where - __begin);
+      __result = static_cast<size_t>(__where - __begin);
+      break;
     }
   }
-  return __npos;
+  return __result;
 }
 } // namespace __detail
 
 template <class _Env, class _Query, class... _Args>
-using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__query_result_<_Env, _Query, _Args...>());
+using __query_result_t _CCCL_NODEBUG = decltype(__detail::__query_result_<_Env, _Query, _Args...>());
 
 template <class _Env, class _Query, class... _Args>
 _CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Env, _Query, _Args...>::value;
@@ -156,7 +154,7 @@ _CCCL_CONCEPT __nothrow_queryable_with = true;
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
-using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__unwrap_ref<_Ty>);
+using __unwrap_reference_t _CCCL_NODEBUG = decltype(__detail::__unwrap_ref<_Ty>);
 
 template <class _Query, class _DefaultFn = void>
 struct __basic_query : __basic_query<_Query>
@@ -237,7 +235,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
 #endif // !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 
 template <class _Query, class _Value>
-_CCCL_HOST_DEVICE prop(_Query, _Value) -> prop<_Query, _Value>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES prop(_Query, _Value) -> prop<_Query, _Value>;
 
 //! @brief A variadic template structure representing an environment.
 //!
@@ -271,6 +269,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     {
       return ::cuda::std::__get<__idx>(__self.__envs_);
     }
+    else
+    {
+      return;
+    }
   }
 
   //! @brief Alias for the type of the first environment that satisfies the query type.
@@ -280,8 +282,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   //!
   //! @tparam _Query The type of the query to be performed.
   template <class _Query, class... _Args>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS =
-    decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
+  using __1st_env_t _CCCL_NODEBUG = decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
 
   //! @brief Queries the first environment that satisfies the given query type.
   //!
@@ -306,9 +307,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
 };
 
 template <class... _Envs>
-_CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
-
-#ifndef _CCCL_DOXYGEN_INVOKED
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 // Partial specialization for no env because NVCC segfaults trying to compile `__tuple<>`
 template <>
@@ -317,6 +316,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
   _CCCL_API auto query() const = delete;
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 // Partial specialization for two environments so that the syntax `env(env0, env1)` is
 // valid. That is, `env` can use CTAD with a parentesized list of arguments.
 template <class _Env0, class _Env1>
@@ -339,8 +339,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   }
 
   template <class _Query, class... _Args>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS =
-    decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
+  using __1st_env_t _CCCL_NODEBUG = decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
@@ -373,7 +372,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 struct get_env_t
 {
   template <class _Ty>
-  using __env_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::declval<_Ty>().get_env());
+  using __env_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_Ty>().get_env());
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty>
@@ -392,7 +391,7 @@ struct get_env_t
 _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 
 template <class _Ty>
-using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(::cuda::std::declval<_Ty>()));
+using env_of_t _CCCL_NODEBUG = decltype(get_env(::cuda::std::declval<_Ty>()));
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // forwarding_query_t
@@ -444,7 +443,7 @@ struct __query_or_t
 _CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
 
 template <class _Env, class _Query, class _Default, class... _Args>
-using __query_result_or_t _CCCL_NODEBUG_ALIAS = decltype(__query_or(
+using __query_result_or_t _CCCL_NODEBUG = decltype(__query_or(
   ::cuda::std::declval<_Env>(),
   ::cuda::std::declval<_Query>(),
   ::cuda::std::declval<_Default>(),

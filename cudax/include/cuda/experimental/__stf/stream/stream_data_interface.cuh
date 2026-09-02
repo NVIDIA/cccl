@@ -63,7 +63,7 @@ public:
     cudaStream_t stream) = 0;
 
   // Returns prereq
-  void data_copy(backend_ctx_untyped& bctx,
+  void data_copy(backend_ctx_untyped& ctx,
                  const data_place& dst_memory_node,
                  instance_id_t dst_instance_id,
                  const data_place& src_memory_node,
@@ -71,15 +71,15 @@ public:
                  event_list& prereqs) override
   {
     cudaStream_t stream;
-    auto op = stream_async_op(bctx, dst_memory_node, &stream, prereqs);
-    if (bctx.generate_event_symbols())
+    auto op = stream_async_op(ctx, dst_memory_node, &stream, prereqs);
+    if (ctx.generate_event_symbols())
     {
       op.set_symbol("copy");
     }
 
     stream_data_copy(dst_memory_node, dst_instance_id, src_memory_node, src_instance_id, stream);
 
-    prereqs = op.end(bctx);
+    prereqs = op.end(ctx);
   }
 };
 
@@ -116,7 +116,7 @@ public:
 
   void data_allocate(
     backend_ctx_untyped& ctx,
-    block_allocator_untyped& /*unused*/,
+    block_allocator_untyped& custom_allocator,
     const data_place& memory_node,
     instance_id_t instance_id,
     ::std::ptrdiff_t& s,
@@ -144,7 +144,7 @@ public:
 
   void data_deallocate(
     backend_ctx_untyped& ctx,
-    block_allocator_untyped& /*custom_allocator*/,
+    block_allocator_untyped& custom_allocator,
     const data_place& memory_node,
     instance_id_t instance_id,
     void* extra_args,
@@ -170,7 +170,7 @@ public:
     cudaStream_t stream) = 0;
 
   // Returns prereq
-  void data_copy(backend_ctx_untyped& bctx,
+  void data_copy(backend_ctx_untyped& ctx,
                  const data_place& dst_memory_node,
                  instance_id_t dst_instance_id,
                  const data_place& src_memory_node,
@@ -178,15 +178,15 @@ public:
                  event_list& prereqs) override
   {
     cudaStream_t stream;
-    auto op = stream_async_op(bctx, dst_memory_node, &stream, prereqs);
-    if (bctx.generate_event_symbols())
+    auto op = stream_async_op(ctx, dst_memory_node, &stream, prereqs);
+    if (ctx.generate_event_symbols())
     {
       op.set_symbol("copy");
     }
 
     stream_data_copy(dst_memory_node, dst_instance_id, src_memory_node, src_instance_id, stream);
 
-    prereqs = op.end(bctx);
+    prereqs = op.end(ctx);
   }
 };
 } // end namespace cuda::experimental::stf

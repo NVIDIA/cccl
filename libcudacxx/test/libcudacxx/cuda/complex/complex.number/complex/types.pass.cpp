@@ -15,13 +15,15 @@
 #include <cuda/__complex_>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ void test_types()
+TEST_FUNC void test_types()
 {
   static_assert(cuda::std::is_same_v<T, typename cuda::complex<T>::value_type>);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_types<float>();
   test_types<double>();

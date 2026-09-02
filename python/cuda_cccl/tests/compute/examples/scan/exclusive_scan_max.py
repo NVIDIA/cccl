@@ -25,7 +25,9 @@ d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
 d_output = cp.empty_like(d_input, dtype="int32")
 
 # Perform the exclusive scan.
-cuda.compute.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
+cuda.compute.exclusive_scan(
+    d_in=d_input, d_out=d_output, op=max_op, init_value=h_init, num_items=d_input.size
+)
 
 # Verify the result.
 expected = np.asarray([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])

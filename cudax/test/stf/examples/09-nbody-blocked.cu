@@ -35,7 +35,7 @@ void writeVTKFile(context& ctx,
 
   if (!outfile)
   {
-    std::cerr << "Error opening file: " << filename << std::endl;
+    std::cerr << "Error opening file: " << filename << '\n';
     return;
   }
 
@@ -74,7 +74,7 @@ void load_input_file(std::string filename, std::vector<body>& particles)
   std::ifstream infile(filename);
   if (!infile)
   {
-    std::cerr << "Error opening file." << std::endl;
+    std::cerr << "Error opening file." << '\n';
     abort();
     return;
   }

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/random.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/integral.h>
@@ -49,7 +50,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr __feistel_bijection() noexcept = default;
 
   template <class _RNG>
-  _CCCL_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
+  _CCCL_HOST_DEVICE_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
   {
     // Calculate number of bits needed to represent num_elements - 1
     // Prevent zero
@@ -65,28 +66,28 @@ public:
 
     ::cuda::std::uniform_int_distribution<uint32_t> __dist{};
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (uint32_t i = 0; i < __num_rounds; i++)
+    for (auto& __key : __keys_)
     {
-      __keys_[i] = __dist(__gen);
+      __key = __dist(__gen);
     }
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t size() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t size() const noexcept
   {
     return 1ull << (__L_bits_ + __R_bits_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr uint64_t operator()(const uint64_t __val) const noexcept
   {
     // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
     // (2022): 1-20.
     uint32_t __L = static_cast<uint32_t>(__val >> __R_bits_);
     uint32_t __R = static_cast<uint32_t>(__val & __R_mask_);
-    for (uint32_t __i = 0; __i < __num_rounds; __i++)
+    for (const auto __key : __keys_)
     {
       constexpr uint64_t __m0  = 0xD2B74407B1CE6E93;
       const uint64_t __product = __m0 * __L;
-      uint32_t __F_k           = (__product >> 32) ^ __keys_[__i];
+      uint32_t __F_k           = (__product >> 32) ^ __key;
       uint32_t __B_k           = static_cast<uint32_t>(__product);
       uint32_t __L_prime       = __F_k ^ __R;
 

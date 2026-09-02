@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,8 +25,8 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/core.cuh>
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__utility/optionally_static.cuh>
 
 #include <cassert>
 #include <variant>
@@ -142,7 +143,7 @@ struct deduce_execution_policy<b, s, T, Ts...>
 template <bool b, size_t s, auto... P, typename... Ts>
 struct deduce_execution_policy<b, s, thread_hierarchy_spec<P...>, Ts...>
 {
-  static_assert(::std::is_same_v<typename deduce_execution_policy<b, s, Ts...>::type, thread_hierarchy_spec<b, s>>,
+  static_assert(::cuda::std::is_same_v<typename deduce_execution_policy<b, s, Ts...>::type, thread_hierarchy_spec<b, s>>,
                 "Only one argument of type deduce_execution_policy<...> is allowed.");
   using type = thread_hierarchy_spec<b, s, P...>;
 };
@@ -188,7 +189,7 @@ public:
    * Parameters can be specified in any order. All are optional. It is illegal to pass the same parameter type more
    * than once.
    *
-   * @param P... Types of parameters
+   * @tparam P Types of parameters
    * @param p Values of parameters
    */
   template <typename... P>
@@ -394,9 +395,9 @@ public:
 
 private:
   /// @brief The inner thread hierarchy.
-  [[no_unique_address]] thread_hierarchy_spec<lower_levels...> inner;
+  _CCCL_NO_UNIQUE_ADDRESS thread_hierarchy_spec<lower_levels...> inner;
   /// @brief The dynamic width, if applicable.
-  [[no_unique_address]] optionally_static<width, 0> dynamic_width;
+  _CCCL_NO_UNIQUE_ADDRESS ::cuda::experimental::optionally_static<width, 0> dynamic_width;
   /// @brief Synchronization level(s)
   hw_scope sync_scope = hw_scope::none;
   /// @brief The memory bytes.
@@ -496,7 +497,7 @@ constexpr auto con(const P&... p)
 UNITTEST("par") {
     {
         auto x = par();
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0)>>);
         static_assert(x.depth() == 1);
         static_assert(!thread_hierarchy_spec<false, size_t(0)>::template is_synchronizable<0>);
         static_assert(x.static_width(0) == 0);
@@ -505,14 +506,14 @@ UNITTEST("par") {
 
     {
         auto x = par<1024>();
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(1024)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(1024)>>);
         static_assert(x.depth() == 1);
         ::std::ignore = x;
     }
 
     {
         auto x = par(1024);
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0)>>);
         static_assert(x.depth() == 1);
         ::std::ignore = x;
         assert(x.get_width(1) == 1024);
@@ -520,7 +521,7 @@ UNITTEST("par") {
 
     {
         auto x = par(par());
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(0)>>);
         static_assert(x.depth() == 2);
         static_assert(!thread_hierarchy_spec<false, size_t(0), false, size_t(0)>::template is_synchronizable<0>);
         static_assert(!thread_hierarchy_spec<false, size_t(0), false, size_t(0)>::template is_synchronizable<1>);
@@ -529,7 +530,7 @@ UNITTEST("par") {
 
     {
         auto x = par<1024>(par());
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(1024), false, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(1024), false, size_t(0)>>);
         static_assert(x.depth() == 2);
         assert(x.get_width(0) == 1024);
         ::std::ignore = x;
@@ -537,7 +538,7 @@ UNITTEST("par") {
 
     {
         auto x = par(par(), 512);
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(0)>>);
         static_assert(x.depth() == 2);
         assert(x.get_width(0) == 512);
         ::std::ignore = x;
@@ -545,21 +546,21 @@ UNITTEST("par") {
 
     {
         auto x = par(par(), mem(512));
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(0)>>);
         static_assert(x.depth() == 2);
         ::std::ignore = x;
     }
 
     {
         auto x = par<256>(par(), mem(512));
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(256), false, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(256), false, size_t(0)>>);
         static_assert(x.depth() == 2);
         ::std::ignore = x;
     }
 
     {
         auto x = par(par<256>(), 1024, mem(512));
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(256)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(256)>>);
         static_assert(x.depth() == 2);
         assert(x.get_width(0) == 1024);
         assert(x.get_width(1) == 256);
@@ -571,7 +572,7 @@ UNITTEST("par") {
 UNITTEST("con") {
     {
         auto x = con();
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0)>>);
         static_assert(x.depth() == 1);
         static_assert(thread_hierarchy_spec<true, size_t(0)>::template is_synchronizable<0>);
         ::std::ignore = x;
@@ -579,14 +580,14 @@ UNITTEST("con") {
 
     {
         auto x = con<1024>();
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(1024)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(1024)>>);
         static_assert(x.depth() == 1);
         ::std::ignore = x;
     }
 
     {
         auto x = con(1024);
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0)>>);
         static_assert(x.depth() == 1);
         ::std::ignore = x;
         assert(x.get_width(1) == 1024);
@@ -594,14 +595,14 @@ UNITTEST("con") {
 
     {
         auto x = con(con());
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(0)>>);
         static_assert(x.depth() == 2);
         ::std::ignore = x;
     }
 
     {
         auto x = con<1024>(con());
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(1024), true, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(1024), true, size_t(0)>>);
         static_assert(x.depth() == 2);
         assert(x.get_width(0) == 1024);
         ::std::ignore = x;
@@ -609,7 +610,7 @@ UNITTEST("con") {
 
     {
         auto x = con(con(), 512);
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(0)>>);
         static_assert(x.depth() == 2);
         assert(x.get_width(0) == 512);
         ::std::ignore = x;
@@ -617,21 +618,21 @@ UNITTEST("con") {
 
     {
         auto x = con(con(), mem(512));
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(0)>>);
         static_assert(x.depth() == 2);
         ::std::ignore = x;
     }
 
     {
         auto x = con<256>(con(), mem(512));
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(256), true, size_t(0)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(256), true, size_t(0)>>);
         static_assert(x.depth() == 2);
         ::std::ignore = x;
     }
 
     {
         auto x = con(con<256>(), 1024, mem(512));
-        static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(256)>>);
+        static_assert(::cuda::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0), true, size_t(256)>>);
         static_assert(x.depth() == 2);
         assert(x.get_width(0) == 1024);
         assert(x.get_width(1) == 256);
@@ -640,76 +641,6 @@ UNITTEST("con") {
     }
 };
 // clang-format on
-
-// These trigger a segfault in nvcc 12.9. Temporarily disabling until they can be investigated.
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
-// unittest for core.h that can't be there
-UNITTEST("optionally_static")
-{
-  optionally_static<size_t(42), 0> v1;
-  static_assert(v1.get() == 42);
-  static_assert(v1 == v1);
-  static_assert(v1 == 42UL);
-
-  optionally_static<size_t(43), 0> v2;
-  static_assert(v2.get() == 43UL);
-
-  optionally_static<size_t(0), 0> v3;
-  EXPECT(v3.get() == 0);
-  v3 = 44;
-  EXPECT(v3.get() == 44UL);
-
-#    if 0
-  // TODO clarify these tests !
-
-  // Make sure the size is optimized properly
-  struct S1
-  {
-    [[no_unique_address]] optionally_static<size_t(42)> x;
-    int y;
-  };
-  static_assert(sizeof(S1) == sizeof(int));
-  struct S2
-  {
-    int y;
-    [[no_unique_address]] optionally_static<size_t(42)> x;
-  };
-  static_assert(sizeof(S1) == sizeof(int));
-#    endif
-
-  // Multiplication
-  static_assert(v1 * v1 == 42UL * 42UL);
-  static_assert(v1 * v2 == 42UL * 43UL);
-  static_assert(v1 * 44 == 42UL * 44UL);
-  static_assert(44 * v1 == 42UL * 44UL);
-  EXPECT(v1 * v3 == 42 * 44);
-
-  // Odds and ends
-  optionally_static<3, 18> v4;
-  optionally_static<6, 18> v5;
-  static_assert(v4 * v5 == 18UL);
-  static_assert(v4 * v5 == (optionally_static<18, 18>(18)));
-
-// TODO solve these there are some ambiguities !
-#    if 0
-  // Mutating operators
-  optionally_static<1, 1> v6;
-  v6 += v6;
-  EXPECT(v6 == 0);
-  v6 += 2;
-  EXPECT(v6 == 2);
-  v6 -= 1;
-  EXPECT(v6 == 1);
-  v6++;
-  ++v6;
-  EXPECT(v6 == 3);
-  --v6;
-  v6--;
-  EXPECT(v6 == 1);
-  EXPECT(-v6 == -1);
-#    endif
-};
-#  endif
 
 UNITTEST("thread hierarchy spec equality")
 {

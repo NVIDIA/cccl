@@ -16,7 +16,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     cuda::std::array<double, 1> const array = {3.3};
@@ -35,7 +35,7 @@ __host__ __device__ constexpr bool tests()
   }
   {
     cuda::std::array<double, 1> const array = {3.3};
-    static_assert(cuda::std::is_same<double const&, decltype(cuda::std::get<0>(array))>::value, "");
+    static_assert(cuda::std::is_same<double const&, decltype(cuda::std::get<0>(array))>::value);
     assert(cuda::std::get<0>(array) == 3.3);
   }
 
@@ -45,6 +45,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

@@ -4,8 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+from __future__ import annotations
+
+import sys
+import sysconfig
+import warnings
+
 from ._bindings import Op, OpKind
 from ._caching import CachableFunction, cache_with_registered_key_functions
+from ._device_code import DeviceCode
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -38,16 +45,11 @@ class _OpAdapter:
         """Return True if this op has runtime state."""
         return False
 
-    def update_op_state(self, cccl_op: Op) -> None:
+    def get_state(self) -> bytes:
         """
-        Update the Op's state bytes.
-
-        Args:
-            cccl_op: The compiled CCCL Op to update
-
-        Default implementation is a no-op (for stateless ops).
+        Return the op's state bytes.
         """
-        pass
+        return b""
 
     def get_return_type(self, input_types):
         """Get the return type for this op given input types."""
@@ -92,8 +94,150 @@ class _WellKnownOp(_OpAdapter):
         return hash(self._kind)
 
 
+class RawOp(_OpAdapter):
+    """
+    ``RawOp`` lets you supply pre-compiled device code (LTO-IR) implementing a
+    custom operator, bypassing the default Numba-based JIT pipeline.
+
+    Example:
+        Supplying C++ device code compiled to LTO-IR via NVRTC:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
+            :language: python
+            :start-after: # example-begin
+
+    Args:
+        name: The ABI name of the operator.
+        ltoir: Raw ``bytes`` of pre-compiled LTO-IR implementing the operator
+            (for example, produced by ``nvcc -dlto`` or NVRTC).
+        state: Optional bytes representing the operator's state.
+        state_alignment: Alignment requirement for the state bytes (default: 1).
+        extra_ltoirs: Optional list of additional LTO-IR ``bytes`` to link.
+
+    Notes:
+        - The provided code must define a function with the specified name and the correct signature.
+        - The function must use untyped pointers for all parameters and return type. The function body
+          is responsible for correctly interpreting the pointer arguments based on the expected input and output types.
+          For stateless operators, the signature is
+
+             void func(void* arg1, void* arg2, ..., void* result)`
+
+          For stateful operators, the first parameter must be a pointer to the state:
+
+             void func(void* state, void* arg1, void* arg2, ...)
+    """
+
+    __slots__ = [
+        "_ltoir",
+        "_name",
+        "_state",
+        "_state_alignment",
+        "_extra_ltoirs",
+    ]
+
+    def __init__(
+        self,
+        *,
+        ltoir: bytes | DeviceCode,
+        name: str,
+        state: bytes = b"",
+        state_alignment: int = 1,
+        extra_ltoirs: list[bytes | DeviceCode] | None = None,
+    ):
+        self._ltoir = ltoir
+        self._name = name
+        self._state = state
+        self._state_alignment = state_alignment
+        self._extra_ltoirs = extra_ltoirs or []
+
+    def compile(self, input_types, output_type=None) -> Op:
+        # Determine if stateful based on whether state is provided
+        op_kind = OpKind.STATEFUL if self._state else OpKind.STATELESS
+
+        return Op(
+            operator_type=op_kind,
+            name=self._name,
+            ltoir=self._ltoir,
+            state=self._state,
+            state_alignment=self._state_alignment,
+            extra_ltoirs=self._extra_ltoirs,
+        )
+
+    def get_state(self) -> bytes:
+        """Return the op's state bytes."""
+        return self._state
+
+    @property
+    def _identity(self):
+        return (
+            self._ltoir,
+            self._name,
+            self._state,
+            self._state_alignment,
+            tuple(self._extra_ltoirs),
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, RawOp):
+            return False
+        return self._identity == other._identity
+
+    def __hash__(self):
+        return hash(self._identity)
+
+
 # Public aliases
 OpAdapter = _OpAdapter
+
+
+def _jit_op_adapter_factory():
+    # helper that tries to import `_jit.py`. If it fails,
+    # returns a function that raises an appropriate error when called.
+    try:
+        from ._jit import to_jit_op_adapter
+
+        return to_jit_op_adapter
+    except ModuleNotFoundError as e:
+        if "numba" in str(e):
+
+            def _missing_jit_adapter(op):
+                raise ImportError(
+                    "numba-cuda is required to JIT compile Python callables"
+                )
+
+            return _missing_jit_adapter
+        raise
+
+
+# Resolved lazily on the first Python-callable operator (see
+# _get_jit_op_adapter) so that `import cuda.compute` never imports numba.
+# Importing numba eagerly would make every consumer pay its import cost, would
+# turn a broken numba installation into a package-wide import failure, and on
+# free-threaded CPython would re-enable the GIL for the whole process before
+# any user code runs -- even for users who only ever pass OpKind/RawOp
+# operators.
+_jit_adapter = None
+
+
+def _get_jit_op_adapter():
+    global _jit_adapter
+    if _jit_adapter is None:
+        # A concurrent first call may run the factory twice; that is benign
+        # (the factory is idempotent) so no lock is taken.
+        gil_was_off = (
+            sysconfig.get_config_var("Py_GIL_DISABLED")
+            and not getattr(sys, "_is_gil_enabled", lambda: True)()
+        )
+        _jit_adapter = _jit_op_adapter_factory()
+        if gil_was_off and sys._is_gil_enabled():
+            warnings.warn(
+                "Compiling a Python callable operator imported numba, which "
+                "re-enabled the GIL for this process. To keep free-threaded "
+                "execution, use OpKind or RawOp (pre-compiled LTO-IR) "
+                "operators instead of Python callables.",
+                RuntimeWarning,
+            )
+    return _jit_adapter
 
 
 def make_op_adapter(op) -> OpAdapter:
@@ -106,8 +250,6 @@ def make_op_adapter(op) -> OpAdapter:
     Returns:
         A value with appropriate subtype of _BaseOp
     """
-    from ._jit import to_jit_op_adapter
-
     # Already an _OpAdapter instance:
     if isinstance(op, _OpAdapter):
         return op
@@ -117,14 +259,7 @@ def make_op_adapter(op) -> OpAdapter:
         return _WellKnownOp(op)
 
     # It's a Python callable
-    return to_jit_op_adapter(op)
-
-
-__all__ = [
-    "OpAdapter",
-    "OpKind",
-    "make_op_adapter",
-]
+    return _get_jit_op_adapter()(op)
 
 
 cache_with_registered_key_functions.register(
@@ -138,3 +273,13 @@ cache_with_registered_key_functions.register(
 cache_with_registered_key_functions.register(
     type(lambda: None), lambda func: CachableFunction(func)
 )
+
+cache_with_registered_key_functions.register(RawOp, lambda op: op._identity)
+
+
+__all__ = [
+    "OpAdapter",
+    "OpKind",
+    "make_op_adapter",
+    "RawOp",
+]

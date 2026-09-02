@@ -17,8 +17,8 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void f1() {}
-__host__ __device__ void f2() {}
+TEST_FUNC void f1() {}
+TEST_FUNC void f2() {}
 
 int main(int, char**)
 {

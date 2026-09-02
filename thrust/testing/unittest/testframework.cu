@@ -55,7 +55,7 @@ void set_test_sizes(const std::string& val)
   }
   else
   {
-    std::cerr << "invalid test size \"" << val << "\"" << std::endl;
+    std::cerr << "invalid test size \"" << val << "\"" << '\n';
     exit(1);
   }
 
@@ -72,7 +72,7 @@ void UnitTestDriver::register_test(UnitTest* test)
 {
   if (UnitTestDriver::s_driver().test_map.count(test->name))
   {
-    std::cout << "[WARNING] Test name \"" << test->name << " already encountered " << std::endl;
+    std::cout << "[WARNING] Test name \"" << test->name << " already encountered " << '\n';
   }
 
   UnitTestDriver::s_driver().test_map[test->name] = test;
@@ -178,7 +178,7 @@ void record_result(const TestResult& test_result, std::vector<TestResult>& test_
 
 void report_results(std::vector<TestResult>& test_results, double elapsed_minutes)
 {
-  std::cout << std::endl;
+  std::cout << '\n';
 
   std::string hline = "================================================================";
 
@@ -199,7 +199,7 @@ void report_results(std::vector<TestResult>& test_results, double elapsed_minute
     }
     else
     {
-      std::cout << hline << std::endl;
+      std::cout << hline << '\n';
 
       switch (tr.status)
       {
@@ -219,25 +219,25 @@ void report_results(std::vector<TestResult>& test_results, double elapsed_minute
           break;
       }
 
-      std::cout << ": " << tr.name << std::endl << tr.message << std::endl;
+      std::cout << ": " << tr.name << '\n' << tr.message << '\n';
     }
   }
 
-  std::cout << hline << std::endl;
+  std::cout << hline << '\n';
 
   std::cout << "Totals: ";
   std::cout << num_failures << " failures, ";
   std::cout << num_known_failures << " known failures, ";
   std::cout << num_errors << " errors, and ";
-  std::cout << num_passes << " passes." << std::endl;
-  std::cout << "Time:  " << elapsed_minutes << " minutes" << std::endl;
+  std::cout << num_passes << " passes." << '\n';
+  std::cout << "Time:  " << elapsed_minutes << " minutes" << '\n';
 }
 
 void UnitTestDriver::list_tests()
 {
   for (TestMap::iterator iter = test_map.begin(); iter != test_map.end(); iter++)
   {
-    std::cout << iter->second->name << std::endl;
+    std::cout << iter->second->name << '\n';
   }
 }
 
@@ -260,13 +260,13 @@ bool UnitTestDriver::run_tests(std::vector<UnitTest*>& tests_to_run, const Argum
 
   if (verbose && concise)
   {
-    std::cout << "--verbose and --concise cannot be used together" << std::endl;
+    std::cout << "--verbose and --concise cannot be used together" << '\n';
     exit(EXIT_FAILURE);
   }
 
   if (!concise)
   {
-    std::cout << "Running " << tests_to_run.size() << " unit tests." << std::endl;
+    std::cout << "Running " << tests_to_run.size() << " unit tests." << '\n';
   }
 
   for (size_t i = 0; i < tests_to_run.size(); i++)
@@ -331,7 +331,7 @@ bool UnitTestDriver::run_tests(std::vector<UnitTest*>& tests_to_run, const Argum
             break;
         }
 
-        std::cout << " " << test.name << std::endl;
+        std::cout << " " << test.name << '\n';
       }
       else
       {
@@ -446,7 +446,7 @@ bool UnitTestDriver::run_tests(const ArgumentSet& args, const ArgumentMap& kwarg
 
       if (matches == 0)
       {
-        std::cout << "[ERROR] found no test names matching the pattern: " << arg << std::endl;
+        std::cout << "[ERROR] found no test names matching the pattern: " << arg << '\n';
         return false;
       }
     }
@@ -498,7 +498,7 @@ int main(int argc, char** argv)
 
   if (kwargs.count("concise"))
   {
-    std::cout << ((passed) ? "PASSED" : "FAILED") << std::endl;
+    std::cout << ((passed) ? "PASSED" : "FAILED") << '\n';
   }
 
   return (passed) ? EXIT_SUCCESS : EXIT_FAILURE;

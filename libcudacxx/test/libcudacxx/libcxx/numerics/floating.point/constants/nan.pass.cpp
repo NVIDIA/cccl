@@ -22,20 +22,20 @@
 TEST_NV_DIAG_SUPPRESS(23) // integer constant is too large
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_nan(cuda::std::__fp_storage_t<Fmt> expected)
+TEST_FUNC void test_fp_nan(cuda::std::__fp_storage_t<Fmt> expected)
 {
   assert(cuda::std::__fp_nan<Fmt>() == expected);
   static_assert(((void) cuda::std::__fp_nan<Fmt>(), true));
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_nan()
+TEST_FUNC void test_fp_nan()
 {
   static_assert(!cuda::std::__fp_has_nan_v<Fmt>);
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::__fp_has_nan_v<cuda::std::__fp_format_of_v<T>>, int> = 0>
-__host__ __device__ void test_fp_nan()
+TEST_FUNC void test_fp_nan()
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
   const auto result  = cuda::std::__fp_nan<T>();
@@ -60,10 +60,10 @@ __host__ __device__ void test_fp_nan()
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::__fp_has_nan_v<cuda::std::__fp_format_of_v<T>>, int> = 0>
-__host__ __device__ void test_fp_nan()
+TEST_FUNC void test_fp_nan()
 {}
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   using namespace test_integer_literals;
 

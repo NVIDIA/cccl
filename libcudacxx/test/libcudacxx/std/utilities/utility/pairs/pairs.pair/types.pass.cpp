@@ -22,8 +22,8 @@
 int main(int, char**)
 {
   using P = cuda::std::pair<float, short*>;
-  static_assert((cuda::std::is_same<P::first_type, float>::value), "");
-  static_assert((cuda::std::is_same<P::second_type, short*>::value), "");
+  static_assert((cuda::std::is_same<P::first_type, float>::value));
+  static_assert((cuda::std::is_same<P::second_type, short*>::value));
 
   return 0;
 }

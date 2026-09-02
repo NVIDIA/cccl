@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::complex<T> c;
   const cuda::std::complex<T> c2(1.5, 2.5);
@@ -61,10 +61,10 @@ int main(int, char**)
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
   return 0;

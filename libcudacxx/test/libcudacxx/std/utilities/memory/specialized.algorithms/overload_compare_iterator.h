@@ -32,7 +32,7 @@ struct overload_compare_iterator
 
   overload_compare_iterator() = default;
 
-  __host__ __device__ explicit overload_compare_iterator(Iterator it)
+  TEST_FUNC explicit overload_compare_iterator(Iterator it)
       : it_(it)
   {}
 
@@ -41,48 +41,48 @@ struct overload_compare_iterator
   overload_compare_iterator& operator=(overload_compare_iterator const&) = default;
   overload_compare_iterator& operator=(overload_compare_iterator&&)      = default;
 
-  __host__ __device__ reference operator*() const noexcept
+  TEST_FUNC reference operator*() const noexcept
   {
     return *it_;
   }
 
-  __host__ __device__ pointer operator->() const noexcept
+  TEST_FUNC pointer operator->() const noexcept
   {
     return cuda::std::addressof(*it_);
   }
 
-  __host__ __device__ overload_compare_iterator& operator++() noexcept
+  TEST_FUNC overload_compare_iterator& operator++() noexcept
   {
     ++it_;
     return *this;
   }
 
-  __host__ __device__ overload_compare_iterator operator++(int) const noexcept
+  TEST_FUNC overload_compare_iterator operator++(int) const noexcept
   {
     overload_compare_iterator old(*this);
     ++(*this);
     return old;
   }
 
-  __host__ __device__ bool operator==(overload_compare_iterator const& other) const noexcept
+  TEST_FUNC bool operator==(overload_compare_iterator const& other) const noexcept
   {
     return this->it_ == other.it_;
   }
 
-  __host__ __device__ bool operator!=(overload_compare_iterator const& other) const noexcept
+  TEST_FUNC bool operator!=(overload_compare_iterator const& other) const noexcept
   {
     return !this->operator==(other);
   }
 
   // Hostile overloads
   template <class Sentinel>
-  __host__ __device__ friend bool operator==(overload_compare_iterator const& lhs, Sentinel const& rhs) noexcept
+  TEST_FUNC friend bool operator==(overload_compare_iterator const& lhs, Sentinel const& rhs) noexcept
   {
     return static_cast<Iterator const&>(lhs) == rhs;
   }
 
   template <class Sentinel>
-  __host__ __device__ friend bool operator!=(overload_compare_iterator const& lhs, Sentinel const& rhs) noexcept
+  TEST_FUNC friend bool operator!=(overload_compare_iterator const& lhs, Sentinel const& rhs) noexcept
   {
     return static_cast<Iterator const&>(lhs) != rhs;
   }

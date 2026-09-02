@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// CONSTEXPR_STEPS: 15000000
+
 // <algorithm>
 
 // template<RandomAccessIterator Iter>
@@ -22,8 +24,9 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int orig[15] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
   T work[15]   = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
@@ -53,7 +56,8 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+_CCCL_EXEC_CHECK_DISABLE
+TEST_FUNC constexpr bool test()
 {
   int i = 42;
   cuda::std::partial_sort(&i, &i, &i); // no-op
@@ -65,6 +69,13 @@ __host__ __device__ constexpr bool test()
   test<MoveOnly, random_access_iterator<MoveOnly*>>();
   test<MoveOnly, MoveOnly*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<int, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
+  NV_IF_TARGET(NV_IS_DEVICE, (test<int, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
+
   return true;
 }
 
@@ -72,7 +83,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

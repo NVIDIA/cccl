@@ -17,6 +17,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -132,11 +136,11 @@ struct logical_data_state
 
   // Task currently making a write access : future readers or writer will
   // have to wait for it (RaW or WaW accesses)
-  ::std::optional<task> current_writer;
+  ::cuda::std::optional<task> current_writer;
 
   // Previous writer which all new readers will need to sync with (RaW accesses)
   // We use a vector so that we don't store a null task
-  ::std::optional<task> previous_writer;
+  ::cuda::std::optional<task> previous_writer;
 
   /* If we are tracing dependencies to generate a DOT output, we keep track
    * of the identifiers of the tasks which performed a reduction access on
@@ -224,6 +228,9 @@ public:
     inst.reclaimable = false;
   }
 
+  // erase() writes data back and unfreezes it. A failure part-way through leaves the data
+  // in a state no caller could recover from, so terminating is the intended outcome.
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   ~logical_data_untyped_impl()
   {
     erase();
@@ -302,7 +309,7 @@ public:
   // destroyed. This assumed all dependencies are solved by other means (eg.
   // because it is used within other tasks)
   bool automatic_unfreeze = false;
-  ::std::optional<task> unfreeze_fake_task;
+  ::cuda::std::optional<task> unfreeze_fake_task;
 
   // This defines how to allocate/deallocate raw buffers (ptr+size) within
   // the interface, if undefined (set to nullptr), then the default allocator
@@ -422,11 +429,11 @@ public:
             instance_id_t dst_node = dst_place.memory_node;
 
             // Force initialization
-            auto& machine = reserved::machine::instance();
+            auto& mach = ::cuda::experimental::places::reserved::machine::instance();
 
             // We iterate over nodes, in an order that is could improve locality
             for (int n = 0; n < nnodes(); n++) {
-                int n_aux = machine.get_ith_closest_node(dst_node, n);
+                int n_aux = mach.get_ith_closest_node(dst_node, n);
                 if (get_data_instance(n_aux).get_msir() != reserved::msir_state_id::invalid) {
                     return data_place(n_aux);
                 }
@@ -937,8 +944,12 @@ class logical_data_untyped
 public:
   ///@{
   /** @name Constructors */
+
+  /// @brief Default constructor.
   logical_data_untyped() = default;
 
+  /// @brief Constructs a logical_data_untyped from an existing implementation.
+  /// @param p Shared implementation pointer.
   logical_data_untyped(::std::shared_ptr<reserved::logical_data_untyped_impl> p)
       : pimpl(mv(p))
   {}
@@ -1044,6 +1055,42 @@ public:
     pimpl->freeze(freeze_mode, place);
   }
 
+  /**
+   * @brief Adopt an externally managed, already-valid instance of this
+   * logical data at `place`.
+   *
+   * The instance is registered as a valid SHARED copy: it will never be
+   * allocated, populated, reclaimed or deallocated by the library, and the
+   * reference instance is downgraded from modified to shared since it is no
+   * longer the unique valid copy. This is the import primitive for
+   * replicated data: a nested context created from one frozen member
+   * instance can adopt the remaining members so that a read at the
+   * replicated place resolves without issuing any copy.
+   *
+   * Only sound for read-only imports: writing through any instance of this
+   * logical data would invalidate copies the library does not own.
+   */
+  template <typename T>
+  void adopt_shared_instance(T view, const data_place& place)
+  {
+    const instance_id_t id             = find_instance_id(place);
+    pimpl->dinterface->instance<T>(id) = mv(view);
+    auto& inst                         = pimpl->get_data_instance(id);
+    inst.set_msir(reserved::msir_state_id::shared);
+    inst.set_allocated(true);
+    inst.reclaimable = false;
+    if (pimpl->ctx.has_start_events())
+    {
+      inst.add_read_prereq(pimpl->ctx, pimpl->ctx.get_start_events());
+    }
+    // The reference instance is no longer the unique valid copy
+    auto& ref = pimpl->get_data_instance(pimpl->reference_instance_id);
+    if (ref.get_msir() == reserved::msir_state_id::modified)
+    {
+      ref.set_msir(reserved::msir_state_id::shared);
+    }
+  }
+
   template <typename T>
   ::std::pair<T, event_list> get_frozen(task& fake_task, const data_place& dplace, access_mode m)
   {
@@ -1072,7 +1119,6 @@ public:
   /**
    * @brief Allocate memory for this logical data
    *
-   * @param ctx
    * @param memory_node
    * @param instance_id
    * @param s
@@ -1091,7 +1137,6 @@ public:
   /**
    * @brief Deallocate memory previously allocated with `allocate`
    *
-   * @param ctx
    * @param memory_node
    * @param instance_id
    * @param extra_args
@@ -1105,12 +1150,10 @@ public:
   /**
    * @brief Copy data
    *
-   * @param ctx
    * @param dst_node
    * @param dst_instance_id
    * @param src_node
    * @param src_instance_id
-   * @param arg
    * @param prereqs
    */
   void data_copy(const data_place& dst_node,
@@ -1125,7 +1168,6 @@ public:
   /**
    * @brief Writes back data
    *
-   * @param ctx
    * @param src_node
    * @param instance_id
    * @param prereqs
@@ -1215,7 +1257,7 @@ public:
    * @return task_dep_untyped The dependency object corresponding to this logical data
    */
   ///@{
-  task_dep_untyped read(data_place dp = data_place::affine())
+  task_dep_untyped read(data_place dp = data_place::affine()) const
   {
     return task_dep_untyped(*this, access_mode::read, mv(dp));
   }
@@ -1467,8 +1509,7 @@ public:
         continue;
       }
 
-      // TODO THIS MAY BE A BUG: do we care about managed devices or host?
-      const auto memory_node = data_place::device(static_cast<int>(n - 2));
+      const auto memory_node = from_index(n);
       // Skip the target memory node in this step
       if (memory_node == target_memory_node)
       {
@@ -1482,9 +1523,10 @@ public:
       // typically change the current device if needed, or select an
       // appropriate affinity mask.
 
-      exec_place e_place_n = memory_node.get_affine_exec_place();
+      exec_place e_place_n = memory_node.affine_exec_place();
 
-      auto saved_place = e_place_n.activate();
+      // Activate the execution place - automatically restores when active goes out of scope
+      auto active = e_place_n.activate();
 
       // Reduce instances if there are more than one
       if (per_node[n].size() > 1)
@@ -1563,9 +1605,7 @@ public:
         per_node[to_index(target_memory_node)].push_back(copy_instance_id);
       }
 
-      // Restore the execution place to its previous state (e.g. current CUDA device)
-      // fprintf(stderr, "RESET CTX\n");
-      e_place_n.deactivate(saved_place);
+      // Execution place automatically restored when 'active' goes out of scope
     }
 
     if (per_node[to_index(target_memory_node)].size() > 1)
@@ -1732,7 +1772,8 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
-      auto e                       = ref_dplace.get_affine_exec_place();
+      _CCCL_ASSERT(ref_dplace.is_resolved(), "ref_dplace must be resolved before erase");
+      auto e = ref_dplace.affine_exec_place();
       l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;
@@ -1851,7 +1892,7 @@ inline event_list enforce_stf_deps_before(
   const instance_id_t instance_id,
   const task_type& task,
   const access_mode mode,
-  const ::std::optional<exec_place> eplace)
+  const ::cuda::std::optional<exec_place> eplace)
 {
   auto result  = event_list();
   auto& ctx_st = bctx.get_state();
@@ -1902,7 +1943,7 @@ inline event_list enforce_stf_deps_before(
   const bool write = (mode == access_mode::rw || mode == access_mode::write);
 
   // ::std::cout << "Notifying " << (write?"W":"R") << " access on " << get_symbol() << " by task " <<
-  // task->get_symbol() << ::std::endl;
+  // task->get_symbol() << ::'\n';
   if (write)
   {
     if (ctx_.current_mode == access_mode::write)
@@ -1978,7 +2019,7 @@ inline event_list enforce_stf_deps_before(
       }
 
       ctx_.current_mode = access_mode::none;
-      // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
+      // ::std::cout << "CHANGING to FALSE for " << symbol << ::'\n';
     }
     else if (ctx_.previous_writer.has_value())
     {
@@ -2031,7 +2072,7 @@ inline void fetch_data(
   const instance_id_t instance_id,
   task& t,
   access_mode mode,
-  const ::std::optional<exec_place> eplace,
+  const ::cuda::std::optional<exec_place> eplace,
   const data_place& dplace,
   event_list& result)
 {
@@ -2078,12 +2119,12 @@ reserved::logical_data_untyped_impl::get_frozen(task& fake_task, const data_plac
   // deps !). Then, if the data wasn't available on the data place, it can be
   // allocated and a copy from a valid source can be made.
   // This will also update the MSI states of the logical data instances.
-  reserved::fetch_data(ctx, d, id, fake_task, m, ::std::nullopt, dplace, prereqs);
+  reserved::fetch_data(ctx, d, id, fake_task, m, ::cuda::std::nullopt, dplace, prereqs);
 
   // Make sure we now have a valid copy (unless this is a token, because
   // fetch_data will only enforce dependencies and will not move or allocate
   // data)
-  if constexpr (!::std::is_same_v<T, void_interface>)
+  if constexpr (!::cuda::std::is_same_v<T, void_interface>)
   {
     assert(used_instances[int(id)].is_allocated());
     assert(used_instances[int(id)].get_msir() != reserved::msir_state_id::invalid);
@@ -2139,7 +2180,7 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
 
 inline void backend_ctx_untyped::impl::print_logical_data_summary() const
 {
-  ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
+  ::std::scoped_lock guard(logical_data_ids_mutex);
 
   fprintf(stderr, "Context current logical data summary\n");
   fprintf(stderr, "====================================\n");
@@ -2312,7 +2353,6 @@ public:
    * @param ctx Backend context
    * @param instance Reference instance used for initializing this logical data
    * @param dp Data place
-   * @param data_prereq
    */
   template <typename U>
   logical_data(backend_ctx_untyped ctx, ::std::shared_ptr<U> instance, data_place dp)
@@ -2324,8 +2364,8 @@ public:
                   "Cannot add state here because it would be lost through slicing");
 
     EXPECT(get_ctx());
-    static_assert(::std::is_same_v<T, typename U::element_type>);
-    static_assert(::std::is_same_v<shape_of<T>, typename U::shape_t>);
+    static_assert(::cuda::std::is_same_v<T, typename U::element_type>);
+    static_assert(::cuda::std::is_same_v<shape_of<T>, typename U::shape_t>);
   }
 
   ///@{ @name Execution place getter
@@ -2381,31 +2421,31 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = readonly_type_of<T>;
-    return task_dep<U, ::std::monostate, false>(*this, access_mode::read, ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::cuda::std::monostate, false>(*this, access_mode::read, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto write(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::write, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto rw(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::rw, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto relaxed(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::cuda::std::monostate, false>(*this, access_mode::relaxed, ::cuda::std::forward<Pack>(pack)...);
   }
 
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::cuda::std::forward<Pack>(pack)...);
   }
 
   /* If we do not pass the no_init{} tag type there, this is going to
@@ -2413,7 +2453,7 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, Pack&&... pack)
   {
-    return task_dep<T, Op, true>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, true>(*this, access_mode::reduce, ::cuda::std::forward<Pack>(pack)...);
   }
 
   ///@}
@@ -2477,7 +2517,7 @@ inline void reclaim_memory(
   for (int pass = first_pass; (reclaimed_s < requested_s) && (eligible_data_size < requested_s) && (pass <= 2); pass++)
   {
     // Get the table of all logical data ids used in this context (the parent of the task)
-    ::std::lock_guard<::std::mutex> guard(ctx_state.logical_data_ids_mutex);
+    ::std::scoped_lock guard(ctx_state.logical_data_ids_mutex);
     auto& logical_data_ids = ctx_state.logical_data_ids;
     for (auto& e : logical_data_ids)
     {

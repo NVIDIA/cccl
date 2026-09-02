@@ -36,7 +36,7 @@ struct nearly_vector
   using value_type = T;
   using iterator   = T*;
 
-  __host__ __device__ nearly_vector(size_t N)
+  TEST_FUNC nearly_vector(size_t N)
       : size_(N)
       , ptr_(::new T[size_])
   {
@@ -46,38 +46,38 @@ struct nearly_vector
     }
   }
 
-  __host__ __device__ ~nearly_vector()
+  TEST_FUNC ~nearly_vector()
   {
     ::delete[] ptr_;
   }
 
-  __host__ __device__ T* begin() noexcept
+  TEST_FUNC T* begin() noexcept
   {
     return ptr_;
   }
-  __host__ __device__ const T* begin() const noexcept
+  TEST_FUNC const T* begin() const noexcept
   {
     return ptr_;
   }
-  __host__ __device__ T* end() noexcept
+  TEST_FUNC T* end() noexcept
   {
     return ptr_ + size_;
   }
-  __host__ __device__ const T* end() const noexcept
+  TEST_FUNC const T* end() const noexcept
   {
     return ptr_ + size_;
   }
 
-  __host__ __device__ size_t size() const noexcept
+  TEST_FUNC size_t size() const noexcept
   {
     return size_;
   }
 
-  __host__ __device__ T& operator[](size_t index) noexcept
+  TEST_FUNC T& operator[](size_t index) noexcept
   {
     return ptr_[index];
   }
-  __host__ __device__ const T& operator[](size_t index) const noexcept
+  TEST_FUNC const T& operator[](size_t index) const noexcept
   {
     return ptr_[index];
   }
@@ -87,7 +87,7 @@ struct nearly_vector
 };
 
 template <class Container, class RI>
-__host__ __device__ void test_sort_helper(RI f, RI l)
+TEST_FUNC void test_sort_helper(RI f, RI l)
 {
   if (f != l)
   {
@@ -103,19 +103,19 @@ __host__ __device__ void test_sort_helper(RI f, RI l)
 }
 
 template <class T>
-__host__ __device__ void set_value(T& dest, int value)
+TEST_FUNC void set_value(T& dest, int value)
 {
   dest = value;
 }
 
-__host__ __device__ void set_value(cuda::std::pair<int, int>& dest, int value)
+TEST_FUNC void set_value(cuda::std::pair<int, int>& dest, int value)
 {
   dest.first  = value;
   dest.second = value;
 }
 
 template <class Container, class RI>
-__host__ __device__ void test_sort_driver_driver(RI f, RI l, int start, RI real_last)
+TEST_FUNC void test_sort_driver_driver(RI f, RI l, int start, RI real_last)
 {
   for (RI i = l; i > f + start;)
   {
@@ -132,13 +132,13 @@ __host__ __device__ void test_sort_driver_driver(RI f, RI l, int start, RI real_
 }
 
 template <class Container, class RI>
-__host__ __device__ void test_sort_driver(RI f, RI l, int start)
+TEST_FUNC void test_sort_driver(RI f, RI l, int start)
 {
   test_sort_driver_driver<Container>(f, l, start, l);
 }
 
 template <class Container, int sa>
-__host__ __device__ void test_sort_()
+TEST_FUNC void test_sort_()
 {
   Container ia(sa);
   for (int i = 0; i < sa; ++i)
@@ -148,12 +148,12 @@ __host__ __device__ void test_sort_()
 }
 
 template <class T>
-__host__ __device__ T increment_or_reset(T value, int max_value)
+TEST_FUNC T increment_or_reset(T value, int max_value)
 {
   return value == max_value - 1 ? 0 : value + 1;
 }
 
-__host__ __device__ cuda::std::pair<int, int> increment_or_reset(cuda::std::pair<int, int> value, int max_value)
+TEST_FUNC cuda::std::pair<int, int> increment_or_reset(cuda::std::pair<int, int> value, int max_value)
 {
   int new_value = value.first + 1;
   if (new_value == max_value)
@@ -164,7 +164,7 @@ __host__ __device__ cuda::std::pair<int, int> increment_or_reset(cuda::std::pair
 }
 
 template <class Container, int N>
-__host__ __device__ void test_larger_sorts(int M)
+TEST_FUNC void test_larger_sorts(int M)
 {
   using Iter      = typename Container::iterator;
   using ValueType = typename Container::value_type;
@@ -216,7 +216,7 @@ __host__ __device__ void test_larger_sorts(int M)
 }
 
 template <class Container, int N>
-__host__ __device__ void test_larger_sorts()
+TEST_FUNC void test_larger_sorts()
 {
   test_larger_sorts<Container, N>(1);
   test_larger_sorts<Container, N>(2);
@@ -229,7 +229,7 @@ __host__ __device__ void test_larger_sorts()
   test_larger_sorts<Container, N>(N);
 }
 
-__host__ __device__ void test_pointer_sort()
+TEST_FUNC void test_pointer_sort()
 {
   static const int array_size = 10;
   const int v[array_size]     = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -245,7 +245,7 @@ __host__ __device__ void test_pointer_sort()
 }
 
 template <class Container>
-__host__ __device__ void run_sort_tests()
+TEST_FUNC void run_sort_tests()
 {
   // test null range
   using ValueType = typename Container::value_type;

@@ -21,9 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__iterator/counting_iterator.h>
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/generate.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -55,15 +56,17 @@ generate([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Inpu
                 "cuda::std::generate requires InputIterator to be indirectly writable with the return value of "
                 "Generator");
 
-  if (__first == __last)
-  {
-    return;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__generate_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::generate");
+
+    if (__first == __last)
+    {
+      return;
+    }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     (void) __dispatch(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__gen));
   }
@@ -80,6 +83,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_GENERATE_H

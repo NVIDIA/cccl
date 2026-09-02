@@ -41,7 +41,7 @@ void print(const String& s, const Vector& v)
   {
     std::cout << " " << e;
   }
-  std::cout << " ]" << std::endl;
+  std::cout << " ]" << '\n';
 }
 
 template <typename Vector>
@@ -131,7 +131,7 @@ void SetIntersectionSize(const Vector& A, const Vector& B)
 
   C_end = thrust::set_intersection(A.begin(), A.end(), B.begin(), B.end(), C_begin);
 
-  std::cout << "SetIntersectionSize(A,B) " << (C_end - C_begin) << std::endl;
+  std::cout << "SetIntersectionSize(A,B) " << (C_end - C_begin) << '\n';
 }
 
 int main()

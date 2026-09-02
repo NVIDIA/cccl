@@ -23,25 +23,25 @@ struct PODIter
   using value_type        = int;
   using difference_type   = intptr_t;
 
-  __host__ __device__ constexpr int operator*() const
+  TEST_FUNC constexpr int operator*() const
   {
     return i;
   }
 
-  __host__ __device__ constexpr PODIter& operator++()
+  TEST_FUNC constexpr PODIter& operator++()
   {
     return *this;
   }
-  __host__ __device__ constexpr void operator++(int) {}
+  TEST_FUNC constexpr void operator++(int) {}
 
 #if TEST_STD_VER >= 2020
-  __host__ __device__ friend constexpr bool operator==(const PODIter&, const PODIter&) = default;
+  TEST_FUNC friend constexpr bool operator==(const PODIter&, const PODIter&) = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool operator==(const PODIter& lhs, const PODIter& rhs)
+  TEST_FUNC friend constexpr bool operator==(const PODIter& lhs, const PODIter& rhs)
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool operator!=(const PODIter& lhs, const PODIter& rhs)
+  TEST_FUNC friend constexpr bool operator!=(const PODIter& lhs, const PODIter& rhs)
   {
     return lhs.i != rhs.i;
   }
@@ -52,7 +52,7 @@ struct IterNotDefaultConstructible
 {
   int i; // deliberately uninitialised
 
-  __host__ __device__ constexpr IterNotDefaultConstructible(const int val) noexcept
+  TEST_FUNC constexpr IterNotDefaultConstructible(const int val) noexcept
       : i(val)
   {}
 
@@ -60,27 +60,27 @@ struct IterNotDefaultConstructible
   using value_type        = int;
   using difference_type   = intptr_t;
 
-  __host__ __device__ constexpr int operator*() const
+  TEST_FUNC constexpr int operator*() const
   {
     return i;
   }
 
-  __host__ __device__ constexpr IterNotDefaultConstructible& operator++()
+  TEST_FUNC constexpr IterNotDefaultConstructible& operator++()
   {
     return *this;
   }
-  __host__ __device__ constexpr void operator++(int) {}
+  TEST_FUNC constexpr void operator++(int) {}
 
 #if TEST_STD_VER >= 2020
-  __host__ __device__ friend constexpr bool
+  TEST_FUNC friend constexpr bool
   operator==(const IterNotDefaultConstructible&, const IterNotDefaultConstructible&) = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool
+  TEST_FUNC friend constexpr bool
   operator==(const IterNotDefaultConstructible& lhs, const IterNotDefaultConstructible& rhs)
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool
+  TEST_FUNC friend constexpr bool
   operator!=(const IterNotDefaultConstructible& lhs, const IterNotDefaultConstructible& rhs)
   {
     return lhs.i != rhs.i;
@@ -92,7 +92,7 @@ struct IterNotDefaultConstructibleSized
 {
   int i; // deliberately uninitialised
 
-  __host__ __device__ constexpr IterNotDefaultConstructibleSized(const int val) noexcept
+  TEST_FUNC constexpr IterNotDefaultConstructibleSized(const int val) noexcept
       : i(val)
   {}
 
@@ -102,34 +102,34 @@ struct IterNotDefaultConstructibleSized
   using pointer           = int*;
   using reference         = int&;
 
-  __host__ __device__ constexpr int operator*() const
+  TEST_FUNC constexpr int operator*() const
   {
     return i;
   }
 
-  __host__ __device__ constexpr IterNotDefaultConstructibleSized& operator++()
+  TEST_FUNC constexpr IterNotDefaultConstructibleSized& operator++()
   {
     return *this;
   }
-  __host__ __device__ constexpr void operator++(int) {}
+  TEST_FUNC constexpr void operator++(int) {}
 
 #if TEST_STD_VER >= 2020
-  __host__ __device__ friend constexpr bool
+  TEST_FUNC friend constexpr bool
   operator==(const IterNotDefaultConstructibleSized&, const IterNotDefaultConstructibleSized&) = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool
+  TEST_FUNC friend constexpr bool
   operator==(const IterNotDefaultConstructibleSized& lhs, const IterNotDefaultConstructibleSized& rhs)
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool
+  TEST_FUNC friend constexpr bool
   operator!=(const IterNotDefaultConstructibleSized& lhs, const IterNotDefaultConstructibleSized& rhs)
   {
     return lhs.i != rhs.i;
   }
 #endif // TEST_STD_VER <=2017
 
-  __host__ __device__ friend constexpr difference_type
+  TEST_FUNC friend constexpr difference_type
   operator-(const IterNotDefaultConstructibleSized& x, const IterNotDefaultConstructibleSized& y)
   {
     return x.i - y.i;
@@ -149,41 +149,39 @@ struct forward_sized_iterator
   using reference         = decltype(*Base{});
 
   forward_sized_iterator() = default;
-  __host__ __device__ constexpr forward_sized_iterator(Base it)
+  TEST_FUNC constexpr forward_sized_iterator(Base it)
       : it_(it)
   {}
 
-  __host__ __device__ constexpr reference operator*() const
+  TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ constexpr forward_sized_iterator& operator++()
+  TEST_FUNC constexpr forward_sized_iterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr forward_sized_iterator operator++(int)
+  TEST_FUNC constexpr forward_sized_iterator operator++(int)
   {
     return forward_sized_iterator(it_++);
   }
 
 #if TEST_STD_VER >= 2020
-  __host__ __device__ friend constexpr bool
-  operator==(const forward_sized_iterator&, const forward_sized_iterator&) = default;
+  TEST_FUNC friend constexpr bool operator==(const forward_sized_iterator&, const forward_sized_iterator&) = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool operator==(const forward_sized_iterator& x, const forward_sized_iterator& y)
+  TEST_FUNC friend constexpr bool operator==(const forward_sized_iterator& x, const forward_sized_iterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const forward_sized_iterator& x, const forward_sized_iterator& y)
+  TEST_FUNC friend constexpr bool operator!=(const forward_sized_iterator& x, const forward_sized_iterator& y)
   {
     return x.it_ != y.it_;
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ friend constexpr difference_type
-  operator-(const forward_sized_iterator& x, const forward_sized_iterator& y)
+  TEST_FUNC friend constexpr difference_type operator-(const forward_sized_iterator& x, const forward_sized_iterator& y)
   {
     return x.it_ - y.it_;
   }
@@ -203,63 +201,57 @@ struct iter_move_swap_iterator
   using value_type        = int;
   using difference_type   = intptr_t;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20
-  iter_move_swap_iterator(int& move_called, int& swap_called, int val = 0) noexcept
+  TEST_FUNC TEST_CONSTEXPR_CXX20 iter_move_swap_iterator(int& move_called, int& swap_called, int val = 0) noexcept
       : iter_move_called_times(move_called)
       , iter_swap_called_times(swap_called)
       , i(val)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 int operator*() const
+  TEST_FUNC TEST_CONSTEXPR_CXX20 int operator*() const
   {
     return i;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 iter_move_swap_iterator& operator++()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 iter_move_swap_iterator& operator++()
   {
     ++i;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void operator++(int)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 void operator++(int)
   {
     ++i;
   }
 
 #if TEST_STD_VER >= 2020
-  __host__ __device__ friend TEST_CONSTEXPR_CXX20 bool
-  operator==(const iter_move_swap_iterator& x, cuda::std::default_sentinel_t)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX20 bool operator==(const iter_move_swap_iterator& x, cuda::std::default_sentinel_t)
   {
     return x.i == 5;
   }
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend TEST_CONSTEXPR_CXX20 bool
-  operator==(const iter_move_swap_iterator& x, cuda::std::default_sentinel_t)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX20 bool operator==(const iter_move_swap_iterator& x, cuda::std::default_sentinel_t)
   {
     return x.i == 5;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX20 bool
-  operator==(cuda::std::default_sentinel_t, const iter_move_swap_iterator& x)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX20 bool operator==(cuda::std::default_sentinel_t, const iter_move_swap_iterator& x)
   {
     return x.i == 5;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX20 bool
-  operator!=(const iter_move_swap_iterator& x, cuda::std::default_sentinel_t)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX20 bool operator!=(const iter_move_swap_iterator& x, cuda::std::default_sentinel_t)
   {
     return x.i != 5;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX20 bool
-  operator!=(cuda::std::default_sentinel_t, const iter_move_swap_iterator& x)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX20 bool operator!=(cuda::std::default_sentinel_t, const iter_move_swap_iterator& x)
   {
     return x.i != 5;
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX20 int iter_move(iter_move_swap_iterator const& it)
+  TEST_FUNC friend TEST_CONSTEXPR_CXX20 int iter_move(iter_move_swap_iterator const& it)
   {
     ++it.iter_move_called_times;
     return it.i;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX20 void
+  TEST_FUNC friend TEST_CONSTEXPR_CXX20 void
   iter_swap(iter_move_swap_iterator const& x, iter_move_swap_iterator const& y)
   {
     ++x.iter_swap_called_times;
@@ -278,7 +270,7 @@ struct LessThanIterator
 {
   int* it_           = nullptr;
   LessThanIterator() = default;
-  __host__ __device__ constexpr LessThanIterator(int* it)
+  TEST_FUNC constexpr LessThanIterator(int* it)
       : it_(it)
   {}
 
@@ -286,77 +278,77 @@ struct LessThanIterator
   using value_type        = int;
   using difference_type   = intptr_t;
 
-  __host__ __device__ constexpr int& operator*() const
+  TEST_FUNC constexpr int& operator*() const
   {
     return *it_;
   }
-  __host__ __device__ constexpr int& operator[](difference_type n) const
+  TEST_FUNC constexpr int& operator[](difference_type n) const
   {
     return it_[n];
   }
-  __host__ __device__ constexpr LessThanIterator& operator++()
+  TEST_FUNC constexpr LessThanIterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr LessThanIterator& operator--()
+  TEST_FUNC constexpr LessThanIterator& operator--()
   {
     --it_;
     return *this;
   }
-  __host__ __device__ constexpr LessThanIterator operator++(int)
+  TEST_FUNC constexpr LessThanIterator operator++(int)
   {
     return LessThanIterator(it_++);
   }
-  __host__ __device__ constexpr LessThanIterator operator--(int)
+  TEST_FUNC constexpr LessThanIterator operator--(int)
   {
     return LessThanIterator(it_--);
   }
 
-  __host__ __device__ constexpr LessThanIterator& operator+=(difference_type n)
+  TEST_FUNC constexpr LessThanIterator& operator+=(difference_type n)
   {
     it_ += n;
     return *this;
   }
-  __host__ __device__ constexpr LessThanIterator& operator-=(difference_type n)
+  TEST_FUNC constexpr LessThanIterator& operator-=(difference_type n)
   {
     it_ -= n;
     return *this;
   }
 
-  __host__ __device__ constexpr friend LessThanIterator operator+(LessThanIterator x, difference_type n)
+  TEST_FUNC constexpr friend LessThanIterator operator+(LessThanIterator x, difference_type n)
   {
     x += n;
     return x;
   }
-  __host__ __device__ constexpr friend LessThanIterator operator+(difference_type n, LessThanIterator x)
+  TEST_FUNC constexpr friend LessThanIterator operator+(difference_type n, LessThanIterator x)
   {
     x += n;
     return x;
   }
-  __host__ __device__ constexpr friend LessThanIterator operator-(LessThanIterator x, difference_type n)
+  TEST_FUNC constexpr friend LessThanIterator operator-(LessThanIterator x, difference_type n)
   {
     x -= n;
     return x;
   }
-  __host__ __device__ constexpr friend difference_type operator-(LessThanIterator x, LessThanIterator y)
+  TEST_FUNC constexpr friend difference_type operator-(LessThanIterator x, LessThanIterator y)
   {
     return x.it_ - y.it_;
   }
 
-  __host__ __device__ constexpr friend bool operator==(LessThanIterator const& x, LessThanIterator const& y)
+  TEST_FUNC constexpr friend bool operator==(LessThanIterator const& x, LessThanIterator const& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend bool operator!=(LessThanIterator const& x, LessThanIterator const& y);
+  TEST_FUNC friend bool operator!=(LessThanIterator const& x, LessThanIterator const& y);
 
-  __host__ __device__ constexpr friend bool operator<(LessThanIterator const& x, LessThanIterator const& y)
+  TEST_FUNC constexpr friend bool operator<(LessThanIterator const& x, LessThanIterator const& y)
   {
     return x.it_ < y.it_;
   }
-  __host__ __device__ friend bool operator<=(LessThanIterator const&, LessThanIterator const&);
-  __host__ __device__ friend bool operator>(LessThanIterator const&, LessThanIterator const&);
-  __host__ __device__ friend bool operator>=(LessThanIterator const&, LessThanIterator const&);
+  TEST_FUNC friend bool operator<=(LessThanIterator const&, LessThanIterator const&);
+  TEST_FUNC friend bool operator>(LessThanIterator const&, LessThanIterator const&);
+  TEST_FUNC friend bool operator>=(LessThanIterator const&, LessThanIterator const&);
 };
 static_assert(cuda::std::random_access_iterator<LessThanIterator>);
 

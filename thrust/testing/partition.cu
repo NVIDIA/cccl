@@ -272,7 +272,7 @@ struct TestPartitionCopy
     thrust::device_vector<T> d_data = h_data;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
     thrust::host_vector<T> h_true_results(n_true, 0);
@@ -317,7 +317,7 @@ struct TestPartitionCopyStencil
     thrust::device_vector<T> d_stencil = h_stencil;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
     thrust::host_vector<T> h_true_results(n_true, 0);
@@ -362,7 +362,7 @@ struct TestStablePartitionCopyStencil
     thrust::device_vector<T> d_stencil = h_stencil;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
     thrust::host_vector<T> h_true_results(n_true, 0);
@@ -405,7 +405,7 @@ struct TestPartitionCopyToDiscardIterator
     thrust::device_vector<T> d_data = h_data;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::partition_copy(
@@ -479,7 +479,7 @@ struct TestPartitionCopyStencilToDiscardIterator
     thrust::device_vector<T> d_stencil = h_stencil;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::partition_copy(
@@ -624,7 +624,7 @@ struct TestStablePartitionCopy
     thrust::device_vector<T> d_data = h_data;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // setup output ranges
     thrust::host_vector<T> h_true_results(n_true, 0);
@@ -663,7 +663,7 @@ struct TestStablePartitionCopyToDiscardIterator
     thrust::device_vector<T> d_data = h_data;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_data.begin(), h_data.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::stable_partition_copy(
@@ -738,7 +738,7 @@ struct TestStablePartitionCopyStencilToDiscardIterator
     thrust::device_vector<T> d_stencil = h_stencil;
 
     std::ptrdiff_t n_true  = thrust::count_if(h_stencil.begin(), h_stencil.end(), is_even<T>());
-    std::ptrdiff_t n_false = n - n_true;
+    std::ptrdiff_t n_false = static_cast<std::ptrdiff_t>(n - n_true);
 
     // mask both ranges
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> h_result1 = thrust::stable_partition_copy(

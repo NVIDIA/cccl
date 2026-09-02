@@ -17,8 +17,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test_default_constructor()
+TEST_FUNC constexpr void test_default_constructor()
 {
   using C = cuda::complex<T>;
 
@@ -37,7 +39,7 @@ __host__ __device__ constexpr void test_default_constructor()
   assert(v.imag() == T{});
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_default_constructor<float>();
   test_default_constructor<double>();

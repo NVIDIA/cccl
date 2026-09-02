@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: gcc-6
-
 // <cuda/std/tuple>
 
 // template <class T> constexpr size_t tuple_size_v = tuple_size<T>::value;
@@ -20,13 +18,13 @@
 #include "test_macros.h"
 
 template <class Tuple, int Expect>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  static_assert(cuda::std::tuple_size_v<Tuple> == Expect, "");
-  static_assert(cuda::std::tuple_size_v<Tuple> == cuda::std::tuple_size<Tuple>::value, "");
-  static_assert(cuda::std::tuple_size_v<Tuple const> == cuda::std::tuple_size<Tuple>::value, "");
-  static_assert(cuda::std::tuple_size_v<Tuple volatile> == cuda::std::tuple_size<Tuple>::value, "");
-  static_assert(cuda::std::tuple_size_v<Tuple const volatile> == cuda::std::tuple_size<Tuple>::value, "");
+  static_assert(cuda::std::tuple_size_v<Tuple> == Expect);
+  static_assert(cuda::std::tuple_size_v<Tuple> == cuda::std::tuple_size<Tuple>::value);
+  static_assert(cuda::std::tuple_size_v<Tuple const> == cuda::std::tuple_size<Tuple>::value);
+  static_assert(cuda::std::tuple_size_v<Tuple volatile> == cuda::std::tuple_size<Tuple>::value);
+  static_assert(cuda::std::tuple_size_v<Tuple const volatile> == cuda::std::tuple_size<Tuple>::value);
 }
 
 int main(int, char**)

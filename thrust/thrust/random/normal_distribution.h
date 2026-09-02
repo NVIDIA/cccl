@@ -19,9 +19,9 @@
 #include <thrust/random/detail/normal_distribution_base.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__utility/pair.h>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -55,15 +55,15 @@ namespace random
  *    thrust::random::normal_distribution<float> dist(2.0f, 3.5f);
  *
  *    // write a random number to standard output
- *    std::cout << dist(rng) << std::endl;
+ *    std::cout << dist(rng) << '\n';
  *
  *    // write the mean of the distribution, just in case we forgot
- *    std::cout << dist.mean() << std::endl;
+ *    std::cout << dist.mean() << '\n';
  *
  *    // 2.0 is printed
  *
  *    // and the standard deviation
- *    std::cout << dist.stddev() << std::endl;
+ *    std::cout << dist.stddev() << '\n';
  *
  *    // 3.5 is printed
  *

@@ -34,14 +34,14 @@ namespace cuda_cub::detail
 class cuda_error_category : public error_category
 {
 public:
-  inline cuda_error_category() {}
+  inline cuda_error_category() = default;
 
-  inline virtual const char* name() const
+  inline const char* name() const override
   {
     return "cuda";
   }
 
-  inline virtual std::string message(int ev) const
+  inline std::string message(int ev) const override
   {
     char const* const unknown_str  = "unknown error";
     char const* const unknown_name = "cudaErrorUnknown";
@@ -50,7 +50,7 @@ public:
     return std::string(c_name ? c_name : unknown_name) + ": " + (c_str ? c_str : unknown_str);
   }
 
-  inline virtual error_condition default_error_condition(int ev) const
+  inline error_condition default_error_condition(int ev) const override
   {
     using namespace cuda::errc;
 

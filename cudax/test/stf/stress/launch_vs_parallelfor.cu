@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/__stf/places/blocked_partition.cuh>
-#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh>
+#include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <cuda/experimental/stf.cuh>
 

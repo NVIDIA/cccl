@@ -88,13 +88,13 @@ int main()
   {
     std::cout << value << " ";
   }
-  std::cout << "]" << std::endl;
+  std::cout << "]" << '\n';
 
   // print moving averages
-  std::cout << "simple moving averages (window = " << w << ")" << std::endl;
+  std::cout << "simple moving averages (window = " << w << ")" << '\n';
   for (size_t i = 0; i < averages.size(); i++)
   {
-    std::cout << "  [" << std::setw(2) << i << "," << std::setw(2) << (i + w) << ") = " << averages[i] << std::endl;
+    std::cout << "  [" << std::setw(2) << i << "," << std::setw(2) << (i + w) << ") = " << averages[i] << '\n';
   }
 
   return 0;

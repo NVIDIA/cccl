@@ -33,7 +33,7 @@
 #include "test_macros.h"
 
 template <class E>
-__host__ __device__ constexpr void test_layout_mapping_right()
+TEST_FUNC constexpr void test_layout_mapping_right()
 {
   using M = cuda::std::layout_right::template mapping<E>;
   assert(M::is_unique() == true);
@@ -50,11 +50,11 @@ __host__ __device__ constexpr void test_layout_mapping_right()
   static_assert(noexcept(M::is_always_strided()));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_layout_mapping_right<cuda::std::extents<int>>();
-  test_layout_mapping_right<cuda::std::extents<char, 4, 5>>();
+  test_layout_mapping_right<cuda::std::extents<signed char, 4, 5>>();
   test_layout_mapping_right<cuda::std::extents<unsigned, D, 4>>();
   test_layout_mapping_right<cuda::std::extents<size_t, D, D, D, D>>();
   return true;
@@ -63,6 +63,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

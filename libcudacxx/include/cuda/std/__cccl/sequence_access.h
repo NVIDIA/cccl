@@ -24,64 +24,60 @@
 
 // We need to define hidden friends for {cr,r,}{begin,end} of our containers as we will otherwise encounter ambigouities
 #define _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(_ClassName, _ConstIter)                                                       \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend iterator begin(_ClassName& __sequence) noexcept(noexcept(__sequence.begin())) \
+  [[nodiscard]] _CCCL_API friend iterator begin(_ClassName& __sequence) noexcept(noexcept(__sequence.begin()))         \
   {                                                                                                                    \
     return __sequence.begin();                                                                                         \
   }                                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstIter begin(const _ClassName& __sequence) noexcept(                      \
+  [[nodiscard]] _CCCL_API friend _ConstIter begin(const _ClassName& __sequence) noexcept(noexcept(__sequence.begin())) \
+  {                                                                                                                    \
+    return __sequence.begin();                                                                                         \
+  }                                                                                                                    \
+  [[nodiscard]] _CCCL_API friend iterator end(_ClassName& __sequence) noexcept(noexcept(__sequence.end()))             \
+  {                                                                                                                    \
+    return __sequence.end();                                                                                           \
+  }                                                                                                                    \
+  [[nodiscard]] _CCCL_API friend _ConstIter end(const _ClassName& __sequence) noexcept(noexcept(__sequence.end()))     \
+  {                                                                                                                    \
+    return __sequence.end();                                                                                           \
+  }                                                                                                                    \
+  [[nodiscard]] _CCCL_API friend _ConstIter cbegin(const _ClassName& __sequence) noexcept(                             \
     noexcept(__sequence.begin()))                                                                                      \
   {                                                                                                                    \
     return __sequence.begin();                                                                                         \
   }                                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend iterator end(_ClassName& __sequence) noexcept(noexcept(__sequence.end()))     \
-  {                                                                                                                    \
-    return __sequence.end();                                                                                           \
-  }                                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstIter end(const _ClassName& __sequence) noexcept(                        \
-    noexcept(__sequence.end()))                                                                                        \
-  {                                                                                                                    \
-    return __sequence.end();                                                                                           \
-  }                                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstIter cbegin(const _ClassName& __sequence) noexcept(                     \
-    noexcept(__sequence.begin()))                                                                                      \
-  {                                                                                                                    \
-    return __sequence.begin();                                                                                         \
-  }                                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstIter cend(const _ClassName& __sequence) noexcept(                       \
-    noexcept(__sequence.end()))                                                                                        \
+  [[nodiscard]] _CCCL_API friend _ConstIter cend(const _ClassName& __sequence) noexcept(noexcept(__sequence.end()))    \
   {                                                                                                                    \
     return __sequence.end();                                                                                           \
   }
-#define _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(_ClassName, _ConstRevIter)                            \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend reverse_iterator rbegin(_ClassName& __sequence) noexcept(     \
-    noexcept(__sequence.rbegin()))                                                                     \
-  {                                                                                                    \
-    return __sequence.rbegin();                                                                        \
-  }                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstRevIter rbegin(const _ClassName& __sequence) noexcept(  \
-    noexcept(__sequence.rbegin()))                                                                     \
-  {                                                                                                    \
-    return __sequence.rbegin();                                                                        \
-  }                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend reverse_iterator rend(_ClassName& __sequence) noexcept(       \
-    noexcept(__sequence.rend()))                                                                       \
-  {                                                                                                    \
-    return __sequence.rend();                                                                          \
-  }                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstRevIter rend(const _ClassName& __sequence) noexcept(    \
-    noexcept(__sequence.rend()))                                                                       \
-  {                                                                                                    \
-    return __sequence.rend();                                                                          \
-  }                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstRevIter crbegin(const _ClassName& __sequence) noexcept( \
-    noexcept(__sequence.rbegin()))                                                                     \
-  {                                                                                                    \
-    return __sequence.rbegin();                                                                        \
-  }                                                                                                    \
-  [[nodiscard]] _CCCL_HOST_DEVICE friend _ConstRevIter crend(const _ClassName& __sequence) noexcept(   \
-    noexcept(__sequence.rend()))                                                                       \
-  {                                                                                                    \
-    return __sequence.rend();                                                                          \
+#define _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(_ClassName, _ConstRevIter)                                          \
+  [[nodiscard]] _CCCL_API friend reverse_iterator rbegin(_ClassName& __sequence) noexcept(                           \
+    noexcept(__sequence.rbegin()))                                                                                   \
+  {                                                                                                                  \
+    return __sequence.rbegin();                                                                                      \
+  }                                                                                                                  \
+  [[nodiscard]] _CCCL_API friend _ConstRevIter rbegin(const _ClassName& __sequence) noexcept(                        \
+    noexcept(__sequence.rbegin()))                                                                                   \
+  {                                                                                                                  \
+    return __sequence.rbegin();                                                                                      \
+  }                                                                                                                  \
+  [[nodiscard]] _CCCL_API friend reverse_iterator rend(_ClassName& __sequence) noexcept(noexcept(__sequence.rend())) \
+  {                                                                                                                  \
+    return __sequence.rend();                                                                                        \
+  }                                                                                                                  \
+  [[nodiscard]] _CCCL_API friend _ConstRevIter rend(const _ClassName& __sequence) noexcept(                          \
+    noexcept(__sequence.rend()))                                                                                     \
+  {                                                                                                                  \
+    return __sequence.rend();                                                                                        \
+  }                                                                                                                  \
+  [[nodiscard]] _CCCL_API friend _ConstRevIter crbegin(const _ClassName& __sequence) noexcept(                       \
+    noexcept(__sequence.rbegin()))                                                                                   \
+  {                                                                                                                  \
+    return __sequence.rbegin();                                                                                      \
+  }                                                                                                                  \
+  [[nodiscard]] _CCCL_API friend _ConstRevIter crend(const _ClassName& __sequence) noexcept(                         \
+    noexcept(__sequence.rend()))                                                                                     \
+  {                                                                                                                  \
+    return __sequence.rend();                                                                                        \
   }
 
 #endif // __CCCL_SEQUENCE_ACCESS_H

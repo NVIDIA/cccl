@@ -15,7 +15,8 @@ static void benchmark(nvbench::state& state, nvbench::type_list<T>)
   thrust::device_vector<T> b(elements, T{1});
 
   const auto common_prefix = state.get_float64("CommonPrefixRatio");
-  const auto same_elements = std::min(static_cast<std::size_t>(elements * common_prefix), elements);
+  const auto same_elements =
+    std::min(static_cast<std::size_t>(static_cast<double>(elements) * common_prefix), elements);
   caching_allocator_t alloc;
   thrust::fill(policy(alloc), b.begin() + same_elements, b.end(), T{2});
 

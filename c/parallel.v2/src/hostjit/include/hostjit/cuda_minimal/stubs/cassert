@@ -1,0 +1,6 @@
+// Minimal freestanding-mode stub for <cassert>.
+// Just delegate to <assert.h>'s no-op assert.
+#ifndef _HOSTJIT_CASSERT
+#define _HOSTJIT_CASSERT
+#include <assert.h>
+#endif // _HOSTJIT_CASSERT

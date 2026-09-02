@@ -20,11 +20,11 @@
 #define BITSET_TEST_CONSTEXPR constexpr
 
 #define NUMARGS(...) (::cuda::std::tuple_size<decltype(::cuda::std::make_tuple(__VA_ARGS__))>::value)
-#define DEFINE_CASES(N, ...)                                                                                    \
-  __host__ __device__ BITSET_TEST_CONSTEXPR cuda::std::array<const char*, NUMARGS(__VA_ARGS__)> get_test_cases( \
-    cuda::std::integral_constant<int, N>)                                                                       \
-  {                                                                                                             \
-    return {{__VA_ARGS__}};                                                                                     \
+#define DEFINE_CASES(N, ...)                                                                          \
+  TEST_FUNC BITSET_TEST_CONSTEXPR cuda::std::array<const char*, NUMARGS(__VA_ARGS__)> get_test_cases( \
+    cuda::std::integral_constant<int, N>)                                                             \
+  {                                                                                                   \
+    return {{__VA_ARGS__}};                                                                           \
   }
 
 DEFINE_CASES(0, "")

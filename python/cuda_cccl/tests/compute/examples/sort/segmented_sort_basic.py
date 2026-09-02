@@ -27,15 +27,15 @@ d_out_vals = cp.empty_like(d_in_vals)
 
 # Perform the segmented sort (ascending within each segment).
 cuda.compute.segmented_sort(
-    d_in_keys,
-    d_out_keys,
-    d_in_vals,
-    d_out_vals,
-    d_in_keys.size,
-    start_offsets.size,
-    cp.asarray(start_offsets),
-    cp.asarray(end_offsets),
-    cuda.compute.SortOrder.ASCENDING,
+    d_in_keys=d_in_keys,
+    d_out_keys=d_out_keys,
+    d_in_values=d_in_vals,
+    d_out_values=d_out_vals,
+    num_items=d_in_keys.size,
+    num_segments=start_offsets.size,
+    start_offsets_in=cp.asarray(start_offsets),
+    end_offsets_in=cp.asarray(end_offsets),
+    order=cuda.compute.SortOrder.ASCENDING,
 )
 
 # Verify the result.

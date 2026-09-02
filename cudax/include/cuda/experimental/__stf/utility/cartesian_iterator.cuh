@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -20,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <iostream>
 
 namespace cuda::experimental::stf::reserved
 {
@@ -39,7 +41,7 @@ public:
     bool is_end() const { return end_reached; }
 
     CartesianProduct& operator++() {
-        increment_helper(::std::index_sequence_for<Iterators...> {});
+        increment_helper(::cuda::std::index_sequence_for<Iterators...> {});
         end_reached = (current == ends);
         return *this;
     }
@@ -52,7 +54,7 @@ public:
 
 private:
     template <::std::size_t... Is>
-    void increment_helper(::std::index_sequence<Is...>) {
+    void increment_helper(::cuda::std::index_sequence<Is...>) {
         (((::std::get<Is>(current) != ::std::get<Is>(ends) &&
                   ++diagonal > ::std::distance(::std::get<Is>(begins), ::std::get<Is>(current)))
                          ? (++::std::get<Is>(current), 0)
@@ -83,7 +85,7 @@ UNITTEST("cartesian product") {
     while (!product.is_end()) {
         auto tuple = *product;
         ::std::cout << "(" << *(::std::get<0>(tuple)) << ", " << *(::std::get<1>(tuple)) << ", " << *(::std::get<2>(tuple))
-                  << ")" << ::std::endl;
+                  << ")" << ::'\n';
 
         ++product;
     }
@@ -472,7 +474,7 @@ UNITTEST("StridedRange")
     cnt++;
   }
 
-  //    ::std::cout << ::std::endl;
+  //    ::std::cout << ::'\n';
 
   EXPECT(cnt == expected_cnt);
 };
@@ -492,7 +494,7 @@ UNITTEST("StridedRange loop")
       EXPECT(cnt < n);
       cnt++;
     }
-    //        ::std::cout << ::std::endl;
+    //        ::std::cout << ::'\n';
   }
 
   EXPECT(cnt == n);

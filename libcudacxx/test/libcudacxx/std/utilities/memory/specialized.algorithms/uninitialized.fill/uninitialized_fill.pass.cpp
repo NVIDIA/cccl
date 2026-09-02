@@ -23,10 +23,10 @@
 TEST_GLOBAL_VARIABLE int Nasty_count = 0;
 struct Nasty
 {
-  __host__ __device__ Nasty()
+  TEST_FUNC Nasty()
       : i_(Nasty_count++)
   {}
-  __host__ __device__ Nasty* operator&() const
+  TEST_FUNC Nasty* operator&() const
   {
     return nullptr;
   }
@@ -88,6 +88,7 @@ void test_exceptions()
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("Counted_count") cannot be used in tile code
   {
     const int N                  = 5;
     char pool[N * sizeof(Nasty)] = {0};
@@ -100,6 +101,8 @@ int main(int, char**)
       assert(bp[i].i_ == 23);
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
+
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // TEST_HAS_EXCEPTIONS()

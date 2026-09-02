@@ -21,20 +21,20 @@
 TEST_NV_DIAG_SUPPRESS(23) // integer constant is too large
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_denorm_min(cuda::std::__fp_storage_t<Fmt> expected)
+TEST_FUNC void test_fp_denorm_min(cuda::std::__fp_storage_t<Fmt> expected)
 {
   assert(cuda::std::__fp_denorm_min<Fmt>() == expected);
   static_assert(((void) cuda::std::__fp_denorm_min<Fmt>(), true));
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ void test_fp_denorm_min()
+TEST_FUNC void test_fp_denorm_min()
 {
   static_assert(!cuda::std::__fp_has_denorm_v<Fmt>);
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::__fp_has_denorm_v<cuda::std::__fp_format_of_v<T>>, int> = 0>
-__host__ __device__ void test_fp_denorm_min()
+TEST_FUNC void test_fp_denorm_min()
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
   assert(cuda::std::__fp_get_storage(cuda::std::__fp_denorm_min<T>()) == cuda::std::__fp_denorm_min<fmt>());
@@ -42,10 +42,10 @@ __host__ __device__ void test_fp_denorm_min()
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::__fp_has_denorm_v<cuda::std::__fp_format_of_v<T>>, int> = 0>
-__host__ __device__ void test_fp_denorm_min()
+TEST_FUNC void test_fp_denorm_min()
 {}
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   using namespace test_integer_literals;
 

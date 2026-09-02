@@ -24,17 +24,17 @@ _CCCL_CONCEPT HasData = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.data()));
 
 struct ContiguousIters
 {
-  __host__ __device__ contiguous_iterator<int*> begin();
-  __host__ __device__ sentinel_wrapper<contiguous_iterator<int*>> end();
+  TEST_FUNC contiguous_iterator<int*> begin();
+  TEST_FUNC sentinel_wrapper<contiguous_iterator<int*>> end();
 };
 
 struct NoData
 {
-  __host__ __device__ random_access_iterator<int*> begin();
-  __host__ __device__ random_access_iterator<int*> end();
+  TEST_FUNC random_access_iterator<int*> begin();
+  TEST_FUNC random_access_iterator<int*> end();
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using OwningView = cuda::std::ranges::owning_view<ContiguousIters>;

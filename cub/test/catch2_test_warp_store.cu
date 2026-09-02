@@ -5,7 +5,7 @@
 #include <cub/util_arch.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
@@ -23,12 +23,13 @@ __global__ void warp_store_kernel(OutputIteratorT output_iterator, ActionT actio
   constexpr int tile_size = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+  const int tid =
+    cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
   T reg[ITEMS_PER_THREAD];
 
   for (int item = 0; item < ITEMS_PER_THREAD; item++)
   {
-    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item);
+    reg[item] = static_cast<T>(tid * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
   }
 
   const int warp_id = tid / LOGICAL_WARP_THREADS;
@@ -107,8 +108,8 @@ c2h::device_vector<T> compute_reference(int valid_items)
     for (int warp_id = 0; warp_id < TOTAL_WARPS; warp_id++)
     {
       thrust::fill(c2h::device_policy,
-                   d_input.begin() + warp_id * tile_size + valid_items,
-                   d_input.begin() + (warp_id + 1) * tile_size,
+                   d_input.begin() + warp_id * tile_size + valid_items, // NOLINT(bugprone-misplaced-widening-cast)
+                   d_input.begin() + (warp_id + 1) * tile_size, // NOLINT(bugprone-misplaced-widening-cast)
                    T{});
     }
   }
@@ -169,8 +170,9 @@ struct params_t
   static constexpr int total_item_count              = total_warps * tile_size;
 };
 
-C2H_TEST("Warp store guarded range works with pointer",
+CUB_TEST("Warp store guarded range works with pointer",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -190,8 +192,9 @@ C2H_TEST("Warp store guarded range works with pointer",
   REQUIRE(d_expected_output == d_out);
 }
 
-C2H_TEST("Warp store guarded range works with cache modified iterator",
+CUB_TEST("Warp store guarded range works with cache modified iterator",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -213,8 +216,9 @@ C2H_TEST("Warp store guarded range works with cache modified iterator",
   REQUIRE(d_expected_output == d_out);
 }
 
-C2H_TEST("Warp store unguarded range works with pointer",
+CUB_TEST("Warp store unguarded range works with pointer",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -234,8 +238,9 @@ C2H_TEST("Warp store unguarded range works with pointer",
   REQUIRE(d_expected_output == d_out);
 }
 
-C2H_TEST("Warp store unguarded range works with cache modified iterator",
+CUB_TEST("Warp store unguarded range works with cache modified iterator",
          "[store][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -258,8 +263,9 @@ C2H_TEST("Warp store unguarded range works with cache modified iterator",
 }
 
 #if ALGO_TYPE == 3 // cub::WarpStoreAlgorithm::WARP_STORE_VECTORIZE
-C2H_TEST("Vectorized warp store with different alignment cases",
+CUB_TEST("Vectorized warp store with different alignment cases",
          "[store][warp]",
+         CUB_SMALL,
          c2h::type_list<std::int32_t>,
          logical_warp_threads,
          items_per_thread,

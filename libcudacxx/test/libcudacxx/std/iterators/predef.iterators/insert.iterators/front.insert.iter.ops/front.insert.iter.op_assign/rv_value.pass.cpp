@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c)
+TEST_FUNC void test(C c)
 {
   cuda::std::front_insert_iterator<C> i(c);
   i = typename C::value_type();

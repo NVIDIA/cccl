@@ -11,7 +11,7 @@ from textwrap import dedent
 import numpy as np
 
 from .._bindings import Op, OpKind
-from .._cpp_compile import compile_cpp_to_ltoir, cpp_type_from_descriptor
+from .._cpp_compile import compile_cpp_op_code, cpp_type_from_descriptor
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
 from ._common import CUDA_PREAMBLE
@@ -71,11 +71,11 @@ class CountingIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[],
         )
 
@@ -91,11 +91,11 @@ class CountingIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
+            ltoir=code,
             extra_ltoirs=[],
         )
 

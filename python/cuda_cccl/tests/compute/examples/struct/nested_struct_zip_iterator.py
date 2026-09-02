@@ -72,7 +72,9 @@ d_output = cp.empty(1, dtype=Pixel.dtype)
 h_init = Pixel(Point(0, 0), Color(0, 0, 0))
 
 # Perform the reduction on the zipped data
-cuda.compute.reduce_into(zip_it, d_output, sum_pixels, num_items, h_init)
+cuda.compute.reduce_into(
+    d_in=zip_it, d_out=d_output, num_items=num_items, op=sum_pixels, h_init=h_init
+)
 
 # Verify the result
 result = d_output.get()[0]

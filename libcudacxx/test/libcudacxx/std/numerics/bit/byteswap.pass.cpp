@@ -28,10 +28,10 @@ enum class Byte : cuda::std::uint8_t
 {
 };
 
-static_assert(!has_byteswap<void*>::value, "");
-static_assert(!has_byteswap<float>::value, "");
-static_assert(!has_byteswap<char[2]>::value, "");
-static_assert(!has_byteswap<Byte>::value, "");
+static_assert(!has_byteswap<void*>::value);
+static_assert(!has_byteswap<float>::value);
+static_assert(!has_byteswap<char[2]>::value);
+static_assert(!has_byteswap<Byte>::value);
 
 template <class T>
 struct MakeUnsigned
@@ -46,7 +46,7 @@ struct MakeUnsigned<bool>
 };
 
 template <class T>
-__host__ __device__ constexpr void test_num(T in, T expected)
+TEST_FUNC constexpr void test_num(T in, T expected)
 {
   using U = typename MakeUnsigned<T>::type;
 
@@ -63,30 +63,35 @@ struct TestData
 };
 
 template <class T>
-__host__ __device__ constexpr TestData<T> get_test_data()
+TEST_FUNC constexpr TestData<T> get_test_data()
 {
-  switch (sizeof(T))
+  if constexpr (sizeof(T) == 2)
   {
-    case 2:
-      return {static_cast<T>(0x1234), static_cast<T>(0x3412)};
-    case 4:
-      return {static_cast<T>(0x60AF8503), static_cast<T>(0x0385AF60)};
-    case 8:
-      return {static_cast<T>(0xABCDFE9477936406), static_cast<T>(0x0664937794FECDAB)};
-    default:
-      assert(false);
-      cuda::std::unreachable();
+    return {static_cast<T>(0x1234), static_cast<T>(0x3412)};
+  }
+  else if constexpr (sizeof(T) == 4)
+  {
+    return {static_cast<T>(0x60AF8503), static_cast<T>(0x0385AF60)};
+  }
+  else if constexpr (sizeof(T) == 8)
+  {
+    return {static_cast<T>(0xABCDFE9477936406), static_cast<T>(0x0664937794FECDAB)};
+  }
+  else
+  {
+    assert(false);
+    cuda::std::unreachable();
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test_implementation_defined_size()
+TEST_FUNC constexpr void test_implementation_defined_size()
 {
   const auto test_data = get_test_data<T>();
   test_num<T>(test_data.in, test_data.expected);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_num<cuda::std::uint8_t>(0xAB, 0xAB);
   test_num<cuda::std::uint16_t>(0xCDEF, 0xEFCD);
@@ -133,7 +138,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

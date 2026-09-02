@@ -22,19 +22,22 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-constexpr __host__ __device__ bool equalToTwo(const int v) noexcept
+struct equalToTwo
 {
-  return v == 2;
-}
+  TEST_FUNC constexpr bool operator()(const int v) const noexcept
+  {
+    return v == 2;
+  }
+};
 
 template <class InIter, class OutIter>
-constexpr __host__ __device__ void test()
+constexpr TEST_FUNC void test()
 {
   constexpr int N           = 5;
   constexpr int ia[N]       = {0, 1, 2, 3, 4};
   int ib[N + 1]             = {0};
   constexpr int expected[N] = {0, 1, 5, 3, 4};
-  OutIter r                 = cuda::std::replace_copy_if(InIter(ia), InIter(ia + N), OutIter(ib), equalToTwo, 5);
+  OutIter r                 = cuda::std::replace_copy_if(InIter(ia), InIter(ia + N), OutIter(ib), equalToTwo{}, 5);
   assert(base(r) == ib + N);
   for (int i = 0; i < N; ++i)
   {
@@ -47,7 +50,7 @@ constexpr __host__ __device__ void test()
   }
 }
 
-constexpr __host__ __device__ bool test()
+constexpr TEST_FUNC bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*>>();
@@ -85,7 +88,7 @@ constexpr __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

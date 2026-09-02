@@ -79,7 +79,7 @@ constexpr _CCCL_HOST_DEVICE const DerivedPolicy& derived_cast(const execution_po
 //! template<typename Iterator, typename Function>
 //! Iterator for_each(my_policy, Iterator first, Iterator last, Function f)
 //! {
-//!   std::cout << "Hello, world from for_each(my_policy)!" << std::endl;
+//!   std::cout << "Hello, world from for_each(my_policy)!" << '\n';
 //!
 //!   for(; first < last; ++first)
 //!   {

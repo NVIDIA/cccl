@@ -21,13 +21,13 @@
 
 struct test1
 {
-  __host__ __device__ constexpr bool operator()(const int& i) const
+  TEST_FUNC constexpr bool operator()(const int& i) const
   {
     return i % 2 == 0;
   }
 };
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   int ia[] = {1, 3, 6, 7};
   int ib[] = {1, 3, 5, 7};
@@ -62,7 +62,7 @@ int main(int, char**)
            == true);
   }
 
-  static_assert(test_constexpr(), "");
+  static_assert(test_constexpr());
 
   return 0;
 }

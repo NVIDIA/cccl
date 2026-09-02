@@ -30,7 +30,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using month  = cuda::std::chrono::month;
   using months = cuda::std::chrono::months;

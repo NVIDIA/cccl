@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <cuda/__cccl_config>
 
 _CCCL_DIAG_PUSH

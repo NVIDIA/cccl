@@ -27,7 +27,22 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_scoped_enum)
+#  define _CCCL_BUILTIN_IS_SCOPED_ENUM(...) __is_scoped_enum(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_scoped_enum)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if defined(_CCCL_BUILTIN_IS_SCOPED_ENUM)
+
+template <class _Tp>
+inline constexpr bool is_scoped_enum_v = _CCCL_BUILTIN_IS_SCOPED_ENUM(_Tp);
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scoped_enum : bool_constant<_CCCL_BUILTIN_IS_SCOPED_ENUM(_Tp)>
+{};
+
+#else // ^^^ _CCCL_BUILTIN_IS_SCOPED_ENUM ^^^ / vvv !_CCCL_BUILTIN_IS_SCOPED_ENUM vvv
 
 template <class _Tp, bool = is_enum_v<_Tp>>
 inline constexpr bool __cccl_is_scoped_enum_helper_v = false;
@@ -39,8 +54,10 @@ template <class _Tp>
 inline constexpr bool is_scoped_enum_v = __cccl_is_scoped_enum_helper_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scoped_enum : public bool_constant<__cccl_is_scoped_enum_helper_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scoped_enum : bool_constant<__cccl_is_scoped_enum_helper_v<_Tp>>
 {};
+
+#endif // ^^^ !_CCCL_BUILTIN_IS_SCOPED_ENUM ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

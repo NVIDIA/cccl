@@ -15,14 +15,14 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_remove_const_imp()
+TEST_FUNC void test_remove_const_imp()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::remove_const<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::remove_const_t<T>>);
 }
 
 template <class T>
-__host__ __device__ void test_remove_const()
+TEST_FUNC void test_remove_const()
 {
   test_remove_const_imp<T, T>();
   test_remove_const_imp<const T, T>();

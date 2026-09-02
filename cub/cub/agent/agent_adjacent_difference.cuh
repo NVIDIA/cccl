@@ -24,14 +24,16 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int BlockThreads,
+namespace detail
+{
+template <int ThreadsPerBlock,
           int ItemsPerThread                      = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
           cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
-struct AgentAdjacentDifferencePolicy
+struct agent_adjacent_difference_policy
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
@@ -39,6 +41,16 @@ struct AgentAdjacentDifferencePolicy
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
+using AgentAdjacentDifferencePolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference") =
+  detail::agent_adjacent_difference_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 namespace detail::adjacent_difference
 {
@@ -93,7 +105,7 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(LoadIt(input_it))
+      , load_it(try_make_cache_modified_iterator<Policy::LOAD_MODIFIER>(input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)

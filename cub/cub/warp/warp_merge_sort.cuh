@@ -55,9 +55,9 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
+//!        constexpr int threads_per_block = 256;
 //!        constexpr int items_per_thread = 4;
-//!        constexpr int warps_per_block = block_threads / warp_threads;
+//!        constexpr int warps_per_block = threads_per_block / warp_threads;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
 //!        // Specialize WarpMergeSort for a virtual warp of 16 threads

@@ -17,6 +17,7 @@ print_help() {
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
     echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
     echo "  -e, --env list           Set additional container environment variables."
+    echo "  --ulimit ulimit          Ulimit forwarded to the docker run command."
     echo "  -v, --volume list        Bind mount a volume."
     echo "  -h, --help               Display this help message and exit."
 }
@@ -30,9 +31,10 @@ print_help() {
 _upvar() {
     if unset -v "$1"; then
         if (( $# == 2 )); then
-            eval $1=\"\$2\";
+            eval "$1"=\"\$2\";
         else
-            eval $1=\(\"\${@:2}\"\);
+            # shellcheck disable=SC1083
+            eval "$1"=\(\"\${@:2}\"\);
         fi;
     fi
 }
@@ -41,13 +43,33 @@ parse_options() {
     local -;
     set -euo pipefail;
 
+    # Must disable set -e temporarily. Per man getopt:
+    #
+    # [getopt -T] generates no output, and sets the error status to 4. Other
+    # implementations of getopt(1), and this version if the environment variable
+    # GETOPT_COMPATIBLE is set, will return '--' and error status 0.
+    set +e
+    getopt -T >/dev/null 2>&1
+    getopt_ret=$?
+    set -e
+
+    if [[ "${getopt_ret}" != '4' ]]; then
+      echo "Must use enhanced (GNU) version of getopt which understand long options to use this script."
+      echo "Either your version of getopt does not support them or you have GETOPT_COMPATIBLE set."
+      exit 1
+    fi
+
     # Read the name of the variable in which to return unparsed arguments
     local UNPARSED="${!#}";
     # Splice the unparsed arguments variable name from the arguments list
     set -- "${@:1:$#-1}";
+    # Read the name of the variable in which to return docker run arguments
+    local RUN_ARGS="${!#}";
+    # Splice the docker run arguments variable name from the arguments list
+    set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:
-    local LONG_OPTIONS=cuda:,cuda-ext,env:,host:,gpus:,volume:,docker,help
+    local LONG_OPTIONS=cuda:,cuda-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -57,6 +79,15 @@ parse_options() {
     fi
 
     eval set -- "${PARSED_OPTIONS}"
+
+    local -a DOCKER_RUN_ARGS=();
+
+    if command -v code > /dev/null 2>&1 ; then
+      docker_mode=false
+    else
+      # no vscode, default to docker
+      docker_mode=true
+    fi
 
     while true; do
         case "$1" in
@@ -92,6 +123,10 @@ parse_options() {
                 volumes+=("$1" "$2")
                 shift 2
                 ;;
+            --ulimit)
+                DOCKER_RUN_ARGS+=("$1" "$2")
+                shift 2
+                ;;
             --)
                 shift
                 _upvar "${UNPARSED}" "${@}"
@@ -104,12 +139,20 @@ parse_options() {
                 ;;
         esac
     done
+
+    _upvar "${RUN_ARGS}" "${DOCKER_RUN_ARGS[@]}"
 }
 
 # shellcheck disable=SC2155
 launch_docker() {
     local -;
     set -euo pipefail
+
+    if ! docker --version > /dev/null 2>&1 ; then
+      echo "Docker launch requires a working installation of docker."
+      echo "Ensure that 'docker' is reachable on PATH."
+      exit 127
+    fi
 
     ###
     # Read relevant values from devcontainer.json
@@ -119,13 +162,61 @@ launch_docker() {
     # Introduces the `DOCKER_IMAGE`, `ENTRYPOINTS`, `ENV_VARS`, `GPU_REQUEST`,
     # `INITIALIZE_COMMANDS`, `MOUNTS`, `REMOTE_USER`, `RUN_ARGS`, and
     # `WORKSPACE_FOLDER` variables
+    # shellcheck disable=SC2312,SC1090
     source <(python3 .devcontainer/launch.py "${path}/devcontainer.json")
+
+    ###
+    # Worktree support
+    ###
+
+    # In a linked git worktree, `.git` is a file containing
+    #   gitdir: <main-repo>/.git/worktrees/<name>
+    # an absolute host path. The container only mounts the worktree at
+    # /home/coder/cccl, so that gitdir path (and the main .git it links
+    # back to via commondir) is unreachable, and every git operation in
+    # the container fails. Bind-mount the main .git at its host path so
+    # both the absolute gitdir pointer and the relative commondir
+    # resolve inside the container.
+    if [[ -f .git ]]; then
+        local git_common_dir
+        git_common_dir="$(cd "$(git rev-parse --git-common-dir)" && pwd)"
+        MOUNTS+=(--mount "source=${git_common_dir},target=${git_common_dir},type=bind")
+
+        # The devcontainer mounts ${localWorkspaceFolder}/.config to
+        # /home/coder/.config, which in a fresh worktree has no gh/ subdir,
+        # so devcontainer-utils-init-git triggers an interactive
+        # `gh auth login` device flow on startup. Share the main checkout's
+        # .config/gh (where the host's gh auth lives, populated by prior
+        # main-checkout container runs) so init-git skips the device flow.
+        local main_repo
+        main_repo="$(cd "${git_common_dir}/.." && pwd)"
+        local main_gh_config="${main_repo}/.config/gh"
+        local gh_auth_shared=false
+        if [[ -d "${main_gh_config}" ]]; then
+            MOUNTS+=(--mount "source=${main_gh_config},target=/home/coder/.config/gh,type=bind")
+            gh_auth_shared=true
+        fi
+
+        echo "warning: launching from a git worktree." >&2
+        echo "         The 'cccl-build' and 'cccl-wheelhouse' docker volumes are" >&2
+        echo "         shared across all worktrees and the main checkout, so build" >&2
+        echo "         artifacts will collide between them. Avoid running multiple" >&2
+        echo "         worktree devcontainers concurrently." >&2
+        if ! ${gh_auth_shared}; then
+            echo "         The main checkout has no .config/gh/ to share, so" >&2
+            echo "         devcontainer-utils-init-git will block on an interactive" >&2
+            echo "         'gh auth login' device flow. Launch the main checkout's" >&2
+            echo "         devcontainer once and complete the gh login there to" >&2
+            echo "         persist auth state, then re-launch this worktree." >&2
+        fi
+    fi
 
     ###
     # Run the initialize command(s) before starting the container
     ###
 
     local init_cmd;
+    # shellcheck disable=SC2154
     for init_cmd in "${INITIALIZE_COMMANDS[@]}"; do
         eval "${init_cmd}"
     done
@@ -147,6 +238,7 @@ launch_docker() {
         RUN_ARGS+=(--gpus "${gpu_request}")
     else
         # Otherwise read and infer from hostRequirements.gpu
+        # shellcheck disable=SC2154,SC2153
         RUN_ARGS+=("${GPU_REQUEST[@]}")
     fi
 
@@ -160,6 +252,7 @@ launch_docker() {
                 ENV_VARS+=(--env NEW_UID="$(id -u)")
                 ENV_VARS+=(--env NEW_GID="$(id -g)")
                 ENV_VARS+=(--env REMOTE_USER="$REMOTE_USER")
+                # shellcheck disable=SC2154
                 ENTRYPOINTS+=("${WORKSPACE_FOLDER}/.devcontainer/docker-entrypoint.sh")
                 ;;
         esac
@@ -185,8 +278,10 @@ launch_docker() {
             echo "::group::Docker run command"
             set -x
         fi
+        # shellcheck disable=SC2154
         exec docker run \
           "${RUN_ARGS[@]}" \
+          "${run_args[@]}" \
           "${ENV_VARS[@]}" \
           "${MOUNTS[@]}" \
           "${DOCKER_IMAGE}" \
@@ -202,6 +297,13 @@ launch_docker() {
 launch_vscode() {
     local -;
     set -euo pipefail;
+
+    if ! code --version > /dev/null 2>&1 ; then
+      echo "VSCode launch requires a working installation of vscode."
+      echo "Ensure that 'code' is reachable on PATH."
+      exit 127
+    fi
+
     # Since Visual Studio Code allows only one instance per `devcontainer.json`,
     # this code prepares a unique temporary directory structure for each launch of a devcontainer.
     # By doing so, it ensures that multiple instances of the same environment can be run
@@ -209,14 +311,17 @@ launch_vscode() {
     # and compiler environment into this temporary directory, adjusting paths to ensure the
     # correct workspace is loaded. A special URL is then generated to instruct VSCode to
     # launch the development container using this temporary configuration.
-    local workspace="$(basename "$(pwd)")"
-    local tmpdir="$(mktemp -d)/${workspace}"
+    local workspace
+    workspace="$(basename "$(pwd)")"
+    local tmpdir
+    tmpdir="$(mktemp -d)/${workspace}"
     mkdir -p "${tmpdir}"
     mkdir -p "${tmpdir}/.devcontainer"
     cp -arL "${path}/devcontainer.json" "${tmpdir}/.devcontainer"
     sed -i "s@\${localWorkspaceFolder}@$(pwd)@g" "${tmpdir}/.devcontainer/devcontainer.json"
     local path="${tmpdir}"
-    local hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')"
+    local hash
+    hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')"
     local url="vscode://vscode-remote/dev-container+${hash}/home/coder/cccl"
 
     local launch=""
@@ -226,7 +331,7 @@ launch_vscode() {
         launch="xdg-open"
     fi
 
-    if [ -n "${launch}" ]; then
+    if [[ -n "${launch}" ]]; then
         echo "Launching VSCode Dev Container URL: ${url}"
         code --new-window "${tmpdir}"
         exec "${launch}" "${url}" >/dev/null 2>&1
@@ -234,14 +339,25 @@ launch_vscode() {
 }
 
 main() {
+    local -a run_args;
     local -a unparsed;
-    parse_options "$@" unparsed;
+    parse_options "$@" run_args unparsed;
     set -- "${unparsed[@]}";
 
     # If no CTK/Host compiler are provided, just use the default environment
     if [[ -z ${cuda_version:-} ]] && [[ -z ${host_compiler:-} ]]; then
         path=".devcontainer"
     else
+        if [[ -z ${cuda_version:-} ]]; then
+          echo "Must also provide a CUDA version when specifying the host compiler" >&2
+          exit 2
+        fi
+
+        if [[ -z ${host_compiler:-} ]]; then
+          echo "Must also provide a host compiler when specifying the cuda version" >&2
+          exit 2
+        fi
+
         if ${cuda_ext:-false}; then
           cuda_suffix="ext"
         fi

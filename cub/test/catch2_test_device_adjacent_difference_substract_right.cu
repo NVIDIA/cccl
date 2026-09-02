@@ -5,13 +5,15 @@
 
 #include <cub/device/device_adjacent_difference.cuh>
 
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/execution>
 
 #include <algorithm>
 #include <numeric>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRight, adjacent_difference_subtract_right);
@@ -29,7 +31,8 @@ using all_types =
 
 using types = c2h::type_list<std::uint8_t, std::int32_t>;
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRight can run with empty input", "[device][adjacent_difference]", types)
+CUB_TEST(
+  "DeviceAdjacentDifference::SubtractRight can run with empty input", "[device][adjacent_difference]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -39,7 +42,10 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can run with empty input", "[d
   adjacent_difference_subtract_right(in.begin(), num_items, cuda::std::minus<>{});
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input", "[device][adjacent_difference]", types)
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input",
+         "[device][adjacent_difference]",
+         CUB_SMALL,
+         types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -50,7 +56,10 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input",
   adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, cuda::std::minus<>{});
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input", "[device][adjacent_difference]", types)
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input",
+         "[device][adjacent_difference]",
+         CUB_SMALL,
+         types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -65,6 +74,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class T>
 struct ref_diff
 {
@@ -90,7 +100,100 @@ struct ref_diff
 };
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[device][adjacent_difference]", types)
+#if TEST_LAUNCH == 0
+CUB_TEST("DeviceAdjacentDifference::SubtractRight works with user provided memory and environment",
+         "[device][adjacent_difference]",
+         CUB_SMALL,
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items, thrust::default_init);
+  c2h::device_vector<type> out(num_items, thrust::default_init);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items, thrust::default_init);
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
+  std::rotate(reference.begin(), reference.begin() + 1, reference.end());
+  reference.back() = h_in.back();
+
+  size_t expected_allocation_size = 0;
+  auto error                      = cub::DeviceAdjacentDifference::SubtractRight(
+    static_cast<void*>(nullptr), expected_allocation_size, in.begin(), num_items, cuda::std::minus<>{});
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_subtract_right = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceAdjacentDifference::SubtractRight(
+      static_cast<void*>(nullptr), num_bytes, in.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_allocation_size == num_bytes);
+
+    error = cub::DeviceAdjacentDifference::SubtractRight(
+      temp_storage, num_bytes, in.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(reference == in);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right(stream.get());
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right(stream);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_subtract_right(stream_ref);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_subtract_right(env);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_subtract_right(policy);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRight works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_subtract_right(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
+
+CUB_TEST(
+  "DeviceAdjacentDifference::SubtractRight works with iterators", "[device][adjacent_difference]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -110,7 +213,100 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[devic
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with iterators", "[device][adjacent_difference]", types)
+#if TEST_LAUNCH == 0
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with user provided memory and environment",
+         "[device][adjacent_difference]",
+         CUB_SMALL,
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), ref_diff<type>{});
+  std::rotate(reference.begin(), reference.begin() + 1, reference.end());
+  reference.back() = h_in.back();
+
+  size_t expected_allocation_size = 0;
+  auto error                      = cub::DeviceAdjacentDifference::SubtractRightCopy(
+    static_cast<void*>(nullptr), expected_allocation_size, in.begin(), out.begin(), num_items, cuda::std::minus<>{});
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  auto d_temp        = c2h::device_vector<uint8_t>(expected_allocation_size, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  auto test_subtract_right_copy = [&](const auto& env) {
+    size_t num_bytes = 0;
+    error            = cub::DeviceAdjacentDifference::SubtractRightCopy(
+      static_cast<void*>(nullptr), num_bytes, in.begin(), out.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    REQUIRE(expected_allocation_size == num_bytes);
+
+    error = cub::DeviceAdjacentDifference::SubtractRightCopy(
+      temp_storage, num_bytes, in.begin(), out.begin(), num_items, cuda::std::minus<>{}, env);
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    // Verify result
+    REQUIRE(reference == out);
+  };
+
+  int current_device;
+  error = cudaGetDevice(&current_device);
+  REQUIRE(error == cudaSuccess);
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cudaStream_t")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right_copy(stream.get());
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    test_subtract_right_copy(stream);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::stream_ref")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    cuda::stream_ref stream_ref{stream};
+    test_subtract_right_copy(stream_ref);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::std::execution::env")
+  {
+    cuda::std::execution::env env{};
+    test_subtract_right_copy(env);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::execution::gpu")
+  {
+    const auto policy = cuda::execution::gpu;
+    test_subtract_right_copy(policy);
+  }
+
+  SECTION("DeviceAdjacentDifference::SubtractRightCopy works with cuda::execution::gpu with stream")
+  {
+    cuda::stream stream{cuda::devices[current_device]};
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_subtract_right_copy(policy);
+  }
+}
+#endif // TEST_LAUNCH == 0
+
+CUB_TEST(
+  "DeviceAdjacentDifference::SubtractRightCopy works with iterators", "[device][adjacent_difference]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -130,7 +326,8 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with iterators", "[d
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRight works with pointers", "[device][adjacent_difference]", types)
+CUB_TEST(
+  "DeviceAdjacentDifference::SubtractRight works with pointers", "[device][adjacent_difference]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -149,7 +346,8 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with pointers", "[device
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[device][adjacent_difference]", types)
+CUB_TEST(
+  "DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[device][adjacent_difference]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -171,6 +369,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 struct cust_diff
 {
   template <class T>
@@ -196,8 +395,9 @@ struct cust_diff
 };
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
+CUB_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
          "[device][adjacent_difference]",
+         CUB_SMALL,
          all_types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -217,8 +417,9 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with custom difference",
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with custom difference",
          "[device][adjacent_difference]",
+         CUB_SMALL,
          types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -259,8 +460,9 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with a different output type",
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with a different output type",
          "[device][adjacent_difference]",
+         CUB_SMALL,
          types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -297,8 +499,9 @@ struct check_difference
   }
 };
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes",
-         "[device][adjacent_difference][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes",
+         "[device][adjacent_difference][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_SMALL)
 {
   constexpr cuda::std::size_t num_items = 1ll << 33;
   c2h::device_vector<int> error(1);
@@ -327,8 +530,9 @@ private:
   unsigned long long* counts_;
 };
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy uses right number of invocations",
-         "[device][adjacent_difference]")
+CUB_TEST("DeviceAdjacentDifference::SubtractRightCopy uses right number of invocations",
+         "[device][adjacent_difference]",
+         CUB_SMALL)
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<unsigned long long> counts(1, 0);

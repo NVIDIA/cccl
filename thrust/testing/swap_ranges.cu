@@ -115,10 +115,7 @@ struct type_with_swap
       , m_swapped(s)
   {}
 
-  inline _CCCL_HOST_DEVICE type_with_swap(const type_with_swap& other)
-      : m_x(other.m_x)
-      , m_swapped(other.m_swapped)
-  {}
+  inline type_with_swap(const type_with_swap& other) = default;
 
   inline _CCCL_HOST_DEVICE bool operator==(const type_with_swap& other) const
   {
@@ -131,7 +128,7 @@ struct type_with_swap
   bool m_swapped;
 };
 
-inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b)
+inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b) noexcept
 {
   using ::cuda::std::swap;
   swap(a.m_x, b.m_x);

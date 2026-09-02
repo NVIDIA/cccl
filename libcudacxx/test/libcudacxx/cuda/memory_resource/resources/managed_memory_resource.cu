@@ -17,6 +17,8 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "pool_availability.cuh"
+
 #if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define TEST_TYPES cuda::mr::legacy_managed_memory_resource, cuda::managed_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
@@ -26,14 +28,14 @@
 template <typename Resource>
 void resource_static_asserts()
 {
-  static_assert(!cuda::std::is_trivial<Resource>::value, "");
-  static_assert(!cuda::std::is_trivially_default_constructible<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_copy_constructible<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_move_constructible<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_copy_assignable<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_move_assignable<Resource>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<Resource>::value, "");
-  static_assert(!cuda::std::is_empty<Resource>::value, "");
+  static_assert(!cuda::std::is_trivial<Resource>::value);
+  static_assert(!cuda::std::is_trivially_default_constructible<Resource>::value);
+  static_assert(cuda::std::is_trivially_copy_constructible<Resource>::value);
+  static_assert(cuda::std::is_trivially_move_constructible<Resource>::value);
+  static_assert(cuda::std::is_trivially_copy_assignable<Resource>::value);
+  static_assert(cuda::std::is_trivially_move_assignable<Resource>::value);
+  static_assert(cuda::std::is_trivially_destructible<Resource>::value);
+  static_assert(!cuda::std::is_empty<Resource>::value);
 }
 
 template void resource_static_asserts<cuda::mr::legacy_managed_memory_resource>();
@@ -89,19 +91,17 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource construction", "[memory_resource]"
 C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using managed_resource = TestType;
-#if _CCCL_CTK_AT_LEAST(13, 0)
-  if (!cuda::device_attributes::concurrent_managed_access(cuda::devices[0])
-      && cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>)
+  if constexpr (test::is_memory_pool_type<managed_resource>)
   {
-    return;
+    test::skip_if_unsupported_memory_pool<managed_resource>();
   }
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
   managed_resource res = get_resource<managed_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_managed_ptr(ptr);
 
     res.deallocate_sync(ptr, 42);
@@ -109,7 +109,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 
   { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_managed_ptr(ptr);
 
     res.deallocate_sync(ptr, 42, 4);
@@ -119,7 +119,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
   {
     { // allocate / deallocate
       auto* ptr = res.allocate(stream, 42);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
       stream.sync();
       ensure_managed_ptr(ptr);
@@ -129,7 +129,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 
     { // allocate / deallocate with alignment
       auto* ptr = res.allocate(stream, 42, 4);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
       stream.sync();
       ensure_managed_ptr(ptr);
@@ -176,18 +176,16 @@ struct derived_managed_resource : cuda::mr::legacy_managed_memory_resource
 {
   using cuda::mr::legacy_managed_memory_resource::legacy_managed_memory_resource;
 };
-static_assert(cuda::mr::synchronous_resource<derived_managed_resource>, "");
+static_assert(cuda::mr::synchronous_resource<derived_managed_resource>);
 
 C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using managed_resource = TestType;
-#if _CCCL_CTK_AT_LEAST(13, 0)
-  if (!cuda::device_attributes::concurrent_managed_access(cuda::devices[0])
-      && cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>)
+  if constexpr (test::is_memory_pool_type<managed_resource>)
   {
-    return;
+    test::skip_if_unsupported_memory_pool<managed_resource>();
   }
-#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
   managed_resource first = get_resource<managed_resource>();
   { // comparison against a plain managed_memory_resource
     managed_resource second = get_resource<managed_resource>();

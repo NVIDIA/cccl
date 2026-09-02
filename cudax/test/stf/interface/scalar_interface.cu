@@ -19,6 +19,19 @@
 
 using namespace cuda::experimental::stf;
 
+void test_shape_from_scalar_view()
+{
+  double x = 0;
+  scalar_view<double> sv(&x);
+  shape_of<scalar_view<double>> s = shape(sv);
+  EXPECT(s.size() == sizeof(double));
+
+  size_t n = 0;
+  scalar_view<size_t> sv_n(&n);
+  shape_of<scalar_view<size_t>> s_n = shape(sv_n);
+  EXPECT(s_n.size() == sizeof(size_t));
+}
+
 template <typename Ctx>
 void run()
 {
@@ -39,11 +52,21 @@ void run()
     EXPECT(fabs(*x.addr - (42.0 + 12.3)) < 0.001);
   };
 
+  // Exercise logical_data(la.shape()) when la is scalar_view-backed (uses shape_of from scalar_view)
+  auto ld = ctx.logical_data(la.shape()).set_symbol("d");
+  ctx.parallel_for(box(1), la.read(), ld.write())->*[] __device__(size_t, auto a, auto d) {
+    *d.addr = *a.addr;
+  };
+  ctx.host_launch(ld.read())->*[](auto x) {
+    EXPECT(fabs(*x.addr - 42.0) < 0.001);
+  };
+
   ctx.finalize();
 }
 
 int main()
 {
+  test_shape_from_scalar_view();
   run<stream_ctx>();
   run<graph_ctx>();
 }

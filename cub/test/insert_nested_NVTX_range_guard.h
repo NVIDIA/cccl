@@ -2,11 +2,13 @@
 
 // Include this file at the top of a unit test for CUB device algorithms to check whether any inserted NVTX ranges nest.
 
+#include <cuda/std/optional>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-#include <catch2/catch_test_macros.hpp>
+#include <c2h/catch2_test_macros.h>
 
 inline thread_local const char* current_nvtx_range_name = nullptr;
 

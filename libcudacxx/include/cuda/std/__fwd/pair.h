@@ -40,6 +40,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pair;
 
+template <class>
+inline constexpr bool __is_cuda_std_pair = false;
+
+template <class _Tp, class _Up>
+inline constexpr bool __is_cuda_std_pair<pair<_Tp, _Up>> = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>

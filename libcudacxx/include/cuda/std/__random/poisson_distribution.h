@@ -20,15 +20,19 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/normal_distribution.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/cmath>
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ios>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -59,7 +63,7 @@ public:
   public:
     using distribution_type = poisson_distribution;
 
-    _CCCL_API explicit param_type(double __mean = 1.0) noexcept
+    _CCCL_HOST_DEVICE_API explicit param_type(double __mean = 1.0) noexcept
         // According to the standard `inf` is a valid input, but it causes the
         // distribution to hang, so we replace it with the maximum representable
         // mean.
@@ -85,17 +89,19 @@ public:
       }
     }
 
-    [[nodiscard]] _CCCL_API constexpr double mean() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double mean() const noexcept
     {
       return __mean_;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__mean_ == __y.__mean_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -110,17 +116,17 @@ private:
   template <class _IntT,
             class _FloatT,
             bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits)>
-  [[nodiscard]] _CCCL_API static constexpr _IntT __max_representable_int_for_float() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _IntT __max_representable_int_for_float() noexcept
   {
     static_assert(::cuda::std::is_floating_point<_FloatT>::value, "must be a floating point type");
     static_assert(::cuda::std::is_integral<_IntT>::value, "must be an integral type");
     static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
-    constexpr int _bits = cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
+    constexpr int _bits = ::cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
     return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _bits << _bits);
   }
 
   template <class _IntT, class _RealT>
-  [[nodiscard]] _CCCL_API static _IntT __clamp_to_integral(_RealT __r) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _IntT __clamp_to_integral(_RealT __r) noexcept
   {
     using _Limits         = numeric_limits<_IntT>;
     const _IntT __max_val = __max_representable_int_for_float<_IntT, _RealT>();
@@ -137,27 +143,27 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API constexpr poisson_distribution() noexcept
+  _CCCL_HOST_DEVICE_API constexpr poisson_distribution() noexcept
       : poisson_distribution{1.0}
   {}
-  _CCCL_API constexpr explicit poisson_distribution(double __mean) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit poisson_distribution(double __mean) noexcept
       : __p_{__mean}
   {}
-  _CCCL_API constexpr explicit poisson_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit poisson_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URNG>
-  [[nodiscard]] _CCCL_API result_type operator()(_URNG& __urng, const param_type& __pr)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URNG& __urng, const param_type& __pr)
   {
-    static_assert(__cccl_random_is_valid_urng<_URNG>, "");
+    static_assert(__cccl_random_is_valid_urng<_URNG>);
     double __tx = 0;
     uniform_real_distribution<double> __urd{};
     if (__pr.__mean_ < 10)
@@ -260,43 +266,44 @@ public:
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr double mean() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double mean() const noexcept
   {
     return __p_.mean();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return 0;
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return numeric_limits<result_type>::max();
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const poisson_distribution& __x, const poisson_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const poisson_distribution& __x, const poisson_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const poisson_distribution& __x)
@@ -328,7 +335,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

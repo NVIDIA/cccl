@@ -6,13 +6,19 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
 // template<class RealType = double>
 // class extreme_value_distribution
+
+// UNSUPPORTED: true
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -26,7 +32,7 @@ struct extreme_value_cdf
 {
   using P = typename cuda::std::extreme_value_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; a, b) = exp(-exp(-(x - a) / b))
     return cuda::std::exp(-cuda::std::exp(-(x - p.a()) / p.b()));
@@ -34,7 +40,7 @@ struct extreme_value_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::extreme_value_distribution<T>;

@@ -13,7 +13,9 @@
 
 #include <cuda/std/cassert>
 
-__host__ __device__ inline bool failed_on_device()
+#include "test_macros.h"
+
+TEST_FUNC inline bool failed_on_device()
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, return false;, return true;)
 }

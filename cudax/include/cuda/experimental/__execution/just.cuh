@@ -52,7 +52,7 @@ private:
     using operation_state_concept = operation_state_t;
     using __tuple_t               = ::cuda::std::__tuple<_Ts...>;
 
-    _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
+    _CCCL_HOST_DEVICE_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __values_{static_cast<__tuple_t&&>(__values)}
     {}
@@ -66,7 +66,7 @@ private:
     _CCCL_IMMOVABLE(__opstate_t);
 #endif // !_CCCL_COMPILER(GCC)
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       ::cuda::std::__apply(
         _SetTag{}, static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
@@ -82,7 +82,7 @@ private:
 public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Ts>
-  _CCCL_API constexpr auto operator()(_Ts... __ts) const;
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(_Ts... __ts) const;
 };
 
 struct just_t : __just_t<just_t, set_value_t>
@@ -110,27 +110,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
   using sender_concept = sender_t;
 
   template <class>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
     return completion_signatures<__set_tag_t(_Ts...)>{};
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
-    -> __opstate_t<_Rcvr, _Ts...>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  connect(_Rcvr __rcvr) && noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>) -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{
       static_cast<_Rcvr&&>(__rcvr), static_cast<::cuda::std::__tuple<_Ts...>&&>(__values_)};
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
   connect(_Rcvr __rcvr) const& noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>) -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
   }
 
-  [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto get_env() noexcept
   {
     return __inln_attrs_t{};
   }
@@ -159,7 +159,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_t::__sndr_t
 _CCCL_EXEC_CHECK_DISABLE
 template <class _JustTag, class _SetTag>
 template <class... _Ts>
-_CCCL_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
+_CCCL_HOST_DEVICE_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
 {
   using __sndr_t = typename _JustTag::template __sndr_t<_Ts...>;
   return __sndr_t{{{}, {static_cast<_Ts&&>(__ts)...}}};

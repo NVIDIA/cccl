@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class E>
-__host__ __device__ constexpr void test_required_span_size(E e, typename E::index_type expected_size)
+TEST_FUNC constexpr void test_required_span_size(E e, typename E::index_type expected_size)
 {
   using M = cuda::std::layout_left::mapping<E>;
   const M m(e);
@@ -29,7 +29,7 @@ __host__ __device__ constexpr void test_required_span_size(E e, typename E::inde
   assert(m.required_span_size() == expected_size);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_required_span_size(cuda::std::extents<int>(), 1);
@@ -47,6 +47,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

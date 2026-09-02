@@ -47,7 +47,7 @@ private:
   {
     using operation_state_concept = operation_state_t;
 
-    _CCCL_API constexpr void start() noexcept
+    _CCCL_HOST_DEVICE_API constexpr void start() noexcept
     {
       set_value(static_cast<_Rcvr&&>(__rcvr));
     }
@@ -63,34 +63,34 @@ public:
     using sender_concept = sender_t;
 
     template <class Self>
-    [[nodiscard]] _CCCL_API static constexpr auto get_completion_signatures() noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto get_completion_signatures() noexcept
     {
       return completion_signatures<set_value_t()>{};
     }
 
     template <class _Rcvr>
-    [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
     {
       return {{}, static_cast<_Rcvr&&>(__rcvr)};
     }
 
-    [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept -> __attrs_t
+    [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto get_env() noexcept -> __attrs_t
     {
       return {};
     }
   };
 
-  [[nodiscard]] _CCCL_API constexpr auto schedule() const noexcept -> __sndr_t
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto schedule() const noexcept -> __sndr_t
   {
     return {};
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator==(inline_scheduler, inline_scheduler) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator==(inline_scheduler, inline_scheduler) noexcept
   {
     return true;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(inline_scheduler, inline_scheduler) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(inline_scheduler, inline_scheduler) noexcept
   {
     return false;
   }

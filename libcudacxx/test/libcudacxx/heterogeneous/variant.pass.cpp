@@ -21,7 +21,7 @@ struct pod
 {
   int val;
 
-  __host__ __device__ friend bool operator==(pod lhs, pod rhs)
+  TEST_FUNC friend bool operator==(pod lhs, pod rhs)
   {
     return lhs.val == rhs.val;
   }
@@ -33,13 +33,13 @@ template <typename T, int Val>
 struct tester
 {
   template <typename Variant>
-  __host__ __device__ static void initialize(Variant&& v)
+  TEST_FUNC static void initialize(Variant&& v)
   {
     v = T{Val};
   }
 
   template <typename Variant>
-  __host__ __device__ static void validate(Variant&& v)
+  TEST_FUNC static void validate(Variant&& v)
   {
     assert(cuda::std::holds_alternative<T>(v));
     assert(cuda::std::get<T>(v) == T{Val});

@@ -7,6 +7,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: !c++17
+// ptxas error: Stack size for entry function '_Z16fake_main_kernelPi' cannot be statically determined
+
 // <memory>
 
 // unique_ptr
@@ -21,16 +28,16 @@ struct A
 {
   cuda::std::unique_ptr<A> ptr_;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 A()
       : ptr_(this)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void reset()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void reset()
   {
     ptr_.reset();
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   (new A)->reset();
 

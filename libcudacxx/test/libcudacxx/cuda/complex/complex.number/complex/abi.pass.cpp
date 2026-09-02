@@ -14,14 +14,16 @@
 
 #include <cuda/__complex_>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ void test_abi()
+TEST_FUNC void test_abi()
 {
   static_assert(sizeof(cuda::complex<T>) == (sizeof(T) * 2), "wrong size");
   static_assert(alignof(cuda::complex<T>) == (alignof(T) * 2), "misaligned");
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_abi<float>();
   test_abi<double>();

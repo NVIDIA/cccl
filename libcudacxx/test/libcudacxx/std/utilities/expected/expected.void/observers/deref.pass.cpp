@@ -25,15 +25,15 @@ template <class T>
 constexpr bool DerefNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().operator*())>> =
   noexcept(cuda::std::declval<T>().operator*());
 
-static_assert(!DerefNoexcept<int>, "");
+static_assert(!DerefNoexcept<int>);
 
-static_assert(DerefNoexcept<cuda::std::expected<void, int>>, "");
+static_assert(DerefNoexcept<cuda::std::expected<void, int>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   const cuda::std::expected<void, int> e;
   *e;
-  static_assert(cuda::std::is_same_v<decltype(*e), void>, "");
+  static_assert(cuda::std::is_same_v<decltype(*e), void>);
 
   return true;
 }
@@ -41,7 +41,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

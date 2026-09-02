@@ -34,6 +34,8 @@ class WarpExchangeShfl
 
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
 
+  // Hide recursive template from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
   // concrete recursion class
   template <typename OutputT, int IDX, int SIZE>
   class CompileTimeArray : protected CompileTimeArray<OutputT, IDX + 1, SIZE>
@@ -240,6 +242,7 @@ class WarpExchangeShfl
         : output_items{output_items}
     {}
   };
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   const unsigned int lane_id;
   const unsigned int warp_id;

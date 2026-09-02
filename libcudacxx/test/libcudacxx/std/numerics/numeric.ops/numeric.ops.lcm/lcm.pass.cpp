@@ -27,18 +27,18 @@ struct TestCases
 };
 
 template <typename Input1, typename Input2, typename Output>
-__host__ __device__ constexpr bool test0(int in1, int in2, int out)
+TEST_FUNC constexpr bool test0(int in1, int in2, int out)
 {
   auto value1 = static_cast<Input1>(in1);
   auto value2 = static_cast<Input2>(in2);
-  static_assert(cuda::std::is_same<Output, decltype(cuda::std::lcm(value1, value2))>::value, "");
-  static_assert(cuda::std::is_same<Output, decltype(cuda::std::lcm(value2, value1))>::value, "");
+  static_assert(cuda::std::is_same<Output, decltype(cuda::std::lcm(value1, value2))>::value);
+  static_assert(cuda::std::is_same<Output, decltype(cuda::std::lcm(value2, value1))>::value);
   assert(static_cast<Output>(out) == cuda::std::lcm(value1, value2));
   return true;
 }
 
 template <typename Input1, typename Input2 = Input1>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using S1                    = cuda::std::make_signed_t<Input1>;
   using S2                    = cuda::std::make_signed_t<Input2>;
@@ -83,7 +83,7 @@ __host__ __device__ constexpr void test()
   assert(accumulate);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<signed char>();
   test<short>();
@@ -111,13 +111,13 @@ __host__ __device__ constexpr bool test()
 int main(int argc, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   //  LWG#2837
   {
     auto res1 = cuda::std::lcm(static_cast<cuda::std::int64_t>(1234), INT32_MIN);
     TEST_IGNORE_NODISCARD cuda::std::lcm(INT_MIN, 2UL); // this used to trigger UBSAN
-    static_assert(cuda::std::is_same<decltype(res1), cuda::std::int64_t>::value, "");
+    static_assert(cuda::std::is_same<decltype(res1), cuda::std::int64_t>::value);
     assert(res1 == 1324997410816LL);
   }
 

@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class It, class U>
-__host__ __device__ void test(U u)
+TEST_FUNC void test(U u)
 {
   const cuda::std::move_iterator<U> r2(u);
   cuda::std::move_iterator<It> r1 = r2;
@@ -50,7 +50,7 @@ int main(int, char**)
     constexpr const Derived* p                             = nullptr;
     constexpr cuda::std::move_iterator<const Derived*> it1 = cuda::std::make_move_iterator(p);
     constexpr cuda::std::move_iterator<const Base*> it2(it1);
-    static_assert(it2.base() == p, "");
+    static_assert(it2.base() == p);
   }
 
   return 0;

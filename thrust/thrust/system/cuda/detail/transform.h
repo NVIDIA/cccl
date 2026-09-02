@@ -130,8 +130,8 @@ template <class Derived,
           class... InputIts,
           class OutputIt,
           class TransformOp,
-          class Predicate = cub::detail::transform::always_true_predicate>
-OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
+          class Predicate = ::cuda::always_true>
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<InputIts...> firsts,
   OutputIt result,
@@ -144,17 +144,21 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
     return result;
   }
 
-  constexpr auto stable_address =
-    (::cuda::proclaims_copyable_arguments<Predicate>::value && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
-      ? cub::detail::transform::requires_stable_address::no
-      : cub::detail::transform::requires_stable_address::yes;
+  // throw exception in case num_items is negative. Should never happen since last - first iterator must be positive.
+  _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(num_items);
 
   cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    (cub::detail::transform::dispatch<stable_address>),
-    num_items,
-    (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
+  if constexpr (::cuda::proclaims_copyable_arguments<Predicate>::value
+                && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
+  {
+    status = CUB_NS_QUALIFIER::DeviceTransform::TransformIf(
+      firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));
+  }
+  else
+  {
+    status = CUB_NS_QUALIFIER::DeviceTransform::__transform_if_stable_argument_addresses(
+      firsts, result, num_items, pred, transform_op, cuda_cub::stream(policy));
+  }
   throw_on_error(status, "transform: failed inside CUB");
 
   status = cuda_cub::synchronize_optional(policy);
@@ -166,7 +170,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
 // unwrap zip_iterator and zip_function into their underlying iterators so cub::DeviceTransform can optimize them
 // TODO(bgruber): we may want to move this unpacking logic into cub::DeviceTransform directly
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
-OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<zip_iterator<::cuda::std::tuple<InputIts...>>> firsts,
   OutputIt result,
@@ -178,7 +182,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
 }
 
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
-OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
+OutputIt _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE cub_transform_many(
   execution_policy<Derived>& policy,
   ::cuda::std::tuple<::cuda::zip_iterator<InputIts...>> firsts,
   OutputIt result,
@@ -194,7 +198,7 @@ struct raw_reference_cast_args
   mutable F f; // mutable to support non-const F::operator()
 
   template <typename... Ts>
-  _CCCL_API _CCCL_FORCEINLINE decltype(auto) operator()(Ts&&... args) const
+  _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE decltype(auto) operator()(Ts&&... args) const
   {
     return f(raw_reference_cast(::cuda::std::forward<Ts>(args))...);
   }
@@ -204,7 +208,7 @@ struct raw_reference_cast_args
 //  one input data stream
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp>
-_CCCL_API _CCCL_FORCEINLINE OutputIt
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt
 transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op)
 {
   THRUST_CDP_DISPATCH(
@@ -215,7 +219,7 @@ transform(execution_policy<Derived>& policy, InputIt first, InputIt last, Output
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_n(
   execution_policy<Derived>& policy,
   InputIt first,
   ::cuda::std::iter_difference_t<InputIt> num_items,
@@ -229,7 +233,7 @@ _CCCL_API _CCCL_FORCEINLINE OutputIt transform_n(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp, typename Predicate>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_if(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -256,7 +260,7 @@ _CCCL_API _CCCL_FORCEINLINE OutputIt transform_if(
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename TransformOp, typename Predicate>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_if_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if_n(
   execution_policy<Derived>& policy,
   InputIt first,
   ::cuda::std::iter_difference_t<InputIt> num_items,
@@ -279,7 +283,7 @@ _CCCL_API _CCCL_FORCEINLINE OutputIt transform_if_n(
 //  one input data stream + stencil
 
 template <class Derived, class InputIt, class OutputIt, class StencilInputIt, class TransformOp, class Predicate>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_if(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if(
   execution_policy<Derived>& policy,
   InputIt first,
   InputIt last,
@@ -298,7 +302,7 @@ template <typename Derived,
           typename OutputIt,
           typename TransformOp,
           typename Predicate>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_if_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if_n(
   execution_policy<Derived>& policy,
   InputIt first,
   ::cuda::std::iter_difference_t<InputIt> num_items,
@@ -313,7 +317,7 @@ _CCCL_API _CCCL_FORCEINLINE OutputIt transform_if_n(
 // two input data streams
 
 template <typename Derived, typename InputIt1, typename InputIt2, typename OutputIt, typename BinaryTransformOp>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   InputIt1 last1,
@@ -333,7 +337,7 @@ _CCCL_API _CCCL_FORCEINLINE OutputIt transform(
 }
 
 template <typename Derived, typename InputIt1, typename InputIt2, typename OutputIt, typename BinaryTransformOp>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_n(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   ::cuda::std::iter_difference_t<InputIt1> num_items,
@@ -360,7 +364,7 @@ template <typename Derived,
           typename OutputIt,
           typename BinaryTransformOp,
           typename Predicate>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_if(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   InputIt1 last1,
@@ -381,7 +385,7 @@ template <typename Derived,
           typename OutputIt,
           typename BinaryTransformOp,
           typename Predicate>
-_CCCL_API _CCCL_FORCEINLINE OutputIt transform_if_n(
+_CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE OutputIt transform_if_n(
   execution_policy<Derived>& policy,
   InputIt1 first1,
   ::cuda::std::iter_difference_t<InputIt1> num_items,

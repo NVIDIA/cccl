@@ -41,10 +41,10 @@ CUB_NAMESPACE_BEGIN
 //! @tparam T
 //!   The data type to be exchanged.
 //!
-//! @tparam BlockThreads
+//! @tparam ThreadsPerBlock
 //!   The thread block size in threads.
 //!
-template <typename T, int BlockThreads>
+template <typename T, int ThreadsPerBlock>
 struct BlockRakingLayout
 {
   //---------------------------------------------------------------------
@@ -52,15 +52,15 @@ struct BlockRakingLayout
   //---------------------------------------------------------------------
 
   /// The total number of elements that need to be cooperatively reduced
-  static constexpr int SHARED_ELEMENTS = BlockThreads;
+  static constexpr int SHARED_ELEMENTS = ThreadsPerBlock;
 
   /// Maximum number of warp-synchronous raking threads
-  static constexpr int MAX_RAKING_THREADS = ::cuda::std::min(BlockThreads, detail::warp_threads);
+  static constexpr int MAX_RAKING_THREADS = ::cuda::std::min(ThreadsPerBlock, detail::warp_threads);
 
   /// Number of raking elements per warp-synchronous raking thread (rounded up)
   static constexpr int SEGMENT_LENGTH = (SHARED_ELEMENTS + MAX_RAKING_THREADS - 1) / MAX_RAKING_THREADS;
 
-  /// Never use a raking thread that will have no valid data (e.g., when BlockThreads is 62 and SEGMENT_LENGTH is 2,
+  /// Never use a raking thread that will have no valid data (e.g., when ThreadsPerBlock is 62 and SEGMENT_LENGTH is 2,
   /// we should only use 31 raking threads)
   static constexpr int RAKING_THREADS = (SHARED_ELEMENTS + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 

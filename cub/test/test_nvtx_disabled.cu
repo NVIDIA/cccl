@@ -1,10 +1,14 @@
-#define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name) static_assert(false, "");
+#define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name) static_assert(false);
 #define CCCL_DISABLE_NVTX
 
 #include <cub/device/device_for.cuh>
 
 #include <cuda/iterator>
 #include <cuda/std/functional>
+
+#include "cub_non_catch2_test_memory.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
 #if defined(CCCL_DISABLE_NVTX) && defined(NVTX_VERSION)
 #  error "NVTX was included somewhere even though it is turned off via CCCL_DISABLE_NVTX"

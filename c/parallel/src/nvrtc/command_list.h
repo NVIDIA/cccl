@@ -262,7 +262,7 @@ struct nvrtc2_pre_build
     {
       std::unique_ptr<char[]> log{new char[log_size]};
       check(nvrtcGetProgramLog(context.program, log.get()));
-      std::cerr << log.get() << std::endl;
+      std::cerr << log.get() << '\n';
     }
     check(result);
 
@@ -377,7 +377,7 @@ struct nvrtc2_top_level
     {
       std::unique_ptr<char[]> log{new char[log_size]};
       check(nvJitLinkGetErrorLog(context.jit.handle, log.get()));
-      std::cerr << log.get() << std::endl;
+      std::cerr << log.get() << '\n';
     }
 
     check(jitlink_error);

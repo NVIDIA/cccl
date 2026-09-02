@@ -16,7 +16,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using permutation_iterator = cuda::permutation_iterator<random_access_iterator<int*>, random_access_iterator<int*>>;
   permutation_iterator iter;

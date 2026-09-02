@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 #include <mutex>
 
@@ -64,7 +65,7 @@ public:
   {
     EXPECT(s > 0);
 
-    ::std::lock_guard<::std::mutex> g(allocator_mutex);
+    ::std::scoped_lock g(allocator_mutex);
     if (auto it = free_cache.find(memory_node); it != free_cache.end())
     {
       per_place_map_t& m = it->second;
@@ -93,10 +94,11 @@ public:
    * @param ptr Pointer to the memory block to be deallocated.
    * @param sz Size of the memory block.
    */
-  void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
-    ::std::lock_guard<::std::mutex> g(allocator_mutex);
+    (void) ctx;
+    ::std::scoped_lock g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead
     free_cache[memory_node].emplace(sz, alloc_cache_entry{ptr, prereqs});
   }
@@ -109,7 +111,7 @@ public:
   {
     ::std::unordered_map<data_place, per_place_map_t, hash<data_place>> free_cache_janitor;
     {
-      ::std::lock_guard<::std::mutex> g(allocator_mutex);
+      ::std::scoped_lock g(allocator_mutex);
       free_cache.swap(free_cache_janitor);
     }
 
@@ -220,7 +222,7 @@ public:
   {
     EXPECT(s > 0);
 
-    ::std::lock_guard<::std::mutex> g(allocator_mutex);
+    ::std::scoped_lock g(allocator_mutex);
     if (auto it = free_cache.find(memory_node); it != free_cache.end())
     {
       per_place_map_t& size_map = it->second;
@@ -277,10 +279,11 @@ public:
    * @param ptr Pointer to the memory block to be deallocated.
    * @param sz Size of the memory block.
    */
-  void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
-    ::std::lock_guard<::std::mutex> g(allocator_mutex);
+    (void) ctx;
+    ::std::scoped_lock g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead.
     // Note that we do not need to keep track of the "large buffer" from which this originated
     free_cache[memory_node][sz].push(alloc_cache_entry{ptr, prereqs});
@@ -294,7 +297,7 @@ public:
   {
     decltype(free_cache) free_cache_janitor;
     {
-      ::std::lock_guard<::std::mutex> g(allocator_mutex);
+      ::std::scoped_lock g(allocator_mutex);
       free_cache.swap(free_cache_janitor);
     }
 

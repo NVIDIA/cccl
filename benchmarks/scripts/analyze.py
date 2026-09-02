@@ -875,7 +875,11 @@ def main():
     args = parse_arguments()
 
     if args.list_benches:
-        cccl.bench.list_benches()
+        cccl.bench.list_benches(
+            cccl.bench.filter_benchmarks_by_regex(
+                cccl.bench.Config().benchmarks, args.R
+            )
+        )
         return
 
     if args.coverage:

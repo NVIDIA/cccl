@@ -7,7 +7,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -51,7 +51,7 @@ type_triple<custom_t>
 // clang-format on
 #endif
 
-C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_list)
+CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using value_t  = typename params::item_t;

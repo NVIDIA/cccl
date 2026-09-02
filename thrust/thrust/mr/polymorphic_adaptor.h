@@ -26,17 +26,17 @@ public:
       : upstream_resource(t)
   {}
 
-  virtual Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return upstream_resource->allocate(bytes, alignment);
   }
 
-  virtual void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
+  void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
   {
     return upstream_resource->deallocate(p, bytes, alignment);
   }
 
-  _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource<Pointer>& other) const noexcept override
+  _CCCL_HOST_DEVICE bool do_is_equal(const memory_resource<Pointer>& other) const noexcept override
   {
     return upstream_resource->is_equal(other);
   }

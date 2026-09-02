@@ -40,7 +40,7 @@ int main(int, char**)
   // Test the return value of the builtin for basic sanity only. It's the
   // compilers job to test tho builtin for correctness.
   {
-    static_assert(cuda::std::is_constant_evaluated(), "");
+    static_assert(cuda::std::is_constant_evaluated());
     bool p = cuda::std::is_constant_evaluated();
     assert(!p);
     static_assert(cuda::std::is_same_v<InTemplate<cuda::std::is_constant_evaluated()>, InTemplate<true>>);

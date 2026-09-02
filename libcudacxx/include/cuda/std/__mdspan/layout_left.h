@@ -64,29 +64,8 @@ public:
   friend class mdspan;
 
 private:
-  [[nodiscard]] _CCCL_API static constexpr bool __mul_overflow(index_type x, index_type y, index_type* res) noexcept
-  {
-    *res = x * y;
-    return x && ((*res / x) != y);
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(const extents_type& __ext)
-  {
-    if constexpr (extents_type::rank() != 0)
-    {
-      index_type __prod = __ext.extent(0);
-      for (rank_type __r = 1; __r < extents_type::rank(); __r++)
-      {
-        if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
-        {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  static_assert((extents_type::rank_dynamic() > 0) || __required_span_size_is_representable(extents_type()),
+  static_assert((extents_type::rank_dynamic() > 0)
+                  || ::cuda::std::__mdspan_detail::__required_span_size_is_representable(extents_type()),
                 "layout_left::mapping product of static extents must be representable as index_type.");
 
 public:
@@ -99,7 +78,7 @@ public:
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // mapping<dextents<char, 2>> map(dextents<char, 2>(40,40)); map(10, 3) == -126
-    _CCCL_ASSERT(__required_span_size_is_representable(__ext),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__required_span_size_is_representable(__ext),
                  "layout_left::mapping extents ctor: product of extents must be representable as index_type.");
   }
 
@@ -110,7 +89,7 @@ public:
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // mapping<dextents<char, 2>> map(mapping<dextents<int, 2>>(dextents<int, 2>(40,40))); map(10, 3) == -126
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
                  "index_type.");
   }
@@ -123,7 +102,7 @@ public:
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // mapping<dextents<char, 2>> map(mapping<dextents<int, 2>>(dextents<int, 2>(40,40))); map(10, 3) == -126
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
                  "index_type.");
   }
@@ -140,7 +119,7 @@ public:
     // layout_left::mapping<dextents<char, 1>> map(
     //           layout_right::mapping<dextents<unsigned, 1>>(dextents<unsigned, 1>(200))); map.extents().extent(0) ==
     //           -56
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
                  "index_type.");
   }
@@ -184,7 +163,7 @@ public:
   {
     _CCCL_ASSERT(__check_strides(__other),
                  "layout_left::mapping from layout_stride ctor: strides are not compatible with layout_left.");
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_left::mapping from layout_stride ctor: other.required_span_size() must be representable as "
                  "index_type.");
   }

@@ -1,6 +1,7 @@
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/transform.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -30,7 +31,7 @@
       thrust::transform(                                                                                       \
         lhs_reference.begin(),                                                                                 \
         lhs_reference.end(),                                                                                   \
-        thrust::make_constant_iterator<T>(1),                                                                  \
+        cuda::make_constant_iterator<T>(1),                                                                    \
         reference.begin(),                                                                                     \
         reference_functor<T>());                                                                               \
       thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), result.begin(), _1 op T(1));                      \

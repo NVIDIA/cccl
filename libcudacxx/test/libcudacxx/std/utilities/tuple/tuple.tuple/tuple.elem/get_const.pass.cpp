@@ -43,8 +43,8 @@ int main(int, char**)
   {
     using T = cuda::std::tuple<double, int>;
     constexpr T t(2.718, 5);
-    static_assert(cuda::std::get<0>(t) == 2.718, "");
-    static_assert(cuda::std::get<1>(t) == 5, "");
+    static_assert(cuda::std::get<0>(t) == 2.718);
+    static_assert(cuda::std::get<1>(t) == 5);
   }
   {
     using T = cuda::std::tuple<Empty>;

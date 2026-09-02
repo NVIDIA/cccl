@@ -19,9 +19,14 @@ int main()
   int nqpoints = 3;
   auto ltoken  = ctx.token();
 
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)
   ctx.parallel_for(exec_place::host(), box(5), ltoken.read())->*[nqpoints] __host__(size_t) {
     _CCCL_ASSERT(nqpoints == 3, "invalid value");
   };
+#else
+  _CCCL_UNSUPPORTED(parallel_for_on_the_host_requires_nvcc_or_nvcpp,
+                    "parallel_for on exec_place::host() requires nvcc or nvc++");
+#endif
 
   ctx.finalize();
 }

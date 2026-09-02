@@ -22,64 +22,104 @@
 
 #include <cuda/cmath>
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/execution>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 1000;
 
+template <class T = int>
 struct is_power_of_2
 {
-  __device__ constexpr bool operator()(const int val) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T val) const noexcept
   {
-    return cuda::is_power_of_two(val);
+    if constexpr (cuda::std::is_convertible_v<T, int>)
+    {
+      return cuda::is_power_of_two(static_cast<int>(val));
+    }
+    else
+    {
+      return cuda::is_power_of_two(val.value_);
+    }
   }
 };
 
-C2H_TEST("cuda::std::replace_if", "[parallel algorithm]")
+template <class Policy, class T>
+void test_replace_if(const Policy& policy, c2h::device_vector<T>& input)
 {
-  thrust::device_vector<int> input(size, thrust::no_init);
+  { // empty should not access anything
+    cuda::std::replace_if(
+      policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), is_power_of_2<T>{}, static_cast<T>(1337));
+  }
+
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // contiguous
+    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2<T>{}, static_cast<T>(1337));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
+  }
+
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  T* raw = thrust::raw_pointer_cast(input.data());
+  { // random access
+    cuda::std::replace_if(
+      policy, random_access_iterator{raw}, random_access_iterator{raw + size}, is_power_of_2<T>{}, static_cast<T>(1337));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
+  }
+
+  if constexpr (cuda::std::is_integral_v<T>)
+  {
+    thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+    { // convertible type
+      cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2<int>{}, static_cast<T>(1337));
+      CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
+    }
+  }
+
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // convertible replacement
+    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2<T>{}, static_cast<short>(1337));
+    CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
+  }
+}
+
+C2H_TEST("cuda::std::replace_if", "[parallel algorithm]", all_types)
+{
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
-    const auto policy = cuda::execution::__cub_par_unseq;
-    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(input.begin(), input.end(), is_power_of_2{}));
+    const auto policy = cuda::execution::gpu;
+    test_replace_if(policy, input);
   }
 
   SECTION("with provided stream")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(input.begin(), input.end(), is_power_of_2{}));
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
+    test_replace_if(policy, input);
   }
 
   SECTION("with provided memory_resource")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(input.begin(), input.end(), is_power_of_2{}));
+    const auto policy = cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource);
+    test_replace_if(policy, input);
   }
 
   SECTION("with provided stream and memory_resource")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    cuda::std::replace_if(policy, input.begin(), input.end(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(input.begin(), input.end(), is_power_of_2{}));
+    const auto policy =
+      cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
+    test_replace_if(policy, input);
   }
 }

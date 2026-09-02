@@ -8,14 +8,14 @@
 
 #include <cuda/std/mdspan>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 void check_status(cudaError_t status)
 {
   REQUIRE(status == cudaSuccess);
 }
 
-C2H_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]")
+CUB_TEST("DeviceCopy::Copy Mdspan API example", "[copy][mdspan]", CUB_SMALL)
 {
   // clang-format off
 // example-begin copy-mdspan-example-op

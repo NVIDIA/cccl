@@ -29,7 +29,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Shape>
-_CCCL_API inline void apply_access_property(
+_CCCL_HOST_DEVICE_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::persisting __prop) noexcept
@@ -53,7 +53,7 @@ _CCCL_API inline void apply_access_property(
 }
 
 template <typename _Shape>
-_CCCL_API inline void apply_access_property(
+_CCCL_HOST_DEVICE_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::normal __prop) noexcept

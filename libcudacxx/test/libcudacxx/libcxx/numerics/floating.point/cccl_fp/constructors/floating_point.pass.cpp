@@ -16,8 +16,10 @@
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <cuda::std::__fp_format Fmt, class Fp>
-__host__ __device__ constexpr void test_fp_constructor()
+TEST_FUNC constexpr void test_fp_constructor()
 {
   using T = cuda::std::__cccl_fp<Fmt>;
 
@@ -33,7 +35,7 @@ __host__ __device__ constexpr void test_fp_constructor()
 }
 
 template <cuda::std::__fp_format Fmt>
-__host__ __device__ constexpr void test_format()
+TEST_FUNC constexpr void test_format()
 {
   // standard floating point types
   test_fp_constructor<Fmt, float>();
@@ -92,7 +94,7 @@ __host__ __device__ constexpr void test_format()
   test_fp_constructor<Fmt, cuda::std::__cccl_fp<cuda::std::__fp_format::__fp4_nv_e2m1>>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_format<cuda::std::__fp_format::__binary16>();
   test_format<cuda::std::__fp_format::__binary32>();

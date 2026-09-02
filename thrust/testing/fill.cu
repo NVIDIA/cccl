@@ -285,13 +285,9 @@ DECLARE_UNITTEST(TestFillWithTrivialAssignment);
 
 struct TypeWithNonTrivialAssigment
 {
-  int x, y, z;
+  int x{0}, y{0}, z{0};
 
-  _CCCL_HOST_DEVICE TypeWithNonTrivialAssigment()
-      : x(0)
-      , y(0)
-      , z(0)
-  {}
+  TypeWithNonTrivialAssigment() = default;
 
   TypeWithNonTrivialAssigment(const TypeWithNonTrivialAssigment&) = default;
 

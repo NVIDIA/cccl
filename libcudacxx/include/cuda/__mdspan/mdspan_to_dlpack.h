@@ -22,27 +22,30 @@
 
 #if _CCCL_HAS_DLPACK()
 
-#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__internal/dlpack.h>
-#  include <cuda/__mdspan/host_device_mdspan.h>
-#  include <cuda/__type_traits/is_floating_point.h>
-#  include <cuda/__type_traits/is_vector_type.h>
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__fwd/complex.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
-#  include <cuda/std/__limits/numeric_limits.h>
-#  include <cuda/std/__type_traits/always_false.h>
-#  include <cuda/std/__type_traits/is_pointer.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/num_bits.h>
-#  include <cuda/std/__type_traits/remove_cv.h>
-#  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/array>
-#  include <cuda/std/cstdint>
-#  include <cuda/std/mdspan>
 
-#  include <cuda/std/__cccl/prologue.h>
+#  if _CCCL_HAS_DLPACK_VERSION_1()
+#    include <cuda/__driver/driver_api.h>
+#    include <cuda/__mdspan/host_device_mdspan.h>
+#    include <cuda/__type_traits/is_floating_point.h>
+#    include <cuda/__type_traits/is_vector_type.h>
+#    include <cuda/std/__cstddef/types.h>
+#    include <cuda/std/__exception/cuda_error.h>
+#    include <cuda/std/__exception/exception_macros.h>
+#    include <cuda/std/__fwd/complex.h>
+#    include <cuda/std/__host_stdlib/stdexcept>
+#    include <cuda/std/__limits/numeric_limits.h>
+#    include <cuda/std/__type_traits/always_false.h>
+#    include <cuda/std/__type_traits/is_pointer.h>
+#    include <cuda/std/__type_traits/is_same.h>
+#    include <cuda/std/__type_traits/num_bits.h>
+#    include <cuda/std/__type_traits/remove_cv.h>
+#    include <cuda/std/__utility/cmp.h>
+#    include <cuda/std/array>
+#    include <cuda/std/cstdint>
+#    include <cuda/std/mdspan>
+
+#    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -62,50 +65,50 @@ template <typename _ElementType>
   }
   //--------------------------------------------------------------------------------------------------------------------
   // bfloat16 (must come before general floating-point)
-#  if _CCCL_HAS_NVBF16()
+#    if _CCCL_HAS_NVBF16()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_bfloat16>)
   {
     return ::DLDataType{::kDLBfloat, 16, 1};
   }
-#  endif // _CCCL_HAS_NVBF16()
+#    endif // _CCCL_HAS_NVBF16()
   //--------------------------------------------------------------------------------------------------------------------
   // Low-precision Floating-point types (must come before general floating-point)
-#  if _CCCL_HAS_NVFP8_E4M3()
+#    if _CCCL_HAS_NVFP8_E4M3()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_e4m3>)
   {
     return ::DLDataType{::kDLFloat8_e4m3fn, 8, 1};
   }
-#  endif // _CCCL_HAS_NVFP8_E4M3()
-#  if _CCCL_HAS_NVFP8_E5M2()
+#    endif // _CCCL_HAS_NVFP8_E4M3()
+#    if _CCCL_HAS_NVFP8_E5M2()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_e5m2>)
   {
     return ::DLDataType{::kDLFloat8_e5m2, 8, 1};
   }
-#  endif // _CCCL_HAS_NVFP8_E5M2()
-#  if _CCCL_HAS_NVFP8_E8M0()
+#    endif // _CCCL_HAS_NVFP8_E5M2()
+#    if _CCCL_HAS_NVFP8_E8M0()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_e8m0>)
   {
     return ::DLDataType{::kDLFloat8_e8m0fnu, 8, 1};
   }
-#  endif // _CCCL_HAS_NVFP8_E8M0()
-#  if _CCCL_HAS_NVFP6_E2M3()
+#    endif // _CCCL_HAS_NVFP8_E8M0()
+#    if _CCCL_HAS_NVFP6_E2M3()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp6_e2m3>)
   {
     return ::DLDataType{::kDLFloat6_e2m3fn, 6, 1};
   }
-#  endif // _CCCL_HAS_NVFP6_E2M3()
-#  if _CCCL_HAS_NVFP6_E3M2()
+#    endif // _CCCL_HAS_NVFP6_E2M3()
+#    if _CCCL_HAS_NVFP6_E3M2()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp6_e3m2>)
   {
     return ::DLDataType{::kDLFloat6_e3m2fn, 6, 1};
   }
-#  endif // _CCCL_HAS_NVFP6_E3M2()
-#  if _CCCL_HAS_NVFP4_E2M1()
+#    endif // _CCCL_HAS_NVFP6_E3M2()
+#    if _CCCL_HAS_NVFP4_E2M1()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp4_e2m1>)
   {
     return ::DLDataType{::kDLFloat4_e2m1fn, 4, 1};
   }
-#  endif // _CCCL_HAS_NVFP4_E2M1()
+#    endif // _CCCL_HAS_NVFP4_E2M1()
   //--------------------------------------------------------------------------------------------------------------------
   // Floating-point types (after specific types)
   else if constexpr (::cuda::is_floating_point_v<_ElementType>)
@@ -123,7 +126,7 @@ template <typename _ElementType>
   }
   //--------------------------------------------------------------------------------------------------------------------
   // CUDA built-in vector types
-#  if _CCCL_HAS_CTK()
+#    if _CCCL_HAS_CTK()
   else if constexpr (::cuda::is_vector_type_v<_ElementType> || ::cuda::is_extended_fp_vector_type_v<_ElementType>)
   {
     constexpr ::cuda::std::uint16_t __lanes = ::cuda::std::tuple_size_v<_ElementType>;
@@ -140,7 +143,7 @@ template <typename _ElementType>
       return ::DLDataType{};
     }
   }
-#  endif // _CCCL_HAS_CTK()
+#    endif // _CCCL_HAS_CTK()
   //--------------------------------------------------------------------------------------------------------------------
   // Unsupported types
   else
@@ -189,11 +192,11 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
     {
       if (::cuda::std::cmp_greater(__mdspan.extent(__i), __max_extent))
       {
-        _CCCL_THROW(std::invalid_argument, "Extent is too large");
+        _CCCL_THROW(::std::invalid_argument, "Extent is too large");
       }
       if (::cuda::std::cmp_greater(__mdspan.stride(__i), __max_extent))
       {
-        _CCCL_THROW(std::invalid_argument, "Stride is too large");
+        _CCCL_THROW(::std::invalid_argument, "Stride is too large");
       }
       __wrapper.__shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
       __wrapper.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
@@ -226,7 +229,7 @@ to_dlpack_tensor(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _A
   const auto __status = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __mdspan.data_handle());
   if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "Failed to get device ordinal of a pointer");
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to get device ordinal of a pointer");
   }
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __ptr_dev_id);
 }
@@ -241,7 +244,8 @@ to_dlpack_tensor(const ::cuda::managed_mdspan<_ElementType, _Extents, _Layout, _
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
+#    include <cuda/std/__cccl/epilogue.h>
 
+#  endif // _CCCL_HAS_DLPACK_VERSION_1()
 #endif // _CCCL_HAS_DLPACK()
 #endif // _CUDA___MDSPAN_MDSPAN_TO_DLPACK_H

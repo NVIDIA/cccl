@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
+// NOLINTBEGIN(modernize-use-using)
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
@@ -24,13 +25,16 @@ CCCL_C_EXTERN_C_BEGIN
 typedef struct cccl_device_transform_build_result_t
 {
   int cc;
-  void* cubin;
-  size_t cubin_size;
+  void* payload;
+  size_t payload_size;
+  cccl_payload_kind_t payload_kind;
   CUlibrary library;
   CUkernel transform_kernel;
   int loaded_bytes_per_iteration;
   void* runtime_policy;
+  size_t runtime_policy_size;
   void* cache;
+  char* transform_kernel_lowered_name;
 } cccl_device_transform_build_result_t;
 
 CCCL_C_API CUresult cccl_device_unary_transform_build(
@@ -58,6 +62,21 @@ CCCL_C_API CUresult cccl_device_unary_transform_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_unary_transform_compile(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
+CCCL_C_API CUresult cccl_device_transform_load(cccl_device_transform_build_result_t* build_ptr);
 
 CCCL_C_API CUresult cccl_device_unary_transform(
   cccl_device_transform_build_result_t build,
@@ -95,6 +114,20 @@ CCCL_C_API CUresult cccl_device_binary_transform_build_ex(
   const char* ctk_path,
   cccl_build_config* config);
 
+CCCL_C_API CUresult cccl_device_binary_transform_compile(
+  cccl_device_transform_build_result_t* build_ptr,
+  cccl_iterator_t d_in1,
+  cccl_iterator_t d_in2,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
 CCCL_C_API CUresult cccl_device_binary_transform(
   cccl_device_transform_build_result_t build,
   cccl_iterator_t d_in1,
@@ -104,6 +137,24 @@ CCCL_C_API CUresult cccl_device_binary_transform(
   cccl_op_t op,
   CUstream stream);
 
+CCCL_C_API CUresult cccl_device_transform_link_ltoir(
+  cccl_device_transform_build_result_t* build, const void** input_blobs, const size_t* input_sizes, size_t num_inputs);
+
+// Serializes a populated build_result into a self-describing byte buffer.
+// On success *out_buf points to a heap allocation that the caller must free
+// with cccl_serialization_buffer_free, and *out_size holds its length. The build_result
+// itself is not modified. CUlibrary/CUkernel handles are not serialized.
+CCCL_C_API CUresult
+cccl_device_transform_serialize(const cccl_device_transform_build_result_t* build, void** out_buf, size_t* out_size);
+
+// Reconstructs a build_result from a buffer produced by cccl_device_transform_serialize.
+// On success build is populated as if by compile(); CUlibrary/CUkernel handles
+// remain null until cccl_device_transform_load is called. On failure build is
+// left unchanged and a non-success CUresult is returned.
+CCCL_C_API CUresult
+cccl_device_transform_deserialize(cccl_device_transform_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_transform_cleanup(cccl_device_transform_build_result_t* bld_ptr);
 
 CCCL_C_EXTERN_C_END
+// NOLINTEND(modernize-use-using)

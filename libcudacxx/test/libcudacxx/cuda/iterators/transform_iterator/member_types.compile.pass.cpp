@@ -21,7 +21,7 @@ template <class Iter, class Fn>
 _CCCL_CONCEPT HasIterCategory =
   _CCCL_REQUIRES_EXPR((Iter, Fn))(typename(typename cuda::transform_iterator<Fn, Iter>::iterator_category));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     // Member typedefs for contiguous iterator.

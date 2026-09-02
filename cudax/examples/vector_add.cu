@@ -33,7 +33,7 @@
  * of the programming guide with some additions like error checking.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda/std/span>
@@ -57,7 +57,7 @@ using cudax::out;
  */
 __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B, cudax::span<float> C)
 {
-  int i = blockDim.x * blockIdx.x + threadIdx.x;
+  int i = static_cast<int>(blockDim.x * blockIdx.x + threadIdx.x);
 
   if (i < A.size())
   {
@@ -68,7 +68,7 @@ __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B
 /**
  * Host main routine
  */
-int main(void)
+int main()
 try
 {
   // A CUDA stream on which to execute the vector addition kernel
@@ -86,8 +86,8 @@ try
   // Initialize the host input vectors
   for (int i = 0; i < numElements; ++i)
   {
-    A[i] = rand() / (float) RAND_MAX;
-    B[i] = rand() / (float) RAND_MAX;
+    A[i] = static_cast<float>(rand()) / (float) RAND_MAX;
+    B[i] = static_cast<float>(rand()) / (float) RAND_MAX;
   }
 
   // Define the kernel launch parameters

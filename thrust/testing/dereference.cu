@@ -13,8 +13,7 @@ template <typename Iterator1, typename Iterator2>
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 __global__
 #endif
-  void
-  simple_copy_on_device(Iterator1 first1, Iterator1 last1, Iterator2 first2)
+  void simple_copy_on_device(Iterator1 first1, Iterator1 last1, Iterator2 first2)
 {
   while (first1 != last1)
   {
@@ -49,7 +48,7 @@ void TestDeviceDereferenceDevicePtr()
   thrust::device_vector<int> output(input.size(), 0);
 
   thrust::device_ptr<int> _first1 = &input[0];
-  thrust::device_ptr<int> _last1  = _first1 + input.size();
+  thrust::device_ptr<int> _last1  = _first1 + static_cast<std::ptrdiff_t>(input.size());
   thrust::device_ptr<int> _first2 = &output[0];
 
   simple_copy(_first1, _last1, _first2);

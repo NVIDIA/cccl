@@ -14,6 +14,8 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 extern int arr[];
 
 // Verify that for an array of unknown bound `ranges::size` is ill-formed.

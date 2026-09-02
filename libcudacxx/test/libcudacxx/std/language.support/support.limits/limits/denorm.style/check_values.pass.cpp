@@ -20,8 +20,8 @@ struct two
   one _[2];
 };
 
-__host__ __device__ one test(cuda::std::float_round_style);
-__host__ __device__ two test(int);
+TEST_FUNC one test(cuda::std::float_round_style);
+TEST_FUNC two test(int);
 
 int main(int, char**)
 {

@@ -8,6 +8,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_memcpy.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -16,14 +23,37 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 //! @brief cub::DeviceMemcpy provides device-wide, parallel operations for copying data.
+//!
+//! @rst
+//!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All algorithms in DeviceMemcpy that accept an environment can be tuned by passing a custom :ref:`policy selector
+//! <cub-policy-selectors>` that returns a :cpp:struct:`cub::BatchedCopyPolicy`, as shown in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin memcpy-batched-policy-selector
+//!      :end-before: example-end memcpy-batched-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin memcpy-batched-tuning
+//!      :end-before: example-end memcpy-batched-tuning
+//! @endrst
 struct DeviceMemcpy
 {
   //! @rst
@@ -120,8 +150,7 @@ struct DeviceMemcpy
   //!   to be copied for each pair of buffers
   //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -150,7 +179,7 @@ struct DeviceMemcpy
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
     ::cuda::std::int64_t num_buffers,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
     static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
@@ -165,9 +194,99 @@ struct DeviceMemcpy
     // IDIV_CEIL(num_buffers, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::
-      DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BlockOffsetT, CopyAlg::Memcpy>::Dispatch(
-        d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+    return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+      d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+  }
+
+  //! @rst
+  //! Copies data from a batch of given source buffers to their corresponding destination buffer.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! .. note::
+  //!
+  //!    If any input buffer aliases memory from any output buffer the behavior is undefined.
+  //!    If any output buffer aliases memory of another output buffer the behavior is undefined.
+  //!    Input buffers can alias one another.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates usage of DeviceMemcpy::Batched with an environment:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin memcpy-batched-env
+  //!     :end-before: example-end memcpy-batched-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputBufferIt
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the pointers to
+  //!   the source memory buffers
+  //!
+  //! @tparam OutputBufferIt
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the pointers to
+  //!   the destination memory buffers
+  //!
+  //! @tparam BufferSizeIteratorT
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the number of bytes
+  //!   to be copied for each pair of buffers
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] input_buffer_it
+  //!   Device-accessible iterator providing the pointers to the source memory buffers
+  //!
+  //! @param[in] output_buffer_it
+  //!   Device-accessible iterator providing the pointers to the destination memory buffers
+  //!
+  //! @param[in] buffer_sizes
+  //!   Device-accessible iterator providing the number of bytes to be copied for each pair of buffers
+  //!
+  //! @param[in] num_buffers
+  //!   The total number of buffer pairs
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputBufferIt,
+            typename OutputBufferIt,
+            typename BufferSizeIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputBufferIt, void*>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Batched(InputBufferIt input_buffer_it,
+          OutputBufferIt output_buffer_it,
+          BufferSizeIteratorT buffer_sizes,
+          ::cuda::std::int64_t num_buffers,
+          const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMemcpy::Batched");
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
+                  "DeviceMemcpy::Batched only supports copying of memory buffers."
+                  "Please consider using DeviceCopy::Batched instead.");
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<OutputBufferIt>>,
+                  "DeviceMemcpy::Batched only supports copying of memory buffers."
+                  "Please consider using DeviceCopy::Batched instead.");
+
+    using BlockOffsetT            = uint32_t;
+    using default_policy_selector = detail::batch_memcpy::policy_selector;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+          storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream, policy_selector);
+      });
   }
 };
 

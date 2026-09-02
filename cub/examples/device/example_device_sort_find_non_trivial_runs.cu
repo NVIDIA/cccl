@@ -17,11 +17,15 @@
 
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_run_length_encode.cuh>
-#include <cub/util_allocator.cuh>
+
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_pool>
+#include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #include <algorithm>
-
-#include <stdio.h>
+#include <cstdio>
 
 #include "../../test/test_util.h"
 
@@ -32,7 +36,6 @@ using namespace cub;
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console
-CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
 // Test generation
@@ -181,7 +184,6 @@ int main(int argc, char** argv)
   if (args.CheckCmdLineFlag("help"))
   {
     printf("%s "
-           "[--device=<device-id>] "
            "[--i=<timing iterations> "
            "[--n=<input items, default 40> "
            "[--maxkey=<max key, default 20 (use -1 to test only unique keys)>]"
@@ -191,8 +193,10 @@ int main(int argc, char** argv)
     exit(0);
   }
 
-  // Initialize device
-  CubDebugExit(args.DeviceInit());
+  // Set up device, stream, and memory resource
+  const auto device                 = cuda::devices[0];
+  const auto stream                 = cuda::stream{device};
+  const auto device_memory_resource = cuda::device_default_memory_pool(device);
 
   // Allocate host arrays (problem and reference solution)
 
@@ -205,150 +209,104 @@ int main(int argc, char** argv)
   printf("Computing reference solution on CPU for %d items (max key %d)\n", num_items, max_key);
   fflush(stdout);
 
-  Initialize(h_keys, h_values, num_items, max_key);
+  Initialize(h_keys, h_values, num_items, static_cast<int>(max_key));
   int num_runs = Solve(h_keys, h_values, num_items, h_offsets_reference, h_lengths_reference);
 
   printf("%d non-trivial runs\n", num_runs);
   fflush(stdout);
 
   // Repeat for performance timing
-  GpuTimer gpu_timer;
-  GpuTimer gpu_rle_timer;
   float elapsed_millis     = 0.0;
   float elapsed_rle_millis = 0.0;
   for (int i = 0; i <= timing_iterations; ++i)
   {
     // Allocate and initialize device arrays for sorting
-    DoubleBuffer<Key> d_keys;
-    DoubleBuffer<Value> d_values;
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[0], sizeof(Key) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[1], sizeof(Key) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_values.d_buffers[0], sizeof(Value) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_values.d_buffers[1], sizeof(Value) * num_items));
-
-    CubDebugExit(
-      cudaMemcpy(d_keys.d_buffers[d_keys.selector], h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
-    CubDebugExit(
-      cudaMemcpy(d_values.d_buffers[d_values.selector], h_values, sizeof(int) * num_items, cudaMemcpyHostToDevice));
+    auto d_keys_0   = cuda::make_buffer<Key>(stream, device_memory_resource, h_keys, h_keys + num_items);
+    auto d_keys_1   = cuda::make_buffer<Key>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_values_0 = cuda::make_buffer<Value>(stream, device_memory_resource, h_values, h_values + num_items);
+    auto d_values_1 = cuda::make_buffer<Value>(stream, device_memory_resource, num_items, cuda::no_init);
+    DoubleBuffer<Key> d_keys{d_keys_0.data(), d_keys_1.data()};
+    DoubleBuffer<Value> d_values{d_values_0.data(), d_values_1.data()};
 
     // Start timer
-    gpu_timer.Start();
+    const auto start_event = stream.record_timed_event();
 
     // Allocate temporary storage for sorting
     size_t temp_storage_bytes = 0;
     void* d_temp_storage      = nullptr;
-    CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
-    CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+    CubDebugExit(DeviceRadixSort::SortPairs(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(Key) * 8, stream.get()));
+    auto sort_temp_storage =
+      cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
 
     // Do the sort
-    CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
-
-    // Free unused buffers and sorting temporary storage
-    if (d_keys.d_buffers[d_keys.selector ^ 1])
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[d_keys.selector ^ 1]));
-    }
-    if (d_values.d_buffers[d_values.selector ^ 1])
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[d_values.selector ^ 1]));
-    }
-    if (d_temp_storage)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
-    }
+    CubDebugExit(DeviceRadixSort::SortPairs(
+      sort_temp_storage.data(), temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(Key) * 8, stream.get()));
 
     // Start timer
-    gpu_rle_timer.Start();
+    const auto rle_start_event = stream.record_timed_event();
 
     // Allocate device arrays for enumerating non-trivial runs
-    int* d_offests_out = nullptr;
-    int* d_lengths_out = nullptr;
-    int* d_num_runs    = nullptr;
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_offests_out, sizeof(int) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_lengths_out, sizeof(int) * num_items));
-    CubDebugExit(g_allocator.DeviceAllocate((void**) &d_num_runs, sizeof(int) * 1));
+    auto d_offsets_out = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_lengths_out = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
+    auto d_num_runs    = cuda::make_buffer<int>(stream, device_memory_resource, 1, cuda::no_init);
 
     // Allocate temporary storage for isolating non-trivial runs
-    d_temp_storage = nullptr;
+    d_temp_storage     = nullptr;
+    temp_storage_bytes = 0;
     CubDebugExit(DeviceRunLengthEncode::NonTrivialRuns(
       d_temp_storage,
       temp_storage_bytes,
       d_keys.d_buffers[d_keys.selector],
-      d_offests_out,
-      d_lengths_out,
-      d_num_runs,
-      num_items));
-    CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+      d_offsets_out.data(),
+      d_lengths_out.data(),
+      d_num_runs.data(),
+      num_items,
+      stream.get()));
+    auto rle_temp_storage =
+      cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
 
     // Do the isolation
     CubDebugExit(DeviceRunLengthEncode::NonTrivialRuns(
-      d_temp_storage,
+      rle_temp_storage.data(),
       temp_storage_bytes,
       d_keys.d_buffers[d_keys.selector],
-      d_offests_out,
-      d_lengths_out,
-      d_num_runs,
-      num_items));
-
-    // Free keys buffer
-    if (d_keys.d_buffers[d_keys.selector])
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[d_keys.selector]));
-    }
+      d_offsets_out.data(),
+      d_lengths_out.data(),
+      d_num_runs.data(),
+      num_items,
+      stream.get()));
 
     //
     // Hypothetically do stuff with the original key-indices corresponding to non-trivial runs of identical keys
     //
 
     // Stop sort timer
-    gpu_timer.Stop();
-    gpu_rle_timer.Stop();
+    const auto end_event = stream.record_timed_event();
+    stream.sync();
 
     if (i == 0)
     {
       // First iteration is a warmup: // Check for correctness (and display results, if specified)
 
       printf("\nRUN OFFSETS: \n");
-      int compare = CompareDeviceResults(h_offsets_reference, d_offests_out, num_runs, true, g_verbose);
+      int compare = CompareDeviceResults(h_offsets_reference, d_offsets_out.data(), num_runs, true, g_verbose);
       printf("\t\t %s ", compare ? "FAIL" : "PASS");
 
       printf("\nRUN LENGTHS: \n");
-      compare |= CompareDeviceResults(h_lengths_reference, d_lengths_out, num_runs, true, g_verbose);
+      compare |= CompareDeviceResults(h_lengths_reference, d_lengths_out.data(), num_runs, true, g_verbose);
       printf("\t\t %s ", compare ? "FAIL" : "PASS");
 
       printf("\nNUM RUNS: \n");
-      compare |= CompareDeviceResults(&num_runs, d_num_runs, 1, true, g_verbose);
+      compare |= CompareDeviceResults(&num_runs, d_num_runs.data(), 1, true, g_verbose);
       printf("\t\t %s ", compare ? "FAIL" : "PASS");
 
       AssertEquals(0, compare);
     }
     else
     {
-      elapsed_millis += gpu_timer.ElapsedMillis();
-      elapsed_rle_millis += gpu_rle_timer.ElapsedMillis();
-    }
-
-    // GPU cleanup
-
-    if (d_values.d_buffers[d_values.selector])
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[d_values.selector]));
-    }
-    if (d_offests_out)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_offests_out));
-    }
-    if (d_lengths_out)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_lengths_out));
-    }
-    if (d_num_runs)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_num_runs));
-    }
-    if (d_temp_storage)
-    {
-      CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
+      elapsed_millis += static_cast<float>((end_event - start_event).count()) / 1.0e6f;
+      elapsed_rle_millis += static_cast<float>((end_event - rle_start_event).count()) / 1.0e6f;
     }
   }
 
@@ -377,8 +335,8 @@ int main(int argc, char** argv)
     printf("%d timing iterations, average time to sort and isolate non-trivial duplicates: %.3f ms (%.3f ms spent in "
            "RLE isolation)\n",
            timing_iterations,
-           elapsed_millis / timing_iterations,
-           elapsed_rle_millis / timing_iterations);
+           elapsed_millis / static_cast<float>(timing_iterations),
+           elapsed_rle_millis / static_cast<float>(timing_iterations));
   }
 
   return 0;

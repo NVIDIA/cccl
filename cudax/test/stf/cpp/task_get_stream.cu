@@ -24,7 +24,8 @@ void test_stream()
   context ctx;
 
   auto token = ctx.token();
-  auto t     = ctx.task(token.write());
+  EXPECT(token.is_void_interface());
+  auto t = ctx.task(token.write());
   t.start();
   cudaStream_t s = t.get_stream();
   EXPECT(s != nullptr);

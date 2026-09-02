@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -40,7 +41,6 @@
 namespace cuda::experimental::stf
 {
 class logical_data_untyped;
-class data_place;
 class task;
 template <typename T>
 class shape_of;
@@ -78,9 +78,6 @@ struct rw_type_of<mdspan<const T, Extents, Layout, Accessor<const T>>>
 {
   using type = mdspan<T, Extents, Layout, Accessor<T>>;
 };
-
-template <class T>
-inline constexpr bool always_false = false;
 } // namespace reserved
 
 /**
@@ -119,7 +116,8 @@ mdspan<T, Extents, Layout, Accessor<T>> to_rw_type_of(const mdspan<const T, Exte
   }
   else
   {
-    static_assert(reserved::always_false<T>, "Need to implement the conversion of Accessor<T> to Accessor<const T>");
+    static_assert(::cuda::std::__always_false_v<T>,
+                  "Need to implement the conversion of Accessor<T> to Accessor<const T>");
   }
   _CCCL_UNREACHABLE();
 }
@@ -132,7 +130,7 @@ void dep_allocate(
   Data& d,
   access_mode mode,
   const data_place& dplace,
-  const ::std::optional<exec_place> eplace,
+  const ::cuda::std::optional<exec_place> eplace,
   instance_id_t instance_id,
   event_list& prereqs);
 } // end namespace reserved
@@ -158,6 +156,7 @@ public:
    * @brief Allocate data and return a prerequisite event list.
    *
    * @param ctx Backend context state
+   * @param custom_allocator Allocator used for data allocation
    * @param memory_node The memory node where the data is stored
    * @param instance_id The ID of the data instance
    * @param s Pointer to the size of the allocated data
@@ -177,6 +176,7 @@ public:
    * @brief Deallocate data and return a prerequisite event list.
    *
    * @param ctx Backend context state
+   * @param custom_allocator Allocator used for data deallocation
    * @param memory_node The memory node where the data is stored
    * @param instance_id The ID of the data instance
    * @param extra_args Additional arguments required for deallocation
@@ -198,7 +198,6 @@ public:
    * @param dst_instance_id The destination instance ID
    * @param src_memory_node The source memory node
    * @param src_instance_id The source instance ID
-   * @param arg Additional arguments required for copying data
    * @param prereqs Prerequisite event list, will be updated as a side effect
    */
   virtual void data_copy(
@@ -215,20 +214,20 @@ public:
    * @param instance_id The ID of the data instance
    * @return true if the instance was pinned, false otherwise
    */
-  virtual bool pin_host_memory(instance_id_t /*instance_id*/)
+  virtual bool pin_host_memory(instance_id_t instance_id)
   {
     return false;
   }
 
-  virtual ::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
+  virtual ::cuda::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
   {
-    return ::std::nullopt;
+    return ::cuda::std::nullopt;
   }
 
   /// @brief Unpin host memory.
   ///
   /// @param instance_id The ID of the data instance
-  virtual void unpin_host_memory(instance_id_t /*instance_id*/) {}
+  virtual void unpin_host_memory(instance_id_t instance_id) {}
 
   /**
    * @brief Get the hash of the data representation for the given instance ID.
@@ -259,7 +258,7 @@ public:
   {
     using R            = rw_type_of<T>;
     const auto& result = *static_cast<const R*>(get_common_impl(typeid(R), type_name<R>));
-    if constexpr (::std::is_same_v<T, R>)
+    if constexpr (::cuda::std::is_same_v<T, R>)
     {
       return result; // lvalue straight into the store
     }
@@ -281,7 +280,7 @@ public:
   {
     using R      = rw_type_of<T>;
     auto& result = *static_cast<R*>(get_instance_impl(instance_id, typeid(R), type_name<R>));
-    if constexpr (::std::is_same_v<T, R>)
+    if constexpr (::cuda::std::is_same_v<T, R>)
     {
       return result; // lvalue straight into the store
     }
@@ -310,11 +309,13 @@ public:
    *
    * @param ctx The backend context state
    * @param d The logical data_untyped
+   * @param tp The current task
    * @return The ID of the data instance for this logical data
    */
   template <typename backend_ctx_untyped>
-  instance_id_t get_default_instance_id(backend_ctx_untyped&, const logical_data_untyped& d, task& tp) const
+  instance_id_t get_default_instance_id(backend_ctx_untyped& ctx, const logical_data_untyped& d, task& tp) const
   {
+    (void) ctx;
     return tp.find_data_instance_id(d);
   }
 

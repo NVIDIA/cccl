@@ -1,19 +1,28 @@
 .. _cccl-runtime-buffer:
 
+.. |cuda_make_buffer| replace:: ``cuda::make_buffer``
+.. _cuda_make_buffer: ../api/namespacecuda_1a8d909070d4cf758e776659b91e473a6f.html
+
 Buffer
 ======
 
 The buffer API provides a typed container allocated from memory resources. It handles stream-ordered allocation, initialization, and deallocation of memory.
 
-``cuda::buffer``
-----------------
+:cpp:class:`cuda::buffer`
+---------------------------
 .. _cccl-runtime-buffer-buffer:
 
-``cuda::buffer`` is a container that manages typed storage allocated from a given :ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided :ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require a kernel launch. The stream provided during construction is stored and later used for deallocation of the buffer, either explicitly or when the buffer destructor is called.
+:cpp:class:`cuda::buffer` is a container that manages typed storage allocated from a given
+:ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided
+:ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require
+a kernel launch. The stream provided during construction is stored and later used for deallocation of the buffer,
+either explicitly or when the buffer destructor is called.
 
 Buffer owns a copy of the memory resource, which means it must be copy-constructible. If a resource is not copy-constructible, like memory pool objects, :ref:`shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>` can be used to attach shared ownership to a resource type.
 
-In addition to being typed, ``buffer`` also takes a set of :ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to ensure that memory accessibility and other constraints are checked at compile time.
+In addition to being typed, :cpp:class:`cuda::buffer` also takes a set of
+:ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to ensure that memory accessibility and other
+constraints are checked at compile time.
 
 While the buffer operates in stream order, it can also be constructed with a :ref:`synchronous_resource <libcudacxx-extended-api-memory-resources-synchronous-resource>`, in which case it will automatically use the :ref:`synchronous_resource_adapter <libcudacxx-extended-api-memory-resources-synchronous-adapter>` to wrap the provided resource.
 
@@ -49,8 +58,8 @@ Type Aliases
 
 Convenience type aliases are provided for common buffer types:
 
-- ``cuda::device_buffer<T>`` - Buffer with ``device_accessible`` property
-- ``cuda::host_buffer<T>`` - Buffer with ``host_accessible`` property
+- :cpp:any:`cuda::device_buffer` - Buffer with ``device_accessible`` property
+- :cpp:any:`cuda::host_buffer` - Buffer with ``host_accessible`` property
 
 Example:
 
@@ -83,6 +92,45 @@ Buffers can be constructed in several ways, depending on how you want to initial
 
 In each case the memory is allocated and initialized in stream order on the provided stream.
 
+.. warning::
+
+   Construction from host iterators or host ranges is stream-ordered: the copy from the source is enqueued on the
+   provided stream. The source memory must remain valid until that copy completes on the stream, not just until the
+   constructor returns. This follows the same ordering rules as other asynchronous work submitted to a
+   `CUDA stream <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#cuda-streams>`__.
+
+   Avoid returning a buffer constructed from a temporary host source:
+
+   .. code:: cpp
+
+      cuda::device_buffer<int> make_buffer_from_values(
+        std::vector<int> values,
+        cuda::stream_ref stream,
+        cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
+      {
+        return cuda::device_buffer<int>{stream, mr, values.begin(), values.end()};
+        // BUG: values is destroyed when the function returns, but the H2D copy may still be in flight.
+      }
+
+   If the host source must be destroyed before the caller can synchronize later, synchronize the stream first:
+
+   .. code:: cpp
+
+      cuda::device_buffer<int> make_buffer_from_values(
+        std::vector<int> values,
+        cuda::stream_ref stream,
+        cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
+      {
+        auto ret = cuda::device_buffer<int>{stream, mr, values.begin(), values.end()};
+        stream.sync(); // Ensure the H2D copy completes before values is destroyed.
+        return ret;
+      }
+
+   Some ``cudaMemcpyAsync`` paths historically synchronized implicitly when copying from pageable host memory, which
+   could mask this bug. Do not rely on that behavior; newer platforms and asynchronous copy implementations may
+   perform a truly asynchronous copy. The same lifetime rule applies to temporary host sources such as initializer
+   lists, whose backing storage is destroyed at the end of the full expression.
+
 Example:
 
 .. code:: cpp
@@ -108,8 +156,11 @@ Example:
      std::vector<int> vec{1, 2, 3, 4, 5};
      cuda::device_buffer<int> buf4{stream, mr, vec.begin(), vec.end()};
 
-     // From initializer list
-     cuda::device_buffer<int> buf5{stream, mr, {1, 2, 3, 4, 5}};
+     // From range
+     cuda::device_buffer<int> buf5{stream, mr, vec};
+
+     // Keep local host sources alive until stream-ordered copies complete.
+     stream.sync();
    }
 
 Stored Stream Management and Deallocation
@@ -135,8 +186,8 @@ Example:
    #include <cuda/stream>
 
    void manage_stream_and_deallocate() {
-     cuda::stream stream1{};
-     cuda::stream stream2{};
+     cuda::stream stream1{cuda::devices[0]};
+     cuda::stream stream2{cuda::devices[0]};
      auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
     // Allocate on stream1
@@ -150,13 +201,13 @@ Example:
     // Alternative would be to call buf.destroy(stream2)
    }
 
-``cuda::make_buffer``
----------------------
+|cuda_make_buffer|_
+------------------------------------------------------------------------------------------------
 .. _cccl-runtime-buffer-make-buffer:
 
-``cuda::make_buffer()`` is a factory function that creates buffers with automatic property deduction from the memory
-resource. It supports the same construction patterns as the buffer constructors, in addition to an overload that sets
-all elements of the buffer to the same value.
+|cuda_make_buffer|_ is a factory function that
+creates buffers with automatic property deduction from the memory resource. It supports the same construction patterns
+as the buffer constructors, in addition to an overload that sets all elements of the buffer to the same value.
 
 Example:
 
@@ -197,10 +248,13 @@ Example:
    #include <cuda/memory_resource>
    #include <cuda/std/cstddef>
    #include <algorithm>
+   #include <vector>
 
    void iterate_buffer(cuda::stream_ref stream) {
      auto mr = cuda::pinned_default_memory_pool();
-     cuda::host_buffer<int> buf{stream, mr, {1, 2, 3, 4, 5}};
+     std::vector<int> vec{1, 2, 3, 4, 5};
+     cuda::host_buffer<int> buf{stream, mr, vec};
+     stream.sync();
 
      // Unsynchronized element access by index
      for (cuda::std::size_t i = 0; i < buf.size(); ++i) {

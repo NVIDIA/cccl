@@ -8,12 +8,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 #include <cuda/devices>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-__device__ void test_current()
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void test_current()
 {
   // 1. Test cuda::device::current_arch_id() signature.
   static_assert(cuda::std::is_same_v<cuda::arch_id, decltype(cuda::device::current_arch_id())>);
@@ -38,6 +43,8 @@ __device__ void test_current()
     (assert(arch == cuda::arch_id::sm_100a); return;),
     NV_HAS_FEATURE_SM_103a,
     (assert(arch == cuda::arch_id::sm_103a); return;),
+    NV_HAS_FEATURE_SM_107a,
+    (assert(arch == cuda::arch_id::sm_107a); return;),
     NV_HAS_FEATURE_SM_110a,
     (assert(arch == cuda::arch_id::sm_110a); return;),
     NV_HAS_FEATURE_SM_120a,
@@ -73,6 +80,8 @@ __device__ void test_current()
     (assert(arch == cuda::arch_id::sm_100); return;),
     NV_IS_EXACTLY_SM_103,
     (assert(arch == cuda::arch_id::sm_103); return;),
+    NV_IS_EXACTLY_SM_107,
+    (assert(arch == cuda::arch_id::sm_107); return;),
     NV_IS_EXACTLY_SM_110,
     (assert(arch == cuda::arch_id::sm_110); return;),
     NV_IS_EXACTLY_SM_120,
@@ -84,7 +93,7 @@ __device__ void test_current()
   )
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // 1. Test cuda::arch_id enum values.
   static_assert(cuda::std::is_scoped_enum_v<cuda::arch_id>);
@@ -102,12 +111,14 @@ __host__ __device__ constexpr bool test()
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_90) == 90);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_100) == 100);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_103) == 103);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_107) == 107);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_110) == 110);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_120) == 120);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_121) == 121);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_90a) == 90 * 100000);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_100a) == 100 * 100000);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_103a) == 103 * 100000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_107a) == 107 * 100000);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_110a) == 110 * 100000);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_120a) == 120 * 100000);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_121a) == 121 * 100000);
@@ -119,6 +130,8 @@ __host__ __device__ constexpr bool test()
 
     cuda::arch_id id_lowest = cuda::to_arch_id(cuda::compute_capability{60});
     assert(id_lowest == cuda::arch_id::sm_60);
+    cuda::arch_id id_middle = cuda::to_arch_id(cuda::compute_capability{107});
+    assert(id_middle == cuda::arch_id::sm_107);
     cuda::arch_id id_highest = cuda::to_arch_id(cuda::compute_capability{120});
     assert(id_highest == cuda::arch_id::sm_120);
   }
@@ -130,6 +143,8 @@ __host__ __device__ constexpr bool test()
 
     cuda::arch_id id_lowest = cuda::to_arch_specific_id(cuda::compute_capability{90});
     assert(id_lowest == cuda::arch_id::sm_90a);
+    cuda::arch_id id_middle = cuda::to_arch_specific_id(cuda::compute_capability{107});
+    assert(id_middle == cuda::arch_id::sm_107a);
     cuda::arch_id id_highest = cuda::to_arch_specific_id(cuda::compute_capability{120});
     assert(id_highest == cuda::arch_id::sm_120a);
   }

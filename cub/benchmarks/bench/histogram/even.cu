@@ -17,31 +17,6 @@
 template <typename SampleT, typename CounterT, typename OffsetT>
 static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
 {
-  constexpr int num_channels        = 1;
-  constexpr int num_active_channels = 1;
-
-  using sample_iterator_t = SampleT*;
-
-#if !TUNE_BASE
-  using policy_t = policy_hub_t<key_t, num_channels, num_active_channels>;
-  using dispatch_t =
-    cub::DispatchHistogram<num_channels, //
-                           num_active_channels,
-                           sample_iterator_t,
-                           CounterT,
-                           SampleT,
-                           OffsetT,
-                           policy_t>;
-#else // TUNE_BASE
-  using dispatch_t =
-    cub::DispatchHistogram<num_channels, //
-                           num_active_channels,
-                           sample_iterator_t,
-                           CounterT,
-                           /* LevelT = */ SampleT,
-                           OffsetT>;
-#endif // TUNE_BASE
-
   const auto entropy   = str_to_entropy(state.get_string("Entropy"));
   const auto elements  = state.get_int64("Elements{io}");
   const auto num_bins  = state.get_int64("Bins");
@@ -66,49 +41,30 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   SampleT* d_input      = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
 
-  std::uint8_t* d_temp_storage = nullptr;
-  std::size_t temp_storage_bytes{};
-
-  cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
-  OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
-  OffsetT num_rows           = 1;
-  OffsetT row_stride_samples = num_row_pixels;
-
   state.add_element_count(elements);
   state.add_global_memory_reads<SampleT>(elements);
   state.add_global_memory_writes<CounterT>(num_bins);
 
-  dispatch_t::DispatchEven(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_input,
-    {d_histogram},
-    {num_levels},
-    {lower_level},
-    {upper_level},
-    num_row_pixels,
-    num_rows,
-    row_stride_samples,
-    0,
-    is_byte_sample);
-
-  thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceHistogram::HistogramEven,
+      "HistogramEven failed",
       d_input,
-      {d_histogram},
-      {num_levels},
-      {lower_level},
-      {upper_level},
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      launch.get_stream(),
-      is_byte_sample);
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      static_cast<OffsetT>(elements),
+      env);
   });
 }
 

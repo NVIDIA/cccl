@@ -20,20 +20,20 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral<T>::value, int> = 0>
-__host__ __device__ constexpr int make_expected_max_digits10()
+TEST_FUNC constexpr int make_expected_max_digits10()
 {
   return 0;
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_integral<T>::value, int> = 0>
-__host__ __device__ constexpr int make_expected_max_digits10()
+TEST_FUNC constexpr int make_expected_max_digits10()
 {
   // std::ceil(std::numeric_limits<float>::digits * std::log10(2) + 1)
   return static_cast<int>((cuda::std::numeric_limits<T>::digits * 30103l + 99999l) / 100000l) + 1;
 }
 
 template <class T, int expected = make_expected_max_digits10<T>()>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::max_digits10 == expected, "max_digits10 test 1");
   static_assert(cuda::std::numeric_limits<const T>::max_digits10 == expected, "max_digits10 test 2");

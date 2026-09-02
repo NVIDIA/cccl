@@ -14,7 +14,7 @@
  *         times) to check that parallel_for works on a grid of places.
  */
 
-#include <cuda/experimental/__stf/places/tiled_partition.cuh>
+#include <cuda/experimental/__places/partitions/tiled_partition.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;

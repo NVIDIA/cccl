@@ -22,13 +22,16 @@
 #    (e.g. cuda/cccl/parallel/experimental/cu13/_bindings_impl.cp312-win_amd64.pyd)
 #    to the current process's DLL search path using `os.add_dll_directory`.
 
+from __future__ import annotations
+
 import importlib
 import os
 
-from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
 from cuda.pathfinder import (  # type: ignore[import-not-found]
     load_nvidia_dynamic_lib,
 )
+
+from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
 
 
 def _load_cuda_libraries():

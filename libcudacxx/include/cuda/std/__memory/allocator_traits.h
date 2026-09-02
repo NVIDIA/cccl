@@ -53,43 +53,51 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   template <class _Tp>                                       \
   inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 
+// Allocator::pointer is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 // __pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer)
 template <class _Tp, class _Alloc, class _RawAlloc = remove_reference_t<_Alloc>, bool = __has_pointer_v<_RawAlloc>>
 struct __pointer
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _RawAlloc::pointer;
+  using type _CCCL_NODEBUG = typename _RawAlloc::pointer;
 };
 template <class _Tp, class _Alloc, class _RawAlloc>
 struct __pointer<_Tp, _Alloc, _RawAlloc, false>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Tp*;
+  using type _CCCL_NODEBUG = _Tp*;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+// Allocator::const_pointer is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 // __const_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_pointer, const_pointer)
 template <class _Tp, class _Ptr, class _Alloc, bool = __has_const_pointer_v<_Alloc>>
 struct __const_pointer
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::const_pointer;
+  using type _CCCL_NODEBUG = typename _Alloc::const_pointer;
 };
 template <class _Tp, class _Ptr, class _Alloc>
 struct __const_pointer<_Tp, _Ptr, _Alloc, false>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename pointer_traits<_Ptr>::template rebind<const _Tp>;
+  using type _CCCL_NODEBUG = typename pointer_traits<_Ptr>::template rebind<const _Tp>;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 // __void_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer)
 template <class _Ptr, class _Alloc, bool = __has_void_pointer_v<_Alloc>>
 struct __void_pointer
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::void_pointer;
+  using type _CCCL_NODEBUG = typename _Alloc::void_pointer;
 };
 template <class _Ptr, class _Alloc>
 struct __void_pointer<_Ptr, _Alloc, false>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename pointer_traits<_Ptr>::template rebind<void>;
+  using type _CCCL_NODEBUG = typename pointer_traits<_Ptr>::template rebind<void>;
 };
 
 // __const_void_pointer
@@ -97,12 +105,12 @@ _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_void_pointer, const_void_pointe
 template <class _Ptr, class _Alloc, bool = __has_const_void_pointer_v<_Alloc>>
 struct __const_void_pointer
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::const_void_pointer;
+  using type _CCCL_NODEBUG = typename _Alloc::const_void_pointer;
 };
 template <class _Ptr, class _Alloc>
 struct __const_void_pointer<_Ptr, _Alloc, false>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename pointer_traits<_Ptr>::template rebind<const void>;
+  using type _CCCL_NODEBUG = typename pointer_traits<_Ptr>::template rebind<const void>;
 };
 
 // __size_type
@@ -113,7 +121,7 @@ struct __size_type : make_unsigned<_DiffType>
 template <class _Alloc, class _DiffType>
 struct __size_type<_Alloc, _DiffType, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::size_type;
+  using type _CCCL_NODEBUG = typename _Alloc::size_type;
 };
 
 // __alloc_traits_difference_type
@@ -121,12 +129,12 @@ _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_alloc_traits_difference_type, differe
 template <class _Alloc, class _Ptr, bool = __has_alloc_traits_difference_type_v<_Alloc>>
 struct __alloc_traits_difference_type
 {
-  using type _CCCL_NODEBUG_ALIAS = typename pointer_traits<_Ptr>::difference_type;
+  using type _CCCL_NODEBUG = typename pointer_traits<_Ptr>::difference_type;
 };
 template <class _Alloc, class _Ptr>
 struct __alloc_traits_difference_type<_Alloc, _Ptr, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::difference_type;
+  using type _CCCL_NODEBUG = typename _Alloc::difference_type;
 };
 
 // __propagate_on_container_copy_assignment
@@ -138,7 +146,7 @@ struct __propagate_on_container_copy_assignment : false_type
 template <class _Alloc>
 struct __propagate_on_container_copy_assignment<_Alloc, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::propagate_on_container_copy_assignment;
+  using type _CCCL_NODEBUG = typename _Alloc::propagate_on_container_copy_assignment;
 };
 
 // __propagate_on_container_move_assignment
@@ -150,7 +158,7 @@ struct __propagate_on_container_move_assignment : false_type
 template <class _Alloc>
 struct __propagate_on_container_move_assignment<_Alloc, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::propagate_on_container_move_assignment;
+  using type _CCCL_NODEBUG = typename _Alloc::propagate_on_container_move_assignment;
 };
 
 // __propagate_on_container_swap
@@ -161,41 +169,49 @@ struct __propagate_on_container_swap : false_type
 template <class _Alloc>
 struct __propagate_on_container_swap<_Alloc, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::propagate_on_container_swap;
+  using type _CCCL_NODEBUG = typename _Alloc::propagate_on_container_swap;
 };
 
-// __is_always_equal
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal, is_always_equal)
-template <class _Alloc, bool = __has_is_always_equal_v<_Alloc>>
-struct __is_always_equal : is_empty<_Alloc>
+_CCCL_SUPPRESS_DEPRECATED_PUSH // std::allocator::is_always_equal has been deprecated
+  _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+
+  // __is_always_equal
+  _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal,
+                                       is_always_equal) template <class _Alloc, bool = __has_is_always_equal_v<_Alloc>>
+  struct __is_always_equal : is_empty<_Alloc>
 {};
 template <class _Alloc>
 struct __is_always_equal<_Alloc, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc::is_always_equal;
+  using type _CCCL_NODEBUG = typename _Alloc::is_always_equal;
 };
+
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+// Allocator::rebind is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 
 // __allocator_traits_rebind
 template <class _Tp, class _Up>
 _CCCL_CONCEPT __has_member_rebind_other =
   _CCCL_REQUIRES_EXPR((_Tp, _Up))(typename(typename _Tp::template rebind<_Up>::other));
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _Up, bool = __has_member_rebind_other<_Tp, _Up>>
 struct __allocator_traits_rebind
 {
   static_assert(__has_member_rebind_other<_Tp, _Up>, "This allocator has to implement rebind");
-  using type _CCCL_NODEBUG_ALIAS = typename _Tp::template rebind<_Up>::other;
+  using type _CCCL_NODEBUG = typename _Tp::template rebind<_Up>::other;
 };
 template <template <class, class...> class _Alloc, class _Tp, class... _Args, class _Up>
 struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, true>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Alloc<_Tp, _Args...>::template rebind<_Up>::other;
+  using type _CCCL_NODEBUG = typename _Alloc<_Tp, _Args...>::template rebind<_Up>::other;
 };
 template <template <class, class...> class _Alloc, class _Tp, class... _Args, class _Up>
 struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, false>
 {
-  using type _CCCL_NODEBUG_ALIAS = _Alloc<_Up, _Args...>;
+  using type _CCCL_NODEBUG = _Alloc<_Up, _Args...>;
 };
 
 template <class _Alloc, class _Tp>
@@ -347,7 +363,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void deallocate(allocator_type& __a, pointer __p, size_type __n) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void deallocate( // NOLINT(bugprone-exception-escape)
+    allocator_type& __a,
+    pointer __p,
+    size_type __n) noexcept
   {
     __a.deallocate(__p, __n);
   }
@@ -510,12 +529,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Traits, class _Tp>
-using __rebind_alloc _CCCL_NODEBUG_ALIAS = typename _Traits::template rebind_alloc<_Tp>;
+using __rebind_alloc _CCCL_NODEBUG = typename _Traits::template rebind_alloc<_Tp>;
 
 template <class _Traits, class _Tp>
 struct __rebind_alloc_helper
 {
-  using type _CCCL_NODEBUG_ALIAS = typename _Traits::template rebind_alloc<_Tp>;
+  using type _CCCL_NODEBUG = typename _Traits::template rebind_alloc<_Tp>;
 };
 
 #undef _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX

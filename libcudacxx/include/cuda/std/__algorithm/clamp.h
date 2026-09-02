@@ -28,14 +28,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
-[[nodiscard]] _CCCL_API constexpr const _Tp& clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi, _Compare __comp)
+[[nodiscard]] _CCCL_API constexpr const _Tp&
+clamp(const _Tp& __v _CCCL_LIFETIMEBOUND,
+      const _Tp& __lo _CCCL_LIFETIMEBOUND,
+      const _Tp& __hi _CCCL_LIFETIMEBOUND,
+      _Compare __comp)
 {
   _CCCL_ASSERT(!__comp(__hi, __lo), "Bad bounds passed to cuda::std::clamp");
   return __comp(__v, __lo) ? __lo : __comp(__hi, __v) ? __hi : __v;
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr const _Tp& clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi)
+[[nodiscard]] _CCCL_API constexpr const _Tp&
+clamp(const _Tp& __v _CCCL_LIFETIMEBOUND, const _Tp& __lo _CCCL_LIFETIMEBOUND, const _Tp& __hi _CCCL_LIFETIMEBOUND)
 {
   _CCCL_ASSERT(!(__hi < __lo), "Bad bounds passed to cuda::std::clamp");
   return __v < __lo ? __lo : __hi < __v ? __hi : __v;

@@ -25,7 +25,7 @@ static_assert(noexcept(cuda::std::source_location()));
 static_assert(noexcept(cuda::std::source_location::current()));
 #endif // TEST_CUDA_COMPILER(NVCC)
 
-__host__ __device__ bool compare_strings(const char* lhs, const char* rhs) noexcept
+TEST_FUNC bool compare_strings(const char* lhs, const char* rhs) noexcept
 {
   for (size_t index = 0;; ++index)
   {
@@ -41,7 +41,7 @@ __host__ __device__ bool compare_strings(const char* lhs, const char* rhs) noexc
   }
 }
 
-__host__ __device__ bool find_substring(const char* source, const char* target) noexcept
+TEST_FUNC bool find_substring(const char* source, const char* target) noexcept
 {
   if (target[0] == '\0')
   {
@@ -73,9 +73,9 @@ __host__ __device__ bool find_substring(const char* source, const char* target) 
   }
 }
 
-__device__ __constant__ cuda::std::source_location global_source = cuda::std::source_location::current();
+TEST_GLOBAL_VARIABLE __constant__ cuda::std::source_location global_source = cuda::std::source_location::current();
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   assert(!compare_strings(global_source.file_name(), ""));
   // assert(compare_strings(global_source.function_name(), "__builtin_FUNCTION is unsupported"));

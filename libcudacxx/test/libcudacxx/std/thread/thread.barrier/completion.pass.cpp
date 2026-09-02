@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
 // XFAIL: msvc-19.36 && c++20
@@ -13,6 +13,9 @@
 // Compiler bug for being unable to convert __nv_hdl lambdas
 // XFAIL: msvc-19.33
 // XFAIL: windows && c++20
+
+// UNSUPPORTED: force-tile
+// error: asm statement is not supported
 
 // <cuda/std/barrier>
 
@@ -25,7 +28,7 @@
 template <template <typename> class Barrier,
           template <typename, typename> class Selector,
           typename Initializer = constructor_initializer>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   global_memory_selector<int> int_sel;
   SHARED int* x;

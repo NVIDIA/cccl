@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,7 +27,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
+
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
@@ -182,7 +186,22 @@ public:
   /// Compute the dim4 class obtained by taking the minimum of two dim4 along each axis
   _CCCL_HOST_DEVICE static constexpr dim4 min(const dim4& a, const dim4& b)
   {
-    return dim4(::std::min(a.x, b.x), ::std::min(a.y, b.y), ::std::min(a.z, b.z), ::std::min(a.t, b.t));
+    return dim4(
+      ::cuda::std::min(a.x, b.x), ::cuda::std::min(a.y, b.y), ::cuda::std::min(a.z, b.z), ::cuda::std::min(a.t, b.t));
+  }
+
+  /// Get the coordinate corresponding to a 1D index within a dim4 class
+  /// (inverse of get_index: dimension 0 varies fastest)
+  _CCCL_HOST_DEVICE constexpr pos4 index_to_pos(size_t index) const
+  {
+    _CCCL_ASSERT(index < size(), "invalid index");
+    const size_t px = index % x;
+    index /= x;
+    const size_t py = index % y;
+    index /= y;
+    const size_t pz = index % z;
+    index /= z;
+    return pos4(px, py, pz, index);
   }
 
   /// Get the 1D index of a coordinate defined by a pos4 class within a dim4 class
@@ -193,10 +212,10 @@ public:
     const size_t pz = static_cast<size_t>(p.get(2));
     const size_t pt = static_cast<size_t>(p.get(3));
 
-    _CCCL_ASSERT(p.get(0) >= 0 && px <= x, "invalid position");
-    _CCCL_ASSERT(p.get(1) >= 0 && py <= y, "invalid position");
-    _CCCL_ASSERT(p.get(2) >= 0 && pz <= z, "invalid position");
-    _CCCL_ASSERT(p.get(3) >= 0 && pt <= t, "invalid position");
+    _CCCL_ASSERT(p.get(0) >= 0 && px < x, "invalid position");
+    _CCCL_ASSERT(p.get(1) >= 0 && py < y, "invalid position");
+    _CCCL_ASSERT(p.get(2) >= 0 && pz < z, "invalid position");
+    _CCCL_ASSERT(p.get(3) >= 0 && pt < t, "invalid position");
 
     return px + x * (py + y * (pz + pt * z));
   }
@@ -245,9 +264,14 @@ public:
   ///@{ @name Constructors
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename Int1, typename Int2>
-  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& s)
-      : s(s)
-  {}
+  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& bounds)
+  {
+    for (const size_t ind : each(0, dimensions))
+    {
+      s[ind].first  = bounds[ind].first;
+      s[ind].second = bounds[ind].second;
+    }
+  }
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
   template <typename Int>
@@ -257,7 +281,7 @@ public:
     {
       s[ind].first  = 0;
       s[ind].second = sizes[ind];
-      if constexpr (::std::is_signed_v<Int>)
+      if constexpr (::cuda::std::is_signed_v<Int>)
       {
         _CCCL_ASSERT(sizes[ind] >= 0, "Invalid shape.");
       }
@@ -271,7 +295,7 @@ public:
     static_assert(sizeof...(Int) == dimensions, "Number of dimensions must match");
     each_in_pack(
       [&](auto i, const auto& e) {
-        if constexpr (::std::is_arithmetic_v<::std::remove_reference_t<decltype(e)>>)
+        if constexpr (::cuda::std::is_arithmetic_v<::cuda::std::remove_reference_t<decltype(e)>>)
         {
           s[i].first  = 0;
           s[i].second = e;
@@ -457,12 +481,19 @@ public:
   };
 
   // Functions to create the begin and end iterators
-  _CCCL_HOST_DEVICE iterator begin()
+  _CCCL_HOST_DEVICE iterator begin() const
   {
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+      if (get_extent(i) == 0)
+      {
+        return iterator(*this, true);
+      }
+    }
     return iterator(*this);
   }
 
-  _CCCL_HOST_DEVICE iterator end()
+  _CCCL_HOST_DEVICE iterator end() const
   {
     return iterator(*this, true);
   }
@@ -485,22 +516,20 @@ public:
     return !(*this == rhs);
   }
 
-  using coords_t = array_tuple<size_t, dimensions>;
+  using coords_t = ::cuda::std::array<size_t, dimensions>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
   _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
-    // Help the compiler which may not detect that a device lambda is calling a device lambda
-    CUDASTF_NO_DEVICE_STACK
-    return make_tuple_indexwise<dimensions>([&](auto i) {
-      // included
-      const ::std::ptrdiff_t begin_i  = get_begin(i);
-      const ::std::ptrdiff_t extent_i = get_extent(i);
-      auto result                     = begin_i + (index % extent_i);
+    coords_t coords{};
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+      const ::cuda::std::ptrdiff_t begin_i  = get_begin(i);
+      const ::cuda::std::ptrdiff_t extent_i = get_extent(i);
+      coords[i]                             = begin_i + (index % extent_i);
       index /= extent_i;
-      return result;
-    });
-    CUDASTF_NO_DEVICE_STACK
+    }
+    return coords;
   }
 
 private:
@@ -510,11 +539,11 @@ private:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // Deduction guides
 template <typename... Int>
-box(Int...) -> box<sizeof...(Int)>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES box(Int...) -> box<sizeof...(Int)>;
 template <typename... E>
-box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
 template <typename E, size_t dimensions>
-box(::std::array<E, dimensions>) -> box<dimensions>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES box(::std::array<E, dimensions>) -> box<dimensions>;
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 #ifdef UNITTESTED_FILE
@@ -524,7 +553,7 @@ UNITTEST("box<3>")
   const size_t expected_cnt = 24;
   size_t cnt                = 0;
   auto shape                = box({0, 3}, {1, 3}, {10, 14});
-  static_assert(::std::is_same_v<decltype(shape), box<3>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<3>>);
   for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
@@ -540,7 +569,7 @@ UNITTEST("box<3> upper")
   const size_t expected_cnt = 24;
   size_t cnt                = 0;
   auto shape                = box(3, 2, 4);
-  static_assert(::std::is_same_v<decltype(shape), box<3>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<3>>);
   for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
@@ -553,7 +582,7 @@ UNITTEST("box<3> upper")
 UNITTEST("empty box<1>")
 {
   auto shape = box({7, 7});
-  static_assert(::std::is_same_v<decltype(shape), box<1>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<1>>);
 
   auto it_end   = shape.end();
   auto it_begin = shape.begin();
@@ -570,12 +599,37 @@ UNITTEST("empty box<1>")
   }
 };
 
+UNITTEST("empty box<2>")
+{
+  const auto empty_first = box({7, 7}, {2, 5});
+  EXPECT(empty_first.size() == 0);
+  EXPECT(empty_first.begin() == empty_first.end());
+
+  size_t first_count = 0;
+  for ([[maybe_unused]] const auto& pos : empty_first)
+  {
+    first_count++;
+  }
+  EXPECT(first_count == 0);
+
+  const auto empty_second = box({2, 5}, {7, 7});
+  EXPECT(empty_second.size() == 0);
+  EXPECT(empty_second.begin() == empty_second.end());
+
+  size_t second_count = 0;
+  for ([[maybe_unused]] const auto& pos : empty_second)
+  {
+    second_count++;
+  }
+  EXPECT(second_count == 0);
+};
+
 UNITTEST("mix of integrals and pairs")
 {
   const size_t expected_cnt = 12;
   size_t cnt                = 0;
   auto shape                = box(3, ::std::pair(1, 2), 4);
-  static_assert(::std::is_same_v<decltype(shape), box<3>>);
+  static_assert(::cuda::std::is_same_v<decltype(shape), box<3>>);
   for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
@@ -583,6 +637,22 @@ UNITTEST("mix of integrals and pairs")
   }
 
   EXPECT(cnt == expected_cnt);
+};
+
+UNITTEST("box from an array of integral pairs")
+{
+  const auto bounds = ::std::array{
+    ::std::pair{0, 10},
+    ::std::pair{20, 30},
+  };
+  const auto shape = box(bounds);
+
+  static_assert(::cuda::std::is_same_v<::cuda::std::remove_cv_t<decltype(shape)>, box<2>>);
+  EXPECT(shape.get_begin(0) == 0);
+  EXPECT(shape.get_end(0) == 10);
+  EXPECT(shape.get_begin(1) == 20);
+  EXPECT(shape.get_end(1) == 30);
+  EXPECT(shape.size() == 100);
 };
 
 UNITTEST("pos4 large values")

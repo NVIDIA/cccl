@@ -87,26 +87,26 @@ using ::ulonglong4_32a;
  * Conversion from generic pointer -> state space "pointer"
  *
  **************************************************************/
-inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_smem(const void* __ptr)
+_CCCL_DEVICE_API inline ::cuda::std::uint32_t __as_ptr_smem(const void* __ptr)
 {
   // Consider adding debug asserts here.
   return static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(__ptr));
 }
 
-inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_dsmem(const void* __ptr)
+_CCCL_DEVICE_API inline ::cuda::std::uint32_t __as_ptr_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   return __as_ptr_smem(__ptr);
 }
 
-inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
+_CCCL_DEVICE_API inline ::cuda::std::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
   return __as_ptr_smem(__ptr);
 }
 
-inline _CCCL_DEVICE ::cuda::std::uint64_t __as_ptr_gmem(const void* __ptr)
+_CCCL_DEVICE_API inline ::cuda::std::uint64_t __as_ptr_gmem(const void* __ptr)
 {
   // Consider adding debug asserts here.
   return static_cast<::cuda::std::uint64_t>(::__cvta_generic_to_global(__ptr));
@@ -118,28 +118,28 @@ inline _CCCL_DEVICE ::cuda::std::uint64_t __as_ptr_gmem(const void* __ptr)
  *
  **************************************************************/
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_smem(::cuda::std::size_t __ptr)
+_CCCL_DEVICE_API _Tp* __from_ptr_smem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(::__cvta_shared_to_generic(__ptr));
 }
 
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_dsmem(::cuda::std::size_t __ptr)
+_CCCL_DEVICE_API _Tp* __from_ptr_dsmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_remote_dsmem(::cuda::std::size_t __ptr)
+_CCCL_DEVICE_API _Tp* __from_ptr_remote_dsmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
-inline _CCCL_DEVICE _Tp* __from_ptr_gmem(::cuda::std::size_t __ptr)
+_CCCL_DEVICE_API _Tp* __from_ptr_gmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(::__cvta_global_to_generic(__ptr));
@@ -152,7 +152,7 @@ inline _CCCL_DEVICE _Tp* __from_ptr_gmem(::cuda::std::size_t __ptr)
  **************************************************************/
 
 template <typename _B8>
-inline _CCCL_DEVICE uint32_t __b8_as_u32(_B8 __val)
+_CCCL_DEVICE_API uint32_t __b8_as_u32(_B8 __val)
 {
   static_assert(sizeof(_B8) == 1);
   ::cuda::std::uint32_t __u32 = 0;
@@ -161,7 +161,7 @@ inline _CCCL_DEVICE uint32_t __b8_as_u32(_B8 __val)
 }
 
 template <typename _B8>
-inline _CCCL_DEVICE _B8 __u32_as_b8(uint32_t __u32)
+_CCCL_DEVICE_API _B8 __u32_as_b8(uint32_t __u32)
 {
   static_assert(sizeof(_B8) == 1);
   _B8 b8;

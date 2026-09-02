@@ -8,20 +8,30 @@ set(
   cpp/redundant_data_different_modes.cu
   cpp/scoped_graph_task.cu
   cpp/task_get_stream.cu
+  cpp/test_pick_stream.cu
+  cpp/test_pick_stream_green_context.cu
   cpp/user_streams.cu
+  cpp/wait_token.cu
+  cuda-samples/3_CUDA_Features/graphConditionalNodes/graphConditionalNodes.cu
   dot/basic.cu
   dot/graph_print_to_dot.cu
   dot/sections.cu
   dot/sections_2.cu
+  dot/sections_stackable.cu
   dot/section_movable.cu
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
+  error_checks/dim4_get_index_bounds.cu
   error_checks/double_finalize.cu
   error_checks/erase_frozen.cu
   error_checks/misformed_tasks_dbl_end.cu
   error_checks/misformed_tasks_dbl_start.cu
   error_checks/non_managed_data.cu
+  error_checks/stackable_fence_in_nested.cu
+  error_checks/stackable_illegal_export.cu
+  error_checks/stackable_inconsistent_access_modes.cu
+  error_checks/stackable_wait_in_nested.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
   examples/cuda_kernels_driver.cu
@@ -33,10 +43,12 @@ set(
   gnu/include_only.cpp
   graph/concurrency_test.cu
   graph/explicit_graph.cu
+  graph/explicit_graph_async.cu
   graph/explicit_graph_while.cu
   graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
   graph/graph_cache_policy.cu
+  graph/graph_child_move_ownership.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
@@ -45,11 +57,43 @@ set(
   interface/cuda_kernel_empty_args.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/legacy_to_stf_in_capture.cu
+  local_stf/logical_data_t_template.cu
+  local_stf/stackable.cu
+  local_stf/stackable2.cu
+  local_stf/stackable_add_deps.cu
+  local_stf/stackable_export.cu
+  local_stf/stackable_export2.cu
+  local_stf/stackable_move.cu
+  local_stf/stackable_nested_lib.cu
+  local_stf/stackable_nested_repeat.cu
+  local_stf/stackable_nested_while.cu
+  local_stf/stackable_nested.cu
+  local_stf/stackable_node_pool_growth.cu
+  local_stf/stream_ctx_lifetime_btb.cu
+  local_stf/stackable_read_only.cu
+  local_stf/stackable_threads.cu
+  local_stf/stackable_token.cu
+  local_stf/stackable_while_token.cu
+  local_stf/stackable_write_back.cu
+  local_stf/stackable_redundant_deps.cu
+  local_stf/stackable_tmp.cu
+  local_stf/task_dep_copy_move_semantics.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
-  places/data_place_alloc.cu
-  places/data_place_vmm.cu
-  places/exec_place_guard.cu
+  places/replicated_data_place.cu
+  places/replicated_frozen_import.cu
+  places/cute_parallel_for.cu
+  places/locality_domain_alloc.cu
+  places/locality_domain_enumeration.cu
+  places/locality_domain_exec.cu
+  places/locality_domain_fake.cu
+  places/locality_domain_fake_unfulfillable.cu
+  places/locality_domain_grid.cu
+  places/locality_domain_helper.cu
+  places/locality_domain_localized_disabled.cu
+  places/locality_domain_split_method.cu
+  places/locality_domain_task.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -70,6 +114,8 @@ set(
   reductions/sum_array.cu
   reductions/sum_multiple_places_no_refvalue.cu
   slice/pinning.cu
+  stackable/composite_conditional.cu
+  stackable/graph_scope_test.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
   stress/empty_tasks_alloc.cu
@@ -79,6 +125,7 @@ set(
   stress/task_bench.cu
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
+  utility/exception_policy_c_headers.cu
   utility/timing_with_fences.cu
   utility/source_location_map.cu
 )
@@ -112,6 +159,8 @@ set(
   graph/freeze_for_graph.cu
   graph/freeze_nested_graphs.cu
   graph/freeze_while_graphs.cu
+  graph/freeze_while_graphs_2.cu
+  graph/freeze_while_graphs_3.cu
   # graph/graph_composition.cu
   graph/graph_multiple_launch_resources.cu
   graph/graph_tmp_data.cu
@@ -130,6 +179,7 @@ set(
   interface/data_from_device_2.cu
   interface/data_from_device_wb.cu
   interface/graph_use_device_data.cu
+  interface/host_launch_deps.cu
   interface/mix_stream_and_graph.cu
   interface/mix_stream_and_graph_2.cu
   interface/scal.cu
@@ -140,6 +190,7 @@ set(
   loop_dispatch/dispatch_on_streams.cu
   loop_dispatch/loop_dispatch.cu
   loop_dispatch/nested_loop_dispatch.cu
+  # loop_dispatch/stackable_loop_dispatch.cu # Disabled: double free or corruption (under investigation)
   parallel_for/empty_shape_reduce.cu
   parallel_for/fdtd.cu
   parallel_for/parallel_for_all_devs.cu
@@ -149,6 +200,7 @@ set(
   parallel_for/tiled_loops.cu
   parallel_for/parallel_for_host.cu
   places/cuda_stream_place.cu
+  places/locality_domain_grid_pfor.cu
   places/managed_from_shape.cu
   reductions/reduce_sum.cu
   reductions/successive_reductions_pfor.cu
@@ -186,14 +238,9 @@ set(
   cuda/experimental/__stf/internal/context.cuh
   cuda/experimental/__stf/internal/execution_policy.cuh
   cuda/experimental/__stf/internal/interpreted_execution_policy.cuh
-  cuda/experimental/__stf/internal/logical_data.cuh
-  cuda/experimental/__stf/internal/parallel_for_scope.cuh
   cuda/experimental/__stf/internal/slice.cuh
   cuda/experimental/__stf/internal/thread_hierarchy.cuh
-  cuda/experimental/__stf/places/cyclic_shape.cuh
-  cuda/experimental/__stf/places/inner_shape.cuh
-  cuda/experimental/__stf/places/places.cuh
-  cuda/experimental/__stf/places/tiled_partition.cuh
+  cuda/experimental/__stf/internal/inner_shape.cuh
   cuda/experimental/__stf/stream/stream_ctx.cuh
   cuda/experimental/__stf/utility/cartesian_iterator.cuh
   cuda/experimental/__stf/utility/cuda_safe_call.cuh
@@ -201,9 +248,10 @@ set(
   cuda/experimental/__stf/utility/handle.cuh
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
-  cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/exception_policy.cuh
+  cuda/experimental/__stf/utility/source_location.cuh
+  cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh
-  cuda/experimental/__stf/utility/unstable_unique.cuh
 )
 
 cccl_get_cudatoolkit()

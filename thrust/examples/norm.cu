@@ -40,7 +40,7 @@ int main()
   // compute norm
   float norm = std::sqrt(thrust::transform_reduce(d_x.begin(), d_x.end(), unary_op, init, binary_op));
 
-  std::cout << "norm is " << norm << std::endl;
+  std::cout << "norm is " << norm << '\n';
 
   return 0;
 }

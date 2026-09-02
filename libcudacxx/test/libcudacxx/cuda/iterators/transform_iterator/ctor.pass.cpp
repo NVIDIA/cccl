@@ -28,65 +28,65 @@ struct NoDefaultInitIter
   using reference         = int&;
   using self              = NoDefaultInitIter;
 
-  __host__ __device__ constexpr NoDefaultInitIter(int* ptr)
+  TEST_FUNC constexpr NoDefaultInitIter(int* ptr)
       : ptr_(ptr)
   {}
 
-  __host__ __device__ constexpr reference operator*() const;
-  __host__ __device__ constexpr pointer operator->() const;
+  TEST_FUNC constexpr reference operator*() const;
+  TEST_FUNC constexpr pointer operator->() const;
 #if TEST_HAS_SPACESHIP()
-  __host__ __device__ constexpr auto operator<=>(const self&) const = default;
+  TEST_FUNC constexpr auto operator<=>(const self&) const = default;
 #else // ^^^ TEST_HAS_SPACESHIP() ^^^ / vvv !TEST_HAS_SPACESHIP() vvv
-  __host__ __device__ constexpr bool operator<(const self&) const;
-  __host__ __device__ constexpr bool operator<=(const self&) const;
-  __host__ __device__ constexpr bool operator>(const self&) const;
-  __host__ __device__ constexpr bool operator>=(const self&) const;
+  TEST_FUNC constexpr bool operator<(const self&) const;
+  TEST_FUNC constexpr bool operator<=(const self&) const;
+  TEST_FUNC constexpr bool operator>(const self&) const;
+  TEST_FUNC constexpr bool operator>=(const self&) const;
 #endif // !TEST_HAS_SPACESHIP()
 
-  __host__ __device__ constexpr friend bool operator==(const self& lhs, const self& rhs)
+  TEST_FUNC constexpr friend bool operator==(const self& lhs, const self& rhs)
   {
     return lhs.ptr_ == rhs.ptr_;
   }
 #if TEST_STD_VER <= 2017
-  __host__ __device__ constexpr friend bool operator!=(const self& lhs, const self& rhs)
+  TEST_FUNC constexpr friend bool operator!=(const self& lhs, const self& rhs)
   {
     return lhs.ptr_ != rhs.ptr_;
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ constexpr self& operator++();
-  __host__ __device__ constexpr self operator++(int);
+  TEST_FUNC constexpr self& operator++();
+  TEST_FUNC constexpr self operator++(int);
 
-  __host__ __device__ constexpr self& operator--();
-  __host__ __device__ constexpr self operator--(int);
+  TEST_FUNC constexpr self& operator--();
+  TEST_FUNC constexpr self operator--(int);
 
-  __host__ __device__ constexpr self& operator+=(difference_type n);
-  __host__ __device__ constexpr self operator+(difference_type n) const;
-  __host__ __device__ constexpr friend self operator+(difference_type n, self x);
+  TEST_FUNC constexpr self& operator+=(difference_type n);
+  TEST_FUNC constexpr self operator+(difference_type n) const;
+  TEST_FUNC constexpr friend self operator+(difference_type n, self x);
 
-  __host__ __device__ constexpr self& operator-=(difference_type n);
-  __host__ __device__ constexpr self operator-(difference_type n) const;
-  __host__ __device__ constexpr difference_type operator-(const self&) const;
+  TEST_FUNC constexpr self& operator-=(difference_type n);
+  TEST_FUNC constexpr self operator-(difference_type n) const;
+  TEST_FUNC constexpr difference_type operator-(const self&) const;
 
-  __host__ __device__ constexpr reference operator[](difference_type n) const;
+  TEST_FUNC constexpr reference operator[](difference_type n) const;
 };
 
 struct NoDefaultInitFunc
 {
   int val_;
 
-  __host__ __device__ constexpr NoDefaultInitFunc(int val)
+  TEST_FUNC constexpr NoDefaultInitFunc(int val)
       : val_(val)
   {}
 
-  __host__ __device__ constexpr int operator()(int x) const
+  TEST_FUNC constexpr int operator()(int x) const
   {
     return x * val_;
   }
 };
 
 template <class Iter, class Fn>
-__host__ __device__ constexpr void test(Fn fun)
+TEST_FUNC constexpr void test(Fn fun)
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -105,7 +105,7 @@ __host__ __device__ constexpr void test(Fn fun)
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<NoDefaultInitIter>(PlusOne{});
   test<random_access_iterator<int*>>(PlusOne{});
@@ -120,7 +120,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

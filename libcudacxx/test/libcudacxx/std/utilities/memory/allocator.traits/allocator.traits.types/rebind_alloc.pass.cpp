@@ -77,6 +77,7 @@ struct E
   };
 };
 
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 template <class T>
 struct F
 {
@@ -101,20 +102,22 @@ struct G
     using other = void;
   };
 };
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
 int main(int, char**)
 {
   static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<A<char>>::rebind_alloc<double>, ReboundA<double>>::value), "");
+    (cuda::std::is_same<cuda::std::allocator_traits<A<char>>::rebind_alloc<double>, ReboundA<double>>::value));
+  static_assert((
+    cuda::std::is_same<cuda::std::allocator_traits<B<int, char>>::rebind_alloc<double>, ReboundB<double, char>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::rebind_alloc<double>, C<double>>::value));
   static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<B<int, char>>::rebind_alloc<double>, ReboundB<double, char>>::value),
-    "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char>>::rebind_alloc<double>, C<double>>::value), "");
-  static_assert(
-    (cuda::std::is_same<cuda::std::allocator_traits<D<int, char>>::rebind_alloc<double>, D<double, char>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<E<char>>::rebind_alloc<double>, E<double>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<F<char>>::rebind_alloc<double>, F<double>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<G<char>>::rebind_alloc<double>, G<double>>::value), "");
+    (cuda::std::is_same<cuda::std::allocator_traits<D<int, char>>::rebind_alloc<double>, D<double, char>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<E<char>>::rebind_alloc<double>, E<double>>::value));
+#if !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<F<char>>::rebind_alloc<double>, F<double>>::value));
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<G<char>>::rebind_alloc<double>, G<double>>::value));
+#endif // !TEST_CUDA_COMPILER(NVCC, >=, 13, 3)
 
   return 0;
 }

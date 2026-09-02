@@ -35,7 +35,7 @@ C2H_CCCLRT_TEST("cuFile cufile_ref", "[cufile][cufile]")
     cudax::cufile file{filename, cudax::cufile_open_mode::out};
 
     cudax::cufile_ref file_ref{file.get()};
-    CUDAX_REQUIRE(file_ref.get() == file.get());
+    REQUIRE(file_ref.get() == file.get());
   }
   test_remove_file(filename);
 
@@ -59,11 +59,11 @@ C2H_CCCLRT_TEST("cuFile cufile_ref", "[cufile][cufile]")
   STATIC_REQUIRE(cuda::std::is_same_v<CUfileHandle_t, decltype(cuda::std::declval<cudax::cufile_ref>().get())>);
   {
     const cudax::cufile file;
-    CUDAX_REQUIRE(cudax::cufile_ref{file}.get() == nullptr);
+    REQUIRE(cudax::cufile_ref{file}.get() == nullptr);
   }
   {
     cudax::cufile file{filename, cudax::cufile_open_mode::out};
-    CUDAX_REQUIRE(cudax::cufile_ref{file}.get() != nullptr);
+    REQUIRE(cudax::cufile_ref{file}.get() != nullptr);
   }
   test_remove_file(filename);
 }

@@ -53,8 +53,8 @@ int main(int, char**)
     static_assert(noexcept(Feb2018 / last));
     static_assert(cuda::std::is_same_v<year_month_day_last, decltype(Feb2018 / last)>);
 
-    static_assert((Feb2018 / last).year() == year{2018}, "");
-    static_assert((Feb2018 / last).month() == February, "");
+    static_assert((Feb2018 / last).year() == year{2018});
+    static_assert((Feb2018 / last).month() == February);
 
     for (int i = 1000; i < 1010; ++i)
     {
@@ -75,10 +75,10 @@ int main(int, char**)
     static_assert(noexcept(month_day_last{February} / year{2018}));
     static_assert(cuda::std::is_same_v<year_month_day_last, decltype(month_day_last{February} / year{2018})>);
 
-    static_assert((year{2018} / month_day_last{February}).month() == February, "");
-    static_assert((year{2018} / month_day_last{February}).year() == year{2018}, "");
-    static_assert((month_day_last{February} / year{2018}).month() == February, "");
-    static_assert((month_day_last{February} / year{2018}).year() == year{2018}, "");
+    static_assert((year{2018} / month_day_last{February}).month() == February);
+    static_assert((year{2018} / month_day_last{February}).year() == year{2018});
+    static_assert((month_day_last{February} / year{2018}).month() == February);
+    static_assert((month_day_last{February} / year{2018}).year() == year{2018});
 
     for (int i = 1000; i < 1010; ++i)
     {
@@ -103,10 +103,10 @@ int main(int, char**)
     static_assert(noexcept(month_day_last{February} / 2018));
     static_assert(cuda::std::is_same_v<year_month_day_last, decltype(month_day_last{February} / 2018)>);
 
-    static_assert((2018 / month_day_last{February}).month() == February, "");
-    static_assert((2018 / month_day_last{February}).year() == year{2018}, "");
-    static_assert((month_day_last{February} / 2018).month() == February, "");
-    static_assert((month_day_last{February} / 2018).year() == year{2018}, "");
+    static_assert((2018 / month_day_last{February}).month() == February);
+    static_assert((2018 / month_day_last{February}).year() == year{2018});
+    static_assert((month_day_last{February} / 2018).month() == February);
+    static_assert((month_day_last{February} / 2018).year() == year{2018});
 
     for (int i = 1000; i < 1010; ++i)
     {

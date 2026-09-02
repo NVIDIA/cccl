@@ -29,7 +29,7 @@ template <class Iter>
 _CCCL_CONCEPT can_minus_equal = _CCCL_REQUIRES_EXPR((Iter), Iter i)((i -= 1));
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 
@@ -71,7 +71,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();
@@ -85,7 +85,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

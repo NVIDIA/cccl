@@ -17,48 +17,66 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#include "common_tests.cuh"
+#include "pool_availability.cuh"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 template <typename Resource>
 void resource_static_asserts()
 {
-  static_assert(!cuda::std::is_trivial_v<Resource>, "");
-  static_assert(!cuda::std::is_trivially_default_constructible_v<Resource>, "");
-  static_assert(cuda::std::is_trivially_copy_constructible_v<Resource>, "");
-  static_assert(cuda::std::is_trivially_move_constructible_v<Resource>, "");
-  static_assert(cuda::std::is_trivially_copy_assignable_v<Resource>, "");
-  static_assert(cuda::std::is_trivially_move_assignable_v<Resource>, "");
-  static_assert(cuda::std::is_trivially_destructible_v<Resource>, "");
+  static_assert(!cuda::std::is_trivial_v<Resource>);
+  static_assert(!cuda::std::is_trivially_default_constructible_v<Resource>);
+  static_assert(cuda::std::is_trivially_copy_constructible_v<Resource>);
+  static_assert(cuda::std::is_trivially_move_constructible_v<Resource>);
+  static_assert(cuda::std::is_trivially_copy_assignable_v<Resource>);
+  static_assert(cuda::std::is_trivially_move_assignable_v<Resource>);
+  static_assert(cuda::std::is_trivially_destructible_v<Resource>);
   if constexpr (cuda::std::is_same_v<Resource, cuda::mr::legacy_pinned_memory_resource>)
   {
-    static_assert(cuda::std::is_default_constructible_v<Resource>, "");
+    static_assert(cuda::std::is_default_constructible_v<Resource>);
   }
 }
 
 template void resource_static_asserts<cuda::mr::legacy_pinned_memory_resource>();
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 template void resource_static_asserts<cuda::pinned_memory_pool_ref>();
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
 
 template <class Resource>
 Resource get_resource()
 {
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
   if constexpr (cuda::std::is_same_v<Resource, cuda::pinned_memory_pool_ref>)
   {
     return cuda::pinned_default_memory_pool();
   }
   else
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
   {
     return Resource{};
   }
+}
+
+static bool cuda_malloc_host_reports_memory_type(cudaMemoryType type)
+{
+  cuda::__ensure_current_context guard(cuda::device_ref{0});
+  void* cuda_malloc_host_ptr = nullptr;
+  cudaError_t status         = cudaMallocHost(&cuda_malloc_host_ptr, 1);
+  if (status != cudaSuccess || cuda_malloc_host_ptr == nullptr)
+  {
+    return false;
+  }
+
+  cudaPointerAttributes attributes;
+  status                  = cudaPointerGetAttributes(&attributes, cuda_malloc_host_ptr);
+  cudaError_t free_status = cudaFreeHost(cuda_malloc_host_ptr);
+  CHECK(free_status == cudaSuccess);
+
+  return status == cudaSuccess && free_status == cudaSuccess && attributes.type == type;
 }
 
 static void ensure_pinned_ptr(void* ptr)
@@ -67,7 +85,11 @@ static void ensure_pinned_ptr(void* ptr)
   cudaPointerAttributes attributes;
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
-  CHECK(attributes.type == cudaMemoryTypeHost);
+  if (attributes.type != cudaMemoryTypeHost)
+  {
+    // Some platforms emulate pinned host allocations with another memory type.
+    CHECK(cuda_malloc_host_reports_memory_type(attributes.type));
+  }
   // Driver bug fixed in r575
   // TODO Re-enable one we start testing with r575
   // CHECK(attributes.devicePointer != nullptr);
@@ -76,19 +98,17 @@ static void ensure_pinned_ptr(void* ptr)
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
-
-#if _CCCL_CTK_AT_LEAST(12, 6)
-  if (!cuda::__is_host_memory_pool_supported() && cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>)
+  if constexpr (test::is_memory_pool_type<pinned_resource>)
   {
-    return;
+    test::skip_if_unsupported_memory_pool<pinned_resource>();
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+
   pinned_resource res = get_resource<pinned_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync
     auto* ptr = res.allocate_sync(42);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_pinned_ptr(ptr);
 
     res.deallocate_sync(ptr, 42);
@@ -96,7 +116,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
 
   { // allocate_sync / deallocate_sync with alignment
     auto* ptr = res.allocate_sync(42, 4);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
     ensure_pinned_ptr(ptr);
 
     res.deallocate_sync(ptr, 42, 4);
@@ -106,7 +126,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
   {
     { // allocate / deallocate
       auto* ptr = res.allocate(stream, 42);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
       stream.sync();
       ensure_pinned_ptr(ptr);
@@ -116,7 +136,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
 
     { // allocate / deallocate with alignment
       auto* ptr = res.allocate(stream, 42, 4);
-      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value);
 
       stream.sync();
       ensure_pinned_ptr(ptr);
@@ -197,11 +217,16 @@ struct derived_pinned_resource : cuda::mr::legacy_pinned_memory_resource
 {
   using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };
-static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>, "");
+static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>);
 
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
+  if constexpr (test::is_memory_pool_type<pinned_resource>)
+  {
+    test::skip_if_unsupported_memory_pool<pinned_resource>();
+  }
+
   pinned_resource first = get_resource<pinned_resource>();
   { // comparison against a plain pinned_memory_resource
     pinned_resource second = get_resource<pinned_resource>();
@@ -231,10 +256,12 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
   }
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 C2H_CCCLRT_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
 {
+  test::skip_if_unsupported_memory_pool<cuda::pinned_memory_pool_ref>();
+
   cuda::pinned_memory_pool_ref resource = cuda::pinned_default_memory_pool();
   test_deallocate_async(resource);
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)

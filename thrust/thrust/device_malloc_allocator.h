@@ -21,8 +21,10 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
-#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/limits>
+
+#include <new>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -101,13 +103,13 @@ public:
   }; // end rebind
 
   /*! No-argument constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_malloc_allocator() {}
+  inline device_malloc_allocator() = default;
 
   /*! No-argument destructor has no effect. */
-  _CCCL_HOST_DEVICE inline ~device_malloc_allocator() {}
+  inline ~device_malloc_allocator() = default;
 
   /*! Copy constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_malloc_allocator(device_malloc_allocator const&) {}
+  inline device_malloc_allocator(device_malloc_allocator const&) = default;
 
   /*! Constructor from other \p device_malloc_allocator has no effect. */
   template <typename U>
@@ -149,11 +151,11 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST inline pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(0)))
+  _CCCL_HOST inline pointer allocate(size_type cnt, const_pointer = const_pointer(static_cast<T*>(nullptr)))
   {
     if (cnt > this->max_size())
     {
-      ::cuda::std::__throw_bad_alloc();
+      _CCCL_THROW(::std::bad_alloc);
     } // end if
 
     return pointer(device_malloc<T>(cnt));

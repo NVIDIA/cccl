@@ -24,15 +24,14 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ constexpr void
-check_distance(It first, It last, typename cuda::std::iterator_traits<It>::difference_type dist)
+TEST_FUNC constexpr void check_distance(It first, It last, typename cuda::std::iterator_traits<It>::difference_type dist)
 {
   using Difference = typename cuda::std::iterator_traits<It>::difference_type;
-  static_assert(cuda::std::is_same<decltype(cuda::std::distance(first, last)), Difference>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::distance(first, last)), Difference>::value);
   assert(cuda::std::distance(first, last) == dist);
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   const char* s = "1234567890";
   check_distance(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s + 10), 10);
@@ -46,6 +45,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

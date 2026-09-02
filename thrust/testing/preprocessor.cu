@@ -53,6 +53,8 @@ void test_pp_stringize()
   , "'hello world'"
   );
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_CLANG("-Wdollar-in-identifier-extension")
   ASSERT_EQUAL(
     std::string(THRUST_PP_STRINGIZE($%!&<->))
   , "$%!&<->"
@@ -62,6 +64,7 @@ void test_pp_stringize()
     std::string(THRUST_PP_STRINGIZE($%!&""<->))
   , "$%!&\"\"<->"
   );
+  _CCCL_DIAG_POP
 
   ASSERT_EQUAL(
     std::string(THRUST_PP_STRINGIZE(THRUST_PP_STRINGIZE))
@@ -177,6 +180,8 @@ void test_pp_expand()
   , "'hello world'"
   );
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_CLANG("-Wdollar-in-identifier-extension")
   ASSERT_EQUAL(
     std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND($%!&<->)))
   , "$%!&<->"
@@ -186,6 +191,7 @@ void test_pp_expand()
     std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND($%!&""<->)))
   , "$%!&\"\"<->"
   );
+  _CCCL_DIAG_POP
 
   ASSERT_EQUAL(
     std::string(THRUST_PP_STRINGIZE(THRUST_PP_EXPAND(THRUST_PP_EXPAND)))

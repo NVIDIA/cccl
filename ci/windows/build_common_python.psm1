@@ -1,165 +1,52 @@
-function Get-LatestPythonPatchVersionFromPyEnvWin {
-    <#
-    .SYNOPSIS
-        Resolves the latest patch version for a given Python major.minor (e.g.
-        '3.12') by parsing `pyenv install --list` output on Windows (pyenv-win).
-    .PARAMETER Version
-        A string in the form 'M.m' (e.g., '3.10', '3.11', '3.12').
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, Position = 0)]
-        [ValidatePattern('^\d+\.\d+$')]
-        [string]$Version
-    )
-
-    # Verify pyenv exists.
-    if (-not (Get-Command pyenv -ErrorAction SilentlyContinue)) {
-        throw [System.InvalidOperationException]::new(
-            'pyenv-win ("pyenv") not found on PATH.'
-        )
-    }
-
-    $listOutput = & pyenv install --list 2>&1
-    if ($LASTEXITCODE -ne 0 -or -not $listOutput) {
-        $joined = $listOutput -join "`n"
-        throw [System.InvalidOperationException]::new(
-            "Failed to run 'pyenv install --list'. Output:`n$joined"
-        )
-    }
-
-    # Build a list of patch numbers that match the requested minor version.
-    $versionPrefix = "$Version."
-    $patchNumbers = @()
-    foreach ($line in $listOutput) {
-        $candidate = $line.Trim()
-        if (-not $candidate) { continue }
-
-        # Accept any major version; the StartsWith check guarantees we only
-        # keep the wanted minor.
-        if (-not $candidate.StartsWith($versionPrefix)) { continue }
-        if ($candidate -notmatch '^\d+\.\d+\.\d+$') { continue }
-
-        $patchNumbers += [int]($candidate.Split('.')[2])
-    }
-
-    if ($patchNumbers.Count -eq 0) {
-        throw [System.InvalidOperationException]::new(
-            "No installable CPython versions found for prefix " +
-            "'$Version' in pyenv-win list."
-        )
-    }
-
-    $latestPatch = ($patchNumbers | Sort-Object -Descending)[0]
-    return "$Version.$latestPatch"
-}
-
-function Install-PythonViaPyEnvWin {
-    <#
-    .SYNOPSIS
-        Ensures a Python version for the given major.minor exists via
-        pyenv-win, activates it for the current shell, and returns the
-        path to python.exe.
-    .PARAMETER Version
-        A string in the form 'M.m' (e.g., '3.12').
-    #>
-    param(
-        [Parameter(Mandatory, Position = 0)]
-        [ValidatePattern('^\d+\.\d+$')]
-        [string]$Version
-    )
-
-    $fullVersion = Get-LatestPythonPatchVersionFromPyEnvWin `
-        -Version $Version
-
-    Write-Host "Installing Python $fullVersion via pyenv..."
-    Write-Host "pyenv install $fullVersion"
-    ($null = & pyenv install $fullVersion | Out-Host)
-    if ($LASTEXITCODE -ne 0) {
-        throw [System.InvalidOperationException]::new(
-            "Failed to install Python $fullVersion via pyenv."
-        )
-    }
-    Write-Host "Successfully installed Python $fullVersion via pyenv."
-
-    ($null = & pyenv local $fullVersion | Out-Host)
-    if ($LASTEXITCODE -ne 0) {
-        throw [System.InvalidOperationException]::new(
-            "Failed to set Python $fullVersion as local via pyenv."
-        )
-    }
-    Write-Host "Successfully set Python $fullVersion as local via pyenv."
-
-    # Avoid the shim (i.e. shims/python.bat) because it will attempt to set
-    # a codepage via `chcp` that we probably won't have installed on our
-    # Server Core-based image.
-    $exe = (Resolve-Path -LiteralPath $(pyenv which python)).Path
-    Write-Host "python.exe path: $exe"
-
-    # Add the root and Scripts directory to $Env:PATH.
-    $rootDir = $exe.Replace("\python.exe", "")
-    $scriptsDir = $exe.Replace("python.exe", "Scripts")
-    $pathPrefix = $rootDir + ";" + $scriptsDir + ";"
-    $Env:PATH = $pathPrefix + $Env:PATH
-
-    # Upgrade pip using the found exe.  This is necessary because some older
-    # versions of pip (e.g. 23.10) don't support arguments like `--wheeldir`.
-    ($null = & $exe -m pip install --upgrade pip --no-cache-dir | Out-Host)
-    if ($LASTEXITCODE -ne 0) {
-        throw [System.InvalidOperationException]::new("pip upgrade failed")
-    }
-
-    Write-Host "pip successfully upgraded, running pyenv rehash..."
-    ($null = & pyenv rehash | Out-Host)
-    if ($LASTEXITCODE -ne 0) {
-        throw [System.InvalidOperationException]::new("pyenv rehash failed")
-    }
-    Write-Host "Successfully ran pyenv rehash."
-
-    return $exe
-}
-
 function Get-Python {
     <#
     .SYNOPSIS
         Returns the path of the Python interpreter satisfying the supplied
-        version, potentially installing it via pyenv-win if it's not already
-        installed.
+        version, installing it via uv if necessary.
+    .PARAMETER Version
+        A string in the form 'M.m' (e.g., '3.10', '3.13') or a free-threaded
+        version such as '3.14t'.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0)]
-        [ValidatePattern('^\d+\.\d+$')]
+        [ValidatePattern('^\d+\.\d+t?$')]
         [string]$Version
     )
 
-    # Look for a plain 'python.exe' already on the path.
-    try {
-        $candidate = (Get-Command python -ErrorAction Stop).Source
-        $foundVer = & $candidate -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')" 2>$null
-        if ($foundVer -eq $Version) {
-            Write-Host "Found matching Python $foundVer at $candidate."
-            return $candidate.Trim()
-        }
-        else {
-            Write-Host "Found python.exe but version $foundVer != requested version $Version."
-        }
-    }
-    catch {
-        Write-Host "Unable to query existing 'python' on PATH: $_"
+    # Install uv if not present. uv downloads pre-built CPython binaries --
+    # no compilation, no build dependencies, no pyenv-win required.
+    if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+        Write-Host "Installing uv..."
+        Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression
+        # uv installs to $HOME\.local\bin on Windows
+        $uvBin = Join-Path $HOME '.local\bin'
+        $Env:PATH = $uvBin + ";" + $Env:PATH
     }
 
-    # If we reach here, we'll need to install the requested version via pyenv.
-    try {
-        $exe = Install-PythonViaPyEnvWin -Version $Version
-        return $exe.Trim()
-    }
-    catch {
+    Write-Host "Creating Python $Version venv via uv..."
+    $venvDir = Join-Path $HOME '.cccl-venv'
+    & uv venv --seed --python $Version $venvDir
+    if ($LASTEXITCODE -ne 0) {
         throw [System.InvalidOperationException]::new(
-            "Requested Python $Version not found and installation " +
-            "via pyenv-win failed: $($_.Exception.Message)"
+            "Failed to create Python $Version venv via uv."
         )
     }
+
+    $exe = Join-Path $venvDir 'Scripts\python.exe'
+    if (-not (Test-Path $exe)) {
+        throw [System.InvalidOperationException]::new(
+            "Could not find python.exe in venv at $exe"
+        )
+    }
+
+    Write-Host "Python $Version at: $exe"
+
+    # Add venv Scripts dir to PATH so bare `python` and `pip` work.
+    $scriptsDir = Join-Path $venvDir 'Scripts'
+    $Env:PATH = $scriptsDir + ";" + $Env:PATH
+
+    return $exe
 }
 
 function Get-RepoRoot {
@@ -184,6 +71,77 @@ function Get-CudaMajor {
         if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
     return '13'
+}
+
+function Get-CudaVersion {
+    <#
+    .SYNOPSIS
+        Gets the CUDA major.minor version for this container instance (e.g.
+        '12.9' or '13.0').  Defaults to '13.0' if no match can be found.
+    #>
+    if ($env:CUDA_PATH) {
+        $nvcc = Join-Path $env:CUDA_PATH "bin/nvcc.exe"
+        if (Test-Path $nvcc) {
+            $out = & $nvcc --version 2>&1
+            $text = ($out -join "`n")
+            if ($text -match 'release\s+(\d+\.\d+)') { return $Matches[1] }
+        }
+        # Fallback: parse major.minor from CUDA_PATH like ...\v13.0
+        $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+\.\d+)')
+        if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
+    }
+    return '13.0'
+}
+
+function Get-CtkTestMode {
+    <#
+    .SYNOPSIS
+        Validates and normalizes a CTK test mode passed as -Mode (forwarded from
+        the -ctk-mode arg): 'pinned' (default; empty means pinned), 'latest', or
+        'sysctk'. Throws on any other value (fail loud on a typo'd mode). Returns
+        the lowercased mode.
+    #>
+    param([string]$Mode = "")
+    if ([string]::IsNullOrEmpty($Mode)) { return "pinned" }
+    $Mode = $Mode.ToLowerInvariant()
+    if (-not ($Mode -in @("pinned", "latest", "sysctk"))) {
+        throw "Invalid ctk mode '$Mode' (expected pinned|latest|sysctk)"
+    }
+    return $Mode
+}
+
+function Set-CtkPin {
+    <#
+    .SYNOPSIS
+        Configures cuda-toolkit pinning for this lane per the -Mode arg (see
+        Get-CtkTestMode): 'pinned' (default) pins cuda-toolkit to the container's
+        CTK major.minor via PIP_CONSTRAINT; 'latest' and 'sysctk' leave it
+        unpinned ('sysctk' installs no cuda-toolkit wheel at all -- the
+        system-provided toolkit is used).
+    #>
+    param([string]$Mode = "")
+    if ((Get-CtkTestMode $Mode) -eq "pinned") {
+        $cudaVersion = Get-CudaVersion
+        $env:PIP_CONSTRAINT = Join-Path ([System.IO.Path]::GetTempPath()) "ctk-constraint.txt"
+        "cuda-toolkit==$cudaVersion.*" | Out-File -FilePath $env:PIP_CONSTRAINT -Encoding ascii
+    } else {
+        # latest / sysctk: no pin. Clear any inherited constraint so it cannot
+        # affect the resolve.
+        Remove-Item Env:\PIP_CONSTRAINT -ErrorAction SilentlyContinue
+    }
+}
+
+function Get-CtkExtraFlavor {
+    <#
+    .SYNOPSIS
+        Returns the pip-extra toolkit "flavor" for the given -Mode: 'sysctk' when
+        the mode is sysctk (rely on the system-provided CUDA toolkit) or 'cu'
+        otherwise (pip-installed toolkit). Combine with the CUDA major, e.g.
+        "minimal-$(Get-CtkExtraFlavor $CtkMode)$cudaMajor".
+    #>
+    param([string]$Mode = "")
+    if ((Get-CtkTestMode $Mode) -eq "sysctk") { return "sysctk" }
+    return "cu"
 }
 
 function Convert-ToUnixPath {
@@ -285,4 +243,4 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch

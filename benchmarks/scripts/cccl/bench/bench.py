@@ -39,21 +39,27 @@ class JsonCache:
             cls._instance.device_cache = {}
         return cls._instance
 
+    def get_jsonlist(self, algname, listname):
+        benchmark_bin = os.path.join(".", "bin", algname + ".base")
+        if not os.path.exists(benchmark_bin):
+            raise Exception(f"Benchmark binary not found: {benchmark_bin}")
+        return subprocess.check_output([benchmark_bin, f"--jsonlist-{listname}"])
+
     def get_bench(self, algname):
         if algname not in self.bench_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-benches"]
-            )
+            result = self.get_jsonlist(algname, "benches")
             self.bench_cache[algname] = json.loads(result)
         return self.bench_cache[algname]
 
     def get_device(self, algname):
         if algname not in self.device_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-devices"]
-            )
-            devices = json.loads(result)["devices"]
-
+            result = self.get_jsonlist(algname, "devices")
+            data = json.loads(result)
+            if "devices" not in data:
+                raise Exception(
+                    "JSON returned from --jsonlist-devices does not contain 'devices' key"
+                )
+            devices = data["devices"]
             if len(devices) != 1:
                 raise Exception(
                     "NVBench doesn't work well with multiple GPUs, use `CUDA_VISIBLE_DEVICES`"
@@ -188,6 +194,12 @@ def parse_bw(state):
     return extract_bw(bwutil)
 
 
+def axis_value_key(axis_type, value):
+    if axis_type == "float64":
+        return float(value)
+    return value
+
+
 class SubBenchState:
     def __init__(self, state, axes_names, axes_values):
         self.samples = parse_samples(state)
@@ -196,7 +208,8 @@ class SubBenchState:
         self.point = {}
         for axis in state["axis_values"]:
             name = axes_names[axis["name"]]
-            value = axes_values[axis["name"]][axis["value"]]
+            value_key = axis_value_key(axis["type"], axis["value"])
+            value = axes_values[axis["name"]][value_key]
             self.point[name] = value
 
     def __repr__(self):
@@ -220,9 +233,8 @@ class SubBenchResult:
             axes_values[short_name] = {}
             for value in axis["values"]:
                 if "value" in value:
-                    axes_values[axis["name"]][str(value["value"])] = value[
-                        "input_string"
-                    ]
+                    value_key = axis_value_key(axis["type"], str(value["value"]))
+                    axes_values[axis["name"]][value_key] = value["input_string"]
                 else:
                     axes_values[axis["name"]][value["input_string"]] = value[
                         "input_string"
@@ -268,6 +280,16 @@ def device_json(algname):
     return JsonCache().get_device(algname)
 
 
+CCCL_BENCH_GPU_ENV = "CCCL_BENCH_GPU"
+
+
+def get_gpu_name_override():
+    override = os.environ.get(CCCL_BENCH_GPU_ENV)
+    if override is not None and override.strip():
+        return override.strip()
+    return None
+
+
 def get_device_name(device):
     gpu_name = device["name"]
     bus_width = device["global_memory_bus_width"]
@@ -275,6 +297,13 @@ def get_device_name(device):
     ecc = "eccon" if device["ecc_state"] else "eccoff"
     name = "{} ({}, {}, {})".format(gpu_name, bus_width, sms, ecc)
     return name.replace("NVIDIA ", "")
+
+
+def get_gpu_name(algname):
+    override = get_gpu_name_override()
+    if override is not None:
+        return override
+    return get_device_name(device_json(algname))
 
 
 def is_ct_axis(name):
@@ -368,7 +397,7 @@ class BenchCache:
         config = Config()
         ctk = config.ctk
         cccl = config.cccl
-        gpu = get_device_name(device_json(bench.algname))
+        gpu = get_gpu_name(bench.algname)
         conn = Storage().connection()
 
         self.create_table_if_not_exists(conn, bench)
@@ -418,7 +447,7 @@ class BenchCache:
         config = Config()
         ctk = config.ctk
         cccl = config.cccl
-        gpu = get_device_name(device_json(bench.algname))
+        gpu = get_gpu_name(bench.algname)
         conn = Storage().connection()
 
         self.create_table_if_not_exists(conn, bench)
@@ -506,8 +535,11 @@ class ProcessRunner:
 
     def __init__(self):
         self.process = None
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        import threading
+
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGTERM, self.signal_handler)
 
     def new_process(self, cmd):
         self.process = subprocess.Popen(
@@ -772,7 +804,30 @@ class Bench:
         rt_axes_ids = compute_axes_ids(rt_values)
         weight_matrices = compute_weight_matrices(rt_values, rt_axes_ids)
 
+        # For importance-ordered axis, score favors last speedups:
+        # score = 15% of S16 + 25% of S20 + 29% of S24 + 31% of S28
+        #
+        # Sometimes, list is incomplete. Say, if a workloads error out or skip.
+        # For simplicity, say we skipped 2^16 and 2^20 elements.
+        #
+        # In these cases, `rt_values` should still contain full list with 2^16
+        # and 2^20 included.
+        # Otherwise, we'd assume that 2^24 was the first value on the importance axis.
+        # In which case, we'd assign weights as 38% / 62% instead of 48% / 52%.
+        #
+        # If we do nothing, score computation would just skip S16 and S20 completely,
+        # while still scaling S24 and S28 components lower, as if S16 and S20 was there.
+        # score = 15% of 0 + 25% of 0 + 29% of S24 + 31% of S28
+        # Note how we end up with 29% of S24 + 31% of S28 all while 29 + 31 do
+        # not add to a 100%.
+        # This breaks "speedup" semantic of the score.
+        #
+        # To fix this, we just accumulate what new 100% mean and scale score by that:
+        # (29/100 of S24) / (60/100) + (31/100 of S28) / (60/100)
+        #     = 29/60 of S24 + 31/60 of S28
+        # which is: 48% of S24 + 52% of S28, maintaining the relative importance.
         score = 0
+        total_weight = 0
         for bench in speedups:
             for state in speedups[bench]:
                 rt_workload = state_to_rt_workload(bench, state)
@@ -780,10 +835,13 @@ class Bench:
                 weight = get_workload_weight(
                     rt_workload, rt_values[bench], rt_axes_ids[bench], weights
                 )
-                speedup = speedups[bench][state]
-                score = score + weight * speedup
+                score = score + weight * speedups[bench][state]
+                total_weight = total_weight + weight
 
-        return score
+        if total_weight == 0:
+            return float("-inf")
+
+        return score / total_weight
 
 
 class BaseBench(Bench):

@@ -25,7 +25,7 @@
 
 #if _CCCL_CUDA_COMPILATION()
 #  include <nv/target>
-#  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) NV_IF_TARGET(NV_IS_HOST, _FOR_HOST, _FOR_DEVICE)
+#  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) NV_IF_ELSE_TARGET(NV_IS_HOST, _FOR_HOST, _FOR_DEVICE)
 #else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) {_CCCL_PP_EXPAND _FOR_HOST}
 #endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
@@ -35,7 +35,7 @@
 namespace cuda::experimental::execution
 {
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
-using __thread_id _CCCL_NODEBUG_ALIAS = int;
+using __thread_id _CCCL_NODEBUG = int;
 #elif _CCCL_CUDA_COMPILER(NVHPC)
 struct __thread_id
 {
@@ -45,38 +45,38 @@ struct __thread_id
     int __device_;
   };
 
-  _CCCL_API __thread_id() noexcept
+  _CCCL_HOST_DEVICE_API __thread_id() noexcept
       : __host_()
   {}
-  _CCCL_API __thread_id(::std::thread::id __host) noexcept
+  _CCCL_HOST_DEVICE_API __thread_id(::std::thread::id __host) noexcept
       : __host_(__host)
   {}
-  _CCCL_API __thread_id(int __device) noexcept
+  _CCCL_HOST_DEVICE_API __thread_id(int __device) noexcept
       : __device_(__device)
   {}
 
-  _CCCL_API friend bool operator==(const __thread_id& __self, const __thread_id& __other) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator==(const __thread_id& __self, const __thread_id& __other) noexcept
   {
     _CUDAX_FOR_HOST_OR_DEVICE((return __self.__host_ == __other.__host_;),
                               (return __self.__device_ == __other.__device_;))
   }
 
-  _CCCL_API friend bool operator!=(const __thread_id& __self, const __thread_id& __other) noexcept
+  _CCCL_HOST_DEVICE_API friend bool operator!=(const __thread_id& __self, const __thread_id& __other) noexcept
   {
     return !(__self == __other);
   }
 };
 #else // ^^^ cuda device compilation ^^^ / vvv host compilation vvv
-using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
+using __thread_id _CCCL_NODEBUG = ::std::thread::id;
 #endif // ^^^ host compilation ^^^
 
-inline _CCCL_API auto __this_thread_id() noexcept -> __thread_id
+inline _CCCL_HOST_DEVICE_API auto __this_thread_id() noexcept -> __thread_id
 {
   _CUDAX_FOR_HOST_OR_DEVICE((return ::std::this_thread::get_id();),
                             (return static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);))
 }
 
-inline _CCCL_API void __this_thread_yield() noexcept
+inline _CCCL_HOST_DEVICE_API void __this_thread_yield() noexcept
 {
   _CUDAX_FOR_HOST_OR_DEVICE((::std::this_thread::yield();), (void();))
 }

@@ -27,7 +27,7 @@
 
 struct is_odd
 {
-  __host__ __device__ bool operator()(const int& i) const
+  TEST_FUNC bool operator()(const int& i) const
   {
     return i & 1;
   }
@@ -35,14 +35,14 @@ struct is_odd
 
 struct odd_first
 {
-  __host__ __device__ bool operator()(const cuda::std::pair<int, int>& p) const
+  TEST_FUNC bool operator()(const cuda::std::pair<int, int>& p) const
   {
     return p.first & 1;
   }
 };
 
 template <class Iter>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   { // check mixed
     using P             = cuda::std::pair<int, int>;
@@ -196,14 +196,14 @@ __host__ __device__ void test()
 struct is_null
 {
   template <class P>
-  __host__ __device__ bool operator()(const P& p)
+  TEST_FUNC bool operator()(const P& p)
   {
     return p == 0;
   }
 };
 
 template <class Iter>
-__host__ __device__ void test1()
+TEST_FUNC void test1()
 {
   const unsigned size = 5;
   cuda::std::unique_ptr<int> array[size];
@@ -211,7 +211,7 @@ __host__ __device__ void test1()
   assert(r == Iter(array + size));
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<bidirectional_iterator<cuda::std::pair<int, int>*>>();
   test<random_access_iterator<cuda::std::pair<int, int>*>>();

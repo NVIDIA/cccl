@@ -60,6 +60,16 @@ if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
       -Wno-deprecated-gpu-targets
     )
   endif()
+
+  if (
+    CCCL_ENABLE_TILE
+    AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_LESS_EQUAL "13.2"
+  )
+    message(
+      FATAL_ERROR
+      "tile programs require NVCC 13.3 or later; found NVCC ${CMAKE_CUDA_COMPILER_VERSION}"
+    )
+  endif()
   # Set warnings for Clang as device compiler
 elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
   set(
@@ -87,4 +97,69 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
 endif()
 
 add_subdirectory(nvtarget)
-add_subdirectory(atomic_codegen)
+
+set(
+  LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+  ""
+  CACHE STRING
+  "Semicolon-separated libcu++ FileCheck codegen suites to enable (all, atomics-ptx, atomics-sass, simd-ptx, simd-sass)."
+)
+set(
+  libcudacxx_codegen_filecheck_valid_suites
+  all
+  atomics-ptx
+  atomics-sass
+  simd-ptx
+  simd-sass
+)
+foreach (suite IN LISTS LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
+  if (NOT suite IN_LIST libcudacxx_codegen_filecheck_valid_suites)
+    message(
+      FATAL_ERROR
+      "Unknown libcu++ FileCheck codegen suite '${suite}'. Expected one of: ${libcudacxx_codegen_filecheck_valid_suites}"
+    )
+  endif()
+endforeach()
+
+if (LIBCUDACXX_CODEGEN_FILECHECK_TESTS)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CodegenTest.cmake")
+
+  if (
+    all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+    OR atomics-ptx IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+  )
+    set(libcudacxx_codegen_filecheck_atomics_ptx ON)
+  endif()
+  if (
+    all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+    OR atomics-sass IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+  )
+    set(libcudacxx_codegen_filecheck_atomics_sass ON)
+  endif()
+  if (
+    all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+    OR simd-ptx IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+  )
+    set(libcudacxx_codegen_filecheck_simd_ptx ON)
+  endif()
+  if (
+    all IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+    OR simd-sass IN_LIST LIBCUDACXX_CODEGEN_FILECHECK_TESTS
+  )
+    set(libcudacxx_codegen_filecheck_simd_sass ON)
+  endif()
+
+  if (
+    libcudacxx_codegen_filecheck_atomics_ptx
+    OR libcudacxx_codegen_filecheck_atomics_sass
+  )
+    add_subdirectory(atomic_codegen)
+  endif()
+  if (
+    libcudacxx_codegen_filecheck_simd_ptx
+    OR libcudacxx_codegen_filecheck_simd_sass
+  )
+    add_subdirectory(simd_codegen)
+  endif()
+endif()
+add_subdirectory(debugging)

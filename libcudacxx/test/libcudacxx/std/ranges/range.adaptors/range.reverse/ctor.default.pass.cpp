@@ -26,28 +26,28 @@ struct BidirRangeWith : cuda::std::ranges::view_base
   int* ptr_ = nullptr;
 
   template <CtorKind CK2 = CK, cuda::std::enable_if_t<CK2 == DefaultCtor, int> = 0>
-  __host__ __device__ constexpr BidirRangeWith() noexcept {};
-  __host__ __device__ constexpr BidirRangeWith(int* ptr);
+  TEST_FUNC constexpr BidirRangeWith() noexcept {};
+  TEST_FUNC constexpr BidirRangeWith(int* ptr);
 
-  __host__ __device__ constexpr bidirectional_iterator<int*> begin()
+  TEST_FUNC constexpr bidirectional_iterator<int*> begin()
   {
     return bidirectional_iterator<int*>{ptr_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<const int*> begin() const
+  TEST_FUNC constexpr bidirectional_iterator<const int*> begin() const
   {
     return bidirectional_iterator<const int*>{ptr_};
   }
-  __host__ __device__ constexpr bidirectional_iterator<int*> end()
+  TEST_FUNC constexpr bidirectional_iterator<int*> end()
   {
     return bidirectional_iterator<int*>{ptr_ + 8};
   }
-  __host__ __device__ constexpr bidirectional_iterator<const int*> end() const
+  TEST_FUNC constexpr bidirectional_iterator<const int*> end() const
   {
     return bidirectional_iterator<const int*>{ptr_ + 8};
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     static_assert(cuda::std::default_initializable<cuda::std::ranges::reverse_view<BidirRangeWith<DefaultCtor>>>);
@@ -69,7 +69,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

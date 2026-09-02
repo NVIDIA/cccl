@@ -32,17 +32,17 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const year_month_weekday_last>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const year_month_weekday_last>().ok())>);
 
-  static_assert(!year_month_weekday_last{year{-32768}, month{}, weekday_last{weekday{}}}.ok(), ""); // All three bad
+  static_assert(!year_month_weekday_last{year{-32768}, month{}, weekday_last{weekday{}}}.ok()); // All three bad
 
-  static_assert(!year_month_weekday_last{year{-32768}, January, weekday_last{Tuesday}}.ok(), ""); // Bad year
-  static_assert(!year_month_weekday_last{year{2019}, month{}, weekday_last{Tuesday}}.ok(), ""); // Bad month
-  static_assert(!year_month_weekday_last{year{2019}, January, weekday_last{weekday{8}}}.ok(), ""); // Bad day
+  static_assert(!year_month_weekday_last{year{-32768}, January, weekday_last{Tuesday}}.ok()); // Bad year
+  static_assert(!year_month_weekday_last{year{2019}, month{}, weekday_last{Tuesday}}.ok()); // Bad month
+  static_assert(!year_month_weekday_last{year{2019}, January, weekday_last{weekday{8}}}.ok()); // Bad day
 
-  static_assert(!year_month_weekday_last{year{-32768}, month{}, weekday_last{Tuesday}}.ok(), ""); // Bad year & month
-  static_assert(!year_month_weekday_last{year{2019}, month{}, weekday_last{weekday{8}}}.ok(), ""); // Bad month & day
-  static_assert(!year_month_weekday_last{year{-32768}, January, weekday_last{weekday{8}}}.ok(), ""); // Bad year & day
+  static_assert(!year_month_weekday_last{year{-32768}, month{}, weekday_last{Tuesday}}.ok()); // Bad year & month
+  static_assert(!year_month_weekday_last{year{2019}, month{}, weekday_last{weekday{8}}}.ok()); // Bad month & day
+  static_assert(!year_month_weekday_last{year{-32768}, January, weekday_last{weekday{8}}}.ok()); // Bad year & day
 
-  static_assert(year_month_weekday_last{year{2019}, January, weekday_last{Tuesday}}.ok(), ""); // All OK
+  static_assert(year_month_weekday_last{year{2019}, January, weekday_last{Tuesday}}.ok()); // All OK
 
   for (unsigned i = 0; i <= 50; ++i)
   {

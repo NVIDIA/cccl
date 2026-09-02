@@ -12,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/internal_functional.h>
 #include <thrust/for_each.h>
 #include <thrust/functional.h>
@@ -19,6 +20,7 @@
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN

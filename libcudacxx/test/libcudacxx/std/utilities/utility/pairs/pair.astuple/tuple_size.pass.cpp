@@ -20,19 +20,19 @@ int main(int, char**)
 {
   {
     using P1 = cuda::std::pair<int, short>;
-    static_assert((cuda::std::tuple_size<P1>::value == 2), "");
+    static_assert((cuda::std::tuple_size<P1>::value == 2));
   }
   {
     using P1 = cuda::std::pair<int, short> const;
-    static_assert((cuda::std::tuple_size<P1>::value == 2), "");
+    static_assert((cuda::std::tuple_size<P1>::value == 2));
   }
   {
     using P1 = cuda::std::pair<int, short> volatile;
-    static_assert((cuda::std::tuple_size<P1>::value == 2), "");
+    static_assert((cuda::std::tuple_size<P1>::value == 2));
   }
   {
     using P1 = cuda::std::pair<int, short> const volatile;
-    static_assert((cuda::std::tuple_size<P1>::value == 2), "");
+    static_assert((cuda::std::tuple_size<P1>::value == 2));
   }
 
   return 0;

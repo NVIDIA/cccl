@@ -15,17 +15,17 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_move_assignable()
+TEST_FUNC void test_is_move_assignable()
 {
-  static_assert((cuda::std::is_move_assignable<T>::value), "");
-  static_assert((cuda::std::is_move_assignable_v<T>), "");
+  static_assert((cuda::std::is_move_assignable<T>::value));
+  static_assert((cuda::std::is_move_assignable_v<T>) );
 }
 
 template <class T>
-__host__ __device__ void test_is_not_move_assignable()
+TEST_FUNC void test_is_not_move_assignable()
 {
-  static_assert((!cuda::std::is_move_assignable<T>::value), "");
-  static_assert((!cuda::std::is_move_assignable_v<T>), "");
+  static_assert((!cuda::std::is_move_assignable<T>::value));
+  static_assert((!cuda::std::is_move_assignable_v<T>) );
 }
 
 class Empty
@@ -34,7 +34,7 @@ class Empty
 class NotEmpty
 {
 public:
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -47,7 +47,7 @@ struct bit_zero
 
 struct A
 {
-  __host__ __device__ A();
+  TEST_FUNC A();
 };
 
 int main(int, char**)

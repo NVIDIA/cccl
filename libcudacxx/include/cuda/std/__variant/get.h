@@ -63,16 +63,16 @@ template <size_t _Ip, class _Vp>
 template <size_t _Ip, class... _Types>
 [[nodiscard]] _CCCL_API constexpr variant_alternative_t<_Ip, variant<_Types...>>& get(variant<_Types...>& __v)
 {
-  static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
+  static_assert(_Ip < sizeof...(_Types));
+  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>);
   return ::cuda::std::__generic_get<_Ip>(__v);
 }
 
 template <size_t _Ip, class... _Types>
 [[nodiscard]] _CCCL_API constexpr variant_alternative_t<_Ip, variant<_Types...>>&& get(variant<_Types...>&& __v)
 {
-  static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
+  static_assert(_Ip < sizeof...(_Types));
+  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>);
   return ::cuda::std::__generic_get<_Ip>(::cuda::std::move(__v));
 }
 
@@ -80,8 +80,8 @@ template <size_t _Ip, class... _Types>
 [[nodiscard]] _CCCL_API constexpr const variant_alternative_t<_Ip, variant<_Types...>>&
 get(const variant<_Types...>& __v)
 {
-  static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
+  static_assert(_Ip < sizeof...(_Types));
+  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>);
   return ::cuda::std::__generic_get<_Ip>(__v);
 }
 
@@ -89,36 +89,36 @@ template <size_t _Ip, class... _Types>
 [[nodiscard]] _CCCL_API constexpr const variant_alternative_t<_Ip, variant<_Types...>>&&
 get(const variant<_Types...>&& __v)
 {
-  static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
+  static_assert(_Ip < sizeof...(_Types));
+  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>);
   return ::cuda::std::__generic_get<_Ip>(::cuda::std::move(__v));
 }
 
 template <class _Tp, class... _Types>
 [[nodiscard]] _CCCL_API constexpr _Tp& get(variant<_Types...>& __v)
 {
-  static_assert(!is_void_v<_Tp>, "");
+  static_assert(!is_void_v<_Tp>);
   return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 [[nodiscard]] _CCCL_API constexpr _Tp&& get(variant<_Types...>&& __v)
 {
-  static_assert(!is_void_v<_Tp>, "");
+  static_assert(!is_void_v<_Tp>);
   return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(::cuda::std::move(__v));
 }
 
 template <class _Tp, class... _Types>
 [[nodiscard]] _CCCL_API constexpr const _Tp& get(const variant<_Types...>& __v)
 {
-  static_assert(!is_void_v<_Tp>, "");
+  static_assert(!is_void_v<_Tp>);
   return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 [[nodiscard]] _CCCL_API constexpr const _Tp&& get(const variant<_Types...>&& __v)
 {
-  static_assert(!is_void_v<_Tp>, "");
+  static_assert(!is_void_v<_Tp>);
   return ::cuda::std::get<__find_exactly_one_t<_Tp, _Types...>::value>(::cuda::std::move(__v));
 }
 
@@ -135,8 +135,8 @@ template <size_t _Ip, class... _Types>
 [[nodiscard]] _CCCL_API constexpr add_pointer_t<variant_alternative_t<_Ip, variant<_Types...>>>
 get_if(variant<_Types...>* __v) noexcept
 {
-  static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
+  static_assert(_Ip < sizeof...(_Types));
+  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>);
   return ::cuda::std::__generic_get_if<_Ip>(__v);
 }
 
@@ -144,22 +144,22 @@ template <size_t _Ip, class... _Types>
 [[nodiscard]] _CCCL_API constexpr add_pointer_t<const variant_alternative_t<_Ip, variant<_Types...>>>
 get_if(const variant<_Types...>* __v) noexcept
 {
-  static_assert(_Ip < sizeof...(_Types), "");
-  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>, "");
+  static_assert(_Ip < sizeof...(_Types));
+  static_assert(!is_void_v<variant_alternative_t<_Ip, variant<_Types...>>>);
   return ::cuda::std::__generic_get_if<_Ip>(__v);
 }
 
 template <class _Tp, class... _Types>
 [[nodiscard]] _CCCL_API constexpr add_pointer_t<_Tp> get_if(variant<_Types...>* __v) noexcept
 {
-  static_assert(!is_void_v<_Tp>, "");
+  static_assert(!is_void_v<_Tp>);
   return ::cuda::std::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
 [[nodiscard]] _CCCL_API constexpr add_pointer_t<const _Tp> get_if(const variant<_Types...>* __v) noexcept
 {
-  static_assert(!is_void_v<_Tp>, "");
+  static_assert(!is_void_v<_Tp>);
   return ::cuda::std::get_if<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 

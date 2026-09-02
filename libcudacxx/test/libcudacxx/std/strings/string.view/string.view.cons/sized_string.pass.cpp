@@ -20,7 +20,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_sized_str_constructor()
+TEST_FUNC constexpr void test_sized_str_constructor()
 {
   using CharT = typename SV::value_type;
   using SizeT = typename SV::size_type;
@@ -53,7 +53,7 @@ __host__ __device__ constexpr void test_sized_str_constructor()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_sized_str_constructor<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

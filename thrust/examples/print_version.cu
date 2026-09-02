@@ -9,7 +9,7 @@ int main()
   int subminor = THRUST_SUBMINOR_VERSION;
   int patch    = THRUST_PATCH_NUMBER;
 
-  std::cout << "Thrust v" << major << "." << minor << "." << subminor << "-" << patch << std::endl;
+  std::cout << "Thrust v" << major << "." << minor << "." << subminor << "-" << patch << '\n';
 
   return 0;
 }

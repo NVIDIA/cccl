@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <vector>
+
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -17,23 +19,19 @@ C2H_TEST("basic stf logical_data", "[logical_data]")
 {
   size_t N = 1000000;
 
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
 
-  stf_logical_data_handle lA, lB;
+  std::vector<float> A(N);
+  std::vector<float> B(N);
 
-  float *A, *B;
-  A = (float*) malloc(N * sizeof(float));
-  B = (float*) malloc(N * sizeof(float));
-
-  stf_logical_data(ctx, &lA, A, N * sizeof(float));
-  stf_logical_data(ctx, &lB, B, N * sizeof(float));
+  stf_logical_data_handle lA = stf_logical_data(ctx, A.data(), N * sizeof(float));
+  stf_logical_data_handle lB = stf_logical_data(ctx, B.data(), N * sizeof(float));
+  REQUIRE(lA != nullptr);
+  REQUIRE(lB != nullptr);
 
   stf_logical_data_destroy(lA);
   stf_logical_data_destroy(lB);
 
   stf_ctx_finalize(ctx);
-
-  free(A);
-  free(B);
 }

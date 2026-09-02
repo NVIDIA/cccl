@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ void test(It i, It x)
+TEST_FUNC void test(It i, It x)
 {
   cuda::std::move_iterator<It> r(i);
   cuda::std::move_iterator<It> rr = r--;
@@ -42,10 +42,10 @@ int main(int, char**)
     using MI                = cuda::std::move_iterator<const char*>;
     constexpr MI it1        = cuda::std::make_move_iterator(p);
     constexpr MI it2        = cuda::std::make_move_iterator(p + 1);
-    static_assert(it1 != it2, "");
+    static_assert(it1 != it2);
     constexpr MI it3 = cuda::std::make_move_iterator(p + 1)--;
-    static_assert(it1 != it3, "");
-    static_assert(it2 == it3, "");
+    static_assert(it1 != it3);
+    static_assert(it2 == it3);
   }
 
   return 0;

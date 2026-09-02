@@ -30,16 +30,16 @@ struct Iter
   using difference_type  = intptr_t;
   using iterator_concept = cuda::std::input_iterator_tag;
 
-  __host__ __device__ constexpr decltype(auto) operator*() const
+  TEST_FUNC constexpr decltype(auto) operator*() const
   {
     return *it_;
   }
-  __host__ __device__ constexpr Iter& operator++()
+  TEST_FUNC constexpr Iter& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr void operator++(int)
+  TEST_FUNC constexpr void operator++(int)
   {
     ++it_;
   }
@@ -50,20 +50,20 @@ struct Sent
 {
   int* end_;
 
-  __host__ __device__ friend constexpr bool operator==(const Iter<Const>& i, const Sent& s)
+  TEST_FUNC friend constexpr bool operator==(const Iter<Const>& i, const Sent& s)
   {
     return i.it_ == s.end_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(const Sent& s, const Iter<Const>& i)
+  TEST_FUNC friend constexpr bool operator==(const Sent& s, const Iter<Const>& i)
   {
     return i.it_ == s.end_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Iter<Const>& i, const Sent& s)
+  TEST_FUNC friend constexpr bool operator!=(const Iter<Const>& i, const Sent& s)
   {
     return i.it_ != s.end_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const Sent& s, const Iter<Const>& i)
+  TEST_FUNC friend constexpr bool operator!=(const Sent& s, const Iter<Const>& i)
   {
     return i.it_ != s.end_;
   }
@@ -76,23 +76,23 @@ struct CrossComparableSent
   int* end_;
 
   template <bool C>
-  __host__ __device__ friend constexpr bool operator==(const Iter<C>& i, const CrossComparableSent& s)
+  TEST_FUNC friend constexpr bool operator==(const Iter<C>& i, const CrossComparableSent& s)
   {
     return i.it_ == s.end_;
   }
 #if TEST_STD_VER < 2020
   template <bool C>
-  __host__ __device__ friend constexpr bool operator==(const CrossComparableSent& s, const Iter<C>& i)
+  TEST_FUNC friend constexpr bool operator==(const CrossComparableSent& s, const Iter<C>& i)
   {
     return i.it_ == s.end_;
   }
   template <bool C>
-  __host__ __device__ friend constexpr bool operator!=(const Iter<C>& i, const CrossComparableSent& s)
+  TEST_FUNC friend constexpr bool operator!=(const Iter<C>& i, const CrossComparableSent& s)
   {
     return i.it_ != s.end_;
   }
   template <bool C>
-  __host__ __device__ friend constexpr bool operator!=(const CrossComparableSent& s, const Iter<C>& i)
+  TEST_FUNC friend constexpr bool operator!=(const CrossComparableSent& s, const Iter<C>& i)
   {
     return i.it_ != s.end_;
   }
@@ -106,7 +106,7 @@ struct Range : IntBufferViewBase
   Range() = default;
 
   template <class T>
-  __host__ __device__ constexpr Range(T&& input)
+  TEST_FUNC constexpr Range(T&& input)
       : IntBufferViewBase(cuda::std::forward<T>(input))
   {}
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
@@ -114,19 +114,19 @@ struct Range : IntBufferViewBase
   using IntBufferViewBase::IntBufferViewBase;
 #endif // !TEST_COMPILER(NVRTC)
 
-  __host__ __device__ constexpr Iter<false> begin()
+  TEST_FUNC constexpr Iter<false> begin()
   {
     return Iter<false>{buffer_};
   }
-  __host__ __device__ constexpr Iter<true> begin() const
+  TEST_FUNC constexpr Iter<true> begin() const
   {
     return Iter<true>{buffer_};
   }
-  __host__ __device__ constexpr St<false> end()
+  TEST_FUNC constexpr St<false> end()
   {
     return St<false>{buffer_ + size_};
   }
-  __host__ __device__ constexpr St<true> end() const
+  TEST_FUNC constexpr St<true> end() const
   {
     return St<true>{buffer_ + size_};
   }
@@ -137,7 +137,7 @@ using CrossComparableR = Range<CrossComparableSent>;
 
 struct LessThan3
 {
-  __host__ __device__ constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -179,7 +179,7 @@ template <bool ConstIter>
 struct getBegin
 {
   template <class Range>
-  __host__ __device__ constexpr auto operator()(Range&& rng) const noexcept
+  TEST_FUNC constexpr auto operator()(Range&& rng) const noexcept
   {
     if constexpr (ConstIter)
     {
@@ -196,7 +196,7 @@ template <bool ConstSent>
 struct getEnd
 {
   template <class Range>
-  __host__ __device__ constexpr auto operator()(Range&& rng) const noexcept
+  TEST_FUNC constexpr auto operator()(Range&& rng) const noexcept
   {
     if constexpr (ConstSent)
     {
@@ -211,7 +211,7 @@ struct getEnd
 
 // cannot declare a non constexpr variable in a constexpr function, so need to pull array out of the main function
 template <class R, bool ConstIter, bool ConstSent>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void testarray()
+TEST_FUNC TEST_CONSTEXPR_CXX20 void testarray()
 {
   cuda::std::array<int, 0> arr;
   R v{arr};
@@ -222,7 +222,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void testarray()
 }
 
 template <class R, bool ConstIter, bool ConstSent>
-__host__ __device__ constexpr void testOne()
+TEST_FUNC constexpr void testOne()
 {
   // iter == sentinel.base
   {
@@ -264,7 +264,7 @@ __host__ __device__ constexpr void testOne()
   }
 }
 
-__host__ __device__ constexpr bool test_invoke()
+TEST_FUNC constexpr bool test_invoke()
 { // test cuda::std::invoke is used
   struct Data
   {
@@ -286,7 +286,7 @@ __host__ __device__ constexpr bool test_invoke()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testOne<R, false, false>();
   testOne<R, true, true>();

@@ -16,7 +16,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Iter = cuda::discard_iterator;
   static_assert(cuda::std::same_as<Iter::value_type, void>);

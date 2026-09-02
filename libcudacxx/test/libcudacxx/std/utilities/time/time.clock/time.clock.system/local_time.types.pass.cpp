@@ -7,6 +7,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++17
 
+// UNSUPPORTED: force-tile
+// error: clocks are not supported in tile mode
+
 // <cuda/std/chrono>
 
 // struct local_t {};
@@ -17,7 +20,7 @@
 
 // [Example:
 //   sys_seconds{sys_days{1970y/January/1}}.time_since_epoch() is 0s.
-//   sys_seconds{sys_days{2000y/January/1}}.time_since_epoch() is 946’684’800s, which is 10’957 * 86’400s.
+//   sys_seconds{sys_days{2000y/January/1}}.time_since_epoch() is 946'684'800s, which is 10'957 * 86'400s.
 // —end example]
 
 #include <cuda/std/cassert>

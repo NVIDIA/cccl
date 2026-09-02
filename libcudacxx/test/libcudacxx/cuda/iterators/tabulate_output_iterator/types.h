@@ -17,7 +17,7 @@
 
 struct basic_functor
 {
-  __host__ __device__ constexpr void operator()(const cuda::std::ptrdiff_t val, const int expected) const noexcept
+  TEST_FUNC constexpr void operator()(const cuda::std::ptrdiff_t val, const int expected) const noexcept
   {
     assert(val == expected); // asserts that the assigned value matches the index
   }
@@ -25,8 +25,8 @@ struct basic_functor
 
 struct not_default_constructible_functor
 {
-  __host__ __device__ not_default_constructible_functor(const int) {}
-  __host__ __device__ constexpr void operator()(const cuda::std::ptrdiff_t val, const int expected) const noexcept
+  TEST_FUNC not_default_constructible_functor(const int) {}
+  TEST_FUNC constexpr void operator()(const cuda::std::ptrdiff_t val, const int expected) const noexcept
   {
     assert(val == expected); // asserts that the assigned value matches the index
   }
@@ -34,7 +34,7 @@ struct not_default_constructible_functor
 
 struct mutable_functor
 {
-  __host__ __device__ constexpr void operator()(const cuda::std::ptrdiff_t val, const int expected) noexcept
+  TEST_FUNC constexpr void operator()(const cuda::std::ptrdiff_t val, const int expected) noexcept
   {
     assert(val == expected); // asserts that the assigned value matches the index
   }

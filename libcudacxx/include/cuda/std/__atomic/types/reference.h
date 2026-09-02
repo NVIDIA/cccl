@@ -22,11 +22,24 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/types/base.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if _CCCL_HAS_INT128()
+template <class _Tp>
+inline constexpr bool __atomic_ref_is_volatile_int128_v =
+  is_volatile_v<_Tp> && (is_same_v<remove_cv_t<_Tp>, __int128> || is_same_v<remove_cv_t<_Tp>, unsigned __int128>);
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+template <class _Tp>
+inline constexpr bool __atomic_ref_is_volatile_int128_v = false;
+#endif // !_CCCL_HAS_INT128()
 
 // Reference is compatible with __atomic_base_tag and uses the default dispatch
 template <typename _Tp>
@@ -35,31 +48,35 @@ struct __atomic_ref_storage
   using __underlying_t                = _Tp;
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_base_tag;
 
-#if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 5)
+#if _CCCL_COMPILER(GCC, <, 10) // older gcc fails to handle volatile in is_trivially_copyable
+  static_assert(is_trivially_copyable_v<remove_cvref_t<_Tp>>,
+                "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
+#else // ^^^ _CCCL_COMPILER(GCC, <, 10) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 10) vvv
   static_assert(is_trivially_copyable_v<_Tp>, "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
-#endif
+#endif // !_CCCL_COMPILER(GCC, <, 10)
+  static_assert(sizeof(__underlying_t) <= 16, "cuda::std::atomic_ref<Tp> only supports sizeof(Tp) <= 16");
 
   _Tp* __a_value;
 
   __atomic_ref_storage() = delete;
 
-  _CCCL_HOST_DEVICE constexpr explicit inline __atomic_ref_storage(_Tp* value) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit __atomic_ref_storage(_Tp* value) noexcept
       : __a_value(value)
   {}
 
-  _CCCL_HOST_DEVICE inline auto get() noexcept -> __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() noexcept -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const noexcept -> __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() const noexcept -> __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() volatile noexcept -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() volatile noexcept -> volatile __underlying_t*
   {
     return __a_value;
   }
-  _CCCL_HOST_DEVICE inline auto get() const volatile noexcept -> volatile __underlying_t*
+  _CCCL_HOST_DEVICE_API auto get() const volatile noexcept -> volatile __underlying_t*
   {
     return __a_value;
   }

@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <climits>
-#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  define _CCCL_CHAR_IS_UNSIGNED() ('\xff' > 0) // CURSED
 
 #  define CHAR_BIT 8
@@ -56,6 +56,6 @@
 #  define LLONG_MIN  (-LLONG_MAX - 1)
 #  define LLONG_MAX  0x7fffffffffffffffLL
 #  define ULLONG_MAX 0xffffffffffffffffUL
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_FREESTANDING()
 
 #endif // _CUDA_STD_CLIMITS

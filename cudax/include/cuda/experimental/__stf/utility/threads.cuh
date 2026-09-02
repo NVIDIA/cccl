@@ -40,8 +40,8 @@ namespace cuda::experimental::stf::reserved
  * @code
  * counter<A>.increment();
  * counter<B>.increment();
- * std::cout << "A count: " << counter<A>.load() << std::endl; // Outputs: A count: 1
- * std::cout << "B count: " << counter<B>.load() << std::endl; // Outputs: B count: 2
+ * std::cout << "A count: " << counter<A>.load() << '\n'; // Outputs: A count: 1
+ * std::cout << "B count: " << counter<B>.load() << '\n'; // Outputs: B count: 2
  * @endcode
  *
  * @tparam T tag type
@@ -88,7 +88,7 @@ private:
  * Example usage:
  * @code
  * high_water_mark<event>.record(1024); // Record a new value
- * std::cout << "Current high water mark: " << high_water_mark<event>.load() << std::endl;
+ * std::cout << "Current high water mark: " << high_water_mark<event>.load() << '\n';
  * @endcode
  *
  * @tparam T tag type for this counter

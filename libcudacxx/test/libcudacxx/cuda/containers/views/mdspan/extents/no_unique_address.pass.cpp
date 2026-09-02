@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <size_t First, size_t Second, size_t Third>
-__host__ __device__ void test(cuda::std::extents<size_t, First, Second, Third> ext, size_t expected_size)
+TEST_FUNC void test(cuda::std::extents<size_t, First, Second, Third> ext, size_t expected_size)
 {
   using extents = cuda::std::extents<size_t, First, Second, Third>;
   assert(ext.extent(0) == 42);

@@ -22,6 +22,7 @@
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <vector>
 
@@ -57,6 +58,8 @@ protected:
     ::std::unordered_set<cudaGraphNode_t> seen;
     ::std::vector<cudaGraphNode_t> result;
 
+    result.reserve(nodes.size());
+
     for (cudaGraphNode_t node : nodes)
     {
       if (seen.insert(node).second)
@@ -68,7 +71,7 @@ protected:
     ::std::swap(nodes, result);
   }
 
-  bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override
+  bool factorize(const backend_ctx_untyped& bctx, reserved::event_vector& events) override
   {
     _CCCL_ASSERT(events.size() >= 2, "invalid value");
 
@@ -85,9 +88,11 @@ protected:
     // graph events by making them depend on a single node instead
     if (events.size() > 16)
     {
-      cudaGraphNode_t n;
+      cudaGraphNode_t n = nullptr;
 
       ::std::vector<cudaGraphNode_t> nodes;
+
+      nodes.reserve(events.size());
 
       // List all graph nodes in the vector of events
       for (const auto& e : events)
@@ -119,7 +124,7 @@ protected:
 
         // Create a new empty graph node which depends on the previous ones,
         // empty the list of events and replace it with this single "empty" event
-        cuda_safe_call(cudaGraphAddEmptyNode(&n, bctx_graph, nodes.data(), nodes.size()));
+        n = cuda_try<cudaGraphAddEmptyNode>(bctx_graph, nodes.data(), nodes.size());
       }
 
       events.clear();

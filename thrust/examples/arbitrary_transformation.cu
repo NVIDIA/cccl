@@ -72,10 +72,10 @@ int main()
                    arbitrary_functor1());
 
   // print the output
-  std::cout << "Tuple functor" << std::endl;
+  std::cout << "Tuple functor" << '\n';
   for (size_t i = 0; i < A.size(); i++)
   {
-    std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D1[i] << std::endl;
+    std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D1[i] << '\n';
   }
 
   // apply the transformation using zip_function
@@ -85,9 +85,9 @@ int main()
                    thrust::make_zip_function(arbitrary_functor2()));
 
   // print the output
-  std::cout << "N-ary functor" << std::endl;
+  std::cout << "N-ary functor" << '\n';
   for (size_t i = 0; i < A.size(); i++)
   {
-    std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D2[i] << std::endl;
+    std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D2[i] << '\n';
   }
 }

@@ -22,12 +22,12 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_fp_format(cuda::std::__fp_format expected)
+TEST_FUNC constexpr void test_fp_format(cuda::std::__fp_format expected)
 {
   assert(cuda::std::__fp_format_of_v<T> == expected);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_fp_format<float>(cuda::std::__fp_format::__binary32);
   test_fp_format<double>(cuda::std::__fp_format::__binary64);

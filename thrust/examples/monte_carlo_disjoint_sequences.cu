@@ -37,7 +37,7 @@ struct estimate_pi
     thrust::default_random_engine rng;
 
     // jump past the numbers used by the subsequences before me
-    rng.discard(N * thread_id);
+    rng.discard(N * thread_id); // NOLINT(bugprone-misplaced-widening-cast)
 
     // create a mapping from random numbers to [0,1)
     thrust::uniform_real_distribution<float> u01(0, 1);
@@ -63,7 +63,7 @@ struct estimate_pi
     sum *= 4.0f;
 
     // divide by N
-    return sum / N;
+    return sum / static_cast<float>(N);
   }
 };
 
@@ -74,9 +74,9 @@ int main()
 
   float estimate = thrust::transform_reduce(
     thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi(), 0.0f, cuda::std::plus<float>());
-  estimate /= M;
+  estimate /= static_cast<float>(M);
 
-  std::cout << "pi is around " << estimate << std::endl;
+  std::cout << "pi is around " << estimate << '\n';
 
   return 0;
 }

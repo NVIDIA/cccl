@@ -85,7 +85,7 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
   for (; i1 != last1; ++i1, ++i2)
   {
     value_type1 tmp1 = *i1;
-    value_type2 tmp2 = *i2;
+    value_type2 tmp2 = *i2; // NOLINT(performance-unnecessary-copy-initialization)
 
     if (wrapped_comp(tmp1, *first1))
     {

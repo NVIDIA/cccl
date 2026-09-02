@@ -25,40 +25,40 @@
 
 class MoveOnly
 {
-  __host__ __device__ MoveOnly(const MoveOnly&);
-  __host__ __device__ MoveOnly& operator=(const MoveOnly&);
+  TEST_FUNC MoveOnly(const MoveOnly&);
+  TEST_FUNC MoveOnly& operator=(const MoveOnly&);
 
   int data_;
 
 public:
-  __host__ __device__ MoveOnly(int data = 1)
+  TEST_FUNC MoveOnly(int data = 1)
       : data_(data)
   {}
-  __host__ __device__ MoveOnly(MoveOnly&& x)
+  TEST_FUNC MoveOnly(MoveOnly&& x)
       : data_(x.data_)
   {
     x.data_ = 0;
   }
-  __host__ __device__ MoveOnly& operator=(MoveOnly&& x)
+  TEST_FUNC MoveOnly& operator=(MoveOnly&& x)
   {
     data_   = x.data_;
     x.data_ = 0;
     return *this;
   }
 
-  __host__ __device__ int get() const
+  TEST_FUNC int get() const
   {
     return data_;
   }
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Wrap = cuda::std::reference_wrapper<T>;
-  static_assert(cuda::std::is_copy_constructible<Wrap>::value, "");
-  static_assert(cuda::std::is_copy_assignable<Wrap>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<Wrap>::value, "");
+  static_assert(cuda::std::is_copy_constructible<Wrap>::value);
+  static_assert(cuda::std::is_copy_assignable<Wrap>::value);
+  static_assert(cuda::std::is_trivially_copyable<Wrap>::value);
 }
 
 int main(int, char**)

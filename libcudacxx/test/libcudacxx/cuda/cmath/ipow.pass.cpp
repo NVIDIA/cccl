@@ -13,8 +13,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class B, class E, class In1, class In2, class Ref>
-__host__ __device__ constexpr void test_ipow(In1 base, In2 exp, Ref ref)
+TEST_FUNC constexpr void test_ipow(In1 base, In2 exp, Ref ref)
 {
   if (cuda::std::in_range<B>(base) && cuda::std::in_range<E>(exp) && cuda::std::in_range<B>(ref))
   {
@@ -23,7 +25,7 @@ __host__ __device__ constexpr void test_ipow(In1 base, In2 exp, Ref ref)
 }
 
 template <class B, class E>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::ipow(B{}, E{})), B>);
   static_assert(noexcept(cuda::ipow(B{}, E{})));
@@ -59,7 +61,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <class B>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<B, signed char>();
   test_type<B, signed short>();
@@ -80,7 +82,7 @@ __host__ __device__ constexpr void test_type()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<signed short>();

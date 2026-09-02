@@ -6,14 +6,14 @@
 #include <cuda/std/tuple>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 template <class T>
 __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
 
   if (i < num_items)
   {
@@ -24,7 +24,7 @@ __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_ite
 template <class T>
 __global__ void cub_api_example_x0_5_kernel(const T* d_in, T* d_out, int num_items)
 {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
 
   if (i < num_items)
   {
@@ -44,7 +44,7 @@ struct cub_api_example_t
     const T* d_in,
     T* d_out,
     int num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     constexpr bool should_be_invoked_on_device = TEST_LAUNCH == 1;
 
@@ -64,9 +64,14 @@ struct cub_api_example_t
     }
 
 #if TEST_LAUNCH == 2
-    NV_IF_TARGET(NV_IS_HOST,
-                 (cudaStreamCaptureStatus status{}; cudaStreamIsCapturing(stream, &status);
-                  if (status != cudaStreamCaptureStatusActive) { return cudaErrorLaunchFailure; }));
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   cudaStreamCaptureStatus status{};
+                   cudaStreamIsCapturing(stream, &status);
+                   if (status != cudaStreamCaptureStatusActive)
+                   {
+                     return cudaErrorLaunchFailure;
+                   }
+                 }));
 #endif
 
     const int blocks_in_grid = (num_items + threads_in_block - 1) / threads_in_block;
@@ -82,7 +87,7 @@ struct cub_api_example_t
        const T* d_in,
        T* d_out,
        int num_items,
-       cudaStream_t stream = 0)
+       cudaStream_t stream = nullptr)
   {
     return invoke(d_temp_storage, temp_storage_bytes, cub_api_example_x2_0_kernel<T>, d_in, d_out, num_items, stream);
   }
@@ -94,7 +99,7 @@ struct cub_api_example_t
        const T* d_in,
        T* d_out,
        int num_items,
-       cudaStream_t stream = 0)
+       cudaStream_t stream = nullptr)
   {
     return invoke(d_temp_storage, temp_storage_bytes, cub_api_example_x0_5_kernel<T>, d_in, d_out, num_items, stream);
   }
@@ -103,7 +108,7 @@ struct cub_api_example_t
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
 
-C2H_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
+CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB_SMALL)
 {
   INFO("Launch = " << TEST_LAUNCH);
 
@@ -142,7 +147,7 @@ struct custom_x2_0_invocable
     const T* d_in,
     T* d_out,
     int num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return cub_api_example_t::x2_0(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
@@ -157,13 +162,13 @@ struct custom_x0_5_invocable
     const T* d_in,
     T* d_out,
     int num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return cub_api_example_t::x0_5(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 };
 
-C2H_TEST("Launch wrapper works with custom invocables", "[test][utils]")
+CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]", CUB_SMALL)
 {
   int n = 42;
   c2h::device_vector<int> in(n, 21);

@@ -20,13 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/negative_binomial_distribution.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <iosfwd>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -51,21 +49,23 @@ public:
 
     param_type() noexcept = default;
 
-    _CCCL_API constexpr explicit param_type(double __p) noexcept
+    _CCCL_HOST_DEVICE_API constexpr explicit param_type(double __p) noexcept
         : __p_{__p}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr double p() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double p() const noexcept
     {
       return __p_;
     }
 
-    [[nodiscard]] _CCCL_API friend constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__p_ == __y.__p_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -78,64 +78,64 @@ private:
 public:
   // constructors and reset functions
   constexpr geometric_distribution() noexcept = default;
-  _CCCL_API constexpr explicit geometric_distribution(double __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit geometric_distribution(double __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr explicit geometric_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit geometric_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
   template <class _URng>
-  [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g, const param_type& __p)
   {
     return negative_binomial_distribution<result_type>(1, __p.p())(__g);
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr double p() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double p() const noexcept
   {
     return __p_.p();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return result_type{0};
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return numeric_limits<result_type>::max();
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const geometric_distribution& __x, const geometric_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const geometric_distribution& __x, const geometric_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const geometric_distribution& __x)
@@ -169,7 +169,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

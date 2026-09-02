@@ -57,9 +57,6 @@ typedef struct
 } TOptionData;
 
 typedef struct
-// #if _CCCL_CUDA_COMPILATION()
-//__align__(8)
-// #endif // _CCCL_CUDA_COMPILATION()
 {
   float Expected;
   float Confidence;
@@ -97,31 +94,16 @@ typedef struct
   // Temporary Host-side pinned memory for async + faster data transfers
   __TOptionValue* h_CallValue;
 
-  // Device- and host-side option data
-  //    void* d_OptionData;
+  // Host-side option data
   void* h_OptionData;
 
-  // Device-side option values
-  //    void* d_CallValue;
-
-  // Intermediate device-side buffers
-  //    void* d_Buffer;
-
-  // random number generator states
-  curandState* rngStates;
+  // Random number generator states
   logical_data<slice<curandState>> rngStates_handle;
 
   // Pseudorandom samples count
   int pathN;
 
-  // Time stamp
-  float time;
-
   int gridSize;
 } TOptionPlan;
-
-// extern "C" void initMonteCarloGPU(TOptionPlan *plan);
-// extern "C" void MonteCarloGPU(TOptionPlan *plan, cudaStream_t stream = 0);
-// extern "C" void closeMonteCarloGPU(TOptionPlan *plan);
 
 #endif

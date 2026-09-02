@@ -1,47 +1,83 @@
-#!/bin/bash
-
 setup_python_env() {
     local py_version=$1
+    # Optional venv directory name (under $HOME). Callers whose job runs
+    # several build scripts (e.g. the combined cuda-stf producer) pass their
+    # own name so the setups don't collide on one venv: uv errors on an
+    # existing venv instead of reusing it.
+    local venv_name="${2:-.cccl-venv}"
+    local venv_path="${HOME}/${venv_name}"
 
-    # check if pyenv is installed
-    if ! command -v pyenv &> /dev/null; then
-        rm -f /pyenv
-        curl -fsSL https://pyenv.run | bash
+    # Source pretty_printing.sh for begin_group/end_group helpers
+    local script_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    # shellcheck source=ci/pretty_printing.sh
+    source "${script_dir}/pretty_printing.sh"
+
+    begin_group "🐍 Setting up Python ${py_version} (uv)"
+
+    # Install uv if not present
+    if ! command -v uv &> /dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$PATH"
     fi
 
-    # Install the build dependencies, check /etc/os-release to see if we are on ubuntu or rocky
-    if [ -f /etc/os-release ]; then
-        source /etc/os-release
-        if [ "$ID" = "ubuntu" ]; then
-            # Use the retry helper to mitigate issues with apt network errors:
-            script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-            retry() {
-              "${script_dir}/util/retry.sh" 5 30 "$@"
-            }
+    # Create a venv with the requested Python version.
+    # uv downloads a pre-built CPython binary automatically — no compilation needed.
+    uv venv --seed --python "${py_version}" "${venv_path}"
 
-            retry sudo apt update
-            retry sudo apt install -y make libssl-dev zlib1g-dev \
-            libbz2-dev libreadline-dev libsqlite3-dev curl git \
-            libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
-        elif [ "$ID" = "rocky" ]; then
-            # we're inside the rockylinux container, sudo not required/available
-            dnf install -y make patch zlib-devel bzip2 bzip2-devel readline-devel \
-            sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel libuuid-devel \
-            gdbm-libs libnsl2
-        else
-            echo "Unsupported Linux distribution"
-            exit 1
-        fi
+    # Windows venvs use Scripts/, Linux/macOS use bin/
+    if [[ -f "${venv_path}/Scripts/activate" ]]; then
+        #shellcheck disable=SC1091
+        source "${venv_path}/Scripts/activate"
+    else
+        #shellcheck disable=SC1091
+        source "${venv_path}/bin/activate"
     fi
 
-    # Always set up pyenv environment
-    export PYENV_ROOT="$HOME/.pyenv"
-    [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init - bash)"
+    end_group "🐍 Setting up Python ${py_version} (uv)"
+}
 
-    # Using pyenv, install the Python version
-    PYENV_DEBUG=1 pyenv install -v "${py_version}"
-    pyenv local "${py_version}"
+# Pin the cuda-toolkit wheels to the container's CTK major.minor (read from nvcc)
+# via PIP_CONSTRAINT when the mode ($1) is "pinned" (the default; empty also means
+# pinned). "latest" and "sysctk" leave it unpinned; any other value is a hard
+# error. This is the lane's mode gate -- it runs before ctk_extra_flavor in every
+# script, so ctk_extra_flavor can assume the mode is already valid. Also sets and
+# exports cuda_version / cuda_major_version; the caller uses cuda_major_version in
+# the pip-extra name (e.g. minimal-cu${cuda_major_version}).
+pin_cuda_toolkit() {
+    cuda_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1-2 | cut -d 'V' -f 2)
+    cuda_major_version=$(echo "$cuda_version" | cut -d '.' -f 1)
+    export cuda_version cuda_major_version
 
-    pip install --upgrade pip
+    local mode="${1:-pinned}"
+    case "${mode,,}" in
+        pinned)
+            export PIP_CONSTRAINT="${TMPDIR:-/tmp}/ctk-constraint.txt"
+            echo "cuda-toolkit==${cuda_version}.*" > "${PIP_CONSTRAINT}"
+            ;;
+        latest | sysctk)
+            # No pin. Clear any inherited constraint so it cannot affect the
+            # resolve (latest tests the newest minor; sysctk installs no
+            # cuda-toolkit wheel at all).
+            unset PIP_CONSTRAINT
+            ;;
+        *)
+            echo "ERROR: invalid ctk mode '${mode}' (expected pinned|latest|sysctk)" >&2
+            return 1
+            ;;
+    esac
+}
+
+# Echoes the pip-extra toolkit "flavor" for the mode ($1): "sysctk" when the mode
+# is sysctk (rely on the system-provided CUDA toolkit) or "cu" otherwise
+# (pip-installed toolkit). The mode is validated by pin_cuda_toolkit, which every
+# lane calls first. Combine with the CUDA major, e.g.
+# "minimal-$(ctk_extra_flavor "${ctk_mode}")${cuda_major_version}" -> minimal-sysctk12.
+ctk_extra_flavor() {
+    local mode="${1:-}"
+    if [[ "${mode,,}" == "sysctk" ]]; then
+        echo "sysctk"
+    else
+        echo "cu"
+    fi
 }

@@ -15,19 +15,21 @@
 #include <cuda/std/ranges>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 constexpr int buff[] = {1, 2, 3};
 
 struct DefaultConstructibleView : cuda::std::ranges::view_base
 {
-  __host__ __device__ constexpr DefaultConstructibleView() noexcept
+  TEST_FUNC constexpr DefaultConstructibleView() noexcept
       : begin_(buff)
       , end_(buff + 3)
   {}
-  __host__ __device__ constexpr int const* begin() const
+  TEST_FUNC constexpr int const* begin() const
   {
     return begin_;
   }
-  __host__ __device__ constexpr int const* end() const
+  TEST_FUNC constexpr int const* end() const
   {
     return end_;
   }
@@ -40,10 +42,10 @@ private:
 struct DefaultConstructibleFunction
 {
   int state_;
-  __host__ __device__ constexpr DefaultConstructibleFunction() noexcept
+  TEST_FUNC constexpr DefaultConstructibleFunction() noexcept
       : state_(100)
   {}
-  __host__ __device__ constexpr int operator()(int i) const
+  TEST_FUNC constexpr int operator()(int i) const
   {
     return i + state_;
   }
@@ -52,20 +54,20 @@ struct DefaultConstructibleFunction
 struct NoDefaultCtrView : cuda::std::ranges::view_base
 {
   NoDefaultCtrView() = delete;
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct NoDefaultFunction
 {
   NoDefaultFunction() = delete;
-  __host__ __device__ constexpr int operator()(int i) const
+  TEST_FUNC constexpr int operator()(int i) const
   {
     return i;
   };
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::transform_view<DefaultConstructibleView, DefaultConstructibleFunction> view{};
@@ -97,7 +99,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 
   return 0;

@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ constexpr void test(const int (&input_data)[num_elements])
+TEST_FUNC constexpr void test(const int (&input_data)[num_elements])
 {
   Iter first{cuda::std::begin(input_data)};
   Iter last{cuda::std::end(input_data)};
@@ -44,12 +44,12 @@ __host__ __device__ constexpr void test(const int (&input_data)[num_elements])
 }
 
 template <class Iter, class Pred>
-__host__ __device__ constexpr void test_eq(Iter first, Iter last, Pred p)
+TEST_FUNC constexpr void test_eq(Iter first, Iter last, Pred p)
 {
   assert(first == cuda::std::min_element(first, last, p));
 }
 
-__host__ __device__ constexpr void test_eq()
+TEST_FUNC constexpr void test_eq()
 {
   constexpr int N = 10;
   int a[N]        = {};
@@ -61,7 +61,7 @@ __host__ __device__ constexpr void test_eq()
   test_eq(a, a + N, cuda::std::greater<int>());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr int input_data[num_elements] = INPUT_DATA;
   test<forward_iterator<const int*>>(input_data);
@@ -70,13 +70,20 @@ __host__ __device__ constexpr bool test()
   test<const int*>(input_data);
   test_eq();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>(input_data);))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>(input_data);))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

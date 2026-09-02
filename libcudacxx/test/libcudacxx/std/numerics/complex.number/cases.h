@@ -18,6 +18,8 @@
 #include <cuda/std/complex>
 #include <cuda/std/limits>
 
+#include "test_macros.h"
+
 template <class T>
 using testcases_t = cuda::std::complex<T>[152];
 
@@ -28,45 +30,45 @@ struct _testcases
 
   static constexpr size_t count = sizeof(testcases_t<T>) / sizeof(cuda::std::complex<T>);
 
-  __host__ __device__ const cuda::std::complex<T>* begin() const
+  TEST_FUNC const cuda::std::complex<T>* begin() const
   {
     return &_cases[0];
   }
-  __host__ __device__ const cuda::std::complex<T>* cbegin() const
+  TEST_FUNC const cuda::std::complex<T>* cbegin() const
   {
     return &_cases[0];
   }
-  __host__ __device__ cuda::std::complex<T>* begin()
+  TEST_FUNC cuda::std::complex<T>* begin()
   {
     return &_cases[0];
   }
 
-  __host__ __device__ const cuda::std::complex<T>* end() const
+  TEST_FUNC const cuda::std::complex<T>* end() const
   {
     return &_cases[count];
   }
-  __host__ __device__ const cuda::std::complex<T>* cend() const
+  TEST_FUNC const cuda::std::complex<T>* cend() const
   {
     return &_cases[count];
   }
-  __host__ __device__ cuda::std::complex<T>* end()
+  TEST_FUNC cuda::std::complex<T>* end()
   {
     return &_cases[count];
   }
 
-  __host__ __device__ cuda::std::complex<T>& operator[](size_t n)
+  TEST_FUNC cuda::std::complex<T>& operator[](size_t n)
   {
     return _cases[n];
   }
 
-  __host__ __device__ const cuda::std::complex<T>& operator[](size_t n) const
+  TEST_FUNC const cuda::std::complex<T>& operator[](size_t n) const
   {
     return _cases[n];
   }
 };
 
 template <class T>
-__host__ __device__ _testcases<T> get_testcases()
+TEST_FUNC _testcases<T> get_testcases()
 {
   _testcases<T> tc{
     cuda::std::complex<T>(1.e-2, 1.e-2),
@@ -251,7 +253,7 @@ enum
 };
 
 template <class T>
-__host__ __device__ int classify(const cuda::std::complex<T>& x)
+TEST_FUNC int classify(const cuda::std::complex<T>& x)
 {
   if (x == cuda::std::complex<T>())
   {
@@ -285,7 +287,7 @@ __host__ __device__ int classify(const cuda::std::complex<T>& x)
 }
 
 template <class T>
-inline __host__ __device__ int classify(T x)
+inline TEST_FUNC int classify(T x)
 {
   if (x == T(0))
   {
@@ -302,32 +304,32 @@ inline __host__ __device__ int classify(T x)
   return non_zero;
 }
 
-__host__ __device__ void is_about(float x, float y)
+TEST_FUNC void is_about(float x, float y)
 {
   assert(cuda::std::abs((x - y) / (x + y)) < 1.e-6);
 }
 
-__host__ __device__ void is_about(double x, double y)
+TEST_FUNC void is_about(double x, double y)
 {
   assert(cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-__host__ __device__ void is_about(long double x, long double y)
+TEST_FUNC void is_about(long double x, long double y)
 {
   assert(cuda::std::abs((x - y) / (x + y)) < 1.e-14);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-__host__ __device__ void is_about(__half x, __half y)
+TEST_FUNC void is_about(__half x, __half y)
 {
   assert(cuda::std::fabs((x - y) / (x + y)) <= __half(1e-3));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-__host__ __device__ void is_about(__nv_bfloat16 x, __nv_bfloat16 y)
+TEST_FUNC void is_about(__nv_bfloat16 x, __nv_bfloat16 y)
 {
   assert(cuda::std::fabs((x - y) / (x + y)) <= __nv_bfloat16(5e-3));
 }

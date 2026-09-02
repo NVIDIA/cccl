@@ -3,15 +3,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
+import numpy as np
+
 """
 Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
-from typing import List, Optional, Tuple
-
-import numpy as np
-
-from ..typing import DeviceArrayLike, GpuStruct
+if TYPE_CHECKING:
+    from ..typing import DeviceArrayLike, GpuStruct
 
 
 def is_device_array(obj: object) -> bool:
@@ -45,6 +48,19 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
         return np.dtype(arr.dtype)  # type: ignore
     except (AttributeError, TypeError):
         pass
+
+    # Framework-specific dtypes NumPy can't interpret: PyTorch's bfloat16.
+    # Its __cuda_array_interface__ reports an opaque "<V2" typestr (CAI has no
+    # bfloat16 spelling), which would silently demote the array to a storage
+    # type; map it to the ml_dtypes bfloat16 dtype instead.
+    if str(getattr(arr, "dtype", None)) == "torch.bfloat16":
+        from ..types import bfloat16
+
+        if bfloat16.dtype is None:
+            raise TypeError(
+                "bfloat16 arrays require the ml_dtypes package to be installed"
+            )
+        return bfloat16.dtype
 
     # Fall back to __cuda_array_interface__ for DeviceArrayLike
     cai = arr.__cuda_array_interface__  # type: ignore

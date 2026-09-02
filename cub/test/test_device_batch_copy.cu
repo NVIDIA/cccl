@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -20,9 +21,12 @@
 #include <utility>
 #include <vector>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
+
+CUB_TEST_MEMORY_CLASS(CUB_LARGE);
 
 /**
  * @brief Host-side random data generation
@@ -242,8 +246,11 @@ try
 
   if (it_pair.first != h_gpu_results.cend())
   {
-    std::cout << "Mismatch at index " << std::distance(h_gpu_results.cbegin(), it_pair.first)
-              << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
+    std::cout
+      << "Mismatch at index "
+      << std::distance(h_gpu_results.cbegin(), it_pair.first)
+      // NOLINTNEXTLINE(bugprone-unintended-char-ostream-output)
+      << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
@@ -257,6 +264,7 @@ catch ([[maybe_unused]] std::bad_alloc& e)
     << TestDataGenToString(output_gen) << ")" //
     << "' due to insufficient memory: " << e.what() << "\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
+  return;
 }
 
 struct object_with_non_trivial_ctor

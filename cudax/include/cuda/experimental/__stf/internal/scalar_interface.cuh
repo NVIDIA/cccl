@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -77,12 +78,12 @@ class shape_of<scalar_view<T>>
 {
 public:
   shape_of() = default;
-  shape_of(const scalar_view<T>&)
-      : shape_of<scalar_view<T>>()
+  _CCCL_HOST_DEVICE shape_of(const scalar_view<T>&)
+      : shape_of()
   {}
 
   /// Mandatory method : defined the total number of elements in the shape
-  size_t size() const
+  _CCCL_HOST_DEVICE size_t size() const
   {
     return sizeof(T);
   }
@@ -99,7 +100,7 @@ public:
   using typename base::shape_t;
 
   scalar_stream_interface(scalar_view<T> val)
-      : base(::std::move(val))
+      : base(::cuda::std::move(val))
   {}
   scalar_stream_interface(typename base::shape_t s)
       : base(s)
@@ -131,7 +132,7 @@ public:
 
     size_t sz = sizeof(T);
 
-    cuda_safe_call(cudaMemcpyAsync((void*) dst_instance.addr, (void*) src_instance.addr, sz, kind, stream));
+    cuda_try(cudaMemcpyAsync((void*) dst_instance.addr, (void*) src_instance.addr, sz, kind, stream));
   }
 
   void data_allocate(
@@ -267,9 +268,7 @@ public:
       .extent   = make_cudaExtent(sizeof(T), 1, 1),
       .kind     = kind};
 
-    cudaGraphNode_t result;
-    cuda_safe_call(cudaGraphAddMemcpyNode(&result, graph, input_nodes, input_cnt, &cpy_params));
-    return result;
+    return cuda_try<cudaGraphAddMemcpyNode>(graph, input_nodes, input_cnt, &cpy_params);
   }
 
   bool pin_host_memory(instance_id_t instance_id) override

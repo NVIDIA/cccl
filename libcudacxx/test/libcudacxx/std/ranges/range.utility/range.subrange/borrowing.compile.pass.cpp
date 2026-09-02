@@ -14,6 +14,8 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::ranges::borrowed_range<
               cuda::std::ranges::subrange<int*, const int*, cuda::std::ranges::subrange_kind::sized>>);
 static_assert(

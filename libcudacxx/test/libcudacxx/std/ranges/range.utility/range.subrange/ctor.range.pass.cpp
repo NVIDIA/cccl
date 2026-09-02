@@ -26,7 +26,7 @@ static_assert(cuda::std::is_constructible_v<ConvertibleForwardSubrange, Converti
 static_assert(cuda::std::is_constructible_v<DifferentSentinelSubrange, ForwardBorrowedRangeDifferentSentinel>);
 static_assert(cuda::std::is_constructible_v<DifferentSentinelWithSizeMemberSubrange, DifferentSentinelWithSizeMember>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   ForwardSubrange a{ForwardBorrowedRange()};
   assert(base(a.begin()) == globalBuff);

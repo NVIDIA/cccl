@@ -17,14 +17,14 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val, int exponent)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val, int exponent)
 {
   assert(cuda::std::__fp_get_exp(val) != exponent);
   assert(cuda::std::__fp_get_exp(cuda::std::__fp_set_exp(val, exponent)) == exponent);
 }
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
 {
   constexpr auto fmt = cuda::std::__fp_format_of_v<T>;
 
@@ -65,7 +65,11 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
       assert(!cuda::std::isnan(res));
       assert(!cuda::std::isinf(res));
       assert(cuda::std::isfinite(res));
+      // NVHPC flushes subnormals to 0 by default on some architectures. That causes this check to fail, because we use
+      // __builtin_fpclassify to implement fpclassify. Re-enable once nvbug 6303102 is resolved.
+#if !TEST_COMPILER(NVHPC)
       assert(cuda::std::fpclassify(res) == FP_SUBNORMAL);
+#endif // !TEST_COMPILER(NVHPC)
     }
 
     if constexpr (cuda::std::__fp_has_denorm_v<fmt> && cuda::std::__fp_is_signed_v<fmt>)
@@ -75,7 +79,11 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
       assert(!cuda::std::isnan(res));
       assert(!cuda::std::isinf(res));
       assert(cuda::std::isfinite(res));
+      // NVHPC flushes subnormals to 0 by default on some architectures. That causes this check to fail, because we use
+      // __builtin_fpclassify to implement fpclassify. Re-enable once nvbug 6303102 is resolved.
+#if !TEST_COMPILER(NVHPC)
       assert(cuda::std::fpclassify(res) == FP_SUBNORMAL);
+#endif // !TEST_COMPILER(NVHPC)
     }
   }
 
@@ -126,12 +134,12 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_fp_set_exp(T val)
 }
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test(T val = T{1})
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test(T val = T{1})
 {
   test_fp_set_exp<T>(val);
 }
 
-__host__ __device__ bool test(float val)
+TEST_FUNC bool test(float val)
 {
   test<float>(val);
   test<double>(val);
@@ -168,7 +176,7 @@ __host__ __device__ bool test(float val)
   return true;
 }
 
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr(float val)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr(float val)
 {
   test<float>(val);
   test<double>(val);

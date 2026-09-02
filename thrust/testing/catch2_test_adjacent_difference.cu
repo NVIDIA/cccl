@@ -117,7 +117,7 @@ TEMPLATE_LIST_TEST_CASE("AdjacentDifferenceDiscardIterator", "[adjacent_differen
     thrust::discard_iterator<> d_result =
       thrust::adjacent_difference(d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     CHECK((reference == h_result));
     CHECK((reference == d_result));

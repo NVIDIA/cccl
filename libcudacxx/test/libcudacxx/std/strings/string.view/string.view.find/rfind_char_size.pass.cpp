@@ -18,7 +18,7 @@
 #include "literal.h"
 
 template <class SV>
-__host__ __device__ constexpr void test_rfind(const SV& sv, typename SV::value_type c, typename SV::size_type x)
+TEST_FUNC constexpr void test_rfind(const SV& sv, typename SV::value_type c, typename SV::size_type x)
 {
   assert(sv.rfind(c) == x);
   if (x != SV::npos)
@@ -28,7 +28,7 @@ __host__ __device__ constexpr void test_rfind(const SV& sv, typename SV::value_t
 }
 
 template <class SV>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_rfind(const SV& sv, typename SV::value_type c, typename SV::size_type pos, typename SV::size_type x)
 {
   assert(sv.rfind(c, pos) == x);
@@ -39,7 +39,7 @@ test_rfind(const SV& sv, typename SV::value_type c, typename SV::size_type pos, 
 }
 
 template <class SV>
-__host__ __device__ constexpr void test_rfind()
+TEST_FUNC constexpr void test_rfind()
 {
   using CharT = typename SV::value_type;
   using SizeT = typename SV::size_type;
@@ -90,7 +90,7 @@ __host__ __device__ constexpr void test_rfind()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_rfind<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

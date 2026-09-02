@@ -20,7 +20,7 @@ struct A
   float m3;
   double m4;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 struct B
@@ -30,7 +30,7 @@ struct B
   float m3;
   double m4;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 struct NonStandard
@@ -57,7 +57,7 @@ enum class EC2 : unsigned
 };
 
 template <class T, class U>
-__host__ __device__ constexpr void test_is_layout_compatible(bool expected)
+TEST_FUNC constexpr void test_is_layout_compatible(bool expected)
 {
 #if defined(_CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE)
   assert((cuda::std::is_layout_compatible<T, U>::value == expected));
@@ -96,7 +96,7 @@ __host__ __device__ constexpr void test_is_layout_compatible(bool expected)
 #endif // _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // 1. Signed integer type and its unsigned counterpart are not layout-compatible
   test_is_layout_compatible<int, int>(true);

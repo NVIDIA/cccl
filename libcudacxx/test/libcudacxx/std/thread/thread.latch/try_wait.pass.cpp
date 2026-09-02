@@ -5,9 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is not supported
 
 // <cuda/std/latch>
 
@@ -19,7 +22,7 @@
 #include "test_macros.h"
 
 template <typename Latch, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   Selector<Latch, Initializer> sel;
   SHARED Latch* l;

@@ -5,9 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -23,7 +26,7 @@
 #include "test_macros.h"
 
 template <template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   {
     Selector<cuda::std::atomic_flag, default_initializer> sel;

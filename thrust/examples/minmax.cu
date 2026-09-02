@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include <iostream>
+
 // compute minimum and maximum values in a single reduction
 
 // minmax_pair stores the minimum and maximum
@@ -80,10 +82,10 @@ int main()
   {
     std::cout << e << " ";
   }
-  std::cout << "]" << std::endl;
+  std::cout << "]" << '\n';
 
-  std::cout << "minimum = " << result.min_val << std::endl;
-  std::cout << "maximum = " << result.max_val << std::endl;
+  std::cout << "minimum = " << result.min_val << '\n';
+  std::cout << "maximum = " << result.max_val << '\n';
 
   return 0;
 }

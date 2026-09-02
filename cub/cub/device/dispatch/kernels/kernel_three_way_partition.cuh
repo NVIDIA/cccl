@@ -14,6 +14,8 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/util_arch.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -85,8 +87,10 @@ public:
   {
     if (last_partition)
     {
-      user_num_selected_out_it[0] = num_previously_selected_first() + num_selected_first;
-      user_num_selected_out_it[1] = num_previously_selected_second() + num_selected_second;
+      user_num_selected_out_it[0] =
+        num_previously_selected_first() + num_selected_first; // NOLINT(bugprone-misplaced-widening-cast)
+      user_num_selected_out_it[1] =
+        num_previously_selected_second() + num_selected_second; // NOLINT(bugprone-misplaced-widening-cast)
     }
     else
     {
@@ -101,7 +105,7 @@ public:
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename FirstOutputIteratorT,
           typename SecondOutputIteratorT,
@@ -112,21 +116,33 @@ template <typename ChainedPolicyT,
           typename SelectSecondPartOp,
           typename OffsetT,
           typename StreamingContextT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
-    InputIteratorT d_in,
-    FirstOutputIteratorT d_first_part_out,
-    SecondOutputIteratorT d_second_part_out,
-    UnselectedOutputIteratorT d_unselected_out,
-    NumSelectedIteratorT d_num_selected_out,
+#if _CCCL_HAS_CONCEPTS()
+  requires three_way_partition_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(current_policy<PolicySelector>().lookback.threads_per_block)
+  _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
+    const InputIteratorT d_in,
+    const FirstOutputIteratorT d_first_part_out,
+    const SecondOutputIteratorT d_second_part_out,
+    const UnselectedOutputIteratorT d_unselected_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
-    OffsetT num_items,
-    int num_tiles,
-    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
+    const OffsetT num_items,
+    const int num_tiles,
+    const StreamingContextT streaming_context)
 {
-  using AgentThreeWayPartitionPolicyT = typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
+  static constexpr auto active_policy = current_policy<PolicySelector>();
+  using AgentThreeWayPartitionPolicyT = agent_three_way_partition_policy<
+    active_policy.lookback.threads_per_block,
+    active_policy.lookback.items_per_thread,
+    active_policy.lookback.load_algorithm,
+    active_policy.lookback.load_modifier,
+    active_policy.lookback.scan_algorithm,
+    delay_constructor_t<active_policy.lookback.lookback_delay.kind,
+                        active_policy.lookback.lookback_delay.delay,
+                        active_policy.lookback.lookback_delay.l2_write_latency>>;
 
   // Thread block type for selecting data from input tiles
   using AgentThreeWayPartitionT = AgentThreeWayPartition<
@@ -180,8 +196,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
  *   (i.e., length of @p d_selected_out)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIteratorT d_num_selected_out)
+_CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
+  ScanTileStateT tile_state, const int num_tiles, const NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

@@ -51,10 +51,14 @@ h_init = np.array(-np.inf, dtype=np.float64)
 logcdf2 = cp.empty_like(logpdf)
 
 # Perform the first inclusive scan (log-add-exp).
-cuda.compute.inclusive_scan(logpdf, logcdf, logaddexp, h_init, logpdf.size)
+cuda.compute.inclusive_scan(
+    d_in=logpdf, d_out=logcdf, op=logaddexp, init_value=h_init, num_items=logpdf.size
+)
 
 # Perform the second inclusive scan (maximum).
-cuda.compute.inclusive_scan(logcdf, logcdf2, maximum, h_init, logpdf.size)
+cuda.compute.inclusive_scan(
+    d_in=logcdf, d_out=logcdf2, op=maximum, init_value=h_init, num_items=logpdf.size
+)
 
 # Verify the results and compute quantiles.
 assert cp.all(logcdf2[:-1] <= logcdf2[1:])

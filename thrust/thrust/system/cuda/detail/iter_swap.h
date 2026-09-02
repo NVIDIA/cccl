@@ -26,6 +26,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -33,7 +34,7 @@ namespace cuda_cub
 namespace detail
 {
 template <typename Pointer1, typename Pointer2>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
+_CCCL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
 {
   using ::cuda::std::swap;
   swap(*raw_pointer_cast(a), *raw_pointer_cast(b));
@@ -43,7 +44,8 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void iter_swap_kernel(Pointer1 a, Pointer2 b)
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
 inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 a, Pointer2 b)
 {
-  // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
+  // Because of https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#cuda-arch
+  // point 2., if a call from a __host__
   // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
   // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
   // NV_IF_TARGET switch. See also NVBug 881631.

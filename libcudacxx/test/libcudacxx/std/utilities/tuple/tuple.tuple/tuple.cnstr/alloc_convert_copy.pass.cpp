@@ -24,7 +24,7 @@
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };
@@ -32,7 +32,7 @@ struct Explicit
 struct Implicit
 {
   int value;
-  __host__ __device__ Implicit(int x)
+  TEST_FUNC Implicit(int x)
       : value(x)
   {}
 };

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/optional>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -30,6 +32,8 @@
  * This is a generic class of "tasks" that are synchronized according to
  * accesses on "data" depending on in/out dependencies
  */
+
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/internal/msir.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // task has-a task_dep_vector_untyped
@@ -48,7 +52,6 @@ using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
 
 class backend_ctx_untyped;
 class logical_data_untyped;
-class exec_place;
 
 void reclaim_memory(
   backend_ctx_untyped& ctx, const data_place& place, size_t requested_s, size_t& reclaimed_s, event_list& prereqs);
@@ -118,6 +121,15 @@ private:
     // acquire the logical_data_untypeds accessed by the task
     event_list input_events;
 
+    // We make it mutable because presumably read-only access using this list
+    // may optimize it too
+    mutable event_list ready_prereqs;
+
+    auto& get_ready_prereqs() const
+    {
+      return ready_prereqs;
+    }
+
     // A string useful for debugging purpose
     mutable ::std::string symbol;
 
@@ -130,9 +142,10 @@ private:
     // Used to uniquely identify the task for mapping purposes
     reserved::mapping_id_t mapping_id;
 
-    // This is a pointer to a generic data structure used by "unset_place" to
-    // restore previous context
-    exec_place saved_place_ctx;
+    // RAII guard for the task's execution place activation.
+    // Created in acquire_deps, destroyed in release_deps.
+    // Empty (inactive) scope when not in use.
+    exec_place_scope saved_place_ctx;
 
     // Indicate the status of the task
     task::phase phase = task::phase::setup;
@@ -209,6 +222,10 @@ public:
   void add_deps(task_dep_vector_untyped input_deps)
   {
     EXPECT(get_task_phase() == phase::setup);
+    for (const auto& d : input_deps)
+    {
+      validate_dep_place(d);
+    }
     if (pimpl->deps.empty())
     {
       // Frequent case
@@ -221,15 +238,31 @@ public:
     }
   }
 
+  //! Replicated data places are read-only: every replica must stay a copy
+  //! of the same value, so mutation happens at another place and the next
+  //! replicated read re-broadcasts.
+  static void validate_dep_place(const task_dep_untyped& d)
+  {
+    const data_place& dp = d.get_dplace();
+    if (!dp.is_invalid() && dp.is_replicated() && d.get_access_mode() != access_mode::read)
+    {
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        "replicated data places only support read access (mutate the data at another place; the next replicated "
+        "read re-broadcasts)");
+    }
+  }
+
   /// Add a set of dependencies
   template <typename... Pack>
   void add_deps(task_dep_untyped first, Pack&&... pack)
   {
+    validate_dep_place(first);
     EXPECT(get_task_phase() == phase::setup);
     pimpl->deps.push_back(mv(first));
     if constexpr (sizeof...(Pack) > 0)
     {
-      add_deps(::std::forward<Pack>(pack)...);
+      add_deps(::cuda::std::forward<Pack>(pack)...);
     }
   }
 
@@ -308,7 +341,7 @@ public:
   template <typename T>
   void merge_event_list(T&& tail)
   {
-    pimpl->done_prereqs.merge(::std::forward<T>(tail));
+    pimpl->done_prereqs.merge(::cuda::std::forward<T>(tail));
   }
 
   /**
@@ -347,6 +380,16 @@ public:
     return pimpl->input_events;
   }
 
+  void set_ready_prereqs(event_list _ready_prereqs)
+  {
+    pimpl->ready_prereqs = mv(_ready_prereqs);
+  }
+
+  event_list& get_ready_prereqs() const
+  {
+    return pimpl->ready_prereqs;
+  }
+
   // Get the unique task identifier
   int get_unique_id() const
   {
@@ -372,6 +415,17 @@ public:
   bool is_capture_enabled() const
   {
     return pimpl->enable_capture;
+  }
+
+  // Get the base task - for consistency with unified_task, stream_task, graph_task
+  ::cuda::experimental::stf::task& get_base_task()
+  {
+    return *this;
+  }
+
+  const ::cuda::experimental::stf::task& get_base_task() const
+  {
+    return *this;
   }
 
   /**
@@ -416,11 +470,13 @@ void dep_allocate(
   Data& d,
   access_mode mode,
   const data_place& dplace,
-  const ::std::optional<exec_place> eplace,
+  const ::cuda::std::optional<exec_place> eplace,
   instance_id_t instance_id,
   event_list& prereqs)
 {
   auto& inst = d.get_data_instance(instance_id);
+
+  _CCCL_ASSERT(dplace.is_resolved(), "dep_allocate requires a resolved data_place");
 
   /*
    * DATA LAZY ALLOCATION
@@ -452,6 +508,7 @@ void dep_allocate(
         inst.allocated_size = s;
         inst.set_allocated(true);
         inst.reclaimable = true;
+        _CCCL_ASSERT(inst.get_dplace().is_resolved(), "instance dplace must be resolved after allocation");
         break;
       }
 
@@ -679,7 +736,7 @@ private:
   reserved::per_data_instance_msi_state state;
 
   // This stores the last task which used this instance with a relaxed coherence mode (redux)
-  ::std::optional<task> last_task_relaxed;
+  ::cuda::std::optional<task> last_task_relaxed;
 
   // This generic pointer can be used to store some information in the
   // allocator which is passed to the deallocation routine.

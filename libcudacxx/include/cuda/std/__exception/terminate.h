@@ -22,9 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_TILE_COMPILATION()
+#  include <cuda/std/cassert>
+#endif // !_CCCL_TILE_COMPILATION()
+
+#if _CCCL_HOSTED()
 #  include <stdlib.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,7 +39,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION // purposefully not using versioning na
 
 [[noreturn]] _CCCL_API inline void __cccl_terminate() noexcept
 {
+#if _CCCL_TILE_COMPILATION()
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (assert(false);))
+#else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (::__trap();))
+#endif // !_CCCL_TILE_COMPILATION()
   _CCCL_UNREACHABLE();
 }
 

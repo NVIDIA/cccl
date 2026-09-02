@@ -21,13 +21,13 @@ struct ConvertibleButNoRange
 {
   int buffer[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  __host__ __device__ constexpr operator cuda::std::span<int>() const noexcept
+  TEST_FUNC constexpr operator cuda::std::span<int>() const noexcept
   {
     return cuda::std::span<int>{const_cast<int*>(buffer), 10};
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   ConvertibleButNoRange input{};
   cuda::std::span<int> converted = input;
@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

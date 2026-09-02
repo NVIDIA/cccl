@@ -13,10 +13,12 @@
 
 #include <nv/target>
 
+#include "test_macros.h"
+
 // This test checks whether catching/throwing exceptions works correctly on host and whether it compiles in device code.
 // Device code is not ran, because it traps and CUDA is left in undefined state.
 
-__host__ __device__ constexpr int exception_value()
+TEST_FUNC constexpr int exception_value()
 {
   return 42;
 }
@@ -25,7 +27,7 @@ struct ExceptionBase
 {
   int value = exception_value();
 
-  [[nodiscard]] __host__ __device__ static const char* what() noexcept
+  [[nodiscard]] TEST_FUNC static const char* what() noexcept
   {
     return "ExceptionBase";
   }
@@ -45,7 +47,7 @@ struct HostException
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // 1. test catch by value
   _CCCL_TRY

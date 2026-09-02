@@ -20,9 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/gamma.h>
+#include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/cmath>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -50,35 +52,37 @@ public:
 
     // Kemp, C. D. "A modal method for generating binomial variables." Communications in Statistics-Theory and
     // Methods 15.3 (1986): 805-813.
-    _CCCL_API explicit param_type(result_type __t = 1, double __p = 0.5)
+    _CCCL_HOST_DEVICE_API explicit param_type(result_type __t = 1, double __p = 0.5)
         : __t_{__t}
         , __p_{__p}
     {
       if (0 < __p_ && __p_ < 1)
       {
         __r0_ = static_cast<result_type>((__t_ + 1) * __p_);
-        __pr_ = cuda::std::exp(
-          cuda::std::lgamma(__t_ + 1.) - cuda::std::lgamma(__r0_ + 1.) - cuda::std::lgamma(__t_ - __r0_ + 1.)
-          + __r0_ * cuda::std::log(__p_) + (__t_ - __r0_) * cuda::std::log(1 - __p_));
+        __pr_ = ::cuda::std::exp(
+          ::cuda::std::lgamma(__t_ + 1.) - ::cuda::std::lgamma(__r0_ + 1.) - ::cuda::std::lgamma(__t_ - __r0_ + 1.)
+          + __r0_ * ::cuda::std::log(__p_) + (__t_ - __r0_) * ::cuda::std::log(1 - __p_));
         __odds_ratio_ = __p_ / (1 - __p_);
       }
     }
 
-    [[nodiscard]] _CCCL_API constexpr result_type t() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type t() const noexcept
     {
       return __t_;
     }
-    [[nodiscard]] _CCCL_API constexpr double p() const noexcept
+    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double p() const noexcept
     {
       return __p_;
     }
 
-    [[nodiscard]] friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator==(const param_type& __x, const param_type& __y) noexcept
     {
       return __x.__t_ == __y.__t_ && __x.__p_ == __y.__p_;
     }
 #if _CCCL_STD_VER <= 2017
-    [[nodiscard]] friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
+    [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
+    operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
@@ -92,20 +96,20 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API binomial_distribution() noexcept
+  _CCCL_HOST_DEVICE_API binomial_distribution() noexcept
       : binomial_distribution{1}
   {}
-  _CCCL_API explicit binomial_distribution(result_type __t, double __p = 0.5) noexcept
+  _CCCL_HOST_DEVICE_API explicit binomial_distribution(result_type __t, double __p = 0.5) noexcept
       : __p_{param_type{__t, __p}}
   {}
-  _CCCL_API explicit binomial_distribution(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API explicit binomial_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept {}
+  _CCCL_HOST_DEVICE_API constexpr void reset() noexcept {}
 
   // generating functions
   template <class _URng>
-  _CCCL_API result_type operator()(_URng& __g)
+  _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g)
   {
     return (*this)(__g, __p_);
   }
@@ -113,7 +117,7 @@ public:
   // Reference: Kemp, C. D. "A modal method for generating binomial variables." Communications in Statistics-Theory and
   // Methods 15.3 (1986): 805-813.
   template <class _URng>
-  _CCCL_API result_type operator()(_URng& __g, const param_type& __pr)
+  _CCCL_HOST_DEVICE_API result_type operator()(_URng& __g, const param_type& __pr)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     if (__pr.__t_ == 0 || __pr.__p_ == 0)
@@ -170,47 +174,47 @@ public:
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type t() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type t() const noexcept
   {
     return __p_.t();
   }
-  [[nodiscard]] _CCCL_API constexpr double p() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr double p() const noexcept
   {
     return __p_.p();
   }
 
-  [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr param_type param() const noexcept
   {
     return __p_;
   }
-  _CCCL_API constexpr void param(const param_type& __p) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void param(const param_type& __p) noexcept
   {
     __p_ = __p;
   }
 
-  [[nodiscard]] _CCCL_API constexpr result_type min() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type min() const noexcept
   {
     return 0;
   }
-  [[nodiscard]] _CCCL_API constexpr result_type max() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr result_type max() const noexcept
   {
     return t();
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const binomial_distribution& __x, const binomial_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const binomial_distribution& __x, const binomial_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
 #endif //  _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const binomial_distribution& __x)
@@ -244,7 +248,7 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

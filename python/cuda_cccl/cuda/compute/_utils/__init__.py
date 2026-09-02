@@ -1,6 +1,29 @@
-import re
+from __future__ import annotations
 
-__all__ = ["sanitize_identifier"]
+import re
+from typing import TYPE_CHECKING
+
+from .._bindings import InitKind
+from .protocols import is_device_array
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from ..typing import DeviceArrayLike, GpuStruct
+
+__all__ = ["get_init_kind", "sanitize_identifier"]
+
+
+def get_init_kind(
+    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
+) -> InitKind:
+    match init_value:
+        case None:
+            return InitKind.NO_INIT
+        case _ if is_device_array(init_value):
+            return InitKind.FUTURE_VALUE_INIT
+        case _:
+            return InitKind.VALUE_INIT
 
 
 def sanitize_identifier(name: str) -> str:

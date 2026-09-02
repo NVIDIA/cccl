@@ -32,9 +32,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
-#include <cuda/experimental/__stf/utility/traits.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cmath>
 #include <cstdlib>
@@ -48,7 +51,7 @@ namespace cuda::experimental::stf::reserved
 /**
  * @brief This class stores statistics about task execution time
  */
-class task_statistics : public reserved::meyers_singleton<task_statistics>
+class task_statistics : public ::cuda::experimental::meyers_singleton<task_statistics>
 {
 protected:
   task_statistics()
@@ -92,20 +95,32 @@ public:
     calibrating = true;
   }
 
+  //! @brief Records calibration data without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time The task duration in milliseconds.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void log_task_time(const task_type& t, double time)
+  void log_task_time(const task_type& t,
+                     double time,
+                     const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
-    auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
+    // Calibration is diagnostic only; allocation failures must not interfere
+    // with task teardown.
+    ON_THROW(notify, loc)
+    {
+      auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
-    auto it = statistics.find(key);
-    if (it == statistics.end())
-    {
-      statistics.emplace(key, statistic(time));
-    }
-    else
-    {
-      it->second.update(time);
-    }
+      auto it = statistics.find(key);
+      if (it == statistics.end())
+      {
+        statistics.emplace(key, statistic(time));
+      }
+      else
+      {
+        it->second.update(time);
+      }
+    };
   }
 
   class statistic

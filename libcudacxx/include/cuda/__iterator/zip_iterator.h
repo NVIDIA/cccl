@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__algorithm/ranges_min_element.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
@@ -30,7 +30,9 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iter_move.h>
 #include <cuda/std/__iterator/iter_swap.h>
@@ -64,9 +66,6 @@ using __zv_iter_category_base =
   ::cuda::std::conditional_t<__zip_iter_constraints<_Iterators...>::__all_forward,
                              __zv_iter_category_base_tag,
                              __zv_iter_category_base_none>;
-
-//! @addtogroup iterators
-//! @{
 
 //! @brief @c zip_iterator is an iterator which represents a @c tuple of iterators. This iterator is useful for creating
 //! a virtual array of structures while achieving the same performance and bandwidth as the structure of arrays idiom.
@@ -162,8 +161,8 @@ public:
   {}
 
   using iterator_concept = decltype(__get_zip_iterator_concept<_Iterators...>());
-  using value_type       = ::cuda::std::tuple<::cuda::std::iter_value_t<_Iterators>...>;
-  using reference        = ::cuda::std::tuple<::cuda::std::iter_reference_t<_Iterators>...>;
+  using value_type       = ::cuda::std::tuple<__zip_maybe_proxy_value_type_t<_Iterators>...>;
+  using reference        = ::cuda::std::tuple<__zip_maybe_proxy_reference_t<_Iterators>...>;
   using difference_type  = ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>;
 
   // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not
@@ -336,68 +335,14 @@ public:
     return __rhs;
   }
 
-  struct __zip_op_minus
-  {
-    struct __less_abs
-    {
-      // abs in cstdlib is not constexpr
-      _CCCL_EXEC_CHECK_DISABLE
-      [[nodiscard]] _CCCL_API static constexpr difference_type
-      __abs(difference_type __t) noexcept(noexcept(__t < 0 ? -__t : __t))
-      {
-        return __t < 0 ? -__t : __t;
-      }
-
-      _CCCL_EXEC_CHECK_DISABLE
-      [[nodiscard]] _CCCL_API constexpr bool operator()(difference_type __n, difference_type __y) const
-        noexcept(noexcept(__abs(__n) < __abs(__y)))
-      {
-        return __abs(__n) < __abs(__y);
-      }
-    };
-
-    _CCCL_EXEC_CHECK_DISABLE
-    template <size_t _Zero, size_t... _Indices>
-    [[nodiscard]] _CCCL_API constexpr difference_type
-    operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-               const ::cuda::std::tuple<_Iterators...>& __iters2,
-               ::cuda::std::index_sequence<_Zero, _Indices...>) const //
-      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2)) && ...)))
-    {
-      const auto __first = static_cast<difference_type>(::cuda::std::get<0>(__iters1) - ::cuda::std::get<0>(__iters2));
-      if (__first == 0)
-      {
-        return __first;
-      }
-
-      const difference_type __temp[] = {
-        __first,
-        static_cast<difference_type>(::cuda::std::get<_Indices>(__iters1) - ::cuda::std::get<_Indices>(__iters2))...};
-      return *::cuda::std::ranges::min_element(__temp, __zip_op_minus::__less_abs{});
-    }
-  };
-
   //! @brief Returns the distance between two @c zip_iterators
   //! @returns The minimal distance between any of the stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
   _CCCL_API friend constexpr auto operator-(const zip_iterator& __n, const zip_iterator& __y)
     _CCCL_TRAILING_REQUIRES(difference_type)(_Constraints::__all_sized_sentinel)
   {
-    return __zip_apply(__zip_op_minus{}, __n.__current_, __y.__current_);
+    return __zip_apply(__zip_op_minus<difference_type>{}, __n.__current_, __y.__current_);
   }
-
-  struct __zip_op_eq
-  {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <size_t... _Indices>
-    _CCCL_API constexpr bool operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
-                                        ::cuda::std::index_sequence<_Indices...>) const
-      noexcept(noexcept(((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...)))
-    {
-      return ((::cuda::std::get<_Indices>(__iters1) == ::cuda::std::get<_Indices>(__iters2)) || ...);
-    }
-  };
 
   //! @brief Compares two @c zip_iterator for equality by comparing the tuple of stored iterators
   template <class _Constraints = __zip_iter_constraints<_Iterators...>>
@@ -487,10 +432,10 @@ public:
   struct __zip_op_iter_swap
   {
     template <size_t... _Indices>
-    _CCCL_API constexpr void operator()(const ::cuda::std::tuple<_Iterators...>& __iters1,
-                                        const ::cuda::std::tuple<_Iterators...>& __iters2,
-                                        ::cuda::std::index_sequence<_Indices...>) const
-      noexcept(__zip_iter_constraints<_Iterators...>::__all_noexcept_swappable)
+    _CCCL_API constexpr void _CCCL_STATIC_CALL_OPERATOR(
+      const ::cuda::std::tuple<_Iterators...>& __iters1,
+      const ::cuda::std::tuple<_Iterators...>& __iters2,
+      ::cuda::std::index_sequence<_Indices...>) noexcept(__zip_iter_constraints<_Iterators...>::__all_noexcept_swappable)
     {
       (::cuda::std::ranges::iter_swap(::cuda::std::get<_Indices>(__iters1), ::cuda::std::get<_Indices>(__iters2)), ...);
     }
@@ -516,14 +461,17 @@ public:
   }
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
 
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c zip_iterator from a tuple of iterators.
 //! @param __t The tuple of iterators to wrap
+//! @relates zip_iterator
 template <typename... Iterators>
 _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tuple<Iterators...> __t)
 {
@@ -532,6 +480,7 @@ _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tu
 
 //! @brief Creates a @c zip_iterator from a variadic number of iterators.
 //! @param __iters The iterators to wrap
+//! @relates zip_iterator
 template <typename... Iterators>
 _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... __iters)
 {
@@ -549,6 +498,50 @@ template <class... _Iterators>
 inline constexpr bool __is_fancy_pointer<::cuda::zip_iterator<_Iterators...>> = false;
 _CCCL_END_NAMESPACE_CUDA_STD
 #endif // _CCCL_COMPILER(MSVC) && _CCCL_STD_VER <= 2017
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+//! zip_iterator is a C++20 iterator, so it does not play well with legacy STL features like std::distance
+//! To work around that specialize those functions for zip_iterator
+template <class _Diff, class... _Iterators>
+_CCCL_HOST_API constexpr void advance(::cuda::zip_iterator<_Iterators...>& __iter, _Diff __diff)
+{
+  ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
+}
+
+template <class... _Iterators>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>
+distance(::cuda::zip_iterator<_Iterators...> __first, ::cuda::zip_iterator<_Iterators...> __last)
+{
+  return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
+}
+
+template <class... _Iterators>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::zip_iterator<_Iterators...>
+next(::cuda::zip_iterator<_Iterators...> __iter,
+     ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...> __n = 1)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::__zip_iter_constraints<_Iterators...>::__all_bidirectional,
+               "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
+  ::cuda::std::advance(__iter, __n);
+  return __iter;
+}
+
+template <class... _Iterators>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::zip_iterator<_Iterators...>
+prev(::cuda::zip_iterator<_Iterators...> __iter,
+     ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...> __n = 1)
+{
+  _CCCL_ASSERT(__n <= 0 || ::cuda::__zip_iter_constraints<_Iterators...>::__all_bidirectional,
+               "Attempt to std::prev(it, +n) on a non-bidi iterator");
+  ::cuda::std::advance(__iter, -__n);
+  return __iter;
+}
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

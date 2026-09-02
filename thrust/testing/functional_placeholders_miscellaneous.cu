@@ -104,6 +104,6 @@ void TestFunctionalPlaceholdersSemiRegular()
   expr3 = expr; // copy-assignable
   ASSERT_EQUAL(expr3(2, 3), 13);
 
-  static_assert(::cuda::std::semiregular<Expr>, "");
+  static_assert(::cuda::std::semiregular<Expr>);
 }
 DECLARE_UNITTEST(TestFunctionalPlaceholdersSemiRegular);

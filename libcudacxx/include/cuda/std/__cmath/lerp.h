@@ -90,7 +90,7 @@ _CCCL_API constexpr enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2> && 
                                 __promote_t<_A1, _A2, _A3>> lerp(_A1 __a, _A2 __b, _A3 __t) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>) );
   return ::cuda::std::__lerp((__result_type) __a, (__result_type) __b, (__result_type) __t);
 }
 

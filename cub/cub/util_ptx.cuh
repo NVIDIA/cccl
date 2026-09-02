@@ -79,8 +79,8 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE
+_CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
   return BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
 }
@@ -126,8 +126,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadExit()
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y, int block_dim_z)
 {
-  return ((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y))
-       + ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) + threadIdx.x;
+  return static_cast<int>(((block_dim_z == 1) ? 0 : (threadIdx.z * block_dim_x * block_dim_y))
+                          + ((block_dim_y == 1) ? 0 : (threadIdx.y * block_dim_x)) + threadIdx.x);
 }
 
 /**

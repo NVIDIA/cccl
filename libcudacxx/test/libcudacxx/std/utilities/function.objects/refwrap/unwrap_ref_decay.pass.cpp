@@ -19,10 +19,14 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#if _CCCL_HAS_HOST_STD_LIB()
+#  include <functional>
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 #include "test_macros.h"
 
 template <typename T, typename Result>
-__host__ __device__ void check()
+TEST_FUNC void check()
 {
   static_assert(cuda::std::is_same_v<typename cuda::std::unwrap_ref_decay<T>::type, Result>);
   static_assert(cuda::std::is_same_v<typename cuda::std::unwrap_ref_decay<T>::type, cuda::std::unwrap_ref_decay_t<T>>);
@@ -58,6 +62,21 @@ int main(int, char**)
   check<cuda::std::reference_wrapper<T[3]>&, T(&)[3]>();
   check<cuda::std::reference_wrapper<T()>, T (&)()>();
   check<cuda::std::reference_wrapper<T()>&, T (&)()>();
+
+#if _CCCL_HAS_HOST_STD_LIB()
+  check<::std::reference_wrapper<T>, T&>();
+  check<::std::reference_wrapper<T>&, T&>();
+  check<::std::reference_wrapper<T const>, T const&>();
+  check<::std::reference_wrapper<T const>&, T const&>();
+  check<::std::reference_wrapper<T*>, T*&>();
+  check<::std::reference_wrapper<T*>&, T*&>();
+  check<::std::reference_wrapper<T const*>, T const*&>();
+  check<::std::reference_wrapper<T const*>&, T const*&>();
+  check<::std::reference_wrapper<T[3]>, T(&)[3]>();
+  check<::std::reference_wrapper<T[3]>&, T(&)[3]>();
+  check<::std::reference_wrapper<T()>, T (&)()>();
+  check<::std::reference_wrapper<T()>&, T (&)()>();
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
   return 0;
 }

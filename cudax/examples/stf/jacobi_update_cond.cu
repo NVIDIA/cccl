@@ -1,0 +1,101 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDASTF in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+/**
+ * @file
+ *
+ * @brief Jacobi method using the update_cond helper for clean condition management
+ */
+
+#include <cuda/experimental/stf.cuh>
+
+#include <iostream>
+
+using namespace cuda::experimental::stf;
+
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
+{
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+  return 0;
+#else
+  stackable_ctx ctx;
+
+  size_t n     = 4096;
+  size_t m     = 4096;
+  double tol   = 0.5;
+  int max_iter = 1000;
+
+  if (argc > 2)
+  {
+    n = atol(argv[1]);
+    m = atol(argv[2]);
+  }
+
+  if (argc > 3)
+  {
+    tol = atof(argv[3]);
+  }
+
+  if (argc > 4)
+  {
+    max_iter = atoi(argv[4]);
+  }
+
+  auto lA        = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
+  auto lAnew     = ctx.logical_data(lA.shape());
+  auto lresidual = ctx.logical_data(shape_of<scalar_view<double>>());
+  auto liter     = ctx.logical_data(shape_of<scalar_view<int>>());
+
+  ctx.parallel_for(lA.shape(), lA.write(), lAnew.write()).set_symbol("init")->*
+    [=] __device__(size_t i, size_t j, auto A, auto Anew) {
+      A(i, j)    = (i == j) ? 10.0 : -1.0;
+      Anew(i, j) = A(i, j);
+    };
+
+  // Initialize iteration counter
+  ctx.parallel_for(box(1), liter.write())->*[] __device__(size_t, auto iter) {
+    *iter = 0;
+  };
+
+  {
+    auto while_guard = ctx.while_graph_scope();
+
+    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.rw(), lresidual.reduce(reducer::maxval<double>()))
+        ->*[tol] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {
+              Anew(i, j)   = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
+              double error = fabs(A(i, j) - Anew(i, j));
+              residual     = ::std::max(error, residual);
+            };
+
+    ctx.parallel_for(inner<1>(lA.shape()), lA.rw(), lAnew.read())->*[] __device__(size_t i, size_t j, auto A, auto Anew) {
+      A(i, j) = Anew(i, j);
+    };
+
+    while_guard.update_cond(lresidual.read(), liter.rw())->*[tol, max_iter] __device__(auto residual, auto iter) {
+      bool converged   = (*residual < tol);
+      bool max_reached = ((*iter)++ >= max_iter); // Maximum iteration limit
+      return !converged && !max_reached; // Continue if not converged and under limit
+    };
+  }
+
+  int final_iterations  = ctx.wait(liter);
+  double final_residual = ctx.wait(lresidual);
+
+  printf("Converged after %d iterations, residual = %lf\n", final_iterations, final_residual);
+
+  ctx.finalize();
+
+  EXPECT(final_residual <= tol);
+  EXPECT(final_iterations < max_iter);
+
+  return 0;
+#endif
+}

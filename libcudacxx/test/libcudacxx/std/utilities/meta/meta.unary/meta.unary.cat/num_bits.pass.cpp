@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, int Expected = sizeof(T) * CHAR_BIT>
-__host__ __device__ void test_num_bits()
+TEST_FUNC void test_num_bits()
 {
   static_assert(cuda::std::__num_bits_v<T> == Expected);
   static_assert(cuda::std::__num_bits_v<const T> == Expected);

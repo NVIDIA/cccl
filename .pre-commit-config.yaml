@@ -6,19 +6,49 @@ ci:
     autoupdate_branch: ''
     autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
     autoupdate_schedule: quarterly
-    skip: []
+    skip: [secret-scan-trufflehog]
     submodules: false
 
 repos:
+  # Runs first so a leaked credential blocks the commit before any formatter runs.
+  # Self-installing: the hook downloads a pinned, checksum-verified trufflehog on
+  # first use (no manual install). Skipped on pre-commit.ci; Pulse CI enforces server-side.
+  - repo: https://github.com/NVIDIA/security-workflows
+    rev: v0.2.0
+    hooks:
+      - id: secret-scan-trufflehog
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
+        # handled by clang-format
+        exclude_types: [c, c++, cuda]
+      - id: check-json
+      - id: check-toml
+      - id: pretty-format-json
+        args: ['--autofix', '--indent=2', '--no-sort-keys']
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+        # ruff checks this already
+        exclude_types: [python]
+      - id: check-yaml
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        exclude: |
+          (?x)^(
+            ^.*libcudacxx/cmake/config\.guess$
+          )
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v20.1.7
+    rev: v22.1.5
     hooks:
       - id: clang-format
         types_or: [file]
@@ -40,20 +70,10 @@ repos:
   # TODO/REMINDER: add the Ruff vscode extension to the devcontainers
   # Ruff, the Python auto-correcting linter/formatter written in Rust
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.2
+    rev: v0.15.20
     hooks:
     - id: ruff  # linter
     - id: ruff-format  # formatter
-
-  # TOML lint & format
-  - repo: https://github.com/ComPWA/taplo-pre-commit
-    rev: v0.9.3
-    hooks:
-      # See https://github.com/NVIDIA/cccl/issues/3426
-      # - id: taplo-lint
-      #   exclude: "^docs/"
-      - id: taplo-format
-        exclude: "^docs/"
 
   # CMake formatting
   - repo: https://github.com/BlankSpruce/gersemi
@@ -62,7 +82,7 @@ repos:
     - id: gersemi
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
@@ -74,14 +94,50 @@ repos:
           )
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.16.1'
+    rev: 'v2.1.0'
     hooks:
       - id: mypy
-        additional_dependencies: [types-cachetools, numpy]
+        # numpy is intentionally not installed here: numpy>=2.3 ships PEP 695
+        # `type` statements in its stubs that mypy rejects under
+        # python_version=3.10, and numpy<2.3 has no wheels for the Python that
+        # pre-commit.ci runs. numpy is instead ignored in the mypy config.
+        additional_dependencies: [types-cachetools]
         args: ["--config-file=python/cuda_cccl/pyproject.toml",
                "python/cuda_cccl/cuda/compute/"]
         pass_filenames: false
 
+  - repo: https://github.com/sirosen/texthooks
+    rev: 0.7.1
+    hooks:
+      - id: fix-smartquotes
+      - id: fix-spaces
+      - id: forbid-bidi-controls
+      - id: fix-ligatures
+
+  - repo: local
+    hooks:
+      - id: check-shebang
+        name: check-shebang
+        entry: ci/util/pre-commit/check_shebang.py
+        language: python
+        types: [shell]
+        exclude: |
+          (?x)^(
+            ^.*libcudacxx/cmake/config\.guess$
+          )
+
+      - id: check-cub-test-macros
+        name: require CUB test memory classification
+        entry: ci/util/pre-commit/check_cub_test_macros.py
+        language: python
+        files: ^(cub/test/.*\.(cu|cuh|h)|ci/util/pre-commit/check_cub_test_macros\.py)$
+        types: [file]
+
+      - id: unprintable-unicode
+        name: unprintable-unicode
+        entry: ci/util/pre-commit/strip_unprintable.py
+        language: python
+        types: [text]
 
 default_language_version:
   python: python3

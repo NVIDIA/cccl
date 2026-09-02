@@ -395,8 +395,8 @@ using A1T = std::allocator_traits<A1>;
 using A2  = ContainerTestAllocator<float, int>;
 using A2T = std::allocator_traits<A2>;
 
-static_assert(std::is_same<A1T::rebind_traits<float>, A2T>::value, "");
-static_assert(std::is_same<A2T::rebind_traits<int>, A1T>::value, "");
+static_assert(std::is_same<A1T::rebind_traits<float>, A2T>::value);
+static_assert(std::is_same<A2T::rebind_traits<int>, A1T>::value);
 } // end namespace test_detail
 
 //===----------------------------------------------------------------------===//

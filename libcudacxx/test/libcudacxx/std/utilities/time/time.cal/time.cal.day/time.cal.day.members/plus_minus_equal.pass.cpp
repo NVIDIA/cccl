@@ -23,7 +23,7 @@
 using day  = cuda::std::chrono::day;
 using days = cuda::std::chrono::days;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(noexcept(cuda::std::declval<day&>() += cuda::std::declval<days>()));
   static_assert(noexcept(cuda::std::declval<day&>() -= cuda::std::declval<days>()));

@@ -12,6 +12,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -104,7 +105,12 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   // flag each value < m and compact it, so we have a set of permuted indices in
   // range [0,m) each thread gathers an input element according to its
   // pseudorandom permuted index
-  thrust::inclusive_scan(exec, key_flag_it, key_flag_it + n, gather_output_it, key_flag_scan_op());
+  thrust::inclusive_scan(
+    exec,
+    key_flag_it,
+    key_flag_it + static_cast<typename decltype(key_flag_it)::difference_type>(n),
+    gather_output_it,
+    key_flag_scan_op());
 }
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

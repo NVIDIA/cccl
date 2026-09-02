@@ -11,6 +11,7 @@
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/utility>
 
@@ -18,7 +19,7 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 
@@ -28,21 +29,6 @@ using types = c2h::type_list<std::int32_t, std::int64_t>;
 
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
-
-template <typename T>
-struct equal_to_t
-{
-  T compare;
-
-  explicit __host__ equal_to_t(T compare)
-      : compare(compare)
-  {}
-
-  __device__ bool operator()(const T& a) const
-  {
-    return a == compare;
-  }
-};
 
 template <typename T>
 struct greater_or_equal_t
@@ -92,7 +78,7 @@ struct multiply_and_add
   }
 };
 
-C2H_TEST("Device three-way partition can handle empty problems", "[partition][device]", types)
+CUB_TEST("Device three-way partition can handle empty problems", "[partition][device]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -215,7 +201,7 @@ thrust_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp seco
   return result;
 }
 
-C2H_TEST("Device three-way partition is stable", "[partition][device]", types)
+CUB_TEST("Device three-way partition is stable", "[partition][device]", CUB_SMALL, types)
 {
   using type      = typename c2h::get<0, TestType>;
   using pair_type = cuda::std::pair<type, std::uint32_t>;
@@ -238,7 +224,7 @@ C2H_TEST("Device three-way partition is stable", "[partition][device]", types)
   REQUIRE(cub_result == thrust_result);
 }
 
-C2H_TEST("Device three-way partition handles empty first part", "[partition][device]", types)
+CUB_TEST("Device three-way partition handles empty first part", "[partition][device]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -259,7 +245,7 @@ C2H_TEST("Device three-way partition handles empty first part", "[partition][dev
   REQUIRE(cub_result.num_items_in_first_part == 0);
 }
 
-C2H_TEST("Device three-way partition handles empty second part", "[partition][device]", types)
+CUB_TEST("Device three-way partition handles empty second part", "[partition][device]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -280,7 +266,7 @@ C2H_TEST("Device three-way partition handles empty second part", "[partition][de
   REQUIRE(cub_result.num_items_in_second_part == 0);
 }
 
-C2H_TEST("Device three-way partition handles empty unselected part", "[partition][device]", types)
+CUB_TEST("Device three-way partition handles empty unselected part", "[partition][device]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -300,7 +286,7 @@ C2H_TEST("Device three-way partition handles empty unselected part", "[partition
   REQUIRE(cub_result.num_unselected_items == 0);
 }
 
-C2H_TEST("Device three-way partition handles only unselected items", "[partition][device]", types)
+CUB_TEST("Device three-way partition handles only unselected items", "[partition][device]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -321,7 +307,7 @@ C2H_TEST("Device three-way partition handles only unselected items", "[partition
   REQUIRE(cub_result.num_items_in_second_part == 0);
 }
 
-C2H_TEST("Device three-way partition handles reverse iterator", "[partition][device]", types)
+CUB_TEST("Device three-way partition handles reverse iterator", "[partition][device]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -341,8 +327,8 @@ C2H_TEST("Device three-way partition handles reverse iterator", "[partition][dev
 
   c2h::device_vector<type> first_and_unselected_part(num_items);
 
-  equal_to_t<type> first_selector{first_part_val};
-  equal_to_t<type> second_selector{second_part_val};
+  cuda::equal_to_value<type> first_selector{first_part_val};
+  cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 
@@ -377,7 +363,7 @@ C2H_TEST("Device three-way partition handles reverse iterator", "[partition][dev
   REQUIRE(actual_num_items_in_first_part == num_items_in_first_part);
 }
 
-C2H_TEST("Device three-way partition handles single output", "[partition][device]", types)
+CUB_TEST("Device three-way partition handles single output", "[partition][device]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -398,8 +384,8 @@ C2H_TEST("Device three-way partition handles single output", "[partition][device
 
   c2h::device_vector<type> output(num_items);
 
-  equal_to_t<type> first_selector{first_part_val};
-  equal_to_t<type> second_selector{second_part_val};
+  cuda::equal_to_value<type> first_selector{first_part_val};
+  cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 
@@ -434,8 +420,9 @@ C2H_TEST("Device three-way partition handles single output", "[partition][device
   REQUIRE(actual_num_items_in_second_part == num_items_in_second_part);
 }
 
-C2H_TEST("Device three-way partition works for very large number of items",
+CUB_TEST("Device three-way partition works for very large number of items",
          "[device][partition][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL,
          offset_types)
 try
 {
@@ -487,4 +474,5 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
 }

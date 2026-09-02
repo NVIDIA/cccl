@@ -17,11 +17,11 @@
 
 #include "test_macros.h"
 
-__host__ __device__ int func1()
+TEST_FUNC int func1()
 {
   return 1;
 }
-__host__ __device__ int func2()
+TEST_FUNC int func2()
 {
   return 2;
 }

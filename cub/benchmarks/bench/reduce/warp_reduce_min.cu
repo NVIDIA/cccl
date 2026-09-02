@@ -9,7 +9,7 @@ using value_types = nvbench::type_list<
   int16_t,
   int32_t,
   int64_t,
-#if NVBENCH_HELPER_HAS_I128
+#if _CCCL_HAS_INT128()
   int128_t,
 #endif
 #if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)

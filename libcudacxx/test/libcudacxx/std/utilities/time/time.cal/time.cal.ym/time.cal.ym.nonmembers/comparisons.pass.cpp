@@ -37,11 +37,11 @@ int main(int, char**)
   auto constexpr January  = cuda::std::chrono::January;
   auto constexpr February = cuda::std::chrono::February;
 
-  static_assert(testComparisons(year_month{year{1234}, January}, year_month{year{1234}, January}, true, false), "");
+  static_assert(testComparisons(year_month{year{1234}, January}, year_month{year{1234}, January}, true, false));
 
-  static_assert(testComparisons(year_month{year{1234}, January}, year_month{year{1234}, February}, false, true), "");
+  static_assert(testComparisons(year_month{year{1234}, January}, year_month{year{1234}, February}, false, true));
 
-  static_assert(testComparisons(year_month{year{1234}, January}, year_month{year{1235}, January}, false, true), "");
+  static_assert(testComparisons(year_month{year{1234}, January}, year_month{year{1235}, January}, false, true));
 
   //  same year, different months
   for (unsigned i = 1; i < 12; ++i)

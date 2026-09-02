@@ -105,7 +105,7 @@ This example demonstrates work-stealing at thread-block granularity using this A
   bool success = true;
   for (int i = 0; i < N; ++i) {
     if (c[i] != (1 + i)) {
-      std::cerr << "ERROR " << i << ", " << c[i] << std::endl;
+      std::cerr << "ERROR " << i << ", " << c[i] << '\n';
       success = false;
     }
   }

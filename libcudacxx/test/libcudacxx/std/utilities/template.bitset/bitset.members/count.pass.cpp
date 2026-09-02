@@ -18,7 +18,7 @@
 TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_count()
+TEST_FUNC constexpr void test_count()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -39,7 +39,7 @@ __host__ __device__ constexpr void test_count()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_count<0>();
   test_count<1>();
@@ -57,7 +57,7 @@ int main(int, char**)
 {
   test();
   test_count<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

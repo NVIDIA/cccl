@@ -6,8 +6,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -26,7 +30,7 @@ struct weibull_cdf
 {
   using P = typename cuda::std::weibull_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     // CDF of Weibull distribution: F(x) = 1 - exp(-(x/b)^a)
     if (x < 0)
@@ -40,7 +44,7 @@ struct weibull_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Can be true if/when cuda::std::exp and cuda::std::pow are constexpr
   [[maybe_unused]] const bool test_constexpr = false;

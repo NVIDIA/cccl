@@ -48,9 +48,9 @@ void TestUniversalAllocateUnique()
   auto raw = thrust::allocate_unique<T>(thrust::universal_allocator<T>{}, 42);
   auto obj = thrust::allocate_unique<some_object<T>>(thrust::universal_allocator<some_object<T>>{}, 42);
 
-  static_assert(std::is_same<decltype(raw.get()), thrust::universal_ptr<T>>::value,
+  static_assert(std::is_same_v<decltype(raw.get()), thrust::universal_ptr<T>>,
                 "Unexpected pointer type returned from std::unique_ptr::get.");
-  static_assert(std::is_same<decltype(obj.get()), thrust::universal_ptr<some_object<T>>>::value,
+  static_assert(std::is_same_v<decltype(obj.get()), thrust::universal_ptr<some_object<T>>>,
                 "Unexpected pointer type returned from std::unique_ptr::get.");
 
   ASSERT_EQUAL(*raw, T(42));
@@ -67,7 +67,7 @@ void TestUniversalIterationRaw()
 {
   auto array = thrust::allocate_unique_n<T>(thrust::universal_allocator<T>{}, 6, 42);
 
-  static_assert(std::is_same<decltype(array.get()), thrust::universal_ptr<T>>::value,
+  static_assert(std::is_same_v<decltype(array.get()), thrust::universal_ptr<T>>,
                 "Unexpected pointer type returned from std::unique_ptr::get.");
 
   for (auto iter = array.get(), end = array.get() + 6; iter < end; ++iter)
@@ -83,7 +83,7 @@ void TestUniversalIterationObj()
 {
   auto array = thrust::allocate_unique_n<some_object<T>>(thrust::universal_allocator<some_object<T>>{}, 6, 42);
 
-  static_assert(std::is_same<decltype(array.get()), thrust::universal_ptr<some_object<T>>>::value,
+  static_assert(std::is_same_v<decltype(array.get()), thrust::universal_ptr<some_object<T>>>,
                 "Unexpected pointer type returned from std::unique_ptr::get.");
 
   for (auto iter = array.get(), end = array.get() + 6; iter < end; ++iter)
@@ -101,15 +101,20 @@ void TestUniversalRawPointerCast()
 {
   auto obj = thrust::allocate_unique<T>(thrust::universal_allocator<T>{}, 42);
 
-  static_assert(std::is_same<decltype(obj.get()), thrust::universal_ptr<T>>::value,
+  static_assert(std::is_same_v<decltype(obj.get()), thrust::universal_ptr<T>>,
                 "Unexpected pointer type returned from std::unique_ptr::get.");
 
-  static_assert(std::is_same<decltype(thrust::raw_pointer_cast(obj.get())), T*>::value,
+  static_assert(std::is_same_v<decltype(thrust::raw_pointer_cast(obj.get())), T*>,
                 "Unexpected pointer type returned from thrust::raw_pointer_cast.");
 
-  *thrust::raw_pointer_cast(obj.get()) = T(17);
+  static_assert(std::is_same_v<decltype(cuda::std::to_address(obj.get())), T*>,
+                "Unexpected pointer type returned from cuda::std::to_address.");
 
+  *thrust::raw_pointer_cast(obj.get()) = T(17);
   ASSERT_EQUAL(*obj, T(17));
+
+  *cuda::std::to_address(obj.get()) = T(42);
+  ASSERT_EQUAL(*obj, T(42));
 }
 DECLARE_GENERIC_UNITTEST(TestUniversalRawPointerCast);
 
@@ -157,7 +162,7 @@ void TestUniversalStdVector(std::size_t const n)
   std::vector<T> host(n);
   std::vector<T, thrust::universal_allocator<T>> universal(n);
 
-  static_assert(std::is_same<typename std::decay<decltype(universal)>::type::pointer, thrust::universal_ptr<T>>::value,
+  static_assert(std::is_same_v<typename std::decay<decltype(universal)>::type::pointer, thrust::universal_ptr<T>>,
                 "Unexpected std::vector pointer type.");
 
   std::iota(host.begin(), host.end(), 0);

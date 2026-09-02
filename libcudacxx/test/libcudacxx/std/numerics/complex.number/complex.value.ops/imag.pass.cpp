@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   cuda::std::complex<T> z(1.5, 2.5);
   assert(imag(z) == T(2.5));

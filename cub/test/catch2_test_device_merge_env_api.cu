@@ -1,0 +1,134 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#include "insert_nested_NVTX_range_guard.h"
+
+#include <cub/device/device_merge.cuh>
+
+#include <thrust/device_vector.h>
+
+#include <cuda/__execution/tune.h>
+#include <cuda/devices>
+#include <cuda/stream>
+
+#include <iostream>
+
+#include "cub_test_macros.h"
+
+CUB_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]", CUB_SMALL)
+{
+  // example-begin merge-keys-env
+  auto keys1  = thrust::device_vector<int>{0, 2, 5};
+  auto keys2  = thrust::device_vector<int>{0, 3, 3, 4};
+  auto result = thrust::device_vector<int>(7);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceMerge::MergeKeys(
+    keys1.begin(),
+    static_cast<int>(keys1.size()),
+    keys2.begin(),
+    static_cast<int>(keys2.size()),
+    result.begin(),
+    cuda::std::less<>{},
+    stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  // example-end merge-keys-env
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(result == expected);
+}
+
+CUB_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]", CUB_SMALL)
+{
+  // example-begin merge-pairs-env
+  auto keys1   = thrust::device_vector<int>{0, 2, 5};
+  auto values1 = thrust::device_vector<char>{'a', 'b', 'c'};
+  auto keys2   = thrust::device_vector<int>{0, 3, 3, 4};
+  auto values2 = thrust::device_vector<char>{'A', 'B', 'C', 'D'};
+
+  auto result_keys   = thrust::device_vector<int>(7);
+  auto result_values = thrust::device_vector<char>(7);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceMerge::MergePairs(
+    keys1.begin(),
+    values1.begin(),
+    static_cast<int>(keys1.size()),
+    keys2.begin(),
+    values2.begin(),
+    static_cast<int>(keys2.size()),
+    result_keys.begin(),
+    result_values.begin(),
+    cuda::std::less<>{},
+    stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMerge::MergePairs failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  thrust::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  // example-end merge-pairs-env
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(result_keys == expected_keys);
+  REQUIRE(result_values == expected_values);
+}
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin merge-keys-policy-selector
+struct MergePolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::MergePolicy
+  {
+    return {.threads_per_block        = 512,
+            .items_per_thread         = cc > cuda::compute_capability{9, 0} ? 15 : 11,
+            .load_modifier            = cub::LOAD_DEFAULT,
+            .store_algorithm          = cub::BLOCK_STORE_WARP_TRANSPOSE,
+            .use_bulk_copy_for_keys   = true,
+            .use_bulk_copy_for_values = false};
+  }
+};
+// example-end merge-keys-policy-selector
+
+CUB_TEST("cub::DeviceMerge::MergeKeys accepts a custom policy selector", "[merge][env]", CUB_SMALL)
+{
+  // example-begin merge-keys-tuning
+  auto keys1  = thrust::device_vector<int>{0, 2, 5};
+  auto keys2  = thrust::device_vector<int>{0, 3, 3, 4};
+  auto result = thrust::device_vector<int>(7, thrust::no_init);
+
+  const auto error = cub::DeviceMerge::MergeKeys(
+    keys1.begin(),
+    static_cast<int>(keys1.size()),
+    keys2.begin(),
+    static_cast<int>(keys2.size()),
+    result.begin(),
+    cuda::std::less{},
+    cuda::execution::tune(MergePolicySelector{}));
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  // example-end merge-keys-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(result == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

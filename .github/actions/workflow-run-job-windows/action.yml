@@ -8,6 +8,9 @@ inputs:
   command:
     description: "The command to run."
     required: true
+  environment:
+    description: "Additional environmental parameters for the command."
+    required: false
   image:
     description: "The Docker image to use."
     required: true
@@ -20,6 +23,10 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  gpu_count:
+    description: "Number of GPUs on the runner (0 for CPU-only jobs). Used to decide GPU device passthrough."
+    required: false
+    default: '0'
 
 runs:
 
@@ -36,7 +43,10 @@ runs:
     - name: Define and log job details
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
+        # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        ENVIRONMENT: ${{ inputs.environment }}
         GH_TOKEN: ${{ github.token }}
       run: |
         echo "::group::️🔍 Job Vars"
@@ -48,6 +58,17 @@ runs:
         echo "JOB_IMAGE=${{inputs.image}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_CUDA=${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_HOST=${{inputs.host}}" | tee -a "${GITHUB_ENV}"
+        echo "JOB_ENVIRONMENT=${ENVIRONMENT}" | tee -a "${GITHUB_ENV}"
+
+        # Translate the JSON-string ENVIRONMENT input into `--env FOO=bar` args
+        # for the downstream `docker run` step:
+        if [[ -z "$ENVIRONMENT" || "$ENVIRONMENT" == "null" || "$ENVIRONMENT" == "[]" ]]; then
+          ENVARGS=""
+        else
+          # Extra space is necessary to prevent jq from merging arguments
+          ENVARGS=$(echo "$ENVIRONMENT" | jq -rj '.[] | "--env \(.) "')
+        fi
+        echo "ENVARGS=${ENVARGS}" | tee -a "${GITHUB_ENV}"
 
         # SCCACHE config:
         echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
@@ -59,7 +80,7 @@ runs:
         echo "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX=cccl-preprocessor-cache" | tee -a "${GITHUB_ENV}"
 
     - name: Install GPU driver
-      if: ${{ contains(inputs.runner, '-gpu-') }}
+      if: ${{ inputs.gpu_count != '0' }}
       shell: powershell
       env:
         RUNNER: ${{ runner.name }}
@@ -71,7 +92,7 @@ runs:
 
     - name: Get AWS credentials for sccache bucket
       if: ${{ github.repository == 'NVIDIA/cccl' }}
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
@@ -155,7 +176,7 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         GH_TOKEN: ${{ github.token }}
-        ENABLE_GPU: ${{ contains(inputs.runner, '-gpu-') && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
+        ENABLE_GPU: ${{ inputs.gpu_count != '0' && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
       run: |
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
         $ErrorActionPreference = 'Stop'
@@ -230,6 +251,7 @@ runs:
           --env "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=${{env.SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE}}" \
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
+          ${ENVARGS:-} \
           ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 

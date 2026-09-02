@@ -30,7 +30,7 @@
 #include "types.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr void compareOperatorTest(Iter1&& iter1, Iter2&& iter2)
+TEST_FUNC constexpr void compareOperatorTest(Iter1&& iter1, Iter2&& iter2)
 {
   assert(!(iter1 < iter1));
   assert(iter1 < iter2);
@@ -53,7 +53,7 @@ __host__ __device__ constexpr void compareOperatorTest(Iter1&& iter1, Iter2&& it
 }
 
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr void inequalityOperatorsDoNotExistTest(Iter1&& iter1, Iter2&& iter2)
+TEST_FUNC constexpr void inequalityOperatorsDoNotExistTest(Iter1&& iter1, Iter2&& iter2)
 {
   static_assert(!cuda::std::is_invocable_v<cuda::std::less<>, Iter1, Iter2>);
   static_assert(!cuda::std::is_invocable_v<cuda::std::less_equal<>, Iter1, Iter2>);
@@ -61,7 +61,7 @@ __host__ __device__ constexpr void inequalityOperatorsDoNotExistTest(Iter1&& ite
   static_assert(!cuda::std::is_invocable_v<cuda::std::greater_equal<>, Iter1, Iter2>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[] = {1, 2, 3, 4};
   int b[] = {5, 6, 7, 8, 9};

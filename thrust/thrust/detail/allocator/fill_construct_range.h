@@ -15,12 +15,12 @@
 
 #include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/uninitialized_fill.h>
 
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -53,7 +53,7 @@ struct construct2_via_allocator
 template <typename Allocator, typename Pointer, typename Size, typename T>
 _CCCL_HOST_DEVICE void fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
 {
-  if constexpr (has_effectful_member_construct2<Allocator, typename pointer_element<Pointer>::type, T>)
+  if constexpr (has_effectful_member_construct2<Allocator, typename ::cuda::std::pointer_traits<Pointer>::element_type, T>)
   {
     thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, construct2_via_allocator<Allocator, T>{a, value});
   }

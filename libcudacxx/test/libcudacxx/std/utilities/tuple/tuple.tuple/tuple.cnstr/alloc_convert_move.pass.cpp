@@ -22,28 +22,30 @@
 #include "allocators.h"
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i)
+  TEST_FUNC explicit B(int i)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };
@@ -51,7 +53,7 @@ struct Explicit
 struct Implicit
 {
   int value;
-  __host__ __device__ Implicit(int x)
+  TEST_FUNC Implicit(int x)
       : value(x)
   {}
 };
@@ -68,6 +70,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
   }
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
   {
     using T0 = cuda::std::tuple<cuda::std::unique_ptr<D>>;
     using T1 = cuda::std::tuple<cuda::std::unique_ptr<B>>;
@@ -98,6 +101,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == 2);
     assert(cuda::std::get<2>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   {
     cuda::std::tuple<int> t1(42);
     cuda::std::tuple<Explicit> t2{cuda::std::allocator_arg, cuda::std::allocator<void>{}, cuda::std::move(t1)};

@@ -7,7 +7,7 @@
 
 #include <thrust/sequence.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
@@ -26,7 +26,7 @@ __global__ void warp_load_kernel(InputIteratorT input_iterator, ActionT action, 
 
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  const int linear_tid = threadIdx.x;
+  const int linear_tid = static_cast<int>(threadIdx.x);
 
   const int warp_id = linear_tid / LOGICAL_WARP_THREADS;
   warp_load_t load(storage[warp_id]);
@@ -74,11 +74,13 @@ struct guarded_load_t
   template <int ITEMS_PER_THREAD>
   __device__ void verify(T (&reg)[ITEMS_PER_THREAD], int* error_counter)
   {
-    const auto linear_tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
-    const auto lane_id    = linear_tid % LOGICAL_WARP_THREADS;
+    const auto linear_tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
+    const auto lane_id = linear_tid % LOGICAL_WARP_THREADS;
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
-      const auto expected_value = static_cast<T>(linear_tid * ITEMS_PER_THREAD + item);
+      const auto expected_value =
+        static_cast<T>(linear_tid * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
 
       const bool is_oob = LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED
                           ? item * LOGICAL_WARP_THREADS + lane_id >= valid_items
@@ -121,7 +123,8 @@ struct unguarded_load_t
   {
     for (int item = 0; item < ITEMS_PER_THREAD; item++)
     {
-      const auto expected_value = static_cast<T>(threadIdx.x * ITEMS_PER_THREAD + item);
+      const auto expected_value =
+        static_cast<T>(threadIdx.x * ITEMS_PER_THREAD + item); // NOLINT(bugprone-misplaced-widening-cast)
 
       if (reg[item] != expected_value)
       {
@@ -214,8 +217,13 @@ struct params_t
   static constexpr int total_item_count             = total_warps * tile_size;
 };
 
-C2H_TEST(
-  "Warp load guarded range works with pointer", "[load][warp]", types, logical_warp_threads, items_per_thread, algorithm)
+CUB_TEST("Warp load guarded range works with pointer",
+         "[load][warp]",
+         CUB_SMALL,
+         types,
+         logical_warp_threads,
+         items_per_thread,
+         algorithm)
 {
   using params     = params_t<TestType>;
   using type       = typename params::type;
@@ -238,8 +246,9 @@ C2H_TEST(
   REQUIRE(num_errors == expected_error_count);
 }
 
-C2H_TEST("Warp load guarded range works with cache modified iterator",
+CUB_TEST("Warp load guarded range works with cache modified iterator",
          "[load][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -267,8 +276,9 @@ C2H_TEST("Warp load guarded range works with cache modified iterator",
   REQUIRE(num_errors == expected_error_count);
 }
 
-C2H_TEST("Warp load unguarded range works with pointer",
+CUB_TEST("Warp load unguarded range works with pointer",
          "[load][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -290,8 +300,9 @@ C2H_TEST("Warp load unguarded range works with pointer",
   REQUIRE(num_errors == expected_error_count);
 }
 
-C2H_TEST("Warp load unguarded range works with cache modified iterator",
+CUB_TEST("Warp load unguarded range works with cache modified iterator",
          "[load][warp]",
+         CUB_SMALL,
          types,
          logical_warp_threads,
          items_per_thread,
@@ -317,8 +328,9 @@ C2H_TEST("Warp load unguarded range works with cache modified iterator",
 }
 
 #if ALGO_TYPE == 3 // Test for cub::WarpLoadAlgorithm::WARP_LOAD_VECTORIZE;
-C2H_TEST("Vectorized warp load with const and non-const datatype and different alignment cases",
+CUB_TEST("Vectorized warp load with const and non-const datatype and different alignment cases",
          "[store][warp]",
+         CUB_SMALL,
          c2h::type_list<const int*, int*>,
          logical_warp_threads,
          items_per_thread,

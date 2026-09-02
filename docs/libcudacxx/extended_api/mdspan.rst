@@ -8,6 +8,7 @@ Mdspan
    :maxdepth: 1
 
    mdspan/host_device_accessor
+   mdspan/layout_stride_relaxed
    mdspan/restrict_accessor
    mdspan/shared_memory_accessor
    mdspan/mdspan_to_dlpack
@@ -27,6 +28,11 @@ Mdspan
      - CCCL 3.0.0
      - CUDA 13.0
 
+   * - :ref:`layout_stride_relaxed <libcudacxx-extended-api-mdspan-layout-stride-relaxed>`
+     - Layout mapping policy with negative/zero strides and offset support
+     - CCCL 3.0.0
+     - CUDA 13.0
+
    * - :ref:`restrict mdspan and accessor <libcudacxx-extended-api-mdspan-restrict-accessor>`
      - ``mdspan`` and accessor with the *restrict* aliasing policy
      - CCCL 3.0.0
@@ -34,8 +40,8 @@ Mdspan
 
    * - :ref:`shared_memory mdspan and accessor <libcudacxx-extended-api-mdspan-shared-memory-accessor>`
      - ``mdspan`` and accessor for CUDA shared memory
-     - CCCL 3.2.0
-     - CUDA 13.2
+     - CCCL 3.3.0
+     - CUDA 13.3
 
    * - :ref:`mdspan to dlpack <libcudacxx-extended-api-mdspan-mdspan-to-dlpack>`
      - Convert a ``mdspan`` to a ``DLTensor``

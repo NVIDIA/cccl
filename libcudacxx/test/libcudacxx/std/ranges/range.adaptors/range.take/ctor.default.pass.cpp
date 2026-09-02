@@ -18,15 +18,15 @@ TEST_GLOBAL_VARIABLE constexpr int buff[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
 struct DefaultConstructible : cuda::std::ranges::view_base
 {
-  __host__ __device__ constexpr DefaultConstructible()
+  TEST_FUNC constexpr DefaultConstructible()
       : begin_(buff)
       , end_(buff + 8)
   {}
-  __host__ __device__ constexpr int const* begin() const
+  TEST_FUNC constexpr int const* begin() const
   {
     return begin_;
   }
-  __host__ __device__ constexpr int const* end() const
+  TEST_FUNC constexpr int const* end() const
   {
     return end_;
   }
@@ -39,11 +39,11 @@ private:
 struct NonDefaultConstructible : cuda::std::ranges::view_base
 {
   NonDefaultConstructible() = delete;
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::take_view<DefaultConstructible> tv;
@@ -63,7 +63,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <typename WD, typename Ds>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   {
     WD wd{5};
@@ -60,7 +60,7 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<weekday>() - cuda::std::declval<weekday>()));
   static_assert(cuda::std::is_same_v<days, decltype(cuda::std::declval<weekday>() - cuda::std::declval<weekday>())>);
 
-  static_assert(testConstexpr<weekday, days>(), "");
+  static_assert(testConstexpr<weekday, days>());
 
   for (unsigned i = 0; i <= 6; ++i)
   {

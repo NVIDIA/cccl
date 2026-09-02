@@ -19,6 +19,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -28,11 +29,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh>
+#include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
 #include <cuda/experimental/__stf/internal/cooperative_group_system.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/slice.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh>
-#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -55,8 +57,9 @@ class thread_hierarchy
   // Depth of this hierarchy (each level has two spec values, `sync` and `width`)
   static constexpr size_t depth = [](auto x, auto y, auto...) {
     // Also run some checks
-    static_assert(::std::is_same_v<decltype(x), bool>, "You must use bool for the odd arguments of thread_hierarchy.");
-    static_assert(::std::is_same_v<decltype(y), size_t>,
+    static_assert(::cuda::std::is_same_v<decltype(x), bool>,
+                  "You must use bool for the odd arguments of thread_hierarchy.");
+    static_assert(::cuda::std::is_same_v<decltype(y), size_t>,
                   "You must use size_t for the even arguments of thread_hierarchy.");
     // Two spec parameters per depth level
     return sizeof...(spec) / 2;
@@ -204,44 +207,49 @@ public:
     assert(level >= 0);
     assert(level < depth);
 
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (
-        // Check that it is legal to synchronize (use a static assertion in the future)
-        assert(may_sync(level));
+    NV_IF_TARGET(NV_IS_DEVICE, ({
+                   // Check that it is legal to synchronize (use a static assertion in the future)
+                   assert(may_sync(level));
 
-        // We compute the products of level_sizes and config in reversed order.
+                   // We compute the products of level_sizes and config in reversed order.
 
-        // This is the number of threads to synchronize
-        size_t target_size = 1;
-        for (int l = level; l < depth; l++) { target_size *= level_sizes[l]; }
+                   // This is the number of threads to synchronize
+                   size_t target_size = 1;
+                   for (int l = level; l < depth; l++)
+                   {
+                     target_size *= level_sizes[l];
+                   }
 
-        // We then compute the number of threads for each of the different
-        // scopes (system, device, blocks) ... and compare with this number of
-        // threads
+                   // We then compute the number of threads for each of the different
+                   // scopes (system, device, blocks) ... and compare with this number of
+                   // threads
 
-        // Test the different config levels
-        size_t block_scope_size = launch_config[2];
-        if (target_size == block_scope_size) {
-          cooperative_groups::this_thread_block().sync();
-          return;
-        }
+                   // Test the different config levels
+                   size_t block_scope_size = launch_config[2];
+                   if (target_size == block_scope_size)
+                   {
+                     cooperative_groups::this_thread_block().sync();
+                     return;
+                   }
 
-        size_t device_scope_size = block_scope_size * launch_config[1];
-        if (target_size == device_scope_size) {
-          cooperative_groups::this_grid().sync();
-          return;
-        }
+                   size_t device_scope_size = block_scope_size * launch_config[1];
+                   if (target_size == device_scope_size)
+                   {
+                     cooperative_groups::this_grid().sync();
+                     return;
+                   }
 
-        size_t ndevs             = launch_config[0];
-        size_t system_scope_size = device_scope_size * ndevs;
-        if (target_size == system_scope_size) {
-          cg_system.sync(devid, ndevs);
-          return;
-        }
+                   size_t ndevs             = launch_config[0];
+                   size_t system_scope_size = device_scope_size * ndevs;
+                   if (target_size == system_scope_size)
+                   {
+                     cg_system.sync(devid, ndevs);
+                     return;
+                   }
 
-        // Unsupported configuration
-        assert(0);))
+                   // Unsupported configuration
+                   assert(0);
+                 }))
   }
 
   template <typename T, typename... Others>
@@ -311,31 +319,33 @@ public:
     // scopes (system, device, blocks) ... and compare with this number of
     // threads
 
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (
-        size_t nelems = mem_sizes[level] / sizeof(T);
+    NV_IF_TARGET(NV_IS_DEVICE, ({
+                   size_t nelems = mem_sizes[level] / sizeof(T);
 
-        // Test the different config levels
-        size_t block_scope_size = launch_config[2];
-        if (target_size == block_scope_size) {
-          // Use dynamic shared memory
-          extern __shared__ T dyn_buffer[];
-          return make_slice(&dyn_buffer[0], nelems);
-        }
+                   // Test the different config levels
+                   size_t block_scope_size = launch_config[2];
+                   if (target_size == block_scope_size)
+                   {
+                     // Use dynamic shared memory
+                     extern __shared__ T dyn_buffer[];
+                     return make_slice(&dyn_buffer[0], nelems);
+                   }
 
-        size_t device_scope_size = block_scope_size * launch_config[1];
-        if (target_size == device_scope_size) {
-          // Use device memory
-          return make_slice(static_cast<T*>(device_tmp), nelems);
-        }
+                   size_t device_scope_size = block_scope_size * launch_config[1];
+                   if (target_size == device_scope_size)
+                   {
+                     // Use device memory
+                     return make_slice(static_cast<T*>(device_tmp), nelems);
+                   }
 
-        size_t ndevs             = launch_config[0];
-        size_t system_scope_size = device_scope_size * ndevs;
-        if (target_size == system_scope_size) {
-          // Use system memory (managed memory)
-          return make_slice(static_cast<T*>(system_tmp), nelems);
-        }))
+                   size_t ndevs             = launch_config[0];
+                   size_t system_scope_size = device_scope_size * ndevs;
+                   if (target_size == system_scope_size)
+                   {
+                     // Use system memory (managed memory)
+                     return make_slice(static_cast<T*>(system_tmp), nelems);
+                   }
+                 }))
 
     // Unsupported configuration : memory must be a scope boundaries
     assert(!"Unsupported configuration : memory must be a scope boundaries");
@@ -434,7 +444,7 @@ UNITTEST("thread hierarchy indexing")
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy<<<config[1], config[2]>>>(h);
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 namespace reserved
@@ -465,7 +475,7 @@ UNITTEST("thread hierarchy sync")
   auto config = p.get_config();
 
   void* args[] = {&h};
-  cuda_safe_call(cudaLaunchCooperativeKernel(
+  cuda_try(cudaLaunchCooperativeKernel(
     (void*) reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>,
     config[1],
     config[2],
@@ -473,7 +483,7 @@ UNITTEST("thread hierarchy sync")
     0,
     0));
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 namespace reserved
@@ -503,7 +513,7 @@ UNITTEST("thread hierarchy inner sync")
   auto config = p.get_config();
   reserved::unit_test_thread_hierarchy_inner_sync<false, size_t(0), true, size_t(0)><<<config[1], config[2]>>>(h);
 
-  cuda_safe_call(cudaDeviceSynchronize());
+  cuda_try(cudaDeviceSynchronize());
 };
 
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()

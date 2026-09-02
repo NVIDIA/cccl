@@ -33,7 +33,7 @@
 #include "test_workarounds.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__ void test_const_lvalue_get()
+TEST_FUNC void test_const_lvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;
@@ -42,7 +42,7 @@ __host__ __device__ void test_const_lvalue_get()
     static_assert(!noexcept(cuda::std::get<0>(v)));
 #endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 9)
     static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(v)), const int&>);
-    static_assert(cuda::std::get<0>(v) == 42, "");
+    static_assert(cuda::std::get<0>(v) == 42);
   }
   {
     using V = cuda::std::variant<int, const long>;
@@ -58,7 +58,7 @@ __host__ __device__ void test_const_lvalue_get()
     static_assert(!noexcept(cuda::std::get<1>(v)));
 #endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 9)
     static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(v)), const long&>);
-    static_assert(cuda::std::get<1>(v) == 42, "");
+    static_assert(cuda::std::get<1>(v) == 42);
   }
   {
     using V = cuda::std::variant<int, const long>;
@@ -93,7 +93,7 @@ __host__ __device__ void test_const_lvalue_get()
 #endif
 }
 
-__host__ __device__ void test_lvalue_get()
+TEST_FUNC void test_lvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;
@@ -141,7 +141,7 @@ __host__ __device__ void test_lvalue_get()
 #endif
 }
 
-__host__ __device__ void test_rvalue_get()
+TEST_FUNC void test_rvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;
@@ -191,7 +191,7 @@ __host__ __device__ void test_rvalue_get()
 #endif
 }
 
-__host__ __device__ void test_const_rvalue_get()
+TEST_FUNC void test_const_rvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;

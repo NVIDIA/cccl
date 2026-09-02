@@ -27,22 +27,22 @@ enum class Enum2 : int
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  static_assert(!cuda::std::is_void<T>::value, "");
-  static_assert(!cuda::std::is_null_pointer<T>::value, "");
-  static_assert(!cuda::std::is_integral<T>::value, "");
-  static_assert(!cuda::std::is_floating_point<T>::value, "");
-  static_assert(!cuda::std::is_array<T>::value, "");
-  static_assert(!cuda::std::is_pointer<T>::value, "");
-  static_assert(!cuda::std::is_lvalue_reference<T>::value, "");
-  static_assert(!cuda::std::is_rvalue_reference<T>::value, "");
-  static_assert(!cuda::std::is_member_object_pointer<T>::value, "");
-  static_assert(!cuda::std::is_member_function_pointer<T>::value, "");
-  static_assert(!cuda::std::is_enum<T>::value, "");
-  static_assert(!cuda::std::is_union<T>::value, "");
-  static_assert(!cuda::std::is_class<T>::value, "");
-  static_assert(cuda::std::is_function<T>::value, "");
+  static_assert(!cuda::std::is_void<T>::value);
+  static_assert(!cuda::std::is_null_pointer<T>::value);
+  static_assert(!cuda::std::is_integral<T>::value);
+  static_assert(!cuda::std::is_floating_point<T>::value);
+  static_assert(!cuda::std::is_array<T>::value);
+  static_assert(!cuda::std::is_pointer<T>::value);
+  static_assert(!cuda::std::is_lvalue_reference<T>::value);
+  static_assert(!cuda::std::is_rvalue_reference<T>::value);
+  static_assert(!cuda::std::is_member_object_pointer<T>::value);
+  static_assert(!cuda::std::is_member_function_pointer<T>::value);
+  static_assert(!cuda::std::is_enum<T>::value);
+  static_assert(!cuda::std::is_union<T>::value);
+  static_assert(!cuda::std::is_class<T>::value);
+  static_assert(cuda::std::is_function<T>::value);
 }
 
 // Since we can't actually add the const volatile and ref qualifiers once
@@ -85,7 +85,7 @@ int main(int, char**)
   TEST_REF_QUALIFIED(int(double, char, ...));
 
   //  LWG#2582
-  static_assert(!cuda::std::is_function<incomplete_type>::value, "");
+  static_assert(!cuda::std::is_function<incomplete_type>::value);
 
   return 0;
 }

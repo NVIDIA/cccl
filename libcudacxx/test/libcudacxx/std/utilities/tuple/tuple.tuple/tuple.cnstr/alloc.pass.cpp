@@ -29,12 +29,12 @@
 template <class T = void>
 struct NonDefaultConstructible
 {
-  __host__ __device__ constexpr NonDefaultConstructible()
+  TEST_FUNC constexpr NonDefaultConstructible()
   {
     static_assert(!cuda::std::is_same<T, T>::value, "Default Ctor instantiated");
   }
 
-  __host__ __device__ explicit constexpr NonDefaultConstructible(int) {}
+  TEST_FUNC explicit constexpr NonDefaultConstructible(int) {}
 };
 
 struct DerivedFromAllocArgT : cuda::std::allocator_arg_t

@@ -21,7 +21,7 @@
 template <class Iter>
 _CCCL_CONCEPT canDecrement = _CCCL_REQUIRES_EXPR((Iter), Iter iter)((--iter), (iter--));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[]    = {1, 2, 3, 4};
   double b[] = {4.1, 3.2, 4.3};

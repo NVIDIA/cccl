@@ -24,9 +24,6 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/block_level.h>
-#  include <cuda/__hierarchy/cluster_level.h>
-#  include <cuda/__hierarchy/grid_level.h>
 #  include <cuda/__hierarchy/hierarchy_levels.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/extents.h>

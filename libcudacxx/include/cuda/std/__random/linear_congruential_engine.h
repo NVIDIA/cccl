@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,96 +21,94 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/ios.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>
+#include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ios>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <uint64_t __A,
-          uint64_t __C,
-          uint64_t __M,
+template <uint64_t _Ap,
+          uint64_t _Cp,
           uint64_t _Mp,
-          bool _MightOverflow = (__A != 0 && __M != 0 && __M - 1 > (_Mp - __C) / __A),
-          bool _OverflowOk    = ((__M | (__M - 1)) > __M), // m = 2^n
-          bool _SchrageOk     = (__A != 0 && __M != 0 && __M % __A <= __M / __A)> // r <= q
+          uint64_t _MpMax,
+          bool _MightOverflow = (_Ap != 0 && _Mp != 0 && _Mp - 1 > (_MpMax - _Cp) / _Ap),
+          bool _OverflowOk    = ((_Mp | (_Mp - 1)) > _Mp), // m = 2^n
+          bool _SchrageOk     = (_Ap != 0 && _Mp != 0 && _Mp % _Ap <= _Mp / _Ap)> // r <= q
 struct __lce_alg_picker
 {
-  static_assert(__A != 0 || __M != 0 || !_MightOverflow || _OverflowOk || _SchrageOk,
+  static_assert(_Ap != 0 || _Mp != 0 || !_MightOverflow || _OverflowOk || _SchrageOk,
                 "The current values of a, c, and m cannot generate a number "
                 "within bounds of linear_congruential_engine.");
 
   static constexpr const bool __use_schrage = _MightOverflow && !_OverflowOk && _SchrageOk;
 };
 
-template <uint64_t __A,
-          uint64_t __C,
-          uint64_t __M,
+template <uint64_t _Ap,
+          uint64_t _Cp,
           uint64_t _Mp,
-          bool _UseSchrage = __lce_alg_picker<__A, __C, __M, _Mp>::__use_schrage>
+          uint64_t _MpMax,
+          bool _UseSchrage = __lce_alg_picker<_Ap, _Cp, _Mp, _MpMax>::__use_schrage>
 struct __lce_ta;
 
 // 64
 
-template <uint64_t __A, uint64_t __C, uint64_t __M>
-struct __lce_ta<__A, __C, __M, ~uint64_t{0}, true>
+template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
+struct __lce_ta<_Ap, _Cp, _Mp, ~uint64_t{0}, true>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
     // Schrage's algorithm
-    constexpr result_type __q = __M / __A;
-    constexpr result_type __r = __M % __A;
-    const result_type __t0    = __A * (__x % __q);
+    constexpr result_type __q = _Mp / _Ap;
+    constexpr result_type __r = _Mp % _Ap;
+    const result_type __t0    = _Ap * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __M - __t1;
-    __x += __C - (__x >= __M - __C) * __M;
+    __x                       = __t0 + (__t0 < __t1) * _Mp - __t1;
+    __x += _Cp - (__x >= _Mp - _Cp) * _Mp;
     return __x;
   }
 };
 
-template <uint64_t __A, uint64_t __M>
-struct __lce_ta<__A, 0, __M, ~uint64_t{0}, true>
+template <uint64_t _Ap, uint64_t _Mp>
+struct __lce_ta<_Ap, 0, _Mp, ~uint64_t{0}, true>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
     // Schrage's algorithm
-    constexpr result_type __q = __M / __A;
-    constexpr result_type __r = __M % __A;
-    const result_type __t0    = __A * (__x % __q);
+    constexpr result_type __q = _Mp / _Ap;
+    constexpr result_type __r = _Mp % _Ap;
+    const result_type __t0    = _Ap * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __M - __t1;
+    __x                       = __t0 + (__t0 < __t1) * _Mp - __t1;
     return __x;
   }
 };
 
-template <uint64_t __A, uint64_t __C, uint64_t __M>
-struct __lce_ta<__A, __C, __M, ~uint64_t{0}, false>
+template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
+struct __lce_ta<_Ap, _Cp, _Mp, ~uint64_t{0}, false>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    return (__A * __x + __C) % __M;
+    return (_Ap * __x + _Cp) % _Mp;
   }
 };
 
-template <uint64_t __A, uint64_t __C>
-struct __lce_ta<__A, __C, 0, ~uint64_t{0}, false>
+template <uint64_t _Ap, uint64_t _Cp>
+struct __lce_ta<_Ap, _Cp, 0, ~uint64_t{0}, false>
 {
   using result_type = uint64_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    return __A * __x + __C;
+    return _Ap * __x + _Cp;
   }
 };
 
@@ -120,18 +118,18 @@ template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
 struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, true>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    constexpr auto __A = static_cast<result_type>(_Ap);
-    constexpr auto __C = static_cast<result_type>(_Cp);
-    constexpr auto __M = static_cast<result_type>(_Mp);
+    constexpr auto __a = static_cast<result_type>(_Ap);
+    constexpr auto __c = static_cast<result_type>(_Cp);
+    constexpr auto __m = static_cast<result_type>(_Mp);
     // Schrage's algorithm
-    constexpr result_type __q = __M / __A;
-    constexpr result_type __r = __M % __A;
-    const result_type __t0    = __A * (__x % __q);
+    constexpr result_type __q = __m / __a;
+    constexpr result_type __r = __m % __a;
+    const result_type __t0    = __a * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __M - __t1;
-    __x += __C - (__x >= __M - __C) * __M;
+    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
+    __x += __c - (__x >= __m - __c) * __m;
     return __x;
   }
 };
@@ -140,16 +138,16 @@ template <uint64_t _Ap, uint64_t _Mp>
 struct __lce_ta<_Ap, 0, _Mp, ~uint32_t{0}, true>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    constexpr result_type __A = static_cast<result_type>(_Ap);
-    constexpr result_type __M = static_cast<result_type>(_Mp);
+    constexpr result_type __a = static_cast<result_type>(_Ap);
+    constexpr result_type __m = static_cast<result_type>(_Mp);
     // Schrage's algorithm
-    constexpr result_type __q = __M / __A;
-    constexpr result_type __r = __M % __A;
-    const result_type __t0    = __A * (__x % __q);
+    constexpr result_type __q = __m / __a;
+    constexpr result_type __r = __m % __a;
+    const result_type __t0    = __a * (__x % __q);
     const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __M - __t1;
+    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
     return __x;
   }
 };
@@ -158,12 +156,12 @@ template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
 struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, false>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    constexpr result_type __A = static_cast<result_type>(_Ap);
-    constexpr result_type __C = static_cast<result_type>(_Cp);
-    constexpr result_type __M = static_cast<result_type>(_Mp);
-    return (__A * __x + __C) % __M;
+    constexpr result_type __a = static_cast<result_type>(_Ap);
+    constexpr result_type __c = static_cast<result_type>(_Cp);
+    constexpr result_type __m = static_cast<result_type>(_Mp);
+    return (__a * __x + __c) % __m;
   }
 };
 
@@ -171,23 +169,35 @@ template <uint64_t _Ap, uint64_t _Cp>
 struct __lce_ta<_Ap, _Cp, 0, ~uint32_t{0}, false>
 {
   using result_type = uint32_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    constexpr result_type __A = static_cast<result_type>(_Ap);
-    constexpr result_type __C = static_cast<result_type>(_Cp);
-    return __A * __x + __C;
+    constexpr result_type __a = static_cast<result_type>(_Ap);
+    constexpr result_type __c = static_cast<result_type>(_Cp);
+    return __a * __x + __c;
   }
 };
 
 // 16
 
-template <uint64_t __A, uint64_t __C, uint64_t __M, bool __b>
-struct __lce_ta<__A, __C, __M, static_cast<uint16_t>(~0), __b>
+template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp, bool _UseSchrage>
+struct __lce_ta<_Ap, _Cp, _Mp, static_cast<uint16_t>(~0), _UseSchrage>
 {
   using result_type = uint16_t;
-  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
   {
-    return static_cast<result_type>(__lce_ta<__A, __C, __M, ~uint32_t{0}>::next(__x));
+    return static_cast<result_type>(__lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}>::next(__x));
+  }
+};
+
+// 8
+
+template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp, bool _UseSchrage>
+struct __lce_ta<_Ap, _Cp, _Mp, static_cast<uint8_t>(~0), _UseSchrage>
+{
+  using result_type = uint8_t;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type next(result_type __x) noexcept
+  {
+    return static_cast<result_type>(__lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}>::next(__x));
   }
 };
 
@@ -204,11 +214,12 @@ public:
 private:
   result_type __x_{};
 
-  static constexpr const result_type _Mp = result_type(~0);
+  static constexpr result_type _Mp = static_cast<result_type>(~0); // NOLINT(bugprone-misplaced-widening-cast)
 
   static_assert(__M == 0 || __A < __M, "linear_congruential_engine invalid parameters");
   static_assert(__M == 0 || __C < __M, "linear_congruential_engine invalid parameters");
-  static_assert(is_unsigned_v<_UIntType>, "_UIntType must be uint32_t type");
+  static_assert(__cccl_random_is_valid_uinttype<_UIntType>,
+                "linear_congruential_engine: UIntType must be a supported unsigned integer type");
 
 public:
   static constexpr const result_type _Min = __C == 0u ? 1u : 0u;
@@ -219,36 +230,36 @@ public:
   static constexpr const result_type multiplier = __A;
   static constexpr const result_type increment  = __C;
   static constexpr const result_type modulus    = __M;
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return _Min;
   }
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return _Max;
   }
   static constexpr const result_type default_seed = 1u;
 
   // constructors and seeding functions
-  _CCCL_API constexpr linear_congruential_engine() noexcept
+  _CCCL_HOST_DEVICE_API constexpr linear_congruential_engine() noexcept
       : linear_congruential_engine(default_seed)
   {}
-  _CCCL_API explicit constexpr linear_congruential_engine(result_type __s) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr linear_congruential_engine(result_type __s) noexcept
   {
     seed(__s);
   }
 
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
-  _CCCL_API explicit constexpr linear_congruential_engine(_Sseq& __q) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr linear_congruential_engine(_Sseq& __q) noexcept
   {
     seed(__q);
   }
-  _CCCL_API constexpr void seed(result_type __s = default_seed) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(result_type __s = default_seed) noexcept
   {
     seed(integral_constant<bool, __M == 0>(), integral_constant<bool, __C == 0>(), __s);
   }
   template <class _Sseq, enable_if_t<__is_seed_sequence<_Sseq, linear_congruential_engine>, int> = 0>
-  _CCCL_API constexpr void seed(_Sseq& __q) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __q) noexcept
   {
     __seed(__q,
            integral_constant<uint32_t,
@@ -256,12 +267,12 @@ public:
   }
 
   // generating functions
-  _CCCL_API constexpr result_type operator()() noexcept
+  _CCCL_HOST_DEVICE_API constexpr result_type operator()() noexcept
   {
     return __x_ = static_cast<result_type>(__lce_ta<__A, __C, __M, _Mp>::next(__x_));
   }
 
-  _CCCL_API constexpr void discard(uint64_t __z) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void discard(uint64_t __z) noexcept
   {
     constexpr bool __can_overflow = (__A != 0 && __M != 0 && __M - 1 > (_Mp - __C) / __A);
     // Fallback implementation
@@ -299,20 +310,20 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const linear_congruential_engine& __x, const linear_congruential_engine& __y) noexcept
   {
     return __x.__x_ == __y.__x_;
   }
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const linear_congruential_engine& __x, const linear_congruential_engine& __y) noexcept
   {
     return !(__x == __y);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <typename _CharT, typename _Traits>
-  _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_DEVICE_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const linear_congruential_engine& __e)
   {
     using _Ostream                            = ::std::basic_ostream<_CharT, _Traits>;
@@ -323,7 +334,7 @@ public:
     return __os << __e.__x_;
   }
   template <typename _CharT, typename _Traits>
-  _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_DEVICE_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, linear_congruential_engine& __e)
   {
     using _Istream                            = ::std::basic_istream<_CharT, _Traits>;
@@ -338,35 +349,35 @@ public:
     __is.flags(__flags);
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
-  _CCCL_API constexpr void seed(true_type, true_type, result_type __s) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(true_type, true_type, result_type __s) noexcept
   {
     __x_ = __s == 0 ? 1 : __s;
   }
-  _CCCL_API constexpr void seed(true_type, false_type, result_type __s) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(true_type, false_type, result_type __s) noexcept
   {
     __x_ = __s;
   }
-  _CCCL_API constexpr void seed(false_type, true_type, result_type __s) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(false_type, true_type, result_type __s) noexcept
   {
     __x_ = __s % __M == 0 ? 1 : __s % __M;
   }
-  _CCCL_API constexpr void seed(false_type, false_type, result_type __s) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(false_type, false_type, result_type __s) noexcept
   {
     __x_ = __s % __M;
   }
 
   template <class _Sseq>
-  _CCCL_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept;
+  _CCCL_HOST_DEVICE_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept;
   template <class _Sseq>
-  _CCCL_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept;
+  _CCCL_HOST_DEVICE_API constexpr void __seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept;
 };
 
 template <class _UIntType, _UIntType __A, _UIntType __C, _UIntType __M>
 template <class _Sseq>
-_CCCL_API constexpr void
+_CCCL_HOST_DEVICE_API constexpr void
 linear_congruential_engine<_UIntType, __A, __C, __M>::__seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept
 {
   constexpr uint32_t __k = 1;
@@ -378,7 +389,7 @@ linear_congruential_engine<_UIntType, __A, __C, __M>::__seed(_Sseq& __q, integra
 
 template <class _UIntType, _UIntType __A, _UIntType __C, _UIntType __M>
 template <class _Sseq>
-_CCCL_API constexpr void
+_CCCL_HOST_DEVICE_API constexpr void
 linear_congruential_engine<_UIntType, __A, __C, __M>::__seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept
 {
   constexpr uint32_t __k = 2;

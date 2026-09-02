@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
+#include <iostream>
+
 int my_rand()
 {
   static thrust::default_random_engine rng;
@@ -31,7 +33,7 @@ int main()
   int sum = thrust::reduce(d_vec.begin(), d_vec.end(), init, binary_op);
 
   // print the sum
-  std::cout << "sum is " << sum << std::endl;
+  std::cout << "sum is " << sum << '\n';
 
   return 0;
 }

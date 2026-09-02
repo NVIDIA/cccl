@@ -15,13 +15,13 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr void test_strlen(const char* str, cuda::std::size_t expected)
+TEST_FUNC constexpr void test_strlen(const char* str, cuda::std::size_t expected)
 {
   const auto ret = cuda::std::strlen(str);
   assert(ret == expected);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(
     cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::std::strlen(cuda::std::declval<const char*>()))>);

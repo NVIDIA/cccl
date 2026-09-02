@@ -24,7 +24,7 @@
 
 #include "test_comparisons.h"
 
-__host__ __device__ constexpr void test_with_integral_ticks_value()
+TEST_FUNC constexpr void test_with_integral_ticks_value()
 {
   using Clock = cuda::std::chrono::system_clock;
 
@@ -61,7 +61,7 @@ __host__ __device__ constexpr void test_with_integral_ticks_value()
   }
 }
 
-__host__ __device__ constexpr void test_with_integral_ticks_value_and_custom_period_value()
+TEST_FUNC constexpr void test_with_integral_ticks_value_and_custom_period_value()
 {
   using Clock = cuda::std::chrono::system_clock;
 
@@ -91,7 +91,7 @@ __host__ __device__ constexpr void test_with_integral_ticks_value_and_custom_per
   }
 }
 
-__host__ __device__ constexpr void test_with_floating_point_ticks_value()
+TEST_FUNC constexpr void test_with_floating_point_ticks_value()
 {
   using Clock = cuda::std::chrono::system_clock;
 
@@ -116,7 +116,7 @@ __host__ __device__ constexpr void test_with_floating_point_ticks_value()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_with_integral_ticks_value();
   test_with_integral_ticks_value_and_custom_period_value();

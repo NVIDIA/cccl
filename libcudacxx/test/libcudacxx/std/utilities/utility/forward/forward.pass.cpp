@@ -18,16 +18,16 @@
 struct A
 {};
 
-__host__ __device__ A source() noexcept
+TEST_FUNC A source() noexcept
 {
   return A();
 }
-__host__ __device__ const A csource() noexcept
+TEST_FUNC const A csource() noexcept
 {
   return A();
 }
 
-__host__ __device__ constexpr bool test_constexpr_forward()
+TEST_FUNC constexpr bool test_constexpr_forward()
 {
   int x        = 42;
   const int cx = 101;
@@ -42,32 +42,32 @@ int main(int, char**)
   [[maybe_unused]] A a;
   [[maybe_unused]] const A ca = A();
 
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<A&>(a)), A&>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<A>(a)), A&&>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<A>(source())), A&&>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<A&>(a)), A&>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<A>(a)), A&&>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<A>(source())), A&&>::value);
   static_assert(noexcept(cuda::std::forward<A&>(a)));
   static_assert(noexcept(cuda::std::forward<A>(a)));
   static_assert(noexcept(cuda::std::forward<A>(source())));
 
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A&>(a)), const A&>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(a)), const A&&>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(source())), const A&&>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A&>(a)), const A&>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(a)), const A&&>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(source())), const A&&>::value);
   static_assert(noexcept(cuda::std::forward<const A&>(a)));
   static_assert(noexcept(cuda::std::forward<const A>(a)));
   static_assert(noexcept(cuda::std::forward<const A>(source())));
 
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A&>(ca)), const A&>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(ca)), const A&&>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(csource())), const A&&>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A&>(ca)), const A&>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(ca)), const A&&>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::forward<const A>(csource())), const A&&>::value);
   static_assert(noexcept(cuda::std::forward<const A&>(ca)));
   static_assert(noexcept(cuda::std::forward<const A>(ca)));
   static_assert(noexcept(cuda::std::forward<const A>(csource())));
 
   {
     constexpr int i2 = cuda::std::forward<int>(42);
-    static_assert(cuda::std::forward<int>(42) == 42, "");
-    static_assert(cuda::std::forward<const int&>(i2) == 42, "");
-    static_assert(test_constexpr_forward(), "");
+    static_assert(cuda::std::forward<int>(42) == 42);
+    static_assert(cuda::std::forward<const int&>(i2) == 42);
+    static_assert(test_constexpr_forward());
   }
 
   return 0;

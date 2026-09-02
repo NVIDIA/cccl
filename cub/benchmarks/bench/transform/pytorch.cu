@@ -5,13 +5,22 @@
 // %RANGE% TUNE_ALGORITHM alg 0:4:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 
+// for TUNE_ALGORITHM == 1 (vectorized), this is the number of vectors per thread, which is similar in spirit
+// %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
+
+// those parameters only apply if TUNE_ALGORITHM == 0 (prefetch)
+// %RANGE% TUNE_PREFETCH_MULT pref 1:3:1
+
 // those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
 // %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
-// %RANGE% TUNE_VECTORS_PER_THREAD vpt 1:4:1
 
-#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
-#  error "Non-vectorized algorithms require vector size and vectors per thread to be 1 since they ignore the parameters"
-#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
+#if !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+#  error "Non-prefetch algorithms require prefetch multiple to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
+#  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 
 #include "common.h"
 
@@ -32,8 +41,6 @@ template <typename Op, typename T>
 static void unary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  using OffsetT = int64_t;
-
   const auto n = state.get_int64("Elements{io}");
   thrust::device_vector<T> in(n, 1337);
   thrust::device_vector<T> out(n, thrust::no_init);
@@ -42,7 +49,7 @@ try
   state.add_global_memory_reads<T>(n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), static_cast<OffsetT>(n), Op{});
+  bench_transform(state, cuda::std::tuple{in.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -69,7 +76,7 @@ using opmath_t = float;
 struct relu_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return static_cast<T>(static_cast<opmath_t>(value) > opmath_t{0} ? static_cast<opmath_t>(value) : opmath_t{0});
   }
@@ -81,7 +88,7 @@ BENCHMARK_UNARY(relu);
 struct sigmoid_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return static_cast<T>(opmath_t{1} / (opmath_t{1} + ::cuda::std::exp(-static_cast<opmath_t>(value))));
   }
@@ -91,7 +98,7 @@ BENCHMARK_UNARY(sigmoid);
 struct tanh_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return ::cuda::std::tanh(value);
   }
@@ -103,7 +110,7 @@ BENCHMARK_UNARY(tanh);
 struct gelu_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return static_cast<opmath_t>(value) * opmath_t{0.5}
          * (opmath_t{1} + ::cuda::std::erf(static_cast<opmath_t>(value) * opmath_t{M_SQRT1_2}));
@@ -114,7 +121,7 @@ BENCHMARK_UNARY(gelu);
 struct sin_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return ::cuda::std::sin(value);
   }
@@ -124,7 +131,7 @@ BENCHMARK_UNARY(sin);
 struct exp_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T value) const
+  _CCCL_HOST_DEVICE_API auto operator()(T value) const
   {
     return ::cuda::std::exp(value);
   }
@@ -135,8 +142,6 @@ template <typename Op, typename T>
 static void binary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
-  using OffsetT = int64_t;
-
   const auto n = state.get_int64("Elements{io}");
   thrust::device_vector<T> in1(n, 1337);
   thrust::device_vector<T> in2(n, 42);
@@ -146,7 +151,7 @@ try
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), static_cast<OffsetT>(n), Op{});
+  bench_transform(state, cuda::std::tuple{in1.begin(), in2.begin()}, out.begin(), n, Op{});
 }
 catch (const std::bad_alloc&)
 {
@@ -186,7 +191,7 @@ BENCHMARK_BINARY(ge);
 struct fmin_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T a, T b) const
+  _CCCL_HOST_DEVICE_API auto operator()(T a, T b) const
   {
     return ::cuda::std::fmin(a, b);
   }
@@ -196,7 +201,7 @@ BENCHMARK_BINARY(fmin);
 struct fmax_op
 {
   template <typename T>
-  _CCCL_API auto operator()(T a, T b) const
+  _CCCL_HOST_DEVICE_API auto operator()(T a, T b) const
   {
     return ::cuda::std::fmax(a, b);
   }

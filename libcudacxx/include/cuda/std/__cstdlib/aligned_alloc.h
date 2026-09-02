@@ -25,23 +25,23 @@
 #include <cuda/std/__cstdlib/malloc.h>
 #include <cuda/std/cstring>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdlib>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_CUDA_COMPILATION()
-extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
+extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t __nbytes, size_t __align);
 #endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if !_CCCL_COMPILER(NVRTC)
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
-__aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
+[[nodiscard]] _CCCL_HOST_API inline void*
+__aligned_alloc_host([[maybe_unused]] size_t __align, [[maybe_unused]] size_t __nbytes) noexcept
 {
 #  if _CCCL_OS(WINDOWS)
   _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported on WIndows");
@@ -52,10 +52,10 @@ __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t _
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-[[nodiscard]] _CCCL_API inline void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline void* aligned_alloc(size_t __align, size_t __nbytes) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return ::cuda::std::__aligned_alloc_host(__nbytes, __align);),
+                    (return ::cuda::std::__aligned_alloc_host(__align, __nbytes);),
                     (return ::__cuda_syscall_aligned_malloc(__nbytes, __align);))
 }
 

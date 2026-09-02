@@ -12,6 +12,8 @@
 
 #include <cuda/std/__type_traits/is_fully_bounded_array.h>
 
+#include "test_macros.h"
+
 static_assert(!cuda::std::__is_fully_bounded_array_v<int>);
 static_assert(!cuda::std::__is_fully_bounded_array_v<int[]>);
 static_assert(cuda::std::__is_fully_bounded_array_v<int[1]>);

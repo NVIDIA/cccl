@@ -342,7 +342,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
       d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), thrust::make_discard_iterator());
 
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 = cuda::std::make_pair(
-      thrust::make_discard_iterator(num_unique_keys), thrust::make_discard_iterator(num_unique_keys));
+      thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
+      thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     ASSERT_EQUAL_QUIET(reference1, h_result1);
     ASSERT_EQUAL_QUIET(reference1, d_result1);
@@ -357,10 +358,12 @@ struct TestUniqueCopyByKeyToDiscardIterator
         d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys_output.begin(), thrust::make_discard_iterator());
 
     cuda::std::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_reference2 =
-      cuda::std::make_pair(h_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
+      cuda::std::make_pair(h_keys_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys),
+                           thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     cuda::std::pair<typename thrust::device_vector<K>::iterator, thrust::discard_iterator<>> d_reference2 =
-      cuda::std::make_pair(d_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
+      cuda::std::make_pair(d_keys_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys),
+                           thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     ASSERT_EQUAL(h_keys_output, d_keys_output);
     ASSERT_EQUAL_QUIET(h_reference2, h_result2);
@@ -376,10 +379,12 @@ struct TestUniqueCopyByKeyToDiscardIterator
         d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), d_vals_output.begin());
 
     cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_reference3 =
-      cuda::std::make_pair(thrust::make_discard_iterator(num_unique_keys), h_vals_output.begin() + num_unique_keys);
+      cuda::std::make_pair(thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
+                           h_vals_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys));
 
     cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<V>::iterator> d_reference3 =
-      cuda::std::make_pair(thrust::make_discard_iterator(num_unique_keys), d_vals_output.begin() + num_unique_keys);
+      cuda::std::make_pair(thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
+                           d_vals_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys));
 
     ASSERT_EQUAL(h_vals_output, d_vals_output);
     ASSERT_EQUAL_QUIET(h_reference3, h_result3);

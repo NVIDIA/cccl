@@ -103,7 +103,8 @@ struct large_problem_test_helper
   // Checks whether all results have been written correctly
   void check_all_results_correct()
   {
-    auto correctness_flags_end = correctness_flags.cbegin() + (num_elements / bits_per_element);
+    auto correctness_flags_end =
+      correctness_flags.cbegin() + static_cast<std::ptrdiff_t>(num_elements / bits_per_element);
     const bool all_correct =
       thrust::equal(correctness_flags.cbegin(), correctness_flags_end, cuda::constant_iterator(0xFFFFFFFFU));
 
@@ -120,7 +121,7 @@ struct large_problem_test_helper
       {
         if (((mismatch_value >> i) & 0x01u) == 0)
         {
-          bit_index = i;
+          bit_index = static_cast<int>(i);
           break;
         }
       }

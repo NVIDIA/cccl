@@ -53,7 +53,7 @@ struct __transform_sender_t
     default_domain>;
 
   template <class _Sndr, class _Env, bool _Nothrow = true>
-  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
     using __domain_t = __domain_for_t<_Sndr, _Env>;
     using __result_t = __transform_sender_result_t<__domain_t, _OpTag, _Sndr, _Env>;
@@ -76,7 +76,7 @@ struct __transform_sender_t
   }
 
   template <class _Sndr, class _Env, auto _DeclFn = __get_declfn<_Sndr, _Env>()>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
     noexcept(noexcept(_DeclFn())) -> decltype(_DeclFn())
   {
     using __domain_t = __domain_for_t<_Sndr, _Env>;
@@ -107,7 +107,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __compose
   {
     template <class _Sndr, class _Env>
-    _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
+    _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
       noexcept(noexcept(_Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env)))
         -> decltype(_Fn1()(_Fn2()(static_cast<_Sndr&&>(__sndr), __env), __env))
     {
@@ -122,7 +122,7 @@ private:
 
 public:
   template <class _Sndr, class _Env, class _ImplFn = __impl_fn_t<_Sndr, _Env>>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr&& __sndr, const _Env& __env) const
     noexcept(noexcept(_ImplFn()(static_cast<_Sndr&&>(__sndr), __env)))
       -> decltype(_ImplFn()(static_cast<_Sndr&&>(__sndr), __env))
   {

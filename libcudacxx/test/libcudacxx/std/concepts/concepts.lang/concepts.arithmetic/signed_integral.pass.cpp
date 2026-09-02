@@ -19,80 +19,80 @@
 using cuda::std::signed_integral;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckSignedIntegralQualifiers()
+TEST_FUNC constexpr bool CheckSignedIntegralQualifiers()
 {
   constexpr bool result = signed_integral<T>;
-  static_assert(signed_integral<const T> == result, "");
-  static_assert(signed_integral<volatile T> == result, "");
-  static_assert(signed_integral<const volatile T> == result, "");
+  static_assert(signed_integral<const T> == result);
+  static_assert(signed_integral<volatile T> == result);
+  static_assert(signed_integral<const volatile T> == result);
 
-  static_assert(!signed_integral<T&>, "");
-  static_assert(!signed_integral<const T&>, "");
-  static_assert(!signed_integral<volatile T&>, "");
-  static_assert(!signed_integral<const volatile T&>, "");
+  static_assert(!signed_integral<T&>);
+  static_assert(!signed_integral<const T&>);
+  static_assert(!signed_integral<volatile T&>);
+  static_assert(!signed_integral<const volatile T&>);
 
-  static_assert(!signed_integral<T&&>, "");
-  static_assert(!signed_integral<const T&&>, "");
-  static_assert(!signed_integral<volatile T&&>, "");
-  static_assert(!signed_integral<const volatile T&&>, "");
+  static_assert(!signed_integral<T&&>);
+  static_assert(!signed_integral<const T&&>);
+  static_assert(!signed_integral<volatile T&&>);
+  static_assert(!signed_integral<const volatile T&&>);
 
-  static_assert(!signed_integral<T*>, "");
-  static_assert(!signed_integral<const T*>, "");
-  static_assert(!signed_integral<volatile T*>, "");
-  static_assert(!signed_integral<const volatile T*>, "");
+  static_assert(!signed_integral<T*>);
+  static_assert(!signed_integral<const T*>);
+  static_assert(!signed_integral<volatile T*>);
+  static_assert(!signed_integral<const volatile T*>);
 
-  static_assert(!signed_integral<T (*)()>, "");
-  static_assert(!signed_integral<T (&)()>, "");
-  static_assert(!signed_integral<T (&&)()>, "");
+  static_assert(!signed_integral<T (*)()>);
+  static_assert(!signed_integral<T (&)()>);
+  static_assert(!signed_integral<T (&&)()>);
 
   return result;
 }
 
 // standard signed integers
-static_assert(CheckSignedIntegralQualifiers<signed char>(), "");
-static_assert(CheckSignedIntegralQualifiers<short>(), "");
-static_assert(CheckSignedIntegralQualifiers<int>(), "");
-static_assert(CheckSignedIntegralQualifiers<long>(), "");
-static_assert(CheckSignedIntegralQualifiers<long long>(), "");
+static_assert(CheckSignedIntegralQualifiers<signed char>());
+static_assert(CheckSignedIntegralQualifiers<short>());
+static_assert(CheckSignedIntegralQualifiers<int>());
+static_assert(CheckSignedIntegralQualifiers<long>());
+static_assert(CheckSignedIntegralQualifiers<long long>());
 
 // bool and character *may* be signed
-static_assert(CheckSignedIntegralQualifiers<wchar_t>() == cuda::std::is_signed_v<wchar_t>, "");
-static_assert(CheckSignedIntegralQualifiers<bool>() == cuda::std::is_signed_v<bool>, "");
-static_assert(CheckSignedIntegralQualifiers<char>() == cuda::std::is_signed_v<char>, "");
+static_assert(CheckSignedIntegralQualifiers<wchar_t>() == cuda::std::is_signed_v<wchar_t>);
+static_assert(CheckSignedIntegralQualifiers<bool>() == cuda::std::is_signed_v<bool>);
+static_assert(CheckSignedIntegralQualifiers<char>() == cuda::std::is_signed_v<char>);
 #if _CCCL_HAS_CHAR8_T()
-static_assert(CheckSignedIntegralQualifiers<char8_t>() == cuda::std::is_signed_v<char8_t>, "");
+static_assert(CheckSignedIntegralQualifiers<char8_t>() == cuda::std::is_signed_v<char8_t>);
 #endif // _CCCL_HAS_CHAR8_T()
-static_assert(CheckSignedIntegralQualifiers<char16_t>() == cuda::std::is_signed_v<char16_t>, "");
-static_assert(CheckSignedIntegralQualifiers<char32_t>() == cuda::std::is_signed_v<char32_t>, "");
+static_assert(CheckSignedIntegralQualifiers<char16_t>() == cuda::std::is_signed_v<char16_t>);
+static_assert(CheckSignedIntegralQualifiers<char32_t>() == cuda::std::is_signed_v<char32_t>);
 
 // integers that aren't signed integrals
-static_assert(!CheckSignedIntegralQualifiers<unsigned char>(), "");
-static_assert(!CheckSignedIntegralQualifiers<unsigned short>(), "");
-static_assert(!CheckSignedIntegralQualifiers<unsigned int>(), "");
-static_assert(!CheckSignedIntegralQualifiers<unsigned long>(), "");
-static_assert(!CheckSignedIntegralQualifiers<unsigned long long>(), "");
+static_assert(!CheckSignedIntegralQualifiers<unsigned char>());
+static_assert(!CheckSignedIntegralQualifiers<unsigned short>());
+static_assert(!CheckSignedIntegralQualifiers<unsigned int>());
+static_assert(!CheckSignedIntegralQualifiers<unsigned long>());
+static_assert(!CheckSignedIntegralQualifiers<unsigned long long>());
 
 // extended integers
 #if _CCCL_HAS_INT128()
-static_assert(CheckSignedIntegralQualifiers<__int128_t>(), "");
-static_assert(!CheckSignedIntegralQualifiers<__uint128_t>(), "");
+static_assert(CheckSignedIntegralQualifiers<__int128_t>());
+static_assert(!CheckSignedIntegralQualifiers<__uint128_t>());
 #endif
 
 // types that aren't even integers shouldn't be signed integers!
-static_assert(!signed_integral<void>, "");
-static_assert(!CheckSignedIntegralQualifiers<float>(), "");
-static_assert(!CheckSignedIntegralQualifiers<double>(), "");
-static_assert(!CheckSignedIntegralQualifiers<long double>(), "");
+static_assert(!signed_integral<void>);
+static_assert(!CheckSignedIntegralQualifiers<float>());
+static_assert(!CheckSignedIntegralQualifiers<double>());
+static_assert(!CheckSignedIntegralQualifiers<long double>());
 
-static_assert(!CheckSignedIntegralQualifiers<ClassicEnum>(), "");
-static_assert(!CheckSignedIntegralQualifiers<ScopedEnum>(), "");
-static_assert(!CheckSignedIntegralQualifiers<EmptyStruct>(), "");
-static_assert(!CheckSignedIntegralQualifiers<int EmptyStruct::*>(), "");
-static_assert(!CheckSignedIntegralQualifiers<int (EmptyStruct::*)()>(), "");
+static_assert(!CheckSignedIntegralQualifiers<ClassicEnum>());
+static_assert(!CheckSignedIntegralQualifiers<ScopedEnum>());
+static_assert(!CheckSignedIntegralQualifiers<EmptyStruct>());
+static_assert(!CheckSignedIntegralQualifiers<int EmptyStruct::*>());
+static_assert(!CheckSignedIntegralQualifiers<int (EmptyStruct::*)()>());
 
 #if TEST_STD_VER > 2017
-static_assert(CheckSubsumption(0), "");
-static_assert(CheckSubsumption(0U), "");
+static_assert(CheckSubsumption(0));
+static_assert(CheckSubsumption(0U));
 #endif // TEST_STD_VER > 2017
 
 int main(int, char**)

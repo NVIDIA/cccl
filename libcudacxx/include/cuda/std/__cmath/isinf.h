@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
@@ -37,13 +38,23 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isinf)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+#  undef _CCCL_BUILTIN_ISINF
+#endif // _CCCL_TILE_COMPILATION()
+
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isinf_impl(_Tp __x) noexcept
 {
-  static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  static_assert(is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>,
+                "Only floating-point types are supported");
+  if constexpr (is_floating_point_v<_Tp>)
   {
-    return ::isinf(__x);
+#if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      return ::isinf(__x);
+    }
+#endif // !_CCCL_TILE_COMPILATION()
   }
   if (::cuda::std::isnan(__x))
   {
@@ -64,10 +75,12 @@ template <class _Tp>
   }
   return _CCCL_BUILTIN_ISINF(__x) && !_CCCL_BUILTIN_ISNAN(__x);
 #elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
+#  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isinf(__x);
   }
+#  endif // !_CCCL_TILE_COMPILATION()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<float>) == __fp_exp_mask_of_v<float>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return ::cuda::std::__isinf_impl(__x);
@@ -86,10 +99,12 @@ template <class _Tp>
   }
   return _CCCL_BUILTIN_ISINF(__x) && !_CCCL_BUILTIN_ISNAN(__x);
 #elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
+#  if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isinf(__x);
   }
+#  endif // !_CCCL_TILE_COMPILATION()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
   return ::cuda::std::__isinf_impl(__x);
@@ -185,6 +200,17 @@ template <class _Tp>
   return false;
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr bool isinf(__float128 __x) noexcept
+{
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fabs(__x) == ::cuda::std::__fp_inf<__float128>();))
+  }
+  return ::cuda::std::__isinf_impl(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)

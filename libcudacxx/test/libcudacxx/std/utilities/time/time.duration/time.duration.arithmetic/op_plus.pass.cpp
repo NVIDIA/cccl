@@ -31,7 +31,7 @@ int main(int, char**)
   {
     [[maybe_unused]] constexpr cuda::std::chrono::minutes m(3);
     [[maybe_unused]] constexpr cuda::std::chrono::minutes m2 = +m;
-    static_assert(m.count() == m2.count(), "");
+    static_assert(m.count() == m2.count());
   }
 
   // P0548

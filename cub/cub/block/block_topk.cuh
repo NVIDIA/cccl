@@ -1,9 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-
-//! @file
-//! The @c cub::detail::block_topk class provides a :ref:`collective <collective-primitives>` method for selecting the
-//! top-k elements from a set of items within a CUDA thread block.
 
 #pragma once
 
@@ -17,63 +13,75 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_radix_sort.cuh>
-#include <cub/util_ptx.cuh>
+#include <cub/block/specializations/block_topk_air.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// TODO (elstehle): Add documentation
 template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType>
 class block_topk
 {
 private:
-  using BlockRadixSortT = BlockRadixSort<KeyT, BlockDimX, ItemsPerThread, ValueT>;
+  using internal_block_topk_t = block_topk_air<KeyT, BlockDimX, ItemsPerThread, ValueT>;
 
 public:
   struct TempStorage
   {
-    typename BlockRadixSortT::TempStorage sort_storage;
+    typename internal_block_topk_t::TempStorage topk_storage;
   };
 
 private:
-  TempStorage& temp_storage;
+  TempStorage& storage;
 
 public:
-  _CCCL_DEVICE _CCCL_FORCEINLINE block_topk(TempStorage& temp_storage)
-      : temp_storage(temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk(TempStorage& storage)
+      : storage(storage)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void max_pairs(
+  template <bool IsFullTile>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void max_pairs(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
-    int /*k*/,
+    int k,
+    int num_valid,
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    BlockRadixSortT(temp_storage.sort_storage).SortDescending(keys, values, begin_bit, end_bit);
+    internal_block_topk_t(storage.topk_storage)
+      .template select_pairs<detail::topk::select::max, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  max_keys(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  template <bool IsFullTile>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  max_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    BlockRadixSortT(temp_storage.sort_storage).SortDescending(keys, begin_bit, end_bit);
+    internal_block_topk_t(storage.topk_storage)
+      .template select_keys<detail::topk::select::max, IsFullTile>(keys, k, num_valid, begin_bit, end_bit);
   }
-  _CCCL_DEVICE _CCCL_FORCEINLINE void min_pairs(
+
+  template <bool IsFullTile>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void min_pairs(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
-    int /*k*/,
+    int k,
+    int num_valid,
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    BlockRadixSortT(temp_storage.sort_storage).Sort(keys, values, begin_bit, end_bit);
+    internal_block_topk_t(storage.topk_storage)
+      .template select_pairs<detail::topk::select::min, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  min_keys(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  template <bool IsFullTile>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  min_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    BlockRadixSortT(temp_storage.sort_storage).Sort(keys, begin_bit, end_bit);
+    internal_block_topk_t(storage.topk_storage)
+      .template select_keys<detail::topk::select::min, IsFullTile>(keys, k, num_valid, begin_bit, end_bit);
   }
 };
 } // namespace detail

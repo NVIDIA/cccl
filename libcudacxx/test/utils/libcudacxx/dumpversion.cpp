@@ -27,12 +27,7 @@ int main()
   minor_version = ___NVCOMPILER_MINOR__;
   patch_level   = ___NVCOMPILER_PATCHLEVEL__;
 #elif defined(__clang__)
-// Treat Apple's LLVM fork differently.
-#  if defined(__apple_build_version__)
-  compiler_type = "apple-clang";
-#  else
   compiler_type = "clang";
-#  endif
   major_version = __clang_major__;
   minor_version = __clang_minor__;
   patch_level   = __clang_patchlevel__;

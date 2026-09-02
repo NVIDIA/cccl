@@ -25,6 +25,14 @@
 
 #include <nv/target>
 
+/// In device code, _CCCL_PTX_ARCH() expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH()'s value is implementation defined.
+#if !defined(__CUDA_ARCH__)
+#  define _CCCL_PTX_ARCH() 0
+#else
+#  define _CCCL_PTX_ARCH() __CUDA_ARCH__
+#endif
+
 #ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! When this macro is defined, Programmatic Dependent Launch (PDL) is disabled across CCCL
 #  define CCCL_DISABLE_PDL
@@ -47,6 +55,16 @@
 #  define _CCCL_PDL_GRID_DEPENDENCY_SYNC()
 #  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH()
 #endif // _CCCL_HAS_PDL()
+
+// Internal opt-out: when `_CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH` is defined, CCCL device algorithms do not launch
+// kernels with runtime (dynamic) thread-block cluster extents (in particular, CUB's DeviceBatchedTopK cluster backend
+// is disabled). Kernels with static cluster extents (`__cluster_dims__`) and the standalone `cuda::launch` cluster APIs
+// are unaffected.
+#ifdef _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#  define _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH() 0
+#else // _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#  define _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH() 1
+#endif // _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
 
 // Check whether the relocatable device code (RDC) is being generated.
 #if defined(__CUDACC_RDC__) || defined(__CLANG_RDC__) || defined(_NVHPC_RDC)
@@ -82,6 +100,36 @@
 // We don't have CDP, only host APIs can call kernels
 #  define _CCCL_HAS_CDP() 0
 #endif // ^^^ no CDP ^^^
+
+// When RDC is enabled, __launch_bounds__ cannot be used reliably. See #902.
+#if !_CCCL_HAS_RDC() && !defined(CCCL_DISABLE_LAUNCH_BOUNDS)
+#  define _CCCL_LAUNCH_BOUNDS(...) __launch_bounds__(__VA_ARGS__)
+#else // ^^^ has launch bounds attribute ^^^ / vvv no launch bounds attribute vvv
+#  define _CCCL_LAUNCH_BOUNDS(...)
+#endif // ^^^ no launch bounds attribute ^^^
+
+// __block_size__ attribute is available for nvcc and nvrtc 12.9+ for hopper+ architectures. For older nvcc and nvrtc,
+// we can fallback to __cluster_dims__ attribute only specifying the ncta per cluster.
+// This attribute should be used only for cluster launches.
+#if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9)) && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __block_size__(_NTID, _NCTA_PER_CLUSTER)
+#elif (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __cluster_dims__ _NCTA_PER_CLUSTER
+#else // ^^ has __block_size__ attribute ^^^ / vvv no __block_size__ attribute vvv
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER)
+#endif // ^^^ no __block_size__ attribute ^^^
+
+// `_CCCL_LAUNCH_BOUNDS` plus the optional third `maxBlocksPerCluster` operand, which nvcc, nvrtc, and clang-cuda 18+
+// (clang gained `.maxclusterrank` in 18) accept on the SM90+ device pass but reject on host/pre-SM90 passes. So emit it
+// only there and fall back to the 2-argument form elsewhere -- those passes never launch clusters.
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG, >=, 18)) \
+  && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_LAUNCH_BOUNDS_CLUSTER(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER) \
+    _CCCL_LAUNCH_BOUNDS(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER)
+#else // ^^^ SM90+ device pass ^^^ / vvv host / pre-SM90 / non-CUDA pass vvv
+#  define _CCCL_LAUNCH_BOUNDS_CLUSTER(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER) \
+    _CCCL_LAUNCH_BOUNDS(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM)
+#endif // SM90+ CUDA device pass (nvcc / nvrtc / clang-cuda)
 
 #if _CCCL_HAS_CDP()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED

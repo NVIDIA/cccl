@@ -38,8 +38,8 @@ struct Dummy
 
 struct ThrowsCtorT
 {
-  __host__ __device__ ThrowsCtorT(int) noexcept(false) {}
-  __host__ __device__ ThrowsCtorT& operator=(int) noexcept
+  TEST_FUNC ThrowsCtorT(int) noexcept(false) {}
+  TEST_FUNC ThrowsCtorT& operator=(int) noexcept
   {
     return *this;
   }
@@ -47,8 +47,8 @@ struct ThrowsCtorT
 
 struct ThrowsAssignT
 {
-  __host__ __device__ ThrowsAssignT(int) noexcept {}
-  __host__ __device__ ThrowsAssignT& operator=(int) noexcept(false)
+  TEST_FUNC ThrowsAssignT(int) noexcept {}
+  TEST_FUNC ThrowsAssignT& operator=(int) noexcept(false)
   {
     return *this;
   }
@@ -56,8 +56,8 @@ struct ThrowsAssignT
 
 struct NoThrowT
 {
-  __host__ __device__ NoThrowT(int) noexcept {}
-  __host__ __device__ NoThrowT& operator=(int) noexcept
+  TEST_FUNC NoThrowT(int) noexcept {}
+  TEST_FUNC NoThrowT& operator=(int) noexcept
   {
     return *this;
   }
@@ -124,24 +124,24 @@ struct ThrowsAssignT
 #endif // TEST_HAS_EXCEPTIONS()
 } // namespace RuntimeHelpers
 
-__host__ __device__ void test_T_assignment_noexcept()
+TEST_FUNC void test_T_assignment_noexcept()
 {
   using namespace MetaHelpers;
   {
     using V = cuda::std::variant<Dummy, NoThrowT>;
-    static_assert(cuda::std::is_nothrow_assignable<V, int>::value, "");
+    static_assert(cuda::std::is_nothrow_assignable<V, int>::value);
   }
   {
     using V = cuda::std::variant<Dummy, ThrowsCtorT>;
-    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
+    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value);
   }
   {
     using V = cuda::std::variant<Dummy, ThrowsAssignT>;
-    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
+    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value);
   }
 }
 
-__host__ __device__ void test_T_assignment_sfinae()
+TEST_FUNC void test_T_assignment_sfinae()
 {
   {
     using V = cuda::std::variant<long, long long>;
@@ -184,7 +184,7 @@ __host__ __device__ void test_T_assignment_sfinae()
     };
     struct Y
     {
-      __host__ __device__ operator X();
+      TEST_FUNC operator X();
     };
     using V = cuda::std::variant<X>;
     static_assert(cuda::std::is_assignable<V, Y>::value, "regression on user-defined conversions in operator=");
@@ -201,7 +201,7 @@ __host__ __device__ void test_T_assignment_sfinae()
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-__host__ __device__ void test_T_assignment_basic()
+TEST_FUNC void test_T_assignment_basic()
 {
 #if !TEST_COMPILER(NVHPC, <, 25, 5)
   static_assert(cuda::std::is_assignable_v<cuda::std::variant<short, long>, int>);

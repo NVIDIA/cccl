@@ -41,14 +41,14 @@ public:
   //! @param __v The value to initialize the lane mask with. Defaults to 0.
   //!
   //! @post `value() == __v`
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(::cuda::std::uint32_t __v = 0) noexcept
+  _CCCL_DEVICE_API explicit constexpr lane_mask(::cuda::std::uint32_t __v = 0) noexcept
       : __value_{__v}
   {}
 
   //! @brief Returns the value of the lane mask as a 32-bit unsigned integer.
   //!
   //! @return The value of the lane mask.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr ::cuda::std::uint32_t value() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t value() const noexcept
   {
     return __value_;
   }
@@ -58,7 +58,7 @@ public:
   //! This operator allows explicit conversion of the lane mask to a 32-bit unsigned integer.
   //!
   //! @return The value of the lane mask as a 32-bit unsigned integer.
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr operator ::cuda::std::uint32_t() const noexcept
+  _CCCL_DEVICE_API explicit constexpr operator ::cuda::std::uint32_t() const noexcept
   {
     return __value_;
   }
@@ -66,7 +66,7 @@ public:
   //! @brief Returns a lane mask object with no lane bits set.
   //!
   //! @return A lane mask with no lane bits set.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask none() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr lane_mask none() noexcept
   {
     return lane_mask{};
   }
@@ -76,7 +76,7 @@ public:
   //! @return A lane mask with all lane bits set.
   //!
   //! @note This function may return a mask with 1s set even on inactive lane bits,
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask all() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr lane_mask all() noexcept
   {
     return lane_mask{0xffffffff};
   }
@@ -86,7 +86,7 @@ public:
   //! This function returns a lane_mask object equivalent to calling `lane_mask{::__activemask()}`.
   //!
   //! @return A lane mask with all active lane bits set.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_active() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static lane_mask all_active() noexcept
   {
     return lane_mask{::__activemask()};
   }
@@ -96,7 +96,7 @@ public:
   //! This function is equivalent to constructing a lane_mask object with value of %%lanemask_eq PTX special register.
   //!
   //! @return A lane mask with the current lane bit set.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask this_lane() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static lane_mask this_lane() noexcept
   {
     return lane_mask{::cuda::ptx::get_sreg_lanemask_eq()};
   }
@@ -108,7 +108,7 @@ public:
   //! @return A lane mask with all lanes less than the current lane set.
   //!
   //! @note This function may return a mask with 1s set even on inactive lane bits,
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static lane_mask all_less() noexcept
   {
     return lane_mask{::cuda::ptx::get_sreg_lanemask_lt()};
   }
@@ -120,7 +120,7 @@ public:
   //! @return A lane mask with all lanes equal to or less than the current lane set.
   //!
   //! @note This function may return a mask with 1s set even on inactive lane bits,
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less_equal() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static lane_mask all_less_equal() noexcept
   {
     return lane_mask{::cuda::ptx::get_sreg_lanemask_le()};
   }
@@ -132,7 +132,7 @@ public:
   //! @return A lane mask with all lanes greater than the current lane set.
   //!
   //! @note This function may return a mask with 1s set even on inactive lane bits,
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static lane_mask all_greater() noexcept
   {
     return lane_mask{::cuda::ptx::get_sreg_lanemask_gt()};
   }
@@ -144,7 +144,7 @@ public:
   //! @return A lane mask with all lanes greater than or equal to the current lane set.
   //!
   //! @note This function may return a mask with 1s set even on inactive lane bits,
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater_equal() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static lane_mask all_greater_equal() noexcept
   {
     return lane_mask{::cuda::ptx::get_sreg_lanemask_ge()};
   }
@@ -157,7 +157,7 @@ public:
   //! @return A lane mask with all lanes not equal to the current lane set.
   //!
   //! @note This function may return a mask with 1s set even on inactive lane bits.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_not_equal() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static lane_mask all_not_equal() noexcept
   {
     return lane_mask{~::cuda::ptx::get_sreg_lanemask_eq()};
   }
@@ -168,8 +168,7 @@ public:
   //! @param __rhs The right-hand side lane_mask.
   //!
   //! @return A new lane_mask object representing the bitwise AND of the two lane_masks.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
-  operator&(lane_mask __lhs, lane_mask __rhs) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr lane_mask operator&(lane_mask __lhs, lane_mask __rhs) noexcept
   {
     return lane_mask{__lhs.__value_ & __rhs.__value_};
   }
@@ -179,7 +178,7 @@ public:
   //! @param __v The lane_mask to AND with the current lane_mask.
   //!
   //! @return A reference to the current lane_mask after the AND operation.
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator&=(lane_mask __v) noexcept
+  _CCCL_DEVICE_API constexpr lane_mask& operator&=(lane_mask __v) noexcept
   {
     return *this = *this & __v;
   }
@@ -190,8 +189,7 @@ public:
   //! @param __rhs The right-hand side lane_mask.
   //!
   //! @return A new lane_mask object representing the bitwise OR of the two lane_masks.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
-  operator|(lane_mask __lhs, lane_mask __rhs) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr lane_mask operator|(lane_mask __lhs, lane_mask __rhs) noexcept
   {
     return lane_mask{__lhs.__value_ | __rhs.__value_};
   }
@@ -201,7 +199,7 @@ public:
   //! @param __v The lane_mask to OR with the current lane_mask.
   //!
   //! @return A reference to the current lane_mask after the OR operation.
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator|=(lane_mask __v) noexcept
+  _CCCL_DEVICE_API constexpr lane_mask& operator|=(lane_mask __v) noexcept
   {
     return *this = *this | __v;
   }
@@ -212,8 +210,7 @@ public:
   //! @param __rhs The right-hand side lane_mask.
   //!
   //! @return A new lane_mask object representing the bitwise XOR of the two lane_masks.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
-  operator^(lane_mask __lhs, lane_mask __rhs) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr lane_mask operator^(lane_mask __lhs, lane_mask __rhs) noexcept
   {
     return lane_mask{__lhs.__value_ ^ __rhs.__value_};
   }
@@ -223,7 +220,7 @@ public:
   //! @param __v The lane_mask to XOR with the current lane_mask.
   //!
   //! @return A reference to the current lane_mask after the XOR operation.
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator^=(lane_mask __v) noexcept
+  _CCCL_DEVICE_API constexpr lane_mask& operator^=(lane_mask __v) noexcept
   {
     return *this = *this ^ __v;
   }
@@ -236,8 +233,7 @@ public:
   //! @return A new lane_mask object representing the left-shifted lane_mask.
   //!
   //! @pre `__shift` must be in the range [0, 32).
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
-  operator<<(lane_mask __mask, int __shift) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr lane_mask operator<<(lane_mask __mask, int __shift) noexcept
   {
     _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return lane_mask{__mask.__value_ << __shift};
@@ -250,7 +246,7 @@ public:
   //! @return A reference to the current lane_mask after the left shift operation.
   //!
   //! @pre `__shift` must be in the range [0, 32).
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator<<=(int __shift) noexcept
+  _CCCL_DEVICE_API constexpr lane_mask& operator<<=(int __shift) noexcept
   {
     _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return *this = *this << __shift;
@@ -262,8 +258,7 @@ public:
   //! @param __shift The number of bits to shift right.
   //!
   //! @return A new lane_mask object representing the right-shifted lane_mask.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
-  operator>>(lane_mask __mask, int __shift) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr lane_mask operator>>(lane_mask __mask, int __shift) noexcept
   {
     _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return lane_mask{__mask.__value_ >> __shift};
@@ -276,7 +271,7 @@ public:
   //! @return A reference to the current lane_mask after the right shift operation.
   //!
   //! @pre `__shift` must be in the range [0, 32).
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator>>=(int __shift) noexcept
+  _CCCL_DEVICE_API constexpr lane_mask& operator>>=(int __shift) noexcept
   {
     _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return *this = *this >> __shift;
@@ -287,7 +282,7 @@ public:
   //! @param __mask The lane_mask to negate.
   //!
   //! @return A new lane_mask object representing the negated lane_mask.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask operator~(lane_mask __mask) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr lane_mask operator~(lane_mask __mask) noexcept
   {
     return lane_mask{~__mask.__value_};
   }
@@ -298,8 +293,7 @@ public:
   //! @param __rhs The right-hand side lane_mask.
   //!
   //! @return `true` if the two lane_masks are equal, `false` otherwise.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator==(lane_mask __lhs, lane_mask __rhs) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr bool operator==(lane_mask __lhs, lane_mask __rhs) noexcept
   {
     return __lhs.__value_ == __rhs.__value_;
   }
@@ -310,8 +304,7 @@ public:
   //! @param __rhs The right-hand side lane_mask.
   //!
   //! @return `true` if the two lane_masks are not equal, `false` otherwise.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator!=(lane_mask __lhs, lane_mask __rhs) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API friend constexpr bool operator!=(lane_mask __lhs, lane_mask __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }

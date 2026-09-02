@@ -46,25 +46,25 @@ static_assert(!cuda::std::ranges::empty(static_cast<const Incomplete (&&)[42]>(a
 
 struct InputRangeWithoutSize
 {
-  __host__ __device__ cpp17_input_iterator<int*> begin() const;
-  __host__ __device__ cpp17_input_iterator<int*> end() const;
+  TEST_FUNC cpp17_input_iterator<int*> begin() const;
+  TEST_FUNC cpp17_input_iterator<int*> end() const;
 };
 static_assert(!cuda::std::is_invocable_v<RangeEmptyT, const InputRangeWithoutSize&>);
 
 struct NonConstEmpty
 {
-  __host__ __device__ bool empty();
+  TEST_FUNC bool empty();
 };
 static_assert(!cuda::std::is_invocable_v<RangeEmptyT, const NonConstEmpty&>);
 
 struct HasMemberAndFunction
 {
-  __host__ __device__ constexpr bool empty() const
+  TEST_FUNC constexpr bool empty() const
   {
     return true;
   }
   // We should never do ADL lookup for cuda::std::ranges::empty.
-  __host__ __device__ friend bool empty(const HasMemberAndFunction&)
+  TEST_FUNC friend bool empty(const HasMemberAndFunction&)
   {
     return false;
   }
@@ -72,7 +72,7 @@ struct HasMemberAndFunction
 
 struct BadReturnType
 {
-  __host__ __device__ BadReturnType empty()
+  TEST_FUNC BadReturnType empty()
   {
     return {};
   }
@@ -81,14 +81,14 @@ static_assert(!cuda::std::is_invocable_v<RangeEmptyT, BadReturnType&>);
 
 struct BoolConvertible
 {
-  __host__ __device__ constexpr explicit operator bool() noexcept(false)
+  TEST_FUNC constexpr explicit operator bool() noexcept(false)
   {
     return true;
   }
 };
 struct BoolConvertibleReturnType
 {
-  __host__ __device__ constexpr BoolConvertible empty() noexcept
+  TEST_FUNC constexpr BoolConvertible empty() noexcept
   {
     return {};
   }
@@ -100,13 +100,13 @@ static_assert(!noexcept(cuda::std::ranges::empty(BoolConvertibleReturnType())));
 
 struct InputIterators
 {
-  __host__ __device__ cpp17_input_iterator<int*> begin() const;
-  __host__ __device__ cpp17_input_iterator<int*> end() const;
+  TEST_FUNC cpp17_input_iterator<int*> begin() const;
+  TEST_FUNC cpp17_input_iterator<int*> end() const;
 };
 static_assert(cuda::std::is_same_v<decltype(InputIterators().begin() == InputIterators().end()), bool>);
 static_assert(!cuda::std::is_invocable_v<RangeEmptyT, const InputIterators&>);
 
-__host__ __device__ constexpr bool testEmptyMember()
+TEST_FUNC constexpr bool testEmptyMember()
 {
   HasMemberAndFunction a{};
   assert(cuda::std::ranges::empty(a));
@@ -120,7 +120,7 @@ __host__ __device__ constexpr bool testEmptyMember()
 struct SizeMember
 {
   size_t size_;
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return size_;
   }
@@ -129,7 +129,7 @@ struct SizeMember
 struct SizeFunction
 {
   size_t size_;
-  __host__ __device__ friend constexpr size_t size(SizeFunction sf)
+  TEST_FUNC friend constexpr size_t size(SizeFunction sf)
   {
     return sf.size_;
   }
@@ -137,11 +137,11 @@ struct SizeFunction
 
 struct BeginEndSizedSentinel
 {
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sized_sentinel<int*>(nullptr);
   }
@@ -149,7 +149,7 @@ struct BeginEndSizedSentinel
 static_assert(cuda::std::ranges::forward_range<BeginEndSizedSentinel>);
 static_assert(cuda::std::ranges::sized_range<BeginEndSizedSentinel>);
 
-__host__ __device__ constexpr bool testUsingRangesSize()
+TEST_FUNC constexpr bool testUsingRangesSize()
 {
   SizeMember a{1};
   assert(!cuda::std::ranges::empty(a));
@@ -169,11 +169,11 @@ __host__ __device__ constexpr bool testUsingRangesSize()
 
 struct BeginEndNotSizedSentinel
 {
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sentinel_wrapper<int*>(nullptr);
   }
@@ -184,15 +184,15 @@ static_assert(!cuda::std::ranges::sized_range<BeginEndNotSizedSentinel>);
 // size is disabled here, so we have to compare begin and end.
 struct DisabledSizeRangeWithBeginEnd
 {
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sentinel_wrapper<int*>(nullptr);
   }
-  __host__ __device__ size_t size() const;
+  TEST_FUNC size_t size() const;
 };
 template <>
 inline constexpr bool cuda::std::ranges::disable_sized_range<DisabledSizeRangeWithBeginEnd> = true;
@@ -201,15 +201,15 @@ static_assert(!cuda::std::ranges::sized_range<DisabledSizeRangeWithBeginEnd>);
 
 struct BeginEndAndEmpty
 {
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return nullptr;
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sentinel_wrapper<int*>(nullptr);
   }
-  __host__ __device__ constexpr bool empty()
+  TEST_FUNC constexpr bool empty()
   {
     return false;
   }
@@ -217,18 +217,18 @@ struct BeginEndAndEmpty
 
 struct EvilBeginEnd
 {
-  __host__ __device__ bool empty() &&;
-  __host__ __device__ constexpr int* begin() &
+  TEST_FUNC bool empty() &&;
+  TEST_FUNC constexpr int* begin() &
   {
     return nullptr;
   }
-  __host__ __device__ constexpr int* end() &
+  TEST_FUNC constexpr int* end() &
   {
     return nullptr;
   }
 };
 
-__host__ __device__ constexpr bool testBeginEqualsEnd()
+TEST_FUNC constexpr bool testBeginEqualsEnd()
 {
   BeginEndNotSizedSentinel a{};
   assert(cuda::std::ranges::empty(a));

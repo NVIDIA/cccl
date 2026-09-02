@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
@@ -30,25 +30,9 @@
 #  elif TUNE_LOAD == 1
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
-
-struct policy_hub_t
-{
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
-  {
-    using ScanByKeyPolicyT = cub::AgentScanByKeyPolicy<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      // TODO Tune
-      TUNE_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      TUNE_STORE_ALGORITHM,
-      delay_constructor_t>;
-  };
-
-  using MaxPolicy = policy_t;
-};
 #endif // !TUNE_BASE
+
+#include "../../policy_selector.h"
 
 namespace impl
 {
@@ -104,22 +88,9 @@ template <typename T, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   static_assert(cuda::std::is_integral_v<T> && cuda::std::is_unsigned_v<T>, "Unsigned integral type should be used");
-  using wrapped_init_t = cub::NullType;
-  using pair_t         = cuda::std::pair<T, T>;
-  using op_t           = impl::bicyclic_monoid_op<T>;
-  using accum_t        = pair_t;
-  using input_it_t     = const pair_t*;
-  using output_it_t    = pair_t*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
-
-#if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t>;
-  using dispatch_t = cub::
-    DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No, policy_t>;
-#else
-  using dispatch_t =
-    cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No>;
-#endif
+  using pair_t                   = cuda::std::pair<T, T>;
+  using op_t                     = impl::bicyclic_monoid_op<T>;
+  using accum_t [[maybe_unused]] = pair_t;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
@@ -145,24 +116,31 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   state.add_global_memory_reads<pair_t>(elements, "Size");
   state.add_global_memory_writes<pair_t>(elements);
 
-  cudaStream_t bench_stream = state.get_cuda_stream();
-
-  size_t tmp_size;
-  dispatch_t::Dispatch(nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), bench_stream);
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
+  caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_tmp, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{}, input.size(), launch.get_stream());
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector<accum_t>{})
+#endif // !TUNE_BASE
+    );
+    _CCCL_TRY_CUDA_API(
+      cub::DeviceScan::InclusiveScan,
+      "InclusiveScan failed",
+      d_input,
+      d_output,
+      op_t{},
+      static_cast<OffsetT>(input.size()),
+      env);
   });
 }
 
 #ifdef TUNE_T
 using uint_types = nvbench::type_list<TUNE_T>;
 #else
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
 using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t, uint128_t>;
 #  else
 using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;

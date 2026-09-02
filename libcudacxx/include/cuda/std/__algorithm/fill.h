@@ -38,6 +38,7 @@ __fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_, f
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Tp>
 _CCCL_API constexpr void
 __fill(_RandomAccessIterator __first, _RandomAccessIterator __last, const _Tp& __value_, random_access_iterator_tag)
@@ -45,10 +46,11 @@ __fill(_RandomAccessIterator __first, _RandomAccessIterator __last, const _Tp& _
   ::cuda::std::fill_n(__first, __last - __first, __value_);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Tp>
 _CCCL_API constexpr void fill(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
-  ::cuda::std::__fill(__first, __last, __value_, typename iterator_traits<_ForwardIterator>::iterator_category());
+  ::cuda::std::__fill(__first, __last, __value_, __iterator_traits_category_or_concept_t<_ForwardIterator>());
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

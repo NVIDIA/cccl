@@ -22,7 +22,7 @@
 #include <thrust/system/omp/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system::omp
+namespace system::omp // NOLINT(modernize-concat-nested-namespaces)
 {
 //! \cond
 namespace detail

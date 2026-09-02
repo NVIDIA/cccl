@@ -15,7 +15,7 @@ void TestEqualRangeOnStream()
 
   vector_t input(10);
   thrust::sequence(thrust::device, input.begin(), input.end(), 0);
-  cudaStream_t stream = 0;
+  cudaStream_t stream = nullptr;
   result_t result     = thrust::equal_range(thrust::cuda::par.on(stream), input.begin(), input.end(), 5);
 
   ASSERT_EQUAL(5, ::cuda::std::distance(input.begin(), result.first));

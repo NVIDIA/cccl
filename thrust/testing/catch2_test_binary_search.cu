@@ -3,6 +3,7 @@
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+#include <cuda/iterator>
 #include <cuda/std/cstdint>
 
 #include "catch2_test_helper.h"
@@ -64,6 +65,32 @@ TEST_CASE("ScalarLowerBoundDispatchImplicit", "[binary_search]")
   thrust::lower_bound(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
 
   CHECK(13 == vec.front());
+}
+
+template <class OutputIt>
+struct tabulate_lower_bound_output_op
+{
+  OutputIt output;
+
+  _CCCL_DEVICE void operator()(int idx, int value) const
+  {
+    output[idx] = value;
+  }
+};
+
+TEST_CASE("VectorLowerBoundWithTabulateOutputIterator", "[binary_search]")
+{
+  thrust::device_vector<int> haystack = {0, 2, 4, 6};
+  thrust::device_vector<int> needles  = {1, 3, 5, 7};
+  thrust::device_vector<int> output(needles.size());
+
+  auto output_it =
+    cuda::tabulate_output_iterator{tabulate_lower_bound_output_op<decltype(output.begin())>{output.begin()}};
+
+  thrust::lower_bound(haystack.begin(), haystack.end(), needles.begin(), needles.end(), output_it);
+
+  thrust::device_vector<int> expected = {1, 2, 3, 4};
+  CHECK(output == expected);
 }
 
 TEMPLATE_LIST_TEST_CASE("ScalarUpperBoundSimple", "[binary_search]", vector_list)

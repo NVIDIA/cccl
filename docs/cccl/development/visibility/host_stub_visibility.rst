@@ -69,7 +69,7 @@ However, imagine that there are two shared libraries: ``lib_a`` and ``lib_b`` bo
     add_library(lib_b SHARED tu_b.cu)
     target_link_libraries(host_stub_visibility PRIVATE lib_a lib_b)
 
-Each library will have it's own fatbinary: ``d_kernel_a`` and ``d_kernel_b``, but the the compiler
+Each library will have its own fatbinary: ``d_kernel_a`` and ``d_kernel_b``, but the compiler
 generated host stub function ``h_kernel`` has weak external linkage, so after dynamic linkage, we'll end up having
 only one of them.
 

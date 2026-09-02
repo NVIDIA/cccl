@@ -20,11 +20,39 @@
 template <class T>
 _CCCL_CONCEPT Decrementable = _CCCL_REQUIRES_EXPR((T), T i)((--i), (i--));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::counting_iterator<int> iter1{0};
     cuda::counting_iterator<int> iter2{0};
+    assert(iter1 == iter2);
+    assert(--iter1 != iter2--);
+    assert(iter1 == iter2);
+
+    static_assert(noexcept(--iter2));
+    static_assert(noexcept(iter2--));
+    static_assert(!cuda::std::is_reference_v<decltype(iter2--)>);
+    static_assert(cuda::std::is_reference_v<decltype(--iter2)>);
+    static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(--iter2)>, decltype(iter2--)>);
+  }
+
+  {
+    cuda::counting_iterator<int, int> iter1{0};
+    cuda::counting_iterator<int, int> iter2{0};
+    assert(iter1 == iter2);
+    assert(--iter1 != iter2--);
+    assert(iter1 == iter2);
+
+    static_assert(noexcept(--iter2));
+    static_assert(noexcept(iter2--));
+    static_assert(!cuda::std::is_reference_v<decltype(iter2--)>);
+    static_assert(cuda::std::is_reference_v<decltype(--iter2)>);
+    static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(--iter2)>, decltype(iter2--)>);
+  }
+
+  {
+    cuda::counting_iterator<int, int> iter1{0};
+    cuda::counting_iterator<int, cuda::std::int64_t> iter2{0};
     assert(iter1 == iter2);
     assert(--iter1 != iter2--);
     assert(iter1 == iter2);
@@ -50,6 +78,34 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(--iter2)>, decltype(iter2--)>);
   }
 
+  { // With a decrementable type and same (but non-default) difference type
+    cuda::counting_iterator<SomeInt, int> iter1{SomeInt{0}};
+    cuda::counting_iterator<SomeInt, int> iter2{SomeInt{0}};
+    assert(iter1 == iter2);
+    assert(--iter1 != iter2--);
+    assert(iter1 == iter2);
+
+    static_assert(!noexcept(--iter2));
+    static_assert(!noexcept(iter2--));
+    static_assert(!cuda::std::is_reference_v<decltype(iter2--)>);
+    static_assert(cuda::std::is_reference_v<decltype(--iter2)>);
+    static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(--iter2)>, decltype(iter2--)>);
+  }
+
+  { // With a decrementable type and different difference type
+    cuda::counting_iterator<SomeInt, int> iter1{SomeInt{0}};
+    cuda::counting_iterator<SomeInt, cuda::std::int64_t> iter2{SomeInt{0}};
+    assert(iter1 == iter2);
+    assert(--iter1 != iter2--);
+    assert(iter1 == iter2);
+
+    static_assert(!noexcept(--iter2));
+    static_assert(!noexcept(iter2--));
+    static_assert(!cuda::std::is_reference_v<decltype(iter2--)>);
+    static_assert(cuda::std::is_reference_v<decltype(--iter2)>);
+    static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(--iter2)>, decltype(iter2--)>);
+  }
+
   static_assert(!Decrementable<cuda::counting_iterator<Int42<ValueCtor>>>);
 
   return true;
@@ -58,7 +114,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

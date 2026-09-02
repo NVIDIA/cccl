@@ -55,10 +55,10 @@ int main()
       Y.begin(), // output range
       saxpy_functor(a)); // functor
 
-    std::cout << "SAXPY (functor method)" << std::endl;
+    std::cout << "SAXPY (functor method)" << '\n';
     for (size_t i = 0; i < Y.size(); i++)
     {
-      std::cout << a << " * " << x_data[i] << " + " << y_data[i] << " = " << Y[i] << std::endl;
+      std::cout << a << " * " << x_data[i] << " + " << y_data[i] << " = " << Y[i] << '\n';
     }
   }
 
@@ -74,10 +74,10 @@ int main()
       Y.begin(), // output range
       a * _1 + _2); // placeholder expression
 
-    std::cout << "SAXPY (placeholder method)" << std::endl;
+    std::cout << "SAXPY (placeholder method)" << '\n';
     for (size_t i = 0; i < Y.size(); i++)
     {
-      std::cout << a << " * " << x_data[i] << " + " << y_data[i] << " = " << Y[i] << std::endl;
+      std::cout << a << " * " << x_data[i] << " + " << y_data[i] << " = " << Y[i] << '\n';
     }
   }
 

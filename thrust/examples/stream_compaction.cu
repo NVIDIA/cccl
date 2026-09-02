@@ -4,8 +4,9 @@
 #include <thrust/remove.h>
 #include <thrust/sequence.h>
 
+#include <cuda/std/iterator>
+
 #include <iostream>
-#include <iterator>
 #include <string>
 
 // this functor returns true if the argument is odd, and false otherwise
@@ -21,7 +22,7 @@ struct is_odd
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  using T = typename std::iterator_traits<Iterator>::value_type;
+  using T = cuda::std::iter_value_t<Iterator>;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));

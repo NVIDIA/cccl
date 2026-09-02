@@ -240,8 +240,6 @@ struct TestUniqueCopyToDiscardIterator
 
     thrust::discard_iterator<> reference(h_unique.size());
 
-    typename thrust::device_vector<T>::iterator d_new_last;
-
     thrust::discard_iterator<> h_result =
       thrust::unique_copy(h_data.begin(), h_data.end(), thrust::make_discard_iterator());
 
@@ -293,7 +291,7 @@ VariableUnitTest<TestUniqueCount, IntegralTypes> TestUniqueCountInstance;
 template <typename T>
 struct TestUniqueMemoryAccess
 {
-  void operator()(void)
+  void operator()()
   {
     thrust::device_vector<cuda::std::array<T, 100>> v(10);
     thrust::unique(v.begin(), v.end());

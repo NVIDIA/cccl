@@ -40,10 +40,7 @@ template <typename Derived, typename InputIt, typename Size, typename OutputIt, 
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   thrust::cuda_cub::execution_policy<Derived>& policy, InputIt first, Size num_items, OutputIt result, ScanOp scan_op)
 {
-  using AccumT     = thrust::detail::it_value_t<InputIt>;
-  using Dispatch32 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint32_t, AccumT>;
-  using Dispatch64 = cub::DispatchScan<InputIt, OutputIt, ScanOp, cub::NullType, std::uint64_t, AccumT>;
-
+  using AccumT        = thrust::detail::it_value_t<InputIt>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -56,10 +53,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<AccumT>,
       num_items,
       (nullptr, tmp_size, first, result, scan_op, cub::NullType{}, num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -72,10 +70,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<AccumT>,
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, cub::NullType{}, num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
@@ -96,15 +95,9 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
-  using ValueT      = cub::detail::it_value_t<InputIt>;
-  using AccumT      = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
-
-  using Dispatch32 =
-    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, AccumT, cub::ForceInclusive::Yes>;
-  using Dispatch64 =
-    cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, AccumT, cub::ForceInclusive::Yes>;
-
+  using InputValueT   = cub::detail::InputValue<InitValueT>;
+  using ValueT        = cub::detail::it_value_t<InputIt>;
+  using AccumT        = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -117,10 +110,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScanInit directly in CCCL 4.0, which is a breaking
+    // change. See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
       num_items,
       (nullptr, tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -133,10 +127,11 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::InclusiveScanInit directly in CCCL 4.0, which is a breaking
+    // change. See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      (cub::detail::scan::dispatch_with_accum<AccumT, cub::ForceInclusive::Yes>),
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching inclusive_scan kernel");
@@ -157,10 +152,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
-  using Dispatch32  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, InitValueT>;
-  using Dispatch64  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, InitValueT>;
-
+  using InputValueT   = cub::detail::InputValue<InitValueT>;
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
   cudaError_t status;
 
@@ -173,10 +165,11 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   // Determine temporary storage requirements:
   size_t tmp_size = 0;
   {
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::ExclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<InitValueT>,
       num_items,
       (nullptr, tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(
@@ -189,10 +182,11 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   {
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
-    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+    // TODO(bgruber): we should call cub::DeviceScan::ExclusiveScan directly in CCCL 4.0, which is a breaking change.
+    // See https://github.com/NVIDIA/cccl/issues/3993 for details.
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
       status,
-      Dispatch32::Dispatch,
-      Dispatch64::Dispatch,
+      cub::detail::scan::dispatch_with_accum<InitValueT>,
       num_items,
       (tmp.data().get(), tmp_size, first, result, scan_op, InputValueT(init), num_items_fixed, stream));
     thrust::cuda_cub::throw_on_error(status, "after dispatching exclusive_scan kernel");

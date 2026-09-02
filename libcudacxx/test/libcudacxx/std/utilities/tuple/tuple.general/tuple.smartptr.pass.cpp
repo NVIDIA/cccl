@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 //  Tuples of smart pointers; based on bug #18350
 //  auto_ptr doesn't have a copy constructor that takes a const &, but tuple does.

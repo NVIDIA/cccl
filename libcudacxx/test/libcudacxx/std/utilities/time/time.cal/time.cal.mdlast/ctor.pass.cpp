@@ -30,12 +30,12 @@ int main(int, char**)
   static_assert(noexcept(month_day_last{month{1}}));
 
   constexpr month_day_last md0{month{}};
-  static_assert(md0.month() == month{}, "");
-  static_assert(!md0.ok(), "");
+  static_assert(md0.month() == month{});
+  static_assert(!md0.ok());
 
   constexpr month_day_last md1{cuda::std::chrono::January};
-  static_assert(md1.month() == cuda::std::chrono::January, "");
-  static_assert(md1.ok(), "");
+  static_assert(md1.month() == cuda::std::chrono::January);
+  static_assert(md1.ok());
 
   return 0;
 }

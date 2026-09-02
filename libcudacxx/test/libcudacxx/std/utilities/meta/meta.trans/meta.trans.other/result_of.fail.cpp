@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class Ret, class Fn>
-__host__ __device__ void test_lambda(Fn&&)
+TEST_FUNC void test_lambda(Fn&&)
 {
   static_assert(cuda::std::is_same_v<Ret, typename cuda::std::result_of<Fn()>::type>);
 
@@ -30,10 +30,10 @@ int main(int, char**)
 {
 #if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
   { // extended device lambda
-    test_lambda<int>([] __device__() {
+    test_lambda<int>([] TEST_DEVICE_FUNC() {
       return 42;
     });
-    test_lambda<double>([] __device__() {
+    test_lambda<double>([] TEST_DEVICE_FUNC() {
       return 42.0;
     });
   }

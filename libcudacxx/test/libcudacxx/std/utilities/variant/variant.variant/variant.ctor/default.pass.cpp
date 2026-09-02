@@ -24,12 +24,12 @@
 
 struct NonDefaultConstructible
 {
-  __host__ __device__ constexpr NonDefaultConstructible(int) {}
+  TEST_FUNC constexpr NonDefaultConstructible(int) {}
 };
 
 struct NotNoexcept
 {
-  __host__ __device__ NotNoexcept() noexcept(false) {}
+  TEST_FUNC NotNoexcept() noexcept(false) {}
 };
 
 #if TEST_HAS_EXCEPTIONS()
@@ -42,33 +42,33 @@ struct DefaultCtorThrows
 };
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void test_default_ctor_sfinae()
+TEST_FUNC void test_default_ctor_sfinae()
 {
   {
     using V = cuda::std::variant<cuda::std::monostate, int>;
-    static_assert(cuda::std::is_default_constructible<V>::value, "");
+    static_assert(cuda::std::is_default_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<NonDefaultConstructible, int>;
-    static_assert(!cuda::std::is_default_constructible<V>::value, "");
+    static_assert(!cuda::std::is_default_constructible<V>::value);
   }
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
     using V = cuda::std::variant<int&, int>;
-    static_assert(!cuda::std::is_default_constructible<V>::value, "");
+    static_assert(!cuda::std::is_default_constructible<V>::value);
   }
 #endif
 }
 
-__host__ __device__ void test_default_ctor_noexcept()
+TEST_FUNC void test_default_ctor_noexcept()
 {
   {
     using V = cuda::std::variant<int>;
-    static_assert(cuda::std::is_nothrow_default_constructible<V>::value, "");
+    static_assert(cuda::std::is_nothrow_default_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<NotNoexcept>;
-    static_assert(!cuda::std::is_nothrow_default_constructible<V>::value, "");
+    static_assert(!cuda::std::is_nothrow_default_constructible<V>::value);
   }
 }
 
@@ -92,7 +92,7 @@ void test_default_ctor_throws()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void test_default_ctor_basic()
+TEST_FUNC void test_default_ctor_basic()
 {
   {
     cuda::std::variant<int> v;
@@ -112,20 +112,20 @@ __host__ __device__ void test_default_ctor_basic()
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
-    static_assert(cuda::std::get<0>(v) == 0, "");
+    static_assert(v.index() == 0);
+    static_assert(cuda::std::get<0>(v) == 0);
   }
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
-    static_assert(cuda::std::get<0>(v) == 0, "");
+    static_assert(v.index() == 0);
+    static_assert(cuda::std::get<0>(v) == 0);
   }
   {
     using V = cuda::std::variant<int, NonDefaultConstructible>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
-    static_assert(cuda::std::get<0>(v) == 0, "");
+    static_assert(v.index() == 0);
+    static_assert(cuda::std::get<0>(v) == 0);
   }
 }
 

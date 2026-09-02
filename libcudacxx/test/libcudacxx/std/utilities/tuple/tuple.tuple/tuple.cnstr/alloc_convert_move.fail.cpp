@@ -17,11 +17,11 @@
 
 struct ExplicitCopy
 {
-  __host__ __device__ explicit ExplicitCopy(int) {}
-  __host__ __device__ explicit ExplicitCopy(ExplicitCopy const&) {}
+  TEST_FUNC explicit ExplicitCopy(int) {}
+  TEST_FUNC explicit ExplicitCopy(ExplicitCopy const&) {}
 };
 
-__host__ __device__ cuda::std::tuple<ExplicitCopy> explicit_move_test()
+TEST_FUNC cuda::std::tuple<ExplicitCopy> explicit_move_test()
 {
   cuda::std::tuple<int> t1(42);
   return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, cuda::std::move(t1)};

@@ -15,17 +15,17 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_is_nothrow_assignable()
+TEST_FUNC void test_is_nothrow_assignable()
 {
-  static_assert((cuda::std::is_nothrow_assignable<T, U>::value), "");
-  static_assert((cuda::std::is_nothrow_assignable_v<T, U>), "");
+  static_assert((cuda::std::is_nothrow_assignable<T, U>::value));
+  static_assert((cuda::std::is_nothrow_assignable_v<T, U>) );
 }
 
 template <class T, class U>
-__host__ __device__ void test_is_not_nothrow_assignable()
+TEST_FUNC void test_is_not_nothrow_assignable()
 {
-  static_assert((!cuda::std::is_nothrow_assignable<T, U>::value), "");
-  static_assert((!cuda::std::is_nothrow_assignable_v<T, U>), "");
+  static_assert((!cuda::std::is_nothrow_assignable<T, U>::value));
+  static_assert((!cuda::std::is_nothrow_assignable_v<T, U>) );
 }
 
 struct A
@@ -33,12 +33,12 @@ struct A
 
 struct B
 {
-  __host__ __device__ void operator=(A);
+  TEST_FUNC void operator=(A);
 };
 
 struct C
 {
-  __host__ __device__ void operator=(C&); // not const
+  TEST_FUNC void operator=(C&); // not const
 };
 
 int main(int, char**)

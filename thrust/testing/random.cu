@@ -1,5 +1,8 @@
 #include <thrust/generate.h>
 #include <thrust/random.h>
+#include <thrust/random/detail/urng_traits.h>
+
+#include <cuda/std/random>
 
 #include <sstream>
 
@@ -12,7 +15,7 @@ struct ValidateEngine
       : m_value_10000(value_10000)
   {}
 
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     Engine e;
     e.discard(9999);
@@ -27,7 +30,7 @@ struct ValidateEngine
 template <typename Engine, bool trivial_min = (Engine::min == 0)>
 struct ValidateEngineMin
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     Engine e;
 
@@ -45,7 +48,7 @@ struct ValidateEngineMin
 template <typename Engine>
 struct ValidateEngineMin<Engine, true>
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     return true;
   }
@@ -54,7 +57,7 @@ struct ValidateEngineMin<Engine, true>
 template <typename Engine>
 struct ValidateEngineMax
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     Engine e;
 
@@ -72,7 +75,7 @@ struct ValidateEngineMax
 template <typename Engine>
 struct ValidateEngineEqual
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     bool result = true;
 
@@ -104,7 +107,7 @@ struct ValidateEngineEqual
 template <typename Engine>
 struct ValidateEngineUnequal
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     bool result = true;
 
@@ -148,7 +151,7 @@ struct ValidateDistributionMin
       : d(dd)
   {}
 
-  _CCCL_HOST_DEVICE bool operator()(void)
+  _CCCL_HOST_DEVICE bool operator()()
   {
     Engine e;
 
@@ -174,7 +177,7 @@ struct ValidateDistributionMax
       : d(dd)
   {}
 
-  _CCCL_HOST_DEVICE bool operator()(void)
+  _CCCL_HOST_DEVICE bool operator()()
   {
     Engine e;
 
@@ -194,7 +197,7 @@ struct ValidateDistributionMax
 template <typename Distribution>
 struct ValidateDistributionEqual
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     return d0 == d1;
   }
@@ -205,7 +208,7 @@ struct ValidateDistributionEqual
 template <typename Distribution>
 struct ValidateDistributionUnqual
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     return d0 != d1;
   }
@@ -695,28 +698,33 @@ void ValidateDistributionCharacteristic()
   // only do this if they have the same result_type
   if (::cuda::std::is_same<typename Distribution::result_type, typename Engine::result_type>::value)
   {
+    using engine_traits = thrust::random::detail::urng_traits<Engine>;
+
     // test Distribution with same range as engine
 
     // test host
-    thrust::generate(h.begin(), h.end(), Validator(Distribution(Engine::min, Engine::max)));
+    thrust::generate(h.begin(), h.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution(Engine::min, Engine::max)));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
 
     ASSERT_EQUAL(true, d[0]);
 
     // test Distribution with smaller range than engine
 
     // test host
-    typename Distribution::result_type engine_range = Engine::max - Engine::min;
-    thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
+    typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
+    typename Distribution::result_type smaller_min  = engine_range / 3;
+    typename Distribution::result_type smaller_max  = engine_range - smaller_min;
+
+    thrust::generate(h.begin(), h.end(), Validator(Distribution(smaller_min, smaller_max)));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution(smaller_min, smaller_max)));
 
     ASSERT_EQUAL(true, d[0]);
   }
@@ -841,3 +849,23 @@ void TestNormalDistributionSaveRestore()
   TestDistributionSaveRestore<double_dist>();
 }
 DECLARE_UNITTEST(TestNormalDistributionSaveRestore);
+
+template <typename Distribution, typename Engine>
+void ValidateDistributionWithEngine()
+{
+  ValidateDistributionCharacteristic<Distribution, ValidateDistributionMin<Distribution, Engine>>();
+  ValidateDistributionCharacteristic<Distribution, ValidateDistributionMax<Distribution, Engine>>();
+}
+
+void TestDistributionsWithCudaStdPhilox()
+{
+  using engine      = cuda::std::philox4x32;
+  using uint_dist   = thrust::random::uniform_int_distribution<typename engine::result_type>;
+  using float_dist  = thrust::random::uniform_real_distribution<float>;
+  using double_dist = thrust::random::normal_distribution<double>;
+
+  ValidateDistributionWithEngine<uint_dist, engine>();
+  ValidateDistributionWithEngine<float_dist, engine>();
+  ValidateDistributionWithEngine<double_dist, engine>();
+}
+DECLARE_UNITTEST(TestDistributionsWithCudaStdPhilox);

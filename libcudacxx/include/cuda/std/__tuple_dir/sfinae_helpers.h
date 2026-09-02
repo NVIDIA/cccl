@@ -30,12 +30,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <bool... _Preds>
-struct __all_dummy;
-
-template <bool... _Pred>
-using __all = is_same<__all_dummy<_Pred...>, __all_dummy<((void) _Pred, true)...>>;
-
 enum class __smf_availability
 {
   __trivial,
