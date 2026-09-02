@@ -90,6 +90,8 @@
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_NCCL": true,
+        "HACK_cudax_ALLOW_MISSING_NCCL": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
         "CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING": true
@@ -141,6 +143,16 @@
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true
+      }
+    },
+    {
+      "name": "libcudacxx-codegen-filecheck",
+      "displayName": "libcu++: Codegen FileCheck",
+      "inherits": "libcudacxx",
+      "cacheVariables": {
+        "CMAKE_CUDA_ARCHITECTURES": "80",
+        "LIBCUDACXX_CODEGEN_FILECHECK_TESTS": "all",
+        "LIBCUDACXX_REQUIRE_CODEGEN_TEST_TOOLS": true
       }
     },
     {
@@ -386,7 +398,9 @@
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
-        "cudax_ENABLE_CUFILE": false
+        "cudax_ENABLE_CUFILE": false,
+        "cudax_ENABLE_NCCL": true,
+        "HACK_cudax_ALLOW_MISSING_NCCL": true
       }
     },
     {
@@ -457,6 +471,7 @@
       "name": "cub-benchmark",
       "displayName": "CUB benchmarking",
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/$env{CCCL_BUILD_INFIX}/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CUDA_ARCHITECTURES": "native",
@@ -526,9 +541,18 @@
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
         "libcudacxx.test.nvtarget",
+        "libcudacxx.test.c2h_all",
+        "libcudacxx.test.debugging"
+      ]
+    },
+    {
+      "name": "libcudacxx-codegen-filecheck",
+      "configurePreset": "libcudacxx-codegen-filecheck",
+      "targets": [
         "libcudacxx.test.atomics.ptx",
+        "libcudacxx.test.atomics.sass",
         "libcudacxx.test.simd.ptx",
-        "libcudacxx.test.c2h_all"
+        "libcudacxx.test.simd.sass"
       ]
     },
     {
@@ -631,6 +655,10 @@
     {
       "name": "cub-lid2-cpp20",
       "configurePreset": "cub-lid2-cpp20"
+    },
+    {
+      "name": "cub-benchmark",
+      "configurePreset": "cub-benchmark"
     },
     {
       "name": "thrust",

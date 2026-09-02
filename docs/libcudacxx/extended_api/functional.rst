@@ -9,6 +9,7 @@ Functional
 
    functional/always_true_false
    functional/proclaim_return_type
+   functional/hash
    functional/maximum_minimum
    functional/operator_properties
 
@@ -30,6 +31,11 @@ Functional
      - Function object that always returns ``false``
      - CCCL 3.4.0
      - CUDA 13.4
+
+   * - :ref:`cuda::hash <libcudacxx-extended-api-functional-hash>`
+     - Host/device xxHash and MurmurHash3 function objects
+     - CCCL 3.6.0
+     - CUDA 13.6
 
    * - :ref:`cuda::maximum <libcudacxx-extended-api-functional-maximum-minimum>`
      - Returns the maximum of two values

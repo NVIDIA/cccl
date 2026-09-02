@@ -345,7 +345,7 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
 
 // Return void pointer to work around NVCC bug with __restrict__
 template <class _Kernel, class _Config, class... _Args>
-[[nodiscard]] _CCCL_API constexpr const void* __get_kernel_launcher() noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr const void* __get_kernel_launcher() noexcept
 {
   using _Hierarchy = typename _Config::hierarchy_type;
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
@@ -353,27 +353,9 @@ template <class _Kernel, class _Config, class... _Args>
 
   if constexpr (_BlockExts::rank_dynamic() == 0)
   {
-    if constexpr (_Hierarchy::has_level(cluster))
-    {
-      // todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters
-      // directive is fixed.
-      //
-      // using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
-      // using _ClusterExts = typename _ClusterDesc::extents_type;
-      //
-      // if constexpr (_ClusterExts::rank_dynamic() == 0)
-      // {
-      //   return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>);
-      // }
-      // else
-      {
-        return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
-      }
-    }
-    else
-    {
-      return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
-    }
+    // todo(dabayer): Re-enable the cluster-specific block-size launcher once cuda::launch with kernels compiled with
+    // .blocksareclusters directive is fixed.
+    return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
   }
   else
   {

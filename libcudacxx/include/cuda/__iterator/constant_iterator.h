@@ -110,6 +110,15 @@ public:
       : __store_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr constant_iterator(const constant_iterator&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr constant_iterator(constant_iterator&&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr constant_iterator& operator=(const constant_iterator&) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HIDE_FROM_ABI constexpr constant_iterator& operator=(constant_iterator&&) = default;
+
   //! @brief Creates a @c constant_iterator from a value. The index is set to zero
   //! @param __value The value to store in the @c constant_iterator
   _CCCL_EXEC_CHECK_DISABLE

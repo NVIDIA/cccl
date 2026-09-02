@@ -31,7 +31,7 @@
  *
  * For more information on conditional nodes, see the programming guide:
  *
- *   https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#conditional-graph-nodes
+ *   https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html#conditional-graph-nodes
  *
  */
 

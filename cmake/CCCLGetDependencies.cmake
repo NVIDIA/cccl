@@ -1,4 +1,5 @@
 set(_cccl_cpm_file "${CMAKE_CURRENT_LIST_DIR}/CPM.cmake")
+set(_cccl_find_module_dir "${CMAKE_CURRENT_LIST_DIR}/find_modules")
 
 macro(cccl_get_boost)
   include("${_cccl_cpm_file}")
@@ -77,7 +78,7 @@ endmacro()
 
 set(
   CCCL_NVBENCH_SHA
-  "56d552687e6a462a812d6f046f5a85a07f13c9f3"
+  "d4ccbc05a8f1974ee6374ec24b9b065ae76b77e1"
   CACHE STRING
   "SHA/tag to use for CCCL's NVBench."
 )
@@ -109,6 +110,13 @@ macro(cccl_get_nvtx)
   include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
 endmacro()
 
+macro(cccl_get_rapids_test)
+  set(rapids-cmake-version "26.06")
+  set(rapids-cmake-tag "v26.06.00")
+  include("${CCCL_SOURCE_DIR}/cmake/RAPIDS.cmake")
+  include(rapids-test)
+endmacro()
+
 macro(cccl_get_thrust)
   find_package(
     Thrust
@@ -117,4 +125,10 @@ macro(cccl_get_thrust)
     NO_DEFAULT_PATH # Only check the explicit HINTS below:
     HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
   )
+endmacro()
+
+macro(cccl_get_nccl)
+  list(APPEND CMAKE_MODULE_PATH "${_cccl_find_module_dir}")
+  find_package(NCCL ${ARGN})
+  list(POP_BACK CMAKE_MODULE_PATH)
 endmacro()

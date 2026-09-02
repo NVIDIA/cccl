@@ -218,7 +218,7 @@ private:
     }
     else
     {
-      return data[Fold + i];
+      return data[Fold + i]; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 

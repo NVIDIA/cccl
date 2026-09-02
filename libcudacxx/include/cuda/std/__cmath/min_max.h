@@ -72,6 +72,8 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmax(_Tp __x, _Tp __y) noexcept
 {
 #if _CCCL_HAS_NVFP16()
+  // The half and bfloat16 branches can become identical under some CUDA Toolkit versions.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
@@ -82,6 +84,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
                       (return ::__float2half(::cuda::std::fmax(::__half2float(__x), ::__half2float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
+  // NOLINTEND(bugprone-branch-clone)
   else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
@@ -195,6 +198,8 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr conditional_t<is_integral_v<_Tp>, double, _Tp> fmin(_Tp __x, _Tp __y) noexcept
 {
 #if _CCCL_HAS_NVFP16()
+  // The half and bfloat16 branches can become identical under some CUDA Toolkit versions.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (is_same_v<_Tp, ::__half>)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 2)
@@ -205,6 +210,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
                       (return ::__float2half(::cuda::std::fmin(::__half2float(__x), ::__half2float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
   }
+  // NOLINTEND(bugprone-branch-clone)
   else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()

@@ -79,7 +79,7 @@ void test_merge(const Policy& policy,
     // in1 = [0,2,4,..., 2 * size1), in2 = [1,3,5,..., 2 * size2)
     // First subrange is equal [0, 1, ..., 2 * size2)
     // The remaining elements are equal to [2 * size2 - 1, 2 * size2 + 1, ..., 2 * size2)
-    const auto mid = out.begin() + 2 * size2;
+    const auto mid = out.begin() + 2 * size2; // NOLINT(bugprone-misplaced-widening-cast)
     CHECK(cuda::std::equal(policy, out.begin(), mid, cuda::counting_iterator{0}));
     CHECK(cuda::std::equal(policy, mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2}, 2}));
   }
@@ -93,7 +93,7 @@ void test_merge(const Policy& policy,
     // in1 = [0,2,4,..., 2 * size1), in2 = [1,3,5,..., 2 * size2)
     // First subrange is equal [0, 1, ..., 2 * size2)
     // The remaining elements are equal to [2 * size2 - 1, 2 * size2 + 1, ..., 2 * size2)
-    const auto mid = out.begin() + 2 * size2;
+    const auto mid = out.begin() + 2 * size2; // NOLINT(bugprone-misplaced-widening-cast)
     CHECK(cuda::std::equal(policy, out.begin(), mid, cuda::counting_iterator{0}));
     CHECK(cuda::std::equal(policy, mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2}, 2}));
   }
@@ -107,7 +107,7 @@ void test_merge(const Policy& policy,
     // in1 = [0,2,4,..., 2 * size1), in2 = [1,3,5,..., 2 * size2)
     // First subrange is equal [0, 1, ..., 2 * size2)
     // The remaining elements are equal to [2 * size2 - 1, 2 * size2 + 1, ..., 2 * size2)
-    const auto mid = out.begin() + 2 * size2;
+    const auto mid = out.begin() + 2 * size2; // NOLINT(bugprone-misplaced-widening-cast)
     CHECK(cuda::std::equal(policy, out.begin(), mid, cuda::counting_iterator{0}));
     CHECK(cuda::std::equal(policy, mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2}, 2}));
   }

@@ -48,8 +48,9 @@ struct basic_test_single_dim
   {
     auto dims = cuda::make_hierarchy(cuda::block_dims<block_size>(), cuda::grid_dims<grid_size>());
     static_assert(cuda::gpu_thread.dims(cuda::grid, dims).x == grid_size * block_size);
-    static_assert(cuda::gpu_thread.count(cuda::grid, dims) == grid_size * block_size);
-    static_assert(cuda::gpu_thread.static_dims(cuda::grid, dims)[0] == grid_size * block_size);
+    static_assert(cuda::gpu_thread.count(cuda::grid, dims) == static_cast<unsigned long>(grid_size) * block_size);
+    static_assert(
+      cuda::gpu_thread.static_dims(cuda::grid, dims)[0] == static_cast<unsigned long>(grid_size) * block_size);
 
     static_assert(cuda::gpu_thread.dims(cuda::block, dims).x == block_size);
     static_assert(cuda::block.dims(cuda::grid, dims).x == grid_size);

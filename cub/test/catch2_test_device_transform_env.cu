@@ -9,7 +9,9 @@
 #include <cuda/iterator>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include <sstream>
+
+#include "cub_test_macros.h"
 
 using namespace thrust::placeholders;
 
@@ -129,7 +131,7 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
   REQUIRE(cudaGraphDestroy(graph) == cudaSuccess);
 }
 
-C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -144,7 +146,7 @@ C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
   CHECK(thrust::equal(result.begin(), result.end(), cuda::counting_iterator<type>{42 + 13}));
 }
 
-C2H_TEST("DeviceTransform::Transform (single argument) custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform (single argument) custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -158,7 +160,7 @@ C2H_TEST("DeviceTransform::Transform (single argument) custom stream", "[device]
   CHECK(thrust::equal(result.begin(), result.end(), cuda::counting_iterator<type>{42 + 13}));
 }
 
-C2H_TEST("DeviceTransform::Generate custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Generate custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -175,7 +177,7 @@ C2H_TEST("DeviceTransform::Generate custom stream", "[device][transform]")
   CHECK(thrust::equal(result.begin(), result.end(), cuda::constant_iterator<type>{1337}));
 }
 
-C2H_TEST("DeviceTransform::Fill custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::Fill custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -197,7 +199,7 @@ struct reference_func
   }
 };
 
-C2H_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -214,7 +216,7 @@ C2H_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]")
   CHECK(thrust::equal(result.begin(), result.end(), reference_it));
 }
 
-C2H_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -229,7 +231,7 @@ C2H_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[devic
   CHECK(thrust::equal(result.begin(), result.end(), reference_it));
 }
 
-C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[device][transform]")
+CUB_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -265,7 +267,7 @@ struct get_thread_id
   }
 };
 
-C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
+CUB_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]", CUB_SMALL)
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
@@ -278,7 +280,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
   REQUIRE(result == expected);
 }
 
-C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce][device]")
+CUB_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce][device]", CUB_SMALL)
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
@@ -293,41 +295,90 @@ C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("TransformPolicy", "[transform][device]")
+CUB_TEST("Test TransformPolicy properties", "[transform][device]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformPolicy>);
 
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformPrefetchPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformPrefetchPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformVectorizedPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformVectorizedPolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::TransformAsyncCopyPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::TransformAsyncCopyPolicy>);
+
   // aggregate init
-  constexpr auto p1 = cub::TransformPolicy{
-    64 * 1024,
-    cub::TransformAlgorithm::prefetch,
-    cub::TransformPrefetchPolicy{256, 2, 1, 32, 128, 0},
-    cub::TransformVectorizedPolicy{256, 8, 4},
-    cub::TransformAsyncCopyPolicy{256, 1, 32, 1}};
+  constexpr auto p1_prefetch   = cub::TransformPrefetchPolicy{256, 2, 1, 32, 128, 0};
+  constexpr auto p1_vectorized = cub::TransformVectorizedPolicy{256, 8, 4};
+  constexpr auto p1_async_copy = cub::TransformAsyncCopyPolicy{256, 1, 32, 1};
+  constexpr auto p1 =
+    cub::TransformPolicy{64 * 1024, cub::TransformAlgorithm::prefetch, p1_prefetch, p1_vectorized, p1_async_copy};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
+  constexpr auto p2_prefetch = cub::TransformPrefetchPolicy{
+    .threads_per_block         = 256,
+    .items_per_thread_no_input = 2,
+    .min_items_per_thread      = 1,
+    .max_items_per_thread      = 32,
+    .prefetch_byte_stride      = 128,
+    .unroll_factor             = 0};
+  constexpr auto p2_vectorized =
+    cub::TransformVectorizedPolicy{.threads_per_block = 256, .items_per_thread = 8, .vec_size = 4};
+  constexpr auto p2_async_copy = cub::TransformAsyncCopyPolicy{
+    .threads_per_block = 256, .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1};
   constexpr auto p2 = cub::TransformPolicy{
     .min_bytes_in_flight = 64 * 1024,
     .algorithm           = cub::TransformAlgorithm::prefetch,
-    .prefetch =
-      cub::TransformPrefetchPolicy{
-        .threads_per_block         = 256,
-        .items_per_thread_no_input = 2,
-        .min_items_per_thread      = 1,
-        .max_items_per_thread      = 32,
-        .prefetch_byte_stride      = 128,
-        .unroll_factor             = 0},
-    .vectorized = cub::TransformVectorizedPolicy{.threads_per_block = 256, .items_per_thread = 8, .vec_size = 4},
-    .async_copy = cub::TransformAsyncCopyPolicy{
-      .threads_per_block = 256, .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1}};
+    .prefetch            = p2_prefetch,
+    .vectorized          = p2_vectorized,
+    .async_copy          = p2_async_copy};
 #  else // _CCCL_STD_VER >= 2020
-  constexpr auto p2 = p1;
+  constexpr auto p2_prefetch   = p1_prefetch;
+  constexpr auto p2_vectorized = p1_vectorized;
+  constexpr auto p2_async_copy = p1_async_copy;
+  constexpr auto p2            = p1;
 #  endif // _CCCL_STD_VER >= 2020
 
   // comparison
+  STATIC_REQUIRE(p1_prefetch == p2_prefetch);
+  STATIC_REQUIRE_FALSE(p1_prefetch != p2_prefetch);
+
+  STATIC_REQUIRE(p1_vectorized == p2_vectorized);
+  STATIC_REQUIRE_FALSE(p1_vectorized != p2_vectorized);
+
+  STATIC_REQUIRE(p1_async_copy == p2_async_copy);
+  STATIC_REQUIRE_FALSE(p1_async_copy != p2_async_copy);
+
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1_prefetch)
+          == "TransformPrefetchPolicy { .threads_per_block = 256, .items_per_thread_no_input = 2"
+             ", .min_items_per_thread = 1, .max_items_per_thread = 32"
+             ", .prefetch_byte_stride = 128, .unroll_factor = 0 }");
+  REQUIRE(to_string(p1_vectorized)
+          == "TransformVectorizedPolicy { .threads_per_block = 256, .items_per_thread = 8, .vec_size = 4 }");
+  REQUIRE(to_string(p1_async_copy)
+          == "TransformAsyncCopyPolicy { .threads_per_block = 256, .min_items_per_thread = 1"
+             ", .max_items_per_thread = 32, .unroll_factor = 1, .store_vec_size = 0 }");
+  REQUIRE(
+    to_string(p1)
+    == "TransformPolicy { .min_bytes_in_flight = 65536"
+       ", .algorithm = TransformAlgorithm::prefetch"
+       ", .prefetch = TransformPrefetchPolicy { .threads_per_block = 256"
+       ", .items_per_thread_no_input = 2, .min_items_per_thread = 1, .max_items_per_thread = 32"
+       ", .prefetch_byte_stride = 128, .unroll_factor = 0 }"
+       ", .vectorized = TransformVectorizedPolicy { .threads_per_block = 256"
+       ", .items_per_thread = 8, .vec_size = 4 }"
+       ", .async_copy = TransformAsyncCopyPolicy { .threads_per_block = 256"
+       ", .min_items_per_thread = 1, .max_items_per_thread = 32, .unroll_factor = 1, .store_vec_size = 0 } }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

@@ -72,9 +72,9 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   }
 }
 
-template <class ParentGroup, cuda::std::size_t N, class Synchronizer>
-__device__ void
-test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by<N>, Synchronizer>& group)
+template <class ParentGroup, class MappingResult, class Synchronizer>
+__device__ void test_queries(const cudax::group<cuda::thread_level, ParentGroup, MappingResult, Synchronizer>& group,
+                             const ParentGroup& parent_group)
 {
   // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
   // reference. Can we find a solution that works without copying the group?
@@ -83,7 +83,7 @@ test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
   using Level = typename Group::level_type;
 
-  const auto count_ref = group.__mapping_result().count();
+  const auto count_ref = group.__mapping_result().unit_count();
   const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
 
   REQUIRE(cuda::gpu_thread.count(group) == count_ref);
@@ -91,17 +91,13 @@ test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by
   REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
   REQUIRE(cuda::gpu_thread.is_part_of(group));
 
-  auto group_count_ref = group.__mapping_result().group_count();
-  auto group_rank_ref  = group.__mapping_result().group_rank();
+  const auto static_group_count_ref = group.__mapping_result().static_group_count();
+  const auto group_count_ref        = group.__mapping_result().group_count();
+  const auto group_rank_ref         = group.__mapping_result().group_rank();
 
-  if constexpr (!cuda::std::is_same_v<Level, cuda::grid_level>)
-  {
-    group_count_ref *= Level{}.count(cuda::grid, group.hierarchy());
-    group_rank_ref += group.__mapping_result().group_count() * Level{}.rank(cuda::grid, group.hierarchy());
-  }
-
-  REQUIRE(group.count(cuda::grid) == group_count_ref);
-  REQUIRE(group.rank(cuda::grid) == group_rank_ref);
+  REQUIRE(group.static_count(parent_group) == static_group_count_ref);
+  REQUIRE(group.count(parent_group) == group_count_ref);
+  REQUIRE(group.rank(parent_group) == group_rank_ref);
 }
 
 template <cuda::std::size_t N, class Unit, class Level, class Config>
@@ -118,11 +114,8 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
-    static_assert(
-      cuda::std::is_same_v<cudax::group<Unit, decltype(parent_group), decltype(mapping), decltype(synchronizer)>,
-                           decltype(group)>);
     test_common_properties<Unit, Level>(config.hierarchy(), group);
-    test_queries(group);
+    test_queries(group, parent_group);
     group.sync();
   }
   {
@@ -132,11 +125,8 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
-    static_assert(
-      cuda::std::is_same_v<cudax::group<Unit, decltype(parent_group), decltype(mapping), decltype(synchronizer)>,
-                           decltype(group)>);
     test_common_properties<Unit, Level>(config.hierarchy(), group);
-    test_queries(group);
+    test_queries(group, parent_group);
     group.sync();
   }
 }

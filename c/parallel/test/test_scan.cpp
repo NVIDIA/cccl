@@ -399,7 +399,7 @@ C2H_TEST("Scan works with custom types", "[scan]")
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op              = make_operation("op",
-                                  R"(struct pair { short a; size_t b; };
+                                               R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
   pair* rhs = static_cast<pair*>(rhs_ptr);
@@ -439,7 +439,7 @@ C2H_TEST("Scan works with custom types with well-known operations", "[scan][well
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op_state        = make_operation("op",
-                                        R"(struct pair { short a; size_t b; };
+                                               R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
   pair* lhs = static_cast<pair*>(lhs_ptr);
   pair* rhs = static_cast<pair*>(rhs_ptr);
@@ -811,7 +811,7 @@ C2H_TEST("Scan works with no init value", "[scan]")
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("Scan build result has AoT metadata populated", "[scan][aot]")
+C2H_TEST("Scan build result has serialization metadata populated", "[scan][serialization]")
 {
   using T = int32_t;
 
@@ -854,7 +854,7 @@ C2H_TEST("Scan build result has AoT metadata populated", "[scan][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
 
-C2H_TEST("Scan compile/load round-trip", "[scan][aot]")
+C2H_TEST("Scan compile/load round-trip", "[scan][serialization]")
 {
   using T = int32_t;
 
@@ -919,7 +919,7 @@ C2H_TEST("Scan compile/load round-trip", "[scan][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
 
-C2H_TEST("Scan link_ltoir round-trip", "[scan][aot]")
+C2H_TEST("Scan link_ltoir round-trip", "[scan][serialization]")
 {
   using T = int32_t;
 

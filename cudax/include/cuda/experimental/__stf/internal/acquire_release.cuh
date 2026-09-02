@@ -26,7 +26,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+
+#include <algorithm>
+#include <vector>
 
 namespace cuda::experimental::stf
 {
@@ -114,10 +119,42 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // Since logical data are ordered by addresses, "mergeable" deps will be
     // stored contiguously, so we can stop as soon as there is another
     // dependency
+    const auto group_first = it;
     for (auto next = ::std::next(it); next != task_deps.end() && *it == *next; ++it, ++next)
     {
       mode |= next->get_access_mode();
       it->skipped = true;
+    }
+
+    // Merging picks one surviving dependency per logical data, so a
+    // replicated dep in the group only takes effect if it survives, and the
+    // MERGED mode governs the fetch. A group that mixes a replicated place
+    // with a write-capable mode (one replica would be fetched writable,
+    // leaving the others stale) or with a different place (the surviving
+    // place would silently win) is rejected outright.
+    for (auto g = group_first;; ++g)
+    {
+      const data_place& gdp = g->get_dplace();
+      if (!gdp.is_invalid() && gdp.is_replicated())
+      {
+        if (mode != access_mode::read)
+        {
+          _CCCL_THROW(
+            ::std::invalid_argument,
+            "replicated data places only support read access (another dependency on the same logical data upgrades "
+            "the merged access mode)");
+        }
+        if (!(it->get_dplace() == gdp))
+        {
+          _CCCL_THROW(::std::invalid_argument,
+                      "conflicting data places for merged dependencies on the same logical data (one "
+                      "of them is replicated)");
+        }
+      }
+      if (g == it)
+      {
+        break;
+      }
     }
 
     /* Get of this dependency which is not skipped, and save it in a vector. We also save the equivalent merged
@@ -131,7 +168,48 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // The affine data place is set at the task level, it can be inherited
     // from the execution place, or be some composite data place set up in
     // a parallel_for construct, for example
-    const data_place& dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
+    data_place dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
+
+    // A deferred replicated place binds to THIS task's execution place: one
+    // replica per grid member, or plain affine on a scalar place. The
+    // materialized place is written back into the dep so release and grid
+    // dispatch see a concrete place.
+    if (dplace.is_replicated() && ::cuda::experimental::places::replicated_is_deferred(dplace))
+    {
+      dplace = (eplace.size() > 1) ? data_place::replicated(eplace) : eplace.affine_data_place();
+      it->set_dplace(dplace);
+    }
+
+    if (dplace.instance_count() > 1)
+    {
+      // A dependency at a replicated place resolves to one ORDINARY data
+      // instance per member place, each allocated and made valid by the
+      // unchanged per-instance path below. The dep records the first
+      // member's instance; grid dispatch resolves the other shards per
+      // sub-task. Read-only and place-consistency across merged deps were
+      // validated by the group check above.
+      _CCCL_ASSERT(mode == access_mode::read, "replicated fetches are read-only");
+      // Members with equal data places resolve to the same instance
+      // (find_instance_id is keyed by place): fetch each distinct instance
+      // exactly once.
+      ::std::vector<instance_id_t> processed;
+      processed.reserve(dplace.instance_count());
+      for (size_t r = 0; r < dplace.instance_count(); r++)
+      {
+        const data_place member = dplace.member(r);
+        const instance_id_t im  = d.find_instance_id(member);
+        if (r == 0)
+        {
+          it->set_instance_id(im);
+        }
+        if (::std::find(processed.begin(), processed.end(), im) == processed.end())
+        {
+          processed.push_back(im);
+          reserved::fetch_data(ctx, d, im, *this, mode, eplace, member, result);
+        }
+      }
+      continue;
+    }
 
     const instance_id_t instance_id =
       mode == access_mode::relaxed ? d.find_unused_instance_id(dplace) : d.find_instance_id(dplace);
@@ -180,7 +258,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     result.merge(ctx.get_start_events());
   }
 
-  // @@@@ TODO@@@@ explain this algorithm, and why we need to go in reversed
+  // @@@@ TODO@@@@ explain this algorithm, and why we need to go in reversed
   // order because we skipped equivalent dependencies that were stored
   // contiguously after sorting.
   instance_id_t previous_instance_id = instance_id_t::invalid;
@@ -193,7 +271,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     else
     {
       assert(previous_instance_id != instance_id_t::invalid);
-      // @@@@ TODO @@@@ make a unit test to make sure we have the same instance id for different acquired_data
+      // @@@@ TODO @@@@ make a unit test to make sure we have the same instance id for different acquired_data
       // ? fprintf(stderr, "SETTING SKIPPED INSTANCE ID ... %d\n", previous_instance_id);
       it->set_instance_id(previous_instance_id);
     }
@@ -285,6 +363,24 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
     {
       // If we have a read-only task, we only need to make sure that write accesses waits for this task
       data_instance.add_write_prereq(ctx, done_prereqs);
+
+      // A dep at a replicated place read one instance PER member place:
+      // protect the others the same way (writes elsewhere must wait)
+      const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
+      if (rel_dplace.instance_count() > 1)
+      {
+        ::std::vector<instance_id_t> protected_ids{e.get_instance_id()};
+        protected_ids.reserve(rel_dplace.instance_count());
+        for (size_t r = 1; r < rel_dplace.instance_count(); r++)
+        {
+          const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
+          if (::std::find(protected_ids.begin(), protected_ids.end(), im) == protected_ids.end())
+          {
+            protected_ids.push_back(im);
+            d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
+          }
+        }
+      }
     }
     else
     {

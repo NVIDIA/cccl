@@ -15,6 +15,7 @@
 #include <thrust/system/cuda/config.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__cccl/assert.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -28,16 +29,29 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   Size const shared_mem;
   bool const dependent_launch;
   cudaStream_t const stream;
+  dim3 const cluster_dim;
 
   /// @param dependent_launch Launches the kernel using programmatic dependent launch if available.
+  /// @param cluster_dim Launches the kernel with the given thread-block cluster dimension. A zero `x` means no cluster.
   THRUST_RUNTIME_FUNCTION triple_chevron(
-    dim3 grid_, dim3 block_, Size shared_mem_ = 0, cudaStream_t stream_ = nullptr, bool dependent_launch = false)
+    dim3 grid_,
+    dim3 block_,
+    Size shared_mem_      = 0,
+    cudaStream_t stream_  = nullptr,
+    bool dependent_launch = false,
+    dim3 cluster_dim_     = dim3{0, 0, 0})
       : grid(grid_)
       , block(block_)
       , shared_mem(shared_mem_)
       , dependent_launch(dependent_launch)
       , stream(stream_)
-  {}
+      , cluster_dim(cluster_dim_)
+  {
+    // A mix such as {1, 0, 0} is not launchable and surfaces a bug in the code that built `cluster_dim`.
+    _CCCL_ASSERT((cluster_dim.x == 0u && cluster_dim.y == 0u && cluster_dim.z == 0u)
+                   || (cluster_dim.x != 0u && cluster_dim.y != 0u && cluster_dim.z != 0u),
+                 "cluster_dim must be all-zero (no cluster) or nonzero in every axis");
+  }
 
   // cudaLaunchKernelEx requires C++11, but unfortunately <cuda_runtime.h> checks this using the __cplusplus macro,
   // which is reported wrongly for MSVC. CTK 12.3 fixed this by additionally detecting _MSV_VER. As a workaround, we
@@ -59,12 +73,46 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
-#  if _CCCL_HAS_PDL()
-    if (dependent_launch)
+#  if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
+    const bool has_cluster = cluster_dim.x != 0u;
+#  else // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
+    // Dynamic cluster launch is disabled (_CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH): any requested cluster fails rather
+    // than silently launching without one. This includes a single-block cluster ({1, 1, 1}), whose presence still
+    // affects launch/occupancy, so demoting it to a plain launch is not a safe silent default.
+    if (cluster_dim.x != 0u)
     {
-      cudaLaunchAttribute attribute[1];
-      attribute[0].id                                         = cudaLaunchAttributeProgrammaticStreamSerialization;
-      attribute[0].val.programmaticStreamSerializationAllowed = 1;
+      return cudaErrorNotSupported;
+    }
+    const bool has_cluster = false;
+#  endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
+#  if _CCCL_HAS_PDL()
+    const bool needs_launch_ex = dependent_launch || has_cluster;
+#  else // _CCCL_HAS_PDL()
+    const bool needs_launch_ex = has_cluster;
+#  endif // _CCCL_HAS_PDL()
+    if (needs_launch_ex)
+    {
+      // Up to two attributes: programmatic dependent launch and/or the cluster dimension.
+      cudaLaunchAttribute attribute[2];
+      int num_attrs = 0;
+#  if _CCCL_HAS_PDL()
+      if (dependent_launch)
+      {
+        attribute[num_attrs].id = cudaLaunchAttributeProgrammaticStreamSerialization;
+        attribute[num_attrs].val.programmaticStreamSerializationAllowed = 1;
+        ++num_attrs;
+      }
+#  endif // _CCCL_HAS_PDL()
+#  if _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
+      if (has_cluster)
+      {
+        attribute[num_attrs].id               = cudaLaunchAttributeClusterDimension;
+        attribute[num_attrs].val.clusterDim.x = cluster_dim.x;
+        attribute[num_attrs].val.clusterDim.y = cluster_dim.y;
+        attribute[num_attrs].val.clusterDim.z = cluster_dim.z;
+        ++num_attrs;
+      }
+#  endif // _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH()
 
       cudaLaunchConfig_t config{};
       config.gridDim          = grid;
@@ -72,15 +120,14 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
       config.dynamicSmemBytes = shared_mem;
       config.stream           = stream;
       config.attrs            = attribute;
-      config.numAttrs         = 1;
-#    if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
+      config.numAttrs         = num_attrs;
+#  if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
       cudaLaunchKernelEx_MSVC_workaround(&config, k, args...);
-#    else
+#  else
       cudaLaunchKernelEx(&config, k, args...);
-#    endif
+#  endif
     }
     else
-#  endif // _CCCL_HAS_PDL()
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
     }
@@ -130,6 +177,12 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_DEVICE doit_device(K k, Args const&... args) const
   {
+    // Device-side launch (cudaLaunchDevice) cannot honor a thread-block cluster; a requested one would otherwise be
+    // silently dropped.
+    if (cluster_dim.x != 0u)
+    {
+      return cudaErrorNotSupported;
+    }
     const size_t size  = argument_pack_size(0, args...);
     void* param_buffer = cudaGetParameterBuffer(64, size);
     fill_arguments((char*) param_buffer, 0, args...);

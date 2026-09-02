@@ -36,10 +36,8 @@ struct policy_selector
                   "Large segment size must be larger than small and medium segment sizes");
     static_assert(medium_segment_size > small_segment_size, "Medium segment size must be larger than small one");
 
-    using namespace cub::detail::segmented_sort;
-
-    return segmented_sort_policy{
-      segmented_radix_sort_policy{
+    return cub::SegmentedSortPolicy{
+      cub::SegmentedSortRadixSortPolicy{
         TUNE_THREADS,
         TUNE_L_ITEMS,
         (TUNE_TRANSPOSE == 0) ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
@@ -50,23 +48,23 @@ struct policy_selector
         cub::BLOCK_SCAN_WARP_SCANS,
         TUNE_RADIX_BITS,
       },
-      sub_warp_merge_sort_policy{
-        TUNE_THREADS,
-        tune_sw_threads,
-        TUNE_S_ITEMS,
-        (TUNE_S_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
-        (TUNE_S_LOAD == 0)   ? cub::LOAD_DEFAULT
-        : (TUNE_S_LOAD == 1) ? cub::LOAD_LDG
-                             : cub::LOAD_CA,
-        cub::WARP_STORE_DIRECT,
-      },
-      sub_warp_merge_sort_policy{
+      cub::SegmentedSortSubWarpMergeSortPolicy{
         TUNE_THREADS,
         tune_mw_threads,
         TUNE_M_ITEMS,
         (TUNE_M_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
         (TUNE_M_LOAD == 0)   ? cub::LOAD_DEFAULT
         : (TUNE_M_LOAD == 1) ? cub::LOAD_LDG
+                             : cub::LOAD_CA,
+        cub::WARP_STORE_DIRECT,
+      },
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        TUNE_THREADS,
+        tune_sw_threads,
+        TUNE_S_ITEMS,
+        (TUNE_S_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
+        (TUNE_S_LOAD == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_S_LOAD == 1) ? cub::LOAD_LDG
                              : cub::LOAD_CA,
         cub::WARP_STORE_DIRECT,
       },

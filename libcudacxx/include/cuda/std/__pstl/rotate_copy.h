@@ -62,12 +62,7 @@ _CCCL_HOST_API _OutputIterator rotate_copy(
     {
       return __result;
     }
-    else if (__first == __middle)
-    {
-      return ::cuda::std::copy(
-        __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result));
-    }
-    else if (__middle == __last)
+    else if (__first == __middle || __middle == __last)
     {
       return ::cuda::std::copy(
         __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result));

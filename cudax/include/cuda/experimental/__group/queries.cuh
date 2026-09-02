@@ -39,7 +39,7 @@ template <class _Unit, class _Group>
   using _GroupUnit          = typename _Group::unit_type;
   using _GroupMappingResult = typename _Group::__mapping_result_type;
 
-  constexpr auto __group_unit_count = _GroupMappingResult::static_count();
+  constexpr auto __group_unit_count = _GroupMappingResult::static_unit_count();
 
   if constexpr (::cuda::std::is_same_v<_Unit, _GroupUnit>)
   {
@@ -78,7 +78,7 @@ template <class _Tp, class _Unit, class _Group>
   // }
   // else
   {
-    const auto __group_unit_count = static_cast<_Tp>(__group.__mapping_result().count());
+    const auto __group_unit_count = static_cast<_Tp>(__group.__mapping_result().unit_count());
     if constexpr (::cuda::std::is_same_v<_Unit, _GroupUnit>)
     {
       return __group_unit_count;
@@ -96,7 +96,7 @@ template <class _Tp, class _Unit, class _Group>
 {
   using _GroupUnit = typename _Group::unit_type;
 
-  const auto __group_unit_rank = static_cast<_Tp>(__group.__mapping_result().rank());
+  const auto __group_unit_rank = static_cast<_Tp>(__group.__mapping_result().unit_rank());
   if constexpr (::cuda::std::is_same_v<_Unit, _GroupUnit>)
   {
     return __group_unit_rank;

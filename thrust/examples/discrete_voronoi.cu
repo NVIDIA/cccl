@@ -178,26 +178,26 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
     thrust::make_zip_iterator(
       in.begin(),
       in.begin() + k,
-      in.begin() + m * k,
+      in.begin() + m * k, // NOLINT(bugprone-misplaced-widening-cast)
       in.begin() - k,
-      in.begin() - m * k,
-      in.begin() + k + m * k,
-      in.begin() + k - m * k,
-      in.begin() - k + m * k,
-      in.begin() - k - m * k,
+      in.begin() - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
       thrust::counting_iterator<int>(0)),
     thrust::make_zip_iterator(
       in.begin(),
       in.begin() + k,
-      in.begin() + m * k,
+      in.begin() + m * k, // NOLINT(bugprone-misplaced-widening-cast)
       in.begin() - k,
-      in.begin() - m * k,
-      in.begin() + k + m * k,
-      in.begin() + k - m * k,
-      in.begin() - k + m * k,
-      in.begin() - k - m * k,
+      in.begin() - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() + k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k + m * k, // NOLINT(bugprone-misplaced-widening-cast)
+      in.begin() - k - m * k, // NOLINT(bugprone-misplaced-widening-cast)
       thrust::counting_iterator<int>(0))
-      + n * m,
+      + n * m, // NOLINT(bugprone-misplaced-widening-cast)
     out.begin(),
     voronoi_site_selector(m, n, static_cast<int>(k)));
 }

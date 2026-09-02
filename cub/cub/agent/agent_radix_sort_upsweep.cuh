@@ -76,6 +76,7 @@ struct agent_radix_sort_upsweep_policy : ScalingType
 };
 } // namespace detail
 
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,

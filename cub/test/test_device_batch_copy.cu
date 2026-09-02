@@ -21,9 +21,12 @@
 #include <utility>
 #include <vector>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
+
+CUB_TEST_MEMORY_CLASS(CUB_LARGE);
 
 /**
  * @brief Host-side random data generation

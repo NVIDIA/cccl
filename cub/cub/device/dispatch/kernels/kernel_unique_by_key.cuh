@@ -245,15 +245,15 @@ __launch_bounds__(
     EqualityOpT,
     OffsetT>::policy.threads_per_block)
   _CCCL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
-    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
-    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
+    const KeyInputIteratorT d_keys_in,
+    const ValueInputIteratorT d_values_in,
+    const KeyOutputIteratorT d_keys_out,
+    const ValueOutputIteratorT d_values_out,
+    const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_state,
     EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_tiles,
+    const OffsetT num_items,
+    const int num_tiles,
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
@@ -271,8 +271,8 @@ __launch_bounds__(
   __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
 
   // Get temporary storage
-  typename agent_unique_by_key_t::TempStorage& temp_storage =
-    vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem, (blockIdx.x * gridDim.y) + blockIdx.y);
+  typename agent_unique_by_key_t::TempStorage& temp_storage = vsmem_helper_t::get_temp_storage(
+    static_temp_storage, vsmem, (blockIdx.x * gridDim.y) + blockIdx.y); // NOLINT(bugprone-misplaced-widening-cast)
 
   // Process tiles
   agent_unique_by_key_t(temp_storage, d_keys_in, d_values_in, d_keys_out, d_values_out, equality_op, num_items)

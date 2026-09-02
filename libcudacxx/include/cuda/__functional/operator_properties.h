@@ -463,18 +463,7 @@ template <class _Op, class _Tp>
       return __no_identity_element{};
     }
   }
-  else if constexpr (__is_cuda_std_bit_or_v<_Op>)
-  {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
-    {
-      return _Up{};
-    }
-    else
-    {
-      return __no_identity_element{};
-    }
-  }
-  else if constexpr (__is_cuda_std_bit_xor_v<_Op>)
+  else if constexpr (__is_cuda_std_bit_or_v<_Op> || __is_cuda_std_bit_xor_v<_Op>)
   {
     if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
@@ -564,20 +553,10 @@ template <class _Op, class _Tp>
 [[nodiscard]] _CCCL_API constexpr auto absorbing_element() noexcept
 {
   using _Up = ::cuda::std::remove_cv_t<_Tp>;
-  if constexpr (__is_cuda_std_multiplies_v<_Op>)
+  if constexpr (__is_cuda_std_multiplies_v<_Op> || __is_cuda_std_bit_and_v<_Op>)
   {
-    // no absorbing element for floating-point due to NaN, infinity, and -1.0 * +0.0 = -0.0 (!= +0.0)
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
-    {
-      return _Up{};
-    }
-    else
-    {
-      return __no_absorbing_element{};
-    }
-  }
-  else if constexpr (__is_cuda_std_bit_and_v<_Op>)
-  {
+    // Multiplication has no absorbing element for floating-point due to NaN, infinity,
+    // and -1.0 * +0.0 = -0.0 (!= +0.0).
     if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};

@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // <algorithm>
 
 // template<InputIterator Iter1, ForwardIterator Iter2>

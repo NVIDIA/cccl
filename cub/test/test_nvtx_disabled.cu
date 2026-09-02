@@ -6,6 +6,10 @@
 #include <cuda/iterator>
 #include <cuda/std/functional>
 
+#include "cub_non_catch2_test_memory.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
+
 #if defined(CCCL_DISABLE_NVTX) && defined(NVTX_VERSION)
 #  error "NVTX was included somewhere even though it is turned off via CCCL_DISABLE_NVTX"
 #endif // defined(CCCL_DISABLE_NVTX) && defined(NVTX_VERSION)

@@ -39,13 +39,9 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-/**
- * Parameterizable tuning policy type for AgentScanByKey
- *
- * @tparam DelayConstructorT
- *   Implementation detail, do not specify directly, requirements on the
- *   content of this type are subject to breaking change.
- */
+namespace detail
+{
+// TODO(bgruber): remove this when C++20 is the minimum, since then we can pass policy values as NTTP
 template <int ThreadsPerBlock,
           int ItemsPerThread                 = 1,
           BlockLoadAlgorithm LoadAlgorithm   = BLOCK_LOAD_DIRECT,
@@ -53,7 +49,7 @@ template <int ThreadsPerBlock,
           BlockScanAlgorithm ScanAlgorithm   = BLOCK_SCAN_WARP_SCANS,
           BlockStoreAlgorithm StoreAlgorithm = BLOCK_STORE_DIRECT,
           typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentScanByKeyPolicy
+struct agent_scan_by_key_policy
 {
   static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
@@ -68,6 +64,25 @@ struct AgentScanByKeyPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
+} // namespace detail
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread                 = 1,
+          BlockLoadAlgorithm LoadAlgorithm   = BLOCK_LOAD_DIRECT,
+          CacheLoadModifier LoadModifier     = LOAD_DEFAULT,
+          BlockScanAlgorithm ScanAlgorithm   = BLOCK_SCAN_WARP_SCANS,
+          BlockStoreAlgorithm StoreAlgorithm = BLOCK_STORE_DIRECT,
+          typename DelayConstructorT         = detail::fixed_delay_constructor_t<350, 450>>
+using AgentScanByKeyPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScanByKey") = detail::agent_scan_by_key_policy<
+    ThreadsPerBlock,
+    ItemsPerThread,
+    LoadAlgorithm,
+    LoadModifier,
+    ScanAlgorithm,
+    StoreAlgorithm,
+    DelayConstructorT>;
 
 /******************************************************************************
  * Thread block abstractions

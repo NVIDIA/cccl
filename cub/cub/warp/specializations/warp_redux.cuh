@@ -121,8 +121,8 @@ _CUB_REDUX_FLOAT_OP(max)
 #  undef _CUB_REDUX_FLOAT_OP
 
 template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
-warp_redux_sm100af(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
+[[nodiscard]] _CCCL_DEVICE_API
+_CCCL_FORCEINLINE T warp_redux_sm100af(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
   static_assert(is_warp_redux_op_supported_sm100af<ReductionOp, T>, "Reduction operator not supported");
   _CCCL_ASSERT(mask != 0, "Mask must not be 0");
@@ -151,7 +151,7 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
 {
   static_assert(is_warp_redux_op_supported<ReductionOp, T>, "Reduction operator not supported");
   if constexpr (is_warp_redux_op_supported_sm80<ReductionOp, T>)
-  {
+  { // NOLINT(bugprone-branch-clone)
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_sm80(input, mask, reduction_op);))
   }
   else if constexpr (is_warp_redux_op_supported_sm100af<ReductionOp, T>)

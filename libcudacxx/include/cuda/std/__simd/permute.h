@@ -64,7 +64,7 @@ inline constexpr bool __idxmap_result_is_integral_v =
     : __idxmap_nargs_integral_v<remove_cvref_t<_IdxMap>, void, __simd_size_type>;
 
 //----------------------------------------------------------------------------------------------------------------------
-// gen-fn: idxmap(i, V​::​size()) if that expression is well-formed, and idxmap(i) otherwise.
+// gen-fn: idxmap(i, V::size()) if that expression is well-formed, and idxmap(i) otherwise.
 
 template <typename _IdxMap, __simd_size_type _Idx, __simd_size_type _Size>
 inline constexpr bool __idxmap_invocable_two_args_v =
@@ -203,7 +203,7 @@ permute(const basic_mask<_Bytes, _Abi>& __v, const basic_vec<_Up, _UAbi>& __indi
 // [simd.permute.mask]
 
 // A data-parallel object where the i-th element is initialized to the result of select-value(i) for all i in the range
-// [0, V​::​size()).
+// [0, V::size()).
 
 template <typename _Vp, typename _Mp>
 struct __compress_generator
@@ -242,7 +242,7 @@ __make_compress_generator(const _Vp& __v, const _Mp& __sel, typename _Vp::value_
 }
 
 // A data-parallel object where the i-th element is initialized to the result of select-value(i) for all i in the range
-// [0, V​::​size())
+// [0, V::size())
 
 template <typename _Vp, typename _Mp>
 struct __expand_generator

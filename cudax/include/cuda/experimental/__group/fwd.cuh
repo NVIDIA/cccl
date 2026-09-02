@@ -30,7 +30,10 @@
 #endif // ^^^ no cooperative groups ^^^
 
 #include <cuda/__fwd/hierarchy.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/extents.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,6 +46,12 @@ using __implicit_hierarchy_t =
             hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
+
+using __implicit_hierarchy_1d_t =
+  hierarchy<thread_level,
+            hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
+            hierarchy_level_desc<block_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>>;
 
 // groups
 
@@ -64,15 +73,21 @@ class this_cluster;
 template <class _Hierarchy>
 class this_grid;
 
-template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
 class group;
+
+template <class _Unit, class _ParentGroup, class _MappingResult>
+class virtual_group;
+
+template <class _Unit, class _Group>
+class group_view;
 
 // mappings
 
 template <class _Fn>
 class binary_partition;
 
-template <::cuda::std::size_t _Count = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
+template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
 class group_by;
 
 template <class _Data, bool _IsExahustive>
@@ -80,12 +95,17 @@ class group_as;
 
 class identity_mapping;
 
-// synchronizers
+template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent>
+class take;
 
-class lane_synchronizer;
+// synchronizers
 
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
+
+class lane_synchronizer;
+
+class level_synchronizer;
 
 // traits
 
@@ -104,8 +124,8 @@ inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
 template <class _Tp>
 inline constexpr bool __is_group_mapping_v = false;
-template <::cuda::std::size_t _Count, bool _IsExhaustive>
-inline constexpr bool __is_group_mapping_v<group_by<_Count, _IsExhaustive>> = true;
+template <::cuda::std::size_t _UnitCount, bool _IsExhaustive>
+inline constexpr bool __is_group_mapping_v<group_by<_UnitCount, _IsExhaustive>> = true;
 template <class _Data, bool _IsExhaustive>
 inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsExhaustive>> = true;
 
@@ -113,7 +133,7 @@ inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsExhaustive>> = tru
 
 struct non_exhaustive_t;
 
-inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
+inline constexpr ::cuda::std::uint32_t __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

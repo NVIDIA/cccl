@@ -8,8 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile
+// error: assertion failed
 
 // <memory>
 
@@ -24,7 +27,7 @@
 #include "unique_ptr_test_helper.h"
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT               = typename cuda::std::conditional<IsArray, A[], A>::type;
   const int expect_alive = IsArray ? 3 : 1;
@@ -70,7 +73,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

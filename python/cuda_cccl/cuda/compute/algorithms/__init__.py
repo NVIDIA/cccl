@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from .._serialization import deserialize as deserialize
+from .._serialization import serialize as serialize
 from ._binary_search import lower_bound as lower_bound
 from ._binary_search import make_lower_bound as make_lower_bound
 from ._binary_search import make_upper_bound as make_upper_bound
@@ -37,6 +39,8 @@ from ._unique_by_key import make_unique_by_key as make_unique_by_key
 from ._unique_by_key import unique_by_key as unique_by_key
 
 __all__ = [
+    "serialize",
+    "deserialize",
     "reduce_into",
     "make_reduce_into",
     "lower_bound",

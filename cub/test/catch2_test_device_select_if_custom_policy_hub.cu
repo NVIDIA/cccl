@@ -13,14 +13,14 @@
 
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
 template <class InputT>
 struct my_policy_hub
 {
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int nominal_4b_items_per_thread = 10;
     static constexpr int items_per_thread =
@@ -43,7 +43,7 @@ struct is_even_t
   }
 };
 
-C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
+CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]", CUB_SMALL)
 {
   using value_t  = int;
   using offset_t = int;

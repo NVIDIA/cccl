@@ -224,7 +224,7 @@ void free(my_memory_system& system, Pointer)
 
 void TestFreeDispatchExplicit()
 {
-  thrust::pointer<my_memory_system, void> ptr;
+  thrust::pointer<my_memory_system, void> ptr{};
 
   my_memory_system sys(0);
   thrust::free(sys, ptr);

@@ -63,7 +63,7 @@ inline int __stronger_order_msvc(int __a, int __b)
   return __xform[__a < __b ? __a : __b];
 }
 
-static inline void __atomic_signal_fence(int __memorder)
+inline void __atomic_signal_fence(int __memorder)
 {
   if (__memorder != __ATOMIC_RELAXED)
   {
@@ -71,7 +71,7 @@ static inline void __atomic_signal_fence(int __memorder)
   }
 }
 
-static inline void __atomic_thread_fence(int __memorder)
+inline void __atomic_thread_fence(int __memorder)
 {
   if (__memorder != __ATOMIC_RELAXED)
   {

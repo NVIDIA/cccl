@@ -149,7 +149,8 @@ PREDEFINED             = __device__= \
                         "CUB_RDC_ENABLED" \
                         "CUB_NAMESPACE_BEGIN=namespace cub {" \
                         "CUB_NAMESPACE_END=}" \
-                        "CUB_RUNTIME_FUNCTION="
+                        "CUB_RUNTIME_FUNCTION=" \
+                        "_CCCL_HOSTED()=1"
 
 # Images and examples
 IMAGE_PATH             = ../img

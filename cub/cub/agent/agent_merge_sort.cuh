@@ -48,7 +48,7 @@ struct AgentBlockSort
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT>;
+  using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
 
   using KeysLoadIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyInputIteratorT>;
   using ItemsLoadIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueInputIteratorT>;
@@ -169,7 +169,9 @@ struct AgentBlockSort
 
     if constexpr (IS_LAST_TILE)
     {
-      BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
+      // The no-sentinel overload: only the sorted valid prefix is needed, and no oob_default
+      // ordered after all valid keys is available for arbitrary key types and comparators.
+      BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op, num_remaining);
     }
     else
     {
@@ -555,7 +557,7 @@ struct AgentMerge
     //
     int indices[ITEMS_PER_THREAD];
 
-    SerialMerge(
+    detail::serial_merge<policy.unroll>(
       &storage.keys_shared[0],
       keys1_beg_local,
       keys2_beg_local + num_keys1,

@@ -27,6 +27,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/limits>
+#include <cuda/std/optional>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -36,8 +40,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
@@ -107,7 +114,7 @@ struct per_vertex_info
   //! text associated to the vertex
   ::std::string label;
   //! measured duration of the vertex
-  ::std::optional<float> timing;
+  ::cuda::std::optional<float> timing;
   //! is that a task, fence or prereq ?
   vertex_type type;
 
@@ -142,8 +149,8 @@ public:
   dot_section(::std::string sym)
       : symbol(mv(sym))
   {
-    static_assert(::std::is_move_constructible_v<dot_section>, "dot_section must be move constructible");
-    static_assert(::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
+    static_assert(::cuda::std::is_move_constructible_v<dot_section>, "dot_section must be move constructible");
+    static_assert(::cuda::std::is_move_assignable_v<dot_section>, "dot_section must be move assignable");
   }
 
   //! RAII guard class for managing DOT section lifecycle
@@ -165,7 +172,7 @@ public:
     // Move constructor: transfer ownership and disable the moved-from guard.
     guard(guard&& other) noexcept
         : pc(mv(other.pc))
-        , active(::std::exchange(other.active, false))
+        , active(::cuda::std::exchange(other.active, false))
     {}
 
     // Move assignment, disable the moved-from guard
@@ -181,7 +188,7 @@ public:
         }
         // Transfer ownership
         pc     = mv(other.pc);
-        active = ::std::exchange(other.active, false);
+        active = ::cuda::std::exchange(other.active, false);
       }
       return *this;
     }
@@ -263,7 +270,7 @@ public:
   ::std::string symbol;
 
 private:
-  int depth = ::std::numeric_limits<int>::min();
+  int depth = ::cuda::std::numeric_limits<int>::min();
 
   // An identifier for that section. This is movable, but non
   // copyable, but we manipulate section by the means of shared_ptr.
@@ -541,18 +548,32 @@ public:
     }
   }
 
+  //! @brief Records task timing metadata without disrupting task teardown on failure.
+  //!
+  //! @param[in] t The task whose timing is recorded.
+  //! @param[in] time_ms The task duration in milliseconds.
+  //! @param[in] device The device that executed the task, or `-1` if unspecified.
+  //! @param[in] loc The caller location reported if recording fails.
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
+  void add_vertex_timing(const task_type& t,
+                         float time_ms,
+                         [[maybe_unused]] int device            = -1,
+                         const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
   {
-    ::std::scoped_lock guard(mtx);
-
-    if (!tracing_enabled)
+    // Timing metadata is diagnostic only; allocation or locking failures must
+    // not interfere with task teardown.
+    ON_THROW(notify, loc)
     {
-      return;
-    }
+      ::std::scoped_lock guard(mtx);
 
-    // Save timing information for this task
-    metadata[t.get_unique_id()].timing = time_ms;
+      if (!tracing_enabled)
+      {
+        return;
+      }
+
+      // Save timing information for this task
+      metadata[t.get_unique_id()].timing = time_ms;
+    };
   }
 
   // Take a reference to an (unused) `::std::scoped_lock<::std::mutex>` to make sure someone did take a lock.
@@ -560,7 +581,8 @@ public:
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
     {
-      const int dev = cuda_try<cudaGetDevice>();
+      int dev = 0;
+      cuda_safe_call(cudaGetDevice(&dev));
       EXPECT(dev < sizeof(colors) / sizeof(*colors));
       current_color = colors[dev];
     }
@@ -683,8 +705,8 @@ private:
   //! - Proper critical path computation through nested contexts (even empty ones)
   //! - Clean visualization of context boundaries in the DAG
   //! - Correct dependency chaining between parent and child contexts
-  ::std::optional<int> proxy_start_unique_id;
-  ::std::optional<int> proxy_end_unique_id;
+  ::cuda::std::optional<int> proxy_start_unique_id;
+  ::cuda::std::optional<int> proxy_end_unique_id;
 };
 
 class dot : public ::cuda::experimental::meyers_singleton<dot>
@@ -713,7 +735,20 @@ protected:
 
   ~dot()
   {
-    finish();
+    // A trace we failed to write is not worth terminating the program over, which is what
+    // an exception escaping a destructor would do.
+    _CCCL_TRY
+    {
+      finish();
+    }
+    _CCCL_CATCH (const ::std::exception& e)
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s: %s\n", dot_filename.c_str(), e.what());
+    }
+    _CCCL_CATCH_ALL
+    {
+      fprintf(stderr, "Could not write the DOT trace to %s\n", dot_filename.c_str());
+    }
   }
 
 public:
@@ -839,7 +874,7 @@ public:
         statsFile << "#nedges,nvertices,total_work,critical_path\n";
 
         // to display an optional value or NA
-        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
+        auto formatOptional = [](const ::cuda::std::optional<float>& opt) -> ::std::string {
           return opt ? ::std::to_string(*opt) : "NA";
         };
 
@@ -1477,8 +1512,8 @@ private:
   ::std::string dot_filename;
 
   // Stats
-  ::std::optional<float> critical_path; // Tinf
-  ::std::optional<float> total_work; // T1
+  ::cuda::std::optional<float> critical_path; // Tinf
+  ::cuda::std::optional<float> total_work; // T1
   size_t edge_count;
   size_t vertex_count;
 

@@ -22,6 +22,7 @@
 #  include <cub/util_temporary_storage.cuh>
 
 #  include <thrust/detail/alignment.h>
+#  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -81,6 +82,8 @@ THRUST_RUNTIME_FUNCTION cudaError_t unique_by_key_impl(
   std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
   void* allocations[2]            = {nullptr, nullptr};
 
+  thrust::detail::wrapped_function<BinaryPred, bool> wrapped_pred{binary_pred};
+
   // Query temp storage
   cudaError_t status = cub::DeviceSelect::UniqueByKey(
     nullptr,
@@ -91,7 +94,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t unique_by_key_impl(
     values_result,
     static_cast<OffsetT*>(nullptr),
     num_items,
-    binary_pred,
+    wrapped_pred,
     stream);
   cuda_cub::throw_on_error(status, "unique_by_key: failed on 1st step");
 
@@ -118,7 +121,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t unique_by_key_impl(
     values_result,
     d_num_selected_out,
     num_items,
-    binary_pred,
+    wrapped_pred,
     stream);
   cuda_cub::throw_on_error(status, "unique_by_key: failed on 2nd step");
 

@@ -22,11 +22,11 @@ struct any_assign
   any_assign() = default;
 
   template <typename T>
-  _CCCL_HOST_DEVICE any_assign(T)
+  _CCCL_API any_assign(T)
   {}
 
   template <typename T>
-  _CCCL_HOST_DEVICE any_assign& operator=(T)
+  _CCCL_API any_assign& operator=(T)
   {
     return *this;
   }

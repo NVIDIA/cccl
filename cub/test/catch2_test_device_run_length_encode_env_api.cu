@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_length_encode][env]")
+CUB_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_length_encode][env]", CUB_SMALL)
 {
   // example-begin encode-env
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -47,7 +47,7 @@ C2H_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_len
   REQUIRE(num_runs_out == expected_num_runs);
 }
 
-C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "[run_length_encode][env]")
+CUB_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "[run_length_encode][env]", CUB_SMALL)
 {
   // example-begin non-trivial-runs-env
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
@@ -86,18 +86,21 @@ struct RleNonTrivialRunsPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::RleNonTrivialRunsPolicy
   {
-    return {.threads_per_block       = 128,
-            .items_per_thread        = cc > cuda::compute_capability{9, 0} ? 20 : 15,
-            .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-            .load_modifier           = cub::LOAD_DEFAULT,
-            .store_with_time_slicing = false,
-            .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-            .lookback_delay          = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
+    return {.algorithm = cub::RleNonTrivialRunsAlgorithm::lookback,
+            .lookback  = {.threads_per_block       = 128,
+                          .items_per_thread        = cc > cuda::compute_capability{9, 0} ? 20 : 15,
+                          .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                          .load_modifier           = cub::LOAD_DEFAULT,
+                          .store_with_time_slicing = false,
+                          .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+                          .lookback_delay          = {cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}}};
   }
 };
 // example-end non-trivial-runs-policy-selector
 
-C2H_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns env-based API with tuning", "[run_length_encode][env]")
+CUB_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts a custom policy selector",
+         "[run_length_encode][env]",
+         CUB_SMALL)
 {
   // example-begin non-trivial-runs-tuning
   auto input        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};

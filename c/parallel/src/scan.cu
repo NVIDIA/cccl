@@ -33,7 +33,9 @@
 #include <nvrtc.h>
 
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include <cccl/c/scan.h>
+#include <cccl/c/serialization.h>
 #include <kernels/iterators.h>
 #include <kernels/operators.h>
 #include <nvrtc/command_list.h>
@@ -234,11 +236,13 @@ struct scan_kernel_source
     return arg;
   }
 
-  static auto lookahead_make_tile_state_kernel_arg(void* ts)
+  static auto lookahead_make_tile_state_kernel_arg(void* ts, ::cuda::std::uint32_t* atomic_counter = nullptr)
   {
     // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
     cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead,
+                                cub::detail::scan::lookahead_tile_state_arg_t<char>{
+                                  static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts), atomic_counter});
     return arg;
   }
 };
@@ -398,6 +402,21 @@ static_assert(device_scan_policy()(detail::current_tuning_cc()) == {6}, "Host ge
     "-default-device",
     "-DCUB_DISABLE_CDP",
     "-std=c++20"};
+
+  // The scan tuning policy depends on the version of the CUDA compiler evaluating it, so this library and NVRTC can
+  // select different algorithms when their versions differ, tripping the policy-mismatch static_assert in the
+  // generated source (NVBug 6235538). Force the JIT to agree with the host: when the host selected lookback, disable
+  // the warpspeed/lookahead scan for the JIT as well. The other direction cannot diverge as long as this library is
+  // built with a CUDA compiler below 13.4: every NVRTC version able to target the architectures for which the host
+  // then selects lookahead also selects lookahead.
+  static_assert(_CCCL_CUDACC_BELOW(13, 4),
+                "Building cccl.c with CUDA >= 13.4 lets the host select the lookahead scan on sm_120, which an NVRTC "
+                "below 13.4 rejects, and this one-directional forcing cannot fix that. Revisit NVBug 6235538 "
+                "before lifting this assert.");
+  if (active_policy.algorithm == cub::ScanAlgorithm::lookback)
+  {
+    args.push_back("-DCCCL_DISABLE_WARPSPEED_SCAN");
+  }
 
   cccl::detail::extend_args_with_build_config(args, config);
 
@@ -801,5 +820,124 @@ try
 catch (const std::exception& exc)
 {
   printf("\nEXCEPTION in cccl_device_scan_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_serialize(const cccl_device_scan_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0 || build_ptr->runtime_policy == nullptr
+      || build_ptr->runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  *out_buf  = nullptr;
+  *out_size = 0;
+
+  using namespace cccl::serialization;
+  buffer_writer w;
+  write_header(w, CCCL_SERIALIZATION_ALGO_SCAN, build_ptr->payload_kind, build_ptr->cc);
+  write_type_info(w, build_ptr->input_type);
+  write_type_info(w, build_ptr->output_type);
+  write_type_info(w, build_ptr->accumulator_type);
+  w.write_pod<uint8_t>(build_ptr->force_inclusive ? 1 : 0);
+  w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->init_kind));
+  w.write_pod<uint64_t>(build_ptr->description_bytes_per_tile);
+  w.write_pod<uint64_t>(build_ptr->payload_bytes_per_tile);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_cstring(build_ptr->init_kernel_lowered_name);
+  w.write_cstring(build_ptr->scan_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_scan_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_scan_deserialize(cccl_device_scan_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_SCAN);
+
+  const auto in_type     = read_type_info(r);
+  const auto out_type    = read_type_info(r);
+  const auto accum_type  = read_type_info(r);
+  const bool force_inc   = r.read_pod<uint8_t>() != 0;
+  const auto init_kind_v = r.read_pod<uint32_t>();
+  if (init_kind_v > static_cast<uint32_t>(CCCL_NO_INIT))
+  {
+    throw std::runtime_error(std::format("serialization blob: invalid init kind ({})", init_kind_v));
+  }
+  const auto init_kind  = static_cast<cccl_init_kind_t>(init_kind_v);
+  const auto desc_bytes = r.read_pod<uint64_t>();
+  const auto pay_bytes  = r.read_pod<uint64_t>();
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  if (payload_size == 0)
+  {
+    throw std::runtime_error("serialization blob: empty payload");
+  }
+
+  std::unique_ptr<cub::detail::scan::policy_selector, decltype(&std::free)> policy(
+    static_cast<cub::detail::scan::policy_selector*>(std::malloc(sizeof(cub::detail::scan::policy_selector))),
+    std::free);
+  if (!policy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  r.read_into(policy.get(), sizeof(cub::detail::scan::policy_selector));
+
+  std::unique_ptr<char[]> n_init{r.read_cstring_dup()};
+  std::unique_ptr<char[]> n_scan{r.read_cstring_dup()};
+
+  cccl_device_scan_build_result_t result{};
+  result.cc                         = static_cast<int>(h.cc);
+  result.payload_kind               = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.input_type                 = in_type;
+  result.output_type                = out_type;
+  result.accumulator_type           = accum_type;
+  result.force_inclusive            = force_inc;
+  result.init_kind                  = init_kind;
+  result.description_bytes_per_tile = desc_bytes;
+  result.payload_bytes_per_tile     = pay_bytes;
+  result.payload                    = payload_owner.release();
+  result.payload_size               = payload_size;
+  result.runtime_policy             = policy.release();
+  result.runtime_policy_size        = sizeof(cub::detail::scan::policy_selector);
+  result.init_kernel_lowered_name   = n_init.release();
+  result.scan_kernel_lowered_name   = n_scan.release();
+  *build_ptr                        = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_scan_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }

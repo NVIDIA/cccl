@@ -51,7 +51,10 @@ struct ReduceKernel
 
     if constexpr (Broadcasted)
     {
+      //! [broadcasted reduce]
+      // Every thread in the block receives the same reduction result.
       const auto result = cudax::coop::reduce(cudax::broadcasted, block, thread_data, red_op);
+      //! [broadcasted reduce]
 
       d_out[cuda::gpu_thread.rank(block)] = result;
     }

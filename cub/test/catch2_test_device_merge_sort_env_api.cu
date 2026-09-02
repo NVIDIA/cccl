@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::SortPairs env-based API", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin sort-pairs-env
   auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -37,7 +37,7 @@ C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API", "[merge_sort][env]")
   REQUIRE(d_values == expected_values);
 }
 
-C2H_TEST("cub::DeviceMergeSort::SortKeys env-based API", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::SortKeys env-based API", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin sort-keys-env
   auto d_keys = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -56,7 +56,7 @@ C2H_TEST("cub::DeviceMergeSort::SortKeys env-based API", "[merge_sort][env]")
   REQUIRE(d_keys == expected_keys);
 }
 
-C2H_TEST("cub::DeviceMergeSort::StableSortPairs env-based API", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::StableSortPairs env-based API", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin stable-sort-pairs-env
   auto d_keys   = thrust::device_vector<int>{8, 6, 6, 5, 3, 0, 9};
@@ -78,7 +78,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortPairs env-based API", "[merge_sort][en
   REQUIRE(d_values == expected_values);
 }
 
-C2H_TEST("cub::DeviceMergeSort::StableSortKeys env-based API", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::StableSortKeys env-based API", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin stable-sort-keys-env
   auto d_keys = thrust::device_vector<int>{8, 6, 7, 5, 5, 3, 0, 9};
@@ -97,7 +97,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortKeys env-based API", "[merge_sort][env
   REQUIRE(d_keys == expected_keys);
 }
 
-C2H_TEST("cub::DeviceMergeSort::SortPairsCopy env-based API", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::SortPairsCopy env-based API", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin sort-pairs-copy-env
   auto d_keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -131,7 +131,7 @@ C2H_TEST("cub::DeviceMergeSort::SortPairsCopy env-based API", "[merge_sort][env]
   REQUIRE(d_values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceMergeSort::SortKeysCopy env-based API", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::SortKeysCopy env-based API", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin sort-keys-copy-env
   auto d_keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -159,7 +159,7 @@ C2H_TEST("cub::DeviceMergeSort::SortKeysCopy env-based API", "[merge_sort][env]"
   REQUIRE(d_keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin stable-sort-keys-copy-env
   auto d_keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 5, 3, 0, 9};
@@ -187,7 +187,7 @@ C2H_TEST("cub::DeviceMergeSort::StableSortKeysCopy env-based API", "[merge_sort]
   REQUIRE(d_keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with greater comparator", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::SortPairs env-based API with greater comparator", "[merge_sort][env]", CUB_SMALL)
 {
   auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto d_values = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
@@ -223,7 +223,7 @@ struct MergeSortPolicySelector
 };
 // example-end sort-pairs-policy-selector
 
-C2H_TEST("cub::DeviceMergeSort::SortPairs env-based API with tuning", "[merge_sort][env]")
+CUB_TEST("cub::DeviceMergeSort::SortPairs accepts a custom policy selector", "[merge_sort][env]", CUB_SMALL)
 {
   // example-begin sort-pairs-tuning
   auto d_keys   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};

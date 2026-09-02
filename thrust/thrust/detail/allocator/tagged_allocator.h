@@ -81,9 +81,12 @@ public:
     return &x;
   }
 
+  // Workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>` with
+  // `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+  template <class SizeType = size_type>
   size_type max_size() const
   {
-    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
+    return (::cuda::std::numeric_limits<SizeType>::max)() / sizeof(T);
   }
 
   _CCCL_HOST_DEVICE friend bool operator==(const tagged_allocator&, const tagged_allocator&)

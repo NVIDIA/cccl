@@ -14,9 +14,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-segmented-sum-env
   ::cuda::std::int64_t num_segments    = 3;
@@ -43,7 +43,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[seg
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-segmented-scan-env
   ::cuda::std::int64_t num_segments    = 3;
@@ -70,7 +70,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[se
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-segmented-sum-env
   ::cuda::std::int64_t num_segments    = 3;
@@ -97,7 +97,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[seg
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-segmented-scan-env
   ::cuda::std::int64_t num_segments    = 3;
@@ -124,7 +124,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[se
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
   // example-begin inclusive-segmented-scan-init-env
   ::cuda::std::int64_t num_segments    = 3;
@@ -151,7 +151,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", 
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
 {
   // example-begin exclusive-segmented-sum-separate-env
   const auto sentinel               = -1;
@@ -181,7 +183,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) acc
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
 {
   // example-begin exclusive-segmented-scan-separate-env
   const auto sentinel               = -1;
@@ -219,7 +223,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
 {
   // example-begin inclusive-segmented-sum-separate-env
   const auto sentinel               = -1;
@@ -249,7 +255,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) acc
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) accepts stream", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
 {
   // example-begin inclusive-segmented-scan-separate-env
   const auto sentinel               = -1;
@@ -279,8 +287,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) ac
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets) accepts stream",
-         "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
 {
   // example-begin inclusive-segmented-scan-init-separate-env
   const auto sentinel               = -1;
@@ -336,7 +345,9 @@ struct SegmentedScanPolicySelector
 };
 // example-end segmented-scan-policy-selector
 
-C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan env-based API with tuning", "[segmented_scan][env]")
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom policy selector",
+         "[segmented_scan][env]",
+         CUB_SMALL)
 {
   // example-begin segmented-scan-tuning
   ::cuda::std::int64_t num_segments    = 3;

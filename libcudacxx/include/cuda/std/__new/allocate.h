@@ -39,7 +39,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_API constexpr bool __is_overaligned_for_new(size_t __align) noexcept
+_CCCL_HOST_DEVICE_API constexpr bool __is_overaligned_for_new(size_t __align) noexcept
 {
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
   return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
@@ -49,7 +49,7 @@ _CCCL_API constexpr bool __is_overaligned_for_new(size_t __align) noexcept
 }
 
 template <class... _Args>
-_CCCL_API inline void* __cccl_operator_new(_Args... __args)
+_CCCL_HOST_DEVICE_API inline void* __cccl_operator_new(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
 #if defined(_CCCL_BUILTIN_OPERATOR_NEW)
@@ -60,7 +60,7 @@ _CCCL_API inline void* __cccl_operator_new(_Args... __args)
 }
 
 template <class... _Args>
-_CCCL_API inline void __cccl_operator_delete(_Args... __args)
+_CCCL_HOST_DEVICE_API inline void __cccl_operator_delete(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
 #if defined(_CCCL_BUILTIN_OPERATOR_DELETE)
@@ -74,7 +74,7 @@ _CCCL_API inline void __cccl_operator_delete(_Args... __args)
 using ::std::align_val_t;
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
-_CCCL_API inline void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __align)
+_CCCL_HOST_DEVICE_API inline void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (::cuda::std::__is_overaligned_for_new(__align))
@@ -87,7 +87,8 @@ _CCCL_API inline void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __
 }
 
 template <class... _Args>
-_CCCL_API inline void __do_deallocate_handle_size(void* __ptr, [[maybe_unused]] size_t __size, _Args... __args)
+_CCCL_HOST_DEVICE_API inline void
+__do_deallocate_handle_size(void* __ptr, [[maybe_unused]] size_t __size, _Args... __args)
 {
 #if _LIBCUDACXX_HAS_SIZED_DEALLOCATION()
   return ::cuda::std::__cccl_operator_delete(__ptr, __size, __args...);
@@ -96,7 +97,7 @@ _CCCL_API inline void __do_deallocate_handle_size(void* __ptr, [[maybe_unused]] 
 #endif // !_LIBCUDACXX_HAS_SIZED_DEALLOCATION()
 }
 
-_CCCL_API inline void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unused]] size_t __align)
+_CCCL_HOST_DEVICE_API inline void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (::cuda::std::__is_overaligned_for_new(__align))
@@ -108,7 +109,7 @@ _CCCL_API inline void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unus
   return ::cuda::std::__do_deallocate_handle_size(__ptr, __size);
 }
 
-_CCCL_API inline void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] size_t __align)
+_CCCL_HOST_DEVICE_API inline void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] size_t __align)
 {
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (::cuda::std::__is_overaligned_for_new(__align))

@@ -85,7 +85,7 @@ struct __pstl_dispatch<__pstl_algorithm::__min_element, __execution_backend::__c
       static_cast<size_t*>(nullptr),
       __count,
       __pred,
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<size_t> __storage{__policy, __num_bytes, 1};
@@ -101,7 +101,7 @@ struct __pstl_dispatch<__pstl_algorithm::__min_element, __execution_backend::__c
         __storage.template __get_raw_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
-        __stream.get());
+        __policy);
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
@@ -119,8 +119,8 @@ struct __pstl_dispatch<__pstl_algorithm::__min_element, __execution_backend::__c
   }
 
   template <class _Policy, class _InputIterator, class _BinaryPred>
-  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
-    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPred __pred) const
+  [[nodiscard]] _CCCL_HOST_API _InputIterator _CCCL_STATIC_CALL_OPERATOR(
+    [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPred __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
     {

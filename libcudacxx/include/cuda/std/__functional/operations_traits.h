@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/operations.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -46,44 +46,44 @@ _CCCL_END_NAMESPACE_STD
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _BinaryOp>
-inline constexpr bool __is_plus_op_v =
-  is_same_v<_BinaryOp, plus<>>
+inline constexpr bool __is_plus_op_v = ::cuda::__is_cuda_std_plus_v<_BinaryOp>;
+
 #if _CCCL_HOSTED()
-  || is_same_v<_BinaryOp, ::std::plus<void>>
+template <typename... _Tp>
+inline constexpr bool __is_plus_op_v<::std::plus<_Tp...>> = true;
 #endif // _CCCL_HOSTED()
-  ;
 
 template <typename _BinaryOp>
-inline constexpr bool __is_multiplies_op_v =
-  is_same_v<_BinaryOp, multiplies<>>
+inline constexpr bool __is_multiplies_op_v = ::cuda::__is_cuda_std_multiplies_v<_BinaryOp>;
+
 #if _CCCL_HOSTED()
-  || is_same_v<_BinaryOp, ::std::multiplies<void>>
+template <typename... _Tp>
+inline constexpr bool __is_multiplies_op_v<::std::multiplies<_Tp...>> = true;
 #endif // _CCCL_HOSTED()
-  ;
 
 template <typename _BinaryOp>
-inline constexpr bool __is_bit_and_op_v =
-  is_same_v<_BinaryOp, bit_and<>>
+inline constexpr bool __is_bit_and_op_v = ::cuda::__is_cuda_std_bit_and_v<_BinaryOp>;
+
 #if _CCCL_HOSTED()
-  || is_same_v<_BinaryOp, ::std::bit_and<void>>
+template <typename... _Tp>
+inline constexpr bool __is_bit_and_op_v<::std::bit_and<_Tp...>> = true;
 #endif // _CCCL_HOSTED()
-  ;
 
 template <typename _BinaryOp>
-inline constexpr bool __is_bit_or_op_v =
-  is_same_v<_BinaryOp, bit_or<>>
+inline constexpr bool __is_bit_or_op_v = ::cuda::__is_cuda_std_bit_or_v<_BinaryOp>;
+
 #if _CCCL_HOSTED()
-  || is_same_v<_BinaryOp, ::std::bit_or<void>>
+template <typename... _Tp>
+inline constexpr bool __is_bit_or_op_v<::std::bit_or<_Tp...>> = true;
 #endif // _CCCL_HOSTED()
-  ;
 
 template <typename _BinaryOp>
-inline constexpr bool __is_bit_xor_op_v =
-  is_same_v<_BinaryOp, bit_xor<>>
+inline constexpr bool __is_bit_xor_op_v = ::cuda::__is_cuda_std_bit_xor_v<_BinaryOp>;
+
 #if _CCCL_HOSTED()
-  || is_same_v<_BinaryOp, ::std::bit_xor<void>>
+template <typename... _Tp>
+inline constexpr bool __is_bit_xor_op_v<::std::bit_xor<_Tp...>> = true;
 #endif // _CCCL_HOSTED()
-  ;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

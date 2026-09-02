@@ -6,6 +6,10 @@
  * Test evaluation for caching allocator of device memory
  ******************************************************************************/
 
+// TODO: remove this test in CCCL 4.0
+// This test intentionally exercises the deprecated caching allocator.
+#define CCCL_IGNORE_DEPRECATED_API
+
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
@@ -16,7 +20,10 @@
 
 #include <cstdio>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
 using namespace cub;
 

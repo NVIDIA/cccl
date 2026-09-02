@@ -432,8 +432,8 @@ struct AgentReduceByKey
     for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
     {
       KeyValuePairT pair                                = temp_storage.raw_exchange.Alias()[item];
-      d_unique_out[num_tile_segments_prefix + item]     = pair.key;
-      d_aggregates_out[num_tile_segments_prefix + item] = pair.value;
+      d_unique_out[num_tile_segments_prefix + item]     = pair.key; // NOLINT(bugprone-misplaced-widening-cast)
+      d_aggregates_out[num_tile_segments_prefix + item] = pair.value; // NOLINT(bugprone-misplaced-widening-cast)
     }
   }
 

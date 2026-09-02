@@ -36,8 +36,10 @@
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/nvjitlink.h"
+#include "util/serialization.h"
 #include "util/types.h"
 #include <cccl/c/segmented_sort.h>
+#include <cccl/c/serialization.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -175,7 +177,6 @@ struct selector_state_t
 };
 
 cccl_op_t make_segments_selector_op(
-  OffsetT offset,
   cccl_iterator_t begin_offset_iterator,
   cccl_iterator_t end_offset_iterator,
   const char* selector_op_name,
@@ -186,7 +187,6 @@ cccl_op_t make_segments_selector_op(
   size_t num_lto_opts)
 {
   cccl_op_t selector_op{};
-  auto selector_op_state = std::make_unique<selector_state_t>();
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
@@ -239,15 +239,8 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
   selector_op.code_type = CCCL_OP_LTOIR;
   selector_op.size      = sizeof(selector_state_t);
   selector_op.alignment = alignof(selector_state_t);
-
-  selector_op_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
-  auto* state_copy = static_cast<selector_state_t*>(std::malloc(sizeof(selector_state_t)));
-  if (!state_copy)
-  {
-    throw std::bad_alloc();
-  }
-  std::memcpy(state_copy, selector_op_state.get(), sizeof(selector_state_t));
-  selector_op.state = state_copy;
+  // No state in the build result: it is per-call (see segmented_sort_kernel_source).
+  selector_op.state = nullptr;
 
   return selector_op;
 }
@@ -261,7 +254,6 @@ struct owned_selector_op
   {}
   ~owned_selector_op()
   {
-    std::free(op.state);
     std::free(const_cast<char*>(op.code));
   }
   owned_selector_op(const owned_selector_op&)            = delete;
@@ -277,6 +269,8 @@ struct owned_selector_op
 struct segmented_sort_kernel_source
 {
   cccl_device_segmented_sort_build_result_t& build;
+  selector_state_t* large_state;
+  selector_state_t* small_state;
 
   CUkernel SegmentedSortFallbackKernel() const
   {
@@ -302,17 +296,20 @@ struct segmented_sort_kernel_source
   indirect_arg_t LargeSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    static_cast<selector_state_t*>(build.large_segments_selector_op.state)
-      ->initialize(offset, begin_offset_iterator, end_offset_iterator);
-    return indirect_arg_t(build.large_segments_selector_op);
+    large_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
+    // Same compiled op, pointed at this call's state instead of the shared one.
+    cccl_op_t op = build.large_segments_selector_op;
+    op.state     = large_state;
+    return indirect_arg_t(op);
   }
 
   indirect_arg_t SmallSegmentsSelector(
     OffsetT offset, indirect_iterator_t begin_offset_iterator, indirect_iterator_t end_offset_iterator) const
   {
-    static_cast<selector_state_t*>(build.small_segments_selector_op.state)
-      ->initialize(offset, begin_offset_iterator, end_offset_iterator);
-    return indirect_arg_t(build.small_segments_selector_op);
+    small_state->initialize(offset, begin_offset_iterator, end_offset_iterator);
+    cccl_op_t op = build.small_segments_selector_op;
+    op.state     = small_state;
+    return indirect_arg_t(op);
   }
 
   void SetSegmentOffset(indirect_arg_t& selector, long long base_segment_offset) const
@@ -485,7 +482,6 @@ try
   // DispatchThreeWayPartition eventually. This causes increased compilation
   // times, which might be avoidable.
   segmented_sort::owned_selector_op large_selector_op{segmented_sort::make_segments_selector_op(
-    0,
     start_offset_it,
     end_offset_it,
     "cccl_large_segments_selector_op",
@@ -495,7 +491,6 @@ try
     lopts,
     num_lto_args)};
   segmented_sort::owned_selector_op small_selector_op{segmented_sort::make_segments_selector_op(
-    0,
     start_offset_it,
     end_offset_it,
     "cccl_small_segments_selector_op",
@@ -906,6 +901,11 @@ CUresult cccl_device_segmented_sort_impl(
     cub::DoubleBuffer<indirect_arg_t> d_values_double_buffer(
       *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
+    // Per-call state, stack-local so concurrent launches stay independent. Safe under
+    // async: copied by value into kernel params at each launch within this dispatch.
+    segmented_sort::selector_state_t large_selector_state{};
+    segmented_sort::selector_state_t small_selector_state{};
+
     auto exec_status = cub::detail::segmented_sort::dispatch<Order, OffsetT>(
       d_temp_storage,
       *temp_storage_bytes,
@@ -921,7 +921,8 @@ CUresult cccl_device_segmented_sort_impl(
       *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
       /* partition_policy_selector */
       *static_cast<cub::detail::three_way_partition::policy_selector*>(build.partition_runtime_policy),
-      /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
+      /* kernel_source */
+      segmented_sort::segmented_sort_kernel_source{build, &large_selector_state, &small_selector_state},
       /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
       /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
@@ -993,9 +994,7 @@ try
 
   std::unique_ptr<char[]> payload(reinterpret_cast<char*>(build_ptr->payload));
 
-  // Clean up the selector op states and code buffers (malloc-allocated, so use std::free)
-  std::free(build_ptr->large_segments_selector_op.state);
-  std::free(build_ptr->small_segments_selector_op.state);
+  // Clean up the selector op code buffers (malloc-allocated, so use std::free)
   std::free(const_cast<char*>(build_ptr->large_segments_selector_op.code));
   std::free(const_cast<char*>(build_ptr->small_segments_selector_op.code));
 
@@ -1068,5 +1067,240 @@ try
 catch (const std::exception& exc)
 {
   printf("\nEXCEPTION in cccl_device_segmented_sort_link_ltoir(): %s\n", exc.what());
+  return CUDA_ERROR_UNKNOWN;
+}
+
+namespace segmented_sort_serialization
+{
+// Selector op names are compile-time constants (set in make_segments_selector_op).
+// Deserialize simply points back at these literals — cleanup never frees op.name.
+inline constexpr const char* kLargeSegmentsName = "cccl_large_segments_selector_op";
+inline constexpr const char* kSmallSegmentsName = "cccl_small_segments_selector_op";
+
+inline void serialize_selector_op(cccl::serialization::buffer_writer& w, const cccl_op_t& op)
+{
+  w.write_pod<uint32_t>(static_cast<uint32_t>(op.type));
+  w.write_pod<uint32_t>(static_cast<uint32_t>(op.code_type));
+  w.write_blob(op.code, op.code_size);
+  // op.size/op.alignment/op.state are intentionally not serialized: the selector
+  // state is runtime-specific and fully reconstructed by deserialize_selector_op.
+}
+
+inline cccl_op_t deserialize_selector_op(cccl::serialization::buffer_reader& r, const char* fixed_name)
+{
+  cccl_op_t op{};
+  const auto type_v = r.read_pod<uint32_t>();
+  if (type_v > static_cast<uint32_t>(CCCL_MAXIMUM))
+  {
+    throw std::runtime_error(std::format("serialization blob: invalid selector op kind ({})", type_v));
+  }
+  op.type = static_cast<cccl_op_kind_t>(type_v);
+
+  const auto code_type_v = r.read_pod<uint32_t>();
+  if (code_type_v > static_cast<uint32_t>(CCCL_OP_CPP_SOURCE))
+  {
+    throw std::runtime_error(std::format("serialization blob: invalid selector op code type ({})", code_type_v));
+  }
+  op.code_type = static_cast<cccl_op_code_type>(code_type_v);
+
+  // code blob — hold in RAII until commit so a throw during read_bytes doesn't leak
+  uint64_t code_n = r.read_pod<uint64_t>();
+  std::unique_ptr<void, decltype(&std::free)> code_owner(nullptr, std::free);
+  if (code_n > 0)
+  {
+    code_owner.reset(std::malloc(static_cast<size_t>(code_n)));
+    if (!code_owner)
+    {
+      throw std::bad_alloc{};
+    }
+    r.read_bytes(code_owner.get(), static_cast<size_t>(code_n));
+  }
+
+  // No selector state to reconstruct (it is per-call). op.size stays hardcoded so a
+  // malformed blob cannot dictate it.
+  using segmented_sort::selector_state_t;
+
+  // commit — no throws past this point
+  op.size      = sizeof(selector_state_t);
+  op.alignment = alignof(selector_state_t);
+  op.code      = static_cast<const char*>(code_owner.release());
+  op.code_size = static_cast<size_t>(code_n);
+  op.state     = nullptr;
+  // op.name is not freed by cleanup; safe to point at a string literal.
+  op.name = fixed_name;
+  // Selector ops never carry extra ltoirs in this codepath.
+  op.extra_ltoirs      = nullptr;
+  op.extra_ltoir_sizes = nullptr;
+  op.num_extra_ltoirs  = 0;
+  return op;
+}
+} // namespace segmented_sort_serialization
+
+CUresult cccl_device_segmented_sort_serialize(
+  const cccl_device_segmented_sort_build_result_t* build_ptr, void** out_buf, size_t* out_size)
+try
+{
+  if (build_ptr == nullptr || out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (build_ptr->payload == nullptr || build_ptr->payload_size == 0 || build_ptr->runtime_policy == nullptr
+      || build_ptr->runtime_policy_size == 0 || build_ptr->partition_runtime_policy == nullptr
+      || build_ptr->partition_runtime_policy_size == 0)
+  {
+    *out_buf  = nullptr;
+    *out_size = 0;
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_writer w;
+  write_header(w, CCCL_SERIALIZATION_ALGO_SEGMENTED_SORT, build_ptr->payload_kind, build_ptr->cc);
+  write_type_info(w, build_ptr->key_type);
+  write_type_info(w, build_ptr->offset_type);
+  w.write_pod<uint32_t>(static_cast<uint32_t>(build_ptr->order));
+  segmented_sort_serialization::serialize_selector_op(w, build_ptr->large_segments_selector_op);
+  segmented_sort_serialization::serialize_selector_op(w, build_ptr->small_segments_selector_op);
+  w.write_blob(build_ptr->payload, build_ptr->payload_size);
+  w.write_blob(build_ptr->runtime_policy, build_ptr->runtime_policy_size);
+  w.write_blob(build_ptr->partition_runtime_policy, build_ptr->partition_runtime_policy_size);
+  w.write_cstring(build_ptr->segmented_sort_fallback_kernel_lowered_name);
+  w.write_cstring(build_ptr->segmented_sort_kernel_small_lowered_name);
+  w.write_cstring(build_ptr->segmented_sort_kernel_large_lowered_name);
+  w.write_cstring(build_ptr->three_way_partition_init_kernel_lowered_name);
+  w.write_cstring(build_ptr->three_way_partition_kernel_lowered_name);
+  w.release(out_buf, out_size);
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_sort_serialize(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_device_segmented_sort_deserialize(
+  cccl_device_segmented_sort_build_result_t* build_ptr, const void* buf, size_t size)
+try
+{
+  if (build_ptr == nullptr || buf == nullptr || size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  using namespace cccl::serialization;
+  buffer_reader r{buf, size};
+  const auto h = read_and_validate_header(r, CCCL_SERIALIZATION_ALGO_SEGMENTED_SORT);
+
+  const auto key_t    = read_type_info(r);
+  const auto offset_t = read_type_info(r);
+  const auto order    = static_cast<cccl_sort_order_t>(r.read_pod<uint32_t>());
+  if (order != CCCL_ASCENDING && order != CCCL_DESCENDING)
+  {
+    throw std::runtime_error(std::format("serialization blob: invalid sort order ({})", static_cast<uint32_t>(order)));
+  }
+
+  // selector ops own a malloc'd code buffer (state is per-call now, so nullptr
+  // here). If a later step throws, the catch handlers below std::free the code.
+  cccl_op_t large_op =
+    segmented_sort_serialization::deserialize_selector_op(r, segmented_sort_serialization::kLargeSegmentsName);
+  cccl_op_t small_op{};
+  try
+  {
+    small_op =
+      segmented_sort_serialization::deserialize_selector_op(r, segmented_sort_serialization::kSmallSegmentsName);
+  }
+  catch (...)
+  {
+    std::free(const_cast<char*>(large_op.code));
+    throw;
+  }
+
+  std::unique_ptr<char[]> payload_owner;
+  size_t payload_size = 0;
+  try
+  {
+    void* p = nullptr;
+    r.read_blob_new(&p, &payload_size);
+    payload_owner.reset(static_cast<char*>(p));
+  }
+  catch (...)
+  {
+    std::free(const_cast<char*>(large_op.code));
+    std::free(const_cast<char*>(small_op.code));
+    throw;
+  }
+  if (payload_size == 0)
+  {
+    std::free(const_cast<char*>(large_op.code));
+    std::free(const_cast<char*>(small_op.code));
+    throw std::runtime_error("serialization blob: empty payload");
+  }
+
+  std::unique_ptr<cub::detail::segmented_sort::policy_selector, decltype(&std::free)> sort_policy(nullptr, std::free);
+  std::unique_ptr<cub::detail::three_way_partition::policy_selector, decltype(&std::free)> partition_policy(
+    nullptr, std::free);
+  std::unique_ptr<char[]> n_fb;
+  std::unique_ptr<char[]> n_small;
+  std::unique_ptr<char[]> n_large;
+  std::unique_ptr<char[]> n_init;
+  std::unique_ptr<char[]> n_part;
+  try
+  {
+    sort_policy.reset(static_cast<cub::detail::segmented_sort::policy_selector*>(
+      std::malloc(sizeof(cub::detail::segmented_sort::policy_selector))));
+    if (!sort_policy)
+    {
+      throw std::bad_alloc{};
+    }
+    r.read_into(sort_policy.get(), sizeof(cub::detail::segmented_sort::policy_selector));
+    partition_policy.reset(static_cast<cub::detail::three_way_partition::policy_selector*>(
+      std::malloc(sizeof(cub::detail::three_way_partition::policy_selector))));
+    if (!partition_policy)
+    {
+      throw std::bad_alloc{};
+    }
+    r.read_into(partition_policy.get(), sizeof(cub::detail::three_way_partition::policy_selector));
+    n_fb.reset(r.read_cstring_dup());
+    n_small.reset(r.read_cstring_dup());
+    n_large.reset(r.read_cstring_dup());
+    n_init.reset(r.read_cstring_dup());
+    n_part.reset(r.read_cstring_dup());
+  }
+  catch (...)
+  {
+    std::free(const_cast<char*>(large_op.code));
+    std::free(const_cast<char*>(small_op.code));
+    throw;
+  }
+
+  cccl_device_segmented_sort_build_result_t result{};
+  result.cc                                           = static_cast<int>(h.cc);
+  result.payload_kind                                 = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.key_type                                     = key_t;
+  result.offset_type                                  = offset_t;
+  result.order                                        = order;
+  result.large_segments_selector_op                   = large_op;
+  result.small_segments_selector_op                   = small_op;
+  result.payload                                      = payload_owner.release();
+  result.payload_size                                 = payload_size;
+  result.runtime_policy                               = sort_policy.release();
+  result.runtime_policy_size                          = sizeof(cub::detail::segmented_sort::policy_selector);
+  result.partition_runtime_policy                     = partition_policy.release();
+  result.partition_runtime_policy_size                = sizeof(cub::detail::three_way_partition::policy_selector);
+  result.segmented_sort_fallback_kernel_lowered_name  = n_fb.release();
+  result.segmented_sort_kernel_small_lowered_name     = n_small.release();
+  result.segmented_sort_kernel_large_lowered_name     = n_large.release();
+  result.three_way_partition_init_kernel_lowered_name = n_init.release();
+  result.three_way_partition_kernel_lowered_name      = n_part.release();
+  *build_ptr                                          = result;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_sort_deserialize(): %s\n", exc.what());
+  fflush(stdout);
   return CUDA_ERROR_UNKNOWN;
 }

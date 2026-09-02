@@ -44,6 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 class legacy_managed_memory_resource : public memory_resource_base<legacy_managed_memory_resource>
 {
 private:
+  // cudaMemAttach values are macros, so we cannot :: them.
   unsigned int __flags_ = cudaMemAttachGlobal;
 
   static constexpr unsigned int __available_flags = cudaMemAttachGlobal | cudaMemAttachHost;
@@ -55,7 +56,7 @@ public:
   //! for the resource. This association has the effect of initializing that device and the memory being implicitly
   //! freed if the device is reset.
   _CCCL_HOST_API constexpr legacy_managed_memory_resource(
-    const unsigned int __flags = cudaMemAttachGlobal, device_ref __device = {0}) noexcept
+    const unsigned int __flags = cudaMemAttachGlobal, ::cuda::device_ref __device = {0}) noexcept
       : __flags_(__flags & __available_flags)
       , __device_(__device)
   {
@@ -126,7 +127,7 @@ public:
   {}
 
   //! @brief Checks whether the passed in alignment is valid
-  _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
     return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
         && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
@@ -135,7 +136,7 @@ public:
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 
 private:
-  device_ref __device_{0};
+  ::cuda::device_ref __device_{0};
 };
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::device_accessible>);
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::host_accessible>);

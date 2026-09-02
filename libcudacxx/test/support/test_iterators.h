@@ -1397,19 +1397,23 @@ public:
   TEST_FUNC constexpr explicit sentinel_wrapper(const It& it)
       : base_(base(it))
   {}
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ == base(i);
   }
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ != base(i);
   }
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ != base(i);
@@ -2076,7 +2080,7 @@ struct ProxyRange
 
 template <cuda::std::ranges::input_range R>
   requires cuda::std::ranges::viewable_range<R&&>
-ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
 #endif // !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
 
 namespace types

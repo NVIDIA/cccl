@@ -335,7 +335,7 @@ struct AgentThreeWayPartition
           // Medium item
           int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
                                   + (second_items_selection_indices - num_second_selections_prefix);
-          local_scatter_offset = second_item_end + item_idx - local_selection_idx;
+          local_scatter_offset    = second_item_end + item_idx - local_selection_idx;
         }
 
         temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
@@ -345,11 +345,13 @@ struct AgentThreeWayPartition
     __syncthreads();
 
     // Gather items from shared memory and scatter to global
+    // NOLINTBEGIN(bugprone-misplaced-widening-cast)
     auto first_base =
       d_first_part_out + (streaming_context.num_previously_selected_first() + num_first_selections_prefix);
     auto second_base =
       d_second_part_out + (streaming_context.num_previously_selected_second() + num_second_selections_prefix);
     auto unselected_base = d_unselected_out + (streaming_context.num_previously_rejected() + num_rejected_prefix);
+    // NOLINTEND(bugprone-misplaced-widening-cast)
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;

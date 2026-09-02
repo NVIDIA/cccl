@@ -11,14 +11,16 @@
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/iterator>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 
 #include <sstream>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/test_util_vec.h>
 
@@ -29,8 +31,9 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, t
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Fill, fill);
 
-C2H_TEST("DeviceTransform::Transform BabelStream add",
+CUB_TEST("DeviceTransform::Transform BabelStream add",
          "[device][transform]",
+         CUB_SMALL,
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, uchar3>)
 {
   using type     = c2h::get<0, TestType>;
@@ -57,8 +60,9 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
 }
 
 // note: because this uses a fancy iterator type, it will only test the fallback kernel
-C2H_TEST("DeviceTransform::Transform works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceTransform::Transform works for large number of items",
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL)
 {
   using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
@@ -76,8 +80,9 @@ C2H_TEST("DeviceTransform::Transform works for large number of items",
   check_result_helper.check_all_results_correct();
 }
 
-C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL)
 {
   using offset_t = cuda::std::int64_t;
   CAPTURE(c2h::type_name<offset_t>());
@@ -109,8 +114,9 @@ struct times_seven
 // num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
 // straddles 4 GiB (negative delta -> just under, positive -> just over). Both deltas fit in I32
 // and I64 offset types.
-C2H_TEST("DeviceTransform::Transform works with large input",
-         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceTransform::Transform works with large input",
+         "[device][transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using type     = std::uint32_t;
@@ -146,7 +152,7 @@ struct overaligned_addable_and_equal_comparable_policy
   {
     __host__ __device__ static void check(const CustomType& obj)
     {
-      _CCCL_VERIFY(reinterpret_cast<uintptr_t>(&obj) % Alignment == 0,
+      _CCCL_VERIFY(cuda::std::is_sufficiently_aligned<Alignment>(&obj),
                    "overaligned_addable_policy_t<Alignment> is not sufficiently aligned");
     }
 
@@ -220,7 +226,7 @@ struct uncommon_plus
   }
 };
 
-C2H_TEST("DeviceTransform::Transform uncommon types", "[device][transform]", uncommon_types)
+CUB_TEST("DeviceTransform::Transform uncommon types", "[device][transform]", CUB_SMALL, uncommon_types)
 {
   using type = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<type>());
@@ -263,9 +269,9 @@ struct non_default_constructible
 static_assert(!cuda::std::is_trivially_default_constructible_v<non_default_constructible>);
 static_assert(!cuda::std::is_default_constructible_v<non_default_constructible>);
 static_assert(cuda::std::is_trivially_copyable_v<non_default_constructible>); // as required by the standard
-static_assert(thrust::is_trivially_relocatable_v<non_default_constructible>); // CUB uses this check internally
+static_assert(::cuda::is_trivially_copyable_v<non_default_constructible>); // CUB uses this check internally
 
-C2H_TEST("DeviceTransform::Transform non-default constructible types", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform non-default constructible types", "[device][transform]", CUB_SMALL)
 {
   using type          = non_default_constructible;
   const int num_items = GENERATE(0, 1, 100, 1'000, 100'000); // try to hit the small and full tile code paths
@@ -291,8 +297,9 @@ struct nstream_kernel
 };
 
 // overwrites one input stream
-C2H_TEST("DeviceTransform::Transform BabelStream nstream",
+CUB_TEST("DeviceTransform::Transform BabelStream nstream",
          "[device][transform]",
+         CUB_SMALL,
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type     = c2h::get<0, TestType>;
@@ -329,7 +336,7 @@ struct sum_five
   }
 };
 
-C2H_TEST("DeviceTransform::Transform add five streams", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform add five streams", "[device][transform]", CUB_SMALL)
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<std::int8_t> a(num_items, thrust::no_init);
@@ -368,7 +375,7 @@ struct give_me_five
   }
 };
 
-C2H_TEST("DeviceTransform::Generate", "[device][transform]")
+CUB_TEST("DeviceTransform::Generate", "[device][transform]", CUB_SMALL)
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<int> result(num_items, thrust::no_init);
@@ -379,7 +386,7 @@ C2H_TEST("DeviceTransform::Generate", "[device][transform]")
   REQUIRE(reference == result);
 }
 
-C2H_TEST("DeviceTransform::Fill", "[device][transform]")
+CUB_TEST("DeviceTransform::Fill", "[device][transform]", CUB_SMALL)
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<int> result(num_items, thrust::no_init);
@@ -390,7 +397,7 @@ C2H_TEST("DeviceTransform::Fill", "[device][transform]")
   REQUIRE(reference == result);
 }
 
-C2H_TEST("DeviceTransform::Transform fancy input iterator types", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform fancy input iterator types", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -406,7 +413,7 @@ C2H_TEST("DeviceTransform::Transform fancy input iterator types", "[device][tran
   REQUIRE(reference_h == result);
 }
 
-C2H_TEST("DeviceTransform::Transform fancy output iterator type", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform fancy output iterator type", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -420,7 +427,7 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type", "[device][tran
   REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) + 4));
 }
 
-C2H_TEST("DeviceTransform::Transform fancy output iterator type with void value type", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform fancy output iterator type with void value type", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -444,7 +451,7 @@ struct plus_mul_neg
   }
 };
 
-C2H_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][transform]", CUB_SMALL)
 {
   using type          = unsigned; // overflow is defined
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -485,7 +492,7 @@ struct plus_needs_stable_address
   }
 };
 
-C2H_TEST("DeviceTransform::Transform address stability", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform address stability", "[device][transform]", CUB_SMALL)
 {
   using type          = int;
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
@@ -543,13 +550,13 @@ struct non_trivial
   }
 };
 static_assert(!cuda::std::is_trivially_copyable_v<non_trivial>); // as required by the standard
-static_assert(!thrust::is_trivially_relocatable_v<non_trivial>); // CUB uses this check internally
+static_assert(!::cuda::is_trivially_copyable_v<non_trivial>); // CUB uses this check internally
 
 // Note(bgruber): I gave up on writing a test that checks whether the copy ctor/assignment operator is actually called
 // (e.g. by tracking/counting invocations of those), since C++ allows (but not guarantees) elision of these operations.
 // Also thrust algorithms perform a lot of copies in-between, so the test needs to use only raw allocations and
 // iteration for setup and checking.
-C2H_TEST("DeviceTransform::Transform not trivially relocatable", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform not trivially relocatable", "[device][transform]", CUB_SMALL)
 {
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   c2h::device_vector<non_trivial> input(num_items, non_trivial{42});
@@ -561,8 +568,9 @@ C2H_TEST("DeviceTransform::Transform not trivially relocatable", "[device][trans
   REQUIRE((reference == result));
 }
 
-C2H_TEST("DeviceTransform::Transform buffer start alignment",
+CUB_TEST("DeviceTransform::Transform buffer start alignment",
          "[device][transform]",
+         CUB_SMALL,
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>)
 {
   using type          = c2h::get<0, TestType>;
@@ -616,7 +624,7 @@ struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
 } // namespace Catch
 
 // TODO(bgruber): rewrite this example using int3
-C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]", CUB_SMALL)
 {
   alignas(128) int arr[256];
   using namespace cub::detail::transform;
@@ -631,7 +639,7 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
   CHECK(make_aligned_base_ptr(&arr[129], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
 }
 
-C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]", CUB_SMALL)
 {
   using It         = cuda::std::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
   using kernel_arg = cub::detail::transform::kernel_arg<It>;
@@ -641,7 +649,7 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][transform]")
 }
 
 // See discussion on: https://github.com/NVIDIA/cccl/pull/4815
-C2H_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform]", CUB_SMALL)
 {
   using thrust::placeholders::_1;
 
@@ -702,7 +710,7 @@ struct BtoC
   }
 };
 
-C2H_TEST("DeviceTransform::Transform function/output_iter return type not convertible", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform function/output_iter return type not convertible", "[device][transform]", CUB_SMALL)
 {
   using thrust::placeholders::_1;
 
@@ -725,7 +733,9 @@ __global__ void unrelated_kernel()
   asm("" : "+r"(dsmem[0]));
 }
 
-C2H_TEST("DeviceTransform::Transform does not effect unrelated kernel's static SMEM consumption", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform does not effect unrelated kernel's static SMEM consumption",
+         "[device][transform]",
+         CUB_SMALL)
 {
   cudaFuncAttributes attrs;
   REQUIRE(cudaFuncGetAttributes(&attrs, unrelated_kernel) == cudaSuccess);
@@ -771,7 +781,7 @@ void fill_pdl(T* data, size_t n, T value)
     .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
 
-C2H_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]")
+CUB_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]", CUB_SMALL)
 {
   using type = int;
   // need a warmup run to lazy load kernels and perform some setup, then a problem size that occupies 1/2 of all SMs

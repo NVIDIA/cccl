@@ -12,6 +12,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN

@@ -11,6 +11,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -20,12 +22,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__tuple_dir/apply.h>
+#include <cuda/std/__tuple_dir/tuple.h>
+
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // launch_impl() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy_impl.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh> // graph_launch_impl() uses SCOPE
+#include <cuda/experimental/__stf/utility/exception_policy.cuh> // graph_launch_impl() uses SCOPE
 
 namespace cuda::experimental::stf
 {
@@ -38,10 +43,31 @@ class stream_task;
 
 namespace reserved
 {
+//! @brief Builds the argument tuple that `launch_kernel` receives by value.
+//!
+//! @param[in] __prefix Value to place first, in practice the thread hierarchy.
+//! @param[in] __tuple Data instances that follow it.
+//! @return A `cuda::std::tuple` holding `__prefix` ahead of the elements of `__tuple`.
+//!
+//! The result is deliberately not a `std::tuple`: the kernel unpacks it in device code, and
+//! libstdc++'s `std::apply` is host-only. nvcc accepts calling it from device code because
+//! `--expt-relaxed-constexpr` admits host `constexpr` functions there, but clang-cuda has no
+//! such escape hatch and rejects it.
+template <typename _Prefix, typename... _Ts>
+[[nodiscard]] auto __make_kernel_args(_Prefix __prefix, ::std::tuple<_Ts...> __tuple)
+{
+  return ::std::apply(
+    [&](auto&&... __elements) {
+      return ::cuda::std::tuple<_Prefix, _Ts...>(
+        mv(__prefix), ::cuda::std::forward<decltype(__elements)>(__elements)...);
+    },
+    mv(__tuple));
+}
+
 template <typename Fun, typename Arg>
 __global__ void launch_kernel(Fun f, Arg arg)
 {
-  ::std::apply(mv(f), mv(arg));
+  ::cuda::std::apply(mv(f), mv(arg));
 }
 
 template <typename interpreted_spec, typename Fun, typename Stream_t>
@@ -102,6 +128,18 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 
     void* th_dev_tmp_ptr = nullptr;
 
+    // Free the temporary device memory on the way out, even if set_device_tmp
+    // or the launch throws. Installed before the malloc so a throw from
+    // set_device_tmp cannot skip the free. cuda_safe_call (not cuda_try)
+    // because SCOPE(exit) is noexcept.
+    SCOPE(exit)
+    {
+      if (th_dev_tmp_ptr)
+      {
+        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
+      }
+    };
+
     /* Allocate temporary device memory */
     auto th_mem_config = interpreted_policy.get_mem_config();
     if (th_mem_config[0] > 0)
@@ -124,17 +162,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
       th.set_device_tmp(th_dev_tmp_ptr);
     }
 
-    // Free the temporary device memory on the way out, even if the launch throws.
-    // cuda_safe_call (not cuda_try) because SCOPE(exit) is noexcept.
-    SCOPE(exit)
-    {
-      if (th_dev_tmp_ptr)
-      {
-        cuda_safe_call(cudaFreeAsync(th_dev_tmp_ptr, stream));
-      }
-    };
-
-    auto kernel_args = tuple_prepend(mv(th), mv(arg));
+    auto kernel_args = __make_kernel_args(mv(th), mv(arg));
     using args_type  = decltype(kernel_args);
     void* all_args[] = {&f, &kernel_args};
 
@@ -147,7 +175,7 @@ void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_plac
 {
   _CCCL_ASSERT(p.size() == 1, "Expected scalar exec_place");
 
-  auto kernel_args = tuple_prepend(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
+  auto kernel_args = __make_kernel_args(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
   using args_type  = decltype(kernel_args);
   void* all_args[] = {&f, &kernel_args};
 
@@ -180,22 +208,24 @@ public:
   {}
 
   launch(exec_place e_place, ::std::vector<cudaStream_t> streams, Arg arg)
-      : launch(spec_t(), mv(e_place), mv(arg), mv(streams))
+      : launch(spec_t(), mv(e_place), mv(streams), mv(arg))
   {}
 
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVHPC) VVV
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVCC) VVV
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     static_assert(is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type,
                   "Cannot run launch() on the host");
@@ -205,7 +235,7 @@ public:
     const size_t grid_size = e_place.size();
 
     using th_t     = typename spec_t::thread_hierarchy_t;
-    using arg_type = decltype(tuple_prepend(th_t(), arg));
+    using arg_type = decltype(__make_kernel_args(th_t(), arg));
 
     auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, arg_type>);
 
@@ -222,7 +252,7 @@ public:
       unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
       if (hostMemoryArrivedList)
       {
-        deallocateManagedMemory(hostMemoryArrivedList, grid_size, streams[0]);
+        deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, streams[0]);
       }
     };
 
@@ -232,9 +262,16 @@ public:
     {
       if (interpreted_policy.last_level_scope() == hw_scope::device)
       {
-        auto hostMemoryArrivedList = (unsigned char*) allocateManagedMemory(grid_size - 1);
-        // printf("About to allocate hostmemarrivedlist : %lu bytes\n", grid_size - 1);
-        memset(hostMemoryArrivedList, 0, grid_size - 1);
+        const size_t arrived_bytes  = grid_size - 1;
+        auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
+        // Own the buffer until cg_system adopts it; if the assignment below
+        // throws, free immediately so we do not leak. cuda_safe_call because
+        // SCOPE(fail) is noexcept (pool insert can throw).
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+        };
+        memset(hostMemoryArrivedList, 0, arrived_bytes);
         interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
@@ -289,8 +326,17 @@ public:
   launch_scope(const launch_scope&)            = delete;
   launch_scope& operator=(const launch_scope&) = delete;
 
+  // nvcc infers __host__ __device__ for special members that are defaulted on their first
+  // declaration, and neither an explicit annotation nor defaulting out of class overrides that.
+  // A launch_scope holds host-only state (a std::string, host containers) and only ever lives on
+  // the host, so the members below are exempted from the execution space check.
+
   /// Move constructor
+  _CCCL_EXEC_CHECK_DISABLE
   launch_scope(launch_scope&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~launch_scope() = default;
 
   /**
    * @brief Set the symbol for the task.
@@ -311,16 +357,18 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVHPC) VVV
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVCC) VVV
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     static_assert(is_extended_device_lambda_closure_type || is_extended_host_device_lambda_closure_type,
                   "Cannot run launch() on the host");
@@ -351,42 +399,42 @@ public:
       t.set_symbol(symbol);
     }
 
-    bool record_time = t.schedule_task();
+    const bool scheduled = t.schedule_task();
     // Execution place may have changed during scheduling task
-    e_place = t.get_exec_place();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    e_place                = t.get_exec_place();
+    const bool record_time = scheduled || statistics.is_calibrating_to_file();
 
     nvtx_range nr(t.get_symbol().c_str());
-    t.start();
 
     int device              = -1;
     cudaEvent_t start_event = nullptr, end_event = nullptr;
-    // Set only once both timing events exist and the start event has been recorded.
-    // The timing setup is done below, after the SCOPE(exit) guard is installed, so a
-    // throw from those cuda_try calls cannot skip t.end_uncleared()/t.clear().
-    bool timing_active = false;
-
-    const size_t grid_size = e_place.size();
-
-    // Put all data instances in a tuple
-    auto args = data2inst<decltype(t), Deps...>(t);
-
-    using th_t      = typename thread_hierarchy_spec_t::thread_hierarchy_t;
-    using args_type = decltype(tuple_prepend(th_t(), args));
-
-    auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, args_type>);
 
     SCOPE(exit)
     {
-      t.end_uncleared();
-
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if (start_event)
       {
-        /* If there was managed memory allocated we need to deallocate it */
+        cuda_safe_call(cudaEventDestroy(start_event));
+      }
+      if (end_event)
+      {
+        cuda_safe_call(cudaEventDestroy(end_event));
+      }
+    };
+
+    const size_t grid_size = e_place.size();
+
+    // Build the policy before start(): occupancy queries can throw, and we must
+    // not leave a started task without teardown guards. args_type only needs the
+    // unevaluated return type of data2inst, so get() is not invoked here.
+    using th_t      = typename thread_hierarchy_spec_t::thread_hierarchy_t;
+    using args_type = decltype(__make_kernel_args(th_t(), data2inst<decltype(t), Deps...>(t)));
+
+    auto interpreted_policy = interpreted_execution_policy(spec, e_place, reserved::launch_kernel<Fun, args_type>);
+
+    // Free launch-scoped managed temps between end_uncleared and clear on both paths.
+    auto free_launch_temps = [&] {
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
+      {
         void* sys_mem = interpreted_policy.get_system_mem();
         if (sys_mem)
         {
@@ -397,14 +445,25 @@ public:
         unsigned char* hostMemoryArrivedList = interpreted_policy.cg_system.get_arrived_list();
         if (hostMemoryArrivedList)
         {
-          deallocateManagedMemory(hostMemoryArrivedList, grid_size, t.get_stream());
+          deallocateManagedMemory(hostMemoryArrivedList, grid_size - 1, t.get_stream());
         }
+      }
+    };
 
-        if (timing_active)
+    t.start();
+
+    // If things go well, end the task with time measurements.
+    SCOPE(success)
+    {
+      t.end_uncleared();
+      free_launch_temps();
+
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (start_event && end_event)
         {
-          // These run inside the enclosing SCOPE(exit) body, which is noexcept;
-          // keep cuda_safe_call so a CUDA error aborts rather than throwing
-          // through the guard (which would call std::terminate).
+          // Inside the SCOPE body; keep cuda_safe_call so a CUDA error aborts
+          // rather than throwing through a fail/exit guard (std::terminate).
           cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
           cuda_safe_call(cudaEventSynchronize(end_event));
 
@@ -426,7 +485,18 @@ public:
       t.clear();
     };
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    // And if they don't, free temps and just end the task.
+    SCOPE(fail)
+    {
+      t.end_uncleared();
+      free_launch_temps();
+      t.clear();
+    };
+
+    // Put all data instances in a tuple (requires a started task).
+    auto args = data2inst<decltype(t), Deps...>(t);
+
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -438,7 +508,6 @@ public:
         start_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         end_event   = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
         cuda_try<cudaEventRecord>(start_event, t.get_stream());
-        timing_active = true;
       }
     }
 
@@ -448,9 +517,16 @@ public:
     {
       if (interpreted_policy.last_level_scope() == hw_scope::device)
       {
-        unsigned char* hostMemoryArrivedList;
-        hostMemoryArrivedList = (unsigned char*) allocateManagedMemory(grid_size - 1);
-        memset(hostMemoryArrivedList, 0, grid_size - 1);
+        const size_t arrived_bytes  = grid_size - 1;
+        auto* hostMemoryArrivedList = static_cast<unsigned char*>(allocateManagedMemory(arrived_bytes));
+        // Own the buffer until cg_system adopts it; if the assignment below
+        // throws, free immediately so we do not leak. cuda_safe_call because
+        // SCOPE(fail) is noexcept (pool insert can throw).
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaFree(hostMemoryArrivedList));
+        };
+        memset(hostMemoryArrivedList, 0, arrived_bytes);
         interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
@@ -458,7 +534,7 @@ public:
     for (size_t p_rank = 0; p_rank < e_place.size(); ++p_rank)
     {
       auto p = e_place.get_place(p_rank);
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         reserved::launch_impl(interpreted_policy, p, f, args, t.get_stream(p_rank), p_rank);
       }

@@ -12,12 +12,14 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -25,6 +27,7 @@
 #include <cccl/c/experimental/stf/stf.h>
 
 using namespace cuda::experimental::stf;
+using ::cuda::experimental::places::cute_partition_descriptor;
 
 struct stf_exec_place_resources_opaque_t
 {
@@ -125,6 +128,10 @@ template <class P>
   {
     return static_cast<stf_exec_place_scope_handle>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<P, cute_partition_descriptor>)
+  {
+    return static_cast<stf_cute_partition_handle>(opaque_bits);
+  }
 #if _CCCL_CTK_AT_LEAST(12, 4)
   else if constexpr (::std::is_same_v<P, green_context_helper>)
   {
@@ -176,6 +183,10 @@ template <class Opaque>
   {
     return static_cast<const exec_place_scope*>(opaque_bits);
   }
+  else if constexpr (::std::is_same_v<Opaque*, stf_cute_partition_handle>)
+  {
+    return static_cast<const cute_partition_descriptor*>(opaque_bits);
+  }
 #if _CCCL_CTK_AT_LEAST(12, 4)
   else if constexpr (::std::is_same_v<Opaque*, stf_green_context_helper_handle>)
   {
@@ -216,6 +227,16 @@ stf_exec_place_handle stf_exec_place_current_device(void)
 {
   return to_opaque(stf_try_allocate([] {
     return new exec_place(exec_place::current_device());
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_cuda_context(CUcontext ctx, int dev_id)
+{
+  _CCCL_ASSERT(ctx != nullptr, "CUcontext must not be null");
+  // A null context in release builds throws in exec_place::cuda_context and is
+  // mapped to a null handle (with a stderr trace) by stf_try_allocate.
+  return to_opaque(stf_try_allocate([ctx, dev_id] {
+    return new exec_place(exec_place::cuda_context(ctx, dev_id));
   }));
 }
 
@@ -333,11 +354,28 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
   {
     cpp_places.push_back(*from_opaque_const(places[i]));
   }
-  exec_place grid = (grid_dims != nullptr)
-                    ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
-                    : make_grid(::std::move(cpp_places));
-  return to_opaque(stf_try_allocate([g = ::std::move(grid)]() mutable {
-    return new exec_place(::std::move(g));
+  const bool shaped = grid_dims != nullptr;
+  const dim4 dims   = shaped ? dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t) : dim4(count, 1, 1, 1);
+  return to_opaque(stf_try_allocate([cpp_places = ::std::move(cpp_places), dims, shaped]() mutable {
+    return new exec_place(shaped ? make_grid(::std::move(cpp_places), dims) : make_grid(::std::move(cpp_places)));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_grid_reshape(stf_exec_place_handle grid, const stf_dim4* grid_dims)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid must not be null");
+  _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
+  return to_opaque(stf_try_allocate([&] {
+    const dim4 dims(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t);
+    return new exec_place(from_opaque_const(grid)->reshape(dims));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_grid_collapse_axes(stf_exec_place_handle grid, size_t first_axis, size_t last_axis)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid must not be null");
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(from_opaque_const(grid)->collapse_axes(first_axis, last_axis));
   }));
 }
 
@@ -515,6 +553,124 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   return to_opaque(dp);
 }
 
+uint32_t stf_locality_domain_count(int dev_id)
+{
+  try
+  {
+    return static_cast<uint32_t>(::cuda::experimental::places::locality_domain_count(dev_id));
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_locality_domain_count: %s\n", e.what());
+    return 0;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_locality_domain_count: unknown error\n");
+    return 0;
+  }
+}
+
+namespace
+{
+// C enum -> C++ enum, rejecting out-of-range values (throws, so the
+// stf_try_allocate wrappers below report NULL with detail on stderr).
+::cuda::experimental::places::locality_domain_sm_split stf_to_cpp_sm_split(stf_locality_domain_sm_split split)
+{
+  switch (split)
+  {
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL:
+      return ::cuda::experimental::places::locality_domain_sm_split::backfill;
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED:
+      return ::cuda::experimental::places::locality_domain_sm_split::aligned;
+    case STF_LOCALITY_DOMAIN_SM_SPLIT_FINE:
+      return ::cuda::experimental::places::locality_domain_sm_split::fine;
+    default:
+      throw ::std::invalid_argument(
+        "invalid stf_locality_domain_sm_split value " + ::std::to_string(static_cast<int>(split)));
+  }
+}
+} // namespace
+
+stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(exec_place::locality_domain(dev_id, domain_id));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_split(int dev_id, int domain_id, stf_locality_domain_sm_split split)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(exec_place::locality_domain(dev_id, domain_id, stf_to_cpp_sm_split(split)));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id));
+  }));
+}
+
+stf_exec_place_handle stf_exec_place_locality_domain_grid_split(int dev_id, stf_locality_domain_sm_split split)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new exec_place(::cuda::experimental::places::make_locality_domain_grid(dev_id, stf_to_cpp_sm_split(split)));
+  }));
+}
+
+stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
+{
+  return to_opaque(stf_try_allocate([&] {
+    return new data_place(data_place::locality_domain(dev_id, domain_id));
+  }));
+}
+
+stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  auto* grid_ptr = from_opaque(grid);
+  return to_opaque(stf_try_allocate([grid_ptr] {
+    return new data_place(data_place::replicated(*grid_ptr));
+  }));
+}
+
+stf_data_place_handle stf_data_place_replicated_deferred(void)
+{
+  return to_opaque(stf_try_allocate([] {
+    return new data_place(data_place::replicated());
+  }));
+}
+
+int stf_data_place_is_replicated(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data place handle must not be null");
+  return from_opaque(h)->is_replicated() ? 1 : 0;
+}
+
+stf_get_executor_fn stf_partition_fn_blocked(int dim)
+{
+  switch (dim)
+  {
+    case 0:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<0>::get_executor);
+    case 1:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<1>::get_executor);
+    case 2:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<2>::get_executor);
+    case 3:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition_custom<3>::get_executor);
+    default:
+      return reinterpret_cast<stf_get_executor_fn>(&blocked_partition::get_executor);
+  }
+}
+
+stf_get_executor_fn stf_partition_fn_cyclic(void)
+{
+  return reinterpret_cast<stf_get_executor_fn>(&cyclic_partition::get_executor);
+}
+
 stf_data_place_handle stf_data_place_green_ctx(stf_green_context_helper_handle helper, size_t idx)
 {
 #if _CCCL_CTK_AT_LEAST(12, 4)
@@ -581,6 +737,30 @@ void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStrea
   }
 }
 
+void* stf_data_place_allocate_nd(
+  stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
+  // The layouts are static_asserted identical above; bit_cast avoids the
+  // -Wclass-memaccess warning that memcpy onto the non-trivial dim4 triggers.
+  const dim4 dims = ::std::bit_cast<dim4>(*data_dims);
+  try
+  {
+    return from_opaque(h)->allocate_nd(dims, elemsize, stream);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_data_place_allocate_nd failed: %s\n", e.what());
+    return nullptr;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_data_place_allocate_nd failed: unknown exception\n");
+    return nullptr;
+  }
+}
+
 void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
@@ -602,6 +782,213 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
+}
+
+stf_cute_partition_handle stf_cute_partition_create(
+  const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank)
+{
+  _CCCL_ASSERT(true_dims != nullptr, "true_dims must not be null");
+  _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
+  _CCCL_ASSERT(spec != nullptr, "spec must not be null");
+  dim4 td, gd;
+  ::std::memcpy(&td, true_dims, sizeof(td));
+  ::std::memcpy(&gd, grid_dims, sizeof(gd));
+  return to_opaque(stf_try_allocate([&] {
+    if (rank > 4)
+    {
+      throw ::std::invalid_argument("stf_cute_partition_create: rank must be at most 4");
+    }
+    ::std::vector<::cuda::experimental::places::dim_spec> cpp_spec(rank);
+    for (size_t d = 0; d < rank; d++)
+    {
+      if (spec[d].policy < STF_DIM_WHOLE || spec[d].policy > STF_DIM_BLOCK_CYCLIC)
+      {
+        throw ::std::invalid_argument("stf_cute_partition_create: dimension policy out of range");
+      }
+      cpp_spec[d].policy    = static_cast<::cuda::experimental::places::dim_policy>(spec[d].policy);
+      cpp_spec[d].mesh_axis = spec[d].mesh_axis;
+      cpp_spec[d].block     = spec[d].block;
+    }
+    return new cute_partition_descriptor(::cuda::experimental::places::make_partition_descriptor(td, cpp_spec, gd));
+  }));
+}
+
+stf_cute_partition_handle stf_cute_partition_from_leaves(
+  const uint64_t* place_extents,
+  const int64_t* place_strides,
+  const int* place_axes,
+  size_t num_place_leaves,
+  const uint64_t* local_extents,
+  const int64_t* local_strides,
+  size_t num_local_leaves,
+  const stf_dim4* padded_dims,
+  const stf_dim4* true_dims,
+  const stf_dim4* grid_dims)
+{
+  _CCCL_ASSERT(padded_dims != nullptr && true_dims != nullptr && grid_dims != nullptr, "dims must not be null");
+  _CCCL_ASSERT(num_place_leaves == 0 || (place_extents != nullptr && place_strides != nullptr && place_axes != nullptr),
+               "place leaf arrays must not be null");
+  _CCCL_ASSERT(num_local_leaves == 0 || (local_extents != nullptr && local_strides != nullptr),
+               "local leaf arrays must not be null");
+  dim4 pd, td, gd;
+  ::std::memcpy(&pd, padded_dims, sizeof(pd));
+  ::std::memcpy(&td, true_dims, sizeof(td));
+  ::std::memcpy(&gd, grid_dims, sizeof(gd));
+  return to_opaque(stf_try_allocate([&] {
+    ::std::vector<layout_leaf> pl(num_place_leaves), ll(num_local_leaves);
+    ::std::vector<int> axes(num_place_leaves);
+    for (size_t k = 0; k < num_place_leaves; k++)
+    {
+      pl[k]   = {place_extents[k], static_cast<::std::ptrdiff_t>(place_strides[k])};
+      axes[k] = place_axes[k];
+    }
+    for (size_t k = 0; k < num_local_leaves; k++)
+    {
+      ll[k] = {local_extents[k], static_cast<::std::ptrdiff_t>(local_strides[k])};
+    }
+    return new cute_partition_descriptor(mv(pl), mv(axes), mv(ll), pd, td, gd);
+  }));
+}
+
+void stf_cute_partition_destroy(stf_cute_partition_handle h)
+{
+  delete from_opaque(h);
+}
+
+void stf_cute_partition_true_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+{
+  _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
+  const dim4 d = from_opaque_const(h)->true_dims();
+  ::std::memcpy(out_dims, &d, sizeof(d));
+}
+
+void stf_cute_partition_padded_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+{
+  _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
+  const dim4 d = from_opaque_const(h)->padded_dims();
+  ::std::memcpy(out_dims, &d, sizeof(d));
+}
+
+void stf_cute_partition_grid_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+{
+  _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
+  const dim4 d = from_opaque_const(h)->grid_dims();
+  ::std::memcpy(out_dims, &d, sizeof(d));
+}
+
+size_t stf_cute_partition_num_place_leaves(stf_cute_partition_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  return from_opaque_const(h)->place_leaves().size();
+}
+
+size_t stf_cute_partition_num_local_leaves(stf_cute_partition_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  return from_opaque_const(h)->local_leaves().size();
+}
+
+void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides, int* axes)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  const auto* part = from_opaque_const(h);
+  for (size_t k = 0; k < part->place_leaves().size(); k++)
+  {
+    if (extents != nullptr)
+    {
+      extents[k] = part->place_leaves()[k].extent;
+    }
+    if (strides != nullptr)
+    {
+      strides[k] = static_cast<int64_t>(part->place_leaves()[k].stride);
+    }
+    if (axes != nullptr)
+    {
+      axes[k] = part->place_axes()[k];
+    }
+  }
+}
+
+void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  const auto* part = from_opaque_const(h);
+  for (size_t k = 0; k < part->local_leaves().size(); k++)
+  {
+    if (extents != nullptr)
+    {
+      extents[k] = part->local_leaves()[k].extent;
+    }
+    if (strides != nullptr)
+    {
+      strides[k] = static_cast<int64_t>(part->local_leaves()[k].stride);
+    }
+  }
+}
+
+int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  _CCCL_ASSERT(data_coords != nullptr, "data_coords must not be null");
+  _CCCL_ASSERT(out_grid_pos != nullptr, "out_grid_pos must not be null");
+  try
+  {
+    const pos4 coords(data_coords->x, data_coords->y, data_coords->z, data_coords->t);
+    const auto* part = from_opaque_const(h);
+    const dim4 dims  = part->padded_dims();
+    if (coords.x < 0 || coords.y < 0 || coords.z < 0 || coords.t < 0 || static_cast<uint64_t>(coords.x) >= dims.x
+        || static_cast<uint64_t>(coords.y) >= dims.y || static_cast<uint64_t>(coords.z) >= dims.z
+        || static_cast<uint64_t>(coords.t) >= dims.t)
+    {
+      throw ::std::out_of_range("stf_cute_partition_owner: coordinates are outside the padded extents");
+    }
+    const pos4 owner = part->owner(coords);
+    out_grid_pos->x  = owner.x;
+    out_grid_pos->y  = owner.y;
+    out_grid_pos->z  = owner.z;
+    out_grid_pos->t  = owner.t;
+    return 0;
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_cute_partition_owner failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_cute_partition_owner failed: unknown exception\n");
+    return 1;
+  }
+}
+
+uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
+{
+  _CCCL_ASSERT(h != nullptr, "partition handle must not be null");
+  try
+  {
+    return from_opaque_const(h)->place_offset(place_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_cute_partition_place_offset failed: %s\n", e.what());
+    return UINT64_MAX;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_cute_partition_place_offset failed: unknown exception\n");
+    return UINT64_MAX;
+  }
+}
+
+stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(partition != nullptr, "partition handle must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  const auto* part     = from_opaque_const(partition);
+  return to_opaque(stf_try_allocate([&] {
+    return new data_place(make_composite_data_place(*grid_ptr, *part));
+  }));
 }
 
 stf_ctx_handle stf_ctx_create(void)
@@ -743,6 +1130,10 @@ int stf_ctx_wait(stf_ctx_handle ctx, stf_logical_data_handle ld, void* out, size
       const auto dst_end   = dst_begin + copy_sz;
       _CCCL_ASSERT(copy_sz == 0 || dst_end <= src_begin || src_end <= dst_begin,
                    "stf_ctx_wait destination buffer must not overlap the logical data range");
+      // The range bounds are only consumed by the assertion, which compiles
+      // out in release builds.
+      (void) src_end;
+      (void) dst_end;
       ::std::memcpy(dst, data.data_handle(), copy_sz);
     };
 
@@ -1272,33 +1663,77 @@ decltype(auto) visit_sld(stf_logical_data_handle h, F&& f)
 }
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
-// Built-in condition kernel for while_cond_scalar.  Reads the head of the
-// scalar logical data, applies the requested comparison and updates the
-// conditional handle in place.  Lives outside extern "C" because it is a
-// device kernel template.
-template <typename T>
-__global__ void
-stf_stackable_while_cond_kernel(const T* value, cudaGraphConditionalHandle handle, double threshold, int op)
+// Built-in condition kernel for while_cond_scalar / while_cond_multi.  Reads
+// the head scalar of each referenced logical data, applies the requested
+// comparison (optionally negated), folds the term results with the requested
+// combiner and updates the conditional handle in place.  The whole term pack
+// is passed by value through kernel parameters (at most
+// STF_WHILE_COND_MAX_TERMS entries, well under the parameter-space limit) so
+// no device allocation is needed.  Lives outside extern "C" because it is a
+// device kernel.
+struct stf_while_cond_term_dev
 {
-  const double v = static_cast<double>(*value);
-  bool result;
-  switch (op)
+  const void* ptr;
+  double threshold;
+  int op;
+  int dtype;
+  int negate;
+};
+
+struct stf_while_cond_pack
+{
+  stf_while_cond_term_dev terms[STF_WHILE_COND_MAX_TERMS];
+  int n_terms;
+  int combiner;
+};
+
+__global__ void stf_stackable_while_cond_kernel(stf_while_cond_pack pack, cudaGraphConditionalHandle handle)
+{
+  bool result = (pack.combiner == STF_COND_ALL);
+  for (int i = 0; i < pack.n_terms; ++i)
   {
-    case STF_CMP_GT:
-      result = v > threshold;
-      break;
-    case STF_CMP_LT:
-      result = v < threshold;
-      break;
-    case STF_CMP_GE:
-      result = v >= threshold;
-      break;
-    case STF_CMP_LE:
-      result = v <= threshold;
-      break;
-    default:
-      result = false;
-      break;
+    const stf_while_cond_term_dev& t = pack.terms[i];
+    double v                         = 0.0;
+    switch (t.dtype)
+    {
+      case STF_DTYPE_FLOAT32:
+        v = static_cast<double>(*static_cast<const float*>(t.ptr));
+        break;
+      case STF_DTYPE_FLOAT64:
+        v = *static_cast<const double*>(t.ptr);
+        break;
+      case STF_DTYPE_INT32:
+        v = static_cast<double>(*static_cast<const int*>(t.ptr));
+        break;
+      case STF_DTYPE_INT64:
+        v = static_cast<double>(*static_cast<const long long*>(t.ptr));
+        break;
+      default:
+        break;
+    }
+    bool term = false;
+    switch (t.op)
+    {
+      case STF_CMP_GT:
+        term = v > t.threshold;
+        break;
+      case STF_CMP_LT:
+        term = v < t.threshold;
+        break;
+      case STF_CMP_GE:
+        term = v >= t.threshold;
+        break;
+      case STF_CMP_LE:
+        term = v <= t.threshold;
+        break;
+      default:
+        break;
+    }
+    if (t.negate)
+    {
+      term = !term;
+    }
+    result = (pack.combiner == STF_COND_ALL) ? (result && term) : (result || term);
   }
   cudaGraphSetConditional(handle, result ? 1 : 0);
 }
@@ -1514,60 +1949,89 @@ void stf_stackable_while_cond_scalar(
   double threshold,
   stf_dtype dtype)
 {
+  stf_while_cond_term term{ld, op, threshold, dtype, /* negate */ 0};
+  stf_stackable_while_cond_multi(ctx, scope, &term, 1, STF_COND_ALL);
+}
+
+void stf_stackable_while_cond_multi(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  const stf_while_cond_term* terms,
+  int n_terms,
+  stf_cond_combiner combiner)
+{
   _CCCL_ASSERT(ctx != nullptr, "stackable context handle must not be null");
   _CCCL_ASSERT(scope != nullptr, "while scope handle must not be null");
-  _CCCL_ASSERT(ld != nullptr, "stackable logical data handle must not be null");
+  _CCCL_ASSERT(terms != nullptr, "condition terms must not be null");
+  _CCCL_ASSERT(n_terms >= 1 && n_terms <= STF_WHILE_COND_MAX_TERMS, "invalid number of condition terms");
+  _CCCL_ASSERT(combiner == STF_COND_ALL || combiner == STF_COND_ANY, "invalid condition combiner");
 
-  auto* sctx                             = from_opaque_sctx(ctx);
-  auto* guard                            = from_opaque_while(scope);
-  cudaGraphConditionalHandle cond_handle = guard->cond_handle();
+  auto* sctx                                   = from_opaque_sctx(ctx);
+  auto* guard                                  = from_opaque_while(scope);
+  const cudaGraphConditionalHandle cond_handle = guard->cond_handle();
 
   const int offset = sctx->get_head_offset();
 
-  // Validate (and auto-push if necessary) the read access on this scope,
-  // then materialise the untyped logical_data for the task dep.  The
-  // concrete stackable_logical_data<T> is dispatched through visit_sld()
-  // so both slice<char>-backed data and void_interface tokens resolve
-  // correctly; the while-condition kernel below only makes sense on a
-  // scalar-typed slice, but validate_access/get_ld are type-agnostic.
-  logical_data_untyped ld_ut = visit_sld(ld, [&](auto& sld) {
-    sld.validate_access(offset, *sctx, access_mode::read);
-    return logical_data_untyped{sld.get_ld(offset)};
-  });
-
   auto& underlying_ctx = sctx->get_ctx(offset);
   auto task            = underlying_ctx.task();
-  task.add_deps(task_dep_untyped(ld_ut, access_mode::read));
+
+  // Validate (and auto-push if necessary) the read access of every term on
+  // this scope, then materialise the untyped logical_data for the task dep.
+  // The concrete stackable_logical_data<T> is dispatched through visit_sld()
+  // so both slice<char>-backed data and void_interface tokens resolve
+  // correctly; the while-condition kernel below only makes sense on
+  // scalar-typed slices, but validate_access/get_ld are type-agnostic.
+  // Duplicate handles share a single read dependency (dep_index remembers
+  // which task-dep slot each term resolves to).
+  int dep_index[STF_WHILE_COND_MAX_TERMS];
+  int n_deps = 0;
+  for (int i = 0; i < n_terms; ++i)
+  {
+    _CCCL_ASSERT(terms[i].ld != nullptr, "stackable logical data handle must not be null");
+    _CCCL_ASSERT(terms[i].dtype >= STF_DTYPE_FLOAT32 && terms[i].dtype <= STF_DTYPE_INT64,
+                 "unsupported dtype for stf_stackable_while_cond_multi");
+    int found = -1;
+    for (int j = 0; j < i; ++j)
+    {
+      if (terms[j].ld == terms[i].ld)
+      {
+        found = dep_index[j];
+        break;
+      }
+    }
+    if (found >= 0)
+    {
+      dep_index[i] = found;
+      continue;
+    }
+    logical_data_untyped ld_ut = visit_sld(terms[i].ld, [&](auto& sld) {
+      sld.validate_access(offset, *sctx, access_mode::read);
+      return logical_data_untyped{sld.get_ld(offset)};
+    });
+    task.add_deps(task_dep_untyped(ld_ut, access_mode::read));
+    dep_index[i] = n_deps++;
+  }
+
   task.set_symbol("while_condition");
   task.enable_capture();
   task.start();
 
-  auto stream     = task.get_stream();
-  auto s          = task.template get<slice<const char>>(0);
-  const void* ptr = s.data_handle();
+  const auto stream = task.get_stream();
 
-  switch (dtype)
+  stf_while_cond_pack pack{};
+  pack.n_terms  = n_terms;
+  pack.combiner = static_cast<int>(combiner);
+  for (int i = 0; i < n_terms; ++i)
   {
-    case STF_DTYPE_FLOAT32:
-      stf_stackable_while_cond_kernel<float>
-        <<<1, 1, 0, stream>>>(static_cast<const float*>(ptr), cond_handle, threshold, op);
-      break;
-    case STF_DTYPE_FLOAT64:
-      stf_stackable_while_cond_kernel<double>
-        <<<1, 1, 0, stream>>>(static_cast<const double*>(ptr), cond_handle, threshold, op);
-      break;
-    case STF_DTYPE_INT32:
-      stf_stackable_while_cond_kernel<int>
-        <<<1, 1, 0, stream>>>(static_cast<const int*>(ptr), cond_handle, threshold, op);
-      break;
-    case STF_DTYPE_INT64:
-      stf_stackable_while_cond_kernel<long long>
-        <<<1, 1, 0, stream>>>(static_cast<const long long*>(ptr), cond_handle, threshold, op);
-      break;
-    default:
-      _CCCL_ASSERT(false, "unsupported dtype for stf_stackable_while_cond_scalar");
-      break;
+    auto s                  = task.template get<slice<const char>>(dep_index[i]);
+    pack.terms[i].ptr       = s.data_handle();
+    pack.terms[i].threshold = terms[i].threshold;
+    pack.terms[i].op        = static_cast<int>(terms[i].op);
+    pack.terms[i].dtype     = static_cast<int>(terms[i].dtype);
+    pack.terms[i].negate    = terms[i].negate;
   }
+
+  stf_stackable_while_cond_kernel<<<1, 1, 0, stream>>>(pack, cond_handle);
 
   task.end();
 }

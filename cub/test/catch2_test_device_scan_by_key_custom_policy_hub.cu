@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop DispatchScanByKey
+
+// disable deprecation warnings for DispatchScanByKey
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -9,11 +14,9 @@
 #include <cuda/std/type_traits>
 
 #include "catch2_test_device_scan.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the scan-by-key dispatcher after publishing the tuning API
 
 template <typename KeysInputIteratorT, typename AccumT>
 struct my_policy_hub
@@ -21,7 +24,7 @@ struct my_policy_hub
   using key_t = cub::detail::it_value_t<KeysInputIteratorT>;
 
   // from Policy500 of the CUB scan-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<128,
@@ -34,7 +37,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device]")
+CUB_TEST("DispatchScanByKey::Dispatch: custom policy hub", "[scan_by_key][device]", CUB_SMALL)
 {
   using key_t     = int;
   using value_t   = int;

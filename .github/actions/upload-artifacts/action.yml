@@ -52,7 +52,7 @@ runs:
 
     - name: Upload artifact 0
       if: ${{ steps.parse.outputs.enabled0 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name0 }}
         path: ${{ steps.parse.outputs.path0 }}
@@ -60,7 +60,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level0 }}
     - name: Upload artifact 1
       if: ${{ steps.parse.outputs.enabled1 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name1 }}
         path: ${{ steps.parse.outputs.path1 }}
@@ -68,7 +68,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level1 }}
     - name: Upload artifact 2
       if: ${{ steps.parse.outputs.enabled2 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name2 }}
         path: ${{ steps.parse.outputs.path2 }}
@@ -76,7 +76,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level2 }}
     - name: Upload artifact 3
       if: ${{ steps.parse.outputs.enabled3 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name3 }}
         path: ${{ steps.parse.outputs.path3 }}
@@ -84,7 +84,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level3 }}
     - name: Upload artifact 4
       if: ${{ steps.parse.outputs.enabled4 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name4 }}
         path: ${{ steps.parse.outputs.path4 }}
@@ -92,7 +92,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level4 }}
     - name: Upload artifact 5
       if: ${{ steps.parse.outputs.enabled5 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name5 }}
         path: ${{ steps.parse.outputs.path5 }}
@@ -100,7 +100,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level5 }}
     - name: Upload artifact 6
       if: ${{ steps.parse.outputs.enabled6 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name6 }}
         path: ${{ steps.parse.outputs.path6 }}
@@ -108,7 +108,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level6 }}
     - name: Upload artifact 7
       if: ${{ steps.parse.outputs.enabled7 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name7 }}
         path: ${{ steps.parse.outputs.path7 }}
@@ -116,7 +116,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level7 }}
     - name: Upload artifact 8
       if: ${{ steps.parse.outputs.enabled8 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name8 }}
         path: ${{ steps.parse.outputs.path8 }}
@@ -124,7 +124,7 @@ runs:
         compression-level: ${{ steps.parse.outputs.compression_level8 }}
     - name: Upload artifact 9
       if: ${{ steps.parse.outputs.enabled9 == 'true' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
       with:
         name: ${{ steps.parse.outputs.name9 }}
         path: ${{ steps.parse.outputs.path9 }}

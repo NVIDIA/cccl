@@ -6,15 +6,18 @@
 """
 Test runner for CCCL examples.
 
-This module automatically discovers and runs all example scripts from both
-coop and compute directories to ensure they execute without errors.
+This module automatically discovers and runs all example scripts from the
+compute directory to ensure they execute without errors.
 """
 
 import importlib
+import importlib.util
 import inspect
 import sys
 import traceback
 from pathlib import Path
+
+import pytest
 
 
 def discover_examples():
@@ -23,7 +26,6 @@ def discover_examples():
     examples = []
 
     example_directories = [
-        ("Coop Experimental", "coop/_experimental/examples"),
         ("Compute", "compute/examples"),
     ]
 
@@ -44,8 +46,8 @@ def discover_examples():
             rel_path = python_file.relative_to(tests_dir)
 
             # Convert path to module name (OS-agnostic)
-            # Example: coop/_experimental/examples/block/reduce.py
-            #          -> coop._experimental.examples.block.reduce
+            # Example: compute/examples/reduce/reduce_basic.py
+            #          -> compute.examples.reduce.reduce_basic
             module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display
@@ -153,6 +155,11 @@ def create_test_functions():
         globals()[test_name] = make_test_func(module_name, display_name)
         globals()[test_name].__name__ = test_name
         globals()[test_name].__doc__ = f"Test {display_name} examples"
+        if module_name.startswith("compute.examples."):
+            globals()[test_name] = pytest.mark.skipif(
+                importlib.util.find_spec("cupy") is None,
+                reason="cuda.compute examples require the optional CuPy dependency",
+            )(globals()[test_name])
 
 
 # Create test functions for pytest

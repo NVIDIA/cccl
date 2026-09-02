@@ -1,6 +1,6 @@
 import numpy as np
 
-from cuda.compute._caching import CachableFunction
+from cuda.compute._caching import CachableFunction, _make_hashable
 
 global_x = 1
 
@@ -66,6 +66,47 @@ def test_func_caching_with_numpy_numeric_scalar_closure():
         index_dtype = np.int64
         idx_len = index_dtype(indexlength)
         reg_size = index_dtype(regularsize)
+
+        def func(counter):
+            return counter % idx_len + reg_size
+
+        return func
+
+    f1 = CachableFunction(factory(100_000, 16))
+    f2 = CachableFunction(factory(100_000, 16))
+    assert f1 == f2
+
+    f3 = CachableFunction(factory(100_000, 32))
+    assert f1 != f3
+
+
+def test_make_hashable_python_scalars_keyed_by_value():
+    # Regression test for gh-9626: plain Python int/float/bool scalars used to
+    # fall through to ``id(value)``, so two equal-valued but distinct (non-
+    # interned) objects produced different cache keys and missed the cache.
+    # int(str(...)) forces fresh, non-interned objects.
+    a = int(str(10**6))
+    b = int(str(10**6))
+    assert a is not b
+    assert _make_hashable(a) == _make_hashable(b)
+
+    x = float(str(3.5))
+    y = float(str(3.5))
+    assert _make_hashable(x) == _make_hashable(y)
+
+    # Distinct values, types, and bool-vs-int must not collide.
+    assert _make_hashable(a) != _make_hashable(int(str(10**6 + 1)))
+    assert _make_hashable(1) != _make_hashable(1.0)
+    assert _make_hashable(True) != _make_hashable(1)
+
+
+def test_func_caching_with_python_scalar_closure():
+    # gh-9626: closures capturing equal-valued Python scalars must compare
+    # equal so the algorithm build cache hits instead of rebuilding every call.
+    def factory(indexlength, regularsize):
+        # int(str(...)) forces fresh, non-interned int objects.
+        idx_len = int(str(indexlength))
+        reg_size = int(str(regularsize))
 
         def func(counter):
             return counter % idx_len + reg_size

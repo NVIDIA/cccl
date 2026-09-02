@@ -14,7 +14,7 @@ using namespace cuda::experimental::stf;
 
 /*
  * DATA BLOCKS
- *   | GHOSTS | DATA | GHOSTS |
+ *   | GHOSTS | DATA | GHOSTS |
  */
 template <typename T>
 class data_block

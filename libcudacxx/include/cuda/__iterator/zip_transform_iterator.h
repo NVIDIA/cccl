@@ -58,6 +58,7 @@ template <class _Fn, class... _Iterators>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __get_zip_transform_iterator_category()
 {
   using _Constraints = __zip_iter_constraints<_Iterators...>;
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (!::cuda::std::is_reference_v<
                   ::cuda::std::invoke_result_t<_Fn&, ::cuda::std::iter_reference_t<_Iterators>...>>)
   {
@@ -79,6 +80,7 @@ template <class _Fn, class... _Iterators>
   {
     return ::cuda::std::input_iterator_tag{};
   }
+  // NOLINTEND(bugprone-branch-clone)
 }
 
 //! @brief @c zip_transform_iterator is an iterator which represents the result of a transformation of a set of

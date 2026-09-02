@@ -90,7 +90,7 @@ struct CustomBinaryPartition
   template <class MappingResult>
   __device__ bool operator()(MappingResult mapping_result)
   {
-    switch (mapping_result.rank())
+    switch (mapping_result.unit_rank())
     {
       case 1:
       case 5:

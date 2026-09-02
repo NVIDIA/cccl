@@ -24,12 +24,14 @@
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/implicit_hierarchy.cuh>
+#include <cuda/experimental/__group/synchronizer/level_synchronizer.cuh>
 
 #if _CCCL_HAS_COOPERATIVE_GROUPS()
 #  include <cooperative_groups.h>
@@ -45,40 +47,6 @@ template <class _HierarchyLike>
 using __hierarchy_type_of =
   ::cuda::std::remove_cvref_t<decltype(::cuda::__unpack_hierarchy_if_needed(::cuda::std::declval<_HierarchyLike>()))>;
 
-#  if _CCCL_CUDA_COMPILATION()
-template <bool _Aligned>
-_CCCL_DEVICE_API void __block_sync() noexcept
-{
-  if constexpr (_Aligned)
-  {
-    ::__syncthreads();
-  }
-  else
-  {
-    ::__barrier_sync(0);
-  }
-}
-
-template <bool _Aligned>
-_CCCL_DEVICE_API void __cluster_sync() noexcept
-{
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                    ({
-                      if constexpr (_Aligned)
-                      {
-                        asm volatile("barrier.cluster.arrive.aligned;");
-                        asm volatile("barrier.cluster.wait.aligned;");
-                      }
-                      else
-                      {
-                        ::__cluster_barrier_arrive();
-                        ::__cluster_barrier_wait();
-                      }
-                    }),
-                    ({ ::cuda::experimental::__block_sync<_Aligned>(); }))
-}
-#  endif // _CCCL_CUDA_COMPILATION()
-
 template <class _Level>
 struct __this_mapping_result
 {
@@ -87,27 +55,27 @@ struct __this_mapping_result
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const noexcept
   {
     return 0;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
   {
     return 1;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const noexcept
   {
     return 0;
   }
@@ -138,106 +106,145 @@ struct __this_mapping_result
   {
     return true;
   }
-
-  // todo(dabayer): add method that determines whether the unit is part of the group or not.
 };
 
-// todo: use __hier_ in queries
 template <class _Level, class _Hierarchy>
 class __this_group_base
 {
   static_assert(__is_hierarchy_level_v<_Level>);
   static_assert(__is_hierarchy_v<_Hierarchy>);
 
-protected:
-  using __mapping_result_type = __this_mapping_result<_Level>;
-
-  _Hierarchy __hier_;
+  using _SynchronizerInstance = level_synchronizer::__synchronizer_instance<_Level>;
 
 public:
-  _CCCL_DEVICE_API explicit __this_group_base() noexcept
-      : __hier_{::cuda::experimental::__implicit_hierarchy()}
-  {}
+  using unit_type             = _Level;
+  using level_type            = _Level;
+  using __mapping_result_type = __this_mapping_result<_Level>;
+  using hierarchy_type        = _Hierarchy;
 
+private:
+  _Hierarchy __hier_;
+  __mapping_result_type __mapping_result_{};
+  _SynchronizerInstance __synchronizer_instance_{};
+
+public:
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
   _CCCL_DEVICE_API __this_group_base(const _HierarchyLike& __hier_like) noexcept
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
   {}
 
-  _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND(
-    !::cuda::std::is_same_v<_Level2, grid_level>))
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
+  {
+    return __hier_;
+  }
+
+  // todo(dabayer): Do we want to expose mapping result getter?
+  [[nodiscard]] _CCCL_DEVICE_API const __mapping_result_type& __mapping_result() const noexcept
+  {
+    return __mapping_result_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API const _SynchronizerInstance& __synchronizer_instance() const noexcept
+  {
+    return __synchronizer_instance_;
+  }
+
+  _CCCL_DEVICE_API void sync() const noexcept
+  {
+    __synchronizer_instance_.do_sync(__mapping_result_, __hier_);
+  }
+
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
+  {
+    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __hier_);
+  }
+
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count(const _InLevel& __in_level) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
+    {
+      return 1;
+    }
+    else
+    {
+      return _Level::static_count(__in_level, _Hierarchy{});
+    }
+  }
+
+  template <class _Tp, class _MappingResult, class _InLevel>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr _Tp
+  __count_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
+    {
+      return _Tp{1};
+    }
+    else
+    {
+      return _Level::template count_as<_Tp>(__in_level, __hier);
+    }
+  }
+
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.template count_as<_Tp>(__in_level, __hier_);
+    return __count_as_impl<_Tp>(__mapping_result_, __hier_, __in_level);
   }
 
-  _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.count(__in_level, __hier_);
+    return __count_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
 
-#  if _CCCL_CUDA_COMPILATION()
-  _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND(
-    !::cuda::std::is_same_v<_Level2, grid_level>))
+  template <class _Tp, class _MappingResult, class _InLevel>
+  [[nodiscard]] _CCCL_DEVICE_API static _Tp
+  __rank_as_impl(const _MappingResult&, const _Hierarchy& __hier, const _InLevel& __in_level) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_InLevel, _Level>)
+    {
+      return _Tp{0};
+    }
+    else
+    {
+      return _Level::template rank_as<_Tp>(__in_level, __hier);
+    }
+  }
+
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.template rank_as<_Tp>(__in_level, __hier_);
+    return __rank_as_impl<_Tp>(__mapping_result_, __hier_, __in_level);
   }
 
-  _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.rank(__in_level, __hier_);
+    return __rank_as_impl<typename _InLevel::__product_type>(__mapping_result_, __hier_, __in_level);
   }
-#  endif // _CCCL_CUDA_COMPILATION()
 };
 
 template <class _Hierarchy>
-class this_thread : __this_group_base<thread_level, _Hierarchy>
+class this_thread : public __this_group_base<thread_level, _Hierarchy>
 {
   using __base_type = __this_group_base<thread_level, _Hierarchy>;
 
 public:
-  using unit_type    = thread_level;
-  using level_type   = thread_level;
-  using mapping_type = void;
-  using typename __base_type::__mapping_result_type;
-  using hierarchy_type    = _Hierarchy;
-  using synchronizer_type = void;
-
   using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
-#  if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
 
-#    if _CCCL_HAS_COOPERATIVE_GROUPS()
+#  if _CCCL_HAS_COOPERATIVE_GROUPS()
   template <class _Parent>
   _CCCL_DEVICE_API this_thread(const ::cooperative_groups::thread_block_tile<1, _Parent>&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
   {}
-#    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
-
-  _CCCL_DEVICE_API void sync() const noexcept {}
-
-  _CCCL_DEVICE_API void sync_aligned() const noexcept {}
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
-  {
-    return {};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
-  {
-    return __base_type::__hier_;
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
 
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread() -> this_thread<__implicit_hierarchy_t>;
@@ -252,51 +259,19 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_thread(const ::cooperative_groups::thread_
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
-class this_warp : __this_group_base<warp_level, _Hierarchy>
+class this_warp : public __this_group_base<warp_level, _Hierarchy>
 {
   using __base_type = __this_group_base<warp_level, _Hierarchy>;
 
 public:
-  using unit_type    = warp_level;
-  using level_type   = warp_level;
-  using mapping_type = void;
-  using typename __base_type::__mapping_result_type;
-  using hierarchy_type    = _Hierarchy;
-  using synchronizer_type = void;
-
   using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
-#  if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
 
-#    if _CCCL_HAS_COOPERATIVE_GROUPS()
+#  if _CCCL_HAS_COOPERATIVE_GROUPS()
   template <class _Parent>
   _CCCL_DEVICE_API this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
   {}
-#    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
-
-  _CCCL_DEVICE_API void sync() const noexcept
-  {
-    ::__syncwarp();
-  }
-
-  _CCCL_DEVICE_API void sync_aligned() const noexcept
-  {
-    ::__syncwarp();
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
-  {
-    return {};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
-  {
-    return __base_type::__hier_;
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
 
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp() -> this_warp<__implicit_hierarchy_t>;
@@ -312,50 +287,18 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_warp(const ::cooperative_groups::thread_bl
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
-class this_block : __this_group_base<block_level, _Hierarchy>
+class this_block : public __this_group_base<block_level, _Hierarchy>
 {
   using __base_type = __this_group_base<block_level, _Hierarchy>;
 
 public:
-  using unit_type    = block_level;
-  using level_type   = block_level;
-  using mapping_type = void;
-  using typename __base_type::__mapping_result_type;
-  using hierarchy_type    = _Hierarchy;
-  using synchronizer_type = void;
-
   using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
 
-#  if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
-
-#    if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept {}
-#    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
-
-  _CCCL_DEVICE_API void sync() const noexcept
-  {
-    ::cuda::experimental::__block_sync<false>();
-  }
-
-  _CCCL_DEVICE_API void sync_aligned() const noexcept
-  {
-    ::cuda::experimental::__block_sync<true>();
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
-  {
-    return {};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
-  {
-    return __base_type::__hier_;
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
+#  if _CCCL_HAS_COOPERATIVE_GROUPS()
+  _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
+  {}
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
 
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block() -> this_block<__implicit_hierarchy_t>;
@@ -370,64 +313,18 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_block(const ::cooperative_groups::thread_b
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
-class this_cluster : __this_group_base<cluster_level, _Hierarchy>
+class this_cluster : public __this_group_base<cluster_level, _Hierarchy>
 {
   using __base_type = __this_group_base<cluster_level, _Hierarchy>;
 
 public:
-  using unit_type    = cluster_level;
-  using level_type   = cluster_level;
-  using mapping_type = void;
-  using typename __base_type::__mapping_result_type;
-  using hierarchy_type    = _Hierarchy;
-  using synchronizer_type = void;
-
   using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
 
-#  if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
-
-#    if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
-  _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept {}
-#    endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
-
-  _CCCL_DEVICE_API void sync() const noexcept
-  {
-    if constexpr (_Hierarchy::has_level(cluster))
-    {
-      ::cuda::experimental::__cluster_sync<false>();
-    }
-    else
-    {
-      ::cuda::experimental::__block_sync<false>();
-    }
-  }
-
-  _CCCL_DEVICE_API void sync_aligned() const noexcept
-  {
-    if constexpr (_Hierarchy::has_level(cluster))
-    {
-      ::cuda::experimental::__cluster_sync<true>();
-    }
-    else
-    {
-      ::cuda::experimental::__block_sync<true>();
-    }
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
-  {
-    return {};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
-  {
-    return __base_type::__hier_;
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
+#  if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
+  _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
+  {}
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 };
 
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster() -> this_cluster<__implicit_hierarchy_t>;
@@ -441,114 +338,19 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_cluster(const ::cooperative_groups::cluste
   -> this_cluster<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 
-// Synchronizing whole grid requires driver support and the kernel must be launched using the cooperative launch API.
-// This part is extracted from grid synchronization implementation in cooperative groups.
-#  if _CCCL_CUDA_COMPILATION()
-[[nodiscard]] _CCCL_DEVICE_API inline unsigned* __get_grid_barrier_ptr() noexcept
-{
-  struct __grid_workspace
-  {
-    unsigned __size_;
-    unsigned __barrier_;
-  };
-
-  __grid_workspace* __grid_workspace_ptr;
-  asm("mov.b64 %0, {%%envreg2, %%envreg1};" : "=l"(__grid_workspace_ptr));
-  _CCCL_ASSERT(__grid_workspace_ptr != nullptr,
-               "Synchronizing grid requires the kernel to be launched using the cooperative launch.");
-
-  return &__grid_workspace_ptr->__barrier_;
-}
-#  endif // _CCCL_CUDA_COMPILATION()
-
 template <class _Hierarchy>
-class this_grid : __this_group_base<grid_level, _Hierarchy>
+class this_grid : public __this_group_base<grid_level, _Hierarchy>
 {
   using __base_type = __this_group_base<grid_level, _Hierarchy>;
 
-#  if _CCCL_CUDA_COMPILATION()
-  template <bool _Aligned>
-  _CCCL_DEVICE_API void __sync_impl() const noexcept
-  {
-    const auto __barrier_ptr = ::cuda::experimental::__get_grid_barrier_ptr();
-
-    // Synchronize the block before synchronizing with the other blocks.
-    ::cuda::experimental::__block_sync<_Aligned>();
-
-    // Synchronize with other blocks using the thread 0 in block.
-    const auto __thread_idx = gpu_thread.index(block, hierarchy());
-    if ((__thread_idx.x | __thread_idx.y | __thread_idx.z) == 0)
-    {
-      const auto __expected = block.count_as<unsigned>(grid, hierarchy());
-      unsigned __nblocks    = 1;
-
-      const auto __block_idx = block.index(grid, hierarchy());
-      if ((__block_idx.x | __block_idx.y | __block_idx.z) == 0)
-      {
-        __nblocks = unsigned{::cuda::std::numeric_limits<int>::min()} - (__expected - 1);
-      }
-
-      unsigned __old_barrier_value;
-#    if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-      __old_barrier_value =
-        __nv_atomic_fetch_add(__barrier_ptr, __nblocks, __NV_ATOMIC_RELEASE, __NV_THREAD_SCOPE_DEVICE);
-#    else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
-      asm volatile("atom.add.release.gpu.u32 %0, [%1], %2;"
-                   : "=r"(__old_barrier_value)
-                   : "l"(__barrier_ptr), "r"(__nblocks)
-                   : "memory");
-#    endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
-      unsigned __curr_barrier_value;
-      do
-      {
-#    if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-        __nv_atomic_load(__barrier_ptr, &__curr_barrier_value, __NV_ATOMIC_ACQUIRE, __NV_THREAD_SCOPE_DEVICE);
-#    else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
-        asm volatile("ld.acquire.gpu.u32 %0, [%1];" : "=r"(__curr_barrier_value) : "l"(__barrier_ptr) : "memory");
-#    endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
-      } while (static_cast<int>(__old_barrier_value) < 0 == static_cast<int>(__curr_barrier_value) < 0);
-    }
-
-    // Wait for the thread 0 to finish the inter block synchronization.
-    ::cuda::experimental::__block_sync<_Aligned>();
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
-
 public:
-  using unit_type    = grid_level;
-  using level_type   = grid_level;
-  using mapping_type = void;
-  using typename __base_type::__mapping_result_type;
-  using hierarchy_type    = _Hierarchy;
-  using synchronizer_type = void;
-
   using __base_type::__base_type;
 
-#  if _CCCL_CUDA_COMPILATION()
-#    if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept {}
-#    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
-
-  _CCCL_DEVICE_API void sync() const noexcept
-  {
-    __sync_impl<false>();
-  }
-
-  _CCCL_DEVICE_API void sync_aligned() const noexcept
-  {
-    __sync_impl<true>();
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
-  {
-    return {};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
-  {
-    return __base_type::__hier_;
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
+#  if _CCCL_HAS_COOPERATIVE_GROUPS()
+  _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept
+      : __base_type{::cuda::experimental::implicit_hierarchy()}
+  {}
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 };
 
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES this_grid() -> this_grid<__implicit_hierarchy_t>;

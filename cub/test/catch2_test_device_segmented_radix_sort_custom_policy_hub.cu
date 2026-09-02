@@ -13,7 +13,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include "catch2_radix_sort_helper.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -21,7 +21,7 @@ template <typename KeyT, typename OffsetT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB radix sort tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
     static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
@@ -32,14 +32,14 @@ struct my_policy_hub
     using HistogramPolicy    = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
     using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
     using OnesweepPolicy     = AgentRadixSortOnesweepPolicy<
-          256,
-          21,
-          KeyT,
-          1,
-          RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-          BLOCK_SCAN_WARP_SCANS,
-          RADIX_SORT_STORE_DIRECT,
-          ONESWEEP_RADIX_BITS>;
+      256,
+      21,
+      KeyT,
+      1,
+      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+      BLOCK_SCAN_WARP_SCANS,
+      RADIX_SORT_STORE_DIRECT,
+      ONESWEEP_RADIX_BITS>;
     using ScanPolicy =
       AgentScanPolicy<512,
                       23,
@@ -98,7 +98,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segmented][radix][sort][device]")
+CUB_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segmented][radix][sort][device]", CUB_SMALL)
 {
   using key_t          = int;
   using value_t        = NullType;
@@ -118,13 +118,13 @@ C2H_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segm
 
   using policy_hub_t = my_policy_hub<key_t, segment_size_t>;
   using dispatch_t   = DispatchSegmentedRadixSort<
-      SortOrder::Ascending,
-      key_t,
-      value_t,
-      const offset_t*,
-      const offset_t*,
-      segment_size_t,
-      policy_hub_t>;
+    SortOrder::Ascending,
+    key_t,
+    value_t,
+    const offset_t*,
+    const offset_t*,
+    segment_size_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

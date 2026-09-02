@@ -15,17 +15,14 @@
 #if !TUNE_BASE
 struct tuned_policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::reduce::reduce_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ReducePolicy
   {
-    cub::detail::reduce::agent_reduce_policy rp{
+    cub::ReducePassPolicy rp{
       TUNE_THREADS_PER_BLOCK,
       TUNE_ITEMS_PER_THREAD,
       1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
       cub::BLOCK_REDUCE_WARP_REDUCTIONS,
       cub::LOAD_DEFAULT};
-    auto rp_nondet            = rp;
-    rp_nondet.block_algorithm = cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
     return {rp, rp};
   }
 };

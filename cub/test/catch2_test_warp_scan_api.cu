@@ -12,7 +12,7 @@
 #include <cuda/std/__numeric/inclusive_scan.h>
 #include <cuda/std/__numeric/iota.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 constexpr int num_warps = 4;
 
@@ -61,7 +61,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
 }
 // example-end inclusive-warp-scan-init-value
 
-C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
 
@@ -73,7 +73,7 @@ C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][war
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start = expected.begin() + i * 32;
+    auto start = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end   = start + 32;
 
     cuda::std::iota(start, end, i); // initialize host input for every warp
@@ -116,7 +116,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
 }
 // example-end inclusive-warp-scan-init-value-aggregate
 
-C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);
@@ -131,7 +131,7 @@ C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start   = expected.begin() + i * 32;
+    auto start   = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end     = start + 32;
     int init_val = 3;
 
@@ -139,8 +139,8 @@ C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
     cuda::std::inclusive_scan(start, end, start, sum_op{}, init_val);
 
-    expected_aggr.push_back(expected[i * 32 + 31] - init_val); // warp aggregate does not take
-                                                               // initial value into account
+    expected_aggr.push_back(expected[i * 32 + 31] - init_val); // NOLINT(bugprone-misplaced-widening-cast) warp
+                                                               // aggregate does not take initial value into account
   }
 
   REQUIRE(expected == d_out);
@@ -194,7 +194,7 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
 }
 // example-end inclusive-warp-scan-init-value-partial
 
-C2H_TEST("Warp array-based partial inclusive scan works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based partial inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
 
@@ -206,7 +206,7 @@ C2H_TEST("Warp array-based partial inclusive scan works with initial value", "[s
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32;
+    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end        = start + 32;
     int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
 
@@ -270,7 +270,7 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
 }
 // example-end inclusive-warp-scan-init-value-aggregate-partial
 
-C2H_TEST("Warp array-based partial inclusive scan aggregate works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based partial inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);
@@ -285,7 +285,7 @@ C2H_TEST("Warp array-based partial inclusive scan aggregate works with initial v
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32;
+    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end        = start + 32;
     int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
     int init_val    = 3;

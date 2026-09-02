@@ -30,10 +30,9 @@
 template <typename KeyT>
 struct bench_policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
-    -> cub::detail::merge::merge_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::MergePolicy
   {
-    return cub::detail::merge::merge_policy{
+    return cub::MergePolicy{
       (1 << TUNE_THREADS_PER_BLOCK_POW2),
       cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
       TUNE_LOAD_MODIFIER,

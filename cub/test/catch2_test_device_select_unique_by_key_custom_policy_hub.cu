@@ -13,7 +13,7 @@
 
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -21,7 +21,7 @@ template <class KeyT, class ValueT>
 struct my_policy_hub
 {
   // from Policy500 of the CUB unique-by-key tunings
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     using UniqueByKeyPolicyT =
       AgentUniqueByKeyPolicy<128,
@@ -33,7 +33,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_key][device]")
+CUB_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_key][device]", CUB_SMALL)
 {
   using key_t    = int;
   using value_t  = int;

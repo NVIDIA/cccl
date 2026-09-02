@@ -12,9 +12,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_sort][pairs][env]", CUB_SMALL)
 {
   // example-begin stable-sort-pairs-env
   auto keys_in       = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -52,7 +52,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[segmented_sort][pairs][env]", CUB_SMALL)
 {
   // example-begin stable-sort-pairs-descending-env
   auto keys_in       = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -90,7 +90,9 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API", "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API",
+         "[segmented_sort][pairs][env]",
+         CUB_SMALL)
 {
   // example-begin stable-sort-pairs-db-env
   auto keys_buf0     = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -132,8 +134,9 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API",
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-based API",
-         "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-based API",
+         "[segmented_sort][pairs][env]",
+         CUB_SMALL)
 {
   // example-begin stable-sort-pairs-descending-db-env
   auto keys_buf0     = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -176,7 +179,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-b
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable env-based API", "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortPairs nonstable env-based API", "[segmented_sort][pairs][env]", CUB_SMALL)
 {
   // example-begin sort-pairs-env
   auto keys_in       = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -214,7 +217,9 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable env-based API", "[segmen
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable env-based API", "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable env-based API",
+         "[segmented_sort][pairs][env]",
+         CUB_SMALL)
 {
   // example-begin sort-pairs-descending-env
   auto keys_in       = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -252,7 +257,9 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable env-based API"
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable DoubleBuffer env-based API", "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortPairs nonstable DoubleBuffer env-based API",
+         "[segmented_sort][pairs][env]",
+         CUB_SMALL)
 {
   // example-begin sort-pairs-db-env
   auto keys_buf0     = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -294,8 +301,9 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable DoubleBuffer env-based A
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer env-based API",
-         "[segmented_sort][pairs][env]")
+CUB_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer env-based API",
+         "[segmented_sort][pairs][env]",
+         CUB_SMALL)
 {
   // example-begin sort-pairs-descending-db-env
   auto keys_buf0     = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};

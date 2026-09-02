@@ -14,9 +14,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-even-env
   auto d_samples   = thrust::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
@@ -50,7 +50,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histog
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-even-2d-env
   // 2D region of interest: 2 rows, 3 samples per row, row stride includes 1 padding element
@@ -92,7 +92,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[h
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-range-env
   auto d_samples   = thrust::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
@@ -124,7 +124,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histo
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-range-2d-env
   // 2D region of interest: 2 rows, 3 samples per row, row stride includes 1 padding element
@@ -164,7 +164,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-even-1d-env
   // 4-channel RGBA pixels, histogram 3 active channels
@@ -222,7 +222,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
   REQUIRE(d_histogram_b == expected_b);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-even-2d-env
   // 4-channel RGBA pixels, histogram 3 active channels, 2D region
@@ -285,7 +285,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
   REQUIRE(d_histogram_b == expected_b);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-range-1d-env
   // 4-channel RGBA pixels, histogram 3 active channels
@@ -342,7 +342,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
   REQUIRE(d_histogram_b == expected_b);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-range-2d-env
   // 4-channel RGBA pixels, histogram 3 active channels, 2D region
@@ -431,7 +431,7 @@ struct HistogramPolicySelector
 };
 // example-end histogram-even-policy-selector
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven env-based API with tuning", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramEven accepts a custom policy selector", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-even-tuning
   auto d_samples   = thrust::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};

@@ -37,13 +37,13 @@ namespace detail
 //! @param env The execution environment
 //! @param algorithm_callable Callable that invokes the algorithm implementation with determinism specified
 template <typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCallable&& algorithm_callable)
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
   // Query memory resource from environment
-  auto mr = ::cuda::__call_or(::cuda::mr::__get_memory_resource, detail::device_memory_resource{}, env);
+  auto mr = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
 
   // Query tuning from environment
   const auto tuning = ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
@@ -76,8 +76,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(const EnvT& env, Algor
 //! @endcond
 
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION static cudaError_t
-dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   return detail::dispatch_with_env(
     env,
@@ -102,7 +101,7 @@ dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_call
 //! @param[in,out] temp_storage_bytes Reference to size in bytes of `d_temp_storage` allocation
 //! @param algorithm_callable Callable that invokes the algorithm implementation with determinism specified
 template <typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
@@ -116,7 +115,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(
 //! @endcond
 
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env_and_tuning(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
   void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
 {
   return detail::dispatch_with_env(

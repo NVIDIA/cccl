@@ -346,11 +346,11 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   else
   {
     // skip checks in cmp_less, cmp_greater, uabs
-    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Lhs>)
+    if constexpr (is_unsigned_v<_Lhs> && is_signed_v<_Rhs>)
     {
       _CCCL_ASSUME(__rhs < 0);
     }
-    else if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Rhs>)
+    if constexpr (is_unsigned_v<_Rhs> && is_signed_v<_Lhs>)
     {
       _CCCL_ASSUME(__lhs < 0);
     }

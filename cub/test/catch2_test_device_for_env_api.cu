@@ -14,7 +14,7 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // example-begin bulk-square-env-t
 struct square_t
@@ -53,7 +53,7 @@ struct odd_count_t
 };
 // example-end odd-count-env-t
 
-C2H_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin bulk-env
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};
@@ -76,7 +76,7 @@ C2H_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-n-env
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};
@@ -99,7 +99,7 @@ C2H_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-env
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};
@@ -122,7 +122,7 @@ C2H_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-copy-n-env
   auto vec   = thrust::device_vector<int>{1, 2, 3, 4};
@@ -146,7 +146,7 @@ C2H_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]")
   REQUIRE(count == expected_count);
 }
 
-C2H_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]")
+CUB_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]", CUB_SMALL)
 {
   // example-begin for-each-copy-env
   auto vec   = thrust::device_vector<int>{1, 2, 3, 4};
@@ -182,7 +182,7 @@ struct ForPolicySelector
 };
 // example-end bulk-policy-selector
 
-C2H_TEST("cub::DeviceFor::Bulk env-based API with tuning", "[for][env]")
+CUB_TEST("cub::DeviceFor::Bulk accepts a custom policy selector", "[for][env]", CUB_SMALL)
 {
   // example-begin bulk-tuning
   auto vec = thrust::device_vector<int>{1, 2, 3, 4};

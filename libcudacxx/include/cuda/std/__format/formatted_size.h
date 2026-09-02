@@ -42,34 +42,34 @@ class __fmt_formatted_size_buffer : __fmt_output_buffer<_CharT>
 {
   __fmt_max_output_size __max_output_size_{0};
 
-  _CCCL_API static constexpr void __prepare_write(__fmt_output_buffer<_CharT>&, size_t)
+  _CCCL_HOST_DEVICE_API static constexpr void __prepare_write(__fmt_output_buffer<_CharT>&, size_t)
   {
     // Note this function does not satisfy the requirement of giving a 1 code unit buffer.
     _CCCL_ASSERT(false, "Since __max_output_size_.__max_size_ == 0 there should never be call to this function.");
   }
 
 public:
-  using _Base _CCCL_NODEBUG_ALIAS = __fmt_output_buffer<_CharT>;
+  using _Base _CCCL_NODEBUG = __fmt_output_buffer<_CharT>;
 
-  _CCCL_API constexpr __fmt_formatted_size_buffer() noexcept
+  _CCCL_HOST_DEVICE_API constexpr __fmt_formatted_size_buffer() noexcept
       : _Base{nullptr, 0, __prepare_write, &__max_output_size_}
   {}
 
-  [[nodiscard]] _CCCL_API constexpr auto __make_output_iterator()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_output_iterator()
   {
     return _Base::__make_output_iterator();
   }
 
   // This function does not need to be r-value qualified, however this is
   // consistent with similar objects.
-  [[nodiscard]] _CCCL_API constexpr size_t __result() &&
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_t __result() &&
   {
     return __max_output_size_.__code_units_written();
   }
 };
 
 template <class _CharT, class _FmtArgs>
-[[nodiscard]] _CCCL_API size_t __formatted_size_impl(basic_string_view<_CharT> __fmt, _FmtArgs __args)
+[[nodiscard]] _CCCL_HOST_DEVICE_API size_t __formatted_size_impl(basic_string_view<_CharT> __fmt, _FmtArgs __args)
 {
   __fmt_formatted_size_buffer<_CharT> __buffer;
   (void) ::cuda::std::__fmt_vformat_to(
@@ -79,14 +79,14 @@ template <class _CharT, class _FmtArgs>
 }
 
 template <class... _Args>
-[[nodiscard]] _CCCL_API size_t formatted_size(format_string<_Args...> __fmt, _Args&&... __args)
+[[nodiscard]] _CCCL_HOST_DEVICE_API size_t formatted_size(format_string<_Args...> __fmt, _Args&&... __args)
 {
   return ::cuda::std::__formatted_size_impl(__fmt.get(), basic_format_args{::cuda::std::make_format_args(__args...)});
 }
 
 #if _CCCL_HAS_WCHAR_T()
 template <class... _Args>
-[[nodiscard]] _CCCL_API size_t formatted_size(wformat_string<_Args...> __fmt, _Args&&... __args)
+[[nodiscard]] _CCCL_HOST_DEVICE_API size_t formatted_size(wformat_string<_Args...> __fmt, _Args&&... __args)
 {
   return ::cuda::std::__formatted_size_impl(__fmt.get(), basic_format_args{::cuda::std::make_wformat_args(__args...)});
 }

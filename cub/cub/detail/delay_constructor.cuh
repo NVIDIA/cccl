@@ -14,81 +14,11 @@
 #endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 
-#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__concepts/same_as.h>
 
 CUB_NAMESPACE_BEGIN
-
-//! The delay algorithm used by decoupled lookback
-enum class LookbackDelayAlgorithm
-{
-  no_delay,
-  fixed_delay,
-  exponential_backoff,
-  exponential_backoff_jitter,
-  exponential_backoff_jitter_window,
-  exponential_backon_jitter_window,
-  exponential_backon_jitter,
-  exponential_backon,
-  __reduce_by_key //!< Internal
-};
-
-#if _CCCL_HOSTED()
-inline ::std::ostream& operator<<(::std::ostream& os, LookbackDelayAlgorithm kind)
-{
-  switch (kind)
-  {
-    case LookbackDelayAlgorithm::no_delay:
-      return os << "LookbackDelayAlgorithm::no_delay";
-    case LookbackDelayAlgorithm::fixed_delay:
-      return os << "LookbackDelayAlgorithm::fixed_delay";
-    case LookbackDelayAlgorithm::exponential_backoff:
-      return os << "LookbackDelayAlgorithm::exponential_backoff";
-    case LookbackDelayAlgorithm::exponential_backoff_jitter:
-      return os << "LookbackDelayAlgorithm::exponential_backoff_jitter";
-    case LookbackDelayAlgorithm::exponential_backoff_jitter_window:
-      return os << "LookbackDelayAlgorithm::exponential_backoff_jitter_window";
-    case LookbackDelayAlgorithm::exponential_backon_jitter_window:
-      return os << "LookbackDelayAlgorithm::exponential_backon_jitter_window";
-    case LookbackDelayAlgorithm::exponential_backon_jitter:
-      return os << "LookbackDelayAlgorithm::exponential_backon_jitter";
-    case LookbackDelayAlgorithm::exponential_backon:
-      return os << "LookbackDelayAlgorithm::exponential_backon";
-    case LookbackDelayAlgorithm::__reduce_by_key:
-      return os << "LookbackDelayAlgorithm::__reduce_by_key";
-    default:
-      return os << "<unknown LookbackDelayAlgorithm: " << static_cast<int>(kind) << ">";
-  }
-}
-#endif // _CCCL_HOSTED()
-
-//! The policy configuring the delay algorithm used by decoupled lookback
-struct LookbackDelayPolicy
-{
-  LookbackDelayAlgorithm kind; //!< The algorithm used for delaying during decoupled lookback
-  unsigned int delay; //!< The delay in nanoseconds
-  unsigned int l2_write_latency; //!< The write latency of the L2 cache in nanoseconds
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs) noexcept
-  {
-    return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const LookbackDelayPolicy& lhs, const LookbackDelayPolicy& rhs) noexcept
-  {
-    return !(lhs == rhs);
-  }
-
-#if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const LookbackDelayPolicy& p)
-  {
-    return os << "LookbackDelayPolicy { .kind = " << p.kind << ", .delay = " << p.delay
-              << ", .l2_write_latency = " << p.l2_write_latency << " }";
-  }
-#endif // _CCCL_HOSTED()
-};
 
 namespace detail
 {

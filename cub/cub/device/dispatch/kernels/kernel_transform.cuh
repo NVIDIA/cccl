@@ -36,6 +36,7 @@
 #include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -270,8 +271,8 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   constexpr int load_store_count = items_per_thread / vec_size;
   static_assert(items_per_thread % vec_size == 0, "The items per thread must be a multiple of the vector size");
 
-  constexpr bool can_vectorize_store = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-                                    && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
+  constexpr bool can_vectorize_store =
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut> && ::cuda::is_trivially_copyable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
@@ -298,13 +299,14 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       }
       else
       {
-        in += threadIdx.x * vec_size;
+        in += threadIdx.x * vec_size; // NOLINT(bugprone-misplaced-widening-cast)
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j = 0; j < vec_size; ++j)
           {
+            // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
             input[i * vec_size + j] = in[i * vec_size * threads_per_block + j];
           }
         }
@@ -343,13 +345,14 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   else
   {
     // serial path
-    out += threadIdx.x * vec_size;
+    out += threadIdx.x * vec_size; // NOLINT(bugprone-misplaced-widening-cast)
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; ++j)
       {
+        // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
         out[i * vec_size * threads_per_block + j] = output[i * vec_size + j];
       }
     }
@@ -359,7 +362,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
 //
 // For performance considerations of memcpy_async:
-// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#performance-guidance-for-memcpy-async
+// https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html#asynchronous-data-copies
 //
 // We basically have to align the base pointer to 16 bytes, and copy a multiple of 16 bytes. To achieve this, when we
 // copy a tile of data from an input buffer, we round down the pointer to the start of the tile to the next lower
@@ -368,10 +371,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 // should align to 128 bytes instead of 16 on Hopper.
 //
 // However, padding memory copies like that may access the input buffer out-of-bounds. Here are some thoughts:
-// * According to the CUDA programming guide
-// (https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#device-memory-accesses), "any address of a variable
-// residing in global memory or returned by one of the memory allocation routines from the driver or runtime API is
-// always aligned to at least 256 bytes."
+// * According to the CUDA Best Practices guide
+// (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/#a-sequential-but-misaligned-access-pattern), "Memory
+// allocated through the CUDA Runtime API, such as via cudaMalloc(), is guaranteed to be aligned to at least 256 bytes."
 // * Memory protection is usually done on memory page level, which is even larger than 256 bytes for CUDA and 4KiB on
 // Intel x86 and 4KiB+ ARM. Front and tail padding thus never leaves the memory page of the input buffer.
 // * This should count for device memory, but also for device accessible memory living on the host.
@@ -531,7 +533,7 @@ copy_and_return_smem_dst(AlignedPtr aligned_ptr, int& smem_offset, Offset offset
   smem_offset += bytes_to_copy; // leaves aligned address for follow-up copy
   memcpy_async_aligned<ThreadsPerBlock>(dst, src, bytes_to_copy);
   const char* const dst_start_of_data = dst + (alignof(T) < ldgsts_size_and_align ? aligned_ptr.head_padding : 0);
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst_start_of_data) % alignof(T) == 0, "");
+  _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(T)>(dst_start_of_data), "");
   return reinterpret_cast<const T*>(dst_start_of_data);
 }
 
@@ -713,6 +715,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
 template <int threads_per_block,
           int UnrollFactor,
+          int StoreVecSize,
           typename Offset,
           typename Predicate,
           typename F,
@@ -782,7 +785,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
   if (inner_blocks)
   {
-    // use one thread to setup the entire bulk copy
+    // use one thread to set up the entire bulk copy
     if (cuda::device::__block_elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
@@ -831,8 +834,12 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
 
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      ptx::mbarrier_arrive_expect_tx(
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
+        ptx::scope_cta,
+        ptx::space_shared,
+        &bar,
+        total_copied);
 
       // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
       // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
@@ -880,11 +887,44 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
     if (elected)
     {
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      ptx::mbarrier_arrive_expect_tx(
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
+        ptx::scope_cta,
+        ptx::space_shared,
+        &bar,
+        total_copied);
     }
 
     // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
+  }
+
+  // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
+  out += offset;
+
+  // determine if we can vectorize storing
+  using output_t         = it_value_t<RandomAccessIteratorOut>;
+  constexpr int out_size = int{size_of<output_t>};
+  static_assert(
+    StoreVecSize == 0
+      || (::cuda::is_power_of_two(StoreVecSize) && (StoreVecSize == 1 || StoreVecSize * out_size <= 16)),
+    "store_vec_size must be 0 (auto) or a power of two, and (unless 1 = scalar) store_vec_size * sizeof(output) <= 16");
+  constexpr int store_vec_size = StoreVecSize == 0 ? auto_ublkcp_store_vec_size(out_size) : StoreVecSize;
+  // compile time eligibility for the vectorized store (STG.128):
+  // 1. there are no predicates
+  // 2. memory layout is contiguous
+  // 3. semantically we can raw copy
+  // 4. size is power-of-2 and <= 16 bytes
+  constexpr bool vectorize_eligible =
+    store_vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
+    && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
+    && ::cuda::is_trivially_copyable_v<output_t> && ::cuda::is_power_of_two(out_size)
+    && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
+
+  [[maybe_unused]] bool can_vectorize = false;
+  if constexpr (vectorize_eligible)
+  {
+    can_vectorize = ::cuda::std::is_sufficiently_aligned<out_size * store_vec_size>(out)
+                 && (... && (aligned_ptrs.head_padding % (int{sizeof(InTs)} * store_vec_size) == 0));
   }
 
   // all threads wait for bulk copy
@@ -892,8 +932,105 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
     ;
 
-  // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
-  out += offset;
+  if constexpr (vectorize_eligible)
+  {
+    if (can_vectorize)
+    {
+      // store_vec_size: element count for vectorized store. default = 16 / sizeof(output). must be pow2
+      // Shrinking store_vec_size narrows the store but also reduces register pressure
+      using store_t      = decltype(load_store_type<store_vec_size * out_size>());
+      auto* out_vec      = reinterpret_cast<store_t*>(out);
+      const int num_vecs = valid_items / store_vec_size;
+      for (auto v = static_cast<int>(threadIdx.x); v < num_vecs; v += threads_per_block)
+      {
+        char* smem       = smem_base;
+        auto load_in_vec = [&](auto aligned_ptr) {
+          using T = typename decltype(aligned_ptr)::value_type;
+          // head_padding = in_ptr % bulk_copy_alignment, and in_ptr is a valid T*, so it's aligned to
+          // alignof(T), i.e. in_ptr % alignof(T) == 0. Both alignof(T) and bulk_copy_alignment are powers of two.
+          //
+          // Two cases:
+          //
+          // 1. alignof(T) >= bulk_copy_alignment. Then bulk_copy_alignment divides alignof(T).
+          // Since in_ptr is a multiple of alignof(T), it's automatically a multiple of bulk_copy_alignment too.
+          // In this case, head_padding is provably 0. Compiler can constant fold this.
+          // 2. alignof(T) < bulk_copy_alignment. The type's own alignment is weaker than the bulk-copy boundary,
+          // so in_ptr can sit anywhere, i.e. head_padding can be nonzero. Must use the real runtime
+          // aligned_ptr.head_padding.
+          //
+          // NOTE: we only require the size of the output type to be < 16B; there are no bounds on the size of the input
+          // type; case 1 can definitely happen!
+          _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
+          const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+          const T* base          = reinterpret_cast<const T*>(smem + head_padding);
+          smem += tile_padding + int{sizeof(T)} * tile_size;
+          // Gather this input's store_vec_size elements for output-vector v into a register array.
+          // we take the maximal alignment out of alignof(T) and 16 bytes. This is because compiler assume
+          // natural alignment on bigger types (e.g. 32 bytes). If input is narrower, we will waste a few (0-16)
+          // registers
+          constexpr ::cuda::std::size_t in_vec_align = (::cuda::std::max) (alignof(T), alignof(int4));
+          ::cuda::__uninitialized_array<T, store_vec_size, in_vec_align> in_vec;
+          constexpr int in_vec_bytes = int{sizeof(T)} * store_vec_size;
+          // since store_vec_size is pow2, sizeof(T) is pow2, in_vec_bytes must be pow2
+          // if in_vec_bytes is a multiple of 16, we do vectorised load from smem into reg
+          if constexpr (in_vec_bytes % int{sizeof(int4)} == 0)
+          {
+            constexpr int n = in_vec_bytes / int{sizeof(int4)};
+            const int4* s   = reinterpret_cast<const int4*>(base) + v * n;
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int i = 0; i < n; ++i)
+            {
+              reinterpret_cast<int4*>(in_vec.data())[i] = s[i];
+            }
+          }
+          // if in_vec_bytes is not a multiple of 16, since it is pow2, in_vec_bytes < 16.
+          // this ensures load_store_type<in_vec_bytes> never fail
+          else
+          {
+            using sub_t                              = decltype(load_store_type<in_vec_bytes>());
+            *reinterpret_cast<sub_t*>(in_vec.data()) = reinterpret_cast<const sub_t*>(base)[v];
+          }
+          return in_vec;
+        };
+        auto in_vecs = ::cuda::std::tuple{load_in_vec(aligned_ptrs)...};
+
+        // must fully unroll to make sure register index is static
+        ::cuda::__uninitialized_array<output_t, store_vec_size, sizeof(output_t) * store_vec_size> res;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int k = 0; k < store_vec_size; ++k)
+        {
+          res[k] = ::cuda::std::apply(
+            [&](auto&... in_vec) {
+              return f(in_vec[k]...);
+            },
+            in_vecs);
+        }
+        out_vec[v] = *reinterpret_cast<const store_t*>(res.data());
+      }
+
+      // use scalar stores for the tail when element count is not a multiple of store_vec_size
+      // implies an always_true predicate, so we store unconditionally.
+      for (int idx = num_vecs * store_vec_size + threadIdx.x; idx < valid_items; idx += threads_per_block)
+      {
+        char* smem         = smem_base;
+        auto fetch_operand = [&](auto aligned_ptr) {
+          using T                = typename decltype(aligned_ptr)::value_type;
+          const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+          const char* src        = smem + head_padding;
+          smem += tile_padding + int{sizeof(T)} * tile_size;
+          return reinterpret_cast<const T*>(src)[idx];
+        };
+        out[idx] = ::cuda::std::apply(
+          [&](auto... values) {
+            return f(values...);
+          },
+          ::cuda::std::tuple<InTs...>{fetch_operand(aligned_ptrs)...});
+      }
+      return;
+    }
+  }
+
+  // fallback when we can't vectorize
 
   auto process_tile = [&](auto full_tile) {
     unrolled_for<UnrollFactor>(num_elem_per_thread, [&](int j) {
@@ -1011,12 +1148,12 @@ template <typename PolicySelector,
   requires transform_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES void transform_kernel(
-  _CCCL_GRID_CONSTANT const Offset num_items,
-  _CCCL_GRID_CONSTANT const int num_elem_per_thread,
-  [[maybe_unused]] _CCCL_GRID_CONSTANT const bool can_vectorize,
-  _CCCL_GRID_CONSTANT const Predicate pred,
-  _CCCL_GRID_CONSTANT const F f,
-  _CCCL_GRID_CONSTANT const RandomAccessIteratorOut out,
+  const Offset num_items,
+  const int num_elem_per_thread,
+  [[maybe_unused]] const bool can_vectorize,
+  const Predicate pred,
+  const F f,
+  const RandomAccessIteratorOut out,
   kernel_arg<RandomAccessIteratorsIn>... ins)
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
@@ -1053,7 +1190,7 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
       ::cuda::std::move(ins.iterator)...);
   }
   else if constexpr (policy.algorithm == TransformAlgorithm::ldgsts)
-  {
+  { // NOLINT(bugprone-branch-clone)
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (transform_kernel_ldgsts</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
@@ -1068,7 +1205,9 @@ __launch_bounds__(get_threads_per_block<PolicySelector>) _CCCL_KERNEL_ATTRIBUTES
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy.threads_per_block, policy.async_copy.unroll_factor>(
+      (transform_kernel_ublkcp<policy.async_copy.threads_per_block,
+                               policy.async_copy.unroll_factor,
+                               policy.async_copy.store_vec_size>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

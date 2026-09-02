@@ -301,7 +301,7 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
 }
 
 #ifndef CCCL_C_PARALLEL_V2
-C2H_TEST("For build result has AoT metadata populated", "[for][aot]")
+C2H_TEST("For build result has serialization metadata populated", "[for][serialization]")
 {
   using T = int32_t;
 
@@ -334,7 +334,7 @@ C2H_TEST("For build result has AoT metadata populated", "[for][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
 
-C2H_TEST("For compile/load round-trip", "[for][aot]")
+C2H_TEST("For compile/load round-trip", "[for][serialization]")
 {
   using T = int32_t;
 
@@ -382,7 +382,7 @@ C2H_TEST("For compile/load round-trip", "[for][aot]")
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
 
-C2H_TEST("For link_ltoir round-trip", "[for][aot]")
+C2H_TEST("For link_ltoir round-trip", "[for][serialization]")
 {
   using T = int32_t;
 

@@ -15,7 +15,7 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // example-begin radix-sort-keys-custom-decomposer
 struct custom_key_t
@@ -78,7 +78,7 @@ struct pairs_decomposer_t
 };
 // example-end radix-sort-pairs-custom-decomposer
 
-C2H_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-env
   auto keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -107,7 +107,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]")
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairsDescending env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairsDescending env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-descending-env
   auto keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -136,7 +136,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending env-based API", "[radix_sort
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeys env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -157,7 +157,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API", "[radix_sort][env]")
   REQUIRE(keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys DoubleBuffer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeys DoubleBuffer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-db-env
   thrust::device_vector<int> keys_buf0{8, 6, 7, 5, 3, 0, 9};
@@ -180,7 +180,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DoubleBuffer env-based API", "[radix_so
   REQUIRE(keys == expected_keys);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-descending-env
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
@@ -201,7 +201,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort]
   REQUIRE(keys_out == expected_keys);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DoubleBuffer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeysDescending DoubleBuffer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-descending-db-env
   thrust::device_vector<int> keys_buf0{8, 6, 7, 5, 3, 0, 9};
@@ -224,7 +224,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DoubleBuffer env-based API", 
   REQUIRE(keys == expected_keys);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer with bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairs decomposer with bits env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-decomposer-bits-env
   auto keys_in    = thrust::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
@@ -259,7 +259,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer with bits env-based API", "
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-decomposer-env
   auto keys_in    = thrust::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
@@ -292,7 +292,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sor
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-db-decomposer-env
   thrust::device_vector<custom_pair_key_t> keys_buf0{{3, 100}, {1, 200}, {2, 300}};
@@ -324,7 +324,9 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API"
   REQUIRE(values == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-based API",
+         "[radix_sort][env]",
+         CUB_SMALL)
 {
   // example-begin radix-sort-pairs-db-decomposer-bits-env
   thrust::device_vector<custom_pair_key_t> keys_buf0{{3, 100}, {1, 200}, {2, 300}};
@@ -356,7 +358,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-
   REQUIRE(values == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer+bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeys decomposer+bits env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-decomposer-bits-env
   thrust::device_vector<custom_key_t> keys_in{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -382,7 +384,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer+bits env-based API", "[radix
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeys decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-decomposer-env
   thrust::device_vector<custom_key_t> keys_in{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -402,7 +404,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer env-based API", "[radix_sort
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeys DB decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-db-decomposer-env
   thrust::device_vector<custom_key_t> keys_buf0{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -425,7 +427,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer env-based API", "[radix_s
   REQUIRE(keys == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer+bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeys DB decomposer+bits env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-db-decomposer-bits-env
   thrust::device_vector<custom_key_t> keys_buf0{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -448,7 +450,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer+bits env-based API", "[ra
   REQUIRE(keys == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer+bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer+bits env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-descending-decomposer-bits-env
   thrust::device_vector<custom_key_t> keys_in{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -474,7 +476,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer+bits env-based API
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-descending-decomposer-env
   thrust::device_vector<custom_key_t> keys_in{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -494,7 +496,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer env-based API", "[
   REQUIRE(keys_out == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-descending-db-decomposer-env
   thrust::device_vector<custom_key_t> keys_buf0{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -517,7 +519,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer env-based API",
   REQUIRE(keys == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer+bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer+bits env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-descending-db-decomposer-bits-env
   thrust::device_vector<custom_key_t> keys_buf0{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -540,7 +542,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer+bits env-based 
   REQUIRE(keys == expected);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer+bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer+bits env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-descending-decomposer-bits-env
   thrust::device_vector<custom_key_t> keys_in{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -572,7 +574,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer+bits env-based AP
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-descending-decomposer-env
   thrust::device_vector<custom_key_t> keys_in{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -602,7 +604,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer env-based API", "
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-descending-db-decomposer-env
   thrust::device_vector<custom_key_t> keys_buf0{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -631,7 +633,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer env-based API"
   REQUIRE(values == expected_values);
 }
 
-C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer+bits env-based API", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer+bits env-based API", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-pairs-descending-db-decomposer-bits-env
   thrust::device_vector<custom_key_t> keys_buf0{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
@@ -670,15 +672,15 @@ struct RadixSortKeysPolicySelector
     const int onesweep_threads = cc >= cuda::compute_capability{8, 0} ? 256 : 128;
     return {
       .algorithm     = cub::RadixSortAlgorithm::onesweep,
-      .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .num_private_partitions = 1, .radix_bits = 8},
+      .histogram     = {.threads_per_block = 256, .items_per_thread = 8, .private_partitions = 1, .radix_bits = 8},
       .exclusive_sum = {.threads_per_block = 256, .radix_bits = 8},
-      .onesweep      = {.threads_per_block           = onesweep_threads,
-                        .items_per_thread            = 21,
-                        .store_algorithm             = cub::RADIX_SORT_STORE_DIRECT,
-                        .rank_algorithm              = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-                        .scan_algorithm              = cub::BLOCK_SCAN_WARP_SCANS,
-                        .rank_num_private_partitions = 2,
-                        .radix_bits                  = 8},
+      .onesweep      = {.threads_per_block       = onesweep_threads,
+                        .items_per_thread        = 21,
+                        .store_algorithm         = cub::RADIX_SORT_STORE_DIRECT,
+                        .rank_algorithm          = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+                        .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
+                        .rank_private_partitions = 2,
+                        .radix_bits              = 8},
       .scan          = {.algorithm = cub::ScanAlgorithm::lookback,
                         .lookback  = {.threads_per_block = 512,
                                       .items_per_thread  = 23,
@@ -717,7 +719,7 @@ struct RadixSortKeysPolicySelector
 };
 // example-end radix-sort-keys-policy-selector
 
-C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API with tuning", "[radix_sort][env]")
+CUB_TEST("cub::DeviceRadixSort::SortKeys accepts a custom policy selector", "[radix_sort][env]", CUB_SMALL)
 {
   // example-begin radix-sort-keys-tuning
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};

@@ -42,19 +42,30 @@ namespace reserved
 inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_t graph)
 {
   cudaGraphExecUpdateResultInfo resultInfo;
-  cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
-
-  // Be sure to "erase" the last error
-  cudaError_t res = cudaGetLastError();
-
-  return (res == cudaSuccess);
+  const cudaError_t res = cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
+  if (res != cudaSuccess)
+  {
+    // A failed update is expected (the caller falls back to instantiation):
+    // consume the sticky error state so it is not misattributed to a later,
+    // unrelated call. Reading cudaGetLastError() INSTEAD of the return value
+    // would have the converse bug: an earlier unrelated failure would make a
+    // successful update look failed.
+    cudaGetLastError();
+  }
+  return res == cudaSuccess;
 }
 
 // Instantiate a CUDA graph
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
+  // The handle stays null if instantiation throws below: the deleter must
+  // not destroy it in that case, or the abort would mask the real error.
   ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-                                           cuda_safe_call(cudaGraphExecDestroy(*p));
+                                           if (*p)
+                                           {
+                                             cuda_safe_call(cudaGraphExecDestroy(*p));
+                                           }
+                                           delete p;
                                          }};
 
   // Automatically free graph-owned async allocations between launches. This

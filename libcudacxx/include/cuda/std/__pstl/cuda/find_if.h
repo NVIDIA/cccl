@@ -122,7 +122,7 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
 
   template <class _Policy, class _Iter, class _UnaryOp>
   [[nodiscard]] _CCCL_HOST_API _Iter
-  operator()([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _UnaryOp __pred) const
+  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _UnaryOp __pred)
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {

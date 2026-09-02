@@ -92,6 +92,7 @@ struct agent_scan_policy : ScalingType
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
+//! Deprecated [Since 3.5]
 template <int NominalThreadsPerBlock4B,
           int NominalItemsPerThread4B,
           typename ComputeT,

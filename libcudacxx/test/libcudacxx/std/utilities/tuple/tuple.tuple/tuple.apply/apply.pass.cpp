@@ -8,7 +8,7 @@
 
 // UNSUPPORTED: nvrtc
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: function-to-pointer decay is unsupported in tile code
 // error: taking address of a function is unsupported in tile code
 
@@ -31,13 +31,13 @@
 TEST_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 TEST_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 
-TEST_FUNC constexpr int constexpr_sum_fn()
+TEST_HOST_DEVICE_FUNC constexpr int constexpr_sum_fn()
 {
   return 0;
 }
 
 template <class... Ints>
-TEST_FUNC constexpr int constexpr_sum_fn(int x1, Ints... rest)
+TEST_HOST_DEVICE_FUNC constexpr int constexpr_sum_fn(int x1, Ints... rest)
 {
   return x1 + constexpr_sum_fn(rest...);
 }
@@ -47,13 +47,13 @@ struct ConstexprSumT
   constexpr ConstexprSumT() = default;
 
   template <class... Ints>
-  TEST_FUNC constexpr int operator()(Ints... values) const
+  TEST_HOST_DEVICE_FUNC constexpr int operator()(Ints... values) const
   {
     return constexpr_sum_fn(values...);
   }
 };
 
-TEST_FUNC void test_constexpr_evaluation()
+TEST_HOST_DEVICE_FUNC void test_constexpr_evaluation()
 {
   constexpr ConstexprSumT sum_obj{};
   {
@@ -117,7 +117,7 @@ struct CallInfo
   Tuple args;
 
   template <class... Args>
-  TEST_FUNC CallInfo(CallQuals q, Args&&... xargs)
+  TEST_HOST_DEVICE_FUNC CallInfo(CallQuals q, Args&&... xargs)
       : quals(q)
       , arg_types(&makeArgumentID<Args&&...>())
       , args(cuda::std::forward<Args>(xargs)...)
@@ -125,7 +125,7 @@ struct CallInfo
 };
 
 template <class... Args>
-TEST_FUNC inline CallInfo<decltype(cuda::std::forward_as_tuple(cuda::std::declval<Args>()...))>
+TEST_HOST_DEVICE_FUNC inline CallInfo<decltype(cuda::std::forward_as_tuple(cuda::std::declval<Args>()...))>
 makeCallInfo(CallQuals quals, Args&&... args)
 {
   return {quals, cuda::std::forward<Args>(args)...};
@@ -136,32 +136,32 @@ struct TrackedCallable
   TrackedCallable() = default;
 
   template <class... Args>
-  TEST_FUNC auto operator()(Args&&... xargs) &
+  TEST_HOST_DEVICE_FUNC auto operator()(Args&&... xargs) &
   {
     return makeCallInfo(CQ_LValue, cuda::std::forward<Args>(xargs)...);
   }
 
   template <class... Args>
-  TEST_FUNC auto operator()(Args&&... xargs) const&
+  TEST_HOST_DEVICE_FUNC auto operator()(Args&&... xargs) const&
   {
     return makeCallInfo(CQ_ConstLValue, cuda::std::forward<Args>(xargs)...);
   }
 
   template <class... Args>
-  TEST_FUNC auto operator()(Args&&... xargs) &&
+  TEST_HOST_DEVICE_FUNC auto operator()(Args&&... xargs) &&
   {
     return makeCallInfo(CQ_RValue, cuda::std::forward<Args>(xargs)...);
   }
 
   template <class... Args>
-  TEST_FUNC auto operator()(Args&&... xargs) const&&
+  TEST_HOST_DEVICE_FUNC auto operator()(Args&&... xargs) const&&
   {
     return makeCallInfo(CQ_ConstRValue, cuda::std::forward<Args>(xargs)...);
   }
 };
 
 template <class... ExpectArgs, class Tuple>
-TEST_FUNC void check_apply_quals_and_types(Tuple&& t)
+TEST_HOST_DEVICE_FUNC void check_apply_quals_and_types(Tuple&& t)
 {
   TypeID const* const expect_args = &makeArgumentID<ExpectArgs...>();
   TrackedCallable obj;
@@ -192,7 +192,7 @@ TEST_FUNC void check_apply_quals_and_types(Tuple&& t)
   }
 }
 
-TEST_FUNC void test_call_quals_and_arg_types()
+TEST_HOST_DEVICE_FUNC void test_call_quals_and_arg_types()
 {
   using Tup   = cuda::std::tuple<int, int const&, unsigned&&>;
   const int x = 42;
@@ -208,21 +208,21 @@ TEST_FUNC void test_call_quals_and_arg_types()
 struct NothrowMoveable
 {
   NothrowMoveable() noexcept = default;
-  TEST_FUNC NothrowMoveable(NothrowMoveable const&) noexcept(false) {}
-  TEST_FUNC NothrowMoveable(NothrowMoveable&&) noexcept {}
+  TEST_HOST_DEVICE_FUNC NothrowMoveable(NothrowMoveable const&) noexcept(false) {}
+  TEST_HOST_DEVICE_FUNC NothrowMoveable(NothrowMoveable&&) noexcept {}
 };
 
 template <bool IsNoexcept>
 struct TestNoexceptCallable
 {
   template <class... Args>
-  TEST_FUNC NothrowMoveable operator()(Args...) const noexcept(IsNoexcept)
+  TEST_HOST_DEVICE_FUNC NothrowMoveable operator()(Args...) const noexcept(IsNoexcept)
   {
     return {};
   }
 };
 
-TEST_FUNC void test_noexcept()
+TEST_HOST_DEVICE_FUNC void test_noexcept()
 {
   TestNoexceptCallable<true> nec;
   TestNoexceptCallable<false> tc;
@@ -261,66 +261,66 @@ template <int N>
 struct index
 {};
 
-TEST_FUNC void f(index<0>) {}
+TEST_HOST_DEVICE_FUNC void f(index<0>) {}
 
-TEST_FUNC int f(index<1>)
+TEST_HOST_DEVICE_FUNC int f(index<1>)
 {
   return 0;
 }
 
-TEST_FUNC int& f(index<2>)
+TEST_HOST_DEVICE_FUNC int& f(index<2>)
 {
   return static_cast<int&>(my_int);
 }
-TEST_FUNC int const& f(index<3>)
+TEST_HOST_DEVICE_FUNC int const& f(index<3>)
 {
   return static_cast<int const&>(my_int);
 }
-TEST_FUNC int volatile& f(index<4>)
+TEST_HOST_DEVICE_FUNC int volatile& f(index<4>)
 {
   return static_cast<int volatile&>(my_int);
 }
-TEST_FUNC int const volatile& f(index<5>)
+TEST_HOST_DEVICE_FUNC int const volatile& f(index<5>)
 {
   return static_cast<int const volatile&>(my_int);
 }
 
-TEST_FUNC int&& f(index<6>)
+TEST_HOST_DEVICE_FUNC int&& f(index<6>)
 {
   return static_cast<int&&>(my_int);
 }
-TEST_FUNC int const&& f(index<7>)
+TEST_HOST_DEVICE_FUNC int const&& f(index<7>)
 {
   return static_cast<int const&&>(my_int);
 }
-TEST_FUNC int volatile&& f(index<8>)
+TEST_HOST_DEVICE_FUNC int volatile&& f(index<8>)
 {
   return static_cast<int volatile&&>(my_int);
 }
-TEST_FUNC int const volatile&& f(index<9>)
+TEST_HOST_DEVICE_FUNC int const volatile&& f(index<9>)
 {
   return static_cast<int const volatile&&>(my_int);
 }
 
-TEST_FUNC int* f(index<10>)
+TEST_HOST_DEVICE_FUNC int* f(index<10>)
 {
   return static_cast<int*>(&my_int);
 }
-TEST_FUNC int const* f(index<11>)
+TEST_HOST_DEVICE_FUNC int const* f(index<11>)
 {
   return static_cast<int const*>(&my_int);
 }
-TEST_FUNC int volatile* f(index<12>)
+TEST_HOST_DEVICE_FUNC int volatile* f(index<12>)
 {
   return static_cast<int volatile*>(&my_int);
 }
-TEST_FUNC int const volatile* f(index<13>)
+TEST_HOST_DEVICE_FUNC int const volatile* f(index<13>)
 {
   return static_cast<int const volatile*>(&my_int);
 }
 
 template <int Func, class Expect>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   using RawInvokeResult = decltype(f(index<Func>{}));
   static_assert(cuda::std::is_same<RawInvokeResult, Expect>::value);
@@ -334,7 +334,7 @@ TEST_FUNC void test()
 }
 } // end namespace ReturnTypeTest
 
-TEST_FUNC void test_return_type()
+TEST_HOST_DEVICE_FUNC void test_return_type()
 {
   using ReturnTypeTest::test;
   test<0, void>();

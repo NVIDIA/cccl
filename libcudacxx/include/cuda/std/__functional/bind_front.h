@@ -39,9 +39,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __bind_front_op
 {
   template <class... _Args>
-  _CCCL_API constexpr auto operator()(_Args&&... __args) const
-    noexcept(noexcept(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...)))
-      -> decltype(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...))
+  _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Args&&... __args) noexcept(
+    noexcept(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...)))
+    -> decltype(::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...))
   {
     return ::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...);
   }

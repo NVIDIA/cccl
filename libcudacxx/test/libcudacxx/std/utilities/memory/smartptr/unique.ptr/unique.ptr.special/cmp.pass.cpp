@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <memory>
 
@@ -54,7 +54,7 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   AssertComparisonsReturnBool<cuda::std::unique_ptr<int>>();
 #if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()

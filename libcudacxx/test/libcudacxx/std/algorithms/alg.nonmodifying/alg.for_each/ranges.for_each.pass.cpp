@@ -208,7 +208,7 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
-#if !TEST_COMPILER(GCC, <, 10) // accessing value of ‘a’ through a ‘int’ glvalue in a constant expression
+#if !TEST_COMPILER(GCC, <, 10) // accessing value of 'a' through a 'int' glvalue in a constant expression
   static_assert(test());
 #endif // !TEST_COMPILER(GCC, <, 10)
 

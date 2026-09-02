@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
@@ -209,5 +209,25 @@ function configure_and_build_preset {
     build_preset $BUILD_NAME $PRESET
 }
 
-Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset
+function Invoke-Checked {
+    <#
+    .SYNOPSIS
+        Runs a script block and throws if the last native command in it exits
+        non-zero. $ErrorActionPreference = "Stop" does not make native commands
+        (python/pip/pytest/...) throw, so their $LASTEXITCODE must be checked
+        explicitly; this wraps that boilerplate into one call.
+    .EXAMPLE
+        Invoke-Checked { & $python -m pip install pytest } "pip install failed"
+    #>
+    param(
+        [Parameter(Mandatory, Position = 0)][scriptblock]$ScriptBlock,
+        [Parameter(Position = 1)][string]$ErrorMessage = "Native command failed"
+    )
+    & $ScriptBlock
+    if ($LASTEXITCODE -ne 0) {
+        throw "$ErrorMessage (exit code $LASTEXITCODE)"
+    }
+}
+
+Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked
 Export-ModuleMember -Variable BUILD_DIR, CL_VERSION

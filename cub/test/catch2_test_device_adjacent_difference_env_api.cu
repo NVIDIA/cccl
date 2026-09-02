@@ -13,9 +13,9 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-left-copy-env-stream
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
@@ -38,7 +38,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adj
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-left-env-stream
   auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
@@ -60,7 +60,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
   REQUIRE(data == expected);
 }
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-right-copy-env-stream
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
@@ -84,7 +84,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[ad
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjacent_difference][env]", CUB_SMALL)
 {
   // example-begin subtract-right-env-stream
   auto data = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
@@ -122,7 +122,9 @@ struct AdjacentDifferencePolicySelector
 };
 // example-end subtract-left-copy-policy-selector
 
-C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy env-based API with tuning", "[adjacent_difference][env]")
+CUB_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts a custom policy selector",
+         "[adjacent_difference][env]",
+         CUB_SMALL)
 {
   // example-begin subtract-left-copy-tuning
   auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};

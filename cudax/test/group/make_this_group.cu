@@ -23,26 +23,13 @@ namespace
 template <template <class> class GroupTempl, class Level, class Config>
 __device__ void test_make_this_group(const Level& level, const Config& config)
 {
-  // Test default construction.
-  {
-    static_assert(
-      cuda::std::is_same_v<GroupTempl<cudax::__implicit_hierarchy_t>, decltype(cudax::make_this_group(level))>);
-    static_assert(noexcept(cudax::make_this_group(level)));
+  using Hierarchy = typename Config::hierarchy_type;
 
-    auto group = cudax::make_this_group(level);
-    group.sync();
-  }
+  static_assert(cuda::std::is_same_v<GroupTempl<Hierarchy>, decltype(cudax::make_this_group(level, config))>);
+  static_assert(noexcept(cudax::make_this_group(level, config)));
 
-  // Test construction from hierarchy-like.
-  {
-    using Hierarchy = typename Config::hierarchy_type;
-
-    static_assert(cuda::std::is_same_v<GroupTempl<Hierarchy>, decltype(cudax::make_this_group(level, config))>);
-    static_assert(noexcept(cudax::make_this_group(level, config)));
-
-    auto group = cudax::make_this_group(level, config);
-    group.sync();
-  }
+  auto group = cudax::make_this_group(level, config);
+  group.sync();
 }
 
 struct TestKernel

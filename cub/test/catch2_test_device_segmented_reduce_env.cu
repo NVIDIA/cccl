@@ -12,6 +12,8 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
@@ -25,7 +27,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_redu
 
 #include <cuda/__execution/require.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -33,7 +35,7 @@ namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device segmented reduce works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device segmented reduce works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -49,7 +51,7 @@ TEST_CASE("Device segmented reduce works with default environment", "[segmented_
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented sum works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device segmented sum works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -65,7 +67,7 @@ TEST_CASE("Device segmented sum works with default environment", "[segmented_red
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented min works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device segmented min works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -81,7 +83,7 @@ TEST_CASE("Device segmented min works with default environment", "[segmented_red
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented max works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device segmented max works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -97,7 +99,7 @@ TEST_CASE("Device segmented max works with default environment", "[segmented_red
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device segmented argmin works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device segmented argmin works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -118,7 +120,7 @@ TEST_CASE("Device segmented argmin works with default environment", "[segmented_
   REQUIRE(h_out[2].value == 1);
 }
 
-TEST_CASE("Device segmented argmax works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device segmented argmax works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -139,7 +141,9 @@ TEST_CASE("Device segmented argmax works with default environment", "[segmented_
   REQUIRE(h_out[2].value == 2);
 }
 
-TEST_CASE("Device fixed-size segmented reduce works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device fixed-size segmented reduce works with default environment",
+              "[segmented_reduce][device]",
+              CUB_SMALL)
 {
   int num_segments = 2;
   int segment_size = 3;
@@ -154,7 +158,7 @@ TEST_CASE("Device fixed-size segmented reduce works with default environment", "
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device fixed-size segmented sum works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device fixed-size segmented sum works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments = 2;
   int segment_size = 3;
@@ -167,7 +171,7 @@ TEST_CASE("Device fixed-size segmented sum works with default environment", "[se
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device fixed-size segmented min works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device fixed-size segmented min works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments = 2;
   int segment_size = 3;
@@ -180,7 +184,7 @@ TEST_CASE("Device fixed-size segmented min works with default environment", "[se
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device fixed-size segmented max works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device fixed-size segmented max works with default environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments = 2;
   int segment_size = 3;
@@ -193,7 +197,9 @@ TEST_CASE("Device fixed-size segmented max works with default environment", "[se
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device fixed-size segmented argmin works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device fixed-size segmented argmin works with default environment",
+              "[segmented_reduce][device]",
+              CUB_SMALL)
 {
   int num_segments = 2;
   int segment_size = 3;
@@ -206,7 +212,9 @@ TEST_CASE("Device fixed-size segmented argmin works with default environment", "
   REQUIRE(d_out == expected);
 }
 
-TEST_CASE("Device fixed-size segmented argmax works with default environment", "[segmented_reduce][device]")
+CUB_TEST_CASE("Device fixed-size segmented argmax works with default environment",
+              "[segmented_reduce][device]",
+              CUB_SMALL)
 {
   int num_segments = 2;
   int segment_size = 3;
@@ -221,7 +229,7 @@ TEST_CASE("Device fixed-size segmented argmax works with default environment", "
 
 #endif
 
-C2H_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]")
+CUB_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -252,7 +260,7 @@ C2H_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented sum uses environment", "[segmented_reduce][device]")
+CUB_TEST("Device segmented sum uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -274,7 +282,7 @@ C2H_TEST("Device segmented sum uses environment", "[segmented_reduce][device]")
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented min uses environment", "[segmented_reduce][device]")
+CUB_TEST("Device segmented min uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -296,7 +304,7 @@ C2H_TEST("Device segmented min uses environment", "[segmented_reduce][device]")
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented max uses environment", "[segmented_reduce][device]")
+CUB_TEST("Device segmented max uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -318,7 +326,7 @@ C2H_TEST("Device segmented max uses environment", "[segmented_reduce][device]")
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]")
+CUB_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -340,7 +348,7 @@ C2H_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]
   REQUIRE(d_out == expected);
 }
 
-C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]")
+CUB_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]", CUB_SMALL)
 {
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
@@ -365,16 +373,14 @@ C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]
 template <int ThreadsPerBlock>
 struct segmented_reduce_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
-    -> cub::detail::segmented_reduce::segmented_reduce_policy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SegmentedReducePolicy
   {
-    auto rp = cub::detail::reduce::agent_reduce_policy{
-      ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    auto rp = cub::ReducePassPolicy{ThreadsPerBlock, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     // need the repetition of the return type for GCC9
-    return cub::detail::segmented_reduce::segmented_reduce_policy{
+    return cub::SegmentedReducePolicy{
       rp,
-      cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT},
-      cub::detail::segmented_reduce::warp_reduce_policy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT}};
+      cub::SegmentedReduceWarpReducePolicy{ThreadsPerBlock, 32, 1, 1, cub::LOAD_DEFAULT},
+      cub::SegmentedReduceWarpReducePolicy{ThreadsPerBlock, 1, 1, 1, cub::LOAD_DEFAULT}};
   }
 };
 
@@ -382,7 +388,7 @@ using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 64>, cuda::
 
 #if TEST_LAUNCH != 1
 
-C2H_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -405,7 +411,7 @@ C2H_TEST("DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Fixed-size DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("Fixed-size DeviceSegmentedReduce::Reduce can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -426,7 +432,7 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::Reduce can be tuned", "[segmented_re
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -449,7 +455,7 @@ C2H_TEST("DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]"
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Fixed-size DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("Fixed-size DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -471,7 +477,7 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::Sum can be tuned", "[segmented_reduc
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -491,7 +497,7 @@ C2H_TEST("DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]"
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Fixed-size DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("Fixed-size DeviceSegmentedReduce::Min can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -510,7 +516,7 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::Min can be tuned", "[segmented_reduc
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -530,7 +536,7 @@ C2H_TEST("DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]"
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Fixed-size DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("Fixed-size DeviceSegmentedReduce::Max can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -549,7 +555,7 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::Max can be tuned", "[segmented_reduc
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -573,7 +579,7 @@ C2H_TEST("DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -592,7 +598,7 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMin can be tuned", "[segmented_re
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -616,7 +622,7 @@ C2H_TEST("DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][device]", block_sizes)
+CUB_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_reduce][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -636,3 +642,86 @@ C2H_TEST("Fixed-size DeviceSegmentedReduce::ArgMax can be tuned", "[segmented_re
 }
 
 #endif // TEST_LAUNCH != 1
+
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
+CUB_TEST("Test SegmentedReducePolicy properties", "[segmented_reduce][device]", CUB_SMALL)
+{
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedReducePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReducePolicy>);
+
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::SegmentedReduceWarpReducePolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::SegmentedReduceWarpReducePolicy>);
+
+  // aggregate init
+  constexpr auto p1_large  = cub::ReducePassPolicy{256, 16, 4, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
+  constexpr auto p1_medium = cub::SegmentedReduceWarpReducePolicy{256, 32, 16, 4, cub::LOAD_LDG};
+  constexpr auto p1_small  = cub::SegmentedReduceWarpReducePolicy{256, 1, 16, 4, cub::LOAD_LDG};
+  constexpr auto p1        = cub::SegmentedReducePolicy{p1_large, p1_medium, p1_small};
+
+#  if _CCCL_STD_VER >= 2020
+  // designated init
+  constexpr auto p2_large = cub::ReducePassPolicy{
+    .threads_per_block = 256,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .reduce_algorithm  = cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+    .load_modifier     = cub::LOAD_LDG};
+  constexpr auto p2_medium = cub::SegmentedReduceWarpReducePolicy{
+    .threads_per_block = 256,
+    .threads_per_warp  = 32,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .load_modifier     = cub::LOAD_LDG};
+  constexpr auto p2_small = cub::SegmentedReduceWarpReducePolicy{
+    .threads_per_block = 256,
+    .threads_per_warp  = 1,
+    .items_per_thread  = 16,
+    .vec_size          = 4,
+    .load_modifier     = cub::LOAD_LDG};
+  constexpr auto p2 =
+    cub::SegmentedReducePolicy{.large_reduce = p2_large, .medium_reduce = p2_medium, .small_reduce = p2_small};
+#  else // _CCCL_STD_VER >= 2020
+  constexpr auto p2_large  = p1_large;
+  constexpr auto p2_medium = p1_medium;
+  constexpr auto p2_small  = p1_small;
+  constexpr auto p2        = p1;
+#  endif // _CCCL_STD_VER >= 2020
+
+  // comparison
+  STATIC_REQUIRE(p1_large == p2_large);
+  STATIC_REQUIRE_FALSE(p1_large != p2_large);
+
+  STATIC_REQUIRE(p1_medium == p2_medium);
+  STATIC_REQUIRE_FALSE(p1_medium != p2_medium);
+
+  STATIC_REQUIRE(p1_small == p2_small);
+  STATIC_REQUIRE_FALSE(p1_small != p2_small);
+
+  STATIC_REQUIRE(p1 == p2);
+  STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1_large)
+          == "ReducePassPolicy { .threads_per_block = 256, .items_per_thread = 16, .vec_size = 4"
+             ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_medium)
+          == "SegmentedReduceWarpReducePolicy { .threads_per_block = 256, .threads_per_warp = 32"
+             ", .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }");
+  REQUIRE(to_string(p1_small)
+          == "SegmentedReduceWarpReducePolicy { .threads_per_block = 256, .threads_per_warp = 1"
+             ", .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }");
+  REQUIRE(
+    to_string(p1)
+    == "SegmentedReducePolicy { .large_reduce = ReducePassPolicy { .threads_per_block = 256"
+       ", .items_per_thread = 16, .vec_size = 4"
+       ", .reduce_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS, .load_modifier = LOAD_LDG }"
+       ", .medium_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 32, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG }"
+       ", .small_reduce = SegmentedReduceWarpReducePolicy { .threads_per_block = 256"
+       ", .threads_per_warp = 1, .items_per_thread = 16, .vec_size = 4, .load_modifier = LOAD_LDG } }");
+}
+#endif // _CCCL_COMPILER(GCC, >=, 8)

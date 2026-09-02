@@ -44,6 +44,10 @@ jobs:
       matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
       bench_enabled: ${{ steps.build-bench-matrix.outputs.bench_enabled }}
       bench_matrix: ${{ steps.build-bench-matrix.outputs.bench_matrix }}
+      compile_time_enabled: ${{ steps.build-compile-time-matrix.outputs.compile_time_enabled }}
+      compile_time_matrix: ${{ steps.build-compile-time-matrix.outputs.compile_time_matrix }}
+      sass_enabled: ${{ steps.build-sass-matrix.outputs.sass_enabled }}
+      sass_matrix: ${{ steps.build-sass-matrix.outputs.sass_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
@@ -95,6 +99,81 @@ jobs:
           {
             echo "bench_enabled=true"
             echo "bench_matrix=${bench_matrix_json}"
+          } >> "${GITHUB_OUTPUT}"
+      - name: Build compile-time benchmark dispatch matrix
+        id: build-compile-time-matrix
+        run: |
+          if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') }}" == "true" ]]; then
+            echo "Commit message contains [skip-compile-time-bench]; skipping compile-time benchmark dispatch."
+            {
+              echo "compile_time_enabled=false"
+              echo 'compile_time_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          compile_time_enabled="$(
+            jq -r 'if (.include // []) == [] then "false" else "true" end' \
+              <<< "${compile_time_matrix_json}"
+          )"
+
+          {
+            echo "compile_time_enabled=${compile_time_enabled}"
+            echo "compile_time_matrix=${compile_time_matrix_json}"
+          } >> "${GITHUB_OUTPUT}"
+      - name: Build SASS diff dispatch matrix
+        id: build-sass-matrix
+        env:
+          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+        run: |
+          set -u
+
+          if [[ "${{ contains(github.event.head_commit.message, '[skip-sass-diff]') }}" == "true" ]]; then
+            echo "Commit message contains [skip-sass-diff]; skipping SASS diff dispatch."
+            {
+              echo "sass_enabled=false"
+              echo 'sass_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          # Only compare SASS when CUB, or something CUB is built from, changed.
+          #
+          # Redirect GITHUB_OUTPUT to our file so that the outputs do not land in this
+          # step's outputs, where they would collide with the ones `build-workflow` writes
+          # later.
+          echo "::group::Inspect changes for CUB"
+
+          dirty_report="${RUNNER_TEMP}/sass-inspect-changes.txt"
+
+          GITHUB_OUTPUT="${dirty_report}" ./ci/inspect_changes.py \
+            --refs "${BASE_SHA}" "${GITHUB_SHA}"
+
+          echo "::endgroup::"
+
+          echo "SASS job changes"
+          cat "${dirty_report}"
+
+          if ! grep -Eq '^(FULL|LITE)_BUILD=.*\bcub\b' "${dirty_report}"; then
+            echo "CUB is not affected by this change; skipping SASS diff dispatch."
+            {
+              echo "sass_enabled=false"
+              echo 'sass_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          sass_matrix_json="$(./ci/sass/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          sass_enabled="$(
+            jq -r 'if (.include // []) == [] then "false" else "true" end' \
+              <<< "${sass_matrix_json}"
+          )"
+
+          echo "SASS enabled: ${sass_enabled}"
+          {
+            echo "sass_enabled=${sass_enabled}"
+            echo "sass_matrix=${sass_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
       - name: Detect .branch_notes changes
         id: branch-notes-dirt
@@ -276,7 +355,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
         with:
           persist-credentials: false
 
@@ -343,7 +422,7 @@ jobs:
     steps:
       - name: Download wheel artifact
         id: download
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
         continue-on-error: true
         with:
           name: wheel-cccl-linux-amd64-py3.14
@@ -362,7 +441,7 @@ jobs:
 
       - name: Set up Python
         if: steps.check-wheel.outputs.skip != 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: '3.14'
 
@@ -420,6 +499,69 @@ jobs:
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
+      nvbench_compare_legacy_args: ${{ matrix.nvbench_compare_legacy_args }}
+
+  dispatch-compile-time-bench:
+    name: Compile-time Bench (${{ matrix.id }})
+    # Compile-time benchmarks are informational PR telemetry. They are launched
+    # by this CI workflow, but intentionally omitted from the aggregate `ci`
+    # branch-protection job so benchmark regressions or script failures do not
+    # block merging a PR.
+    if: >-
+      ${{
+        needs.build-workflow.outputs.compile_time_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.compile_time_matrix).include) != '[]'
+      }}
+    needs: build-workflow
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.build-workflow.outputs.compile_time_matrix) }}
+    uses: ./.github/workflows/compile-time-bench.yml
+    with:
+      id: ${{ matrix.id }}
+      name: ${{ matrix.name }}
+      gpu: ${{ matrix.gpu }}
+      launch_args: ${{ matrix.launch_args }}
+      baseline_ref: ${{ matrix.baseline_ref }}
+      preset: ${{ matrix.preset }}
+      targets_json: ${{ matrix.targets_json }}
+      args: ${{ matrix.args }}
+      slices_json: ${{ matrix.slices_json }}
+      comment: ${{ matrix.comment }}
+      comment_header: ${{ matrix.comment_header }}
+      artifact_retention_days: ${{ matrix.artifact_retention_days }}
+      pr_number: ${{ needs.build-workflow.outputs.pr_number }}
+
+  dispatch-sass-diff:
+    name: SASS Diff (${{ matrix.id }})
+    # A SASS difference does not fail this job. Only an infrastructure or script failure
+    # does, and that failure blocks the merge through the aggregate `ci` job.
+    if: >-
+      ${{
+        needs.build-workflow.outputs.sass_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.sass_matrix).include) != '[]'
+      }}
+    needs: build-workflow
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.build-workflow.outputs.sass_matrix) }}
+    uses: ./.github/workflows/sass-diff.yml
+    with:
+      id: ${{ matrix.id }}
+      launch_args: ${{ matrix.launch_args }}
+      preset: ${{ matrix.preset }}
+      archs: ${{ matrix.archs }}
+      target_filters_json: ${{ matrix.target_filters_json }}
+      base_ref: ${{ needs.build-workflow.outputs.base_sha }}
 
   bench-results:
     name: Post benchmark results
@@ -460,6 +602,94 @@ jobs:
           hide_and_recreate: true
           hide_classify: "OUTDATED"
 
+  sass-results:
+    name: Post SASS comparison results
+    if: >-
+      ${{
+        needs.build-workflow.outputs.sass_enabled == 'true' &&
+        needs.build-workflow.outputs.pr_number != ''
+      }}
+    needs: [build-workflow, dispatch-sass-diff]
+    permissions:
+      actions: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the SASS comment artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sass-*-comment
+          path: sass-comment
+
+      - name: Determine the outcome
+        id: compose
+        run: |
+          # The sass-diff job is a matrix job (presumably to organize it into a drop-down
+          # in the UI). download-artifact will put each sub-job into a separate directory
+          # under sass-comment, keyed by the job ID:
+          #
+          # sass-comment/
+          #   1/
+          #     summary.md
+          #   2/
+          #     summary.md
+          #   ...
+          #
+          # But there is currently only ever 1 job for it that runs, so we could remove
+          # the matrix handling code for it. Then this just becomes a bunch of
+          # straight-line code without the for-loop or the find call below.
+          mapfile -t entries < <(find sass-comment -mindepth 1 -maxdepth 1 -type d | sort)
+
+          if [[ "${#entries[@]}" -eq 0 ]]; then
+            # The artifacts are not in the format we expect them to be.
+            echo "::error::The SASS comment artifacts are empty."
+            exit 1
+          fi
+
+          comment_path="${RUNNER_TEMP}/sass-results-comment.md"
+
+          outcome=NO_CHANGE
+          for entry in "${entries[@]}"; do
+            if [[ ! -s "${entry}/summary.md" ]]; then
+              echo "::error::${entry} has no summary."
+              exit 1
+            fi
+
+            if jq -e '[.targets[].changed] | any' "${entry}/report.json" > /dev/null; then
+              outcome=CHANGE
+            fi
+
+            cat "${entry}/summary.md" >> "${comment_path}"
+          done
+
+          cat "${comment_path}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "SASS outcome: ${outcome}."
+          {
+            echo "outcome=${outcome}"
+            echo "path=${comment_path}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Comment on PR
+        if: ${{ steps.compose.outputs.outcome == 'CHANGE' }}
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          header: sass-results
+          number: ${{ needs.build-workflow.outputs.pr_number }}
+          path: ${{ steps.compose.outputs.path }}
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"
+
+      - name: Hide a previous PR comment when the SASS is unchanged
+        if: ${{ steps.compose.outputs.outcome == 'NO_CHANGE' }}
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          header: sass-results
+          number: ${{ needs.build-workflow.outputs.pr_number }}
+          hide: true
+          hide_classify: "OUTDATED"
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
@@ -475,6 +705,8 @@ jobs:
       - docs-build
       - test-cpu-import
       - dispatch-bench
+      - dispatch-sass-diff
+      - sass-results
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -506,6 +738,26 @@ jobs:
           fi
           check_result "dispatch-bench" "${expected_bench_result}" "${{needs.dispatch-bench.result}}"
 
+          # Test emptiness in the expression. `toJSON` pretty-prints multi-line output,
+          # and the embedded newlines break the `[[ ]]` conditional.
+          expected_sass_result="skipped"
+          if [[ "${{ needs.build-workflow.outputs.sass_enabled }}" == "true" ]] \
+            && [[ "${{ fromJSON(needs.build-workflow.outputs.sass_matrix).include[0] != null }}" == "true" ]]; then
+            expected_sass_result="success"
+          fi
+          check_result "dispatch-sass-diff" "${expected_sass_result}" "${{needs.dispatch-sass-diff.result}}"
+
+          # sass-results skips when dispatch-sass-diff fails. dispatch-sass-diff reports
+          # that failure, so only check sass-results when the dispatch job succeeded.
+          if [[ "${{ needs.dispatch-sass-diff.result }}" == "${expected_sass_result}" ]]; then
+            expected_sass_results_result="skipped"
+            if [[ "${expected_sass_result}" == "success" ]] \
+              && [[ "${{ needs.build-workflow.outputs.pr_number }}" != "" ]]; then
+              expected_sass_results_result="success"
+            fi
+            check_result "sass-results" "${expected_sass_results_result}" "${{needs.sass-results.result}}"
+          fi
+
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
           if [[ "${bench_enabled}" == "true" ]]; then
             echo "::error::ci/bench.yaml differs from ci/bench.template.yaml. Benchmark requests are temporary — reset ci/bench.yaml to match the template before merging."
@@ -524,3 +776,108 @@ jobs:
           if [[ "$status" != "success" ]]; then
             exit 1
           fi
+
+  # This analyzes the current run. Keep every job whose failures should be included in
+  # this job's direct or transitive `needs` so log collection starts after they finish.
+  analyze-failures:
+    name: Analyze CI failures
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        (
+          needs.build-workflow.result == 'failure' ||
+          needs.ci.result == 'failure' ||
+          needs.build-rapids.result == 'failure' ||
+          needs.build-matx.result == 'failure' ||
+          needs.build-pytorch.result == 'failure' ||
+          needs.bench-results.result == 'failure'
+        )
+      }}
+    needs:
+      - build-workflow
+      - ci
+      - build-rapids
+      - build-matx
+      - build-pytorch
+      - bench-results
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      github_comment: ${{ steps.render-github-comment.outputs.content }}
+      pr_number: ${{ steps.pull-request.outputs.pr_number }}
+    steps:
+      - name: Check out CCCL
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve pull request number
+        id: pull-request
+        run: |
+          if [[ "${GITHUB_REF_NAME}" =~ ^pull-request/([0-9]+)$ ]]; then
+            echo "pr_number=${BASH_REMATCH[1]}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Expected a pull-request/<number> branch, got ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
+      - name: Analyze failures
+        id: analyze
+        uses: ./.github/actions/ci-failure-analysis
+        with:
+          inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          run_id: ${{ github.run_id }}
+          pr_number: ${{ steps.pull-request.outputs.pr_number }}
+
+      - name: Render GitHub failure analysis comment
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-comment
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-comment
+
+      - name: Render GitHub verbose failure analysis summary
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-verbose-summary
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-verbose-summary
+
+      - name: Add failure analysis to workflow summary
+        if: ${{ !cancelled() && steps.render-github-verbose-summary.outcome == 'success' }}
+        env:
+          SUMMARY_FILE: ${{ steps.render-github-verbose-summary.outputs.rendered_file }}
+        run: |
+          test -s "${SUMMARY_FILE}"
+          cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
+
+  publish-failure-analysis:
+    name: Add failure analysis to CI results
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        needs.analyze-failures.outputs.github_comment != '' &&
+        needs.analyze-failures.outputs.pr_number != ''
+      }}
+    needs: analyze-failures
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Append to CI Workflow Results
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          header: ci-results
+          number: ${{ needs.analyze-failures.outputs.pr_number }}
+          message: ${{ needs.analyze-failures.outputs.github_comment }}
+          append: true

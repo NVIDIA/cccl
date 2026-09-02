@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // cuda::std::views::common
 
 #include <cuda/std/array>
@@ -62,6 +59,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
   {
     using SomeView = NonCommonView;
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     // Test `v | views::common`
     {
       SomeView view(buf, buf + 3);
@@ -70,6 +68,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
       assert(result.base().begin_ == buf);
       assert(result.base().end_ == buf + 3);
     }
+#endif // !_CCCL_TILE_COMPILATION()
 
     // Test `adaptor | views::common`
     {

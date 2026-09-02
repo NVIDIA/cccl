@@ -10,7 +10,7 @@
 #include <cub/util_vsmem.cuh>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 //----------------------------------------------------------------------------
 // Helper section
@@ -163,6 +163,8 @@ void __global__ __launch_bounds__(
   vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 
+// TODO(bgruber): rewrite the below test to use policy selectors
+
 //----------------------------------------------------------------------------
 // Tuning policy chain
 //----------------------------------------------------------------------------
@@ -173,7 +175,7 @@ struct device_dummy_algorithm_policy_t
 
   static constexpr int FALLBACK_BLOCK_THREADS = 64;
 
-  struct policy_500 : cub::ChainedPolicy<500, policy_500, policy_500>
+  struct policy_500 : cub::detail::chained_policy<500, policy_500, policy_500>
   {
     using DummyAlgorithmPolicy = agent_dummy_algorithm_policy_t<256, cub::Nominal4BItemsToItems<item_t>(17)>;
 
@@ -379,7 +381,7 @@ DECLARE_LAUNCH_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 
 using type_list = c2h::type_list<large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
 
-C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
+CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", CUB_SMALL, type_list)
 {
   using item_t   = typename c2h::get<0, TestType>;
   using offset_t = int32_t;

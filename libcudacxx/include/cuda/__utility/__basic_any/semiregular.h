@@ -124,7 +124,7 @@ template <class...>
 struct __imovable : __basic_interface<__imovable>
 {
   template <class _Tp>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__try_move_fn<_Tp>, &::cuda::__move_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Tp, &::cuda::__try_move_fn<_Tp>, &::cuda::__move_fn<_Tp>>;
 
   _CCCL_HOST_DEVICE_API auto __move_to(void* __pv) noexcept -> void
   {
@@ -141,7 +141,7 @@ template <class...>
 struct __icopyable : __basic_interface<__icopyable, __extends<__imovable<>>>
 {
   template <class _Tp>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__copy_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Tp, &::cuda::__copy_fn<_Tp>>;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
@@ -160,13 +160,13 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   // These overloads are only necessary so that __iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
   // `__iequality_comparable<>::overloads` alias template below.
-  [[noreturn]] friend _CCCL_NODEBUG_API auto
+  [[noreturn]] friend _CCCL_NODEBUG_HOST_DEVICE_API auto
   operator==(__iequality_comparable<> const&, __iequality_comparable<> const&) noexcept -> bool
   {
     ::cuda::std::unreachable();
   }
 
-  [[noreturn]] friend _CCCL_NODEBUG_API auto
+  [[noreturn]] friend _CCCL_NODEBUG_HOST_DEVICE_API auto
   operator!=(__iequality_comparable<> const&, __iequality_comparable<> const&) noexcept -> bool
   {
     ::cuda::std::unreachable();
@@ -180,7 +180,17 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(__iequality_comparable<_ILeft> const& __lhs, __iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
+    auto const& __self  = ::cuda::__basic_any_from(__lhs);
     auto const& __other = ::cuda::__basic_any_from(__rhs);
+    if (!__self.has_value())
+    {
+      return !__other.has_value();
+    }
+    if (!__other.has_value())
+    {
+      return false;
+    }
+
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_ILeft>>;
     return ::cuda::__virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
   }
@@ -188,7 +198,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_ILeft> const&, __basic_any<_IRight> const&>
                  || __any_convertible_to<__basic_any<_IRight> const&, __basic_any<_ILeft> const&>)
-  [[nodiscard]] _CCCL_NODEBUG_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API friend auto
   operator!=(__iequality_comparable<_ILeft> const& __lhs, __iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -210,6 +220,11 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(__iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
   {
+    if (!::cuda::__basic_any_from(__lhs).has_value())
+    {
+      return false;
+    }
+
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
     return ::cuda::__virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), ::cuda::std::addressof(__rhs));
   }
@@ -220,6 +235,11 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend auto
   operator==(_Object const& __lhs, __iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
+    if (!::cuda::__basic_any_from(__rhs).has_value())
+    {
+      return false;
+    }
+
     constexpr auto __eq = &::cuda::__equal_fn<__iequality_comparable<_Interface>>;
     return ::cuda::__virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), ::cuda::std::addressof(__lhs));
   }
@@ -227,7 +247,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = __basic_any_from_t<__iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!::cuda::std::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_NODEBUG_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API friend auto
   operator!=(__iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -236,7 +256,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = __basic_any_from_t<__iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!::cuda::std::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  [[nodiscard]] _CCCL_NODEBUG_API friend auto
+  [[nodiscard]] _CCCL_NODEBUG_HOST_DEVICE_API friend auto
   operator!=(_Object const& __lhs, __iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -244,7 +264,7 @@ struct iequality_comparable_base : __basic_interface<__iequality_comparable>
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::equality_comparable<_Tp>)
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__equal_fn<_Tp>>;
+  using overrides _CCCL_NODEBUG = __overrides_for<_Tp, &::cuda::__equal_fn<_Tp>>;
 };
 
 template <class... _Super>
@@ -316,7 +336,7 @@ struct __iconvertible_to_<__self const&, _To>
 };
 
 template <class _From, class _To>
-using __iconvertible_to _CCCL_NODEBUG_ALIAS = typename __iconvertible_to_<_From, _To>::template __interface_<>;
+using __iconvertible_to _CCCL_NODEBUG = typename __iconvertible_to_<_From, _To>::template __interface_<>;
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

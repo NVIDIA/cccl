@@ -35,6 +35,7 @@
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/iterator.h>
 #include <cuda/std/__simd/specializations/fixed_size_float_vec.h>
+#include <cuda/std/__simd/specializations/fixed_size_integral_vec.h>
 #include <cuda/std/__simd/specializations/fixed_size_vec.h>
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
@@ -131,6 +132,25 @@ private:
   _CCCL_HOST_DEVICE_API constexpr void __set(const __simd_size_type __i, const value_type __v) noexcept
   {
     __s_.__set(__i, __v);
+  }
+
+  template <typename _Operation>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  __simd_saturating_add_impl(const basic_vec& __lhs, const basic_vec& __rhs, const _Operation& __operation) noexcept
+  {
+    return basic_vec{__operation(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  __simd_min_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  {
+    return basic_vec{_Impl::__min_simd(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
+  __simd_max_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
+  {
+    return basic_vec{_Impl::__max_simd(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
 public:
@@ -244,7 +264,7 @@ public:
     static_assert(__has_convert_flag_v<_Flags...>
                     || __is_value_preserving_v<::cuda::std::ranges::range_value_t<_Range>, value_type>,
                   "Conversion from range_value_t<R> to value_type is not value-preserving; use flag_convert");
-    const auto __data = ::cuda::std::ranges::__data_cpo{}(__range);
+    const auto __data = ::cuda::std::ranges::data(__range);
     ::cuda::std::simd::__assert_load_store_alignment<basic_vec, ::cuda::std::ranges::range_value_t<_Range>, _Flags...>(
       __data);
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -262,7 +282,7 @@ public:
     static_assert(__has_convert_flag_v<_Flags...>
                     || __is_value_preserving_v<::cuda::std::ranges::range_value_t<_Range>, value_type>,
                   "Conversion from range_value_t<R> to value_type is not value-preserving; use flag_convert");
-    const auto __data = ::cuda::std::ranges::__data_cpo{}(__range);
+    const auto __data = ::cuda::std::ranges::data(__range);
     ::cuda::std::simd::__assert_load_store_alignment<basic_vec, ::cuda::std::ranges::range_value_t<_Range>, _Flags...>(
       __data);
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -725,9 +745,15 @@ public:
     return __make_mask(_Impl::__less(__lhs.__s_, __rhs.__s_));
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend basic_vec
+  __simd_fma_impl(const basic_vec& __x, const basic_vec& __y, const basic_vec& __z) noexcept
+  {
+    return basic_vec{_Impl::__fma(__x.__s_, __y.__s_, __z.__s_), __storage_tag};
+  }
+
   // [simd.cond], basic_vec exposition-only conditional operators
 
-  [[nodiscard]] _CCCL_API friend constexpr basic_vec
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   __simd_select_impl(const mask_type& __mask, const basic_vec& __a, const basic_vec& __b) noexcept
   {
     basic_vec __result{};

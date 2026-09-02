@@ -186,7 +186,7 @@ int main(int, char**)
   test();
 #if TEST_STD_VER >= 2020
 #  if !TEST_COMPILER(GCC, >=, 14) && !TEST_COMPILER(MSVC)
-  // GCC:  error: destroying ‘b’ outside its lifetime (on the })
+  // GCC:  error: destroying 'b' outside its lifetime (on the })
   // MSVC: error: read of an uninitialized symbol
   static_assert(test());
 #  endif // !TEST_COMPILER(GCC, >=, 14) && !TEST_COMPILER(MSVC)

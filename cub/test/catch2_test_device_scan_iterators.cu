@@ -5,6 +5,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/limits>
 
@@ -13,7 +15,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -33,7 +35,7 @@ using custom_t =
 
 using iterator_type_list = c2h::type_list<type_pair<std::int8_t>, type_pair<custom_t>, type_pair<uchar3>>;
 
-C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_list)
+CUB_TEST("Device scan works with iterators", "[scan][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;
@@ -152,6 +154,43 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
     // Verify result
     REQUIRE(expected_result == out_result);
   }
+
+  SECTION("exclusive scan with future-init value, non-pointer iterator")
+  {
+    // cuda::buffer currently does not handle types with size of exactly 3 in the value
+    // constructor. See https://github.com/NVIDIA/cccl/pull/9776
+    if constexpr (sizeof(input_t) != 3)
+    {
+      using op_t    = cuda::std::plus<>;
+      using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+
+      // Prepare verification data
+      accum_t init_value{};
+      init_default_constant(init_value);
+      c2h::host_vector<output_t> expected_result(num_items);
+      compute_exclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), init_value, op_t{});
+
+      // Run test
+      c2h::device_vector<output_t> out_result(num_items);
+      auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+      using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+      // Note using device buffer here because dereferencing the iterator will return a raw
+      // device reference and cause a segfault if the detail::InputValue is convert-constructed
+      // from the future value below.
+      auto d_initial_value = cuda::make_device_buffer<init_value_t>(
+        cuda::stream_ref{cudaStream_t{}}, cuda::devices[0], /*__size=*/1, static_cast<init_value_t>(init_value));
+
+      using device_buffer_t = decltype(d_initial_value);
+      using future_t = cub::FutureValue<typename device_buffer_t::value_type, typename device_buffer_t::iterator>;
+
+      auto future_init_value = future_t{d_initial_value.begin()};
+
+      device_exclusive_scan(in_it, d_out_it, op_t{}, future_init_value, num_items);
+
+      // Verify result
+      REQUIRE(expected_result == out_result);
+    }
+  }
 }
 
 class custom_input_t
@@ -257,7 +296,7 @@ struct index_to_custom_output_op
   }
 };
 
-C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
+CUB_TEST("Device scan works complex accumulator types", "[scan][device]", CUB_SMALL)
 {
   constexpr int num_items = 2 * 1024 * 1024;
 

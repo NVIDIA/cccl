@@ -16,6 +16,8 @@ struct stream_registry_factory_t;
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
+#include <sstream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, device_find_if);
@@ -24,7 +26,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, device_upper_bound);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
@@ -41,7 +43,7 @@ struct is_greater_than_t
 template <int ThreadsPerBlock>
 struct find_tuning
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::FindPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::FindIfPolicy
   {
     return {ThreadsPerBlock, 4, 4, cub::LOAD_LDG};
   }
@@ -54,7 +56,7 @@ using block_sizes =
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device FindIf works with default environment", "[find][device]")
+CUB_TEST_CASE("Device FindIf works with default environment", "[find][device]", CUB_SMALL)
 {
   constexpr int num_items = 8;
   auto d_in               = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};
@@ -90,7 +92,7 @@ TEST_CASE("Device FindIf works with default environment", "[find][device]")
   }
 }
 
-TEST_CASE("Device FindIf no match returns num_items with default environment", "[find][device]")
+CUB_TEST_CASE("Device FindIf no match returns num_items with default environment", "[find][device]", CUB_SMALL)
 {
   constexpr int num_items = 5;
   auto d_in               = c2h::device_vector<int>{0, 1, 2, 3, 4};
@@ -126,7 +128,7 @@ TEST_CASE("Device FindIf no match returns num_items with default environment", "
   }
 }
 
-TEST_CASE("Device LowerBound works with default environment", "[find][device]")
+CUB_TEST_CASE("Device LowerBound works with default environment", "[find][device]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{1, 3, 5, 7};
@@ -145,7 +147,7 @@ TEST_CASE("Device LowerBound works with default environment", "[find][device]")
   REQUIRE(d_output == expected);
 }
 
-TEST_CASE("Device UpperBound works with default environment", "[find][device]")
+CUB_TEST_CASE("Device UpperBound works with default environment", "[find][device]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{1, 3, 5, 7};
@@ -166,7 +168,7 @@ TEST_CASE("Device UpperBound works with default environment", "[find][device]")
 
 #endif
 
-C2H_TEST("Device FindIf uses environment", "[find][device]")
+CUB_TEST("Device FindIf uses environment", "[find][device]", CUB_SMALL)
 {
   constexpr int num_items = 8;
   auto d_in               = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};
@@ -183,7 +185,7 @@ C2H_TEST("Device FindIf uses environment", "[find][device]")
   REQUIRE(d_out[0] == 5);
 }
 
-C2H_TEST("Device FindIf works with user provided memory and environment", "[find][device]")
+CUB_TEST("Device FindIf works with user provided memory and environment", "[find][device]", CUB_SMALL)
 {
   constexpr int num_items = 8;
   auto d_in               = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};
@@ -255,7 +257,7 @@ C2H_TEST("Device FindIf works with user provided memory and environment", "[find
   }
 }
 
-C2H_TEST("Device LowerBound uses environment", "[find][device]")
+CUB_TEST("Device LowerBound uses environment", "[find][device]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{1, 3, 5, 7};
@@ -289,7 +291,7 @@ C2H_TEST("Device LowerBound uses environment", "[find][device]")
   REQUIRE(d_output == expected);
 }
 
-C2H_TEST("Device LowerBound works with user provided memory and environment", "[find][device]")
+CUB_TEST("Device LowerBound works with user provided memory and environment", "[find][device]", CUB_SMALL)
 {
   auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values                    = c2h::device_vector<int>{1, 3, 5, 7};
@@ -386,7 +388,7 @@ C2H_TEST("Device LowerBound works with user provided memory and environment", "[
   }
 }
 
-C2H_TEST("Device UpperBound uses environment", "[find][device]")
+CUB_TEST("Device UpperBound uses environment", "[find][device]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{1, 3, 5, 7};
@@ -420,7 +422,7 @@ C2H_TEST("Device UpperBound uses environment", "[find][device]")
   REQUIRE(d_output == expected);
 }
 
-C2H_TEST("Device UpperBound works with user provided memory and environment", "[find][device]")
+CUB_TEST("Device UpperBound works with user provided memory and environment", "[find][device]", CUB_SMALL)
 {
   auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values                    = c2h::device_vector<int>{1, 3, 5, 7};
@@ -518,7 +520,7 @@ C2H_TEST("Device UpperBound works with user provided memory and environment", "[
 }
 
 #if TEST_LAUNCH != 1
-C2H_TEST("Device FindIf can be tuned", "[find][device]", block_sizes)
+CUB_TEST("Device FindIf can be tuned", "[find][device]", CUB_SMALL, block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
@@ -539,17 +541,17 @@ C2H_TEST("Device FindIf can be tuned", "[find][device]", block_sizes)
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("FindPolicy", "[find][device]")
+CUB_TEST("Test FindIfPolicy properties", "[find][device]", CUB_SMALL)
 {
-  STATIC_REQUIRE(::cuda::std::semiregular<cub::FindPolicy>);
-  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindPolicy>);
+  STATIC_REQUIRE(::cuda::std::semiregular<cub::FindIfPolicy>);
+  STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindIfPolicy>);
 
   // aggregate init
-  constexpr auto p1 = cub::FindPolicy{128, 7, 4, cub::CacheLoadModifier::LOAD_LDG};
+  constexpr auto p1 = cub::FindIfPolicy{128, 7, 4, cub::CacheLoadModifier::LOAD_LDG};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
-  constexpr auto p2 = cub::FindPolicy{
+  constexpr auto p2 = cub::FindIfPolicy{
     .threads_per_block = 128, .items_per_thread = 7, .vec_size = 4, .load_modifier = cub::CacheLoadModifier::LOAD_LDG};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
@@ -558,5 +560,14 @@ C2H_TEST("FindPolicy", "[find][device]")
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
+
+  auto to_string = [](const auto& p) {
+    std::ostringstream os;
+    os << p;
+    return os.str();
+  };
+  REQUIRE(to_string(p1)
+          == "FindIfPolicy { .threads_per_block = 128, .items_per_thread = 7, .vec_size = 4"
+             ", .load_modifier = LOAD_LDG }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
