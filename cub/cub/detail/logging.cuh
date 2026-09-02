@@ -47,7 +47,8 @@ namespace detail
 #endif // _CCCL_HOSTED() && !defined(CCCL_DISABLE_LOGGING)
 }
 
-//! Logs the message when called from host code, independently of whether logging is enabled
+//! Logs the message when called from host code, independently of whether logging is enabled via the
+//! CCCL_EXPERIMENTAL_LOGGING env variable
 _CCCL_ATTRIBUTE_FORMAT(__printf__, 1, 2)
 _CCCL_HOST_DEVICE_API inline void log_always([[maybe_unused]] const char* fmt, ...) noexcept
 {
