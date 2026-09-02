@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 """How cuda.compute drives the numba-cuda-mlir backend."""
 
+import os
 import subprocess
 import sys
 import textwrap
@@ -189,5 +190,44 @@ def test_return_type_inference_works_without_a_prior_compile():
     )
     result = subprocess.run(
         [sys.executable, "-c", program], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_compiles_for_a_named_target_without_a_device():
+    """Naming a target compiles on a machine with no GPU.
+
+    Building for a compute capability the build machine does not have is the
+    point of naming one, so neither inference nor IR extraction may require a
+    device. Runs in a subprocess with the devices hidden.
+    """
+    program = textwrap.dedent(
+        """
+        from cuda.compute import _mlir
+
+        types = _mlir.types
+
+        def scale(a, r):
+            r[0] = a[0] * 3
+
+        def add_one(a):
+            return a + 1
+
+        assert _mlir.infer_return_type(add_one, (types.int32,)) is not None
+
+        signature = types.void(
+            types.CPointer(types.int32), types.CPointer(types.int32)
+        )
+        assert "define" in _mlir.compile_to_llvm_ir(
+            scale, signature, "no_device", (8, 9)
+        )
+        """
+    )
+    environment = dict(os.environ, CUDA_VISIBLE_DEVICES="")
+    result = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        env=environment,
     )
     assert result.returncode == 0, result.stderr
