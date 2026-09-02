@@ -3,19 +3,19 @@
 Contributor Docs
 ================
 
+.. toctree::
+   :maxdepth: 1
+
+   how_tos/index
+   code_of_conduct
+   license
+
 Thank you for your interest in contributing to the CUDA Core Compute Libraries (CCCL)!
 This section covers the branching, build, test, debug, pull request, and review workflows a CCCL contributor uses day to day.
 
 Looking for ideas for your first contribution? Check out the
 `good first issue <https://github.com/nvidia/cccl/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22>`_ label.
 
-
-.. toctree::
-   :maxdepth: 1
-
-   code_of_conduct
-   license
-   how_tos/index
 
 Getting Started
 ----------------
