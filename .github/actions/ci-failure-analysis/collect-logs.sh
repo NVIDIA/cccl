@@ -92,9 +92,9 @@ jq 'map(del(.check_run_url))' \
 mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"
 
 collected_annotation_count="$(jq '[.[].annotations[]] | length' "${output_dir}/jobs.json")"
-if [[ "${#failed_jobs[@]}" -gt 0 \
-  && "${collected_log_count}" -eq 0 \
-  && "${collected_annotation_count}" -eq 0 ]]; then
+if (( ${#failed_jobs[@]} > 0 \
+  && collected_log_count == 0 \
+  && collected_annotation_count == 0 )); then
   echo "::error::Unable to collect logs or failure annotations for any failed workflow jobs."
   exit 1
 fi
