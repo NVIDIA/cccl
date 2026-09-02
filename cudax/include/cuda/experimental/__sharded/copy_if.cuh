@@ -41,6 +41,7 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <algorithm>
@@ -82,9 +83,8 @@ template <typename _Tp, typename _Pred>
 
   // Pinned host memory for the per-shard kept counts (zero-initialized so
   // skipped empty shards stay empty)
-  places::place_memory_resource host_mr(data_place::host());
   count_type* h_new_sizes =
-    static_cast<count_type*>(host_mr.allocate_sync(num_shards * sizeof(count_type), alignof(count_type)));
+    static_cast<count_type*>(reserved::__pinned_staging(num_shards * sizeof(count_type)));
   ::std::fill(h_new_sizes, h_new_sizes + num_shards, count_type{0});
 
   // Phase 1: local in-place select on each shard (CUB compacts the kept
@@ -121,7 +121,7 @@ template <typename _Tp, typename _Pred>
   {
     mr.deallocate_sync(ptr, sizeof(count_type), alignof(count_type));
   }
-  host_mr.deallocate_sync(h_new_sizes, num_shards * sizeof(count_type), alignof(count_type));
+  // (arena staging is cached; nothing to release)
 
   return data.size();
 }

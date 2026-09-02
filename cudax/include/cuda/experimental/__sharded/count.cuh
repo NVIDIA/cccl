@@ -35,6 +35,7 @@
 #include <cuda/std/functional>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <algorithm>
@@ -99,8 +100,7 @@ template <typename _Tp, typename _Pred>
 
   // Pinned host memory for the per-place counts (zero-initialized so skipped
   // empty shards contribute nothing)
-  places::place_memory_resource host_mr(data_place::host());
-  size_t* h_counts = static_cast<size_t*>(host_mr.allocate_sync(num_shards * sizeof(size_t), alignof(size_t)));
+  size_t* h_counts = static_cast<size_t*>(reserved::__pinned_staging(num_shards * sizeof(size_t)));
   ::std::fill(h_counts, h_counts + num_shards, size_t{0});
 
   // Phase 1: local transform-reduce on each shard; free the per-shard outputs
@@ -140,7 +140,7 @@ template <typename _Tp, typename _Pred>
   {
     mr.deallocate_sync(ptr, sizeof(size_t), alignof(size_t));
   }
-  host_mr.deallocate_sync(h_counts, num_shards * sizeof(size_t), alignof(size_t));
+  // (arena staging is cached; nothing to release)
 
   return total;
 }

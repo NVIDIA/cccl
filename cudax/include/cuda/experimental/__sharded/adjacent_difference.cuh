@@ -30,6 +30,7 @@
 #include <cuda/std/functional>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <stdexcept>
@@ -102,8 +103,7 @@ adjacent_difference(place_group&, sharded_array<_Tp>& input, sharded_array<_Tp>&
 
   // Pinned host buffer for the per-shard boundary elements: written once per
   // shard, read (zero-copy) by the successor shard's kernel
-  places::place_memory_resource host_mr(data_place::host());
-  _Tp* h_last_elements = static_cast<_Tp*>(host_mr.allocate_sync(num_shards * sizeof(_Tp), alignof(_Tp)));
+  _Tp* h_last_elements = static_cast<_Tp*>(reserved::__pinned_staging(num_shards * sizeof(_Tp)));
 
   // Phase 1: gather each shard's last element
   input.sync();
@@ -138,7 +138,7 @@ adjacent_difference(place_group&, sharded_array<_Tp>& input, sharded_array<_Tp>&
   };
 
   output.sync();
-  host_mr.deallocate_sync(h_last_elements, num_shards * sizeof(_Tp), alignof(_Tp));
+  // (arena staging is cached; nothing to release)
 }
 
 /// @brief Out-of-place adjacent difference with subtraction.

@@ -35,6 +35,7 @@
 #include <cub/device/device_histogram.cuh>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <algorithm>
@@ -96,9 +97,8 @@ template <typename _Tp, typename _LevelT>
 
   // Pinned host memory for the per-place histograms (zero-initialized so
   // skipped empty shards contribute nothing)
-  places::place_memory_resource host_mr(data_place::host());
   const size_t host_bytes = num_shards * bins * sizeof(counter_type);
-  counter_type* h_hists   = static_cast<counter_type*>(host_mr.allocate_sync(host_bytes, alignof(counter_type)));
+  counter_type* h_hists   = static_cast<counter_type*>(reserved::__pinned_staging(host_bytes));
   ::std::fill(h_hists, h_hists + num_shards * bins, counter_type{0});
 
   // Phase 1: local histogram on each shard; free the per-shard histograms
@@ -136,7 +136,7 @@ template <typename _Tp, typename _LevelT>
   {
     mr.deallocate_sync(ptr, bins * sizeof(counter_type), alignof(counter_type));
   }
-  host_mr.deallocate_sync(h_hists, host_bytes, alignof(counter_type));
+  // (arena staging is cached; nothing to release)
 
   return counts;
 }

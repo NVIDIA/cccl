@@ -39,6 +39,7 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <algorithm>
@@ -67,7 +68,6 @@ template <typename _Tp>
 
   // Pinned host staging: per-shard kept counts (zero-initialized so skipped
   // empty shards stay empty) and the post-unique boundary elements
-  places::place_memory_resource host_mr(data_place::host());
   // The _Tp block leads so both blocks are aligned for their types (the
   // count block only needs alignof(count_type) <= alignof(_Tp) or the
   // natural alignment of the offset, both guaranteed by the max() below).
@@ -75,7 +75,7 @@ template <typename _Tp>
   const size_t tp_bytes          = 2 * num_shards * sizeof(_Tp);
   const size_t count_offset      = (tp_bytes + alignof(count_type) - 1) / alignof(count_type) * alignof(count_type);
   const size_t host_bytes        = count_offset + num_shards * sizeof(count_type);
-  auto* h_base                   = static_cast<unsigned char*>(host_mr.allocate_sync(host_bytes, staging_align));
+  auto* h_base                   = static_cast<unsigned char*>(reserved::__pinned_staging(host_bytes));
   _Tp* h_first                   = reinterpret_cast<_Tp*>(h_base);
   _Tp* h_last                    = h_first + num_shards;
   count_type* h_new_sizes        = reinterpret_cast<count_type*>(h_base + count_offset);
@@ -151,7 +151,7 @@ template <typename _Tp>
   {
     mr.deallocate_sync(ptr, sizeof(count_type), alignof(count_type));
   }
-  host_mr.deallocate_sync(h_base, host_bytes, staging_align);
+  // (arena staging is cached; nothing to release)
 
   return data.size();
 }
