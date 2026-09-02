@@ -135,16 +135,31 @@ def _can_build_field(typing_context, arg_type, field_type) -> bool:
 
     if getattr(field_type, "_field_spec", None) is not None:
         # A struct field takes its own field values as a tuple, or another
-        # struct that the registered cast handles.  A tuple's length is checked
-        # when the field is packed.
-        return isinstance(arg_type, _mlir.types.BaseTuple) or (
-            getattr(arg_type, "_field_spec", None) is not None
+        # struct.  A tuple's length is checked when the field is packed.
+        if isinstance(arg_type, _mlir.types.BaseTuple):
+            return True
+        arg_field_spec = getattr(arg_type, "_field_spec", None)
+        if arg_field_spec is None:
+            return False
+        # The struct-to-struct cast rebuilds the value field by field, so the
+        # two layouts have to line up.  Without this the call types cleanly and
+        # then fails while lowering, with no mention of the field involved.
+        field_types = list(field_type._field_spec.values())
+        if len(arg_field_spec) != len(field_types):
+            return False
+        return all(
+            _can_build_field(typing_context, arg_field, declared_field)
+            for arg_field, declared_field in zip(arg_field_spec.values(), field_types)
         )
 
     if isinstance(arg_type, _mlir.types.Number) and isinstance(
         field_type, _mlir.types.Number
     ):
-        return True
+        # A complex value cannot initialize a real field: the conversion would
+        # drop the imaginary part rather than report anything.
+        return isinstance(field_type, _mlir.types.Complex) or not isinstance(
+            arg_type, _mlir.types.Complex
+        )
 
     return typing_context.can_convert(arg_type, field_type) is not None
 
