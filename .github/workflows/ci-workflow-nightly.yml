@@ -97,6 +97,7 @@ jobs:
       - build-pytorch
     permissions:
       actions: read
+      checks: read
       contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 30
