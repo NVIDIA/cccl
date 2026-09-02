@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,7 +13,35 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
+#include <functional>
+
 #include <testing.cuh>
+
+#include <catch2/matchers/catch_matchers_exception.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
+
+#if TEST_HAS_EXCEPTIONS()
+namespace
+{
+#  define CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER()                                            \
+    Catch::Matchers::MessageMatches(                                                                 \
+      Catch::Matchers::ContainsSubstring("The NULL/default stream requires a current CUDA context.") \
+      && Catch::Matchers::ContainsSubstring("Set the current device or make a CUDA context current"))
+
+#  define CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(EXPR) \
+    REQUIRE_THROWS_MATCHES(EXPR, cuda::cuda_error, CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER())
+
+void check_default_stream_invalid_context_message(::CUstream native_stream)
+{
+  cuda::stream_ref stream{native_stream};
+
+  CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(stream.sync());
+  CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT((void) stream.is_done());
+}
+} // namespace
+#  undef CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT
+#  undef CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER
+#endif // TEST_HAS_EXCEPTIONS()
 
 C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 {
@@ -219,6 +247,44 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     CCCLRT_REQUIRE(ref2.id() == id1);
 #endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
   }
+}
+
+#if _CCCL_HAS_HOST_STD_LIB()
+C2H_CCCLRT_TEST("Stream hash", "[stream]")
+{
+  STATIC_REQUIRE(
+    cuda::std::is_same_v<decltype(std::hash<cuda::stream>{}(cuda::std::declval<cuda::stream&>())), size_t>);
+  STATIC_REQUIRE(cuda::std::is_default_constructible_v<std::hash<cuda::stream>>);
+  STATIC_REQUIRE(cuda::std::is_copy_constructible_v<std::hash<cuda::stream>>);
+
+  cuda::stream stream{cuda::device_ref{0}};
+
+  // The hash is stable across calls.
+  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream>{}(stream));
+
+  // A stream and a stream_ref that refer to the same stream are equal, so they
+  // must hash equally.
+  cuda::stream_ref ref{stream};
+  CCCLRT_REQUIRE(ref == stream);
+  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream_ref>{}(ref));
+
+  // A moved-to stream owns the same underlying stream, so the hash follows it.
+  auto hash_before = std::hash<cuda::stream>{}(stream);
+  cuda::stream moved{cuda::std::move(stream)};
+  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(moved) == hash_before);
+}
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+C2H_CCCLRT_TEST("Default stream diagnostics mention the missing current context", "[stream]")
+{
+#if TEST_HAS_EXCEPTIONS()
+  test::empty_driver_stack();
+  CCCLRT_REQUIRE(::cuda::__driver::__ctxGetCurrent() == nullptr);
+
+  check_default_stream_invalid_context_message(nullptr);
+  check_default_stream_invalid_context_message(CU_STREAM_LEGACY);
+  check_default_stream_invalid_context_message(CU_STREAM_PER_THREAD);
+#endif // TEST_HAS_EXCEPTIONS()
 }
 
 C2H_CCCLRT_TEST("Invalid stream", "[stream]")

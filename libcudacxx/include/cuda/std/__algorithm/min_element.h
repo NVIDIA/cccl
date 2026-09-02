@@ -67,8 +67,7 @@ template <class _ForwardIterator, class _Compare>
 min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__has_forward_traversal<_ForwardIterator>, "std::min_element requires a ForwardIterator");
-  static_assert(__is_callable<_Compare, decltype(*__first), decltype(*__first)>::value,
-                "The comparator has to be callable");
+  static_assert(__is_callable_v<_Compare, decltype(*__first), decltype(*__first)>, "The comparator has to be callable");
 
   return ::cuda::std::__min_element<__comp_ref_type<_Compare>>(
     ::cuda::std::move(__first), ::cuda::std::move(__last), __comp);
