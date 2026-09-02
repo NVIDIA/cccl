@@ -436,6 +436,10 @@ struct __tuple_constraints
     // NOLINTEND(bugprone-branch-clone)
   }
 
+  template <class _UTuple>
+  static constexpr __select_constructor __select_tuple_like_constructible_v =
+    __select_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
+
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UTuple, size_t... _Indices>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool
@@ -444,6 +448,10 @@ struct __tuple_constraints
     using ::cuda::std::get;
     return (is_nothrow_constructible_v<_Types, decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))> && ...);
   }
+
+  template <class _UTuple>
+  static constexpr bool __nothrow_tuple_like_constructible_v =
+    __nothrow_tuple_like_constructible<_UTuple>(__make_tuple_indices_t<sizeof...(_Types)>{});
 
   // Assignments
   static constexpr bool __all_copy_assignable = (is_copy_assignable_v<_Types> && ...);
