@@ -1886,9 +1886,9 @@ struct dispatch_impl
       return error;
     }
 
-    if (runs_on_guarantee.has_value() && runs_on_guarantee->description().__has_max_sms())
+    if (runs_on_guarantee.has_value() && runs_on_guarantee->description().__max_sms_.has_value())
     {
-      num_sms = ::cuda::std::min(num_sms, static_cast<int>(runs_on_guarantee->description().__max_sms_));
+      num_sms = ::cuda::std::min(num_sms, static_cast<int>(*runs_on_guarantee->description().__max_sms_));
     }
 
     const int histo_block_threads = policy.histogram.threads_per_block;
