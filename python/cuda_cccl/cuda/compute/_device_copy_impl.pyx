@@ -1151,6 +1151,7 @@ cdef extern from "cccl/c/device_copy.h":
         void* copy_fn
         _cccl_type_info value_type
         size_t rank
+        _cccl_device_copy_axis_metadata_t* shape
         _cccl_device_copy_layout_kind_t source_layout
         _cccl_device_copy_layout_kind_t destination_layout
 
@@ -1665,6 +1666,7 @@ cdef class _DeviceCopyBuild:
         self._build.payload_size = 0
         self._build.jit_compiler = NULL
         self._build.copy_fn = NULL
+        self._build.shape = NULL
         self._build.value_type.size = 0
         self._build.value_type.alignment = 0
         self._build.value_type.type = _CCCL_STORAGE

@@ -19,6 +19,7 @@
 
 #include <cuda.h>
 
+#include "device_copy_codegen.h"
 #include <cccl/c/device_copy.h>
 #include <hostjit/codegen/cub_call.hpp>
 #include <hostjit/jit_compiler.hpp>
@@ -96,6 +97,50 @@ bool all_runtime_metadata(const cccl_device_copy_axis_metadata_t* metadata, size
   }
 
   return true;
+}
+
+bool valid_shape_metadata(const cccl_device_copy_axis_metadata_t* metadata, size_t rank)
+{
+  if (metadata == nullptr)
+  {
+    return false;
+  }
+
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    switch (metadata[axis].kind)
+    {
+      case CCCL_DEVICE_COPY_AXIS_RUNTIME:
+        if (metadata[axis].value != 0)
+        {
+          return false;
+        }
+        break;
+      case CCCL_DEVICE_COPY_AXIS_STATIC:
+        if (metadata[axis].value < 0)
+        {
+          return false;
+        }
+        break;
+      default:
+        return false;
+    }
+  }
+
+  return true;
+}
+
+bool has_runtime_metadata(const cccl_device_copy_axis_metadata_t* metadata, size_t rank)
+{
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    if (metadata[axis].kind == CCCL_DEVICE_COPY_AXIS_RUNTIME)
+    {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool validate_view_build(cccl_device_copy_view_build_t view, size_t rank)
@@ -207,7 +252,7 @@ CUresult validate_build_spec(cccl_device_copy_build_spec_t spec)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (!all_runtime_metadata(spec.shape, spec.rank))
+  if (!valid_shape_metadata(spec.shape, spec.rank))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -451,6 +496,10 @@ extern "C" _CCCL_VISIBILITY_EXPORT int cccl_jit_device_copy(
 
   const auto rank = spec.rank;
   src += "  (void) destination_shape;\n";
+  if (!has_runtime_metadata(spec.shape, rank))
+  {
+    src += "  (void) source_shape;\n";
+  }
   if (!is_relaxed_layout(spec.source.layout))
   {
     src += "  (void) source_strides;\n";
@@ -463,11 +512,15 @@ extern "C" _CCCL_VISIBILITY_EXPORT int cccl_jit_device_copy(
   src += "  using value_type   = cccl_device_copy_value_t;\n";
   src += "  using index_type   = unsigned long long;\n";
   src += "  using offset_type  = cccl_device_copy_offset_t;\n";
-  src += "  using extents_type = ::cuda::std::dextents<index_type, " + std::to_string(rank) + ">;\n";
+  src += "  using extents_type = ::cuda::std::extents<index_type, "
+       + cccl::detail::device_copy_codegen::extents_template_arguments(spec.shape, rank) + ">;\n";
   src += "  using runtime_strides_type = ::cuda::strides<offset_type, " + dynamic_stride_template_arguments(rank)
        + ">;\n";
   src += "\n";
-  src += "  const extents_type extents{" + casted_runtime_values("source_shape", rank, "index_type") + "};\n\n";
+  src += "  const extents_type extents{"
+       + cccl::detail::device_copy_codegen::dynamic_extent_constructor_arguments(
+           "source_shape", spec.shape, rank, "index_type")
+       + "};\n\n";
   src += make_mdspan_view_source(
     "input_type", "source_view", "source_data", "source_byte_offset", "source_strides", spec.source.layout, true, rank);
   src += make_mdspan_view_source(
@@ -514,6 +567,12 @@ try
     return status;
   }
 
+  auto retained_shape = std::make_unique<cccl_device_copy_axis_metadata_t[]>(spec.rank);
+  for (size_t axis = 0; axis < spec.rank; ++axis)
+  {
+    retained_shape[axis] = spec.shape[axis];
+  }
+
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -548,6 +607,7 @@ try
   build_ptr->copy_fn            = reinterpret_cast<void*>(fn);
   build_ptr->value_type         = spec.value_type;
   build_ptr->rank               = spec.rank;
+  build_ptr->shape              = retained_shape.release();
   build_ptr->source_layout      = spec.source.layout;
   build_ptr->destination_layout = spec.destination.layout;
 
@@ -584,13 +644,21 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (source.shape == nullptr || destination.shape == nullptr)
+  if (build.shape == nullptr || source.shape == nullptr || destination.shape == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (!valid_shape_metadata(build.shape, build.rank))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
   for (size_t axis = 0; axis < build.rank; ++axis)
   {
     if (source.shape[axis] < 0 || destination.shape[axis] < 0 || source.shape[axis] != destination.shape[axis])
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+    if (build.shape[axis].kind == CCCL_DEVICE_COPY_AXIS_STATIC && source.shape[axis] != build.shape[axis].value)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
@@ -645,6 +713,8 @@ try
   }
 
   cccl::detail::release_jit_artifacts(build_ptr);
+  delete[] build_ptr->shape;
+  build_ptr->shape   = nullptr;
   build_ptr->copy_fn = nullptr;
 
   return CUDA_SUCCESS;

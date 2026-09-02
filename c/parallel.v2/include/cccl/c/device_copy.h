@@ -23,8 +23,7 @@ typedef enum cccl_device_copy_axis_metadata_kind_t
   // The build-time metadata value must be 0 and is ignored.
   CCCL_DEVICE_COPY_AXIS_RUNTIME = 0,
   // The value for this axis is a compile-time constant in the generated mdspan type
-  // or mapping. The build-time metadata value is the constant axis value. Reserved
-  // for a later implementation; the current builder accepts runtime metadata only.
+  // or mapping. The build-time metadata value is the constant axis value.
   CCCL_DEVICE_COPY_AXIS_STATIC = 1,
 } cccl_device_copy_axis_metadata_kind_t;
 
@@ -63,7 +62,7 @@ typedef struct cccl_device_copy_build_spec_t
   size_t rank;
   // Array of rank extent metadata entries. Static extent values must be
   // non-negative. Runtime extent values are supplied by runtime views. Current
-  // implementation requires all entries to be runtime metadata.
+  // implementation supports runtime and static extent metadata.
   const cccl_device_copy_axis_metadata_t* shape;
   cccl_device_copy_view_build_t source;
   cccl_device_copy_view_build_t destination;
@@ -75,9 +74,10 @@ typedef struct cccl_device_copy_source_view_t
   // DLPack-style byte offset from data to the first logical element. The
   // effective address data + byte_offset must satisfy value_type.alignment.
   uint64_t byte_offset;
-  // Host pointer to rank extents. Required when any shape axis is runtime.
-  // Valid for the duration of the API call; data lifetime is governed by stream
-  // ordering and must extend until the copy work has completed.
+  // Host pointer to rank extents. Required for call-time validation of runtime
+  // and static extents. Valid for the duration of the API call; data lifetime is
+  // governed by stream ordering and must extend until the copy work has
+  // completed.
   const int64_t* shape;
   // Host pointer to rank strides in elements. Required for runtime stride axes
   // of strided layouts; ignored for layout_left/layout_right.
@@ -90,9 +90,10 @@ typedef struct cccl_device_copy_destination_view_t
   // DLPack-style byte offset from data to the first logical element. The
   // effective address data + byte_offset must satisfy value_type.alignment.
   uint64_t byte_offset;
-  // Host pointer to rank extents. Required when any shape axis is runtime.
-  // Valid for the duration of the API call; data lifetime is governed by stream
-  // ordering and must extend until the copy work has completed.
+  // Host pointer to rank extents. Required for call-time validation of runtime
+  // and static extents. Valid for the duration of the API call; data lifetime is
+  // governed by stream ordering and must extend until the copy work has
+  // completed.
   const int64_t* shape;
   // Host pointer to rank strides in elements. Required for runtime stride axes
   // of strided layouts; ignored for layout_left/layout_right.
@@ -108,6 +109,9 @@ typedef struct cccl_device_copy_build_result_t
   void* copy_fn;
   cccl_type_info value_type;
   size_t rank;
+  // Owned deep copy of the build-time shape metadata. Used to validate runtime
+  // descriptors when generated code specializes static extents.
+  cccl_device_copy_axis_metadata_t* shape;
   cccl_device_copy_layout_kind_t source_layout;
   cccl_device_copy_layout_kind_t destination_layout;
 } cccl_device_copy_build_result_t;

@@ -90,6 +90,17 @@ std::array<cccl_device_copy_axis_metadata_t, Rank> runtime_axis_metadata()
   metadata.fill({CCCL_DEVICE_COPY_AXIS_RUNTIME, 0});
   return metadata;
 }
+
+template <std::size_t Rank>
+std::array<cccl_device_copy_axis_metadata_t, Rank> static_axis_metadata(const std::array<int64_t, Rank>& values)
+{
+  std::array<cccl_device_copy_axis_metadata_t, Rank> metadata{};
+  for (std::size_t axis = 0; axis < Rank; ++axis)
+  {
+    metadata[axis] = {CCCL_DEVICE_COPY_AXIS_STATIC, values[axis]};
+  }
+  return metadata;
+}
 } // namespace
 
 CATCH_TEST_CASE("C v2 DeviceCopy can copy runtime layout_stride_relaxed views", "[device_copy][hostjit]")
@@ -184,4 +195,78 @@ CATCH_TEST_CASE("C v2 DeviceCopy can copy runtime layout_stride_relaxed views", 
     == cudaSuccess);
 
   CATCH_REQUIRE(destination_storage == expected_destination);
+}
+
+CATCH_TEST_CASE("C v2 DeviceCopy can copy mixed static and runtime extents", "[device_copy][hostjit]")
+{
+  constexpr std::size_t rank = 3;
+
+  constexpr std::array<int64_t, rank> shape{2, 3, 4};
+  constexpr std::array<int64_t, rank> mismatched_static_shape{2, 3, 5};
+  constexpr std::size_t num_items = 24;
+
+  std::vector<int> source_storage(num_items);
+  for (std::size_t i = 0; i < source_storage.size(); ++i)
+  {
+    source_storage[i] = static_cast<int>(1000 + i);
+  }
+  std::vector<int> destination_storage(num_items, -1);
+
+  device_buffer<int> d_source(source_storage.size());
+  device_buffer<int> d_destination(destination_storage.size());
+
+  CATCH_REQUIRE(
+    cudaMemcpy(d_source.get(), source_storage.data(), source_storage.size() * sizeof(int), cudaMemcpyHostToDevice)
+    == cudaSuccess);
+  CATCH_REQUIRE(
+    cudaMemcpy(
+      d_destination.get(), destination_storage.data(), destination_storage.size() * sizeof(int), cudaMemcpyHostToDevice)
+    == cudaSuccess);
+
+  int current_device = 0;
+  CATCH_REQUIRE(cudaGetDevice(&current_device) == cudaSuccess);
+
+  cudaDeviceProp props{};
+  CATCH_REQUIRE(cudaGetDeviceProperties(&props, current_device) == cudaSuccess);
+
+  auto shape_metadata = static_axis_metadata(shape);
+  shape_metadata[1]   = {CCCL_DEVICE_COPY_AXIS_RUNTIME, 0};
+
+  cccl_device_copy_build_spec_t spec{
+    cccl_type_info{sizeof(int), alignof(int), CCCL_INT32},
+    rank,
+    shape_metadata.data(),
+    cccl_device_copy_view_build_t{CCCL_DEVICE_COPY_LAYOUT_RIGHT, nullptr},
+    cccl_device_copy_view_build_t{CCCL_DEVICE_COPY_LAYOUT_RIGHT, nullptr}};
+
+  device_copy_build_guard device_copy;
+  CATCH_REQUIRE(
+    cccl_device_copy_build(
+      &device_copy.build,
+      spec,
+      props.major,
+      props.minor,
+      TEST_CUB_PATH,
+      TEST_THRUST_PATH,
+      TEST_LIBCUDACXX_PATH,
+      TEST_CTK_PATH)
+    == CUDA_SUCCESS);
+
+  const cccl_device_copy_source_view_t source{d_source.get(), 0, shape.data(), nullptr};
+  const cccl_device_copy_destination_view_t destination{d_destination.get(), 0, shape.data(), nullptr};
+
+  CATCH_REQUIRE(cccl_device_copy(device_copy.build, source, destination, nullptr) == CUDA_SUCCESS);
+  CATCH_REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
+
+  CATCH_REQUIRE(
+    cudaMemcpy(
+      destination_storage.data(), d_destination.get(), destination_storage.size() * sizeof(int), cudaMemcpyDeviceToHost)
+    == cudaSuccess);
+  CATCH_REQUIRE(destination_storage == source_storage);
+
+  const cccl_device_copy_source_view_t mismatched_source{d_source.get(), 0, mismatched_static_shape.data(), nullptr};
+  const cccl_device_copy_destination_view_t mismatched_destination{
+    d_destination.get(), 0, mismatched_static_shape.data(), nullptr};
+  CATCH_REQUIRE(cccl_device_copy(device_copy.build, mismatched_source, mismatched_destination, nullptr)
+                == CUDA_ERROR_INVALID_VALUE);
 }
