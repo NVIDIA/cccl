@@ -34,17 +34,15 @@ readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
 numba-cuda-mlir-cu12 = [
-  "cuda-core>=0.5.1,<2",
   "numba-cuda-mlir[cu12]>=0.5.0,<0.6",
 ]
 numba-cuda-mlir-cu13 = [
-  "cuda-core>=0.5.1,<2",
   "numba-cuda-mlir[cu13]>=0.5.0,<0.6",
 ]
 test = [
   "mypy",
   "numpy",
-  "pytest",
+  "pytest>=8.2",
   "pytest-cov",
 ]
 

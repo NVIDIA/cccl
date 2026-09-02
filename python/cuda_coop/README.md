@@ -51,5 +51,5 @@ scalar inputs and built-in operators only.
 Importing `cuda.coop` succeeds without a compiler backend. A reduction outside
 a compatible compiler context reports an explicit error.
 
-See the [CCCL documentation](https://nvidia.github.io/cccl/python.html) for the
+See the [CCCL documentation](https://nvidia.github.io/cccl/unstable/python/) for the
 full contract and examples.

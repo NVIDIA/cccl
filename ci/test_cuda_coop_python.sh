@@ -146,17 +146,22 @@ from pathlib import Path
 from numba_cuda_mlir import cuda as mlir_cuda
 
 import cuda.coop.numba_mlir as coop
-from cuda.coop.numba_mlir._compiler import _planner
+from cuda.coop.numba_mlir._compiler import _group_planner
+from cuda.coop.numba_mlir._lowering import _reduce
 
 distribution = importlib.metadata.distribution("cuda-coop")
 expected_backend = Path(
     distribution.locate_file("cuda/coop/numba_mlir/__init__.py")
 ).resolve()
-expected_planner = Path(
-    distribution.locate_file("cuda/coop/numba_mlir/_compiler/_planner.py")
+expected_group_planner = Path(
+    distribution.locate_file("cuda/coop/numba_mlir/_compiler/_group_planner.py")
+).resolve()
+expected_reduce_lowering = Path(
+    distribution.locate_file("cuda/coop/numba_mlir/_lowering/_reduce.py")
 ).resolve()
 assert Path(coop.__file__).resolve() == expected_backend
-assert Path(_planner.__file__).resolve() == expected_planner
+assert Path(_group_planner.__file__).resolve() == expected_group_planner
+assert Path(_reduce.__file__).resolve() == expected_reduce_lowering
 if not mlir_cuda.is_available():
     raise SystemExit("numba-cuda-mlir cannot access an NVIDIA GPU")
 print(f"numba-cuda-mlir={importlib.metadata.version('numba-cuda-mlir')}")

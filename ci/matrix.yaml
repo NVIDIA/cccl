@@ -194,7 +194,7 @@ workflows:
     # cuda.cccl.headers: CPU-only (gpu:false), arch-insensitive
     - {jobs: ['test_headers'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.14', cxx: ['gcc13', 'msvc2022'], py_ctk_mode: ['pinned', 'latest', 'sysctk']}
     # cuda.coop -- host contracts consume the universal wheel without a GPU.
-    - {jobs: ['test_py_coop_host'], project: 'cuda_coop_python', ctk: '13.3', py_version: '3.14', cxx: 'gcc13'}
+    - {jobs: ['test_py_coop_host'], project: 'cuda_coop_python', ctk: '13.X', py_version: '3.14', cxx: 'gcc13'}
     # Numba-CUDA-MLIR compiles and launches the focused BlockReduce slice.
     - {jobs: ['test_py_coop_numba_mlir'], project: 'cuda_coop_python', ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # CCCL packaging:
@@ -262,7 +262,7 @@ workflows:
     - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_headers'], ctk: '13.X', py_version: '3.14', cxx: ['gcc13', 'msvc2022']}
     - {project: 'python', jobs: ['test_py_stf'], ctk: '13.X', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
-    - {project: 'cuda_coop_python', jobs: ['test_py_coop_host'], ctk: '13.3', py_version: '3.14', cxx: 'gcc13'}
+    - {project: 'cuda_coop_python', jobs: ['test_py_coop_host'], ctk: '13.X', py_version: '3.14', cxx: 'gcc13'}
     - {project: 'cuda_coop_python', jobs: ['test_py_coop_numba_mlir'], ctk: ['12.X', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
@@ -738,8 +738,8 @@ jobs:
   test_py_compute_minimal: { name: "Test cuda.compute minimal", gpu: true, needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_compute_minimal'} }
   test_py_examples: { name: "Test cuda.cccl.examples",     gpu: true,  needs: 'build_py_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_cccl_examples'} }
   test_py_stf:      { name: "Test cuda.stf._experimental", gpu: true,  needs: 'build_py_stf_wheel', force_producer_ctk: "pybuild", invoke: { prefix: 'test_cuda_stf'} }
-  test_py_coop_host: { name: "Test cuda.coop (host)", gpu: false, needs: 'build', invoke: { prefix: 'test'} }
-  test_py_coop_numba_mlir: { name: "Test cuda.coop Numba-MLIR", gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-stage numba-mlir'} }
+  test_py_coop_host: { name: "Test cuda.coop (host)", gpu: false, needs: 'build', force_producer_ctk: '13.X', invoke: { prefix: 'test'} }
+  test_py_coop_numba_mlir: { name: "Test cuda.coop Numba-MLIR", gpu: true, needs: 'build', force_producer_ctk: '13.X', invoke: { prefix: 'test', args: '-stage numba-mlir'} }
 
   # Run jobs for 'target' project (ci/util/build_and_test_targets.sh):
   run_cpu: { gpu: false }

@@ -17,8 +17,8 @@ Install the extra matching the CUDA Toolkit major version:
    pip install "cuda-coop[numba-cuda-mlir-cu12]"  # CUDA 12
    pip install "cuda-coop[numba-cuda-mlir-cu13]"  # CUDA 13
 
-The extras install ``numba-cuda-mlir>=0.5.0,<0.6`` and
-``cuda-core>=0.5.1,<2`` together with the matching CUDA dependencies.
+The extras install ``numba-cuda-mlir>=0.5.0,<0.6`` together with its matching
+CUDA dependencies.
 
 Numba-CUDA-MLIR example
 -----------------------
@@ -43,7 +43,8 @@ reduction contract. This kernel uses the root API:
 Use ``import cuda.coop.numba_mlir as coop`` for an explicit qualified import.
 Both spellings lower to the same provider. The compiler integration obtains the
 exact block dimensions from the launch configuration, so the operation call
-does not repeat them.
+does not repeat them. Numba-CUDA-MLIR specializes the compiled kernel for that
+launch configuration and does not persist the specialization in its disk cache.
 
 Participation and result contract
 ---------------------------------
