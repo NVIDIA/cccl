@@ -139,6 +139,39 @@ def is_contiguous(arr: DeviceArrayLike) -> bool:
         return False
 
 
+def is_c_contiguous(arr: DeviceArrayLike) -> bool:
+    """Whether ``arr`` is contiguous in C (row-major) order.
+
+    ``is_contiguous`` also accepts Fortran order, which is only equivalent to C
+    order for arrays of at most one dimension.  Callers that address the data
+    with C-order strides need this stricter check.
+    """
+    cai = arr.__cuda_array_interface__
+
+    strides = cai["strides"]
+
+    if strides is None:
+        return True
+
+    shape = cai["shape"]
+
+    if any(dim == 0 for dim in shape):
+        # array has no elements
+        return True
+
+    if all(dim == 1 for dim in shape):
+        # there is a single element
+        return True
+
+    itemsize = get_dtype(arr).itemsize
+    expected_stride = itemsize
+    for dim, stride in zip(reversed(shape), reversed(strides)):
+        if stride != expected_stride:
+            return False
+        expected_stride *= dim
+    return True
+
+
 def compute_c_contiguous_strides_in_bytes(
     shape: Tuple[int], itemsize: int
 ) -> Tuple[int, ...]:
