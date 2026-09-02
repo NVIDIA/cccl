@@ -631,10 +631,9 @@ def test_unary_transform_stateful_state_must_be_c_contiguous():
     it in C order, so Fortran-ordered state would be read with the wrong
     strides and silently produce wrong results.
     """
-    cupy = pytest.importorskip("cupy")
-
-    # Transposing a C-contiguous array yields a Fortran-ordered view.
-    state = cupy.arange(6, dtype=cupy.int32).reshape(3, 2).T
+    state = DeviceArray.from_numpy(
+        np.asfortranarray(np.arange(6, dtype=np.int32).reshape(3, 2))
+    )
 
     def add_state(x):
         return x + state[0, 0]
@@ -651,9 +650,7 @@ def test_unary_transform_stateful_state_must_be_c_contiguous():
 
 def test_unary_transform_stateful_two_dimensional_state():
     """A C-contiguous two-dimensional state array is indexed correctly."""
-    cupy = pytest.importorskip("cupy")
-
-    state = cupy.arange(6, dtype=cupy.int32).reshape(3, 2)
+    state = DeviceArray.from_numpy(np.arange(6, dtype=np.int32).reshape(3, 2))
 
     def add_state(x):
         return x + state[1, 1]
