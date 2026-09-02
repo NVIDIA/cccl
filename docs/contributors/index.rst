@@ -174,7 +174,7 @@ it's a false positive. Secrets are also scanned server-side in CI on ``main``.
 Creating a Pull Request
 --------------------------
 
-#. Push the local branch with your changes to your fork on GitHub:
+Push the local branch with your changes to your fork on GitHub:
 
    .. code-block:: bash
 
