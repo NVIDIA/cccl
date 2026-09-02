@@ -31,7 +31,11 @@
 #include <thrust/transform.h>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
+#include <cuda/experimental/__sharded/stream_scope.cuh>
+
+#include <stdexcept>
 
 #include <cuda_runtime.h>
 
@@ -145,4 +149,88 @@ _CCCL_HOST_API void transform(
     output.sync();
   }
 }
+
+// ============================================================================
+// Concept-generic tier (pilot): any sharded_view + per-shard environments
+// ============================================================================
+
+/**
+ * @brief In-place unary transform over any `sharded_view`: for each shard,
+ * `data[i] = op(data[i])` on the shard's environment stream.
+ *
+ * The map family needs no cross-shard stage and no allocation: environments
+ * only supply the per-shard stream. Contract, selected by the per-call
+ * environment:
+ * - `call_env` carries a stream (`async_call_env`): the call is ordered
+ *   against that stream (fork on entry, join on exit), returns after
+ *   enqueue, and never synchronizes with the host.
+ * - `call_env` carries no stream: the call synchronizes the shard
+ *   environments' streams before returning (refused when the call
+ *   environment carries `sync_policy::forbid`).
+ *
+ * @throws std::invalid_argument when fewer environments than shards are
+ *         supplied.
+ */
+_CCCL_TEMPLATE(class _S, class _Envs, class _UnaryOp, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallEnv& call_env = {})
+{
+  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
+  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  {
+    _CCCL_THROW(::std::invalid_argument, "sharded::transform: fewer environments than shards");
+  }
+
+  constexpr bool __is_async = async_call_env<_CallEnv>;
+
+  for (::std::size_t g = 0; g < num_shards; g++)
+  {
+    const auto& s = data.shard(g);
+    if (s.size == 0)
+    {
+      continue;
+    }
+    const ::cuda::stream_ref shard_stream = ::cuda::get_stream(envs[g]);
+    if constexpr (__is_async)
+    {
+      // Fork: order this shard's work after the caller's timeline
+      __detail::__wait_stream_on(shard_stream.get(), ::cuda::get_stream(call_env).get());
+    }
+    stream_scope scope(shard_stream.get());
+    thrust::transform(thrust::cuda::par_nosync.on(shard_stream.get()), s.data, s.data + s.size, s.data, op);
+    cuda_safe_call(cudaGetLastError());
+    if constexpr (__is_async)
+    {
+      // Join: the caller's timeline waits for this shard's work
+      __detail::__wait_stream_on(::cuda::get_stream(call_env).get(), shard_stream.get());
+    }
+  }
+
+  if constexpr (!__is_async)
+  {
+    require_sync_allowed(call_env, "sharded::transform (synchronous form)");
+    for (::std::size_t g = 0; g < num_shards; g++)
+    {
+      if (data.shard(g).size != 0)
+      {
+        cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
+      }
+    }
+  }
+}
+
+/**
+ * @brief In-place unary transform over a self-bound sharded structure:
+ * environments derived via `default_envs`.
+ */
+_CCCL_TEMPLATE(class _S, class _UnaryOp, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
+  !sharded_env_range<::cuda::std::remove_cvref_t<_UnaryOp>>))
+_CCCL_HOST_API void transform(_S&& data, _UnaryOp op, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  sharded::transform(::cuda::std::forward<_S>(data), envs, op, call_env);
+}
+
 } // namespace cuda::experimental::sharded

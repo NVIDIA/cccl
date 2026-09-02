@@ -104,6 +104,66 @@ The algorithm family:
 Algorithm temporaries are drawn from each shard's place through the group's
 per-place memory resources.
 
+Concepts and the generic tier
+-----------------------------
+
+``<cuda/experimental/__sharded/concepts.cuh>`` names the requirements the
+algorithms actually consume, so they can be written against a *concept*
+rather than a concrete container. Three tiers, with three lifecycles:
+
+- **The view** (``sharded_view``): an indexed collection of shard
+  descriptors — for each shard a contiguous element range (``data``,
+  ``size``), its *region* in the global index space (``global_offset``), and
+  an equality-comparable *place* identity. Views are plain data: no element
+  ownership, no capacity, no execution resources (``basic_shard_view`` is
+  the ready-made portable descriptor type). Semantic guarantees — regions
+  pairwise disjoint, ordered, tiling ``[0, extent)`` exactly — are checkable
+  with ``validate()``. ``owning_sharded`` refines the view with per-shard
+  ``capacity``; it is where the size-mutating algorithms live.
+- **Per-shard environments** (``sharded_env`` / ``sharded_env_range``):
+  standard queryable environments supplying the stream to order shard ``i``'s
+  work on (``cuda::get_stream``, mandatory) and — for scratch-bearing
+  algorithms — a memory resource (``cuda::mr::get_memory_resource``).
+  Structures built by a provider answer ``default_envs`` (the ``self_bound``
+  concept, in the spirit of ``std::execution``'s ``get_env``); anything else
+  is used through the explicit-environment overloads.
+- **The per-call environment**: resources of the scope the whole call is
+  ordered against. A stream present in it selects the *asynchronous
+  contract* (the call forks from and joins into that stream and never
+  synchronizes with the host); no stream selects the synchronous convenience
+  form. ``sync_policy::forbid`` (the ``get_sync_policy`` query) turns every
+  would-be host synchronization into a ``std::runtime_error`` thrown before
+  any work, leaving all state valid — the same discipline as the capture
+  guards.
+
+Generic algorithms need no execution-place object: work launched into a
+shard's stream executes in the stream's context with the stream's SM
+confinement (``stream_scope`` supplies the one thing a launch needs from the
+calling thread — device currency — derived from the stream itself; see
+``test/sharded/stream_scope.cu``).
+
+The pilot generic entry points are ``transform`` (in-place unary) and the
+synchronous ``reduce``:
+
+.. code:: cpp
+
+   auto arr = sharded_array<double>::allocate(group, n);   // self-bound
+   sharded::transform(arr, op);                            // envs derived
+   double r = sharded::reduce(arr, cuda::std::plus<>{}, 0.0);
+
+   // explicit environments (any sharded_view, foreign structures included)
+   auto envs = sharded::default_envs(arr);
+   sharded::transform(arr, envs, op);
+
+   // asynchronous: ordered against a caller stream, no host synchronization
+   const auto sp  = cuda::std::execution::prop{cuda::get_stream, stream_ref{s}};
+   const auto env = cuda::std::execution::env{sp};
+   sharded::transform(arr, op, env);
+
+The shipped container tier models the concepts as-is (see
+``test/sharded/concepts/models.cu``); the ``place_group``-parameterized
+algorithm signatures remain unchanged.
+
 Size-mutating algorithms and the contiguous backing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
