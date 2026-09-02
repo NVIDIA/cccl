@@ -956,6 +956,43 @@ public:
     recalculate_offsets();
   }
 
+  /**
+   * @brief Atomically set every shard's logical size and re-tile the global
+   * offsets: the owning structure's size-mutation verb.
+   *
+   * The view invariants (regions disjoint, ordered, exactly tiling
+   * `[0, total_size())`) hold before and after; there is no observable
+   * intermediate state. Capacities are unchanged; each new size must not
+   * exceed the shard's capacity. Refused on contiguous backing (the flat
+   * view's element order could not survive per-shard shrinkage).
+   *
+   * @throws std::invalid_argument on size/count mismatch, capacity overflow,
+   *         or contiguous backing.
+   */
+  void commit_sizes(const ::std::vector<size_t>& new_sizes)
+  {
+    if (new_sizes.size() != shards_.size())
+    {
+      _CCCL_THROW(::std::invalid_argument, "sharded_array::commit_sizes: one size per shard required");
+    }
+    if (is_contiguous())
+    {
+      _CCCL_THROW(::std::invalid_argument, "sharded_array::commit_sizes: not supported on contiguous backing");
+    }
+    for (size_t i = 0; i < shards_.size(); i++)
+    {
+      if (new_sizes[i] > shards_[i].capacity)
+      {
+        _CCCL_THROW(::std::invalid_argument, "sharded_array::commit_sizes: new size exceeds shard capacity");
+      }
+    }
+    for (size_t i = 0; i < shards_.size(); i++)
+    {
+      shards_[i].size = new_sizes[i];
+    }
+    recalculate_offsets();
+  }
+
   /// @brief Recompute global offsets from current shard sizes. Call after an
   /// operation that legitimately updated shard sizes.
   void recalculate_offsets()

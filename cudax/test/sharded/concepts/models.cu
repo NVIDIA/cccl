@@ -20,6 +20,7 @@
 
 #include <cuda/experimental/sharded.cuh>
 
+#include <stdexcept>
 #include <vector>
 
 using namespace cuda::experimental::sharded;
@@ -139,6 +140,41 @@ void test_container_model(place_group& group)
   for (::std::size_t i = 0; i < envs.size(); ++i)
   {
     EXPECT(::cuda::get_stream(envs[i]) == ::cuda::stream_ref{arr.shard(i).stream});
+  }
+
+  // owning_sharded's atomic size-mutation verb: invariants hold before and
+  // after; capacity overflow refused; reuse restores full sizes.
+  {
+    ::std::vector<size_t> sizes(arr.num_shards());
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+      sizes[i] = arr.shard(i).size / 2;
+    }
+    arr.commit_sizes(sizes);
+    EXPECT(validate(arr));
+    size_t total = 0;
+    for (auto s : sizes)
+    {
+      total += s;
+    }
+    EXPECT(total_elements(arr) == total);
+
+    bool overflow_threw = false;
+    ::std::vector<size_t> too_big(arr.num_shards(), n); // > per-shard capacity
+    try
+    {
+      arr.commit_sizes(too_big);
+    }
+    catch (const ::std::invalid_argument&)
+    {
+      overflow_threw = true;
+    }
+    EXPECT(overflow_threw);
+    EXPECT(validate(arr)); // refused atomically: nothing changed
+
+    arr.reset_sizes_to_capacity();
+    EXPECT(validate(arr));
+    EXPECT(total_elements(arr) == n);
   }
 
   // Per-call environment machinery: default is best-effort; forbid throws

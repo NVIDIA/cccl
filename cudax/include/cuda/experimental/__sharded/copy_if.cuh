@@ -108,14 +108,16 @@ template <typename _Tp, typename _Pred>
 
   data.sync();
 
-  // Phase 2: fold the new sizes into the container's bookkeeping
+  // Phase 2: fold the new sizes into the container's bookkeeping through the
+  // owning structure's atomic size-mutation verb
+  ::std::vector<size_t> new_sizes(num_shards);
   for (size_t g = 0; g < num_shards; g++)
   {
     _CCCL_ASSERT(h_new_sizes[g] >= 0 && static_cast<size_t>(h_new_sizes[g]) <= data.shard(g).size,
                  "sharded::copy_if: select returned an out-of-range count");
-    data.shard(g).size = static_cast<size_t>(h_new_sizes[g]);
+    new_sizes[g] = static_cast<size_t>(h_new_sizes[g]);
   }
-  data.recalculate_offsets();
+  data.commit_sizes(new_sizes);
 
   for (auto& [mr, ptr] : d_counts)
   {

@@ -67,6 +67,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -77,6 +78,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
@@ -162,16 +164,25 @@ _CCCL_CONCEPT __has_capacity_field = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __d)(
   _Satisfies(__convertible_to_size) __d.capacity);
 
 //! @brief An owning sharded structure: a `sharded_view` whose shards
-//! additionally expose `capacity` (allocated element count, >= size).
+//! additionally expose `capacity` (allocated element count, >= size) and
+//! which supports the atomic size-mutation verb `commit_sizes`.
 //!
 //! This is the home of the size-mutating algorithm family (`copy_if`,
-//! `unique`, sort): shrinking a shard's logical size and re-tiling the
-//! global offsets are container-metadata operations that a non-owning view
-//! must not (and cannot) express.
+//! `unique`, sort): shrinking shards' logical sizes and re-tiling the global
+//! offsets are container-metadata operations that a non-owning view must not
+//! (and cannot) express. `commit_sizes(new_sizes)` applies one size per
+//! shard (each `<= capacity`) and restores the view invariants in a single
+//! step — `validate()` holds before and after, with no observable
+//! intermediate state (the consumers all compute every new size first and
+//! then apply: batch-then-commit is the algorithm shape, the verb names it).
+//! Capacities never change through this interface: no growth, no
+//! reallocation — redistribution stays an explicit rebuild.
 template <class _S>
-_CCCL_CONCEPT owning_sharded = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
-  requires(sharded_view<_S>),
-  requires(__has_capacity_field<::cuda::std::remove_cvref_t<decltype(__s.shard(::std::size_t{0}))>>));
+_CCCL_CONCEPT owning_sharded =
+  _CCCL_REQUIRES_EXPR((_S), _S& __s, const ::std::vector<::std::size_t>& __sizes)(
+    requires(sharded_view<_S>),
+    requires(__has_capacity_field<::cuda::std::remove_cvref_t<decltype(__s.shard(::std::size_t{0}))>>),
+    _Same_as(void) __s.commit_sizes(__sizes));
 
 //! @brief Check the `sharded_view` semantic guarantees at runtime (debug
 //! aid; concepts cannot express semantics).

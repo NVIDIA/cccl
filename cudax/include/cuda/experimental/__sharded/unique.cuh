@@ -140,12 +140,14 @@ template <typename _Tp>
     prev = g;
   }
 
-  // Fold the new sizes into the container's bookkeeping
+  // Fold the new sizes into the container's bookkeeping through the owning
+  // structure's atomic size-mutation verb
+  ::std::vector<size_t> new_sizes(num_shards);
   for (size_t g = 0; g < num_shards; g++)
   {
-    data.shard(g).size = static_cast<size_t>(h_new_sizes[g]);
+    new_sizes[g] = static_cast<size_t>(h_new_sizes[g]);
   }
-  data.recalculate_offsets();
+  data.commit_sizes(new_sizes);
 
   for (auto& [mr, ptr] : d_counts)
   {
