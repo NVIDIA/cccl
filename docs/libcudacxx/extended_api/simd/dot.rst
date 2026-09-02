@@ -54,10 +54,8 @@ Returns ``init`` plus the dot product of ``lhs`` and ``rhs``.
 
 **Performance considerations**
 
-- Packed 8-bit integer input vectors with compatible 32-bit integer accumulators use ``IDP4A`` on ``SM61`` and newer
-  device targets.
-- Packed 16-bit by 8-bit integer input vectors with compatible 32-bit integer accumulators use ``IDP2A`` on ``SM61``
-  and newer device targets.
+- Packed 8-bit integer input vectors with compatible 32-bit integer accumulators use ``IDP4A`` on  all device targets.
+- Packed 16-bit by 8-bit integer input vectors with compatible 32-bit integer accumulators use ``IDP2A`` on all device targets.
 - A compatible integer accumulator is unsigned when both inputs are unsigned and signed when either input is signed.
 - Other input and accumulator combinations rely on vectorized multiplication (e.g. ``FMUL2`` with 32-bit floating-point types on ``SM100``) and addition instructions.
 
