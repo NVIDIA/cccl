@@ -156,6 +156,36 @@ def _tuple_element_types(tuple_type, count):
     return [None] * count
 
 
+def _can_build_field(typing_context, arg_type, field_type) -> bool:
+    """Whether a constructor argument can initialize a field of ``field_type``.
+
+    Numbers are accepted whenever the field is numeric: the lowering converts
+    each argument to its field type explicitly, and a narrowing conversion
+    (int64 into an int32 field) is not an implicit numba conversion even though
+    it is intended here -- arithmetic on narrow fields promotes, so
+    ``Struct(a.x + b.x, ...)`` legitimately arrives wider than declared.  A
+    struct field additionally accepts a tuple of its own field values, or
+    another struct that the registered cast handles.
+    """
+    if arg_type == field_type:
+        return True
+
+    if getattr(field_type, "_field_spec", None) is not None:
+        # A struct field takes its own field values as a tuple, or another
+        # struct that the registered cast handles.  A tuple's length is checked
+        # when the field is packed.
+        return isinstance(arg_type, _mlir.types.BaseTuple) or (
+            getattr(arg_type, "_field_spec", None) is not None
+        )
+
+    if isinstance(arg_type, _mlir.types.Number) and isinstance(
+        field_type, _mlir.types.Number
+    ):
+        return True
+
+    return typing_context.can_convert(arg_type, field_type) is not None
+
+
 def _convert_field(value, source_type, target_mlir_ty):
     """Convert ``value`` to ``target_mlir_ty``, preserving the source's sign.
 
@@ -405,14 +435,14 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         key = struct_class
 
         def generic(self, args, kws):
-            # Match on arity only and accept the actual argument types: numba
-            # promotes arithmetic (int32 + int32 -> int64), so a field built
-            # from an expression arrives wider than its declared type, and a
-            # narrowing conversion (int64 -> int32) is not an *implicit* numba
-            # conversion.  The constructor lowering converts each argument to
-            # its field type explicitly.
             if kws or len(args) != len(_struct_field_types):
                 return None
+            for position, (arg, field) in enumerate(zip(args, _struct_field_types)):
+                if not _can_build_field(self.context, arg, field):
+                    raise _mlir.errors.TypingError(
+                        f"cannot initialize field {field_names_list[position]!r} "
+                        f"of {struct_class.__name__} (declared {field}) from {arg}"
+                    )
             return _mlir.signature(numba_type, *args)
 
     _mlir.typing_registry.register_global(

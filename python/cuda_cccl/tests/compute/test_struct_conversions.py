@@ -144,7 +144,7 @@ def test_tuple_for_scalar_field_is_rejected():
     d_in = DeviceArray.from_numpy(h_in)
     d_out = DeviceArray.empty(h_in.shape, Outer.dtype)
 
-    with pytest.raises(Exception, match="only a nested struct field"):
+    with pytest.raises(Exception, match="cannot initialize field"):
         cuda.compute.unary_transform(
             d_in=d_in, d_out=d_out, op=build, num_items=h_in.size
         )
@@ -203,4 +203,27 @@ def test_runtime_index_is_rejected():
     with pytest.raises(Exception, match="compile-time constant index"):
         cuda.compute.unary_transform(
             d_in=d_in, d_out=d_out, op=runtime_index, num_items=h_in.size
+        )
+
+
+def test_constructor_rejects_incompatible_argument_type():
+    """A field cannot be initialized from an unrelated type.
+
+    The error names the field and both types, rather than failing later while
+    the constructor is lowered.
+    """
+    Pair = gpu_struct({"a": np.int32, "b": np.int32})
+    Other = gpu_struct({"c": np.int32})
+
+    def build(s):
+        # 's' is a struct; field 'a' is a scalar.
+        return Pair(s, s.c)
+
+    h_in = np.zeros(4, dtype=Other.dtype)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Pair.dtype)
+
+    with pytest.raises(Exception, match="cannot initialize field"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=build, num_items=h_in.size
         )
