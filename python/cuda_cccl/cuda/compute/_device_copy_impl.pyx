@@ -11,6 +11,7 @@ from cpython.pycapsule cimport PyCapsule_GetPointer, PyCapsule_IsValid, PyCapsul
 from cpython.tuple cimport PyTuple_New, PyTuple_SET_ITEM
 from cpython.long cimport PyLong_FromLongLong
 from cpython.ref cimport Py_INCREF
+from cpython.bytes cimport PyBytes_FromStringAndSize
 from libc.stdint cimport INT64_MAX, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t, uintptr_t
 
 import operator
@@ -1754,6 +1755,22 @@ cdef class _DeviceCopyBuild:
             PyMem_Free(source_stride_metadata)
             PyMem_Free(destination_stride_metadata)
 
+    def _get_cubin(self):
+        cdef uintptr_t payload
+        cdef Py_ssize_t payload_size
+
+        if self._closed:
+            raise RuntimeError("DeviceCopy build result is closed")
+
+        payload = <uintptr_t>self._build.payload
+        payload_size = <Py_ssize_t>self._build.payload_size
+        if payload == 0 or payload_size == 0:
+            return b""
+        return PyBytes_FromStringAndSize(
+            <const char*>payload,
+            payload_size,
+        )
+
     cdef void _copy(
         self,
         object source,
@@ -1923,6 +1940,9 @@ cdef class _DeviceCopy:
             _device_copy_residual_byte_offset(<uint64_t>destination_view.byte_offset, self._itemsize),
             stream_handle,
         )
+
+    def _get_cubin(self):
+        return self._build._get_cubin()
 
     def close(self):
         self._build.close()
