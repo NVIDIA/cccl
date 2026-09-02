@@ -35,7 +35,7 @@ from __future__ import annotations
 import itertools
 import threading
 
-from ._mlir import as_numpy_dtype, cuda, infer_return_type, types
+from ._mlir import as_numpy_dtype, cuda, types
 from ._utils import sanitize_identifier
 
 # Global counter to generate unique symbol names even when the same function
@@ -85,23 +85,17 @@ def _is_gpu_struct_type(numba_type):
     return hasattr(numba_type, "_field_spec") and hasattr(numba_type, "python_type")
 
 
-def _op_returns_tuple(op_device, arg_types) -> bool:
-    """Whether ``op`` naturally returns a tuple for the given argument types."""
-    op_return_type = infer_return_type(op_device, arg_types)
-    return isinstance(op_return_type, (types.Tuple, types.UniTuple))
-
-
-def _result_store_body(loads: str, return_type, reconstruct_from_tuple: bool):
+def _result_store_body(loads: str, return_type):
     """Build the wrapper body that computes the op result and stores it.
 
-    A struct-returning operator usually returns the struct directly, which is
-    stored as-is.  But an operator can also return a *tuple* of the struct's
-    field values (e.g. a scan op feeding a zip output iterator returns a tuple);
-    numba-cuda-mlir cannot store a tuple directly into a struct pointer, so when
-    the op returns a tuple we reconstruct the struct field-by-field and let the
-    gpu_struct constructor pack it.  Returns ``(body_stmts, extra_namespace)``.
+    A struct result is rebuilt field by field through the declared struct's
+    constructor, which converts each field to its declared type.  The operator
+    may return that struct, a struct with a narrower field layout, or a tuple of
+    the field values (a scan operator feeding a zip output iterator returns a
+    tuple), and storing any of those directly would need a conversion the
+    pointer store does not perform.  Returns ``(body_stmts, extra_namespace)``.
     """
-    if reconstruct_from_tuple and _is_gpu_struct_type(return_type):
+    if _is_gpu_struct_type(return_type):
         num_fields = len(return_type._field_spec)
         fields = ", ".join(f"_r[{i}]" for i in range(num_fields))
         stmts = [f"_r = _op({loads})", f"result[0] = _ResultStruct({fields})"]
@@ -127,10 +121,7 @@ def create_op_void_ptr_wrapper(op, sig):
 
     # result[0] = _op(arg_0[0], arg_1[0], ...)
     loads = ", ".join(f"{name}[0]" for name in arg_names)
-    reconstruct = _is_gpu_struct_type(return_type) and _op_returns_tuple(
-        op_device, arg_types
-    )
-    body, extra_namespace = _result_store_body(loads, return_type, reconstruct)
+    body, extra_namespace = _result_store_body(loads, return_type)
 
     wrapper_func = _build_wrapper(
         wrapper_name, arg_names + ["result"], body, op_device, extra_namespace
@@ -205,10 +196,7 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     )
     input_args = ", ".join(f"{name}[0]" for name in input_names)
     call_args = ", ".join(a for a in (state_args, input_args) if a)
-    reconstruct = _is_gpu_struct_type(return_type) and _op_returns_tuple(
-        op_device, sig.args
-    )
-    body, extra_namespace = _result_store_body(call_args, return_type, reconstruct)
+    body, extra_namespace = _result_store_body(call_args, return_type)
     # carray is called through ``cuda`` inside the generated device function,
     # and each state's element type is passed to it explicitly.
     extra_namespace = {

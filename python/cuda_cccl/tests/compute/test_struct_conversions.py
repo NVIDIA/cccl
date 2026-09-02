@@ -260,3 +260,25 @@ def test_complex_field_is_read_and_constructed():
     result = d_out.copy_to_host()
     np.testing.assert_array_equal(result["z"], h_in["z"] * 2)
     np.testing.assert_array_equal(result["n"], h_in["n"] + 1)
+
+
+def test_operator_may_return_a_narrower_struct():
+    """An operator's struct may be narrower than the declared output struct.
+
+    Each field is converted to its declared type as the result is stored.
+    """
+    Narrow = gpu_struct({"a": np.int32, "b": np.int32})
+    Wide = gpu_struct({"a": np.int64, "b": np.int64})
+
+    def build(x):
+        return Narrow(x, -x)
+
+    h_in = np.arange(4, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Wide.dtype)
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=build, num_items=h_in.size)
+
+    result = d_out.copy_to_host()
+    np.testing.assert_array_equal(result["a"], h_in.astype(np.int64))
+    np.testing.assert_array_equal(result["b"], -h_in.astype(np.int64))
