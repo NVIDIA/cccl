@@ -1085,29 +1085,30 @@ def test_operator_device_code_targets_the_requested_cc(monkeypatch):
     assert recorded["chip"] == "sm_75"
 
 
-def test_return_type_inference_uses_the_build_target_cc(monkeypatch):
-    """Return-type inference is compiled for the build's target cc.
+def test_return_type_inference_does_not_generate_code(monkeypatch):
+    """Inferring an operator's return type must not generate code.
 
-    It runs before the operator is compiled, so leaving it untargeted makes the
-    whole build depend on the current device.
+    The return type follows from typing alone, so inference needs neither a
+    target arch nor a device; generating code for it would make every build
+    depend on the current device before its compute capability can apply.
     """
     from cuda.compute import _jit
 
-    recorded = {}
+    generated = []
     original = _jit._mlir.cuda.compile
 
-    def record_cc(pyfunc, *args, **kwargs):
-        recorded.setdefault("cc", kwargs.get("cc"))
-        return original(pyfunc, *args, **kwargs)
+    def record(*args, **kwargs):
+        generated.append(kwargs.get("output"))
+        return original(*args, **kwargs)
 
-    monkeypatch.setattr(_jit._mlir.cuda, "compile", record_cc)
+    monkeypatch.setattr(_jit._mlir.cuda, "compile", record)
 
     def add_one(x):
         return x + 1
 
     int32 = from_numpy_dtype(np.dtype(np.int32))
     _jit._infer_return_type.cache_clear()
-    with target_cc((7, 5)):
-        _jit._infer_return_type(add_one, (int32,))
+    inferred = _jit._infer_return_type(add_one, (int32,))
 
-    assert recorded["cc"] == (7, 5)
+    assert inferred == from_numpy_dtype(np.dtype(np.int64))
+    assert generated == []

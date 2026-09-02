@@ -53,41 +53,6 @@ def test_llvm_ir_extraction_does_not_request_lto_codegen(monkeypatch):
     assert recorded.get("lto") is False
 
 
-def test_return_type_check_does_not_generate_code(monkeypatch):
-    """Deciding whether an operator returns a tuple must not generate code.
-
-    This check runs in addition to compiling the operator itself, so doing a
-    full code generation for it roughly doubles the JIT cost of every
-    struct-returning operator.
-    """
-    from cuda.compute import _odr_helpers
-
-    generated = []
-    original = _mlir.cuda.compile
-
-    def record(*args, **kwargs):
-        generated.append(kwargs.get("output"))
-        return original(*args, **kwargs)
-
-    monkeypatch.setattr(_mlir.cuda, "compile", record)
-
-    def returns_tuple(x):
-        return (x + 1, x * 2)
-
-    def returns_scalar(x):
-        return x + 1
-
-    int32 = _mlir.types.int32
-    assert _odr_helpers._op_returns_tuple(
-        _mlir.cuda.jit(device=True)(returns_tuple), (int32,)
-    )
-    assert not _odr_helpers._op_returns_tuple(
-        _mlir.cuda.jit(device=True)(returns_scalar), (int32,)
-    )
-
-    assert generated == []
-
-
 def test_stateful_wrapper_accepts_numpy_integer_shapes():
     """A state shape of numpy integers must not leak into the generated source.
 

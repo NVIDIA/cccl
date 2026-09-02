@@ -779,21 +779,10 @@ def _infer_return_type_impl(py_func, input_types):
     # Ensure any gpu_struct classes referenced in the function are registered
     _ensure_function_structs_registered(py_func)
 
-    # Compile to infer return type
-    from ._utils import sanitize_identifier
-
-    sanitized_name = sanitize_identifier(py_func.__name__)
-    unique_suffix = hex(id(py_func))[2:]
-    abi_name = f"{sanitized_name}_{unique_suffix}"
+    # The return type follows from typing alone, so this stops before code
+    # generation; it needs no target arch and no device.
     input_numba_types = tuple(type_descriptor_to_numba(t) for t in input_types)
-    _, return_type = _mlir.cuda.compile(
-        py_func,
-        input_numba_types,
-        device=True,
-        abi_info={"abi_name": abi_name},
-        output="ltoir",
-        cc=get_target_cc(),
-    )
+    return_type = _mlir.infer_return_type(py_func, input_numba_types)
     return _numba_type_to_type_descriptor(return_type)
 
 
