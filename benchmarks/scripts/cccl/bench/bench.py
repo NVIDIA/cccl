@@ -31,8 +31,8 @@ def first_val(my_dict):
 
 class JsonCache:
     _instance = None
-    bench_cache: dict
-    device_cache: dict
+    bench_cache: dict[str, dict]
+    device_cache: dict[str, dict]
 
     def __new__(cls):
         if cls._instance is None:
@@ -227,7 +227,7 @@ class SubBenchState:
 class SubBenchResult:
     def __init__(self, bench):
         axes_names = {}
-        axes_values: dict[str, dict] = {}
+        axes_values: dict[str, dict[str | float, str]] = {}
         for axis in bench["axes"]:
             short_name = axis["name"]
             full_name = get_axis_name(axis)
@@ -405,7 +405,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers: dict[str, dict] = {}
+        centers: dict[str, dict[str, float]] = {}
         with conn:
             for subbench in result.subbenches:
                 centers[subbench] = {}
@@ -454,7 +454,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers: dict[str, dict] = {}
+        centers: dict[str, dict[str, float]] = {}
 
         with conn:
             for subbench in rt_values:
@@ -504,7 +504,7 @@ def speedup(base, variant):
     if benchmarks != set(variant.keys()):
         raise Exception("Benchmarks do not match.")
 
-    result: dict[str, dict] = {}
+    result: dict[str, dict[str, float]] = {}
     for bench in benchmarks:
         base_states = base[bench]
         variant_states = variant[bench]
@@ -630,7 +630,7 @@ class Bench:
     def ct_axes_value_descriptions(self):
         subbench_descriptions = {}
         for bench in json_benches(self.algname)["benchmarks"]:
-            descriptions: dict[str, dict] = {}
+            descriptions: dict[str, dict[str, str]] = {}
             for axis in bench["axes"]:
                 name = axis["name"]
                 if "{ct}" not in name:

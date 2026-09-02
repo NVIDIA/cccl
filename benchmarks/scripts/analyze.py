@@ -7,6 +7,7 @@ import json
 import math
 import os
 import re
+from typing import Any
 
 import cccl
 import matplotlib.pyplot as plt
@@ -74,7 +75,7 @@ def get_rt_axes(df):
 def ct_space(df):
     ct_axes = get_ct_axes(df)
 
-    unique_ct_combinations: list[dict] = []
+    unique_ct_combinations: list[dict[str, Any]] = []
     for _, row in df[ct_axes].drop_duplicates().iterrows():
         unique_ct_combinations.append({})
         for col in ct_axes:
@@ -240,7 +241,7 @@ def iterate_case_dfs(args, callable):
         if not pattern.match(algname):
             continue
 
-        case_dfs: dict[str, pd.DataFrame] = {}
+        case_dfs: dict[str, dict[str, pd.DataFrame]] = {}
         for file in storages:
             storage = storages[file]
             for subbench in storage.subbenches(algname):
