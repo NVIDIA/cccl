@@ -35,6 +35,7 @@ from __future__ import annotations
 import itertools
 import threading
 
+from . import _mlir
 from ._mlir import as_numpy_dtype, cuda, types
 from ._utils import sanitize_identifier
 
@@ -80,6 +81,58 @@ def _build_wrapper(
     return namespace[wrapper_name]
 
 
+def _convert_to_declared_type(value, dtype):
+    """Convert ``value`` to ``dtype`` inside a generated wrapper.
+
+    Storing through a typed pointer lets the backend choose the conversion, and
+    it selects an unsigned widening for a signed value and a signed conversion
+    for an unsigned one.  A wrapper therefore converts the operator's result
+    itself, so the value reaching the store already has the declared type.
+
+    Only callable from compiled device code; the lowering below defines it.
+    """
+    raise NotImplementedError(
+        "_convert_to_declared_type is only callable from compiled device code"
+    )
+
+
+class _ConvertToDeclaredTypeTemplate(_mlir.AbstractTemplate):
+    key = _convert_to_declared_type
+
+    def generic(self, args, kws):
+        if kws or len(args) != 2:
+            return None
+        instance_type = getattr(args[1], "instance_type", None)
+        if instance_type is None:
+            return None
+        return _mlir.signature(instance_type, *args)
+
+
+def _lower_convert_to_declared_type(builder, target, args, kwargs):
+    from ._jit import _is_signed
+
+    value_var, _dtype_var = args
+    source_type = builder.get_numba_type(value_var.name)
+    target_type = builder.get_numba_type(target.name)
+    builder.store_var(
+        target,
+        _mlir.convert_number(
+            builder.load_var(value_var),
+            builder.get_mlir_type(target_type),
+            from_signed=_is_signed(source_type),
+            to_signed=_is_signed(target_type),
+        ),
+    )
+
+
+_mlir.typing_registry.register_global(
+    _convert_to_declared_type, types.Function(_ConvertToDeclaredTypeTemplate)
+)
+_mlir.lowering_registry.lower(_convert_to_declared_type, types.Any, types.NumberClass)(
+    _lower_convert_to_declared_type
+)
+
+
 def _is_gpu_struct_type(numba_type):
     """True if ``numba_type`` is a registered gpu_struct type (see _jit)."""
     return hasattr(numba_type, "_field_spec") and hasattr(numba_type, "python_type")
@@ -100,6 +153,11 @@ def _result_store_body(loads: str, return_type):
         fields = ", ".join(f"_r[{i}]" for i in range(num_fields))
         stmts = [f"_r = _op({loads})", f"result[0] = _ResultStruct({fields})"]
         return stmts, {"_ResultStruct": return_type.python_type}
+    if isinstance(return_type, types.Number):
+        return [f"result[0] = _convert(_op({loads}), _result_dtype)"], {
+            "_convert": _convert_to_declared_type,
+            "_result_dtype": as_numpy_dtype(return_type).type,
+        }
     return [f"result[0] = _op({loads})"], {}
 
 
