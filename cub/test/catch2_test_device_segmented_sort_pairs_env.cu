@@ -766,7 +766,7 @@ struct segmented_sort_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
   {
-    return {
+    return cub::SegmentedSortPolicy{
       cub::SegmentedSortRadixSortPolicy{
         BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_BASIC, cub::BLOCK_SCAN_WARP_SCANS, 4},
       cub::SegmentedSortSubWarpMergeSortPolicy{

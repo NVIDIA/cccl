@@ -81,18 +81,8 @@ template <bool __has_direct_reduction,
   const _BinaryOp& __op,
   const _Tp& __ident)
 {
-  const auto& __logical_device = __comm.logical_device();
-  // Workaround for the case where:
-  //
-  // 1. The stream is the NULL stream.
-  // 2. The resource is the default per-device memory resource.
-  // 3. There is no current context set.
-  //
-  // In this case cuMemAllocFromPool fails with INVALID_CONTEXT because the driver cannot pick
-  // an appropriate context to tie the allocation to.
-  const auto _                = ::cuda::__ensure_current_context{__logical_device};
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device);
+  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
 
   // One partial per segment. The butterfly fallback folds in place, but needs extra room for
   // the other ranks' data so we allocate it here
@@ -103,7 +93,7 @@ template <bool __has_direct_reduction,
   const auto __rank = __comm.rank();
 
   __CUDAX_MULTI_GPU_DISPATCH(
-    __logical_device,
+    __stream,
     CUB_NS_QUALIFIER::DeviceSegmentedReduce::Reduce,
     __input_it,
     __buff.begin(),
@@ -169,7 +159,7 @@ _CCCL_HOST_API void __exchange_and_fold(
       auto __recv = __buf.subspan(__num_segments, __num_segments);
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __buf.stream(),
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::std::make_tuple(__send.data(), __recv.data()),
         __send.data(),
@@ -295,11 +285,10 @@ _CCCL_HOST_API void __butterfly_reduction(
   // written to directly.
   //
   // All in all *probably* not worth the pain of implementing.
-  for (auto&& [__comm, __env, __local, __out_it] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
+  for (auto&& [__env, __local, __out_it] : ::cuda::std::ranges::views::zip(__envs, *__partials, __outputs))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __local.stream(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       __local.data(),
       __out_it,
@@ -504,14 +493,14 @@ _CCCL_HOST_API void segmented_reduce(
 //! @param[in] __policy The result policy object. Currently must be `cudax::broadcasted`.
 //! @param[in] __comm The communicator.
 //! @param[in] __env The execution environment. Must contain a stream.
-//! @param[in] __input The input iterator to reduce.
-//! @param[in] __num_segments The number of segments in `__input`. Must be identical on every
+//! @param[in] __input_it The input iterator to reduce.
+//! @param[in] __num_segments The number of segments in `__input_it`. Must be identical on every
 //!                           rank.
 //! @param[in] __offset_begin The iterator to the segment begin offsets. Must be readable for
 //!                           `__num_segments` values.
 //! @param[in] __offset_end The iterator to the segment end offsets. Must be readable for
 //!                         `__num_segments` values.
-//! @param[out] __output The output iterator receiving the per-segment results. Must be writable
+//! @param[out] __output_it The output iterator receiving the per-segment results. Must be writable
 //!                      for `__num_segments` values.
 //! @param[in] __init The initial value seeding each segment reduction.
 //! @param[in] __op The binary reduction operator.
@@ -535,11 +524,11 @@ _CCCL_HOST_API void segmented_reduce(
   const __result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
-  _InputIter __input,
+  _InputIter __input_it,
   ::cuda::std::size_t __num_segments,
   _OffsetBeginIter __offset_begin,
   _OffsetEndIter __offset_end,
-  _OutputIter __output,
+  _OutputIter __output_it,
   _Tp __init     = {},
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
@@ -548,11 +537,11 @@ _CCCL_HOST_API void segmented_reduce(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
-    ::cuda::std::span<_InputIter, 1>{::cuda::std::addressof(__input), 1},
+    ::cuda::std::span<_InputIter, 1>{::cuda::std::addressof(__input_it), 1},
     __num_segments,
     ::cuda::std::span<_OffsetBeginIter, 1>{::cuda::std::addressof(__offset_begin), 1},
     ::cuda::std::span<_OffsetEndIter, 1>{::cuda::std::addressof(__offset_end), 1},
-    ::cuda::std::span<_OutputIter, 1>{::cuda::std::addressof(__output), 1},
+    ::cuda::std::span<_OutputIter, 1>{::cuda::std::addressof(__output_it), 1},
     ::cuda::std::move(__init),
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));

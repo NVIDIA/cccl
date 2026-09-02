@@ -70,6 +70,9 @@
 // libstdc++ conflicts with some of the builtins. Ensure that we do not use them if affected libstdc++ is present.
 #ifdef _CCCL_DISABLE_CONFLICTING_COMPILER_BUILTINS
 #  define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(...) 1
+// We have seen at least one codegen bug in cudax::launch related to one of the builtins. Disable for older NVCC
+#elif _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+#  define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(...) 1
 #else // ^^^ _CCCL_DISABLE_CONFLICTING_COMPILER_BUILTINS ^^^ / vvv !_CCCL_DISABLE_CONFLICTING_COMPILER_BUILTINS vvv
 #  define _CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(...) \
     (_CCCL_HOST_STD_LIB(LIBSTDCXX, <, __VA_ARGS__) && !_CCCL_CUDA_COMPILER(CLANG))
@@ -324,18 +327,6 @@
 #  define _CCCL_BUILTIN_IS_MEMBER_POINTER(...) __is_member_pointer(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_member_pointer)
 
-#if _CCCL_CHECK_BUILTIN(is_nothrow_assignable) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_nothrow_assignable)
-
-#if _CCCL_CHECK_BUILTIN(is_nothrow_constructible) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_nothrow_constructible)
-
-#if _CCCL_CHECK_BUILTIN(is_nothrow_destructible) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
-#  define _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(...) __is_nothrow_destructible(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_nothrow_destructible)
-
 #if _CCCL_CHECK_BUILTIN(is_object)
 #  define _CCCL_BUILTIN_IS_OBJECT(...) __is_object(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_object)
@@ -347,11 +338,6 @@
 #if _CCCL_HAS_BUILTIN(__is_reference)
 #  define _CCCL_BUILTIN_IS_REFERENCE(...) __is_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_reference)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_referenceable)
-#  define _CCCL_BUILTIN_IS_REFERENCEABLE(...) __is_referenceable(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_referenceable)
 
 #if _CCCL_HAS_BUILTIN(__is_rvalue_reference)
 #  define _CCCL_BUILTIN_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)

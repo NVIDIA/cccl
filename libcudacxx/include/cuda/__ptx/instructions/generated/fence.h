@@ -3,6 +3,9 @@
 #ifndef _CUDA_PTX_GENERATED_FENCE_H_
 #define _CUDA_PTX_GENERATED_FENCE_H_
 
+// clang-tidy does not distinguish these branches by their inline-assembly strings.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 /*
 // fence.sem.scope; // 1. PTX ISA 60, SM_70
 // .sem       = { .sc }
@@ -13,14 +16,11 @@ __device__ static inline void fence(
   cuda::ptx::scope_t<Scope> scope);
 */
 #if __cccl_ptx_isa >= 600
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_t<_Scope> __scope)
+_CCCL_DEVICE_API void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_sc (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  // NOLINTBEGIN(bugprone-branch-clone)
+  static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.sc.cta; // 1." : : : "memory");
@@ -33,11 +33,6 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_
   {
     asm volatile("fence.sc.sys; // 1." : : : "memory");
   }
-  // NOLINTEND(bugprone-branch-clone)
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 600
 
@@ -51,18 +46,12 @@ __device__ static inline void fence(
   cuda::ptx::scope_cluster_t);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_cluster_t)
+_CCCL_DEVICE_API void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_cluster_t)
 {
-// __sem == sem_sc (due to parameter type constraint)
-// __scope == scope_cluster (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_sc (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
   asm volatile("fence.sc.cluster; // 2." : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 780
 
@@ -76,14 +65,11 @@ __device__ static inline void fence(
   cuda::ptx::scope_t<Scope> scope);
 */
 #if __cccl_ptx_isa >= 600
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::scope_t<_Scope> __scope)
+_CCCL_DEVICE_API void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_acq_rel (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
-  // NOLINTBEGIN(bugprone-branch-clone)
+  static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.acq_rel.cta; // 1." : : : "memory");
@@ -96,11 +82,6 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::s
   {
     asm volatile("fence.acq_rel.sys; // 1." : : : "memory");
   }
-  // NOLINTEND(bugprone-branch-clone)
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_is_not_supported_before_SM_70__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 600
 
@@ -114,18 +95,12 @@ __device__ static inline void fence(
   cuda::ptx::scope_cluster_t);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::scope_cluster_t)
+_CCCL_DEVICE_API void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::scope_cluster_t)
 {
-// __sem == sem_acq_rel (due to parameter type constraint)
-// __scope == scope_cluster (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_acq_rel (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
   asm volatile("fence.acq_rel.cluster; // 2." : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 780
 
@@ -139,13 +114,11 @@ __device__ static inline void fence(
   cuda::ptx::scope_t<Scope> scope);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acquire_t, ::cuda::ptx::scope_t<_Scope> __scope)
+_CCCL_DEVICE_API void fence(::cuda::ptx::sem_acquire_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_acquire (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.acquire.cta;" : : : "memory");
@@ -162,10 +135,6 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acquire_t, ::cuda::ptx::s
   {
     asm volatile("fence.acquire.sys;" : : : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
@@ -179,13 +148,11 @@ __device__ static inline void fence(
   cuda::ptx::scope_t<Scope> scope);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_Scope> __scope)
+_CCCL_DEVICE_API void fence(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   if constexpr (__scope == scope_cta)
   {
     asm volatile("fence.release.cta;" : : : "memory");
@@ -202,11 +169,9 @@ _CCCL_DEVICE static inline void fence(::cuda::ptx::sem_release_t, ::cuda::ptx::s
   {
     asm volatile("fence.release.sys;" : : : "memory");
   }
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_fence_is_not_supported_before_SM_90__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_FENCE_H_
