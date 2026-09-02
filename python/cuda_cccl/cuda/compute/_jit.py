@@ -1096,13 +1096,6 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Ensure any gpu_struct classes referenced in the op are registered
     _ensure_function_structs_registered(op)
 
-    # Validate all state arrays are C-contiguous.  The wrapper rebuilds each one
-    # with carray, which addresses the data in C order, so a multi-dimensional
-    # Fortran-ordered array would otherwise be read with the wrong strides.
-    for i, state_array in enumerate(state_arrays):
-        if not is_c_contiguous(state_array):
-            raise ValueError(f"state array {i} must be C-contiguous")
-
     # Convert input types to numba-cuda-mlir types
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
 
@@ -1188,6 +1181,15 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
 
 class _JitOpState:
     def __init__(self, names: List[str], arrays: List[DeviceArrayLike]):
+        # The wrapper rebuilds each state array with carray, which addresses the
+        # data in C order, so a multi-dimensional Fortran-ordered array would be
+        # read with the wrong strides.  Validate here, where the state is bound
+        # on every call: the compiled wrapper is cached under a key that cannot
+        # describe the layout, so a check on the compile path alone would be
+        # skipped for an array whose shape matches one already compiled for.
+        for i, array in enumerate(arrays):
+            if not is_c_contiguous(array):
+                raise ValueError(f"state array {i} must be C-contiguous")
         self.names = names
         self.arrays = arrays
 

@@ -906,3 +906,34 @@ def test_unary_transform_result_conversion_preserves_value(in_dtype, out_dtype, 
     )
 
     np.testing.assert_array_equal(d_out.copy_to_host(), h_in.astype(out_dtype))
+
+
+def test_unary_transform_stateful_fortran_state_rejected_after_c_state():
+    """Fortran-ordered state is rejected even once a matching C-ordered one ran.
+
+    The compiled wrapper is cached under a key that describes the state's dtype
+    and shape but not its layout, so a Fortran-ordered array of an
+    already-compiled shape reaches the cached wrapper. That wrapper addresses
+    the data in C order, so accepting it would silently read the wrong element.
+    """
+
+    def make_op(state):
+        def add_state(x):
+            return x + state[0, 1]
+
+        return add_state
+
+    h_in = np.zeros(3, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    c_state = DeviceArray.empty((2, 3), np.dtype(np.int32), order="C")
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=make_op(c_state), num_items=h_in.size
+    )
+
+    f_state = DeviceArray.empty((2, 3), np.dtype(np.int32), order="F")
+    with pytest.raises(ValueError, match="C-contiguous"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=make_op(f_state), num_items=h_in.size
+        )
