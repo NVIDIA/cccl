@@ -233,8 +233,7 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     from numba_cuda_mlir.lowering_utilities.llvm_utils import (
         NVPTX64_DATALAYOUT,
         NVPTX64_TRIPLE,
-        dump_llvmir,
-        translate_to_llvmir,
+        translate_to_llvmir_text,
     )
     from numba_cuda_mlir.mlir_optimization import get_base_pipeline
     from numba_cuda_mlir.optimization import run_pre_codegen_patterns
@@ -279,5 +278,7 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
         gpu_mod.operation.attributes["llvm.target_triple"] = mlir_ir.StringAttr.get(
             NVPTX64_TRIPLE
         )
-        llvm_mod, _ = translate_to_llvmir(gpu_mod.operation)
-        return dump_llvmir(llvm_mod)
+        # translate_to_llvmir hands back the LLVM module and context as raw
+        # pointers for the caller to dispose; this wrapper prints the module and
+        # disposes both.
+        return translate_to_llvmir_text(gpu_mod.operation)
