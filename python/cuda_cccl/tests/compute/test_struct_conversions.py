@@ -227,3 +227,36 @@ def test_constructor_rejects_incompatible_argument_type():
         cuda.compute.unary_transform(
             d_in=d_in, d_out=d_out, op=build, num_items=h_in.size
         )
+
+
+def test_complex_field_is_read_and_constructed():
+    """A struct may hold a complex field.
+
+    Complex values are MLIR complex scalars in SSA but are stored as a literal
+    ``{real, imag}`` LLVM struct, which is the only form the LLVM dialect
+    accepts as a struct member.
+    """
+    Sample = gpu_struct({"z": np.complex64, "n": np.int32})
+
+    h_in = np.zeros(4, dtype=Sample.dtype)
+    h_in["z"] = np.array([1 + 2j, 3 + 4j, 5 + 6j, 7 + 8j], dtype=np.complex64)
+    h_in["n"] = np.arange(4)
+    d_in = DeviceArray.from_numpy(h_in)
+
+    def read_complex(s):
+        return s.z
+
+    d_z = DeviceArray.empty(h_in.shape, np.dtype(np.complex64))
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_z, op=read_complex, num_items=h_in.size
+    )
+    np.testing.assert_array_equal(d_z.copy_to_host(), h_in["z"])
+
+    def scale(s):
+        return Sample(s.z * 2, s.n + 1)
+
+    d_out = DeviceArray.empty(h_in.shape, Sample.dtype)
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=scale, num_items=h_in.size)
+    result = d_out.copy_to_host()
+    np.testing.assert_array_equal(result["z"], h_in["z"] * 2)
+    np.testing.assert_array_equal(result["n"], h_in["n"] + 1)

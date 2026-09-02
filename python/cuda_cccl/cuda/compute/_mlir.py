@@ -43,7 +43,13 @@ from numba_cuda_mlir.extending import (
     overload,
     typing_registry,
 )
-from numba_cuda_mlir.lowering_utilities import convert
+from numba_cuda_mlir.lowering_utilities import (
+    complex_to_llvm_struct,
+    convert,
+    get_llvm_struct_for_complex,
+    is_complex_type,
+    llvm_struct_to_complex,
+)
 
 # --- Data models ----------------------------------------------------------------
 from numba_cuda_mlir.models import OpaqueModel, PrimitiveModel, register_model
@@ -81,6 +87,10 @@ __all__ = [
     "arith",
     "llvm",
     "convert",
+    "is_complex_type",
+    "get_llvm_struct_for_complex",
+    "complex_to_llvm_struct",
+    "llvm_struct_to_complex",
     "from_numpy_dtype",
     "as_numpy_dtype",
     "struct_field_position",
