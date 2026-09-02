@@ -62,7 +62,7 @@ struct __idot_operation
 
       if constexpr (__is_dp4)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+        NV_IF_TARGET(NV_IS_DEVICE, ({
                        const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
                        const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
                        return ::cuda::simd::__dp4a_8bit_x4<_Tp, _Up>(__lhs_u, __rhs_u, __init);
@@ -70,7 +70,7 @@ struct __idot_operation
       }
       else if constexpr (__is_dp2_16bitx2_8bitx4)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+        NV_IF_TARGET(NV_IS_DEVICE, ({
                        const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
                        const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
                        return ::cuda::simd::__dp2a_16bit_x2_8bit_x4<_Tp, _Up>(__lhs_u, __rhs_u, __init);
@@ -78,7 +78,7 @@ struct __idot_operation
       }
       else if constexpr (__is_dp2_8bitx4_16bitx2)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+        NV_IF_TARGET(NV_IS_DEVICE, ({
                        const auto __lhs_u = ::cuda::std::simd::__to_unsigned_storage(__lhs);
                        const auto __rhs_u = ::cuda::std::simd::__to_unsigned_storage(__rhs);
                        return ::cuda::simd::__dp2a_16bit_x2_8bit_x4<_Up, _Tp>(__rhs_u, __lhs_u, __init);

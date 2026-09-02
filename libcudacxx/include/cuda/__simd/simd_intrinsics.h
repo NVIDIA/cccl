@@ -107,9 +107,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, (return ::__dp4a(__lhs, __rhs, __init);))
+  NV_IF_TARGET(NV_IS_DEVICE, (return ::__dp4a(__lhs, __rhs, __init);))
 #    elif _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::uint32_t __result{};
                  asm("dp4a.u32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -126,10 +126,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 {
 #    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
   NV_IF_TARGET(
-    NV_PROVIDES_SM_61,
+    NV_IS_DEVICE,
     (return ::__dp4a(static_cast<::cuda::std::int32_t>(__lhs), static_cast<::cuda::std::int32_t>(__rhs), __init);))
 #    elif _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp4a.s32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -145,7 +145,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp4a.u32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -161,7 +161,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp4a.s32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -177,9 +177,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, (return ::__dp2a_lo(__lhs, __rhs, __init);))
+  NV_IF_TARGET(NV_IS_DEVICE, (return ::__dp2a_lo(__lhs, __rhs, __init);))
 #    elif _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::uint32_t __result{};
                  asm("dp2a.lo.u32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -195,9 +195,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, (return ::__dp2a_hi(__lhs, __rhs, __init);))
+  NV_IF_TARGET(NV_IS_DEVICE, (return ::__dp2a_hi(__lhs, __rhs, __init);))
 #    elif _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::uint32_t __result{};
                  asm("dp2a.hi.u32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -214,10 +214,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 {
 #    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
   NV_IF_TARGET(
-    NV_PROVIDES_SM_61,
+    NV_IS_DEVICE,
     (return ::__dp2a_lo(static_cast<::cuda::std::int32_t>(__lhs), static_cast<::cuda::std::int32_t>(__rhs), __init);))
 #    elif _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp2a.lo.s32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -234,10 +234,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 {
 #    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
   NV_IF_TARGET(
-    NV_PROVIDES_SM_61,
+    NV_IS_DEVICE,
     (return ::__dp2a_hi(static_cast<::cuda::std::int32_t>(__lhs), static_cast<::cuda::std::int32_t>(__rhs), __init);))
 #    elif _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp2a.hi.s32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -253,7 +253,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp2a.lo.u32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -269,7 +269,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp2a.hi.u32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -285,7 +285,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp2a.lo.s32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
@@ -301,7 +301,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
   [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
 {
 #    if _CCCL_HAS_SIMD_IDOT_PTX()
-  NV_IF_TARGET(NV_PROVIDES_SM_61, ({
+  NV_IF_TARGET(NV_IS_DEVICE, ({
                  ::cuda::std::int32_t __result{};
                  asm("dp2a.hi.s32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
                  return __result;
