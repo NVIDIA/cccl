@@ -143,6 +143,28 @@ class _StructBase(_mlir.types.Type):
     _field_spec: dict  # Mapping of field names to Numba types
 
 
+def _tuple_element_types(tuple_type, count):
+    """Element types of a numba tuple type, or ``None`` when it is not a tuple."""
+    if isinstance(tuple_type, _mlir.types.UniTuple):
+        return [tuple_type.dtype] * count
+    if isinstance(tuple_type, _mlir.types.BaseTuple):
+        return list(tuple_type.types)
+    return [None] * count
+
+
+def _convert_field(value, source_type, target_mlir_ty):
+    """Convert ``value`` to ``target_mlir_ty``, preserving the source's sign.
+
+    numba-cuda-mlir lowers every integer -- signed or unsigned -- to a signless
+    MLIR type, so a widening conversion zero-extends unless it is told that the
+    source was signed.  Without that, storing a negative value into a wider
+    field silently turns it into a large positive one.
+    """
+    return _mlir.convert(
+        value, target_mlir_ty, signed=getattr(source_type, "signed", False)
+    )
+
+
 # The struct registration logic is isolated here to avoid polluting other
 # modules with Numba-specific type plumbing.
 #
@@ -414,7 +436,7 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             )
         return result
 
-    def _coerce_to_field(builder, value, field_numba_type):
+    def _coerce_to_field(builder, value, source_type, field_numba_type):
         """Coerce a constructor argument value to its declared field type.
 
         Scalars are converted directly.  A struct field may be supplied as a
@@ -426,13 +448,15 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         field_mlir_ty = builder.get_mlir_type(field_numba_type)
         if isinstance(value, (tuple, list)):
             sub_field_types = list(field_numba_type._field_spec.values())
+            sub_source_types = _tuple_element_types(source_type, len(value))
             sub_values = [
-                _coerce_to_field(builder, v, t) for v, t in zip(value, sub_field_types)
+                _coerce_to_field(builder, v, s, t)
+                for v, s, t in zip(value, sub_source_types, sub_field_types)
             ]
             return _pack_fields(
                 builder, _mlir.llvm.StructType(field_mlir_ty), sub_values
             )
-        return _mlir.convert(value, field_mlir_ty)
+        return _convert_field(value, source_type, field_mlir_ty)
 
     # Constructor lowering: coerce each argument to its field type and pack into
     # the LLVM struct (replaces cgutils.create_struct_proxy).
@@ -441,7 +465,12 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             builder.get_mlir_type(builder.get_numba_type(target.name))
         )
         field_values = [
-            _coerce_to_field(builder, builder.load_var(arg), field_type)
+            _coerce_to_field(
+                builder,
+                builder.load_var(arg),
+                builder.get_numba_type(arg.name),
+                field_type,
+            )
             for arg, field_type in zip(args, field_spec.values())
         ]
         builder.store_var(target, _pack_fields(builder, struct_mlir_ty, field_values))
@@ -493,7 +522,9 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
 
         struct_mlir_ty = _mlir.llvm.StructType(builder.get_mlir_type(toty))
         field_values = [
-            _mlir.convert(elements[i], builder.get_mlir_type(field_type))
+            _convert_field(
+                elements[i], element_types[i], builder.get_mlir_type(field_type)
+            )
             for i, field_type in enumerate(field_spec.values())
         ]
         return _pack_fields(builder, struct_mlir_ty, field_values)
@@ -515,7 +546,9 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
                 container=val,
                 position=_mlir.struct_field_position(i),
             )
-            field_values.append(_mlir.convert(elem, builder.get_mlir_type(to_type)))
+            field_values.append(
+                _convert_field(elem, from_type, builder.get_mlir_type(to_type))
+            )
         return _pack_fields(builder, struct_mlir_ty, field_values)
 
     # The typing/target contexts are built and frozen on the first compile, so
