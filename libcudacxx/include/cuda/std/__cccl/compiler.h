@@ -124,6 +124,10 @@
 //! - ``CCCL_HOST_COMPILER(COMPILER, OP, MAJOR)``: Compare the compiler's major version.
 //! - ``CCCL_HOST_COMPILER(COMPILER, OP, MAJOR, MINOR)``: Compare the compiler's major and minor version.
 //!
+//! @warning When used without specifying a minor version, the macro compares only the compiler's
+//! major version. For example, when the compiler is GCC 9.1, ``CCCL_HOST_COMPILER(GCC, >, 9)``
+//! is false even though version 9.1 is greater than 9.
+//!
 //! @note This macro is made available when including any libcu++ header. Users that wish to
 //! include the smallest possible header for this macro should include `<cuda/std/version>`.
 //!
@@ -141,8 +145,6 @@
 //! - ``MSVC2022``: Microsoft Visual C++ 2022.
 //! - ``MSVC2026``: Microsoft Visual C++ 2026.
 //!
-//! NVRTC is not a host compiler and is intentionally not supported.
-//!
 //! Passing any other value will result in an undefined expansion, which may or may not be
 //! diagnosed by the compiler.
 //!
@@ -152,7 +154,7 @@
 //!   // ...
 //! #endif
 //!
-//! #if CCCL_HOST_COMPILER(MSVC2022, >=, 19, 35)
+//! #if CCCL_HOST_COMPILER(MSVC, >=, 19, 35)
 //!   // ...
 //! #endif
 //! @endcode
