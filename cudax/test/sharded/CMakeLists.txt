@@ -7,6 +7,8 @@ set(
   containers/contiguous.cu
   containers/fork_join.cu
   algorithms/elementwise.cu
+  algorithms/generic_tier.cu
+  algorithms/reduce_into.cu
   algorithms/reduce_scan.cu
   algorithms/count_histogram.cu
   algorithms/compaction.cu

@@ -104,4 +104,29 @@ private:
   bool __switched_ = false;
 };
 
+namespace __detail
+{
+//! @brief Make @p __consumer wait for all work currently enqueued on
+//! @p __producer (transient-event idiom; capture-legal: record/wait become
+//! graph dependencies).
+//!
+//! The event is created under the producer stream's device (events must be
+//! created where they are recorded; cross-device stream waits are legal) and
+//! destroyed immediately after the wait is enqueued — the driver defers the
+//! release until completion.
+inline void __wait_stream_on(cudaStream_t __consumer, cudaStream_t __producer)
+{
+  if (__consumer == __producer)
+  {
+    return;
+  }
+  stream_scope __scope(__producer);
+  cudaEvent_t __ev = nullptr;
+  ::cuda::experimental::stf::cuda_safe_call(cudaEventCreateWithFlags(&__ev, cudaEventDisableTiming));
+  ::cuda::experimental::stf::cuda_safe_call(cudaEventRecord(__ev, __producer));
+  ::cuda::experimental::stf::cuda_safe_call(cudaStreamWaitEvent(__consumer, __ev, 0));
+  ::cuda::experimental::stf::cuda_safe_call(cudaEventDestroy(__ev));
+}
+} // namespace __detail
+
 } // namespace cuda::experimental::sharded
