@@ -40,7 +40,7 @@ from ._utils.protocols import (
     get_data_pointer,
     get_dtype,
     get_shape,
-    is_contiguous,
+    is_c_contiguous,
     is_device_array,
 )
 from .op import OpAdapter
@@ -1070,10 +1070,12 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Ensure any gpu_struct classes referenced in the op are registered
     _ensure_function_structs_registered(op)
 
-    # Validate all state arrays are contiguous
+    # Validate all state arrays are C-contiguous.  The wrapper rebuilds each one
+    # with carray, which addresses the data in C order, so a multi-dimensional
+    # Fortran-ordered array would otherwise be read with the wrong strides.
     for i, state_array in enumerate(state_arrays):
-        if not is_contiguous(state_array):
-            raise ValueError(f"state array {i} must be contiguous")
+        if not is_c_contiguous(state_array):
+            raise ValueError(f"state array {i} must be C-contiguous")
 
     # Convert input types to numba-cuda-mlir types
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)

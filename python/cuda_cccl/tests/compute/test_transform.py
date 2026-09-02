@@ -585,6 +585,51 @@ def test_unary_transform_stateful_mixed_dtype_arrays():
     np.testing.assert_allclose(result, expected, rtol=1e-6)
 
 
+def test_unary_transform_stateful_state_must_be_c_contiguous():
+    """A Fortran-ordered multi-dimensional state array is rejected.
+
+    The generated wrapper rebuilds captured state with carray, which addresses
+    it in C order, so Fortran-ordered state would be read with the wrong
+    strides and silently produce wrong results.
+    """
+    cupy = pytest.importorskip("cupy")
+
+    # Transposing a C-contiguous array yields a Fortran-ordered view.
+    state = cupy.arange(6, dtype=cupy.int32).reshape(3, 2).T
+
+    def add_state(x):
+        return x + state[0, 0]
+
+    h_in = np.arange(4, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    with pytest.raises(ValueError, match="C-contiguous"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=add_state, num_items=h_in.size
+        )
+
+
+def test_unary_transform_stateful_two_dimensional_state():
+    """A C-contiguous two-dimensional state array is indexed correctly."""
+    cupy = pytest.importorskip("cupy")
+
+    state = cupy.arange(6, dtype=cupy.int32).reshape(3, 2)
+
+    def add_state(x):
+        return x + state[1, 1]
+
+    h_in = np.arange(4, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=add_state, num_items=h_in.size
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in + 3)
+
+
 def test_unary_transform_stateful_closure_factory():
     """Test stateful transform with dynamically created closures.
 
