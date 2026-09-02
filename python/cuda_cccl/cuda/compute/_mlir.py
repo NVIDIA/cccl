@@ -124,6 +124,12 @@ def infer_return_type(pyfunc, arg_types):
     """
     from numba_cuda_mlir import compiler as _compiler
 
+    # Compiling through a dispatcher builds numba-cuda-mlir's typing and target
+    # contexts on first use.  This entry point drives the compiler directly and
+    # so has to build them itself; without that, inference cannot resolve even
+    # builtin operators.  Refreshing again once they are built costs nothing.
+    refresh_contexts()
+
     result = _compiler._compile_only(pyfunc, tuple(arg_types), {"device": True})
     return result.signature.return_type
 
