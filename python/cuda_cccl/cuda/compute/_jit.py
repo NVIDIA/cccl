@@ -186,17 +186,47 @@ def _can_build_field(typing_context, arg_type, field_type) -> bool:
     return typing_context.can_convert(arg_type, field_type) is not None
 
 
+def _field_storage_mlir_type(value_mlir_ty):
+    """MLIR type a field of ``value_mlir_ty`` occupies inside the struct.
+
+    Complex values are MLIR ``complex`` scalars in SSA but are stored as a
+    literal ``{real, imag}`` LLVM struct, which is how numba-cuda-mlir addresses
+    complex in its other storage paths and the only form the LLVM dialect
+    accepts as a struct member.
+    """
+    if _mlir.is_complex_type(value_mlir_ty):
+        return _mlir.get_llvm_struct_for_complex(value_mlir_ty)
+    return value_mlir_ty
+
+
+def _load_field(builder, struct_value, field_index, field_numba_type):
+    """Extract field ``field_index``, returned in its value representation."""
+    struct_mlir_ty = _mlir.llvm.StructType(struct_value.type)
+    stored = _mlir.llvm.extractvalue(
+        res=struct_mlir_ty.body[field_index],
+        container=struct_value,
+        position=_mlir.struct_field_position(field_index),
+    )
+    value_mlir_ty = builder.get_mlir_type(field_numba_type)
+    if _mlir.is_complex_type(value_mlir_ty):
+        return _mlir.llvm_struct_to_complex(stored, value_mlir_ty)
+    return stored
+
+
 def _convert_field(value, source_type, target_mlir_ty):
-    """Convert ``value`` to ``target_mlir_ty``, preserving the source's sign.
+    """Convert ``value`` into the representation stored in a field.
 
     numba-cuda-mlir lowers every integer -- signed or unsigned -- to a signless
     MLIR type, so a widening conversion zero-extends unless it is told that the
     source was signed.  Without that, storing a negative value into a wider
     field silently turns it into a large positive one.
     """
-    return _mlir.convert(
+    converted = _mlir.convert(
         value, target_mlir_ty, signed=getattr(source_type, "signed", False)
     )
+    if _mlir.is_complex_type(target_mlir_ty):
+        return _mlir.complex_to_llvm_struct(converted)
+    return converted
 
 
 # The struct registration logic is isolated here to avoid polluting other
@@ -322,12 +352,14 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
     class StructModel(_mlir.PrimitiveModel):
         def __init__(self, dmm, fe_type):
             member_mlir_types = [
-                dmm.lookup(typ).get_value_type() for typ in field_spec.values()
+                _field_storage_mlir_type(dmm.lookup(typ).get_value_type())
+                for typ in field_spec.values()
             ]
             be_type = _mlir.llvm.StructType.get_literal(member_mlir_types)
             super().__init__(dmm, fe_type, be_type)
 
     field_names_list = list(field_spec.keys())
+    field_types_list = list(field_spec.values())
 
     # Field access typing: `struct.field` resolves to the field's type.  This
     # replaces numba-cuda's make_attribute_wrapper, which has no MLIR equivalent;
@@ -343,12 +375,8 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
     def lower_struct_getattr(context, builder, target, value, attr):
         field_index = field_names_list.index(attr)
         struct_value = builder.load_var(value)
-        struct_mlir_ty = _mlir.llvm.StructType(struct_value.type)
-        field_mlir_ty = struct_mlir_ty.body[field_index]
-        field_value = _mlir.llvm.extractvalue(
-            res=field_mlir_ty,
-            container=struct_value,
-            position=_mlir.struct_field_position(field_index),
+        field_value = _load_field(
+            builder, struct_value, field_index, field_types_list[field_index]
         )
         target_mlir_ty = builder.get_mlir_type(builder.get_numba_type(target.name))
         builder.store_var(target, _mlir.convert(field_value, target_mlir_ty))
@@ -409,12 +437,8 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
                 "indexing a gpu_struct requires a constant integer index in range"
             )
         struct_value = builder.load_var(struct_var)
-        struct_mlir_ty = _mlir.llvm.StructType(struct_value.type)
-        field_mlir_ty = struct_mlir_ty.body[field_index]
-        field_value = _mlir.llvm.extractvalue(
-            res=field_mlir_ty,
-            container=struct_value,
-            position=_mlir.struct_field_position(field_index),
+        field_value = _load_field(
+            builder, struct_value, field_index, field_types_list[field_index]
         )
         target_mlir_ty = builder.get_mlir_type(builder.get_numba_type(target.name))
         builder.store_var(target, _mlir.convert(field_value, target_mlir_ty))
@@ -550,7 +574,9 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         else:
             elements = [
                 _mlir.llvm.extractvalue(
-                    res=builder.get_mlir_type(element_types[i]),
+                    res=_field_storage_mlir_type(
+                        builder.get_mlir_type(element_types[i])
+                    ),
                     container=val,
                     position=_mlir.struct_field_position(i),
                 )
@@ -578,11 +604,7 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         struct_mlir_ty = _mlir.llvm.StructType(builder.get_mlir_type(toty))
         field_values = []
         for i, (from_type, to_type) in enumerate(zip(from_field_types, to_field_types)):
-            elem = _mlir.llvm.extractvalue(
-                res=builder.get_mlir_type(from_type),
-                container=val,
-                position=_mlir.struct_field_position(i),
-            )
+            elem = _load_field(builder, val, i, from_type)
             field_values.append(
                 _convert_field(elem, from_type, builder.get_mlir_type(to_type))
             )
