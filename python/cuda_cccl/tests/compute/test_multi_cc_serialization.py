@@ -1067,13 +1067,13 @@ def test_operator_device_code_targets_the_requested_cc(monkeypatch):
     import numba_cuda_mlir.compiler as backend_compiler
 
     recorded = {}
-    original = backend_compiler.compile_mlir
+    original = backend_compiler._compile_only
 
-    def record_chip(pyfunc, sig, **kwargs):
-        recorded.setdefault("chip", kwargs.get("chip"))
-        return original(pyfunc, sig, **kwargs)
+    def record_chip(pyfunc, sig=None, targetoptions=None):
+        recorded.setdefault("chip", (targetoptions or {}).get("chip"))
+        return original(pyfunc, sig, targetoptions)
 
-    monkeypatch.setattr(backend_compiler, "compile_mlir", record_chip)
+    monkeypatch.setattr(backend_compiler, "_compile_only", record_chip)
 
     def add_one(x):
         return x + 1
