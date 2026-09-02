@@ -1,0 +1,17 @@
+name: GHCR Windows devcontainers E2E
+
+on:
+  push:
+    branches:
+      - codex/ghcr-windows-e2e
+
+permissions: {}
+
+jobs:
+  publish:
+    permissions:
+      contents: read
+      packages: write
+    uses: rapidsai/devcontainers/.github/workflows/release-windows.yml@a7a1c600c326bb85c7420c5c671946eb433fbb80
+    with:
+      repo: ghcr.io/nvidia/cccl-devcontainers-pr760-e2e
