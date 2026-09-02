@@ -190,10 +190,10 @@ struct BlockReduceWarpReductions
     // Decide whether to reduce warp aggregates in parallel (warp-0) or sequentially (thread-0).
     // With HW redux the parallel path is a single instruction, so we enable it by default (-1).
     // Without it, a simple unrolled loop over <=31 values is just as fast.
-    constexpr bool use_warp_redux_path = (WarpAggregateThreshold == -1) && is_warp_redux_op_supported<ReductionOp, T>
+    constexpr bool use_warp_redux_path = (WarpAggregateThreshold == -1) && is_warp_redux_op_supported_sm80<ReductionOp, T>
                                       && ::cuda::has_identity_element_v<ReductionOp, T>;
     constexpr int effective_threshold =
-      use_warp_redux_path ? 2
+      use_warp_redux_path ? 4
       : (WarpAggregateThreshold <= 0)
         ? (warps + 1)
         : WarpAggregateThreshold;
@@ -240,7 +240,7 @@ struct BlockReduceWarpReductions
         NullType dummy_storage;
         WarpReduceShfl<T, logical_lanes> warp_reduce(dummy_storage);
 
-        if constexpr (is_warp_redux_op_supported<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
+        if constexpr (is_warp_redux_op_supported_sm80<ReductionOp, T> && ::cuda::has_identity_element_v<ReductionOp, T>)
         {
           if (const auto result = cub::detail::warp_redux(val, 0xFFFFFFFFu, reduction_op))
           {
