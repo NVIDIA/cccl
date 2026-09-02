@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Numba-CUDA-MLIR bindings for ``cuda.coop`` block reduction."""
+"""Numba-CUDA-MLIR bindings for ``cuda.coop`` group reduction."""
 
 from __future__ import annotations
 
@@ -10,9 +10,9 @@ from cuda.coop._core.api._dispatch import _register_qualified_backend
 
 from ._compiler._activation import _initialize_runtime_hooks
 from ._group_reduce import reduce, sum
-from ._thread_group import ThreadGroup, this_block
+from ._thread_group import ThreadGroup, this_block, this_warp
 
-__all__ = ["ThreadGroup", "this_block", "reduce", "sum"]
+__all__ = ["ThreadGroup", "this_block", "this_warp", "reduce", "sum"]
 
 _initialize_runtime_hooks()
 _register_qualified_backend(__name__)

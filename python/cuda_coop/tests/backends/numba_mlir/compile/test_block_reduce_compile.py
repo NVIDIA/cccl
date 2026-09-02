@@ -41,6 +41,40 @@ def test_root_calls_compile_after_device_function_inlining():
     assert output[0] == source.sum(dtype=np.int32)
 
 
+@cuda.jit(device=True)
+def _inlined_root_warp_sum(value, valid_items=None):
+    return root_coop.sum(
+        root_coop.this_warp(),
+        value,
+        valid_items=valid_items,
+    )
+
+
+@cuda.jit
+def _root_warp_sum_through_device_function(source, output):
+    thread = cuda.threadIdx.x + cuda.blockDim.x * (
+        cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
+    )
+    result = _inlined_root_warp_sum(source[thread])
+    if thread % 32 == 0:
+        output[thread // 32] = result
+
+
+def test_root_warp_calls_compile_after_device_function_inlining():
+    source = np.arange(64, dtype=np.int32)
+    output = np.zeros(2, dtype=np.int32)
+
+    _root_warp_sum_through_device_function[1, (8, 4, 2)](source, output)
+
+    np.testing.assert_array_equal(
+        output,
+        np.array(
+            [source[:32].sum(dtype=np.int32), source[32:].sum(dtype=np.int32)],
+            dtype=np.int32,
+        ),
+    )
+
+
 @cuda.jit
 def _root_sum_payload_origins(source, output):
     thread = cuda.threadIdx.x

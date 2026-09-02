@@ -25,12 +25,13 @@ def reduce(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> _ScalarT:
-    """Reduce one scalar per thread and return the block-root result.
+    """Reduce one scalar per group member and return the root result.
 
-    Every thread in the block must participate in converged control flow, and
-    only block rank zero may consume the result. A runtime ``valid_items`` must
-    be uniform, positive, and no larger than the block size; it is converted to
-    CUB's ``int`` parameter by the direct provider.
+    Every group member must participate in converged control flow, and only
+    group rank zero may consume the result. A runtime ``valid_items`` must be
+    uniform, positive, and no larger than the group size; it is converted to
+    CUB's ``int`` parameter by the direct provider. ``algorithm`` applies only
+    to block groups.
     """
 
     return group_primitive_marker(
@@ -52,12 +53,13 @@ def sum(
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> _ScalarT:
-    """Sum one scalar per thread and return the block-root result.
+    """Sum one scalar per group member and return the root result.
 
-    Every thread in the block must participate in converged control flow, and
-    only block rank zero may consume the result. A runtime ``valid_items`` must
-    be uniform, positive, and no larger than the block size; it is converted to
-    CUB's ``int`` parameter by the direct provider.
+    Every group member must participate in converged control flow, and only
+    group rank zero may consume the result. A runtime ``valid_items`` must be
+    uniform, positive, and no larger than the group size; it is converted to
+    CUB's ``int`` parameter by the direct provider. ``algorithm`` applies only
+    to block groups.
     """
 
     return group_primitive_marker(

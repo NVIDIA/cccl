@@ -12,6 +12,7 @@ pytest.importorskip("numba_cuda_mlir")
 from numba_cuda_mlir import types
 
 from cuda.coop._core.block.reduce import make_block_reduce_spec
+from cuda.coop._core.warp.reduce import make_warp_reduce_spec
 from cuda.coop.numba_mlir._compiler import _nvrtc
 from cuda.coop.numba_mlir._compiler._operations import factory_operation
 from cuda.coop.numba_mlir._lowering import _reduce
@@ -46,10 +47,35 @@ def _context(**changes):
 def _marker_spec(**changes):
     spec = _spec(dtype=None, valid_items=False, **changes)
     return _reduce._MarkerSpec(
+        group_kind="block",
         block_dim=spec.block_dim,
         operation=spec.operation,
         binary_op=spec.binary_op,
         algorithm=spec.algorithm,
+        valid_items=spec.valid_items,
+    )
+
+
+def _warp_spec(**changes):
+    values = {
+        "dtype": types.int32,
+        "block_dim": (8, 4, 2),
+        "operation": "reduce",
+        "binary_op": "max",
+        "valid_items": True,
+    }
+    values.update(changes)
+    return make_warp_reduce_spec(**values)
+
+
+def _warp_marker_spec(**changes):
+    spec = _warp_spec(dtype=None, valid_items=False, **changes)
+    return _reduce._MarkerSpec(
+        group_kind="warp",
+        block_dim=spec.block_dim,
+        operation=_reduce.BlockReduceOperation(spec.operation.value),
+        binary_op=spec.binary_op,
+        algorithm=None,
         valid_items=spec.valid_items,
     )
 
@@ -90,6 +116,42 @@ def test_sum_operator_selects_cub_sum_without_a_callback(operation):
     assert "BLOCK_REDUCE_WARP_REDUCTIONS" in source
 
 
+def test_generated_provider_is_direct_per_physical_warp_cub_reduce():
+    source = _reduce._source(
+        symbol="test_symbol",
+        cpp_type="::cuda::std::int32_t",
+        spec=_warp_spec(),
+    )
+
+    assert "#include <cub/warp/warp_reduce.cuh>" in source
+    assert "::cub::WarpReduce<T, 32>" in source
+    assert "TempStorage storage[2]" in source
+    assert (
+        "threadIdx.x + blockDim.x * (threadIdx.y + blockDim.y * threadIdx.z)" in source
+    )
+    assert "warp_id = linear_thread_rank / 32" in source
+    assert "WarpReduce(storage[warp_id]).Reduce(" in source
+    assert "::cuda::maximum<T>{}, valid_items" in source
+    assert "__syncwarp();" in source
+    assert "__syncthreads();" not in source
+
+
+def test_warp_reduce_with_sum_operator_uses_cub_sum():
+    source = _reduce._source(
+        symbol="test_symbol",
+        cpp_type="float",
+        spec=_warp_spec(
+            dtype=types.float32,
+            operation="reduce",
+            binary_op="sum",
+            valid_items=False,
+        ),
+    )
+
+    assert ".Sum(value)" in source
+    assert ".Reduce(" not in source
+
+
 def test_lowering_factories_are_registered_by_exact_identity():
     sum_metadata = factory_operation(_reduce.sum)
     reduce_metadata = factory_operation(_reduce.block_reduce_builtin)
@@ -98,6 +160,16 @@ def test_lowering_factories_are_registered_by_exact_identity():
     assert (reduce_metadata.operation, reduce_metadata.namespace) == (
         "block_reduce_builtin",
         "block",
+    )
+    warp_sum_metadata = factory_operation(_reduce.warp_sum)
+    warp_reduce_metadata = factory_operation(_reduce.warp_reduce_builtin)
+    assert (warp_sum_metadata.operation, warp_sum_metadata.namespace) == (
+        "warp_sum",
+        "warp",
+    )
+    assert (warp_reduce_metadata.operation, warp_reduce_metadata.namespace) == (
+        "warp_reduce_builtin",
+        "warp",
     )
 
 
@@ -148,6 +220,7 @@ def test_compile_context_requires_every_direct_header_and_exact_toolkit(
 
     assert requested[0]["required_headers"] == (
         "cub/block/block_reduce.cuh",
+        "cub/warp/warp_reduce.cuh",
         "cuda/functional",
         "cuda/std/cstdint",
         "cuda/std/functional",
@@ -271,6 +344,40 @@ def test_typed_provider_is_governed_by_the_concrete_portable_plan(monkeypatch):
     assert actual is expected
     assert len(plans) == 1
     portable = plans[0].require_supported()
+    assert portable.call.operation.dtype is types.int32
+    assert portable.implementation is not None
+    assert providers == [(portable.implementation, "::cuda::std::int32_t", context)]
+
+
+def test_warp_typed_provider_replans_with_actual_dtype_and_group(monkeypatch):
+    plans = []
+    providers = []
+    original = _reduce.plan_group_primitive
+    expected = _reduce._Provider(extern=object(), ltoir_path="/tmp/warp.ltoir")
+
+    def plan(call, launch):
+        result = original(call, launch)
+        plans.append(result)
+        return result
+
+    monkeypatch.setattr(_reduce, "plan_group_primitive", plan)
+    monkeypatch.setattr(
+        _reduce,
+        "_provider_for_context",
+        lambda spec, cpp_type, context: (
+            providers.append((spec, cpp_type, context)) or expected
+        ),
+    )
+    context = _context()
+
+    actual = _reduce._typed_provider(
+        _warp_marker_spec(binary_op="max"), types.int32, context
+    )
+
+    assert actual is expected
+    assert len(plans) == 1
+    portable = plans[0].require_supported()
+    assert portable.resolved_group.kind == "warp"
     assert portable.call.operation.dtype is types.int32
     assert portable.implementation is not None
     assert providers == [(portable.implementation, "::cuda::std::int32_t", context)]

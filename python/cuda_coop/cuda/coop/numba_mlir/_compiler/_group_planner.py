@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Resolve block group calls against one exact configured launch."""
+"""Resolve group calls against one exact configured launch."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from ._group_reduce import _ReducePlanning
 
 
 class _GroupCallPlanner(_ReducePlanning):
-    """Select exact BlockReduce factories without requiring payload dtype."""
+    """Select exact group-reduction factories without payload dtype."""
 
     error_type = GroupRewriteError
 
@@ -83,27 +83,27 @@ class _GroupCallPlanner(_ReducePlanning):
         is_static, result = self._try_constant(value, name="valid_items")
         return is_static and result is None
 
-    def _is_descriptor(self, value: Any) -> bool:
+    def _descriptor(self, value: Any) -> ThreadGroup | None:
         if not isinstance(value, ir.Var):
-            return False
+            return value if isinstance(value, ThreadGroup) else None
         definition = self._definition(value)
         if isinstance(definition, ir.Var):
-            return self._is_descriptor(definition)
+            return self._descriptor(definition)
         if isinstance(definition, ir.Expr) and definition.op == "cast":
-            return self._is_descriptor(definition.value)
+            return self._descriptor(definition.value)
         if isinstance(definition, (ir.Global, ir.FreeVar, ir.Const)):
-            return isinstance(definition.value, ThreadGroup)
-        return (
-            isinstance(definition, ir.Expr)
-            and definition.op == "call"
-            and self._callable(definition.func) in _GROUP_CONSTRUCTORS
-        )
+            return (
+                definition.value if isinstance(definition.value, ThreadGroup) else None
+            )
+        if isinstance(definition, ir.Expr) and definition.op == "call":
+            return _GROUP_CONSTRUCTORS.get(self._callable(definition.func))
+        return None
 
     @staticmethod
     def _bind(function: Any, call: ir.Expr) -> inspect.BoundArguments:
         if call.vararg is not None or call.varkwarg is not None:
             raise GroupRewriteError(
-                "cuda.coop block reduction does not support *args or **kwargs"
+                "cuda.coop group reduction does not support *args or **kwargs"
             )
         try:
             bound = inspect.signature(function).bind(*call.args, **dict(call.kws))
@@ -275,7 +275,7 @@ class _GroupCallPlanner(_ReducePlanning):
 
 
 def has_group_markers(func_ir: Any) -> bool:
-    """Return whether exact public block-group markers remain in the IR."""
+    """Return whether exact public group markers remain in the IR."""
 
     for block in func_ir.blocks.values():
         for inst in block.body:
@@ -291,7 +291,7 @@ def has_group_markers(func_ir: Any) -> bool:
 
 
 class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
-    """Resolve exact block hierarchy and select a lowering factory first."""
+    """Resolve exact group hierarchy and select a lowering factory first."""
 
     def run(self) -> bool:
         if not has_group_markers(self.state.func_ir):

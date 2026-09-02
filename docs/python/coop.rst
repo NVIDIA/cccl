@@ -4,8 +4,9 @@
 ==========================================
 
 ``cuda.coop`` provides compiler-neutral contracts for cooperative primitives
-inside Python GPU kernels. The initial Numba-CUDA-MLIR integration describes a
-CUDA thread block and reduces one scalar value per thread with CUB BlockReduce.
+inside Python GPU kernels. The Numba-CUDA-MLIR integration describes a CUDA
+thread block or physical warp and reduces one scalar value per thread with CUB
+BlockReduce or WarpReduce.
 
 Installation
 ------------
@@ -23,8 +24,8 @@ CUDA dependencies.
 Numba-CUDA-MLIR example
 -----------------------
 
-The portable root API and :mod:`cuda.coop.numba_mlir` expose the same block
-reduction contract. This kernel uses the root API:
+The portable root API and :mod:`cuda.coop.numba_mlir` expose the same block and
+physical-warp reduction contracts. This kernel uses the root API:
 
 .. code-block:: python
 
@@ -46,18 +47,34 @@ exact block dimensions from the launch configuration, so the operation call
 does not repeat them. Numba-CUDA-MLIR specializes the compiled kernel for that
 launch configuration and does not persist the specialization in its disk cache.
 
+Use :func:`cuda.coop.this_warp` for a physical 32-lane warp:
+
+.. code-block:: python
+
+   @cuda.jit
+   def warp_sums(source, output):
+       thread = cuda.threadIdx.x
+       total = coop.sum(coop.this_warp(), source[thread])
+       if thread % 32 == 0:
+           output[thread // 32] = total
+
 Participation and result contract
 ---------------------------------
 
-Every thread in the block must invoke the collective in converged control
-flow. The returned scalar is defined only for block rank zero. Other threads
-must not consume it, and kernels must guard any use of the result accordingly.
-There is no broadcast mode in this initial API.
+Every member of the selected group must invoke the collective in converged
+control flow. The returned scalar is defined only for group rank zero: block
+rank zero for BlockReduce and lane zero of each physical warp for WarpReduce.
+Other members must not consume it, and kernels must guard any use of the result
+accordingly. There is no broadcast mode in this API.
 
-The optional ``valid_items`` argument selects the block-rank prefix
-``[0, valid_items)``. Its value must be between one and the block size,
-inclusive, and uniform across all block threads. Every block thread still
-invokes the collective, including threads outside the valid prefix.
+The optional ``valid_items`` argument selects the group-rank prefix
+``[0, valid_items)``. Its value must be between one and the group size,
+inclusive, and uniform across the group. Every member still invokes the
+collective, including members outside the valid prefix.
+
+A physical-warp reduction requires an exact enclosing block size divisible by
+32. One-, two-, and three-dimensional block shapes are supported. Physical
+warp identity is computed from CUDA's x-major linear thread rank.
 
 Supported values and operations
 -------------------------------
@@ -82,8 +99,8 @@ operators and per-thread array payloads are outside this initial slice.
 Algorithm selection
 -------------------
 
-The optional ``algorithm`` argument selects one deterministic CUB BlockReduce
-algorithm:
+For block groups, the optional ``algorithm`` argument selects one deterministic
+CUB BlockReduce algorithm:
 
 * ``raking_commutative_only``;
 * ``raking``; or
@@ -92,6 +109,7 @@ algorithm:
 The default is ``warp_reductions``. The algorithm and built-in operator are
 compile-time selectors; ``valid_items`` may be supplied by the kernel at
 runtime.
+WarpReduce does not accept a BlockReduce algorithm selector.
 
 Backend activation
 ------------------

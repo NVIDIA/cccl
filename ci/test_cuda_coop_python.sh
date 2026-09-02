@@ -117,10 +117,13 @@ from cuda import coop
 from cuda.coop._headers import resolve_include_paths
 
 assert coop.this_block().kind == "block"
+assert coop.this_warp().kind == "warp"
+assert coop.this_warp().static_size == 32
 paths = resolve_include_paths(
     start=Path("/tmp/cuda-coop-installed-wheel-probe"),
     required_headers=(
         "cub/block/block_reduce.cuh",
+        "cub/warp/warp_reduce.cuh",
         "thrust/detail/raw_pointer_cast.h",
         "cuda/std/cstdint",
     ),
