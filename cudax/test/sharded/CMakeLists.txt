@@ -3,6 +3,7 @@ set(
   include_only.cu
   stream_scope.cu
   concepts/models.cu
+  concepts/foreign_models.cu
   containers/sharded_array.cu
   containers/contiguous.cu
   containers/fork_join.cu
