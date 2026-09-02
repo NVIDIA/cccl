@@ -33,6 +33,14 @@ dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
+numba-cuda-mlir-cu12 = [
+  "cuda-core>=0.5.1,<2",
+  "numba-cuda-mlir[cu12]>=0.5.0,<0.6",
+]
+numba-cuda-mlir-cu13 = [
+  "cuda-core>=0.5.1,<2",
+  "numba-cuda-mlir[cu13]>=0.5.0,<0.6",
+]
 test = [
   "mypy",
   "numpy",
@@ -111,6 +119,8 @@ extend = "../../pyproject.toml"
 known-first-party = [
   "cuda.coop",
   "cuda.coop._core",
+  "cuda.coop.numba_mlir",
+  "cuda.coop.numba_mlir._compiler",
 ]
 
 [tool.pytest.ini_options]
