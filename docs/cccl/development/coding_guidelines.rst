@@ -53,6 +53,12 @@ libcu++
    and with ``_`` when they use ``PascalCase`` or ``ALL_CAPS``.
    This turns them into C++ reserved identifiers to avoid name collisions with user code and macros.
 
+CUB and Thrust
+--------------
+
+#. Non-public entities, which are not macros, should be put inside a ``detail`` namespace (preferred)
+   or prefixed with ``__``.
+
 CUB
 ----
 
@@ -63,7 +69,7 @@ CUB
 #. Header files use ``.cuh`` as file extension
 
 Thrust
--------
+------
 
 #. Header files use ``.h`` as file extension
 
