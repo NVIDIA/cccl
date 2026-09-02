@@ -35,8 +35,6 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-DAG: {{.*}}LOP3.LUT [[A:R[0-9]+]], [[ATOM_ADDR]], 0xfffffffc, {{.*}}
-; SEQ_CST-DAG: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
-; NON_BLOCK_SEQ_CST-DAG: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}
@@ -44,6 +42,8 @@ extern "C" __device__ auto atomic_codegen_test(cuda::atomic_ref<volatile TYPE, S
 ; NON_BLOCK: {{.*}}LD.E.STRONG.[[SASS_SCOPE]] [[E:R[0-9]+]], {{.*\[}}[[A]]{{(\.64)?\].*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}
 ; RELEASE: {{.*}}MEMBAR.ALL.[[SASS_SCOPE]]{{.*}}
+; SEQ_CST: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
+; NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}LD.E{{.*}}.STRONG{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.E.EXCH{{.*}}

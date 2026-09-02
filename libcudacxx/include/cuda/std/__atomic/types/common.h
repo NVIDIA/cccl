@@ -23,6 +23,8 @@
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstring>
@@ -30,6 +32,37 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _Tp>
+_CCCL_HOST_DEVICE_API bool __cuda_atomic_less(_Tp __lhs, _Tp __rhs)
+{
+  if constexpr (__is_extended_floating_point_v<_Tp> && sizeof(_Tp) == 2)
+  {
+#if _CCCL_HAS_CTK() && _CCCL_CTK_BELOW(12, 2)
+    // Before CTK 12.2, __hlt is device-only and its bfloat16 overload is unavailable before SM80.
+#  if _CCCL_HAS_NVBF16()
+    if constexpr (is_same_v<_Tp, __nv_bfloat16>)
+    {
+      // Intentionally unqualified to avoid including <cuda_bf16.h>.
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_80, (return __hlt(__lhs, __rhs);), (return __bfloat162float(__lhs) < __bfloat162float(__rhs);))
+    }
+    else
+#  endif // _CCCL_HAS_NVBF16()
+    {
+      // Intentionally unqualified to avoid including <cuda_fp16.h>.
+      NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __hlt(__lhs, __rhs);), (return __half2float(__lhs) < __half2float(__rhs);))
+    }
+#else // ^^^ CTK below 12.2 ^^^ / vvv CTK 12.2 or newer vvv
+    // Intentionally unqualified to avoid including <cuda_fp16.h> and <cuda_bf16.h>.
+    return __hlt(__lhs, __rhs);
+#endif // CTK 12.2 or newer
+  }
+  else
+  {
+    return __lhs < __rhs;
+  }
+}
 
 enum class __atomic_tag
 {
