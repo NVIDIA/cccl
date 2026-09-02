@@ -181,6 +181,11 @@ def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
     if len(state_shapes) != num_states:
         raise ValueError("state_shapes and state_dtypes must have the same length")
 
+    # The shapes are interpolated into the generated source, so they must repr
+    # as plain literals; a numpy integer would render as ``np.int64(8)`` and
+    # reference a name the wrapper's namespace does not define.
+    state_shapes = [tuple(int(dim) for dim in shape) for shape in state_shapes]
+
     op_device = cuda.jit(device=True)(op)
 
     # sig.args == (state_0, ..., state_{num_states-1}, input_0, ..., input_{K-1})
