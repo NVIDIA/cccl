@@ -21,6 +21,8 @@ internal pipeline one step further -- to optimized MLIR, then
 
 from __future__ import annotations
 
+import contextlib
+
 # --- Compilation + type system -------------------------------------------------
 from numba_cuda_mlir import cuda, types
 
@@ -86,6 +88,44 @@ __all__ = [
     "infer_return_type",
     "refresh_contexts",
 ]
+
+
+# Inference depends only on the function and its argument types, so any target
+# serves when there is no device to name one.
+_INFERENCE_FALLBACK_CC = (7, 5)
+
+
+@contextlib.contextmanager
+def _target_without_a_device(cc):
+    """Let the backend resolve a target when no device is available.
+
+    numba-cuda-mlir's target resolver reads the host's compute capability even
+    when the caller names a target, because it also decides which arch to link
+    for.  Nothing is linked on these paths, but the query needs a driver, so
+    compiling for a named target on a machine with no GPU fails -- which is
+    exactly what building with an explicit ``compute_capability`` is for.
+
+    Answer that query with the named target while there is no device to ask.
+    """
+    from numba_cuda_mlir import tools
+
+    if cc is None:
+        yield
+        return
+    try:
+        tools.get_gpu_compute_capability(tuple)
+    except Exception:
+        pass
+    else:
+        yield
+        return
+
+    original = tools.get_gpu_compute_capability
+    tools.get_gpu_compute_capability = lambda *args, **kwargs: tuple(cc)
+    try:
+        yield
+    finally:
+        tools.get_gpu_compute_capability = original
 
 
 def convert_number(value, target_type, *, from_signed, to_signed):
@@ -160,7 +200,8 @@ def infer_return_type(pyfunc, arg_types):
     # builtin operators.  Refreshing again once they are built costs nothing.
     refresh_contexts()
 
-    result = _compiler._compile_only(pyfunc, tuple(arg_types), {"device": True})
+    with _target_without_a_device(_INFERENCE_FALLBACK_CC):
+        result = _compiler._compile_only(pyfunc, tuple(arg_types), {"device": True})
     return result.signature.return_type
 
 
@@ -220,7 +261,7 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     # dispatcher performs on first use; see infer_return_type.
     refresh_contexts()
 
-    with _ctx.get_context():
+    with _target_without_a_device(cc), _ctx.get_context():
         cres = _compiler._compile_only(pyfunc, sig, target_options)
         module = cres.metadata["mlir_module"]
         PassManager.parse(get_base_pipeline()).run(module.operation)
