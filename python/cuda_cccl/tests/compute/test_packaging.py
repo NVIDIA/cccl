@@ -15,7 +15,10 @@ _PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 def _optional_dependencies() -> dict[str, list[str]]:
     if not _PYPROJECT.is_file():
         pytest.skip(f"{_PYPROJECT} is not available (not a source checkout)")
-    return tomllib.loads(_PYPROJECT.read_text())["project"]["optional-dependencies"]
+    # Read as binary: TOML is always UTF-8, whereas decoding text applies the
+    # locale's encoding, which fails on a non-ASCII character under a C locale.
+    with _PYPROJECT.open("rb") as f:
+        return tomllib.load(f)["project"]["optional-dependencies"]
 
 
 def test_jit_backend_pin_is_bounded():
