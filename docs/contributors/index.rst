@@ -3,7 +3,6 @@
 Contributor Docs
 ================
 
-
 Thank you for your interest in contributing to the CUDA Core Compute Libraries (CCCL)!
 This section covers the branching, build, test, debug, pull request, and review workflows a CCCL contributor uses day to day.
 
@@ -69,26 +68,15 @@ Making Changes
 Developer Guides
 ~~~~~~~~~~~~~~~~~
 
-For more information about design and development practices for each CCCL component, refer to the
-following developer guides:
+For more information about architecture, design, and development practices, consult the following developer guides:
 
-CUB
-^^^^
-
+- :doc:`CCCL Development Guide </cccl/development/index>` - Internal details and development process shared across CCCL libraries, mostly libcudacxx
+- :doc:`Thrust Systems </thrust/developer/systems>` - Overview of Thrust's backend systems and execution policies
+- :doc:`Thrust Developer CMake Options </thrust/developer/cmake_options>` - CMake options for Thrust development builds
 - :doc:`CUB Developer Guide </cub/developer_overview>` - General overview of the design of CUB internals
 - :doc:`CUB Tests </cub/developer/test_overview>` - Overview of how to write CUB unit tests
 - :doc:`CUB Benchmarks </cub/benchmarking>` - Overview of CUB's performance benchmarks
 - :doc:`CUB Tunings </cub/tuning>` - Overview of CUB's performance tuning infrastructure
-
-Thrust
-^^^^^^^
-
-Coming soon!
-
-libcudacxx
-^^^^^^^^^^^
-
-Coming soon!
 
 Building and Testing
 ----------------------
