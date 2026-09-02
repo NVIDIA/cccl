@@ -18,6 +18,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
@@ -153,6 +154,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
              cc.major_cap(),
              cc.minor_cap(),
              ss.str().c_str());))
+#else // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceSegmentedScan", cc, active_policy);
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   if (d_temp_storage == nullptr)
