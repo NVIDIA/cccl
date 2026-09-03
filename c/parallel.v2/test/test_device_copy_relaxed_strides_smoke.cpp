@@ -209,6 +209,8 @@ CATCH_TEST_CASE("C v2 DeviceCopy can copy mixed static and runtime extents", "[d
 
   constexpr std::array<int64_t, rank> shape{2, 3, 4};
   constexpr std::array<int64_t, rank> mismatched_static_shape{2, 3, 5};
+  constexpr std::array<int64_t, rank> layout_right_strides{12, 4, 1};
+  constexpr std::array<int64_t, rank> bad_layout_right_strides{1, 4, 12};
   constexpr std::size_t num_items = 24;
 
   std::vector<int> source_storage(num_items);
@@ -261,8 +263,9 @@ CATCH_TEST_CASE("C v2 DeviceCopy can copy mixed static and runtime extents", "[d
   CATCH_REQUIRE(device_copy.build.source_strides == nullptr);
   CATCH_REQUIRE(device_copy.build.destination_strides == nullptr);
 
-  const cccl_device_copy_source_view_t source{d_source.get(), 0, shape.data(), nullptr};
-  const cccl_device_copy_destination_view_t destination{d_destination.get(), 0, shape.data(), nullptr};
+  const cccl_device_copy_source_view_t source{d_source.get(), 0, shape.data(), layout_right_strides.data()};
+  const cccl_device_copy_destination_view_t destination{
+    d_destination.get(), 0, shape.data(), layout_right_strides.data()};
 
   CATCH_REQUIRE(cccl_device_copy(device_copy.build, source, destination, nullptr) == CUDA_SUCCESS);
   CATCH_REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
@@ -272,6 +275,16 @@ CATCH_TEST_CASE("C v2 DeviceCopy can copy mixed static and runtime extents", "[d
       destination_storage.data(), d_destination.get(), destination_storage.size() * sizeof(int), cudaMemcpyDeviceToHost)
     == cudaSuccess);
   CATCH_REQUIRE(destination_storage == source_storage);
+
+  const cccl_device_copy_source_view_t bad_source_strides{
+    d_source.get(), 0, shape.data(), bad_layout_right_strides.data()};
+  CATCH_REQUIRE(
+    cccl_device_copy(device_copy.build, bad_source_strides, destination, nullptr) == CUDA_ERROR_INVALID_VALUE);
+
+  const cccl_device_copy_destination_view_t bad_destination_strides{
+    d_destination.get(), 0, shape.data(), bad_layout_right_strides.data()};
+  CATCH_REQUIRE(
+    cccl_device_copy(device_copy.build, source, bad_destination_strides, nullptr) == CUDA_ERROR_INVALID_VALUE);
 
   const cccl_device_copy_source_view_t mismatched_source{d_source.get(), 0, mismatched_static_shape.data(), nullptr};
   const cccl_device_copy_destination_view_t mismatched_destination{

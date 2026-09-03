@@ -35,9 +35,13 @@ typedef struct cccl_device_copy_axis_metadata_t
 
 typedef enum cccl_device_copy_layout_kind_t
 {
-  // cuda::std::layout_right. Runtime stride pointers are ignored.
+  // cuda::std::layout_right. Runtime stride pointers are optional; when
+  // supplied to cccl_device_copy, they must match the implied layout after
+  // degenerate axes are ignored.
   CCCL_DEVICE_COPY_LAYOUT_RIGHT = 0,
-  // cuda::std::layout_left. Runtime stride pointers are ignored.
+  // cuda::std::layout_left. Runtime stride pointers are optional; when supplied
+  // to cccl_device_copy, they must match the implied layout after degenerate
+  // axes are ignored.
   CCCL_DEVICE_COPY_LAYOUT_LEFT = 1,
   // cuda::std::layout_stride. Strides are in elements and must be non-negative.
   // Reserved for a later implementation.
@@ -80,7 +84,8 @@ typedef struct cccl_device_copy_source_view_t
   // completed.
   const int64_t* shape;
   // Host pointer to rank strides in elements. Required for runtime stride axes
-  // of strided layouts; ignored for layout_left/layout_right.
+  // of strided layouts. Optional for layout_left/layout_right; if supplied, it
+  // must match the implied layout after degenerate axes are ignored.
   const int64_t* strides;
 } cccl_device_copy_source_view_t;
 
@@ -96,7 +101,8 @@ typedef struct cccl_device_copy_destination_view_t
   // completed.
   const int64_t* shape;
   // Host pointer to rank strides in elements. Required for runtime stride axes
-  // of strided layouts; ignored for layout_left/layout_right.
+  // of strided layouts. Optional for layout_left/layout_right; if supplied, it
+  // must match the implied layout after degenerate axes are ignored.
   const int64_t* strides;
 } cccl_device_copy_destination_view_t;
 

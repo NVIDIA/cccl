@@ -261,6 +261,65 @@ bool strided_span_is_representable(size_t rank, const int64_t* shape, const int6
       && negative_offset <= std::numeric_limits<uint64_t>::max() - positive_span;
 }
 
+bool contiguous_layout_strides_are_consistent(
+  cccl_device_copy_layout_kind_t layout, size_t rank, const int64_t* shape, const int64_t* strides)
+{
+  if (!is_contiguous_layout(layout) || strides == nullptr)
+  {
+    return true;
+  }
+
+  auto check_axis = [&](size_t axis, uint64_t stride) {
+    return shape[axis] <= 1
+        || (stride <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max())
+            && strides[axis] == static_cast<int64_t>(stride));
+  };
+
+  uint64_t stride = 1;
+  if (layout == CCCL_DEVICE_COPY_LAYOUT_RIGHT)
+  {
+    for (size_t axis = rank; axis-- > 0;)
+    {
+      if (shape[axis] == 0)
+      {
+        return true;
+      }
+      if (!check_axis(axis, stride))
+      {
+        return false;
+      }
+      const auto extent = static_cast<uint64_t>(shape[axis]);
+      if (stride > std::numeric_limits<uint64_t>::max() / extent)
+      {
+        return false;
+      }
+      stride *= extent;
+    }
+  }
+  else
+  {
+    for (size_t axis = 0; axis < rank; ++axis)
+    {
+      if (shape[axis] == 0)
+      {
+        return true;
+      }
+      if (!check_axis(axis, stride))
+      {
+        return false;
+      }
+      const auto extent = static_cast<uint64_t>(shape[axis]);
+      if (stride > std::numeric_limits<uint64_t>::max() / extent)
+      {
+        return false;
+      }
+      stride *= extent;
+    }
+  }
+
+  return true;
+}
+
 CUresult validate_build_spec(cccl_device_copy_build_spec_t spec)
 {
   if (spec.value_type.size == 0 || !is_power_of_two(spec.value_type.alignment))
@@ -693,6 +752,14 @@ try
     }
   }
   if (!product_is_representable(build.rank, source.shape))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  const bool source_strides_are_consistent =
+    contiguous_layout_strides_are_consistent(build.source_layout, build.rank, source.shape, source.strides);
+  const bool destination_strides_are_consistent = contiguous_layout_strides_are_consistent(
+    build.destination_layout, build.rank, destination.shape, destination.strides);
+  if (!source_strides_are_consistent || !destination_strides_are_consistent)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
