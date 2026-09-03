@@ -60,14 +60,21 @@ struct __abs_diff_8bit_operation
 
 #endif // _CCCL_HAS_SIMD_VABSDIFF()
 
-template <typename _Tp>
+template <typename _Tp, typename _Abi>
 struct __abs_diff_32bit_operation
 {
   template <typename _ResultStorage, typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _ResultStorage
   operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
   {
-    return ::cuda::abs_diff(__lhs, __rhs);
+    constexpr auto __size = ::cuda::std::simd::basic_vec<_Tp, _Abi>::size();
+    _ResultStorage __result{};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
+    {
+      __result.__data[__i] = ::cuda::abs_diff(__lhs.__data[__i], __rhs.__data[__i]);
+    }
+    return __result;
   }
 };
 
@@ -85,18 +92,19 @@ abs_diff(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
 #if _CCCL_HAS_SIMD_VABSDIFF()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_DEVICE, ({
-                   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t))
-                   {
-                     return __simd_abs_diff_impl(
-                       __lhs, __rhs, __abs_diff_8bit_operation<_Tp>{}, static_cast<__result_type*>(nullptr)); // ADL
-                   }
-                   if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
-                   {
-                     return __simd_abs_diff_impl(
-                       __lhs, __rhs, __abs_diff_32bit_operation<_Tp>{}, static_cast<__result_type*>(nullptr)); // ADL
-                   }
-                 }))
+    NV_IF_TARGET(
+      NV_IS_DEVICE, ({
+        if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t))
+        {
+          return __simd_abs_diff_impl(
+            __lhs, __rhs, __abs_diff_8bit_operation<_Tp>{}, static_cast<__result_type*>(nullptr)); // ADL
+        }
+        if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
+        {
+          return __simd_abs_diff_impl(
+            __lhs, __rhs, __abs_diff_32bit_operation<_Tp, _Abi>{}, static_cast<__result_type*>(nullptr)); // ADL
+        }
+      }))
   }
 #endif // _CCCL_HAS_SIMD_VABSDIFF()
 
