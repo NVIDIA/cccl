@@ -44,6 +44,16 @@ def check_numba_surface(source: object, destination: object) -> None:
         ThreadDataLike[np.int8],
     )
     assert_type(
+        coop.load(
+            block,
+            source,
+            byte_values,
+            valid_items=1,
+            oob_default=0,
+        ),
+        ThreadDataLike[np.int8],
+    )
+    assert_type(
         coop.load(block, source, values, algorithm="vectorize"),
         ThreadDataLike[np.uint16],
     )
