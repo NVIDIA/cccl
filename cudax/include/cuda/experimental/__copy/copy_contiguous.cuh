@@ -44,6 +44,8 @@
 
 namespace cuda::experimental
 {
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
 //! @brief Tiled copy kernel for contiguous innermost dimension.
 //!
 //! Uses a 2D grid: blockIdx.x = tile along inner dimension, blockIdx.y = outer index.
@@ -70,7 +72,7 @@ template <typename _Config,
           typename _StrideTIn,
           typename _StrideTOut,
           ::cuda::std::size_t _Rank>
-__global__ void __copy_contiguous_kernel(
+_CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
   _CCCL_GRID_CONSTANT const _Config __config,
   _CCCL_GRID_CONSTANT const _TpSrc* const _CCCL_RESTRICT __src_ptr,
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTIn, _Rank> __src_strides,
@@ -229,6 +231,8 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
       __inner_size);
   });
 }
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

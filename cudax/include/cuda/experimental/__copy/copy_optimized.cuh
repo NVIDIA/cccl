@@ -35,6 +35,8 @@
 
 namespace cuda::experimental
 {
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
 //! @brief Element-wise copy kernel for strided tensor data.
 //!
 //! Each thread copies one element at a time using a grid-stride loop, mapping linear indices to
@@ -58,7 +60,7 @@ template <typename _Config,
           typename _StrideTIn,
           typename _StrideTOut,
           ::cuda::std::size_t _Rank>
-__global__ void __copy_optimized_kernel(
+_CCCL_KERNEL_ATTRIBUTES void __copy_optimized_kernel(
   _CCCL_GRID_CONSTANT const _Config __config,
   _CCCL_GRID_CONSTANT const _TpSrc* const _CCCL_RESTRICT __src_ptr,
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTIn, _Rank> __src_strides,
@@ -142,6 +144,8 @@ _CCCL_HOST_API void __copy_optimized(
     __coord_iter,
     __tensor_size);
 }
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

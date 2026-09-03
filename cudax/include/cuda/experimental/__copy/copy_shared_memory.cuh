@@ -59,6 +59,8 @@
 
 namespace cuda::experimental
 {
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
 //! @brief Compute an optimized shared-memory offset.
 //!
 //! @param[in] __offset The offset in the shared-memory tile.
@@ -124,7 +126,7 @@ template <bool _UseOptimizedSmemLayout,
           typename _ExtentT,
           typename _StrideTIn,
           typename _StrideTOut>
-__global__ void __copy_shared_mem_kernel(
+_CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
   _CCCL_GRID_CONSTANT const _Config __config,
   const _TpSrc* _CCCL_RESTRICT __src_ptr,
   _CCCL_GRID_CONSTANT const _SrcAccessor __src_accessor,
@@ -534,6 +536,8 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

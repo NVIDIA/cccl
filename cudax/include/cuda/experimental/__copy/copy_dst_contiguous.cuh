@@ -35,6 +35,8 @@
 
 namespace cuda::experimental
 {
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
 //! @brief Element-wise copy kernel specialized for a contiguous destination layout.
 //!
 //! The source tensor is indexed with multi-dimensional coordinates. The contiguous destination is indexed directly by
@@ -56,7 +58,7 @@ template <typename _Config,
           typename _ExtentT,
           typename _StrideT,
           ::cuda::std::size_t _Rank>
-__global__ void __copy_dst_contiguous_kernel(
+_CCCL_KERNEL_ATTRIBUTES void __copy_dst_contiguous_kernel(
   _CCCL_GRID_CONSTANT const _Config __config,
   _CCCL_GRID_CONSTANT const _TpSrc* const _CCCL_RESTRICT __src_ptr,
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideT, _Rank> __src_strides,
@@ -128,6 +130,8 @@ _CCCL_HOST_API void __copy_dst_contiguous(
     __coord_iter,
     __tensor_size);
 }
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
