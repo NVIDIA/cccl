@@ -99,6 +99,34 @@ int main()
   fill(b, envs, 1LL);
   EXPECT(reduce(b, envs, ::cuda::std::plus<long long>{}, 0LL) == (long long) n);
 
+  // Generic adjacent_difference: boundary crossing between shards must see
+  // the predecessor's last element; iota -> minus gives all-1s except [0].
+  iota(b, 5LL); // b = 5, 6, ..., 5 + n - 1
+  adjacent_difference(b, envs, a, ::cuda::std::minus<long long>{});
+  // a[0] = 5, a[i>0] = 1  =>  sum = 5 + (n - 1)
+  EXPECT(reduce(a, ::cuda::std::plus<long long>{}, 0LL) == 5 + (long long) n - 1);
+  // Self-bound overload, and a second op to vary the boundary value
+  adjacent_difference(b, a, ::cuda::std::plus<long long>{});
+  // a[0] = 5, a[i>0] = b[i] + b[i-1] = 2*(5+i) - 1 => sum = 5 + sum_{i=1..n-1}(2i + 9)
+  {
+    const long long m = (long long) n - 1;
+    EXPECT(reduce(a, ::cuda::std::plus<long long>{}, 0LL) == 5 + m * (m + 1) + 9 * m);
+  }
+  // Aliasing refused
+  {
+    bool threw = false;
+    try
+    {
+      adjacent_difference(b, envs, b, ::cuda::std::minus<long long>{});
+    }
+    catch (const ::std::invalid_argument&)
+    {
+      threw = true;
+    }
+    EXPECT(threw);
+  }
+  fill(b, envs, 1LL); // restore the state the zip block below expects
+
   // Out-of-place elementwise: zip_transform is the generic spelling (a plain
   // `transform(in, out, op)` overload would collide with cuda::std::transform
   // through ADL when cuda::std functors are involved — a recorded design

@@ -52,6 +52,8 @@
 
 #include <cuda/__stream/stream_ref.h>
 
+#include <cuda/std/__functional/invoke.h> // is_invocable_v
+
 #include <cuda/experimental/__places/place_group.cuh> // check_not_capturing
 #include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
@@ -140,8 +142,10 @@ inline void __wait_stream_on(cudaStream_t __consumer, cudaStream_t __producer)
 //! all; concurrent across shards, zero host synchronization), no stream =
 //! synchronous convenience (refused under `sync_policy::forbid`).
 //!
-//! @p __body is a host callable `(const descriptor&, cudaStream_t)` that
-//! enqueues the shard's work on the given stream.
+//! @p __body is a host callable `(const descriptor&, cudaStream_t)` — or,
+//! for algorithms that need the shard index (cross-shard boundary logic),
+//! `(size_t, const descriptor&, cudaStream_t)` — that enqueues the shard's
+//! work on the given stream (the `each_shard` dual-arity convention).
 template <class _S, class _Envs, class _CallEnv, class _PerShard>
 _CCCL_HOST_API void
 __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
@@ -180,7 +184,14 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
       __wait_stream_on(__shard_stream.get(), ::cuda::get_stream(__call_env).get());
     }
     stream_scope __scope(__shard_stream.get());
-    __body(__d, __shard_stream.get());
+    if constexpr (::cuda::std::is_invocable_v<_PerShard&, ::std::size_t, decltype(__d), cudaStream_t>)
+    {
+      __body(__g, __d, __shard_stream.get());
+    }
+    else
+    {
+      __body(__d, __shard_stream.get());
+    }
   }
 
   if constexpr (__is_async)

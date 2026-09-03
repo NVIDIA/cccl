@@ -214,25 +214,6 @@ struct __tuple_result_op
   }
 };
 
-//! @brief Check that two sharded views are co-partitioned: same shard count
-//! and, per shard, identical global regions.
-template <class _SA, class _SB>
-void __check_copartitioned(const _SA& __a, const _SB& __b, const char* __what)
-{
-  if (static_cast<::std::size_t>(__a.num_shards()) != static_cast<::std::size_t>(__b.num_shards()))
-  {
-    _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": shard count mismatch");
-  }
-  for (::std::size_t __g = 0; __g < static_cast<::std::size_t>(__a.num_shards()); ++__g)
-  {
-    if (static_cast<::std::size_t>(__a.shard(__g).size) != static_cast<::std::size_t>(__b.shard(__g).size)
-        || static_cast<::std::size_t>(__a.shard(__g).global_offset)
-             != static_cast<::std::size_t>(__b.shard(__g).global_offset))
-    {
-      _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": shard regions differ (not co-partitioned)");
-    }
-  }
-}
 } // namespace reserved
 
 /**
