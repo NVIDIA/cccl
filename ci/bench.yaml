@@ -1,33 +1,14 @@
 # # CCCL PR benchmark request config.
 #
-# ## Overview:
-#
-# This file is used to request benchmark comparisons in PR CI.
-#
-# This file must match ci/bench.template.yaml to merge.
-# CI branch protections will fail if they differ. Reset before merging.
-#
-# To update the defaults (e.g. new GPU pools), modify both this file and
-# ci/bench.template.yaml together in the same PR.
-#
-# !! Strongly consider appending the following to your **commit messages** while benchmarking. !!
-# This prevents wasteful non-benchmark CI jobs if they are not needed.
-#
-#     [bench-only]
-#
-# To skip compile-time benchmark telemetry on unrelated changes, use:
-#
-#     [skip-compile-time-bench]
-#
-# ## Quick start:
-#
-# 1. Add one or more benchmark regexes under benchmarks.filters.cub and/or
-#    benchmarks.filters.python.
-# 2. Enable at least one GPU by uncommenting or adding entries in benchmarks.gpus.
-# 3. Push and inspect the dispatched benchmark jobs/artifacts.
-# 4. Remove/reset benchmark-request edits before final merge.
+# This file must match ci/bench.template.yaml to merge. Reset before merging.
+# [bench-only] on the commit summary keeps unrelated CI jobs from running.
 
 benchmarks:
-  base:
-    - '^cub\.bench\.histogram\.even\.base$'
-    - '^cub\.bench\.histogram\.multi\.even\.base$'
+  filters:
+    cub:
+      - '^cub\.bench\.histogram\.even\.base$'
+      - '^cub\.bench\.histogram\.multi\.even\.base$'
+  gpus:
+    - "t4"    # sm_75
+    - "l4"    # sm_89
+    - "h100"  # sm_90
