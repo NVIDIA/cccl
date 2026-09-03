@@ -67,6 +67,11 @@ MSVC redistributable rather than from Windows itself. Without them numba and
 redistributable before running anything, which leaves the comparison the lane exists to
 make intact: still no compiler, still no CUDA toolkit.
 
+``test_headers`` is the one lane here that needs no GPU -- it asserts that headers
+shipped in the wheel are on disk and never launches a kernel -- so its entry point sets
+``CCCL_MINIMAL_CONTAINER_NO_GPU=1``, which tells the helper not to hand the sibling any
+devices.
+
 Each lane is therefore two scripts: an entry point that provisions the wheel and
 dispatches (``ci/test_<lane>.sh``, or ``ci/windows/test_<lane>.ps1``), and a payload that
 must survive in the minimal image (``ci/util/python/run_<lane>_tests.sh``, or
@@ -77,7 +82,6 @@ These lanes deliberately stay in the devcontainer, because they need what it pro
 
 * ``py_ctk_mode: sysctk`` -- exists specifically to test against a *system-provided* CUDA
   toolkit.
-* ``test_headers`` -- compiles C++, so it needs a host compiler.
 * ``python_tsan`` -- ``LD_PRELOAD``\ s the runner's ``libtsan``, located via ``gcc``.
 * ``test_py_stf`` -- ``cuda-stf`` is a separate wheel with its own producer and test
   script, which does not use this path.

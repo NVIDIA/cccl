@@ -273,6 +273,34 @@ $indented
     return $pathMatches[0]
 }
 
+function Install-MsvcRuntime {
+    <#
+    .SYNOPSIS
+        Ensures the MSVC runtime redistributable is present.
+    .DESCRIPTION
+        Server Core ships no MSVC runtime, and every C++ Python extension used by
+        the test lanes links against it -- numba's _typeconv and
+        cccl.c.parallel.dll among them. It is a Windows prerequisite rather than
+        a packaging gap, so install it instead of expecting a wheel to carry it.
+        vcruntime140*.dll ship next to some interpreters, which makes
+        msvcp140.dll the reliable probe.
+
+        A no-op wherever the runtime already exists, so it costs nothing in the
+        devcontainer.
+    #>
+    $msvcp = Join-Path $env:SystemRoot 'System32\msvcp140.dll'
+    if (Test-Path $msvcp) { return }
+
+    Write-Host "Installing the MSVC runtime redistributable..."
+    $installer = Join-Path $env:TEMP 'vc_redist.x64.exe'
+    Invoke-WebRequest -UseBasicParsing `
+        -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile $installer
+    Start-Process -Wait -FilePath $installer -ArgumentList '/quiet', '/norestart'
+    if (-not (Test-Path $msvcp)) {
+        throw "vc_redist.x64.exe did not install msvcp140.dll."
+    }
+}
+
 function Assert-MinimalEnvironment {
     <#
     .SYNOPSIS
@@ -313,4 +341,4 @@ function Assert-MinimalEnvironment {
     Write-Host "Minimal environment confirmed: no host compiler, no system CUDA toolkit."
 }
 
-Export-ModuleMember -Function Invoke-Checked, Get-Python, Assert-MinimalEnvironment, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+Export-ModuleMember -Function Invoke-Checked, Get-Python, Assert-MinimalEnvironment, Install-MsvcRuntime, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
