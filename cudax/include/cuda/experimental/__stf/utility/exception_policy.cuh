@@ -4381,9 +4381,10 @@ UNITTEST("type erasure")
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
- * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In debug builds (`NDEBUG` not
- * defined) those lambdas are invoked via `on_throw(abort)`; in release
- * builds they are called directly. The code controlled by `SCOPE(success)` may throw. In all cases the
+ * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In every build type those
+ * lambdas are invoked via `on_throw(abort)`: a throw from a guard body is reported (message and
+ * location) and the program aborts, rather than reaching `std::terminate` bare through the guard's
+ * `noexcept` destructor. The code controlled by `SCOPE(success)` may throw. In all cases the
  * controlled code must return `void` (enforced at compile time).
  *
  * `SCOPE(exit)` runs its code at the natural termination of the current scope. Example: @snippet this SCOPE(exit)
@@ -4423,12 +4424,10 @@ template <class F>
 void invoke_nothrow(F& f, ::cuda::std::source_location loc)
 {
   static_assert(::cuda::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
-#  ifndef NDEBUG
+  // All build types: a guard body that throws is reported and aborts. The guard destructors are
+  // noexcept, so the bare-call alternative is std::terminate with no diagnostics; the report is
+  // worth the try/catch frame, which costs nothing on the non-throwing path.
   on_throw(exception_policies::abort, loc) << f;
-#  else // ^^^ !NDEBUG ^^^ / vvv NDEBUG vvv
-  (void) loc;
-  f();
-#  endif // NDEBUG
 }
 
 template <typename F>
