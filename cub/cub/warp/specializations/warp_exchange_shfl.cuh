@@ -179,7 +179,7 @@ class WarpExchangeShfl
     v         = __shfl_xor_sync(mask, v, NUM_ENTRIES, LOGICAL_WARP_THREADS);
 
     constexpr int next_idx = IDX + 1 + ((IDX + 1) % NUM_ENTRIES == 0) * NUM_ENTRIES;
-    if constexpr (next_idx < NUM_ENTRIES)
+    if constexpr (next_idx < ITEMS_PER_THREAD)
     {
       transpose_foreach<NUM_ENTRIES, next_idx>(vals, xor_bit_set, mask);
     }
@@ -225,7 +225,7 @@ public:
       vals[i] = input_items[i];
     }
 
-    transpose<ITEMS_PER_THREAD / 2>(lane_id, member_mask);
+    transpose<ITEMS_PER_THREAD / 2>(vals, lane_id, member_mask);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
