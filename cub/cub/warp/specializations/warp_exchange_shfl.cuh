@@ -18,6 +18,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -198,24 +199,19 @@ class WarpExchangeShfl
     }
   }
 
-  template <int IDX>
-  _CCCL_DEVICE void copy_into(InputT (&vals)[ITEMS_PER_THREAD], const InputT (&input_items)[ITEMS_PER_THREAD])
+  template <size_t... Is>
+  _CCCL_DEVICE void copy_into(
+    InputT (&vals)[ITEMS_PER_THREAD], const InputT (&input_items)[ITEMS_PER_THREAD], ::cuda::std::index_sequence<Is...>)
   {
-    vals[IDX] = input_items[IDX];
-    if constexpr (IDX + 1 < ITEMS_PER_THREAD)
-    {
-      copy_into<IDX + 1>(vals, input_items);
-    }
+    ((vals[Is] = input_items[Is]), ...);
   }
 
-  template <int IDX, typename OutputT>
-  _CCCL_DEVICE void copy_out(OutputT (&output_items)[ITEMS_PER_THREAD], const InputT (&vals)[ITEMS_PER_THREAD])
+  template <typename OutputT, size_t... Is>
+  _CCCL_DEVICE void copy_out(OutputT (&output_items)[ITEMS_PER_THREAD],
+                             const InputT (&vals)[ITEMS_PER_THREAD],
+                             ::cuda::std::index_sequence<Is...>)
   {
-    output_items[IDX] = vals[IDX];
-    if constexpr (IDX + 1 < ITEMS_PER_THREAD)
-    {
-      copy_out<IDX + 1>(output_items, vals);
-    }
+    ((output_items[Is] = vals[Is]), ...);
   }
 
   const unsigned int lane_id;
@@ -238,11 +234,11 @@ public:
   BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     InputT vals[ITEMS_PER_THREAD];
-    copy_into<0>(vals, input_items);
+    copy_into(vals, input_items, ::cuda::std::make_index_sequence<ITEMS_PER_THREAD>{});
 
     transpose<ITEMS_PER_THREAD / 2>(vals, lane_id, member_mask);
 
-    copy_out<0>(output_items, vals);
+    copy_out(output_items, vals, ::cuda::std::make_index_sequence<ITEMS_PER_THREAD>{});
   }
 
   template <typename OutputT>
