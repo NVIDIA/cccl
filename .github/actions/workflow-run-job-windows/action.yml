@@ -187,9 +187,10 @@ runs:
         fi
 
         images=("${IMAGE}")
-        while IFS= read -r image; do
+        # NUL delimiters avoid retaining a carriage return from Windows jq output.
+        while IFS= read -r -d '' image; do
           images+=("${image}")
-        done < <(jq -r '.[]' <<< "${IMAGE_DEPENDENCIES}")
+        done < <(jq -rj '.[] | "\(.)\u0000"' <<< "${IMAGE_DEPENDENCIES}")
 
         for image in "${images[@]}"; do
           if [[ "${image}" != ghcr.io/* ]]; then
@@ -253,9 +254,10 @@ runs:
         EOF
 
         dependency_envargs=()
-        while IFS= read -r entry; do
+        # Keep image references byte-identical to those used by the pull step.
+        while IFS= read -r -d '' entry; do
           dependency_envargs+=(--env "${entry}")
-        done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "${IMAGE_DEPENDENCIES}")
+        done < <(jq -rj 'to_entries[] | "\(.key)=\(.value)\u0000"' <<< "${IMAGE_DEPENDENCIES}")
 
         docker_exit=0
         set +e
