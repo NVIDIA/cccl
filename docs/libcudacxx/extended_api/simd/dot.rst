@@ -9,16 +9,17 @@ Defined in the ``<cuda/simd>`` header.
 
     namespace cuda::simd {
 
-    template <class T, class U, class Abi, class AccT>
+    template <class T, class U, class Abi, class AccT = cuda::std::common_type_t<T, U>>
     [[nodiscard]] __host__ __device__ constexpr
     AccT dot(const cuda::std::simd::basic_vec<T, Abi>& lhs,
              const cuda::std::simd::basic_vec<U, Abi>& rhs,
-             AccT                                      init) noexcept;
+             AccT                                      init = {}) noexcept;
 
     } // namespace cuda::simd
 
 The function ``cuda::simd::dot`` computes the dot product of two ``cuda::std::simd::basic_vec`` objects and adds the
-result to an accumulator.
+result to an accumulator. If ``init`` is omitted, it is value-initialized and ``AccT`` defaults to
+``cuda::std::common_type_t<T, U>``.
 
 The result is equivalent to:
 
@@ -37,7 +38,7 @@ The result is equivalent to:
 
 - ``lhs``: The left-hand side input vector.
 - ``rhs``: The right-hand side input vector.
-- ``init``: The initial accumulator value.
+- ``init``: The initial accumulator value. Defaults to a value-initialized ``AccT``.
 
 **Return value**
 
@@ -67,21 +68,25 @@ Example
     #include <cuda/simd>
     #include <cuda/std/array>
     #include <cuda/std/cassert>
+    #include <cuda/std/cstdint>
 
     namespace simd = cuda::std::simd;
 
     __global__ void kernel()
     {
-        using vec_t = simd::basic_vec<float, simd::fixed_size<4>>;
+        using lhs_vec_t = simd::basic_vec<uint16_t, simd::fixed_size<4>>;
+        using rhs_vec_t = simd::basic_vec<int8_t,   simd::fixed_size<4>>;
 
-        cuda::std::array<float, 4> lhs_values{1.0f, 2.0f, 3.0f, 4.0f};
-        cuda::std::array<float, 4> rhs_values{5.0f, 6.0f, 7.0f, 8.0f};
-        vec_t lhs(lhs_values);
-        vec_t rhs(rhs_values);
+        cuda::std::array<uint16_t, 4> lhs_values{100, 200, 300, 400};
+        cuda::std::array<int8_t, 4>   rhs_values{-1, 2, -3, 4};
+        lhs_vec_t lhs(lhs_values);
+        rhs_vec_t rhs(rhs_values);
 
-        float result = cuda::simd::dot(lhs, rhs, 10.0f);
+        int result             = cuda::simd::dot(lhs, rhs);
+        int accumulated_result = cuda::simd::dot(lhs, rhs, 10);
 
-        assert(result == 80.0f);
+        assert(result == 1000);
+        assert(accumulated_result == 1010);
     }
 
     int main()

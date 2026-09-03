@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/std/__type_traits/common_type.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -76,11 +78,11 @@ struct __dot_operation
 //! @param[in] __rhs The right-hand side input vector.
 //! @param[in] __init The initial accumulator value.
 //! @return The accumulator plus the dot product of the input vectors.
-template <typename _Tp, typename _Up, typename _Abi, typename _AccumT>
+template <typename _Tp, typename _Up, typename _Abi, typename _AccumT = ::cuda::std::common_type_t<_Tp, _Up>>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _AccumT
 dot(const ::cuda::std::simd::basic_vec<_Tp, _Abi>& __lhs,
     const ::cuda::std::simd::basic_vec<_Up, _Abi>& __rhs,
-    const _AccumT __init) noexcept
+    const _AccumT __init = {}) noexcept
 {
 #if _CCCL_HAS_SIMD_IDOT()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT

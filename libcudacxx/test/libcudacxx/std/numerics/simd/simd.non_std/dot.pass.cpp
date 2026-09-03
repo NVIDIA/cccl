@@ -10,9 +10,9 @@
 
 // <cuda/simd>
 
-// template<class T, class U, class Abi, class AccT>
+// template<class T, class U, class Abi, class AccT = common_type_t<T, U>>
 //   constexpr AccT cuda::simd::dot(
-//     const basic_vec<T, Abi>& lhs, const basic_vec<U, Abi>& rhs, AccT acc) noexcept;
+//     const basic_vec<T, Abi>& lhs, const basic_vec<U, Abi>& rhs, AccT acc = {}) noexcept;
 
 #include <cuda/simd>
 #include <cuda/std/array>
@@ -58,17 +58,23 @@ scalar_dot(const cuda::std::array<T, N>& lhs_values, const cuda::std::array<U, N
 template <typename T, typename U, typename AccT, int N>
 TEST_FUNC constexpr void test_values(cuda::std::array<T, N> lhs_values, cuda::std::array<U, N> rhs_values, AccT acc)
 {
-  using LhsVec = simd::basic_vec<T, simd::fixed_size<N>>;
-  using RhsVec = simd::basic_vec<U, simd::fixed_size<N>>;
+  using LhsVec      = simd::basic_vec<T, simd::fixed_size<N>>;
+  using RhsVec      = simd::basic_vec<U, simd::fixed_size<N>>;
+  using DefaultAccT = cuda::std::common_type_t<T, U>;
   LhsVec lhs(lhs_values, simd::flag_convert);
   RhsVec rhs(rhs_values, simd::flag_convert);
 
   static_assert(cuda::std::is_same_v<decltype(cuda::simd::dot(lhs, rhs, acc)), AccT>);
   static_assert(noexcept(cuda::simd::dot(lhs, rhs, acc)));
+  static_assert(cuda::std::is_same_v<decltype(cuda::simd::dot(lhs, rhs)), DefaultAccT>);
+  static_assert(noexcept(cuda::simd::dot(lhs, rhs)));
 
-  AccT result   = cuda::simd::dot(lhs, rhs, acc);
-  AccT expected = scalar_dot<T, U, AccT, N>(lhs_values, rhs_values, acc);
+  AccT result                  = cuda::simd::dot(lhs, rhs, acc);
+  AccT expected                = scalar_dot<T, U, AccT, N>(lhs_values, rhs_values, acc);
+  DefaultAccT default_result   = cuda::simd::dot(lhs, rhs);
+  DefaultAccT default_expected = scalar_dot<T, U, DefaultAccT, N>(lhs_values, rhs_values, DefaultAccT{});
   assert(result == expected);
+  assert(default_result == default_expected);
 }
 
 template <typename T, typename U, typename AccT, int N>
