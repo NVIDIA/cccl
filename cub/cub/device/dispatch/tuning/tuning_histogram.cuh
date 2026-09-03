@@ -334,6 +334,13 @@ public:
           return HistogramPolicy{512, 11, 1, BLOCK_LOAD_STRIPED, LOAD_CA, true, SMEM, false, 2048};
         }
       }
+
+      if (num_channels == 4 && num_active_channels == 3 && counter_size == 4 && sample_is_primitive && !is_even
+          && sample_size == 1)
+      {
+        // ipt_9.tpb_128.rle_0.ws_0.mem_0.ld_1.laid_2.vec_2 1.115  1.088  1.592  2.162
+        return HistogramPolicy{128, 9, 1 << 2, BLOCK_LOAD_STRIPED, LOAD_LDG, false, GMEM, false, 2048};
+      }
     }
 
     if (cc >= ::cuda::compute_capability{10, 0})
