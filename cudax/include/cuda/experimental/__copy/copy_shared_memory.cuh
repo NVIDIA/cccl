@@ -362,7 +362,7 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   const auto __dst_inner_grid_size =
     ::cuda::ceil_div(__dst.__extents[__dst_inner_dim], static_cast<_ExtentT>(__tile_sizes[__dst_inner_dim]));
   const auto __grid_ratio = ::cuda::ceil_div(__dst_inner_grid_size, __src_inner_grid_size);
-  if (__grid_ratio <= /*heuristic=*/32)
+  if (constexpr auto __heuristic = 32; __grid_ratio <= __heuristic)
   {
     for (size_t __i = 1; __i < __rank; ++__i)
     {
