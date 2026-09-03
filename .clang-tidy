@@ -44,7 +44,6 @@ Checks:
   - '-misc-multiple-inheritance'
   - '-misc-anonymous-namespace-in-header'
   - '-misc-override-with-different-visibility'
-  - '-misc-predictable-rand'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
