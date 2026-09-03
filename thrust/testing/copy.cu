@@ -704,6 +704,9 @@ struct only_set_when_expected_it
     return *this;
   }
 
+  // Write-only test proxy: assignment records that the expected value was written.
+  // There is no meaningful object to return.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_DEVICE void operator=(long long value) const
   {
     if (value == expected)

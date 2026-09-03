@@ -2,8 +2,8 @@ name: "CCCL CI Failure Analysis"
 description: "Analyze failed jobs from a selected GitHub Actions workflow run."
 
 # Caller contract:
-# - Grant `actions: read` and `contents: read`; add `pull-requests: read` when
-#   `pr_number` is provided.
+# - Grant `actions: read`, `checks: read`, and `contents: read`; add
+#   `pull-requests: read` when `pr_number` is provided.
 # - Finish the relevant target jobs before invoking the action.
 # - Consume the runner-local `analysis_file` output before the job ends.
 inputs:

@@ -10,10 +10,10 @@ void _TestStableSortWithLargeKeys()
 
   thrust::host_vector<FixedVector<T, N>> h_keys(n);
 
+  const thrust::host_vector<T> values = unittest::random_integers<T>(n);
   for (size_t i = 0; i < n; i++)
   {
-    // XXX Use proper random number generation facility.
-    h_keys[i] = FixedVector<T, N>(rand());
+    h_keys[i] = FixedVector<T, N>(values[i]);
   }
 
   thrust::device_vector<FixedVector<T, N>> d_keys = h_keys;

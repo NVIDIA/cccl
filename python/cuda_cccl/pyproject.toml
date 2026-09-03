@@ -179,9 +179,47 @@ module = [
   "cuda.bindings.*",
   "cuda.core.*",
   "cuda.pathfinder.*",
+  # Third-party dependencies of benchmarks/scripts that are not installed in
+  # the pre-commit environment.
+  "colorama",
+  "compileiq.*",
+  "fpzip",
+  "matplotlib",
+  "matplotlib.*",
+  "pandas",
+  "pandas.*",
+  "psycopg2",
+  "psycopg2.*",
+  "pytest",
+  "scipy",
+  "scipy.*",
+  "seaborn",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+# The benchmark scripts are untyped; without this, mypy skips their function
+# bodies entirely and misses errors like calls with missing arguments.
+module = [
+  "analyze",
+  "compare",
+  "conftest",
+  "run",
+  "search",
+  "search_iq",
+  "sol",
+  "test_score",
+  "verify",
+  "cccl.*",
+]
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# TODO: verify.py predates the current Bench.do_run/BenchResult API and needs
+# a rewrite before it can be type-checked.
+module = ["verify"]
+ignore_errors = true
 
 [tool.ruff]
 extend = "../../pyproject.toml"

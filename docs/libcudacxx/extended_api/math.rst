@@ -7,6 +7,7 @@ Math
    :hidden:
    :maxdepth: 1
 
+   math/abs_diff
    math/ceil_div
    math/round_up
    math/round_down
@@ -28,6 +29,11 @@ Math
      - **Content**
      - **CCCL Availability**
      - **CUDA Toolkit Availability**
+
+   * - :ref:`abs_diff <libcudacxx-extended-api-math-abs-diff>`
+     - Absolute difference
+     - CCCL 3.6.0
+     - CUDA 13.6
 
    * - :ref:`ceil_div <libcudacxx-extended-api-math-ceil-div>`
      - Ceiling division
