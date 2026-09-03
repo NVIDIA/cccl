@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_topk.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
@@ -481,22 +482,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-    using key_in_t                             = it_value_t<KeyInputIteratorT>;
-    using value_in_t                           = it_value_t<ValueInputIteratorT>;
-    static constexpr bool keys_only            = ::cuda::std::is_same_v<value_in_t, NullType>;
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    log_dispatch("DeviceTopK", cc, active_policy);
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    using key_in_t                  = it_value_t<KeyInputIteratorT>;
+    using value_in_t                = it_value_t<ValueInputIteratorT>;
+    static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;
 
     // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long
     // long
@@ -607,6 +609,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             (long long) stream,
             items_per_thread,
             main_kernel_blocks_per_sm);
+#else // CUB_DEBUG_LOG
+    log("Invoking topk_kernel<<<%d, %d, 0, "
+        "%lld>>>(), %d items per thread, %d SM occupancy\n",
+        topk_grid_size,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread,
+        main_kernel_blocks_per_sm);
 #endif // CUB_DEBUG_LOG
 
     // Initialize address variables

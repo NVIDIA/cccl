@@ -35,6 +35,16 @@ Checks:
   # This is just noise
   - '-bugprone-signed-char-misuse'
   - '-bugprone-multi-level-implicit-pointer-conversion'
+  - 'misc-*'
+  - '-misc-const-correctness'
+  - '-misc-use-anonymous-namespace'
+  - '-misc-use-internal-linkage'
+  - '-misc-redundant-expression'
+  - '-misc-throw-by-value-catch-by-reference'
+  - '-misc-multiple-inheritance'
+  - '-misc-anonymous-namespace-in-header'
+  - '-misc-override-with-different-visibility'
+  - '-misc-predictable-rand'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -91,6 +101,17 @@ Checks:
   - '-bugprone-implicit-widening-of-multiplication-result'
   - '-misc-include-cleaner'
   - '-misc-header-include-cycle'
+  # Covered by -Wunused-parameter, which is the better tool here. clang-tidy analyzes a
+  # single target branch, so it reports parameters that are used only inside NV_IF_TARGET,
+  # NV_IF_ELSE_TARGET, or inline asm operands as unused. The compiler sees the branch it
+  # actually compiles and does not.
+  - '-misc-unused-parameters'
+  # This check fires whenever `const` is applied to a typedef that names a pointer type,
+  # claiming the author meant `const T*`. Every hit in CCCL is an opaque handle
+  # (cudaStream_t, ncclComm_t, stf_task_handle, ...) where a const *pointer* is exactly
+  # what was wanted: the handle is then passed to C APIs that take it non-const, so the
+  # suggested reading would not compile.
+  - '-misc-misplaced-const'
   - '-modernize-macro-to-enum'
   - '-cppcoreguidelines-macro-to-enum'
   - '-misc-no-recursion'
@@ -208,7 +229,6 @@ Checks:
   # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
   - '-cppcoreguidelines-narrowing-conversions'
-  # Covered by misc-unconventional-assign-operator
   - '-cppcoreguidelines-c-copy-assignment-signature'
   # Covered by performance-noexcept-swap
   - '-cppcoreguidelines-noexcept-swap'

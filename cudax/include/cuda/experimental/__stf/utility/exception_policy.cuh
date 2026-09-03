@@ -566,6 +566,7 @@ private:
                     "translate<From, To>: To must be constructible from const From&, from "
                     "From::what(), or default-constructible");
     }
+    _CCCL_UNREACHABLE();
   }
 };
 

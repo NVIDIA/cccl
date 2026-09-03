@@ -11,7 +11,7 @@
 // clang-format off
 // %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope device=tsd,GPU,non_block
 // %PARAM% TYPE,SASS_TYPE type i8=int8_t,.S32:u8=uint8_t,:i16=int16_t,.S32:u16=uint16_t,
-// %PARAM% OP,SASS_OP op add=fetch_add,ADD:sub=fetch_sub,ADD:min=fetch_min,MIN:max=fetch_max,MAX
+// %PARAM% OP,SASS_OP,FILECHECK_PREFIX_OP op add=fetch_add,ADD,add_sub:sub=fetch_sub,ADD,add_sub:min=fetch_min,MIN,minmax:max=fetch_max,MAX,minmax
 // %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,,non_seq_cst,no_acquire,no_membar:acquire=moa,,non_seq_cst,acquire,no_membar:release=more,ALL,non_seq_cst,no_acquire,membar:acq_rel=moar,ALL,non_seq_cst,acquire,membar:seq_cst=mosc,SC,seq_cst,acquire,membar
 // %FILECHECK% PREFIX_COMBINE non_block,seq_cst
 // %FILECHECK% PREFIX_COMBINE non_block,acquire
@@ -28,7 +28,7 @@ extern "C" __device__ auto atomic_codegen_test(volatile cuda::atomic<TYPE, SCOPE
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.[[SASS_OP]][[SASS_TYPE]]{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.{{ADD|MIN|MAX}}{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
@@ -37,14 +37,14 @@ extern "C" __device__ auto atomic_codegen_test(volatile cuda::atomic<TYPE, SCOPE
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.[[SASS_OP]][[SASS_TYPE]]{{.*}}
-; BLOCK: {{.*}}ATOM.E.[[SASS_OP]][[SASS_TYPE]].STRONG.{{CTA|SM}}{{.*}}
-; NON_BLOCK: {{.*}}ATOM.E.[[SASS_OP]][[SASS_TYPE]].STRONG.[[SASS_SCOPE]]{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.{{ADD|MIN|MAX}}{{.*}}
+; ADD_SUB: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.[[SASS_SCOPE]]{{.*}}
+; MINMAX: {{.*}}ATOM.E.[[SASS_OP]][[SASS_TYPE]].STRONG.[[SASS_SCOPE]]{{.*}}
 ; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.[[SASS_OP]][[SASS_TYPE]]{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.{{ADD|MIN|MAX}}{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
