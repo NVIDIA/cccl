@@ -43,8 +43,8 @@ typedef enum cccl_device_copy_layout_kind_t
   // to cccl_device_copy, they must match the implied layout after degenerate
   // axes are ignored.
   CCCL_DEVICE_COPY_LAYOUT_LEFT = 1,
-  // cuda::std::layout_stride. Strides are in elements and must be non-negative.
-  // Reserved for a later implementation.
+  // cuda::std::layout_stride. Runtime strides are in elements and must be
+  // positive.
   CCCL_DEVICE_COPY_LAYOUT_STRIDE = 2,
   // cuda::layout_stride_relaxed. Strides are in elements and may be negative.
   CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED = 3,
@@ -55,7 +55,8 @@ typedef struct cccl_device_copy_view_build_t
   cccl_device_copy_layout_kind_t layout;
   // Array of rank stride metadata entries for strided layouts. Ignored for
   // layout_left/layout_right and may be NULL in that case. Current implementation
-  // requires all layout_stride_relaxed stride metadata entries to be runtime.
+  // requires all layout_stride/layout_stride_relaxed stride metadata entries to
+  // be runtime.
   const cccl_device_copy_axis_metadata_t* strides;
 } cccl_device_copy_view_build_t;
 

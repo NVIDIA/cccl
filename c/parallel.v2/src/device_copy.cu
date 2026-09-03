@@ -71,14 +71,24 @@ bool is_contiguous_layout(cccl_device_copy_layout_kind_t layout)
   return layout == CCCL_DEVICE_COPY_LAYOUT_RIGHT || layout == CCCL_DEVICE_COPY_LAYOUT_LEFT;
 }
 
-bool is_relaxed_layout(cccl_device_copy_layout_kind_t layout)
+bool is_layout_stride_relaxed(cccl_device_copy_layout_kind_t layout)
 {
   return layout == CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED;
 }
 
+bool is_layout_stride(cccl_device_copy_layout_kind_t layout)
+{
+  return layout == CCCL_DEVICE_COPY_LAYOUT_STRIDE;
+}
+
+bool is_strided_layout(cccl_device_copy_layout_kind_t layout)
+{
+  return is_layout_stride(layout) || is_layout_stride_relaxed(layout);
+}
+
 bool is_supported_layout(cccl_device_copy_layout_kind_t layout)
 {
-  return is_contiguous_layout(layout) || is_relaxed_layout(layout);
+  return is_contiguous_layout(layout) || is_strided_layout(layout);
 }
 
 bool all_runtime_metadata(const cccl_device_copy_axis_metadata_t* metadata, size_t rank)
@@ -158,7 +168,7 @@ retain_axis_metadata(const cccl_device_copy_axis_metadata_t* metadata, size_t ra
 std::unique_ptr<cccl_device_copy_axis_metadata_t[]>
 retain_stride_metadata(cccl_device_copy_view_build_t view, size_t rank)
 {
-  if (!is_relaxed_layout(view.layout))
+  if (!is_strided_layout(view.layout))
   {
     return {};
   }
@@ -173,7 +183,7 @@ bool validate_view_build(cccl_device_copy_view_build_t view, size_t rank)
     return false;
   }
 
-  if (is_relaxed_layout(view.layout))
+  if (is_strided_layout(view.layout))
   {
     return all_runtime_metadata(view.strides, rank);
   }
@@ -259,6 +269,24 @@ bool strided_span_is_representable(size_t rank, const int64_t* shape, const int6
 
   return negative_offset <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max())
       && negative_offset <= std::numeric_limits<uint64_t>::max() - positive_span;
+}
+
+bool layout_stride_strides_are_valid(size_t rank, const int64_t* shape, const int64_t* strides)
+{
+  if (strides == nullptr)
+  {
+    return false;
+  }
+
+  for (size_t axis = 0; axis < rank; ++axis)
+  {
+    if (strides[axis] <= 0)
+    {
+      return false;
+    }
+  }
+
+  return strided_span_is_representable(rank, shape, strides);
 }
 
 bool contiguous_layout_strides_are_consistent(
@@ -406,7 +434,7 @@ std::string make_mdspan_view_source(
   src += "  " + pointer_decl + std::string(view_name) + "_effective =\n";
   src += "    " + pointer_cast + char_cast + data_name + ") + " + byte_offset_name + ");\n";
 
-  if (is_relaxed_layout(layout))
+  if (is_layout_stride_relaxed(layout))
   {
     src += "  const runtime_strides_type " + std::string(view_name) + "_strides{"
          + casted_runtime_values(strides_name, rank, "offset_type") + "};\n";
@@ -421,6 +449,17 @@ std::string make_mdspan_view_source(
     src += "  using " + std::string(view_name) + "_mapping_type = " + mdspan_type_name + "::mapping_type;\n";
     src += "  const " + std::string(mdspan_type_name) + " " + view_name + "{" + view_name + "_base, " + view_name
          + "_mapping_type{extents, " + view_name + "_strides, " + view_name + "_offset}};\n";
+  }
+  else if (is_layout_stride(layout))
+  {
+    src += "  const runtime_layout_stride_type " + std::string(view_name) + "_strides{"
+         + casted_runtime_values(strides_name, rank, "index_type") + "};\n";
+    src += "  using " + std::string(mdspan_type_name) + "_layout_type = ::cuda::std::layout_stride;\n";
+    src += "  using " + std::string(mdspan_type_name) + " = ::cuda::std::mdspan<" + value_type_name + ", extents_type, "
+         + mdspan_type_name + "_layout_type>;\n";
+    src += "  using " + std::string(view_name) + "_mapping_type = " + mdspan_type_name + "::mapping_type;\n";
+    src += "  const " + std::string(mdspan_type_name) + " " + view_name + "{" + view_name + "_effective, " + view_name
+         + "_mapping_type{extents, " + view_name + "_strides}};\n";
   }
   else
   {
@@ -443,6 +482,7 @@ std::string make_device_copy_source(cccl_device_copy_build_spec_t spec)
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__mdspan/layout_stride_relaxed.h>
 #include <cuda/__mdspan/strides.h>
+#include <cuda/std/array>
 #include <cuda/std/mdspan>
 #include <cuda/stream_ref>
 #include <cub/device/device_copy.cuh>
@@ -582,11 +622,11 @@ extern "C" _CCCL_VISIBILITY_EXPORT int cccl_jit_device_copy(
   {
     src += "  (void) source_shape;\n";
   }
-  if (!is_relaxed_layout(spec.source.layout))
+  if (!is_strided_layout(spec.source.layout))
   {
     src += "  (void) source_strides;\n";
   }
-  if (!is_relaxed_layout(spec.destination.layout))
+  if (!is_strided_layout(spec.destination.layout))
   {
     src += "  (void) destination_strides;\n";
   }
@@ -598,6 +638,7 @@ extern "C" _CCCL_VISIBILITY_EXPORT int cccl_jit_device_copy(
        + cccl::detail::device_copy_codegen::extents_template_arguments(spec.shape, rank) + ">;\n";
   src += "  using runtime_strides_type = ::cuda::strides<offset_type, " + dynamic_stride_template_arguments(rank)
        + ">;\n";
+  src += "  using runtime_layout_stride_type = ::cuda::std::array<index_type, " + std::to_string(rank) + ">;\n";
   src += "\n";
   src += "  const extents_type extents{"
        + cccl::detail::device_copy_codegen::dynamic_extent_constructor_arguments(
@@ -763,12 +804,22 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (is_relaxed_layout(build.source_layout)
+  if (is_layout_stride(build.source_layout)
+      && !layout_stride_strides_are_valid(build.rank, source.shape, source.strides))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (is_layout_stride(build.destination_layout)
+      && !layout_stride_strides_are_valid(build.rank, destination.shape, destination.strides))
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (is_layout_stride_relaxed(build.source_layout)
       && (source.strides == nullptr || !strided_span_is_representable(build.rank, source.shape, source.strides)))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  if (is_relaxed_layout(build.destination_layout)
+  if (is_layout_stride_relaxed(build.destination_layout)
       && (destination.strides == nullptr
           || !strided_span_is_representable(build.rank, destination.shape, destination.strides)))
   {

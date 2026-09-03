@@ -103,6 +103,82 @@ std::array<cccl_device_copy_axis_metadata_t, Rank> static_axis_metadata(const st
 }
 } // namespace
 
+CATCH_TEST_CASE("C v2 DeviceCopy can copy runtime layout_stride views", "[device_copy][hostjit]")
+{
+  constexpr std::size_t rank = 2;
+  constexpr std::array<int64_t, rank> shape{3, 4};
+  constexpr std::array<int64_t, rank> source_strides{6, 1};
+  constexpr std::array<int64_t, rank> destination_strides{1, 3};
+  constexpr std::array<int64_t, rank> invalid_strides{0, 1};
+
+  const auto shape_metadata  = runtime_axis_metadata<rank>();
+  const auto stride_metadata = runtime_axis_metadata<rank>();
+
+  std::vector<int> source_host(18, -1);
+  std::vector<int> expected(12, 0);
+  for (int64_t i = 0; i < shape[0]; ++i)
+  {
+    for (int64_t j = 0; j < shape[1]; ++j)
+    {
+      const int value = static_cast<int>(10 * i + j);
+      source_host[static_cast<std::size_t>(i * source_strides[0] + j * source_strides[1])]        = value;
+      expected[static_cast<std::size_t>(i * destination_strides[0] + j * destination_strides[1])] = value;
+    }
+  }
+
+  device_buffer<int> d_source(source_host.size());
+  device_buffer<int> d_destination(expected.size());
+  std::vector<int> destination_host(expected.size(), 0);
+
+  CATCH_REQUIRE(cudaMemcpy(d_source.get(), source_host.data(), source_host.size() * sizeof(int), cudaMemcpyHostToDevice)
+                == cudaSuccess);
+  CATCH_REQUIRE(cudaMemset(d_destination.get(), 0, expected.size() * sizeof(int)) == cudaSuccess);
+
+  int device = 0;
+  CATCH_REQUIRE(cudaGetDevice(&device) == cudaSuccess);
+  cudaDeviceProp properties{};
+  CATCH_REQUIRE(cudaGetDeviceProperties(&properties, device) == cudaSuccess);
+
+  cccl_type_info value_type{};
+  value_type.size      = sizeof(int);
+  value_type.alignment = alignof(int);
+
+  const cccl_device_copy_build_spec_t spec{
+    value_type,
+    rank,
+    shape_metadata.data(),
+    {CCCL_DEVICE_COPY_LAYOUT_STRIDE, stride_metadata.data()},
+    {CCCL_DEVICE_COPY_LAYOUT_STRIDE, stride_metadata.data()}};
+
+  device_copy_build_guard device_copy;
+  CATCH_REQUIRE(
+    cccl_device_copy_build_ex(
+      &device_copy.build,
+      spec,
+      properties.major,
+      properties.minor,
+      TEST_CUB_PATH,
+      TEST_THRUST_PATH,
+      TEST_LIBCUDACXX_PATH,
+      TEST_CTK_PATH,
+      nullptr)
+    == CUDA_SUCCESS);
+
+  const cccl_device_copy_source_view_t source{d_source.get(), 0, shape.data(), source_strides.data()};
+  const cccl_device_copy_destination_view_t destination{
+    d_destination.get(), 0, shape.data(), destination_strides.data()};
+
+  CATCH_REQUIRE(cccl_device_copy(device_copy.build, source, destination, nullptr) == CUDA_SUCCESS);
+  CATCH_REQUIRE(
+    cudaMemcpy(
+      destination_host.data(), d_destination.get(), destination_host.size() * sizeof(int), cudaMemcpyDeviceToHost)
+    == cudaSuccess);
+  CATCH_REQUIRE(destination_host == expected);
+
+  const cccl_device_copy_source_view_t invalid_source{d_source.get(), 0, shape.data(), invalid_strides.data()};
+  CATCH_REQUIRE(cccl_device_copy(device_copy.build, invalid_source, destination, nullptr) == CUDA_ERROR_INVALID_VALUE);
+}
+
 CATCH_TEST_CASE("C v2 DeviceCopy can copy runtime layout_stride_relaxed views", "[device_copy][hostjit]")
 {
   constexpr std::size_t rank = 3;
