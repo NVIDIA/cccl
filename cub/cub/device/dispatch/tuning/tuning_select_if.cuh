@@ -2760,7 +2760,7 @@ private:
   // partition::if
   // tunings from cub/benchmarks/bench/partition/if.cu. These are raw measured values and must not be passed through
   // nominal_4B_items_to_items.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_partition_tuning() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_partition_tuning() const noexcept
     -> ::cuda::std::optional<SelectLookbackPolicy>
   {
     if (distinct_partitions || offset_size_bytes != 8)
@@ -2870,7 +2870,7 @@ private:
 
       if (!has_flags && keep_rejects)
       {
-        if (auto policy_opt = get_sm107_partition_tuning())
+        if (const auto policy_opt = get_sm107_partition_tuning())
         {
           return *policy_opt;
         }
