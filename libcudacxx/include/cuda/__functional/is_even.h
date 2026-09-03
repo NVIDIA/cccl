@@ -31,7 +31,7 @@ struct __is_even
   template <class _Tp>
   [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __value) const noexcept
   {
-    return (static_cast<long long>(__value) & 1) == 0;
+    return __value % 2 == 0;
   }
 };
 
