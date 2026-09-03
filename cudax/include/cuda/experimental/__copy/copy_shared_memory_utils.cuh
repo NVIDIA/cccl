@@ -24,10 +24,8 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__cmath/ceil_div.h>
-#  include <cuda/__device/all_devices.h>
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
-#  include <cuda/__driver/driver_api.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/array>
@@ -92,15 +90,6 @@ __num_contiguous_dimensions(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank
     ++__count;
   }
   return __count;
-}
-
-//! @brief Return a device_ref for the current CUDA device.
-//!
-//! @return Device reference for the active CUDA context's device
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::device_ref __current_device() noexcept
-{
-  const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
-  return ::cuda::devices[__dev_id];
 }
 
 //! Maximum extent of a single tile dimension, set to the warp size so that the innermost tile dimension maps to a
@@ -350,6 +339,7 @@ template <typename _TpIn,
 //!
 //! @param[in] __src Source raw tensor descriptor
 //! @param[in] __dst Destination raw tensor descriptor
+//! @param[in] __device Device on which the copy executes
 //! @return Shared-memory tiling decision and layout permutations
 template <typename _TpIn,
           typename _ExtentT,
@@ -358,13 +348,13 @@ template <typename _TpIn,
           typename _StrideTOut,
           typename _TpDst,
           ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API __shared_mem_tiling_result<_MaxRank>
-__find_shared_mem_tiling(const __raw_tensor<_ExtentT, _StrideTIn, _TpSrc, _MaxRank>& __src,
-                         const __raw_tensor<_ExtentT, _StrideTOut, _TpDst, _MaxRank>& __dst) noexcept
+[[nodiscard]] _CCCL_HOST_API __shared_mem_tiling_result<_MaxRank> __find_shared_mem_tiling(
+  const __raw_tensor<_ExtentT, _StrideTIn, _TpSrc, _MaxRank>& __src,
+  const __raw_tensor<_ExtentT, _StrideTOut, _TpDst, _MaxRank>& __dst,
+  ::cuda::device_ref __device) noexcept
 {
-  const auto __current_dev          = ::cuda::experimental::__current_device();
-  const auto __max_shared_mem_bytes = __current_dev.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
-  const auto __num_sms              = __current_dev.attribute<::cudaDevAttrMultiProcessorCount>();
+  const auto __max_shared_mem_bytes = __device.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
+  const auto __num_sms              = __device.attribute<::cudaDevAttrMultiProcessorCount>();
   return ::cuda::experimental::__find_shared_mem_tiling_with_limits<_TpIn>(
     __src, __dst, static_cast<::cuda::std::size_t>(__max_shared_mem_bytes), static_cast<::cuda::std::size_t>(__num_sms));
 }
@@ -373,6 +363,7 @@ __find_shared_mem_tiling(const __raw_tensor<_ExtentT, _StrideTIn, _TpSrc, _MaxRa
 //!
 //! @param[in] __src Source raw tensor descriptor
 //! @param[in] __dst Destination raw tensor descriptor
+//! @param[in] __device Device on which the copy executes
 //! @return true if the shared-memory kernel should be used
 template <typename _ExtentT,
           typename _StrideTIn,
@@ -380,11 +371,12 @@ template <typename _ExtentT,
           typename _TpIn,
           typename _TpOut,
           ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API bool
-__use_shared_mem_kernel(const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _MaxRank>& __src,
-                        const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst) noexcept
+[[nodiscard]] _CCCL_HOST_API bool __use_shared_mem_kernel(
+  const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _MaxRank>& __src,
+  const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst,
+  ::cuda::device_ref __device) noexcept
 {
-  return ::cuda::experimental::__find_shared_mem_tiling<_TpIn>(__src, __dst).__is_valid;
+  return ::cuda::experimental::__find_shared_mem_tiling<_TpIn>(__src, __dst, __device).__is_valid;
 }
 } // namespace cuda::experimental
 

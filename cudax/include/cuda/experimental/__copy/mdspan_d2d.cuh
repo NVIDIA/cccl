@@ -112,7 +112,7 @@ _CCCL_HOST_API void __copy_simplified_rank(
       }
     }
 
-    if (::cuda::experimental::__use_shared_mem_kernel(__src_narrow, __dst_narrow))
+    if (::cuda::experimental::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
     {
       ::cuda::experimental::__launch_copy_shared_mem_kernel(
         __src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
@@ -311,14 +311,14 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         {
           const auto __src_rank2 = cudax::__narrow_raw_tensor_rank<2>(__src_simplified);
           const auto __dst_rank2 = cudax::__narrow_raw_tensor_rank<2>(__dst_simplified);
-          if (cudax::__use_shared_mem_kernel(__src_rank2, __dst_rank2))
+          if (cudax::__use_shared_mem_kernel(__src_rank2, __dst_rank2, __stream.device()))
           {
             cudax::__launch_copy_shared_mem_kernel(
               __src_rank2, __dst_rank2, __stream, __src.accessor(), __dst.accessor());
             return true;
           }
         }
-        if (cudax::__use_shared_mem_kernel(__src_simplified, __dst_simplified))
+        if (cudax::__use_shared_mem_kernel(__src_simplified, __dst_simplified, __stream.device()))
         {
           cudax::__launch_copy_shared_mem_kernel(
             __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
