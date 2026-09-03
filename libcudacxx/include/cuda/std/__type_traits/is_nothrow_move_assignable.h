@@ -32,9 +32,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_assignable
-    : public integral_constant<
-        bool,
-        _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>)>
+    : bool_constant<_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>)>
 {};
 
 template <class _Tp>
@@ -44,12 +42,13 @@ inline constexpr bool is_nothrow_move_assignable_v =
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_move_assignable : public is_nothrow_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_assignable
+    : bool_constant<is_nothrow_assignable_v<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>>
 {};
 
 template <class _Tp>
-inline constexpr bool is_nothrow_move_assignable_v = is_nothrow_move_assignable<_Tp>::value;
+inline constexpr bool is_nothrow_move_assignable_v =
+  is_nothrow_assignable_v<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>;
 
 #endif
 

@@ -125,6 +125,7 @@ set(
   stress/task_bench.cu
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
+  utility/exception_policy_c_headers.cu
   utility/timing_with_fences.cu
   utility/source_location_map.cu
 )
@@ -247,7 +248,7 @@ set(
   cuda/experimental/__stf/utility/handle.cuh
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
-  cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/exception_policy.cuh
   cuda/experimental/__stf/utility/source_location.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh

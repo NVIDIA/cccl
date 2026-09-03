@@ -53,7 +53,7 @@ VSCode offers the most convenient experience with Dev Containers due to its tigh
 
 7. Once initialized, the local `cccl/` directory is mirrored into the container to ensure any changes are persistent.
 
-8. Done! See the [contributing guide](../CONTRIBUTING.md#building-and-testing) for instructions on how to build and run tests.
+8. Done! See the [contributing guide](https://nvidia.github.io/cccl/unstable/contributors/index.html) for instructions on how to build and run tests.
 
 ### (Optional) Authenticate with GitHub for `sccache` <a name="sccache"></a>
 
@@ -190,7 +190,7 @@ $ nvidia-smi
     ```
     See `./.devcontainer/launch.sh --help` for more information.
 
-2. Done. See the [contributing guide](../CONTRIBUTING.md#building-and-testing) for instructions on how to build and run tests.
+2. Done. See the [contributing guide](https://nvidia.github.io/cccl/unstable/contributors/index.html) for instructions on how to build and run tests.
 
 ## Available Environments
 

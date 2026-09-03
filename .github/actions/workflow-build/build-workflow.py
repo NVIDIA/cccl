@@ -278,7 +278,37 @@ def get_gpu(gpu_string):
     if "testing" not in result:
         result["testing"] = False
 
+    if "gpu_count" not in result:
+        result["gpu_count"] = 1
+
+    # runner_id defaults to the GPU key. Used in runner label templates as {gpu_id}.
+    if "runner_id" not in result:
+        result["runner_id"] = gpu_string
+
     return result
+
+
+@static_result
+def get_runner_label_config():
+    """Return the runner label templates from matrix.yaml, with defaults."""
+    runner_labels = matrix_yaml.get("runner_labels", {})
+    return {
+        "cpu": runner_labels.get("cpu", "{os}-{cpu}-cpu16"),
+        "gpu": runner_labels.get(
+            "gpu", "{os}-{cpu}-gpu-{gpu_runner}-{gpu_count}{gpu_testing}"
+        ),
+    }
+
+
+@static_result
+def get_devcontainer_image_config():
+    """Return devcontainer image config from matrix.yaml, with defaults."""
+    return {
+        "image": matrix_yaml.get("devcontainer_image", "rapidsai/devcontainers"),
+        "includes_version": matrix_yaml.get(
+            "devcontainer_image_includes_version", True
+        ),
+    }
 
 
 @memoize_result
@@ -495,14 +525,24 @@ def generate_dispatch_job_runner(matrix_job, job_type):
     runner_os = "windows" if is_windows(matrix_job) else "linux"
     cpu = matrix_job["cpu"]
 
+    runner_config = get_runner_label_config()
+
     job_info = get_job_type_info(job_type)
     if not job_info["gpu"]:
-        return f"{runner_os}-{cpu}-cpu16"
+        return runner_config["cpu"].format(os=runner_os, cpu=cpu)
 
     gpu = get_gpu(matrix_job["gpu"])
-    suffix = "-testing" if gpu["testing"] else ""
+    gpu_testing = "-testing" if gpu["testing"] else ""
 
-    return f"{runner_os}-{cpu}-gpu-{gpu['runner']}{suffix}"
+    return runner_config["gpu"].format(
+        os=runner_os,
+        cpu=cpu,
+        gpu_id=gpu["runner_id"],
+        gpu_runner=gpu["runner"],
+        gpu_count=gpu["gpu_count"],
+        gpu_name=gpu["name"],
+        gpu_testing=gpu_testing,
+    )
 
 
 def generate_dispatch_job_ctk_version(matrix_job, job_type):
@@ -518,6 +558,12 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
 
 def generate_dispatch_job_image(matrix_job, job_type):
     devcontainer_version = matrix_yaml["devcontainer_version"]
+    image_config = get_devcontainer_image_config()
+    image_repo = image_config["image"]
+    version_prefix = (
+        f"{devcontainer_version}-" if image_config["includes_version"] else ""
+    )
+
     ctk = matrix_job["ctk"]
     host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
 
@@ -525,12 +571,12 @@ def generate_dispatch_job_image(matrix_job, job_type):
     ctk_suffix = "ext" if job_info["cuda_ext"] else ""
 
     if is_windows(matrix_job):
-        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}{ctk_suffix}-{host_compiler}"
+        return f"{image_repo}:{version_prefix}cuda{ctk}{ctk_suffix}-{host_compiler}"
 
     if is_nvhpc(matrix_job):
-        return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}"
+        return f"{image_repo}:{version_prefix}cpp-{host_compiler}"
 
-    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
+    return f"{image_repo}:{version_prefix}cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
 def generate_dispatch_job_environment(matrix_job, job_type):
@@ -635,6 +681,12 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
 
 def generate_dispatch_job_json(matrix_job, job_type):
+    job_info = get_job_type_info(job_type)
+    gpu_count = 0
+    if job_info["gpu"]:
+        gpu = get_gpu(matrix_job["gpu"])
+        gpu_count = gpu["gpu_count"]
+
     return {
         "cuda": generate_dispatch_job_ctk_version(matrix_job, job_type),
         "host": generate_dispatch_job_host_compiler(matrix_job, job_type),
@@ -644,6 +696,8 @@ def generate_dispatch_job_json(matrix_job, job_type):
         "environment": generate_dispatch_job_environment(matrix_job, job_type),
         "command": generate_dispatch_job_command(matrix_job, job_type),
         "origin": generate_dispatch_job_origin(matrix_job, job_type),
+        "os": "windows" if is_windows(matrix_job) else "linux",
+        "gpu_count": gpu_count,
     }
 
 
