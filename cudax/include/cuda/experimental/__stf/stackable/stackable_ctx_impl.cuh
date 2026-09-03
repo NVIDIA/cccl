@@ -685,8 +685,9 @@ public:
         cuda_try(cudaGraphGetEdges(graph, nullptr, nullptr, &nedges));
 #endif
 
-        auto [cached_exec, cache_hit] = ctx.async_resources().cached_graphs_query(nnodes, nedges, graph);
-        exec_graph_                   = mv(cached_exec);
+        auto [cached_exec,
+              cache_hit] = ctx.async_resources().cached_graphs_query(nnodes, nedges, graph, support_stream);
+        exec_graph_      = mv(cached_exec);
 
         auto* cache_stat = ctx.graph_get_cache_stat();
         if (cache_stat)
