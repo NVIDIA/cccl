@@ -123,7 +123,7 @@ on:
 jobs:
   run:
     name: "Bench: ${{inputs.gpu}} ${{inputs.arch}} ${{inputs.launch_args}}"
-    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    runs-on: linux-${{ inputs.gpu == 'gb300' && 'arm64' || 'amd64' }}-gpu-${{ inputs.gpu }}-latest-1
     permissions:
       id-token: write
       contents: read
