@@ -451,6 +451,46 @@ workflows:
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
 devcontainer_version: '26.10'
 
+# Devcontainer image configuration.
+#
+# devcontainer_image:
+#   The image repo (registry/organization/name) used as the prefix for all
+#   generated devcontainer image references. Override this to point at an
+#   internal or alternative registry.
+#   Default: 'rapidsai/devcontainers'
+#
+# devcontainer_image_includes_version:
+#   When true, the devcontainer_version is prepended to the image tag
+#   (e.g. 'rapidsai/devcontainers:26.10-cpp-gcc14-cuda12.9').
+#   When false, the version is omitted
+#   (e.g. 'rapidsai/devcontainers:cpp-gcc14-cuda12.9').
+#   Default: true
+devcontainer_image: 'rapidsai/devcontainers'
+devcontainer_image_includes_version: true
+
+# Runner label templates.
+#
+# These templates control how GitHub Actions runner labels are generated for
+# CPU-only and GPU jobs. They support {placeholder} substitution.
+#
+# CPU template variables:
+#   {os}   - 'linux' or 'windows'
+#   {cpu}  - 'amd64' or 'arm64'
+#
+# GPU template variables (in addition to the CPU variables):
+#   {gpu_id}      - The GPU identifier (the key in `gpus`, or `runner_id` if set)
+#   {gpu_runner}  - The base runner name from the `gpus` map (e.g. 't4-latest')
+#   {gpu_count}   - Number of GPUs on the runner (e.g. 1 or 2). Authoritative for
+#                   the count suffix in the default template.
+#   {gpu_name}    - The GPU display name (e.g. 'T4', 'H100 2-GPU')
+#   {gpu_testing} - '-testing' if the GPU is in a testing pool, '' otherwise
+#
+# Default cpu: '{os}-{cpu}-cpu16'
+# Default gpu: '{os}-{cpu}-gpu-{gpu_runner}-{gpu_count}{gpu_testing}'
+runner_labels:
+  cpu: '{os}-{cpu}-cpu16'
+  gpu: '{os}-{cpu}-gpu-{gpu_runner}-{gpu_count}{gpu_testing}'
+
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 15
 cuda99_clang_version: 21
@@ -724,17 +764,23 @@ projects:
 # name -> Display name for generated job labels.
 # runner -> GPU/driver/count segment of the GHA runner label.
 # testing -> Runner with GPU is in a nv-gh-runners testing pool.
+# gpu_count -> Number of GPUs on the runner. Used by runner label templates and
+#              the job-execution actions to decide whether to pass --gpus all.
+# runner_id -> Override the GPU identifier used in runner label templates.
+#              Defaults to the GPU key. Useful when the key includes a suffix
+#              (e.g. 'h100_2gpu') but the runner label should use the base name
+#              (e.g. 'h100').
 gpus:
-  t4:         { name: 'T4',          sm: 75,  runner: 't4-latest-1'         } # 16 GB,  10 runners
-  rtx2080:    { name: 'RTX2080',     sm: 75,  runner: 'rtx2080-latest-1'    } #  8 GB,  12 runners
-  rtxa6000:   { name: 'RTXA6000',    sm: 86,  runner: 'rtxa6000-latest-1'   } # 48 GB,  12 runners
-  l4:         { name: 'L4',          sm: 89,  runner: 'l4-latest-1'         } # 24 GB,  48 runners
-  rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest-1'    } # 24 GB,  10 runners
-  h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest-1'       } # 80 GB,  16 runners
-  h100_2gpu:  { name: 'H100 2-GPU',  sm: 90,  runner: 'h100-latest-2'       } # 2 x 80 GB
+  t4:         { name: 'T4',          sm: 75,  runner: 't4-latest',         gpu_count: 1 } # 16 GB,  10 runners
+  rtx2080:    { name: 'RTX2080',     sm: 75,  runner: 'rtx2080-latest',    gpu_count: 1 } #  8 GB,  12 runners
+  rtxa6000:   { name: 'RTXA6000',    sm: 86,  runner: 'rtxa6000-latest',   gpu_count: 1 } # 48 GB,  12 runners
+  l4:         { name: 'L4',          sm: 89,  runner: 'l4-latest',         gpu_count: 1 } # 24 GB,  48 runners
+  rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest',    gpu_count: 1 } # 24 GB,  10 runners
+  h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest',       gpu_count: 1 } # 80 GB,  16 runners
+  h100_2gpu:  { name: 'H100 2-GPU',  sm: 90,  runner: 'h100-latest',       gpu_count: 2, runner_id: 'h100' } # 2 x 80 GB
   # Very small number of runners on loan from cuda-python while we wait for our order to arrive.
   # Limit jobs on these:
-  rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest-1' }
+  rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest', gpu_count: 1 }
 
 # Tags are used to define a `matrix job` in the workflow section.
 #
