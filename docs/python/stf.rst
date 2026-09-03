@@ -369,10 +369,22 @@ use it. Partitioning the outermost dimension gives each device contiguous row
 bands and avoids interleaving owners within the allocation granularity.
 
 Physical placement is page-granular: memory is localized in blocks of the
-device's allocation granularity (typically 2 MiB), and a block landing on the
-boundary between two owners is placed with the majority owner. Placement can
-therefore only approximate element ownership when ownership runs are smaller
-than a page.
+allocation granularity queried on device 0 (typically 2 MiB; granularity is
+assumed uniform across devices), and a block landing on the boundary between
+two owners is placed with the majority owner. Placement can therefore only
+approximate element ownership when ownership runs are smaller than a page. Use
+``placement_evaluate(grid, partition, None, elemsize)`` to score a candidate
+mapping -- its ``accuracy`` is the fraction of bytes local to their owner --
+before committing memory. The third argument is the data shape; pass ``None``
+with a ``cute_partition``, which carries its own extents.
+
+``accuracy`` is byte-exact for a ``cute_partition``: structured partitions
+resolve through the same analytic (or census) tiers the allocation path uses,
+whose statistics count bytes. A Python or native *callable* mapper is opaque,
+so its blocks are scored by a sampled majority vote instead (``probes``
+samples per block) and ``accuracy`` is then an estimate whose resolution is
+bounded by the probe count -- as is a structured layout too dense for the
+placement blocks, which falls back to the same sampling.
 
 **Tensor of tiles.** Multidimensional distributions match the page granularity
 best when storage is reorganized into tiles: a ``(tiles_y, tiles_x, tile_y,
@@ -406,8 +418,8 @@ placement without re-implementing any policy::
     assert partition.owner((i, j, y, x)) == tile_partition.owner((i, j))
 
 Note that ``owner()`` is exact element-level ownership; the *physical*
-placement of an allocation is page-granular and may only approximate it.
-Note that tile-major storage is a real storage format: viewing it as
+placement of an allocation is page-granular and may only approximate it
+(``placement_evaluate`` quantifies the difference). Note that tile-major storage is a real storage format: viewing it as
 a conventional ``(rows, columns)`` spatial tensor requires a permutation, not a
 reshape.
 

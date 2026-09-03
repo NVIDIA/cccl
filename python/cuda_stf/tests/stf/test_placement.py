@@ -32,6 +32,9 @@ def _require_device():
         pytest.skip("no usable CUDA device")
 
 
+from conftest import require_vmm as _require_vmm  # noqa: E402  (shared VMM gate)
+
+
 def blocked_mapper_1d(data_coords, data_dims, grid_dims):
     """Blocked partition along the outermost dimension (C-order contract)."""
     n = data_dims[0]
@@ -252,6 +255,68 @@ def test_tensor_of_tiles_from_spec():
         )
 
 
+def test_placement_evaluate_all_mapper_forms():
+    """Native fn pointer, cute partition and Python callable must agree."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    n = 4 * MiB
+    kwargs = dict(elemsize=1, block_size=2 * MiB)
+
+    s_native = stf.placement_evaluate(grid, stf.partition_fn_blocked(), (n,), **kwargs)
+    assert s_native.nblocks == 2
+    assert s_native.nallocs == 2
+    assert s_native.accuracy == 1.0  # block-aligned split
+    assert s_native.bytes_per_grid_index == [2 * MiB, 2 * MiB]
+
+    part = stf.cute_partition.from_spec((n,), (("blocked", 0),), (2,))
+    s_part = stf.placement_evaluate(grid, part, None, **kwargs)
+    assert s_part.bytes_per_grid_index == s_native.bytes_per_grid_index
+
+    s_callable = stf.placement_evaluate(grid, blocked_mapper_1d, (n,), **kwargs)
+    assert s_callable.bytes_per_grid_index == s_native.bytes_per_grid_index
+
+
+def test_placement_evaluate_misaligned_majority():
+    """An ownership boundary inside a placement block exercises the sampled
+    majority vote: the straddling block goes to the owner of most of it and
+    accuracy drops below 1. The rank-2 row mapper also pins the C-order
+    contract at rank > 1: with transposed coordinates the owner index would
+    be a column index, far outside the grid, and the callback's range check
+    would fail the evaluation loudly."""
+    _require_device()
+    stf.machine_init()
+    grid = stf.exec_place_grid.from_devices([0, 0])
+
+    rows, cols = 4, 768 * 1024  # 3 MiB of 1-byte elements
+    block = 2 * MiB
+
+    def row_blocked(data_coords, data_dims, grid_dims):
+        # Rows 0-1 to place 0, rows 2-3 to place 1 (public axis 0 = rows)
+        return (data_coords[0] // 2,)
+
+    s = stf.placement_evaluate(
+        grid, row_blocked, (rows, cols), elemsize=1, probes=100, block_size=block
+    )
+    # Two blocks: [0, 2 MiB) straddles the 1.5 MiB ownership boundary (3/4 of
+    # it belongs to place 0), [2 MiB, 3 MiB) is entirely place 1. Blocks are
+    # attributed at full block granularity.
+    assert s.total_bytes == 3 * MiB
+    assert s.vm_bytes == 4 * MiB
+    assert s.nblocks == 2
+    assert s.nallocs == 2
+    assert s.bytes_per_grid_index == [2 * MiB, 2 * MiB]
+    # The straddled block's majority holds at least half of its samples and
+    # the aligned block matches fully, so accuracy lands in [0.75, 1.0]. The
+    # exact value depends on the standard library's distribution mapping, so
+    # only the bounds are asserted — and the upper bound must be inclusive: a
+    # mapping under which every probe of the straddled block lands on the
+    # majority side legitimately reports accuracy == 1.0.
+    assert s.total_samples == 200
+    assert 0.75 <= s.accuracy <= 1.0
+
+
 def test_partition_fn_returns_typed_wrapper():
     """Native partitioners are typed (not bare ints) so composite() can tell
     them apart from Python callables; int() still exposes the raw pointer."""
@@ -262,8 +327,23 @@ def test_partition_fn_returns_typed_wrapper():
     assert int(stf.partition_fn_blocked(1, data_rank=2)) != 0
 
 
+def test_native_partition_fn_rejects_forged_values():
+    """The wrapped pointer is *invoked* as a C function, so an arbitrary
+    integer must not become a native_partition_fn by accident: only the
+    factories construct one, and foreign pointers go through the explicit
+    from_raw_pointer() escape hatch (which round-trips int(fn))."""
+    with pytest.raises(TypeError):
+        stf.native_partition_fn(123)
+    fn = stf.partition_fn_blocked()
+    rewrapped = stf.native_partition_fn.from_raw_pointer(int(fn))
+    assert int(rewrapped) == int(fn)
+    with pytest.raises(ValueError):
+        stf.native_partition_fn.from_raw_pointer(0)
+
+
 def test_shaped_allocation_on_composite_places():
     _require_device()
+    _require_vmm()
     stf.machine_init()
     grid = stf.exec_place_grid.from_devices([0, 0])
 
@@ -291,6 +371,7 @@ def test_shaped_allocation_c_order_extents():
     """composite_cute allocation takes C-order extents: the partition's
     non-square public shape allocates, its transpose is rejected."""
     _require_device()
+    _require_vmm()
     stf.machine_init()
     grid = stf.exec_place_grid.from_devices([0, 0])
 
@@ -308,6 +389,7 @@ def test_tensor_of_tiles_allocation():
     """A rank-4 tensor-of-tiles partition allocates through composite_cute
     with C-order extents (repeated device 0: functional, not residency)."""
     _require_device()
+    _require_vmm()
     stf.machine_init()
     grid = stf.exec_place_grid.create([stf.exec_place.device(0)] * 4, grid_dims=(2, 2))
 
@@ -365,7 +447,7 @@ def test_multi_gpu_residency():
                     "block is not resident on the place that owns it"
                 )
             finally:
-                cu.cuMemRelease(handle)
+                assert cu.cuMemRelease(handle)[0] == cu.CUresult.CUDA_SUCCESS
     finally:
         dp.deallocate(ptr, n * 4)
 
@@ -380,6 +462,14 @@ def test_invalid_inputs_raise_cleanly():
     with pytest.raises(TypeError):
         stf.cute_partition()
 
+    # bool is not a function pointer
+    with pytest.raises(TypeError):
+        stf.placement_evaluate(grid, True, (1024,), 1)
+
+    # neither is a bare int: native partitioners are typed (native_partition_fn)
+    with pytest.raises(TypeError):
+        stf.placement_evaluate(grid, 123, (1024,), 1)
+
     # bool is not a partition
     with pytest.raises(TypeError):
         stf.data_place.composite(grid, True)
@@ -389,6 +479,26 @@ def test_invalid_inputs_raise_cleanly():
         stf.data_place.composite(grid, blocked_mapper_1d)
     with pytest.raises(ValueError, match="data_rank"):
         stf.partition_fn_blocked(1)
+
+    # elemsize 0 (would be a division by zero)
+    with pytest.raises(RuntimeError):
+        stf.placement_evaluate(grid, stf.partition_fn_blocked(), (1024,), 0)
+
+    # A raising mapper must surface, not silently yield wrong statistics
+    def bad_mapper(coords, dims, gdims):
+        raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="mapper raised"):
+        stf.placement_evaluate(grid, bad_mapper, (4 * MiB,), 1, block_size=2 * MiB)
+
+    # A mapper returning the wrong number of grid coordinates must surface
+    def wrong_rank_mapper(coords, dims, gdims):
+        return (0, 0)
+
+    with pytest.raises(RuntimeError, match="mapper raised"):
+        stf.placement_evaluate(
+            grid, wrong_rank_mapper, (4 * MiB,), 1, block_size=2 * MiB
+        )
 
     # Conversely a native partitioner never takes one: rejecting it loudly
     # keeps data_rank's meaning unambiguous (Python-callable tuples only)
@@ -416,6 +526,11 @@ def test_invalid_inputs_raise_cleanly():
         stf.cute_partition.from_spec(
             (2, 2, 2, 2, 2), (None, None, None, None, None), (2,)
         )
+
+    # Partition grid must match the execution grid
+    part = stf.cute_partition.from_spec((4 * MiB,), (("blocked", 0),), (3,))
+    with pytest.raises(RuntimeError):
+        stf.placement_evaluate(grid, part, None, 1)
 
     # elemsize is extents-form-only
     dp = stf.data_place.device(0)

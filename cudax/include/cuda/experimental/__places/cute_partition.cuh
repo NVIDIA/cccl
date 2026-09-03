@@ -1667,62 +1667,6 @@ cute_partition<rank, num_place_leaves, num_local_leaves> make_partition(
 }
 
 /**
- * @brief Evaluate - without allocating - how a localized allocation of a
- * tensor distributed by `partition` over `grid` would be placed
- *
- * See evaluate_localized_placement(); the tensor extents are the partition's
- * true extents.
- */
-template <typename Partition>
-[[nodiscard]] localized_stats evaluate_localized_placement(
-  const exec_place& grid,
-  const Partition& partition,
-  size_t elemsize,
-  size_t probes     = localized_placement_default_probes,
-  size_t block_size = 0)
-{
-  if (!(grid.get_dims() == partition.grid_dims()))
-  {
-    _CCCL_THROW(::std::invalid_argument, "the partition's grid extents do not match the execution place grid");
-  }
-
-  const dim4 data_dims = partition.true_dims();
-
-  if (block_size == 0)
-  {
-    block_size = default_placement_block_size();
-  }
-
-  localized_stats stats;
-
-  const size_t total_elems = data_dims.size();
-  stats.total_bytes        = total_elems * elemsize;
-  stats.vm_bytes           = ((stats.total_bytes + block_size - 1) / block_size) * block_size;
-  stats.block_size         = block_size;
-  stats.nblocks            = stats.vm_bytes / block_size;
-
-  const ::std::vector<pos4> owners = compute_block_owners(
-    [&](size_t index) {
-      return partition.owner(data_dims.index_to_pos(index));
-    },
-    stats.nblocks,
-    block_size,
-    elemsize,
-    total_elems,
-    probes,
-    stats);
-
-  for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
-    const data_place place = grid.get_place(p).affine_data_place();
-    stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
-    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
-    stats.nallocs++;
-  });
-
-  return stats;
-}
-
-/**
  * @brief Composite data place whose partitioner is a cute_partition object
  *
  * Like data_place_composite but ownership is defined by the partition object
@@ -1741,9 +1685,13 @@ template <typename Partition>
  * sampled majority vote for layouts denser than the placement blocks.
  */
 inline auto make_partition_placement_provider(
-  const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
+  const cute_partition_descriptor& partition,
+  dim4 data_dims,
+  size_t total_size,
+  size_t elemsize,
+  size_t probes = localized_placement_default_probes)
 {
-  return [partition, data_dims, total_size, elemsize](
+  return [partition, data_dims, total_size, elemsize, probes](
            size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<block_run> {
     // Budget the analytic walks against what the sampled fallback would
     // spend anyway (probes owner() evaluations per block): when a walk fits
@@ -1773,9 +1721,83 @@ inline auto make_partition_placement_provider(
     const auto owner_of = ::std::function<pos4(size_t)>([&partition, data_dims](size_t ind) {
       return partition.owner(data_dims.index_to_pos(ind));
     });
-    return owners_to_block_runs(compute_block_owners(
-      owner_of, nblocks, block_size_bytes, elemsize, total_size, localized_placement_default_probes, stats));
+    return owners_to_block_runs(
+      compute_block_owners(owner_of, nblocks, block_size_bytes, elemsize, total_size, probes, stats));
   };
+}
+
+/**
+ * @brief Evaluate - without allocating - how a localized allocation of a
+ * tensor distributed by `partition` over `grid` would be placed
+ *
+ * See evaluate_localized_placement(); the tensor extents are the partition's
+ * true extents. Placement follows the same tiered decision procedure as the
+ * allocation path (make_partition_placement_provider): the analytic and
+ * census tiers produce byte-exact statistics (`total_samples` and
+ * `matching_samples` then hold byte counts), and only layouts denser than
+ * the placement blocks fall back to the sampled majority vote, where the
+ * counters hold probe counts. `probes` only affects that fallback.
+ */
+template <typename Partition>
+[[nodiscard]] localized_stats evaluate_localized_placement(
+  const exec_place& grid,
+  const Partition& partition,
+  size_t elemsize,
+  size_t probes     = localized_placement_default_probes,
+  size_t block_size = 0)
+{
+  if (!(grid.get_dims() == partition.grid_dims()))
+  {
+    _CCCL_THROW(::std::invalid_argument, "the partition's grid extents do not match the execution place grid");
+  }
+
+  const dim4 data_dims = partition.true_dims();
+
+  if (block_size == 0)
+  {
+    block_size = default_placement_block_size();
+  }
+
+  localized_stats stats;
+
+  const size_t total_elems = data_dims.size();
+  stats.total_bytes        = total_elems * elemsize;
+  stats.vm_bytes           = ((stats.total_bytes + block_size - 1) / block_size) * block_size;
+  stats.block_size         = block_size;
+  stats.nblocks            = stats.vm_bytes / block_size;
+
+  if (elemsize == 0 || block_size < elemsize)
+  {
+    _CCCL_THROW(::std::invalid_argument,
+                "placement blocks must hold at least one element (elemsize in [1, block size])");
+  }
+
+  // Uniform descriptor access: the typed cute_partition wrapper exposes
+  // descriptor(); the type-erased cute_partition_descriptor is its own.
+  const cute_partition_descriptor desc = [&]() -> cute_partition_descriptor {
+    if constexpr (::cuda::std::is_same_v<Partition, cute_partition_descriptor>)
+    {
+      return partition;
+    }
+    else
+    {
+      return partition.descriptor();
+    }
+  }();
+
+  auto provider = make_partition_placement_provider(desc, data_dims, total_elems, elemsize, probes);
+  const ::std::vector<block_run> runs = provider(block_size, stats.nblocks, stats);
+
+  for (const auto& r : runs)
+  {
+    const size_t grid_index = checked_grid_index(grid.get_dims(), r.owner);
+    const data_place place  = grid.get_place(r.owner).affine_data_place();
+    stats.bytes_per_place[place.to_string()] += r.num_blocks * block_size;
+    stats.bytes_per_grid_index[grid_index] += r.num_blocks * block_size;
+    stats.nallocs++;
+  }
+
+  return stats;
 }
 
 class data_place_cute_composite final : public data_place_interface

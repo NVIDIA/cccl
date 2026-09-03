@@ -38,6 +38,32 @@ stf_exec_place_handle make_dev0_grid(size_t nplaces)
 }
 } // namespace
 
+C2H_TEST("placement evaluation with a native mapper", "[places][placement]")
+{
+  stf_exec_place_handle grid = make_dev0_grid(2);
+
+  const stf_dim4 dims{4 * MiB, 1, 1, 1};
+  stf_placement_stats stats{};
+  uint64_t bytes_per_pos[2] = {0, 0};
+
+  int rc = stf_placement_evaluate(
+    grid, stf_partition_fn_blocked(0), &dims, 1, /*probes=*/0, /*block_size=*/2 * MiB, &stats, bytes_per_pos);
+  REQUIRE(rc == 0);
+
+  REQUIRE(stats.total_bytes == 4 * MiB);
+  REQUIRE(stats.vm_bytes == 4 * MiB);
+  REQUIRE(stats.block_size == 2 * MiB);
+  REQUIRE(stats.nblocks == 2);
+  // Block-aligned blocked split over two positions: one allocation each and
+  // every probe agrees with the block majority
+  REQUIRE(stats.nallocs == 2);
+  REQUIRE(stats.matching_samples == stats.total_samples);
+  REQUIRE(bytes_per_pos[0] == 2 * MiB);
+  REQUIRE(bytes_per_pos[1] == 2 * MiB);
+
+  stf_exec_place_destroy(grid);
+}
+
 C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][placement]")
 {
   const stf_dim4 true_dims{10, 1, 1, 1};
@@ -109,6 +135,40 @@ C2H_TEST("cute partition creation, accessors and leaf round trip", "[places][pla
   stf_cute_partition_destroy(part2);
   stf_cute_partition_destroy(part);
   stf_cute_partition_destroy(nullptr); // must be a no-op
+}
+
+C2H_TEST("partition evaluation matches the equivalent native mapper", "[places][placement]")
+{
+  stf_exec_place_handle grid = make_dev0_grid(2);
+
+  const stf_dim4 dims{8 * MiB, 1, 1, 1};
+  const stf_partition_dim_spec spec[1] = {{STF_DIM_BLOCKED, 0, 0}};
+  const stf_dim4 grid_dims{2, 1, 1, 1};
+
+  stf_cute_partition_handle part = stf_cute_partition_create(&dims, &grid_dims, spec, 1);
+  REQUIRE(part != nullptr);
+
+  stf_placement_stats s_mapper{}, s_part{};
+  uint64_t b_mapper[2] = {0, 0}, b_part[2] = {0, 0};
+
+  REQUIRE(stf_placement_evaluate(grid, stf_partition_fn_blocked(0), &dims, 1, 0, 2 * MiB, &s_mapper, b_mapper) == 0);
+  REQUIRE(stf_placement_evaluate_partition(grid, part, 1, 0, 2 * MiB, &s_part, b_part) == 0);
+
+  REQUIRE(s_mapper.nblocks == s_part.nblocks);
+  REQUIRE(s_mapper.nallocs == s_part.nallocs);
+  // The two paths agree on placement but count in different units: the native
+  // mapper is sampled (probe counts), while the structured partition resolves
+  // through the analytic tier (byte counts). Compare the unit-independent
+  // full-match property per path, and the byte-denominated outputs directly.
+  REQUIRE(s_mapper.total_samples > 0);
+  REQUIRE(s_mapper.matching_samples == s_mapper.total_samples);
+  REQUIRE(s_part.total_samples > 0);
+  REQUIRE(s_part.matching_samples == s_part.total_samples);
+  REQUIRE(b_mapper[0] == b_part[0]);
+  REQUIRE(b_mapper[1] == b_part[1]);
+
+  stf_cute_partition_destroy(part);
+  stf_exec_place_destroy(grid);
 }
 
 C2H_TEST("shaped allocation on composite data places", "[places][placement][allocate]")
