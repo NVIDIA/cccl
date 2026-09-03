@@ -478,8 +478,20 @@ cdef class _PreparedDeviceCopyView:
 cdef const char* DLPACK_EXCHANGE_API_CAPSULE_NAME = "dlpack_exchange_api"
 
 
+def _layout_right():
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_RIGHT
+
+
+def _layout_left():
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_LEFT
+
+
+def _layout_stride():
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE
+
+
 def _layout_stride_relaxed():
-    return <int>CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
 
 
 
@@ -1114,6 +1126,9 @@ cdef extern from "cccl/c/device_copy.h":
         _CCCL_DEVICE_COPY_AXIS_RUNTIME "CCCL_DEVICE_COPY_AXIS_RUNTIME"
 
     ctypedef enum _cccl_device_copy_layout_kind_t "cccl_device_copy_layout_kind_t":
+        _CCCL_DEVICE_COPY_LAYOUT_RIGHT "CCCL_DEVICE_COPY_LAYOUT_RIGHT"
+        _CCCL_DEVICE_COPY_LAYOUT_LEFT "CCCL_DEVICE_COPY_LAYOUT_LEFT"
+        _CCCL_DEVICE_COPY_LAYOUT_STRIDE "CCCL_DEVICE_COPY_LAYOUT_STRIDE"
         _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED "CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED"
 
     ctypedef struct _cccl_device_copy_axis_metadata_t "cccl_device_copy_axis_metadata_t":
