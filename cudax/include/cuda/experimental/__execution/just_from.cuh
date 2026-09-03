@@ -49,13 +49,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
 
   using __just_from_tag_t = _JustFromTag;
 
-  using __diag_t _CCCL_NODEBUG_ALIAS =
+  using __diag_t _CCCL_NODEBUG =
     ::cuda::std::conditional_t<_SetTag{} == set_error,
                                _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
                                _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
   template <class... _Ts>
-  using __error_t _CCCL_NODEBUG_ALIAS =
+  using __error_t _CCCL_NODEBUG =
     _ERROR<_WHERE(_IN_ALGORITHM, _JustFromTag), _WHAT(__diag_t), _WITH_COMPLETION_SIGNATURE<_SetTag(_Ts...)>>;
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __probe_fn
@@ -173,8 +173,8 @@ template <class _JustFromTag, class _SetTag>
 template <class _Fn>
 _CCCL_HOST_DEVICE_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __fn) const noexcept
 {
-  using __sndr_t                          = typename _JustFromTag::template __sndr_t<_Fn>;
-  using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;
+  using __sndr_t                    = typename _JustFromTag::template __sndr_t<_Fn>;
+  using __completions _CCCL_NODEBUG = __call_result_t<_Fn, __probe_fn>;
   static_assert(__valid_completion_signatures<__completions>,
                 "The function passed to just_from must return an instance of a specialization of "
                 "completion_signatures<>.");

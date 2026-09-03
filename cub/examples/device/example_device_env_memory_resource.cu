@@ -132,6 +132,7 @@ int main(int argc, char** argv)
   CubDebugExit(error);
 
   // Check for correctness (and display results, if specified)
+  stream.sync();
   const int compare =
     CompareDeviceResults(&h_reference, thrust::raw_pointer_cast(d_out.data()), 1, g_verbose, g_verbose);
   printf("\t%s", compare ? "FAIL" : "PASS");

@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <algorithm_common.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
@@ -40,7 +41,7 @@ MULTI_GPU_TEST("sort, range overloads default values", )
   constexpr auto cmp = custom_less{};
 
   auto comms = this->communicators();
-  auto rng   = sort_test_util::make_rng(C2H_SEED(2));
+  auto rng   = make_rng(C2H_SEED(2));
 
   // A shape with a bit of everything: unequal rank sizes and duplicate keys, so a defaulted
   // comparator that silently differed from `less` would show up in the comparison.

@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is the main workflow that runs on every PR and push to main
+# Nightly scheduled workflow. Delegates matrix building and job dispatch to
+# .github/workflows/ci-matrix-build.yml, then runs nightly-only third-party
+# builds plus failure analysis and Slack notification.
 name: nightly
 
 defaults:
@@ -30,114 +32,12 @@ concurrency:
 
 jobs:
 
-  build-workflow:
-    name: Build workflow from matrix
-    runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
-    permissions:
-      contents: read
-    outputs:
-      workflow: ${{ steps.build-workflow.outputs.workflow }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - name: Build workflow
-        id: build-workflow
-        uses: ./.github/actions/workflow-build
-        with:
-          workflows: nightly
-          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
-          slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
-          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
-
-  dispatch-groups-linux-two-stage:
-    name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
-    needs: build-workflow
-    permissions:
-      id-token: write
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
+  matrix-build:
+    name: Build & dispatch CI matrix
+    uses: ./.github/workflows/ci-matrix-build.yml
+    secrets: inherit
     with:
-      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
-
-  dispatch-groups-windows-two-stage:
-    name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys']) != '[]' }}
-    needs: build-workflow
-    permissions:
-      id-token: write
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
-    with:
-      pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
-
-  dispatch-groups-linux-standalone:
-    name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
-    needs: build-workflow
-    permissions:
-      id-token: write
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
-    with:
-      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
-
-  dispatch-groups-windows-standalone:
-    name: ${{ matrix.name }}
-    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys']) != '[]' }}
-    needs: build-workflow
-    permissions:
-      id-token: write
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
-    with:
-      job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
-
-  verify-workflow:
-    name: Verify and summarize workflow results
-    if: ${{ always() && !cancelled() }}
-    needs:
-      - build-workflow
-      - dispatch-groups-linux-two-stage
-      - dispatch-groups-windows-two-stage
-      - dispatch-groups-linux-standalone
-      - dispatch-groups-windows-standalone
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Check workflow success
-        id: check-workflow
-        uses: ./.github/actions/workflow-results
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
-          slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
-          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+      workflows: nightly
 
   build-rapids:
     name: Build RAPIDS
@@ -184,26 +84,25 @@ jobs:
         github.repository == 'NVIDIA/cccl' &&
         github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
         (
-          needs.build-workflow.result == 'failure' ||
-          needs.verify-workflow.result == 'failure' ||
+          needs.matrix-build.result == 'failure' ||
           needs.build-rapids.result == 'failure' ||
           needs.build-matx.result == 'failure' ||
           needs.build-pytorch.result == 'failure'
         )
       }}
     needs:
-      - build-workflow
-      - verify-workflow
+      - matrix-build
       - build-rapids
       - build-matx
       - build-pytorch
     permissions:
       actions: read
+      checks: read
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
-      slack_summary: ${{ steps.failure-analysis.outputs.slack_summary }}
+      slack_thread: ${{ steps.render-slack.outputs.content }}
     steps:
       - name: Check out CCCL
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -211,32 +110,71 @@ jobs:
           persist-credentials: false
 
       - name: Analyze failures
-        id: failure-analysis
+        id: analyze
         uses: ./.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
-          output_dir: ${{ runner.temp }}/ci-failure-analysis
+
+      - name: Render GitHub verbose failure analysis summary
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-verbose-summary
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-verbose-summary
 
       - name: Add failure analysis to workflow summary
+        if: ${{ !cancelled() && steps.render-github-verbose-summary.outcome == 'success' }}
         env:
-          GITHUB_REPORT: ${{ steps.failure-analysis.outputs.github_report }}
+          SUMMARY_FILE: ${{ steps.render-github-verbose-summary.outputs.rendered_file }}
         run: |
-          test -n "${GITHUB_REPORT}"
-          printf '%s\n' "${GITHUB_REPORT}" >> "${GITHUB_STEP_SUMMARY}"
+          test -s "${SUMMARY_FILE}"
+          cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
 
-  publish-failure-analysis:
-    name: Post AI failure summary to Slack
-    if: ${{ !cancelled() && needs.analyze-failures.result == 'success' }}
-    needs: analyze-failures
-    permissions: {}
+      - name: Render Slack failure analysis
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-slack
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: slack
+
+  publish-failure-notification:
+    name: Post nightly failure notification to Slack
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        (
+          needs.matrix-build.outputs.failure_message != '' ||
+          needs.analyze-failures.outputs.slack_thread != ''
+        )
+      }}
+    needs:
+      - analyze-failures
+      - matrix-build
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Send AI failure summary
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+      - name: Check out Slack publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/util/publish_slack_notification.py
+          sparse-checkout-cone-mode: false
+
+      - name: Post failure notification
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
-        with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
-          slack-message: ${{ needs.analyze-failures.outputs.slack_summary }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          SLACK_PARENT_TEXT: ${{ needs.matrix-build.outputs.failure_message }}
+          SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          printf '%s' "${SLACK_THREAD}" | \
+            python3 ci/util/publish_slack_notification.py

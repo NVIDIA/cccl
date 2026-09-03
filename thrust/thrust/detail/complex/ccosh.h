@@ -59,6 +59,10 @@ namespace detail::complex
  * These values and the return value were taken from n1124.pdf.
  */
 
+// `y - y` is a deliberate IEEE-754 idiom, not a redundant expression: it yields +0.0 for a
+// finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
+// the complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<double>& z)
 {
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023
@@ -182,6 +186,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
    */
   return (thrust::complex<double>((x * x) * (y - y), (x + x) * (y - y)));
 }
+// NOLINTEND(misc-redundant-expression)
 
 _CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<double>& z)
 {

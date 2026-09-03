@@ -41,14 +41,39 @@ gh api --paginate --slurp \
               or .conclusion == "startup_failure"
               or .conclusion == "action_required"
             ))
+          | map({id, name, conclusion, check_run_url, annotations: []})
         end
     ' \
     > "${output_dir}/jobs.json"
 
-mapfile -t failed_job_ids < <(jq -r '.[].id' "${output_dir}/jobs.json")
+mapfile -t failed_jobs < <(jq -r '.[] | [.id, .check_run_url] | @tsv' "${output_dir}/jobs.json")
 
 collected_log_count=0
-for job_id in "${failed_job_ids[@]}"; do
+for failed_job in "${failed_jobs[@]}"; do
+  IFS=$'\t' read -r job_id check_run_url <<< "${failed_job}"
+
+  annotations_path="${output_dir}/job-${job_id}.annotations.json"
+  if gh api --paginate --slurp \
+    "${check_run_url}/annotations?per_page=100" \
+    | jq '[.[][] | select(.annotation_level == "failure") | {
+        annotation_level,
+        message,
+        title,
+        path,
+        start_line,
+        end_line
+      }]' > "${annotations_path}"; then
+    jq \
+      --argjson job_id "${job_id}" \
+      --slurpfile annotations "${annotations_path}" \
+      'map(if .id == $job_id then .annotations = $annotations[0] else . end)' \
+      "${output_dir}/jobs.json" > "${output_dir}/jobs.json.tmp"
+    mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"
+  else
+    echo "::warning::Unable to collect annotations for job ${job_id}; continuing without them."
+  fi
+  rm -f "${annotations_path}"
+
   log_path="${output_dir}/job-${job_id}.log"
   if ! gh api --allow-escape-sequences \
     "repos/${repository}/actions/jobs/${job_id}/logs" > "${log_path}"; then
@@ -62,7 +87,14 @@ for job_id in "${failed_job_ids[@]}"; do
   fi
 done
 
-if [[ "${#failed_job_ids[@]}" -gt 0 && "${collected_log_count}" -eq 0 ]]; then
-  echo "::error::Unable to collect logs for any failed workflow jobs."
+jq 'map(del(.check_run_url))' \
+  "${output_dir}/jobs.json" > "${output_dir}/jobs.json.tmp"
+mv "${output_dir}/jobs.json.tmp" "${output_dir}/jobs.json"
+
+collected_annotation_count="$(jq '[.[].annotations[]] | length' "${output_dir}/jobs.json")"
+if (( ${#failed_jobs[@]} > 0 \
+  && collected_log_count == 0 \
+  && collected_annotation_count == 0 )); then
+  echo "::error::Unable to collect logs or failure annotations for any failed workflow jobs."
   exit 1
 fi
