@@ -144,6 +144,58 @@ void test_refusals(place_group& group)
   cuda_safe_call(cudaStreamDestroy(origin));
 }
 
+// The lane-ordered capture guard: an asynchronous call whose call stream is
+// capturing while the shard environments' streams are NOT must refuse at
+// entry (the work would silently escape the graph), leaving the capture
+// valid; forking the lanes first makes the same call legal.
+void test_lane_ordered_capture_guard(place_group& group)
+{
+  const size_t n = 4096;
+  auto data      = sharded_array<float>::allocate(group, n);
+  fill(data, 1.0f);
+  data.sync();
+
+  cudaStream_t origin;
+  cuda_safe_call(cudaStreamCreate(&origin));
+  cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
+
+  const auto cprop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
+  const auto ce    = ::cuda::std::execution::env{cprop};
+  bool threw       = false;
+  try
+  {
+    fill(data, default_envs(data), 2.0f, ce); // lanes not forked: refused
+  }
+  catch (const ::std::runtime_error&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+  EXPECT(capture_active(origin));
+
+  // Forked lanes: the same call is legal and records.
+  data.fork_from(origin);
+  fill(data, default_envs(data), 2.0f, ce);
+  data.join_into(origin);
+
+  cudaGraph_t graph = nullptr;
+  cuda_safe_call(cudaStreamEndCapture(origin, &graph));
+  EXPECT(graph != nullptr);
+  cudaGraphExec_t exec = nullptr;
+  cuda_safe_call(cudaGraphInstantiate(&exec, graph, 0));
+  cuda_safe_call(cudaGraphLaunch(exec, origin));
+  cuda_safe_call(cudaStreamSynchronize(origin));
+  ::std::vector<float> host(n);
+  data.copy_to_host(host.data());
+  for (size_t i = 0; i < n; i++)
+  {
+    EXPECT(host[i] == 2.0f);
+  }
+  cuda_safe_call(cudaGraphExecDestroy(exec));
+  cuda_safe_call(cudaGraphDestroy(graph));
+  cuda_safe_call(cudaStreamDestroy(origin));
+}
+
 // Adoption is host-only bookkeeping: it is permitted during capture, and the
 // adopted view is usable by captured elementwise work.
 void test_adoption_is_benign(place_group& group)
@@ -228,6 +280,7 @@ int main()
   auto group = place_group::by_locality_domains();
 
   test_refusals(group);
+  test_lane_ordered_capture_guard(group);
   test_adoption_is_benign(group);
   test_group_materialization_records_nothing();
 

@@ -213,11 +213,18 @@ __global__ void __fold_partials_kernel(
  * Per-shard `cub::DeviceReduce` writes each shard's partial directly into a
  * P-element scratch buffer; a single deterministic fold kernel (fixed shard
  * order, identical to the synchronous form's host fold) then writes the
- * aggregate through @p out on the call environment's stream. The whole call
- * is ordered against that stream — forked on entry, joined before the fold —
- * returns after enqueue, and performs **no host synchronization**
- * (compatible with `sync_policy::forbid` and with CUDA graph capture; the
- * scratch allocation/free are stream-ordered and enclosed).
+ * aggregate through @p out on the call environment's stream. This is a
+ * combine-bearing TERMINATOR, so unlike the map family its call-stream
+ * edges are definitional, not the composition bracket: the entry edge
+ * orders the stream-ordered scratch allocation before the shards' writes,
+ * and every lane joins the call stream before the fold (the fold consumes
+ * all partials). The aggregate is therefore ready in stream order on the
+ * OUTPUT's timeline — awaiting the result means awaiting the call stream,
+ * while the lanes stay free to run past the call (their next lane-ordered
+ * work needs no further edges). Returns after enqueue and performs **no
+ * host synchronization** (compatible with `sync_policy::forbid` and with
+ * CUDA graph capture; the scratch allocation/free are stream-ordered and
+ * enclosed).
  *
  * @param out Device-writable output iterator; written exactly once with the
  *            aggregate. Point it at device memory, pinned host memory (read

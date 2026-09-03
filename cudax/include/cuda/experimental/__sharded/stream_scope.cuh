@@ -138,9 +138,21 @@ inline void __wait_stream_on(cudaStream_t __consumer, cudaStream_t __producer)
 //! @brief Shared driver for the concept-generic map family (no cross-shard
 //! stage): visit every non-empty shard under `stream_scope` on its
 //! environment's stream, with the per-call environment selecting the
-//! contract — stream present = asynchronous (fork all, enqueue all, join
-//! all; concurrent across shards, zero host synchronization), no stream =
-//! synchronous convenience (refused under `sync_policy::forbid`).
+//! contract — stream present = asynchronous (LANE-ORDERED by default: the
+//! call enqueues each shard's work on its environment's stream and touches
+//! nothing else — consecutive calls on the same environments are ordered
+//! per lane by stream order, independent across lanes; zero host
+//! synchronization; a call environment carrying `composition::bracketed`
+//! restores the per-call fork-all/join-all seal against the call stream),
+//! no stream = synchronous convenience (refused under
+//! `sync_policy::forbid`).
+//!
+//! Lane-ordered calls under CUDA graph capture require the environments'
+//! streams to be capturing already (the caller forks the lanes from the
+//! capture origin once per pipeline — `sharded_array::fork_from`, or entry
+//! edges of their own); a lane-ordered call whose call stream is capturing
+//! while a shard stream is not is REFUSED before any work is enqueued —
+//! the work would silently escape the graph otherwise.
 //!
 //! @p __body is a host callable `(const descriptor&, cudaStream_t)` — or,
 //! for algorithms that need the shard index (cross-shard boundary logic),
@@ -156,7 +168,8 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
     _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": fewer environments than shards");
   }
 
-  constexpr bool __is_async = async_call_env<_CallEnv>;
+  constexpr bool __is_async         = async_call_env<_CallEnv>;
+  [[maybe_unused]] bool __bracketed = false;
 
   if constexpr (!__is_async)
   {
@@ -170,6 +183,28 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
       places::check_not_capturing(::cuda::get_stream(__envs[__g]).get(), __what);
     }
   }
+  else
+  {
+    __bracketed = query_composition(__call_env) == composition::bracketed;
+    if (!__bracketed && places::stream_in_capture(::cuda::get_stream(__call_env).get()))
+    {
+      // Lane-ordered under capture: every lane must already be part of the
+      // capture, or its work would silently escape the graph. Refused at
+      // entry, before anything is enqueued (the capture stays valid).
+      for (::std::size_t __g = 0; __g < __num_shards; __g++)
+      {
+        if (__data.shard(__g).size != 0 && !places::stream_in_capture(::cuda::get_stream(__envs[__g]).get()))
+        {
+          _CCCL_THROW(::std::runtime_error,
+                      ::std::string(__what)
+                        + ": lane-ordered asynchronous call during CUDA graph capture requires the "
+                          "shard environments' streams to be capturing (fork the lanes from the "
+                          "capture stream once per pipeline, e.g. sharded_array::fork_from), or opt "
+                          "into composition::bracketed on the call environment");
+        }
+      }
+    }
+  }
 
   for (::std::size_t __g = 0; __g < __num_shards; __g++)
   {
@@ -181,7 +216,10 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
     const ::cuda::stream_ref __shard_stream = ::cuda::get_stream(__envs[__g]);
     if constexpr (__is_async)
     {
-      __wait_stream_on(__shard_stream.get(), ::cuda::get_stream(__call_env).get());
+      if (__bracketed)
+      {
+        __wait_stream_on(__shard_stream.get(), ::cuda::get_stream(__call_env).get());
+      }
     }
     stream_scope __scope(__shard_stream.get());
     if constexpr (::cuda::std::is_invocable_v<_PerShard&, ::std::size_t, decltype(__d), cudaStream_t>)
@@ -196,11 +234,14 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
 
   if constexpr (__is_async)
   {
-    for (::std::size_t __g = 0; __g < __num_shards; __g++)
+    if (__bracketed)
     {
-      if (__data.shard(__g).size != 0)
+      for (::std::size_t __g = 0; __g < __num_shards; __g++)
       {
-        __wait_stream_on(::cuda::get_stream(__call_env).get(), ::cuda::get_stream(__envs[__g]).get());
+        if (__data.shard(__g).size != 0)
+        {
+          __wait_stream_on(::cuda::get_stream(__call_env).get(), ::cuda::get_stream(__envs[__g]).get());
+        }
       }
     }
   }

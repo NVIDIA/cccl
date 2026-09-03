@@ -54,9 +54,13 @@ namespace cuda::experimental::sharded
  * The map family needs no cross-shard stage and no allocation: environments
  * only supply the per-shard stream. Contract, selected by the per-call
  * environment:
- * - `call_env` carries a stream (`async_call_env`): the call is ordered
- *   against that stream (fork on entry, join on exit), returns after
- *   enqueue, and never synchronizes with the host.
+ * - `call_env` carries a stream (`async_call_env`): the call enqueues each
+ *   shard's work on its environment's stream and touches nothing else
+ *   (LANE-ORDERED, the default — consecutive calls on the same environments
+ *   are ordered per lane by stream order, independent across lanes),
+ *   returns after enqueue, and never synchronizes with the host. A call
+ *   environment carrying `composition::bracketed` instead seals the call
+ *   against the call stream (fork on entry, join on exit), per call.
  * - `call_env` carries no stream: the call synchronizes the shard
  *   environments' streams before returning (refused when the call
  *   environment carries `sync_policy::forbid`).
@@ -120,8 +124,9 @@ struct __tuple_result_op
  * memory sweep of chaining binary passes through a temporary.
  *
  * Contract per the call environment, as for `transform`: stream present =
- * asynchronous (fork/join against it, no host synchronization); no stream =
- * synchronous convenience (refused under `sync_policy::forbid`).
+ * asynchronous (lane-ordered by default, `composition::bracketed` to seal
+ * the call; no host synchronization); no stream = synchronous convenience
+ * (refused under `sync_policy::forbid`).
  *
  * @throws std::invalid_argument on environment shortfall or partition
  *         mismatch.

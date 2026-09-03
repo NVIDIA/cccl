@@ -96,10 +96,11 @@ struct for_each_fn
 // Concept-generic tier: the elementwise family over any sharded_view
 // ============================================================================
 //
-// Same semantics as the container-typed entry points above; the per-call
-// environment selects the contract (stream present = asynchronous fork/join
-// against it, no stream = synchronous convenience; sync_policy::forbid
-// refuses the synchronous form). Explicit-environment overloads serve any
+// The per-call environment selects the contract (stream present =
+// asynchronous, lane-ordered by default per the composition contract —
+// `composition::bracketed` seals a call against the call stream; no stream =
+// synchronous convenience; sync_policy::forbid refuses the synchronous
+// form). Explicit-environment overloads serve any
 // sharded_view; the self-bound overloads derive environments via
 // default_envs.
 

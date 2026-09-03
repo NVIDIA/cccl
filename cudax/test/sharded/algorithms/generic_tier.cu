@@ -91,14 +91,24 @@ int main()
   transform(b, envs, times2{}); // b = 4..4n
   EXPECT(reduce(b, envs, ::cuda::std::plus<long long>{}, 0LL) == 4 * tri);
 
-  // Asynchronous form: ordered against a caller stream, no host sync inside
+  // Asynchronous form, lane-ordered default: the call enqueues on the lanes
+  // and touches nothing else — completion is observed through the LANES
+  // (barrier), not the call stream.
   cudaStream_t call_stream;
   cuda_safe_call(cudaStreamCreate(&call_stream));
   const auto stream_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{call_stream}};
   const auto call_env    = ::cuda::std::execution::env{stream_prop};
-  transform(b, times2{}, call_env); // b = 8..8n, on call_stream's timeline
-  cuda_safe_call(cudaStreamSynchronize(call_stream));
+  transform(b, times2{}, call_env); // b = 8..8n, in lane order
+  barrier(envs);
   EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 8 * tri);
+
+  // Bracketed opt-in: the call seals itself against the call stream, so the
+  // call stream's timeline implies completion.
+  const auto bracket_prop = ::cuda::std::execution::prop{get_composition_t{}, composition::bracketed};
+  const auto bracket_env  = ::cuda::std::execution::env{stream_prop, bracket_prop};
+  transform(b, times2{}, bracket_env); // b = 16..16n, sealed on call_stream
+  cuda_safe_call(cudaStreamSynchronize(call_stream));
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 16 * tri);
 
   // Elementwise family, generic self-bound forms
   const long long tri0 = (long long) (n - 1) * (long long) n / 2; // sum of 0..n-1

@@ -12,8 +12,9 @@
  * @file
  *
  * @brief CUDA graph capture of the elementwise sharded pipeline: fork an
- *        origin stream to every shard stream (`fork_from`), record fill/transform/for_each
- *        with `blocking = false`, join back (`join_into`), instantiate, and replay —
+ *        origin stream to every shard stream (`fork_from`) once, record the
+ *        lane-ordered transform/for_each chain, join the lanes back with the
+ *        stream barrier, instantiate, and replay —
  *        including replays with inputs mutated between launches, a
  *        cross-stream (different-lane_id) captured dependency, and a check that
  *        the per-place SM confinement of the shard streams survives inside
@@ -91,11 +92,16 @@ void test_pipeline_capture_and_replay(place_group& group)
   const auto ce          = ::cuda::std::execution::env{origin_prop};
 
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
-  // Asynchronous forms bracket themselves on the origin (the call env's
-  // stream): fork/join become graph dependencies.
+  // Lane-ordered pipeline: fork the lanes from the origin ONCE, enqueue the
+  // whole chain in lane order (consecutive calls on the same envs are
+  // stream-ordered per lane — graph edges within each lane, graph-level
+  // parallelism across lanes), then join the lanes back with the stream
+  // barrier. No per-call brackets anywhere.
+  out.fork_from(origin);
   zip_transform(out, envs, scale_op{}, ce, in);
   transform(out, envs, plus_half_op{}, ce);
   for_each(out, envs, bump_op{}, ce);
+  barrier(envs, ::cuda::stream_ref{origin});
 
   cudaGraph_t graph = nullptr;
   cuda_safe_call(cudaStreamEndCapture(origin, &graph));
@@ -141,9 +147,10 @@ void test_pipeline_capture_and_replay(place_group& group)
   cuda_safe_call(cudaStreamDestroy(origin));
 }
 
-// A captured cross-stream dependency: input and output allocated at different
-// lanes, so the out-of-place transform records event edges between
-// two capturing shard streams.
+// The bracketed opt-in under capture: input and output allocated at
+// different lanes; a call sealed with composition::bracketed forks its
+// lanes from the capture origin and joins them back per call — the
+// foreign-stream composition case, recorded as graph edges.
 void test_cross_lane_dependency(place_group& group)
 {
   if (group.num_lanes() < 2)
@@ -160,12 +167,13 @@ void test_cross_lane_dependency(place_group& group)
   cudaStream_t origin;
   cuda_safe_call(cudaStreamCreate(&origin));
 
-  const auto origin_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
-  const auto ce          = ::cuda::std::execution::env{origin_prop};
-  auto envs_out          = default_envs(out); // lane_id-1 streams
+  const auto origin_prop  = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
+  const auto bracket_prop = ::cuda::std::execution::prop{get_composition_t{}, composition::bracketed};
+  const auto ce           = ::cuda::std::execution::env{origin_prop, bracket_prop};
+  auto envs_out           = default_envs(out); // lane_id-1 streams
 
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
-  zip_transform(out, envs_out, scale_op{}, ce, in); // cross-lane_id capture edges via the ce bracket
+  zip_transform(out, envs_out, scale_op{}, ce, in); // sealed per call: capture edges via the bracket
 
   cudaGraph_t graph = nullptr;
   cuda_safe_call(cudaStreamEndCapture(origin, &graph));

@@ -81,8 +81,11 @@ namespace cuda::experimental::sharded
  * skipped.
  *
  * Contract per the call environment, as for the map family: stream present
- * (`async_call_env`) = asynchronous (fork on entry, join on exit against
- * that stream, no host synchronization; capture-legal); no stream =
+ * (`async_call_env`) = asynchronous (lane-ordered by default: enqueue on
+ * the environments' streams, no call-stream edges, no host synchronization;
+ * `composition::bracketed` on the call environment seals the call against
+ * the call stream instead; capture-legal — under capture the lanes must
+ * already be capturing, or the call refuses at entry); no stream =
  * synchronous convenience (refused under `sync_policy::forbid` and under
  * capture).
  *

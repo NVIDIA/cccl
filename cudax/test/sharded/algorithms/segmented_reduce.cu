@@ -271,7 +271,11 @@ void test_async_capture(place_group& group)
 
   const auto cprop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
   const auto ce    = ::cuda::std::execution::env{cprop};
+  // Lane-ordered under capture: fork the lanes from the origin once, enqueue
+  // in lane order, and join the lanes back with the stream barrier.
+  out.fork_from(origin);
   segmented_reduce(in, envs, seg_b, seg_e, out, sum_op{}, 0.0f, ce);
+  barrier(envs, ::cuda::stream_ref{origin});
 
   cudaGraph_t graph = nullptr;
   cuda_safe_call(cudaStreamEndCapture(origin, &graph));

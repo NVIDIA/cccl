@@ -78,10 +78,13 @@ int main()
   cuda_safe_call(cudaStreamSynchronize(cs));
   EXPECT(*h_out == 42.0);
 
-  // Capture: transform + reduce_into in ONE replayable graph
+  // Capture: transform + reduce_into in ONE replayable graph. Lane-ordered
+  // capture: fork the lanes from the origin once; reduce_into (a
+  // terminator) joins them back into the origin itself.
   fill(a, 1.0);
   cuda_safe_call(cudaStreamBeginCapture(cs, cudaStreamCaptureModeThreadLocal));
-  transform(a, envs, plus2{}, ce); // a += 2
+  a.fork_from(cs);
+  transform(a, envs, plus2{}, ce); // a += 2, in lane order
   reduce_into(a, envs, h_out, ::cuda::std::plus<double>{}, 0.0, ce);
   cudaGraph_t graph;
   cuda_safe_call(cudaStreamEndCapture(cs, &graph));
