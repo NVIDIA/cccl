@@ -1,3 +1,4 @@
+import json
 import os
 import sqlite3
 
@@ -72,6 +73,10 @@ class StorageBase:
     def store_df(self, algname, df):
         raise NotImplementedError
 
+    def axes_values(self, algname, subbench):
+        """The axis space each CCCL version declared for one subbench."""
+        raise NotImplementedError
+
 
 class SQLiteStorage(StorageBase):
     def __init__(self, db_path):
@@ -115,6 +120,23 @@ class SQLiteStorage(StorageBase):
     def store_df(self, algname, df):
         df["samples"] = df["samples"].apply(fpzip.compress)
         df.to_sql(algname, self.conn, if_exists="replace", index=False)
+
+    def axes_values(self, algname, subbench):
+        with self.conn:
+            table = self.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='axes'"
+            ).fetchone()
+            if not table:
+                # Written before the axis space was recorded at all. Callers
+                # fall back to the values the database does hold.
+                return {}
+
+            rows = self.conn.execute(
+                "SELECT cccl, axis_values FROM axes WHERE algorithm=? AND subbench=?",
+                (algname, subbench),
+            ).fetchall()
+
+        return {cccl: json.loads(axis_values) for cccl, axis_values in rows}
 
 
 class PostgreSQLConnectionWrapper:
@@ -229,6 +251,24 @@ if POSTGRES_AVAILABLE:
             raise NotImplementedError(
                 "DataFrame storage for PostgreSQL not yet implemented"
             )
+
+        def axes_values(self, algname, subbench):
+            with self.conn:
+                cur = self.conn.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables
+                        WHERE table_name = 'axes'
+                    );
+                """)
+                if not cur.fetchone()[0]:
+                    # Written before the axis space was recorded at all.
+                    return {}
+
+                cur = self.conn.execute(
+                    "SELECT cccl, axis_values FROM axes WHERE algorithm=? AND subbench=?",
+                    (algname, subbench),
+                )
+                return {cccl: json.loads(values) for cccl, values in cur.fetchall()}
 else:
     # Placeholder when psycopg2 is not available; callers check for None.
     PostgreSQLStorage = None  # type: ignore[assignment, misc]
@@ -267,6 +307,10 @@ class DualStorageWrapper:
     def alg_to_df(self, algname, subbench):
         # Read from primary only
         return self.primary.alg_to_df(algname, subbench)
+
+    def axes_values(self, algname, subbench):
+        # Read from primary only
+        return self.primary.axes_values(algname, subbench)
 
     def store_df(self, algname, df):
         # Write to both databases
@@ -397,3 +441,6 @@ class Storage:
 
     def alg_to_df(self, algname, subbench):
         return self.base.alg_to_df(algname, subbench)
+
+    def axes_values(self, algname, subbench):
+        return self.base.axes_values(algname, subbench)
