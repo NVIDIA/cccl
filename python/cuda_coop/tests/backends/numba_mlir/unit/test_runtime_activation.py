@@ -17,6 +17,72 @@ from cuda.coop.numba_mlir._compiler import _activation
 PACKAGE_ROOT = Path(__file__).parents[4]
 
 
+def _run_import_probe(script: str) -> None:
+    env = os.environ.copy()
+    env.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
+    env["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(PACKAGE_ROOT), env.get("PYTHONPATH")))
+    )
+    result = subprocess.run(
+        [sys.executable, "-B", "-c", textwrap.dedent(script)],
+        check=False,
+        capture_output=True,
+        env=env,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_numba_first_root_import_automatically_activates_backend():
+    _run_import_probe(
+        """
+        import sys
+
+        import numba_cuda_mlir  # noqa: F401
+        import cuda.coop  # noqa: F401
+
+        expected = {
+            "cuda.coop.numba_mlir",
+            "cuda.coop.numba_mlir._compiler._group_planner",
+            "cuda.coop.numba_mlir._compiler._rewrite",
+        }
+        assert expected <= set(sys.modules), expected - set(sys.modules)
+        """
+    )
+
+
+def test_root_first_qualified_import_explicitly_activates_backend():
+    _run_import_probe(
+        """
+        import sys
+
+        before = set(sys.modules)
+        import cuda.coop  # noqa: F401
+        loaded = set(sys.modules) - before
+
+        assert "cuda.coop.numba_mlir" not in sys.modules
+        assert not any(
+            name == "numba_cuda_mlir" or name.startswith("numba_cuda_mlir.")
+            for name in loaded
+        ), loaded
+        assert not any(
+            name == "cuda.bindings" or name.startswith("cuda.bindings.")
+            for name in loaded
+        ), loaded
+
+        import cuda.coop.numba_mlir  # noqa: F401
+
+        expected = {
+            "cuda.coop.numba_mlir",
+            "cuda.coop.numba_mlir._compiler._group_planner",
+            "cuda.coop.numba_mlir._compiler._rewrite",
+        }
+        assert expected <= set(sys.modules), expected - set(sys.modules)
+        """
+    )
+
+
 @pytest.mark.parametrize(
     ("hook_name", "count"),
     [

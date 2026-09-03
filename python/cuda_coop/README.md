@@ -20,6 +20,27 @@ python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
 Python 3.10 through 3.14 is supported. Importing the portable `cuda.coop`
 package does not require loading a compiler backend.
 
+When using the portable namespace with Numba-CUDA-MLIR, import the compiler
+runtime first so `cuda.coop` can activate its compiler hooks automatically:
+
+```python
+from numba_cuda_mlir import cuda
+
+from cuda import coop
+```
+
+A standalone `cuda.coop` import does not discover or load optional compiler
+runtimes or CUDA bindings. If `cuda.coop` was imported first, explicitly import
+the qualified backend before compiling a kernel:
+
+```python
+from cuda import coop
+import cuda.coop.numba_mlir  # Activate support for portable coop calls.
+```
+
+Using `import cuda.coop.numba_mlir as coop` instead activates the backend and
+selects its qualified namespace.
+
 ## Block Load and Store
 
 The portable `cuda.coop` entry points and the qualified
