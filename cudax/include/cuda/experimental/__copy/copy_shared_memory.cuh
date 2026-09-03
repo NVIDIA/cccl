@@ -332,7 +332,7 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   using ::cuda::std::size_t;
   _CCCL_ASSERT(__src.__rank >= 2, "Rank must be at least 2 for shared memory transpose");
 
-  const auto __tiling               = cudax::__find_shared_mem_tiling<_TpIn>(__src, __dst);
+  const auto __tiling               = cudax::__find_shared_mem_tiling<_TpIn>(__src, __dst, __stream.device());
   const auto __tile_sizes           = __tiling.__tile_sizes;
   const auto __rank                 = __src.__rank;
   const auto __tile_total_size      = __tiling.__tile_total_size;
@@ -352,17 +352,21 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   // Optimization: improve destination cache locality.
   // When a destination dimension memory location is not divisible by the tile size, it means that the partial tile at
   // the end can be reused in the next iteration. In this case, visit the tiles by following the destination order.
-  //
-  // However, this could hurt source cache locality. A solution is to enable this optimization depending on a heuristic
-  // that compares how many tiles fit in the fastest-changing dimension of the source and destination tensors.
-  // The heuristic requires the source tensor to have at least 32x more tiles than the destination tensor (in the
+
+  // On the other hand, this could hurt source cache locality. A solution is to enable this optimization depending on a
+  // heuristic that compares how many tiles fit in the fastest-changing dimension of the source and destination tensors.
+  // The heuristic requires the destination tensor to have no more than 32x more tiles than the source tensor (in the
   // fastest-changing dimension).
-  const auto __dst_inner_dim       = __tiling.__dst_perm[0];
-  const auto __src_inner_grid_size = ::cuda::ceil_div(__src.__extents[0], static_cast<_ExtentT>(__tile_sizes[0]));
+
+  const auto __src_inner_dim = __tiling.__src_perm[0];
+  const auto __dst_inner_dim = __tiling.__dst_perm[0];
+  const auto __src_inner_grid_size =
+    ::cuda::ceil_div(__src.__extents[__src_inner_dim], static_cast<_ExtentT>(__tile_sizes[__src_inner_dim]));
   const auto __dst_inner_grid_size =
     ::cuda::ceil_div(__dst.__extents[__dst_inner_dim], static_cast<_ExtentT>(__tile_sizes[__dst_inner_dim]));
-  const auto __grid_ratio = ::cuda::ceil_div(__dst_inner_grid_size, __src_inner_grid_size);
-  if (constexpr auto __heuristic = 32; __grid_ratio <= __heuristic)
+  const auto __dst_to_src_grid_ratio = ::cuda::ceil_div(__dst_inner_grid_size, __src_inner_grid_size);
+
+  if (constexpr auto __max_dst_to_src_grid_ratio = 32; __dst_to_src_grid_ratio <= __max_dst_to_src_grid_ratio)
   {
     for (size_t __i = 1; __i < __rank; ++__i)
     {
