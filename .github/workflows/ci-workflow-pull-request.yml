@@ -39,6 +39,7 @@ jobs:
       pull-requests: write
     outputs:
       base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
+      merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
       matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
@@ -71,15 +72,21 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
+          # `git merge-base` below needs the history of both sides.
+          fetch-depth: 0
           persist-credentials: false
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
       - name: Export PR info
         id: export-pr-info
+        env:
+          BASE_SHA: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
         run: |
-          echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
+          echo "base_sha=${BASE_SHA}" | tee -a "${GITHUB_OUTPUT}"
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
+          git fetch origin "${BASE_SHA}" -q
+          echo "merge_base_sha=$(git merge-base "${BASE_SHA}" "${GITHUB_SHA}")" | tee -a "${GITHUB_OUTPUT}"
       - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
@@ -179,16 +186,12 @@ jobs:
         id: branch-notes-dirt
         env:
           BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+          merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
         run: |
           if [[ -z "${BASE_SHA}" ]]; then
             echo "branch_notes_dirt=" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
-
-          echo "Fetch history and determine merge base..."
-          git fetch origin --unshallow -q || true
-          git fetch origin "${BASE_SHA}" -q
-          merge_base_sha=$(git merge-base "${GITHUB_SHA}" "${BASE_SHA}")
 
           echo "Head SHA: ${GITHUB_SHA}"
           echo "PR Base SHA: ${BASE_SHA}"
@@ -561,7 +564,7 @@ jobs:
       preset: ${{ matrix.preset }}
       archs: ${{ matrix.archs }}
       target_filters_json: ${{ matrix.target_filters_json }}
-      base_ref: ${{ needs.build-workflow.outputs.base_sha }}
+      base_ref: ${{ needs.build-workflow.outputs.merge_base_sha }}
 
   bench-results:
     name: Post benchmark results
