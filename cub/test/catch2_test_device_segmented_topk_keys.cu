@@ -32,6 +32,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/type_traits>
+
+#include <algorithm>
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
@@ -103,6 +106,57 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk_keys(
 DECLARE_TMPL_LAUNCH_WRAPPER(
   dispatch_batched_topk_keys,
   batched_topk_keys,
+  ESCAPE_LIST(
+    cub::detail::topk::select SelectDirection,
+    cuda::execution::determinism::__determinism_t Determinism =
+      cuda::execution::determinism::__determinism_t::__not_guaranteed,
+    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified),
+  ESCAPE_LIST(SelectDirection, Determinism, TieBreak));
+
+// Padding-property companion to dispatch_batched_topk_keys. The public algorithm signature is unchanged: the
+// stateful property is composed into EnvT alongside the existing requirements and stream.
+template <cub::detail::topk::select SelectDirection,
+          cuda::execution::determinism::__determinism_t Determinism =
+            cuda::execution::determinism::__determinism_t::__not_guaranteed,
+          cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
+          typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename SegmentSizeParamT,
+          typename KParamT,
+          typename NumSegmentsParameterT,
+          typename PaddingPropertyT>
+_CCCL_HOST_API static cudaError_t dispatch_batched_topk_keys_with_padding(
+  void* d_temp_storage,
+  cuda::std::size_t& temp_storage_bytes,
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  SegmentSizeParamT segment_sizes,
+  KParamT k,
+  NumSegmentsParameterT num_segments,
+  PaddingPropertyT padding,
+  cudaStream_t stream = nullptr)
+{
+  auto env = cuda::std::execution::env{
+    cuda::stream_ref{stream},
+    cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<Determinism>{},
+                             cuda::execution::tie_break::__tie_break_holder_t<TieBreak>{},
+                             cuda::execution::output_ordering::unsorted),
+    padding};
+  if constexpr (SelectDirection == cub::detail::topk::select::max)
+  {
+    return cub::DeviceBatchedTopK::MaxKeys(
+      d_temp_storage, temp_storage_bytes, d_key_segments_it, d_key_segments_out_it, segment_sizes, k, num_segments, env);
+  }
+  else
+  {
+    return cub::DeviceBatchedTopK::MinKeys(
+      d_temp_storage, temp_storage_bytes, d_key_segments_it, d_key_segments_out_it, segment_sizes, k, num_segments, env);
+  }
+}
+
+DECLARE_TMPL_LAUNCH_WRAPPER(
+  dispatch_batched_topk_keys_with_padding,
+  batched_topk_keys_with_padding,
   ESCAPE_LIST(
     cub::detail::topk::select SelectDirection,
     cuda::execution::determinism::__determinism_t Determinism =
@@ -186,6 +240,118 @@ using det_tie_combos =
                          cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
                  det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
                          cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+
+template <cub::detail::topk::select Direction,
+          cuda::execution::determinism::__determinism_t Determinism,
+          cuda::execution::tie_break::__tie_break_t TieBreak>
+void check_batched_topk_keys_output_padding()
+{
+  using key_t      = cuda::std::int32_t;
+  using seg_size_t = cuda::std::int16_t;
+
+  constexpr int num_segments = 9;
+  constexpr int input_stride = 5;
+  constexpr int output_width = 4;
+  constexpr int guard        = 3;
+  constexpr key_t sentinel   = -12345;
+  constexpr key_t pad        = -1;
+
+  // Segment sizes cover the clamped-negative, empty, short, exact-k, and longer-than-k paths. The last three rows use
+  // per-segment negative, zero, and smaller k values to pin the padding endpoint to max(k, 0), not the static bound.
+  const c2h::host_vector<seg_size_t> h_segment_sizes{-1, 0, 1, 3, 4, 5, 5, 5, 5};
+  const c2h::host_vector<seg_size_t> h_k{4, 4, 4, 4, 4, 4, -1, 0, 3};
+  c2h::device_vector<seg_size_t> d_segment_sizes = h_segment_sizes;
+  c2h::device_vector<seg_size_t> d_k             = h_k;
+
+  c2h::device_vector<key_t> keys_in(num_segments * input_stride, thrust::no_init);
+  thrust::sequence(keys_in.begin(), keys_in.end());
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), input_stride);
+
+  const auto make_output = [=] {
+    return c2h::device_vector<key_t>(guard + num_segments * output_width + guard, sentinel);
+  };
+  auto compact_output = make_output();
+  auto padded_output  = make_output();
+
+  const auto make_output_it = [=](c2h::device_vector<key_t>& storage) {
+    auto output_ptr = thrust::raw_pointer_cast(storage.data()) + guard;
+    return cuda::make_strided_iterator(cuda::make_counting_iterator(output_ptr), output_width);
+  };
+  auto d_compact_output = make_output_it(compact_output);
+  auto d_padded_output  = make_output_it(padded_output);
+
+  auto segment_sizes = cuda::args::deferred_sequence{
+    thrust::raw_pointer_cast(d_segment_sizes.data()), cuda::args::bounds<seg_size_t{-1}, seg_size_t{5}>()};
+  auto k_arg = cuda::args::deferred_sequence{
+    thrust::raw_pointer_cast(d_k.data()), cuda::args::bounds<seg_size_t{-1}, seg_size_t{4}>()};
+  auto num_segs = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+
+  CAPTURE(Direction, Determinism, TieBreak);
+
+  // The existing environment has compact semantics: unused slots remain untouched.
+  batched_topk_keys<Direction, Determinism, TieBreak>(d_keys_in, d_compact_output, segment_sizes, k_arg, num_segs);
+
+  // Adding the stateful property to the same EnvT materializes exactly [valid, max(k, 0)).
+  batched_topk_keys_with_padding<Direction, Determinism, TieBreak>(
+    d_keys_in, d_padded_output, segment_sizes, k_arg, num_segs, cub::DeviceBatchedTopK::OutputPadding(pad));
+
+  const auto verify = [&](const c2h::device_vector<key_t>& output, bool expect_padding) {
+    c2h::host_vector<key_t> h_output = output;
+
+    for (int i = 0; i < guard; ++i)
+    {
+      REQUIRE(h_output[i] == sentinel);
+      REQUIRE(h_output[guard + num_segments * output_width + i] == sentinel);
+    }
+
+    for (int segment = 0; segment < num_segments; ++segment)
+    {
+      const int segment_size = (std::max) (int{h_segment_sizes[segment]}, 0);
+      const int requested    = (std::max) (int{h_k[segment]}, 0);
+      const int valid        = (std::min) (requested, segment_size);
+      auto row_begin         = h_output.begin() + guard + segment * output_width;
+      std::sort(row_begin, row_begin + valid);
+
+      const int input_base = segment * input_stride;
+      const int first_key =
+        Direction == cub::detail::topk::select::min ? input_base : input_base + segment_size - valid;
+      for (int item = 0; item < valid; ++item)
+      {
+        REQUIRE(row_begin[item] == first_key + item);
+      }
+      for (int item = valid; item < requested; ++item)
+      {
+        REQUIRE(row_begin[item] == (expect_padding ? pad : sentinel));
+      }
+      for (int item = requested; item < output_width; ++item)
+      {
+        REQUIRE(row_begin[item] == sentinel);
+      }
+    }
+  };
+
+  verify(compact_output, false);
+  verify(padded_output, true);
+}
+
+// Exercise both implementation backends without multiplying the broad key-type/static-bound Cartesian product of the
+// existing variable-size/per-segment-k test. The deterministic case is only run where the cluster backend is available.
+template <cub::detail::topk::select Direction>
+void check_batched_topk_keys_output_padding_backends()
+{
+  check_batched_topk_keys_output_padding<Direction,
+                                         cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                                         cuda::execution::tie_break::__tie_break_t::__unspecified>();
+
+  if (!batched_topk_backend_unavailable<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                                        cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>(5))
+  {
+    check_batched_topk_keys_output_padding<Direction,
+                                           cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                                           cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>();
+  }
+}
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
@@ -1588,6 +1754,18 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with variable-size segments and 
     keys_out_buffer, num_segments, compacted_offsets.cbegin(), compacted_offsets.cbegin() + 1, direction);
 
   REQUIRE(expected_keys == keys_out_buffer);
+
+#if TEST_TYPES == 0
+  // Extend this existing variable-size/per-segment-k test with fixed-width materialization. Restrict the focused
+  // contract matrix to one representative key/static-k/runtime-size instantiation; direction remains an existing axis.
+  if constexpr (cuda::std::is_same_v<key_t, cuda::std::uint8_t> && static_max_k == 32)
+  {
+    if (num_items == min_items)
+    {
+      check_batched_topk_keys_output_padding_backends<direction>();
+    }
+  }
+#endif // TEST_TYPES == 0
 }
 #if TEST_TYPES == 2
 // Heavy-tie stress/regression: collapse the keys to only a handful of distinct values so the k-th key's bucket holds a
@@ -2092,22 +2270,29 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys treats a uniform negative segment size as n
   auto d_keys_out =
     cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k);
 
+  auto segment_sizes   = cuda::args::immediate{seg_size_t{-1}, cuda::args::bounds<-8, 100>()};
+  constexpr auto k_arg = cuda::args::constant<k>{};
+  auto num_segs        = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+
   skip_unless_batched_topk_keys_supported<cub::detail::topk::select::max, determinism, tie_break>(
-    static_max_segment_size,
-    d_keys_in,
-    d_keys_out,
-    cuda::args::immediate{seg_size_t{-1}, cuda::args::bounds<-8, 100>()},
-    cuda::args::constant<k>{},
-    cuda::args::immediate{cuda::std::int64_t{num_segments}});
+    static_max_segment_size, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs);
   batched_topk_keys<cub::detail::topk::select::max, determinism, tie_break>(
-    d_keys_in,
-    d_keys_out,
-    cuda::args::immediate{seg_size_t{-1}, cuda::args::bounds<-8, 100>()},
-    cuda::args::constant<k>{},
-    cuda::args::immediate{cuda::std::int64_t{num_segments}});
+    d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs);
 
   // No segment had any items, so the whole output is left untouched.
   REQUIRE(keys_out == thrust::device_vector<int>(num_segments * k, sentinel));
+
+  constexpr int pad = -1;
+  auto padded_out   = thrust::device_vector<int>(num_segments * k, sentinel);
+  auto d_padded_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(padded_out.data())), k);
+
+  // The immediate negative value makes __highest_(segment_sizes) negative on the host. This specifically exercises
+  // deterministic cluster launch-shape sizing before the in-kernel empty-segment handling.
+  batched_topk_keys_with_padding<cub::detail::topk::select::max, determinism, tie_break>(
+    d_keys_in, d_padded_out, segment_sizes, k_arg, num_segs, cub::DeviceBatchedTopK::OutputPadding(pad));
+
+  REQUIRE(padded_out == thrust::device_vector<int>(num_segments * k, pad));
 }
 
 // Zero segments is a no-op, but with a positive segment-size bound the `max_seg_size <= 0` guard does not fire, so the
