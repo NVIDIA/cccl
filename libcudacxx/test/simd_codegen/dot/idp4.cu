@@ -8,56 +8,35 @@
 //
 //===----------------------------------------------------------------------===//
 
+// clang-format off
+// %PARAM% LHS_TYPE,SASS_LHS_TYPE lhs signed=int8_t,S8:unsigned=uint8_t,U8
+// %PARAM% RHS_TYPE,SASS_RHS_TYPE rhs signed=int8_t,S8:unsigned=uint8_t,U8
+// clang-format on
+
 #include <cuda/simd>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 namespace simd = cuda::std::simd;
 
-using Vec_s8_x4 = simd::basic_vec<cuda::std::int8_t, simd::fixed_size<4>>;
-using Vec_s8_x5 = simd::basic_vec<cuda::std::int8_t, simd::fixed_size<5>>;
-using Vec_u8_x4 = simd::basic_vec<cuda::std::uint8_t, simd::fixed_size<4>>;
+using cuda::std::int32_t;
+using cuda::std::int8_t;
+using cuda::std::uint32_t;
+using cuda::std::uint8_t;
 
-__device__ cuda::std::int32_t test_dot_s8_s8(Vec_s8_x4 lhs, Vec_s8_x4 rhs, cuda::std::int32_t init)
-{
-  return cuda::simd::dot(lhs, rhs, init);
-}
+using lhs_vec_t = simd::basic_vec<LHS_TYPE, simd::fixed_size<4>>;
+using rhs_vec_t = simd::basic_vec<RHS_TYPE, simd::fixed_size<4>>;
+using accum_t =
+  cuda::std::conditional_t<cuda::std::is_unsigned_v<LHS_TYPE> && cuda::std::is_unsigned_v<RHS_TYPE>, uint32_t, int32_t>;
 
-__device__ cuda::std::uint32_t test_dot_u8_u8(Vec_u8_x4 lhs, Vec_u8_x4 rhs, cuda::std::uint32_t init)
-{
-  return cuda::simd::dot(lhs, rhs, init);
-}
-
-__device__ cuda::std::int32_t test_dot_u8_s8(Vec_u8_x4 lhs, Vec_s8_x4 rhs, cuda::std::int32_t init)
-{
-  return cuda::simd::dot(lhs, rhs, init);
-}
-
-__device__ cuda::std::int32_t test_dot_s8_u8(Vec_s8_x4 lhs, Vec_u8_x4 rhs, cuda::std::int32_t init)
-{
-  return cuda::simd::dot(lhs, rhs, init);
-}
-
-__device__ cuda::std::int32_t test_dot_s8_s8_x5(Vec_s8_x5 lhs, Vec_s8_x5 rhs, cuda::std::int32_t init)
+extern "C" __device__ accum_t test_dot(lhs_vec_t lhs, rhs_vec_t rhs, accum_t init)
 {
   return cuda::simd::dot(lhs, rhs, init);
 }
 
 /*
 
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_dot_s8_s8_x5.*}}
-; SMXX: {{.*IDP\.4A\.S8\.S8.*}}
-; SMXX: {{.*IDP\.4A\.S8\.S8.*}}
-
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_dot_s8_u8.*}}
-; SMXX: {{.*IDP\.4A\.S8\.U8.*}}
-
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_dot_u8_s8.*}}
-; SMXX: {{.*IDP\.4A\.U8\.S8.*}}
-
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_dot_u8_u8.*}}
-; SMXX: {{.*IDP\.4A\.U8\.U8.*}}
-
-; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_dot_s8_s8.*}}
-; SMXX: {{.*IDP\.4A\.S8\.S8.*}}
+; SMXX-LABEL: {{[[:space:]]*}}Function : test_dot
+; SMXX: {{.*IDP\.4A\.}}[[SASS_LHS_TYPE]]{{\.}}[[SASS_RHS_TYPE]]{{.*}}
 
 */
