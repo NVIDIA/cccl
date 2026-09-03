@@ -39,11 +39,13 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh> // SCOPE
 #include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <algorithm>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -67,31 +69,49 @@ template <typename _Tp>
   using count_type        = ::cuda::std::int64_t;
 
   // Pinned host staging: per-shard kept counts (zero-initialized so skipped
-  // empty shards stay empty) and the post-unique boundary elements
-  // The _Tp block leads so both blocks are aligned for their types (the
-  // count block only needs alignof(count_type) <= alignof(_Tp) or the
-  // natural alignment of the offset, both guaranteed by the max() below).
-  constexpr size_t staging_align = ::std::max(alignof(_Tp), alignof(count_type));
-  const size_t tp_bytes          = 2 * num_shards * sizeof(_Tp);
-  const size_t count_offset      = (tp_bytes + alignof(count_type) - 1) / alignof(count_type) * alignof(count_type);
-  const size_t host_bytes        = count_offset + num_shards * sizeof(count_type);
-  auto* h_base                   = static_cast<unsigned char*>(reserved::__pinned_staging(host_bytes));
+  // empty shards stay empty) and the post-unique boundary elements.
+  // The _Tp block leads and the count block starts at an offset rounded up
+  // to alignof(count_type); the arena block itself is cudaMallocHost-backed
+  // (>= 256-byte aligned), so both blocks are aligned for their types.
+  const size_t tp_bytes     = 2 * num_shards * sizeof(_Tp);
+  const size_t count_offset = (tp_bytes + alignof(count_type) - 1) / alignof(count_type) * alignof(count_type);
+  const size_t host_bytes   = count_offset + num_shards * sizeof(count_type);
+  auto* h_base              = static_cast<unsigned char*>(reserved::__pinned_staging(host_bytes));
   _Tp* h_first                   = reinterpret_cast<_Tp*>(h_base);
   _Tp* h_last                    = h_first + num_shards;
   count_type* h_new_sizes        = reinterpret_cast<count_type*>(h_base + count_offset);
   ::std::fill(h_new_sizes, h_new_sizes + num_shards, count_type{0});
 
-  // Phase 1: local in-place unique on each shard (CUB keeps the first element
-  // of every run of consecutive equal elements); the per-shard counters are
-  // freed only after the final sync
-  ::std::vector<::std::pair<places::place_memory_resource, count_type*>> d_counts;
+  // Phase 0: acquire every fallible resource BEFORE any shard is mutated, so
+  // the likely failure (allocation) leaves the array untouched. The guard is
+  // armed before the loop: a mid-loop failure frees what was acquired.
+  ::std::vector<::std::tuple<places::place_memory_resource, count_type*, cudaStream_t>> d_counts;
   d_counts.reserve(num_shards);
-
-  data.each_shard->*[&](const size_t g, auto& s) {
+  SCOPE(exit)
+  {
+    for (auto& [mr, ptr, stream] : d_counts)
+    {
+      mr.deallocate(::cuda::stream_ref{stream}, ptr, sizeof(count_type), alignof(count_type));
+    }
+  };
+  data.each_shard->*[&](auto& s) {
     places::place_memory_resource mr(s.place);
     count_type* d_num =
       static_cast<count_type*>(mr.allocate(::cuda::stream_ref{s.stream}, sizeof(count_type), alignof(count_type)));
-    d_counts.emplace_back(mr, d_num);
+    d_counts.emplace_back(mv(mr), d_num, s.stream);
+  };
+
+  // Phase 1: local in-place unique on each shard (CUB keeps the first element
+  // of every run of consecutive equal elements). From here through
+  // commit_sizes (phases 1-3), the compaction is irrevocable: on any failure,
+  // leave the array VALID and EMPTY rather than compacted with stale sizes.
+  SCOPE(fail)
+  {
+    data.commit_sizes(::std::vector<size_t>(num_shards, 0));
+  };
+  size_t next = 0;
+  data.each_shard->*[&](const size_t g, auto& s) {
+    count_type* d_num = ::std::get<1>(d_counts[next++]);
 
     // Temporaries come from the shard's place through the group's resources
     const auto env = group.env(s.place, s.stream);
@@ -148,12 +168,7 @@ template <typename _Tp>
     new_sizes[g] = static_cast<size_t>(h_new_sizes[g]);
   }
   data.commit_sizes(new_sizes);
-
-  for (auto& [mr, ptr] : d_counts)
-  {
-    mr.deallocate_sync(ptr, sizeof(count_type), alignof(count_type));
-  }
-  // (arena staging is cached; nothing to release)
+  // (counters freed by SCOPE(exit); arena staging is cached)
 
   return data.size();
 }

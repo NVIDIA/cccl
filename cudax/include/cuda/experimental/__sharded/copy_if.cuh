@@ -41,11 +41,13 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh> // SCOPE
 #include <cuda/experimental/__sharded/pinned_staging.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <algorithm>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -87,17 +89,36 @@ template <typename _Tp, typename _Pred>
     static_cast<count_type*>(reserved::__pinned_staging(num_shards * sizeof(count_type)));
   ::std::fill(h_new_sizes, h_new_sizes + num_shards, count_type{0});
 
-  // Phase 1: local in-place select on each shard (CUB compacts the kept
-  // elements to the front of the shard, preserving their order); the
-  // per-shard counters are freed only after the final sync
-  ::std::vector<::std::pair<places::place_memory_resource, count_type*>> d_counts;
+  // Phase 0: acquire every fallible resource BEFORE any shard is mutated, so
+  // the likely failure (allocation) leaves the array untouched. The guard is
+  // armed before the loop: a mid-loop failure frees what was acquired.
+  ::std::vector<::std::tuple<places::place_memory_resource, count_type*, cudaStream_t>> d_counts;
   d_counts.reserve(num_shards);
-
-  data.each_shard->*[&](const size_t g, auto& s) {
+  SCOPE(exit)
+  {
+    for (auto& [mr, ptr, stream] : d_counts)
+    {
+      mr.deallocate(::cuda::stream_ref{stream}, ptr, sizeof(count_type), alignof(count_type));
+    }
+  };
+  data.each_shard->*[&](auto& s) {
     places::place_memory_resource mr(s.place);
     count_type* d_num =
       static_cast<count_type*>(mr.allocate(::cuda::stream_ref{s.stream}, sizeof(count_type), alignof(count_type)));
-    d_counts.emplace_back(mr, d_num);
+    d_counts.emplace_back(mv(mr), d_num, s.stream);
+  };
+
+  // Phase 1: local in-place select on each shard (CUB compacts the kept
+  // elements to the front of the shard, preserving their order). From here
+  // through commit_sizes the compaction is irrevocable: on any failure,
+  // leave the array VALID and EMPTY rather than compacted with stale sizes.
+  SCOPE(fail)
+  {
+    data.commit_sizes(::std::vector<size_t>(num_shards, 0));
+  };
+  size_t next = 0;
+  data.each_shard->*[&](const size_t g, auto& s) {
+    count_type* d_num = ::std::get<1>(d_counts[next++]);
 
     // Temporaries come from the shard's place through the group's resources
     const auto env = group.env(s.place, s.stream);
@@ -118,12 +139,7 @@ template <typename _Tp, typename _Pred>
     new_sizes[g] = static_cast<size_t>(h_new_sizes[g]);
   }
   data.commit_sizes(new_sizes);
-
-  for (auto& [mr, ptr] : d_counts)
-  {
-    mr.deallocate_sync(ptr, sizeof(count_type), alignof(count_type));
-  }
-  // (arena staging is cached; nothing to release)
+  // (counters freed by SCOPE(exit); arena staging is cached)
 
   return data.size();
 }
