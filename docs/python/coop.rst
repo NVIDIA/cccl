@@ -24,6 +24,33 @@ declarations, and a coherent bundle of CUB, Thrust, libcu++, and CUDAX headers.
 Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or an accessible
 GPU.
 
+Backend activation
+------------------
+
+When using the portable namespace with Numba-CUDA-MLIR, import the compiler
+runtime first:
+
+.. code-block:: python
+
+   from numba_cuda_mlir import cuda
+
+   from cuda import coop
+
+Because Numba-CUDA-MLIR is already imported, importing :mod:`cuda.coop`
+automatically activates its compiler hooks. A standalone :mod:`cuda.coop`
+import does not discover or load optional compiler runtimes or CUDA bindings.
+
+If :mod:`cuda.coop` was imported first, activate the backend explicitly before
+compiling a kernel:
+
+.. code-block:: python
+
+   from cuda import coop
+   import cuda.coop.numba_mlir  # Activate support for portable coop calls.
+
+Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
+qualified namespace and its backend-specific controls.
+
 Kernel API
 ----------
 
@@ -32,6 +59,7 @@ The portable root and qualified backend expose matching entry points:
 .. code-block:: python
 
    import numpy as np
+   from numba_cuda_mlir import cuda
 
    from cuda import coop
 
