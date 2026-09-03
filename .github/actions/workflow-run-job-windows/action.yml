@@ -163,7 +163,6 @@ runs:
         echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
     - name: Log in to GHCR
-      if: ${{ startsWith(inputs.image, 'ghcr.io/') }}
       uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
       with:
         registry: ghcr.io
