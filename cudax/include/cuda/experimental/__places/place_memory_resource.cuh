@@ -35,11 +35,13 @@
 #include <cuda/stream>
 
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh> // SCOPE(fail)
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <stdexcept>
 #include <stdexcept>
 
 #include <cuda_runtime.h>
@@ -129,6 +131,22 @@ public:
     // so report it rather than terminate through the noexcept boundary.
     try
     {
+      if (!is_stream_ordered_)
+      {
+        // The backend frees immediately (host / non-stream-ordered device
+        // paths), but the caller's stream may still have in-flight work
+        // touching ptr: drain it first. Refused while the stream is
+        // capturing (a synchronize would invalidate the capture): the throw
+        // is caught below, the free is skipped — a reported leak, never a
+        // use-after-free or a broken capture.
+        if (stream_in_capture(stream.get()))
+        {
+          _CCCL_THROW(::std::runtime_error,
+                      "place_memory_resource::deallocate: cannot drain a capturing stream "
+                      "(non-stream-ordered place)");
+        }
+        cuda_try(cudaStreamSynchronize(stream.get()));
+      }
       place_.deallocate(ptr, bytes, cuda_stream);
     }
     catch (const ::std::exception& e)
@@ -154,7 +172,20 @@ public:
     {
       return nullptr;
     }
-    return place_.allocate(static_cast<::std::ptrdiff_t>(bytes), nullptr);
+    void* const p = place_.allocate(static_cast<::std::ptrdiff_t>(bytes), nullptr);
+    if (is_stream_ordered_)
+    {
+      // The backend allocated on the legacy stream (the only stream a
+      // synchronous API has): the pointer becomes universally usable only
+      // once that allocation has completed. The synchronous contract pays
+      // the wait here, once, so callers never have to know.
+      SCOPE(fail)
+      {
+        place_.deallocate(p, bytes, nullptr); // don't leak if the sync throws
+      };
+      cuda_try(cudaStreamSynchronize(nullptr));
+    }
+    return p;
   }
 
   /// @brief Synchronous deallocation (models the `cuda::mr` synchronous resource concept).
