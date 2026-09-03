@@ -49,6 +49,7 @@ the matrix job is turned into one or more dispatch groups consisting of potentia
     "name": "...",
     "runner": "...",
     "image": "...",
+    "image_dependencies": "{...}",
     "command": "..." },
   }
 """
@@ -348,6 +349,8 @@ def get_job_type_info(job):
         result["gpu"] = False
     if "cuda_ext" not in result:
         result["cuda_ext"] = False
+    if "windows_image_dependencies" not in result:
+        result["windows_image_dependencies"] = {}
     if "force_producer_ctk" in result:
         result["force_producer_ctk"] = canonicalize_ctk_version(
             result["force_producer_ctk"]
@@ -585,6 +588,24 @@ def generate_dispatch_job_image(matrix_job, job_type):
     return f"{image_repo}:{version_prefix}cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
+def generate_dispatch_job_image_dependencies(matrix_job, job_type):
+    if not is_windows(matrix_job):
+        return {}
+
+    dependency_specs = get_job_type_info(job_type)["windows_image_dependencies"]
+
+    dependencies = {}
+    for environment_variable, tag_overrides in dependency_specs.items():
+        dependency_job = copy.deepcopy(matrix_job)
+        dependency_job.update(tag_overrides)
+        canonicalize_tags(dependency_job)
+        dependencies[environment_variable] = generate_dispatch_job_image(
+            dependency_job, job_type
+        )
+
+    return dependencies
+
+
 def generate_dispatch_job_environment(matrix_job, job_type):
     return json.dumps(matrix_job.get("environment") or [])
 
@@ -688,12 +709,13 @@ def generate_dispatch_job_origin(matrix_job, job_type):
 
 def generate_dispatch_job_json(matrix_job, job_type):
     job_info = get_job_type_info(job_type)
+    image_dependencies = generate_dispatch_job_image_dependencies(matrix_job, job_type)
     gpu_count = 0
     if job_info["gpu"]:
         gpu = get_gpu(matrix_job["gpu"])
         gpu_count = gpu["gpu_count"]
 
-    return {
+    job = {
         "cuda": generate_dispatch_job_ctk_version(matrix_job, job_type),
         "host": generate_dispatch_job_host_compiler(matrix_job, job_type),
         "name": generate_dispatch_job_name(matrix_job, job_type),
@@ -705,6 +727,10 @@ def generate_dispatch_job_json(matrix_job, job_type):
         "os": "windows" if is_windows(matrix_job) else "linux",
         "gpu_count": gpu_count,
     }
+    if image_dependencies:
+        job["image_dependencies"] = json.dumps(image_dependencies)
+
+    return job
 
 
 # Create a single build producer, and a separate consumer for each test_job_type:
@@ -817,12 +843,13 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 
 
 def compare_dispatch_jobs(job1, job2):
-    "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
+    "Compare two dispatch job specs for equality, excluding origin and id."
     # Ignores the 'origin' key, which may vary between identical job specifications.
     return (
         job1["name"] == job2["name"]
         and job1["runner"] == job2["runner"]
         and job1["image"] == job2["image"]
+        and job1.get("image_dependencies", "{}") == job2.get("image_dependencies", "{}")
         and job1["environment"] == job2["environment"]
         and job1["command"] == job2["command"]
     )

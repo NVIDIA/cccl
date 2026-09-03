@@ -14,6 +14,10 @@ inputs:
   image:
     description: "The Docker image to use."
     required: true
+  image_dependencies:
+    description: "JSON map of environment variables to additional images to inject and pre-pull."
+    required: false
+    default: '{}'
   runner:
     description: "The GitHub Actions runner name."
     required: true
@@ -169,22 +173,50 @@ runs:
         username: ${{ github.actor }}
         password: ${{ github.token }}
 
-    - name: Fetch ${{ inputs.image }}
+    - name: Fetch job images
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         IMAGE: ${{ inputs.image }}
+        IMAGE_DEPENDENCIES: ${{ inputs.image_dependencies }}
       run: |
-        echo "::group::Pulling Docker image ${IMAGE}"
-        docker pull "${IMAGE}"
-        echo "::endgroup::"
+        if ! jq -e \
+          'type == "object" and all(to_entries[]; (.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) and (.value | type == "string" and length > 0))' \
+          <<< "${IMAGE_DEPENDENCIES}" > /dev/null; then
+          echo "::error::image_dependencies must map environment variable names to non-empty image strings."
+          exit 1
+        fi
+
+        images=("${IMAGE}")
+        while IFS= read -r image; do
+          images+=("${image}")
+        done < <(jq -r '.[]' <<< "${IMAGE_DEPENDENCIES}")
+
+        for image in "${images[@]}"; do
+          if [[ "${image}" != ghcr.io/* ]]; then
+            echo "::error::Windows job images must use ghcr.io: ${image}"
+            exit 1
+          fi
+        done
+
+        for image in "${images[@]}"; do
+          echo "::group::Pulling Docker image ${image}"
+          docker pull "${image}"
+          echo "::endgroup::"
+        done
+
+    # The job container has access to the host Docker daemon. Remove its registry
+    # credentials before running repository-controlled code.
+    - name: Log out of GHCR
+      if: ${{ always() }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: docker logout ghcr.io
 
     - name: Run command
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
-        GH_TOKEN: ${{ github.token }}
-        GITHUB_ACTOR: ${{ github.actor }}
         JOB_IMAGE: ${{ inputs.image }}
+        IMAGE_DEPENDENCIES: ${{ inputs.image_dependencies }}
         ENABLE_GPU: ${{ inputs.gpu_count != '0' && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
       run: |
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
@@ -220,9 +252,14 @@ runs:
         exit $exitCode
         EOF
 
+        dependency_envargs=()
+        while IFS= read -r entry; do
+          dependency_envargs+=(--env "${entry}")
+        done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "${IMAGE_DEPENDENCIES}")
+
         docker_exit=0
         set +e
-        docker run --rm \
+        docker run --rm --pull never \
           -v //./pipe/docker_engine://./pipe/docker_engine \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
@@ -242,9 +279,7 @@ runs:
           --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
           --env "DOCKER_HOST=npipe:////./pipe/docker_engine" \
           --env "HOST_WORKSPACE=${{steps.paths.outputs.HOST_REPO}}" \
-          --env "GH_TOKEN=$GH_TOKEN" \
           --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-          --env "GITHUB_ACTOR=$GITHUB_ACTOR" \
           --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
@@ -262,6 +297,7 @@ runs:
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           ${ENVARGS:-} \
+          "${dependency_envargs[@]}" \
           "${JOB_IMAGE}" \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
