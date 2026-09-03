@@ -4,7 +4,7 @@
 
 """Block Load/Store signatures for the Numba-CUDA-MLIR backend."""
 
-from typing import Literal
+from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
@@ -21,6 +21,7 @@ from ._thread_group import ThreadGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 
+@overload
 def load(
     group: ThreadGroup[Literal["block"]],
     source: object,
@@ -29,7 +30,20 @@ def load(
     *,
     algorithm: BlockLoadStoreAlgorithm | BlockLoadAlgorithm = "direct",
     valid_items: ValidItems | None = None,
-    oob_default: _ItemT | int | float | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorage | None = None,
+) -> ThreadDataLike[_ItemT]: ...
+@overload
+def load(
+    group: ThreadGroup[Literal["block"]],
+    source: object,
+    output: ThreadDataLike[_ItemT],
+    /,
+    *,
+    algorithm: BlockLoadStoreAlgorithm | BlockLoadAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: _ItemT | int | float,
     offset: IntegerValue | None = None,
     temp_storage: TempStorage | None = None,
 ) -> ThreadDataLike[_ItemT]: ...

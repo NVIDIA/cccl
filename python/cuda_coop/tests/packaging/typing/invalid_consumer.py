@@ -24,17 +24,23 @@ coop.load(
     object(),
     values,
 )
-coop.load(
+coop.load(  # expected-error: [call-overload]
     coop.this_block(),
     object(),
     values,
-    algorithm="stripd",  # expected-error: [arg-type]
+    algorithm="stripd",
 )
-coop.load(
+coop.load(  # expected-error: [call-overload]
     coop.this_block(),
     object(),
     values,
-    valid_items=1.5,  # expected-error: [arg-type]
+    valid_items=1.5,
+)
+coop.load(  # expected-error: [call-overload]
+    coop.this_block(),
+    object(),
+    values,
+    oob_default=0,
 )
 coop.store(
     coop.this_block(),
