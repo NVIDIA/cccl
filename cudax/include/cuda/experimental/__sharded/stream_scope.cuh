@@ -52,6 +52,7 @@
 
 #include <cuda/__stream/stream_ref.h>
 
+#include <cuda/experimental/__places/place_group.cuh> // check_not_capturing
 #include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 
@@ -153,6 +154,19 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
 
   constexpr bool __is_async = async_call_env<_CallEnv>;
 
+  if constexpr (!__is_async)
+  {
+    // Refusals first, before any CUDA call: this form synchronizes at the
+    // end, so both refusal conditions must be decided before any work is
+    // enqueued (the entry-guard discipline, applied family-wide).
+    require_sync_allowed(__call_env, __what);
+    places::check_not_capturing(nullptr, __what);
+    for (::std::size_t __g = 0; __g < __num_shards; __g++)
+    {
+      places::check_not_capturing(::cuda::get_stream(__envs[__g]).get(), __what);
+    }
+  }
+
   for (::std::size_t __g = 0; __g < __num_shards; __g++)
   {
     const auto& __d = __data.shard(__g);
@@ -181,7 +195,6 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
   }
   else
   {
-    require_sync_allowed(__call_env, __what);
     for (::std::size_t __g = 0; __g < __num_shards; __g++)
     {
       if (__data.shard(__g).size != 0)

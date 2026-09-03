@@ -270,6 +270,17 @@ zip_transform(_SOut&& out, const _Envs& envs, _Op op, const _CallEnv& call_env, 
 
   constexpr bool __is_async = async_call_env<_CallEnv>;
 
+  if constexpr (!__is_async)
+  {
+    // Refusals first, before any CUDA call: this form synchronizes at the end.
+    require_sync_allowed(call_env, "sharded::zip_transform (synchronous form)");
+    places::check_not_capturing(nullptr, "sharded::zip_transform");
+    for (::std::size_t g = 0; g < num_shards; g++)
+    {
+      places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::zip_transform");
+    }
+  }
+
   for (::std::size_t g = 0; g < num_shards; g++)
   {
     const auto& s_out = out.shard(g);
@@ -303,7 +314,6 @@ zip_transform(_SOut&& out, const _Envs& envs, _Op op, const _CallEnv& call_env, 
 
   if constexpr (!__is_async)
   {
-    require_sync_allowed(call_env, "sharded::zip_transform (synchronous form)");
     for (::std::size_t g = 0; g < num_shards; g++)
     {
       if (out.shard(g).size != 0)
