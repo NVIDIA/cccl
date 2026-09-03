@@ -54,6 +54,7 @@ using ::cuda::experimental::places::layout_leaf;
 using ::cuda::experimental::places::localized_stats;
 using ::cuda::experimental::places::make_composite_data_place;
 using ::cuda::experimental::places::make_partition;
+using ::cuda::experimental::places::make_partition_descriptor;
 using ::cuda::experimental::places::partition_spec;
 using ::cuda::experimental::places::replicate_over;
 using ::cuda::experimental::places::replicate_over_t;

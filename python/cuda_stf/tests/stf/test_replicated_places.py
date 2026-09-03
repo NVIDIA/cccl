@@ -63,6 +63,38 @@ class TestReplicatedDataPlace:
 
         ctx.finalize()
 
+    def test_mutation_between_replicated_reads(self):
+        """Mutate at another place: the next replicated read re-broadcasts.
+        Runs on the stream and graph backends (in the latter the re-broadcast
+        copies land inside the captured graph)."""
+        for use_graph in (False, True):
+            grid = stf.exec_place_grid.from_devices([0, 0])
+            rep = stf.data_place.replicated(grid)
+
+            N = 256
+            ctx = stf.context(use_graph=use_graph)
+            X = np.ones(N, dtype=np.float32)
+            lX = ctx.logical_data(X, name="X_cycle")
+
+            # generation 1 read at the replicated place
+            with ctx.task(grid, lX.read(rep)):
+                pass
+
+            # mutate at another (host) place
+            def bump(x):
+                x[:] = x[:] + 41.0
+
+            ctx.host_launch(lX.rw(), fn=bump)
+
+            # generation 2 read: replicas must be re-broadcast
+            with ctx.task(grid, lX.read(rep)):
+                pass
+
+            results = []
+            ctx.host_launch(lX.read(), fn=lambda x: results.append(float(x.sum())))
+            ctx.finalize()
+            assert abs(results[0] - 42.0 * N) < 1e-3
+
     def test_write_rejected(self):
         """Replicated places are read-only: non-read deps are rejected."""
         grid = stf.exec_place_grid.from_devices([0, 0])
