@@ -196,7 +196,11 @@ Size-mutating algorithms and the contiguous backing
 
 ``copy_if`` / ``filter`` / ``remove_if`` and ``unique`` shrink shard sizes in
 place (capacities are unchanged; ``reset_sizes_to_capacity()`` reuses the
-buffers). On a contiguous array this is unrepresentable: shrinking a shard
+buffers). ``copy_if`` also has an out-of-place form —
+``copy_if(src, dst, pred)`` — selecting from a read-only view into an owning
+destination whose per-shard sizes become the data-dependent selected counts
+(the frontier shape: derive a new ragged structure without destroying the
+source; per shard the destination's capacity must cover the source's size). On a contiguous array this is unrepresentable: shrinking a shard
 would leave a gap between its valid elements and the next shard's, falsifying
 the read-as-one-array contract of ``contiguous_data()``, while compacting
 across the gap would migrate elements onto other places than the caller asked

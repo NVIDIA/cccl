@@ -182,6 +182,106 @@ void test_unique_cross_shard_boundary(place_group& group)
   EXPECT(unique(empty) == 0UL);
 }
 
+
+// Out-of-place selection: source untouched, destination ragged, capacity
+// contract enforced at entry, self-bound and explicit-envs forms agree.
+void test_copy_if_out_of_place(place_group& group)
+{
+  const size_t n = 100003;
+  auto src       = sharded_array<long long>::allocate(group, n);
+  iota(src, 0LL);
+  const auto src_view = src.slice(0, n); // non-owning view over the source
+
+  // Destination with capacity == source size per shard (worst case).
+  ::std::vector<size_t> caps(src.num_shards());
+  for (size_t g = 0; g < src.num_shards(); g++)
+  {
+    caps[g] = static_cast<size_t>(src.shard(g).size);
+  }
+  auto dst = sharded_array<long long>::allocate(group, caps, 0);
+
+  // Self-bound form.
+  const size_t kept = copy_if(src_view, dst, is_even{});
+  EXPECT(kept == (n + 1) / 2);
+  EXPECT(dst.size() == kept);
+  EXPECT(validate(dst));
+
+  // Source untouched.
+  EXPECT(src.size() == n);
+  {
+    ::std::vector<long long> h(n);
+    src.copy_to_host(h.data());
+    for (size_t i = 0; i < n; i++)
+    {
+      EXPECT(h[i] == static_cast<long long>(i));
+    }
+  }
+  // Destination holds exactly the even values, in order.
+  {
+    ::std::vector<long long> h(kept);
+    dst.copy_to_host(h.data());
+    // Per shard, the evens of that shard's range, concatenated in shard order.
+    size_t k = 0;
+    for (size_t g = 0; g < src.num_shards(); g++)
+    {
+      const auto& sh = src.shard(g);
+      for (size_t i = 0; i < static_cast<size_t>(sh.size); i++)
+      {
+        const long long v = static_cast<long long>(sh.global_offset + i);
+        if (v % 2 == 0)
+        {
+          EXPECT(h[k++] == v);
+        }
+      }
+    }
+    EXPECT(k == kept);
+  }
+
+  // Explicit-envs form agrees (rerun into the same destination: prior ragged
+  // sizes are irrelevant by contract).
+  auto envs          = default_envs(dst);
+  const size_t kept2 = copy_if(src_view, envs, dst, is_even{});
+  EXPECT(kept2 == kept);
+
+  // Capacity refusal: a destination with a too-small shard refuses at entry
+  // and stays untouched.
+  ::std::vector<size_t> small(src.num_shards(), 1);
+  auto tiny = sharded_array<long long>::allocate(group, small, 0);
+  fill(tiny, -7LL);
+  bool threw = false;
+  try
+  {
+    (void) copy_if(src_view, tiny, is_even{});
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+  EXPECT(tiny.size() == src.num_shards()); // sizes unchanged
+  {
+    ::std::vector<long long> h(tiny.size());
+    tiny.copy_to_host(h.data());
+    for (long long v : h)
+    {
+      EXPECT(v == -7LL); // contents unchanged: refusal preceded any move
+    }
+  }
+
+  // forbid: refused before any work.
+  threw                  = false;
+  const auto forbid_prop = ::cuda::std::execution::prop{get_sync_policy_t{}, sync_policy::forbid};
+  try
+  {
+    (void) copy_if(src_view, dst, is_even{}, ::cuda::std::execution::env{forbid_prop});
+  }
+  catch (const ::std::runtime_error&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+}
+
 void test_size_mutators_refuse_contiguous(place_group& group)
 {
   // THE CONTRACT: a contiguous array is one VA range read as one array
@@ -243,6 +343,7 @@ int main()
 
   test_copy_if(group);
   test_copy_if_empty_result_shards(group);
+  test_copy_if_out_of_place(group);
   test_remove_if_and_filter(group);
   test_unique_cross_shard_boundary(group);
 
