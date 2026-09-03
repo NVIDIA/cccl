@@ -2676,6 +2676,11 @@ private:
       return {};
     }
 
+    if (!input_is_primitive && input_type != type_t::int128 && input_type != type_t::uint128)
+    {
+      return {};
+    }
+
     if (input_size_bytes == 1)
     {
       // trp_0.ld_0.ipt_20.tpb_512.ns_76.dcid_5.l2w_475  if 2^28 1.132, unique 2^28 1.147
