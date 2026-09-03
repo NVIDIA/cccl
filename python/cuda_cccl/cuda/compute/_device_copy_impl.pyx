@@ -511,7 +511,7 @@ cdef tuple _device_copy_normalize_static_extent_axes(object axes):
     cdef object seen = set()
     cdef object iterator
     cdef object axis_obj
-    cdef object axis
+    cdef Py_ssize_t axis
 
     if axes is None:
         return ()
@@ -539,13 +539,15 @@ cdef tuple _device_copy_normalize_static_extent_axes(object axes):
 cdef tuple _device_copy_static_extent_axes_from_extent_spec(object extents):
     cdef list result = []
     cdef object kind
-    cdef Py_ssize_t axis
+    cdef Py_ssize_t axis = 0
 
-    for axis, kind in enumerate(extents):
+    for kind in extents:
         if kind is None or kind == "runtime" or kind == "dynamic":
+            axis += 1
             continue
         if kind == "static":
             result.append(axis)
+            axis += 1
             continue
         raise ValueError("extent entries must be 'runtime', 'dynamic', 'static', or None")
 
@@ -595,25 +597,27 @@ cdef _DeviceCopyCompileSpec _device_copy_compile_spec_from_object(object spec):
 
 cdef void _device_copy_compile_spec_validate_rank(_DeviceCopyCompileSpec spec, size_t rank) except *:
     cdef Py_ssize_t i
-    cdef object axis
+    cdef Py_ssize_t axis
 
     if spec._all_static_extents:
         return
 
     for i in range(len(spec._static_extent_axes)):
         axis = spec._static_extent_axes[i]
-        if axis >= rank:
+        if <size_t>axis >= rank:
             raise ValueError("static extent axis is out of range for simplified rank")
 
 
 cdef bint _device_copy_compile_spec_axis_is_static(_DeviceCopyCompileSpec spec, size_t axis) except *:
     cdef Py_ssize_t i
+    cdef Py_ssize_t static_axis
 
     if spec._all_static_extents:
         return True
 
     for i in range(len(spec._static_extent_axes)):
-        if spec._static_extent_axes[i] == axis:
+        static_axis = spec._static_extent_axes[i]
+        if <size_t>static_axis == axis:
             return True
 
     return False
@@ -1541,7 +1545,6 @@ cdef void _device_copy_check_runtime_contract(
     object dtype_key,
     size_t itemsize,
     size_t alignment,
-    object shape,
 ) except *:
     _device_copy_check_views_compatible(source, destination, source_dtype_key, destination_dtype_key)
     if source_dtype_key != dtype_key:
@@ -1550,8 +1553,6 @@ cdef void _device_copy_check_runtime_contract(
         raise TypeError("device copy was built for a different item size")
     if <size_t>source.alignment != alignment:
         raise TypeError("device copy was built for a different alignment")
-    if tuple(source.shape) != shape:
-        raise ValueError("device copy was built for a different shape")
 
 
 class _DeviceCopyProtocolView:
@@ -2028,7 +2029,6 @@ cdef class _DeviceCopy:
     cdef _DeviceCopyBuild _build
     cdef _DeviceCopyPlan _plan
     cdef tuple _dtype_key
-    cdef tuple _shape
     cdef size_t _itemsize
     cdef size_t _alignment
     cdef bint _empty
@@ -2064,7 +2064,6 @@ cdef class _DeviceCopy:
         )
 
         self._dtype_key = source_dtype_key
-        self._shape = tuple(source_view.shape)
         self._itemsize = <size_t>source_view.itemsize
         self._alignment = <size_t>source_view.alignment
         self._plan = _device_copy_make_plan_from_views(source_view, destination_view, self._itemsize)
@@ -2104,7 +2103,6 @@ cdef class _DeviceCopy:
             self._dtype_key,
             self._itemsize,
             self._alignment,
-            self._shape,
         )
         plan = _device_copy_make_plan_from_views(source_view, destination_view, self._itemsize)
         if _device_copy_call_rank(plan) != _device_copy_call_rank(self._plan):
