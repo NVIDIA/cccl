@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Weekly scheduled workflow. Delegates matrix building and job dispatch (with
-# Slack alert notifications) to .github/workflows/ci-matrix-build.yml.
-name: weekly
+# On-demand workflow that sideloads a CI matrix file from a different branch of
+# this repo and runs the full nightly build matrix defined there. Unlike the
+# scheduled workflows, this always builds a full matrix (no inspect-changes) and
+# fetches the specified branch into '.private' inside ci-matrix-build so the
+# sideloaded matrix file is available to the workflow-build step.
+name: custom
 
 defaults:
   run:
@@ -23,8 +26,11 @@ defaults:
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 8 * * 0" # Every Sunday at 00:00 PST, 03:00 EST, 08:00 UTC
+    inputs:
+      matrix_branch:
+        description: "Branch (in this repo) containing the CI matrix file to sideload."
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
@@ -36,5 +42,6 @@ jobs:
     uses: ./.github/workflows/ci-matrix-build.yml
     secrets: inherit
     with:
-      workflows: weekly
-      enable_slack_alert: true
+      workflows: nightly
+      matrix_branch: ${{ inputs.matrix_branch }}
+      matrix_file: ${{ inputs.matrix_path }}
