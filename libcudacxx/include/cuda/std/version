@@ -227,6 +227,7 @@
 // # define __cccl_lib_out_ptr                              202106L
 // # define __cccl_lib_ranges_chunk                         202202L
 // # define __cccl_lib_ranges_chunk_by                      202202L
+#  define __cccl_lib_ranges_find_last 202207L
 // # define __cccl_lib_ranges_iota                          202202L
 // # define __cccl_lib_ranges_join_with                     202202L
 // # define __cccl_lib_ranges_slide                         202202L
