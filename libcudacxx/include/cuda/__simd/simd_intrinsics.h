@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_IDOT()
+#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
 
 #  include <cuda/std/cstdint>
 
@@ -313,9 +313,41 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #  endif // _CCCL_HAS_SIMD_IDOT()
 
+#  if _CCCL_HAS_SIMD_VABSDIFF()
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vabsdiff_u8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __c) noexcept
+{
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("vabsdiff4.u32.u32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__c));
+                 return __result;
+               }))
+  _CCCL_VERIFY(false, "cuda::simd::__vabsdiff_u8x4: Unsupported architecture");
+  return ::cuda::std::uint32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vabsdiff_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __c) noexcept
+{
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("vabsdiff4.u32.s32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__c));
+                 return __result;
+               }))
+  _CCCL_VERIFY(false, "cuda::simd::__vabsdiff_s8x4: Unsupported architecture");
+  return ::cuda::std::uint32_t{};
+}
+
+#  endif // _CCCL_HAS_SIMD_VABSDIFF()
+
 _CCCL_END_NAMESPACE_CUDA_SIMD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_IDOT()
+#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
 #endif // _CUDA___SIMD_SIMD_INTRINSICS_H

@@ -37,8 +37,8 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <type_traits>
 #include <utility>
@@ -1177,7 +1177,8 @@ public:
     auto host_func = [](void* untyped_args) {
       // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
       // it.
-      on_throw(::std::abort) << [untyped_args] {
+      ON_THROW(abort)
+      {
         auto p = static_cast<decltype(args)>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);

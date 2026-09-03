@@ -81,18 +81,8 @@ template <bool __has_direct_reduction,
   const _BinaryOp& __op,
   const _Tp& __ident)
 {
-  const auto& __logical_device = __comm.logical_device();
-  // Workaround for the case where:
-  //
-  // 1. The stream is the NULL stream.
-  // 2. The resource is the default per-device memory resource.
-  // 3. There is no current context set.
-  //
-  // In this case cuMemAllocFromPool fails with INVALID_CONTEXT because the driver cannot pick
-  // an appropriate context to tie the allocation to.
-  const auto _                = ::cuda::__ensure_current_context{__logical_device};
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device);
+  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
 
   // One partial per segment. The butterfly fallback folds in place, but needs extra room for
   // the other ranks' data so we allocate it here
@@ -103,7 +93,7 @@ template <bool __has_direct_reduction,
   const auto __rank = __comm.rank();
 
   __CUDAX_MULTI_GPU_DISPATCH(
-    __logical_device,
+    __stream,
     CUB_NS_QUALIFIER::DeviceSegmentedReduce::Reduce,
     __input_it,
     __buff.begin(),
@@ -169,7 +159,7 @@ _CCCL_HOST_API void __exchange_and_fold(
       auto __recv = __buf.subspan(__num_segments, __num_segments);
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __buf.stream(),
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::std::make_tuple(__send.data(), __recv.data()),
         __send.data(),
@@ -295,11 +285,10 @@ _CCCL_HOST_API void __butterfly_reduction(
   // written to directly.
   //
   // All in all *probably* not worth the pain of implementing.
-  for (auto&& [__comm, __env, __local, __out_it] :
-       ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
+  for (auto&& [__env, __local, __out_it] : ::cuda::std::ranges::views::zip(__envs, *__partials, __outputs))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __local.stream(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       __local.data(),
       __out_it,

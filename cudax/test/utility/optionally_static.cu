@@ -20,6 +20,7 @@ TEST_CASE("optionally_static static value", "[utility]")
 {
   constexpr cudax::optionally_static<::std::size_t(42), 0> v1;
   static_assert(v1.get() == 42);
+  // NOLINTNEXTLINE(misc-redundant-expression): tests reflexivity of operator==
   static_assert(v1 == v1);
   static_assert(v1 == 42UL);
 

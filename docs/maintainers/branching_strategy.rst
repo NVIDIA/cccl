@@ -10,7 +10,7 @@ Canonical branches
 - ``main``
 
   - The default development branch.
-  - Updates should be made via pull requests following our :doc:`contributing guidelines </cccl/contributing>`.
+  - Updates should be made via pull requests following our :doc:`contributing guidelines </contributors/index>`.
 
 - ``branch/X.Y.x``
 

@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_unique_by_key.cuh>
@@ -280,6 +281,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
 
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
+#else // CUB_DEBUG_LOG
+    detail::log(
+      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
@@ -334,6 +338,30 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
               (long long) stream,
               items_per_thread,
               sweep_sm_occupancy);
+    }
+#else // CUB_DEBUG_LOG
+    if (detail::logging_enabled())
+    {
+      // Get SM occupancy for unique_by_key_kernel
+      int sweep_sm_occupancy;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            sweep_sm_occupancy, // out
+            kernel_source.UniqueByKeySweepKernel(),
+            threads_per_block)))
+      {
+        return error;
+      }
+
+      detail::log_always(
+        "Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
+        "%lld>>>(), %d items per thread, %d SM occupancy\n",
+        scan_grid_size.x,
+        scan_grid_size.y,
+        scan_grid_size.z,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread,
+        sweep_sm_occupancy);
     }
 #endif // CUB_DEBUG_LOG
 
@@ -538,6 +566,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                            cc.minor_cap(),
                            ss.str().c_str());
                  }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    log_dispatch("DeviceSelect (unique by key)", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const auto threads_per_block = active_policy.threads_per_block;
@@ -582,6 +612,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+#else // CUB_DEBUG_LOG
+    detail::log(
+      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
@@ -634,6 +667,27 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
               (long long) stream,
               items_per_thread,
               sweep_sm_occupancy);
+    }
+#else // CUB_DEBUG_LOG
+    if (detail::logging_enabled())
+    {
+      // Get SM occupancy for unique_by_key_kernel
+      int sweep_sm_occupancy;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            sweep_sm_occupancy, kernel_source.UniqueByKeySweepKernel(), threads_per_block)))
+      {
+        return error;
+      }
+      detail::log_always(
+        "Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
+        "%lld>>>(), %d items per thread, %d SM occupancy\n",
+        scan_grid_size.x,
+        scan_grid_size.y,
+        scan_grid_size.z,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread,
+        sweep_sm_occupancy);
     }
 #endif // CUB_DEBUG_LOG
 

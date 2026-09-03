@@ -715,7 +715,7 @@ template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -727,7 +727,7 @@ template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -744,7 +744,7 @@ template <::cuda::std::size_t _Ip, class _Tp>
 struct tuple_element<_Ip, ::cuda::std::complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<cuda::std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_STD

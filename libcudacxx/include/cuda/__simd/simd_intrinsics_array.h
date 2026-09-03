@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_IDOT()
+#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
 
 #  include <cuda/__simd/simd_intrinsics.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -179,9 +179,35 @@ template <typename _Tp, typename _Up, typename _AccumT, ::cuda::std::size_t _N16
 
 #  endif // _CCCL_HAS_SIMD_IDOT()
 
+#  if _CCCL_HAS_SIMD_VABSDIFF()
+
+template <typename _Tp, ::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vabsdiff_8bit_x4(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    if constexpr (::cuda::std::is_unsigned_v<_Tp>)
+    {
+      __result_u[__i] = ::cuda::simd::__vabsdiff_u8x4(__lhs_u[__i], __rhs_u[__i], __c_u[__i]);
+    }
+    else
+    {
+      __result_u[__i] = ::cuda::simd::__vabsdiff_s8x4(__lhs_u[__i], __rhs_u[__i], __c_u[__i]);
+    }
+  }
+  return __result_u;
+}
+
+#  endif // _CCCL_HAS_SIMD_VABSDIFF()
+
 _CCCL_END_NAMESPACE_CUDA_SIMD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_IDOT()
+#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
 #endif // _CUDA___SIMD_SIMD_INTRINSICS_ARRAY_H

@@ -31,6 +31,8 @@ def first_val(my_dict):
 
 class JsonCache:
     _instance = None
+    bench_cache: dict[str, dict]
+    device_cache: dict[str, dict]
 
     def __new__(cls):
         if cls._instance is None:
@@ -225,7 +227,7 @@ class SubBenchState:
 class SubBenchResult:
     def __init__(self, bench):
         axes_names = {}
-        axes_values = {}
+        axes_values: dict[str, dict[str | float, str]] = {}
         for axis in bench["axes"]:
             short_name = axis["name"]
             full_name = get_axis_name(axis)
@@ -373,6 +375,7 @@ class RunsCache:
 
 class BenchCache:
     _instance = None
+    existing_tables: set[str]
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -402,7 +405,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers = {}
+        centers: dict[str, dict[str, float]] = {}
         with conn:
             for subbench in result.subbenches:
                 centers[subbench] = {}
@@ -418,7 +421,6 @@ class BenchCache:
                         placeholders = placeholders + ", ?"
                         values.append(value)
 
-                    values = tuple(values)
                     samples = fpzip.compress(state.samples)
                     center = estimator(state.samples)
                     to_insert = (
@@ -430,7 +432,7 @@ class BenchCache:
                         center,
                         state.bw,
                         samples,
-                    ) + values
+                    ) + tuple(values)
 
                     query = """
                     INSERT INTO "{0}" (ctk, cccl, gpu, variant, elapsed, center, bw, samples {1})
@@ -452,7 +454,7 @@ class BenchCache:
 
         self.create_table_if_not_exists(conn, bench)
 
-        centers = {}
+        centers: dict[str, dict[str, float]] = {}
 
         with conn:
             for subbench in rt_values:
@@ -502,7 +504,7 @@ def speedup(base, variant):
     if benchmarks != set(variant.keys()):
         raise Exception("Benchmarks do not match.")
 
-    result = {}
+    result: dict[str, dict[str, float]] = {}
     for bench in benchmarks:
         base_states = base[bench]
         variant_states = variant[bench]
@@ -535,8 +537,11 @@ class ProcessRunner:
 
     def __init__(self):
         self.process = None
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        import threading
+
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGINT, self.signal_handler)
+            signal.signal(signal.SIGTERM, self.signal_handler)
 
     def new_process(self, cmd):
         self.process = subprocess.Popen(
@@ -625,7 +630,7 @@ class Bench:
     def ct_axes_value_descriptions(self):
         subbench_descriptions = {}
         for bench in json_benches(self.algname)["benchmarks"]:
-            descriptions = {}
+            descriptions: dict[str, dict[str, str]] = {}
             for axis in bench["axes"]:
                 name = axis["name"]
                 if "{ct}" not in name:
@@ -801,7 +806,30 @@ class Bench:
         rt_axes_ids = compute_axes_ids(rt_values)
         weight_matrices = compute_weight_matrices(rt_values, rt_axes_ids)
 
+        # For importance-ordered axis, score favors last speedups:
+        # score = 15% of S16 + 25% of S20 + 29% of S24 + 31% of S28
+        #
+        # Sometimes, list is incomplete. Say, if a workloads error out or skip.
+        # For simplicity, say we skipped 2^16 and 2^20 elements.
+        #
+        # In these cases, `rt_values` should still contain full list with 2^16
+        # and 2^20 included.
+        # Otherwise, we'd assume that 2^24 was the first value on the importance axis.
+        # In which case, we'd assign weights as 38% / 62% instead of 48% / 52%.
+        #
+        # If we do nothing, score computation would just skip S16 and S20 completely,
+        # while still scaling S24 and S28 components lower, as if S16 and S20 was there.
+        # score = 15% of 0 + 25% of 0 + 29% of S24 + 31% of S28
+        # Note how we end up with 29% of S24 + 31% of S28 all while 29 + 31 do
+        # not add to a 100%.
+        # This breaks "speedup" semantic of the score.
+        #
+        # To fix this, we just accumulate what new 100% mean and scale score by that:
+        # (29/100 of S24) / (60/100) + (31/100 of S28) / (60/100)
+        #     = 29/60 of S24 + 31/60 of S28
+        # which is: 48% of S24 + 52% of S28, maintaining the relative importance.
         score = 0
+        total_weight = 0
         for bench in speedups:
             for state in speedups[bench]:
                 rt_workload = state_to_rt_workload(bench, state)
@@ -809,10 +837,13 @@ class Bench:
                 weight = get_workload_weight(
                     rt_workload, rt_values[bench], rt_axes_ids[bench], weights
                 )
-                speedup = speedups[bench][state]
-                score = score + weight * speedup
+                score = score + weight * speedups[bench][state]
+                total_weight = total_weight + weight
 
-        return score
+        if total_weight == 0:
+            return float("-inf")
+
+        return score / total_weight
 
 
 class BaseBench(Bench):
