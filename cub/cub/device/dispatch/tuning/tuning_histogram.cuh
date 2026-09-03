@@ -334,6 +334,20 @@ public:
           return HistogramPolicy{512, 11, 1, BLOCK_LOAD_STRIPED, LOAD_CA, true, SMEM, false, 2048};
         }
       }
+
+      if (num_channels == 4 && num_active_channels == 3 && counter_size == 4 && sample_is_primitive && is_even)
+      {
+        if (sample_size == 1)
+        {
+          // ipt_7.tpb_128.rle_0.ws_0.mem_1.ld_1.laid_2.vec_0 1.005  0.991  1.537  2.076
+          return HistogramPolicy{128, 7, 1, BLOCK_LOAD_STRIPED, LOAD_LDG, false, SMEM, false, 2048};
+        }
+        if (sample_size == 2)
+        {
+          // ipt_7.tpb_256.rle_1.ws_0.mem_1.ld_0.laid_0.vec_0 0.937  1.014  1.145  1.126
+          return HistogramPolicy{256, 7, 1, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
+        }
+      }
     }
 
     if (cc >= ::cuda::compute_capability{10, 0})
