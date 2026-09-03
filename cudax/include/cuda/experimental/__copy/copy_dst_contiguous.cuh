@@ -111,6 +111,7 @@ _CCCL_HOST_API void __copy_dst_contiguous(
   const _SrcAccessor& __src_accessor = {},
   const _DstAccessor& __dst_accessor = {}) noexcept
 {
+  // Block size = 128 is a heuristic based on benchmark results.
   constexpr int __block_size = 128;
   const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter(__src.__extents);
   const auto __grid_size = ::cuda::ceil_div(__tensor_size, _ExtentT{__block_size});

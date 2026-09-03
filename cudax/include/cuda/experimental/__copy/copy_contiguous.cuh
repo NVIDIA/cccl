@@ -131,10 +131,17 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
   return CUB_NS_QUALIFIER::detail::transform::cc_to_min_bytes_in_flight(__cc);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline int __max_threads_per_sm() noexcept
+{
+  const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
+  const auto __dev    = ::cuda::devices[__dev_id];
+  return __dev.attribute<::cudaDevAttrMaxThreadsPerMultiProcessor>();
+}
+
 // Compute the number of elements each thread copies for a given vector width.
 [[nodiscard]] _CCCL_HOST_API inline int __elem_per_thread(int __access_bytes, int __bytes_in_flight) noexcept
 {
-  constexpr auto __threads_per_sm = 2048;
+  const auto __threads_per_sm = ::cuda::experimental::__max_threads_per_sm();
   return ::cuda::std::max(__bytes_in_flight / (__access_bytes * __threads_per_sm), 1);
 }
 
@@ -185,6 +192,8 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
   const _SrcAccessor& __src_accessor = {},
   const _DstAccessor& __dst_accessor = {})
 {
+  // Block size = 256 is a heuristic based on benchmark results. Smaller block sizes (e.g. 128) show significant
+  // performance degradation.
   constexpr int __block_size   = 256;
   const auto __bytes_in_flight = ::cuda::experimental::__bytes_in_flight();
   const auto __elems_per_thread =

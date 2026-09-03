@@ -42,9 +42,9 @@
 #  include <cuda/std/__type_traits/common_type.h>
 #  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__type_traits/is_const.h>
-#  include <cuda/std/__type_traits/is_signed.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_signed.h>
 
 #  include <cuda/experimental/__copy/copy_contiguous.cuh>
 #  include <cuda/experimental/__copy/copy_dst_contiguous.cuh>

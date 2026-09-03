@@ -24,7 +24,6 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__cmath/ceil_div.h>
-#  include <cuda/__cmath/round_up.h>
 #  include <cuda/__device/all_devices.h>
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
@@ -386,26 +385,6 @@ __use_shared_mem_kernel(const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _MaxRank
                         const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst) noexcept
 {
   return ::cuda::experimental::__find_shared_mem_tiling<_TpIn>(__src, __dst).__is_valid;
-}
-
-//! @brief Compute the thread block size for the shared-memory kernel.
-//!
-//! Balances occupancy by dividing the SM threads across as many blocks as the shared memory allows, then caps at
-//! the device maximum.
-//!
-//! @param[in] __tile_total_bytes Shared memory required for one tile in bytes
-//! @return Thread block size
-[[nodiscard]] _CCCL_HOST_API inline int __find_thread_block_size(::cuda::std::size_t __tile_total_bytes) noexcept
-{
-  using ::cuda::std::size_t;
-  const auto __dev                      = ::cuda::experimental::__current_device();
-  const size_t __total_sm_threads       = __dev.attribute<::cudaDevAttrMaxThreadsPerMultiProcessor>();
-  const size_t __max_thread_block_size  = __dev.attribute<::cudaDevAttrMaxThreadsPerBlock>();
-  const size_t __total_shared_mem_bytes = __dev.attribute<::cudaDevAttrMaxSharedMemoryPerMultiprocessor>();
-  const auto __num_blocks_per_sm        = __total_shared_mem_bytes / __tile_total_bytes;
-  const auto __thread_block_size = ::cuda::std::min(__total_sm_threads / __num_blocks_per_sm, __max_thread_block_size);
-  const auto __thread_block_size32 = ::cuda::round_up(__thread_block_size, /*warp size=*/size_t{32});
-  return static_cast<int>(__thread_block_size32);
 }
 } // namespace cuda::experimental
 
