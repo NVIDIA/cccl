@@ -129,7 +129,7 @@ void assert_equal(T1 a, T2 b, const std::string& filename = "unknown", int linen
   }
 }
 
-void assert_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a == b))
   {
@@ -170,7 +170,7 @@ void assert_not_equal(T1 a, T2 b, const std::string& filename = "unknown", int l
   }
 }
 
-void assert_not_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_not_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (a == b)
   {
@@ -209,7 +209,7 @@ void assert_less(T1 a, T2 b, const std::string& filename = "unknown", int lineno
   }
 }
 
-void assert_less(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_less(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a < b))
   {
@@ -234,7 +234,7 @@ void assert_greater(T1 a, T2 b, const std::string& filename = "unknown", int lin
   }
 }
 
-void assert_greater(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_greater(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a > b))
   {
@@ -259,7 +259,7 @@ void assert_lequal(T1 a, T2 b, const std::string& filename = "unknown", int line
   }
 }
 
-void assert_lequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_lequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a <= b))
   {
@@ -284,7 +284,7 @@ void assert_gequal(T1 a, T2 b, const std::string& filename = "unknown", int line
   }
 }
 
-void assert_gequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_gequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a >= b))
   {
@@ -297,7 +297,7 @@ void assert_gequal(char a, char b, const std::string& filename = "unknown", int 
 }
 
 // will catch everything implicitly convertible to a double
-bool almost_equal(double a, double b, double a_tol, double r_tol)
+inline bool almost_equal(double a, double b, double a_tol, double r_tol)
 {
   if (std::abs(a - b) > r_tol * (std::abs(a) + std::abs(b)) + a_tol)
   {
@@ -732,7 +732,7 @@ enum threw_status
   threw_right_type
 };
 
-void check_assert_throws(
+inline void check_assert_throws(
   threw_status s, std::string const& exception_name, std::string const& file_name = "unknown", int line_number = -1)
 {
   switch (s)

@@ -484,9 +484,14 @@ namespace detail::segmented_reduce
 {
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C.
-template <typename InputIteratorT, typename InitValueT, typename ReductionOpT>
-_CCCL_HOST_DEVICE_API auto select_segmented_accum_t(use_default*)
-  -> ::cuda::std::__accumulator_t<ReductionOpT, ::cuda::std::iter_value_t<InputIteratorT>, InitValueT>;
+template <typename InputIteratorT,
+          typename InitValueT,
+          typename ReductionOpT,
+          typename InputT = ::cuda::std::iter_value_t<InputIteratorT>>
+_CCCL_HOST_DEVICE_API auto select_segmented_accum_t(use_default*) -> ::cuda::std::__accumulator_t<
+  ReductionOpT,
+  InputT,
+  ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, reduce::no_init_t>, InputT, InitValueT>>;
 
 template <typename InputIteratorT,
           typename InitValueT,
