@@ -54,8 +54,8 @@ readonly script
 # Every lane that reaches this helper is a GPU lane, so failing to enumerate is
 # fatal rather than silently handing over a GPU-less container -- that surfaces
 # much later, as confusing failures inside pytest. nvidia-smi's own diagnostic is
-# left on stderr. CCCL_MINIMAL_CONTAINER_NO_GPU=1 opts out, matching the Windows
-# helper.
+# left on stderr. CCCL_MINIMAL_CONTAINER_NO_GPU=1 opts out, which the headers
+# lane uses -- it asserts on files shipped in the wheel and launches no kernel.
 declare -a gpu_request=()
 if [[ "${CCCL_MINIMAL_CONTAINER_NO_GPU:-}" != "1" ]]; then
   if ! gpu_uuids="$(nvidia-smi --query-gpu=uuid --format=csv,noheader | paste -sd, -)" ||
