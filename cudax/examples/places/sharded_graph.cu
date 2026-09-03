@@ -44,6 +44,9 @@
  *     reduce (SpMV-shaped)      = zip_transform (edge-space gather*weight)
  *                                 then segmented_reduce (edges -> vertices)
  *  3. frontier size             = count_if over a vertex property
+ *  4. frontier contents (RAGGED) = out-of-place copy_if of the vertex ids
+ *                                 into an owning array whose per-shard sizes
+ *                                 become the data-dependent frontier sizes
  */
 
 #include <cuda/experimental/sharded.cuh>
@@ -88,6 +91,15 @@ struct deg_at_least_3
   __device__ bool operator()(int d) const
   {
     return d >= 3;
+  }
+};
+
+struct frontier_pred // applied to vertex IDS; degree gathered via the contiguous base
+{
+  const int* deg_base;
+  __device__ bool operator()(int v) const
+  {
+    return deg_base[v] >= 3;
   }
 };
 
@@ -219,7 +231,7 @@ int main()
     vsizes[g] = v_begin[g + 1] - v_begin[g];
     esizes[g] = h_col[g].size();
   }
-  auto deg = sharded_array<int>::allocate(group, vsizes, 0);
+  auto deg = sharded_array<int>::allocate_contiguous(group, V, 0); // contiguous: the frontier predicate gathers by vertex id
   auto y   = sharded_array<float>::allocate(group, vsizes, 0);
   auto z   = sharded_array<float>::allocate(group, esizes, 0);
   auto x   = sharded_array<float>::allocate_contiguous(group, V, 0);
@@ -281,6 +293,38 @@ int main()
   }
   ok = ok && (frontier == ref_frontier);
   ::std::printf("frontier size as count_if: %s (|frontier| = %lld)\n", ok ? "OK" : "MISMATCH", frontier);
+
+  // =========================================================================
+  // 4. Frontier contents: a RAGGED result. Vertex ids pass through an
+  //    out-of-place copy_if into an owning array; each shard's size becomes
+  //    its data-dependent frontier count, committed atomically (offsets
+  //    re-tile, the structure stays valid). The source ids are untouched.
+  // =========================================================================
+  auto ids = sharded_array<int>::allocate(group, vsizes, 0);
+  iota(ids, 0); // ids[v] = v (global vertex id)
+  auto frontier_ids = sharded_array<int>::allocate(group, vsizes, 0); // capacity = worst case
+  const int* deg_base = static_cast<const int*>(deg.shard(0).data); // contiguous base
+
+  const size_t f_kept = copy_if(ids, frontier_ids, frontier_pred{deg_base});
+  ok                  = ok && (f_kept == static_cast<size_t>(ref_frontier));
+  {
+    ::std::vector<int> h_f(f_kept);
+    frontier_ids.copy_to_host(h_f.data());
+    size_t k = 0;
+    for (::std::size_t g = 0; g < P; g++)
+    {
+      for (::std::size_t v = v_begin[g]; v < v_begin[g + 1]; v++)
+      {
+        if (adj[v].size() >= 3)
+        {
+          ok = ok && (k < f_kept) && (h_f[k++] == static_cast<int>(v));
+        }
+      }
+    }
+    ok = ok && (k == f_kept);
+  }
+  ::std::printf("frontier contents as ragged copy_if: %s (%zu ids, per-shard sizes data-dependent)\n",
+                ok ? "OK" : "MISMATCH", f_kept);
 
   for (::std::size_t g = 0; g < P; g++)
   {
