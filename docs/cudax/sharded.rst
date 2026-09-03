@@ -204,6 +204,94 @@ for. These algorithms therefore throw ``std::invalid_argument`` on contiguous
 (``allocate_contiguous``) arrays, leaving them untouched. Read-only
 algorithms (``count`` / ``count_if``, ``histogram_even``, ``reduce`` et al.)
 remain available on every sharded array, contiguous ones included.
+Asynchrony and composition
+--------------------------
+
+One rule
+~~~~~~~~
+
+A *lane* is one ordering domain: one stream per place — the environments'
+streams (``place_group::envs(lane_id)``, a container's ``default_envs``, or
+any environment range you build yourself). The composition contract is one
+rule:
+
+  An asynchronous call (a stream-bearing per-call environment) enqueues each
+  shard's work on ``envs[i]`` and touches nothing else.
+
+Consecutive calls on the same environments are therefore ordered per lane by
+stream order, and independent across lanes: a chain of calls is a pipeline
+with no per-call synchronization anywhere, fields living on different lanes
+(``allocate(..., lane_id)``) overlap by construction, and everything beyond
+stream order is said explicitly with the verbs below. The asynchronous forms
+never synchronize with the host; a call environment carrying
+``sync_policy::forbid`` turns any would-be host synchronization anywhere in
+the surface into an exception thrown *before* work is enqueued.
+
+Results attach to their output's timeline: ``reduce_into`` delivers the
+aggregate on the call environment's stream, so awaiting a result means
+synchronizing that one stream — not the lanes that produced it, which are
+already free to run the next iteration's work. (Terminators like
+``reduce_into`` are the one place call-stream edges remain: their fold
+consumes every lane's partial, so every lane joins the call stream — that is
+the operation's meaning, not a composition policy.)
+
+The verbs
+~~~~~~~~~
+
+All are free functions over any environment range; all are stream/event
+mechanics only.
+
+- ``barrier(envs)`` — synchronize every lane with the host. Refuses under
+  ``sync_policy::forbid`` and under capture.
+- ``barrier(envs, stream)`` — make ``stream`` wait for all work on every
+  lane: event edges, non-blocking, capture-legal. The pipeline-boundary
+  form: join the lanes into a caller's timeline, a capture origin, or a
+  communicator's stream.
+- ``lane_wait(envs, i, {j, ...})`` and
+  ``lane_wait(envs_to, i, envs_from, {j, ...})`` — declare a cross-lane (or
+  cross-field) dependency: lane ``i`` waits for the named source lanes.
+  Event edges, capture-legal. A forgotten ``lane_wait`` between genuinely
+  coupled lanes is a race — the same honesty as any stream programming.
+- ``lane_sync(envs, i)`` — synchronize one lane with the host (refuses under
+  ``forbid``/capture).
+- ``copy_to_host`` / ``copy_from_host`` — synchronous by contract; natural
+  pipeline endpoints.
+
+Sealed calls, per call
+~~~~~~~~~~~~~~~~~~~~~~
+
+A call environment carrying ``composition::bracketed`` (the
+``get_composition`` query) restores the fork-all/join-all seal around that
+one call: every shard's work waits for the call stream, and the call stream
+waits for every shard. Use it when a single call must compose with a foreign
+stream as one opaque unit; leave the default (``composition::lane_ordered``)
+everywhere else — a sealed call in the middle of a pipeline routes every
+lane through one timeline and serializes the pipeline's width.
+
+A two-field pipeline
+~~~~~~~~~~~~~~~~~~~~
+
+The shape that motivates the contract (see
+``examples/places/sharded_multi_field_pipeline.cu`` for the complete
+program): two fields on distinct lanes, per-field chains overlapping, one
+declared coupling per iteration, and a convergence check that awaits only
+the residual's stream:
+
+.. code-block:: cpp
+
+   for (int k = 0; k < iters; k++)
+   {
+     transform(x, envs_x, step_x, ce_x);                    // x's lanes
+     transform(y, envs_y, step_y, ce_r);                    // y's lanes (overlaps x)
+     reduce_into(x, envs_x, d_s, plus, 0.0f, ce_x);         // scalar on cx
+     for (size_t i = 0; i < envs_y.size(); i++)
+       lane_wait(envs_y, i, cx_range, {0});                 // the one coupling edge
+     transform(y, envs_y, couple{d_s}, ce_r);
+     barrier(envs_y, stream_ref{cx});                       // slot-reuse reverse edge
+     reduce_into(y, envs_y, h_res, plus, 0.0f, ce_r);       // residual on cr
+   }
+   cudaStreamSynchronize(cr);                               // await the RESULT
+
 CUDA graph capture
 ------------------
 
@@ -214,11 +302,13 @@ host data or synchronizes refuses cleanly instead of corrupting the capture.
 What captures
 ~~~~~~~~~~~~~
 
-The asynchronous forms — the elementwise family, ``zip_transform`` and
-``reduce_into`` called with a stream-bearing per-call environment — are pure
-per-shard kernel launches bracketed on the call environment's stream
-(fork/join record/wait pairs become graph dependencies), so a pipeline
-captures directly:
+The asynchronous forms — the elementwise family, ``zip_transform``,
+``segmented_reduce`` and ``reduce_into`` called with a stream-bearing
+per-call environment — are pure per-shard stream work, so a pipeline
+captures directly. Under the lane-ordered contract the pipeline forks the
+lanes from the capture origin ONCE, records its chain (per-lane stream order
+becomes graph edges within each lane; distinct lanes become graph-level
+parallelism), and joins the lanes back with the stream barrier:
 
 .. code-block:: cpp
 
@@ -227,10 +317,16 @@ captures directly:
    auto envs = default_envs(out);
 
    cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal);
+   out.fork_from(origin);                 // the lanes join the capture, once
    zip_transform(out, envs, op, ce, data);
    for_each(out, envs, update, ce);
    reduce_into(out, envs, residual_slot, cuda::std::plus<>{}, 0.0, ce);
+   barrier(envs, stream_ref{origin});     // the lanes rejoin the origin
    cudaStreamEndCapture(origin, &graph);
+
+A lane-ordered call whose call stream is capturing while the lanes are not
+refuses at entry (the work would silently escape the graph); fork the lanes
+first, or seal that call with ``composition::bracketed``.
 
 The last line is new capability relative to the container era: the
 asynchronous reduce keeps its cross-shard combine on-device (a deterministic
