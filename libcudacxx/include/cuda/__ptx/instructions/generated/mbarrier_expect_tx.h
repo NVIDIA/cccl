@@ -21,7 +21,7 @@ __device__ static inline void mbarrier_expect_tx(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void mbarrier_expect_tx(
+_CCCL_DEVICE_API void mbarrier_expect_tx(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -63,7 +63,7 @@ __device__ static inline void mbarrier_expect_tx(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void mbarrier_expect_tx(
+_CCCL_DEVICE_API void mbarrier_expect_tx(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_cluster_t,

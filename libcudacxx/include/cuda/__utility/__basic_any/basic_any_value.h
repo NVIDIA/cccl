@@ -228,6 +228,9 @@ public:
   //! __basic_any(cuda::std::move(__other)).swap(*this);
   //! return *this;
   //! @endcode
+  // The return type is already __basic_any&; __assign_from returns *this, which the check
+  // does not follow.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface>, __basic_any>)
@@ -235,6 +238,7 @@ public:
   {
     return __assign_from(::cuda::std::move(__other));
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   //! @brief Converting copy assignment operator from a compatible `__basic_any`
   //! object.
@@ -245,6 +249,7 @@ public:
   //! __basic_any(__other).swap(*this);
   //! return *this;
   //! @endcode
+  // NOLINTBEGIN(misc-unconventional-assign-operator): __assign_from returns *this
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>)
@@ -252,6 +257,7 @@ public:
   {
     return __assign_from(__other);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 #else
   // nvcc 12.0 has a bug with its concepts implementation where substitution occurs too
   // early here causing a hard error. So we use SFINAE to work around it.
@@ -498,7 +504,7 @@ private:
   __convert_from(__basic_any<_SrcInterface>&& __from) noexcept(::cuda::std::same_as<_SrcInterface, _Interface>)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<_SrcInterface>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<_SrcInterface>;
     // if the source is an lvalue reference, we need to copy from it.
     if constexpr (__is_lvalue_reference_v<_SrcInterface>)
     {
@@ -535,7 +541,7 @@ private:
   _CCCL_HOST_DEVICE_API void __convert_from(__basic_any<_SrcInterface> const& __from)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
     if (auto __to_vptr = __vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
     {
       bool const __small = __from.__copy_to(__buffer_, __size_, __align_);

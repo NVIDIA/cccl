@@ -16,8 +16,7 @@ __device__ static inline bool mbarrier_check_layout(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_layout _Layout>
-_CCCL_DEVICE static inline bool
-mbarrier_check_layout(::cuda::ptx::layout_t<_Layout> __layout, const ::cuda::std::uint64_t* __addr)
+_CCCL_DEVICE_API bool mbarrier_check_layout(::cuda::ptx::layout_t<_Layout> __layout, const ::cuda::std::uint64_t* __addr)
 {
   static_assert(__layout == layout_v0 || __layout == layout_v1, "");
   ::cuda::std::uint32_t __p;

@@ -14,7 +14,7 @@ __device__ static inline uint32_t mbarrier_pending_count(
 */
 #if __cccl_ptx_isa >= 700
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t mbarrier_pending_count(::cuda::std::uint64_t __state)
+_CCCL_DEVICE_API ::cuda::std::uint32_t mbarrier_pending_count(::cuda::std::uint64_t __state)
 {
   ::cuda::std::uint32_t __count;
   asm volatile("mbarrier.pending_count.b64 %0, %1;" : "=r"(__count) : "l"(__state) :);

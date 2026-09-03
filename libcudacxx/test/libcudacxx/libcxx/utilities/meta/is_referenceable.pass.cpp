@@ -12,149 +12,149 @@
 //    or a ref-qualifier, or a reference type.
 //
 
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/cassert>
-#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
 struct Foo
 {};
 
-static_assert((!cuda::std::__is_referenceable_v<void>) );
-static_assert((cuda::std::__is_referenceable_v<int>) );
-static_assert((cuda::std::__is_referenceable_v<int[3]>) );
-static_assert((cuda::std::__is_referenceable_v<int[]>) );
-static_assert((cuda::std::__is_referenceable_v<int&>) );
-static_assert((cuda::std::__is_referenceable_v<const int&>) );
-static_assert((cuda::std::__is_referenceable_v<int*>) );
-static_assert((cuda::std::__is_referenceable_v<const int*>) );
-static_assert((cuda::std::__is_referenceable_v<Foo>) );
-static_assert((cuda::std::__is_referenceable_v<const Foo>) );
-static_assert((cuda::std::__is_referenceable_v<Foo&>) );
-static_assert((cuda::std::__is_referenceable_v<const Foo&>) );
-static_assert((cuda::std::__is_referenceable_v<Foo&&>) );
-static_assert((cuda::std::__is_referenceable_v<const Foo&&>) );
+static_assert(!cuda::std::__referenceable<void>);
+static_assert(cuda::std::__referenceable<int>);
+static_assert(cuda::std::__referenceable<int[3]>);
+static_assert(cuda::std::__referenceable<int[]>);
+static_assert(cuda::std::__referenceable<int&>);
+static_assert(cuda::std::__referenceable<const int&>);
+static_assert(cuda::std::__referenceable<int*>);
+static_assert(cuda::std::__referenceable<const int*>);
+static_assert(cuda::std::__referenceable<Foo>);
+static_assert(cuda::std::__referenceable<const Foo>);
+static_assert(cuda::std::__referenceable<Foo&>);
+static_assert(cuda::std::__referenceable<const Foo&>);
+static_assert(cuda::std::__referenceable<Foo&&>);
+static_assert(cuda::std::__referenceable<const Foo&&>);
 
 #if !TEST_COMPILER(MSVC)
-static_assert((cuda::std::__is_referenceable_v<int __attribute__((__vector_size__(8)))>) );
-static_assert((cuda::std::__is_referenceable_v<const int __attribute__((__vector_size__(8)))>) );
-static_assert((cuda::std::__is_referenceable_v<float __attribute__((__vector_size__(16)))>) );
-static_assert((cuda::std::__is_referenceable_v<const float __attribute__((__vector_size__(16)))>) );
+static_assert(cuda::std::__referenceable<int __attribute__((__vector_size__(8)))>);
+static_assert(cuda::std::__referenceable<const int __attribute__((__vector_size__(8)))>);
+static_assert(cuda::std::__referenceable<float __attribute__((__vector_size__(16)))>);
+static_assert(cuda::std::__referenceable<const float __attribute__((__vector_size__(16)))>);
 #endif // !TEST_COMPILER(MSVC)
 
 // Functions without cv-qualifiers are referenceable
-static_assert((cuda::std::__is_referenceable_v<void()>) );
-static_assert((!cuda::std::__is_referenceable_v<void() const>) );
-static_assert((!cuda::std::__is_referenceable_v<void() &>) );
-static_assert((!cuda::std::__is_referenceable_v<void() const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void() &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void() const&&>) );
+static_assert(cuda::std::__referenceable<void()>);
+static_assert(!cuda::std::__referenceable<void() const>);
+static_assert(!cuda::std::__referenceable<void() &>);
+static_assert(!cuda::std::__referenceable<void() const&>);
+static_assert(!cuda::std::__referenceable<void() &&>);
+static_assert(!cuda::std::__referenceable<void() const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void(int)>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int) const>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int) &>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int) const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int) &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int) const&&>) );
+static_assert(cuda::std::__referenceable<void(int)>);
+static_assert(!cuda::std::__referenceable<void(int) const>);
+static_assert(!cuda::std::__referenceable<void(int) &>);
+static_assert(!cuda::std::__referenceable<void(int) const&>);
+static_assert(!cuda::std::__referenceable<void(int) &&>);
+static_assert(!cuda::std::__referenceable<void(int) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void(int, float)>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float) const>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float) &>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float) const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float) &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float) const&&>) );
+static_assert(cuda::std::__referenceable<void(int, float)>);
+static_assert(!cuda::std::__referenceable<void(int, float) const>);
+static_assert(!cuda::std::__referenceable<void(int, float) &>);
+static_assert(!cuda::std::__referenceable<void(int, float) const&>);
+static_assert(!cuda::std::__referenceable<void(int, float) &&>);
+static_assert(!cuda::std::__referenceable<void(int, float) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void(int, float, Foo&)>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&) const>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&) &>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&) const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&) &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&) const&&>) );
+static_assert(cuda::std::__referenceable<void(int, float, Foo&)>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&) const>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&) &>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&) const&>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&) &&>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void(...)>) );
-static_assert((!cuda::std::__is_referenceable_v<void(...) const>) );
-static_assert((!cuda::std::__is_referenceable_v<void(...) &>) );
-static_assert((!cuda::std::__is_referenceable_v<void(...) const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(...) &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(...) const&&>) );
+static_assert(cuda::std::__referenceable<void(...)>);
+static_assert(!cuda::std::__referenceable<void(...) const>);
+static_assert(!cuda::std::__referenceable<void(...) &>);
+static_assert(!cuda::std::__referenceable<void(...) const&>);
+static_assert(!cuda::std::__referenceable<void(...) &&>);
+static_assert(!cuda::std::__referenceable<void(...) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void(int, ...)>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, ...) const>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, ...) &>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, ...) const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, ...) &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, ...) const&&>) );
+static_assert(cuda::std::__referenceable<void(int, ...)>);
+static_assert(!cuda::std::__referenceable<void(int, ...) const>);
+static_assert(!cuda::std::__referenceable<void(int, ...) &>);
+static_assert(!cuda::std::__referenceable<void(int, ...) const&>);
+static_assert(!cuda::std::__referenceable<void(int, ...) &&>);
+static_assert(!cuda::std::__referenceable<void(int, ...) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void(int, float, ...)>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, ...) const>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, ...) &>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, ...) const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, ...) &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, ...) const&&>) );
+static_assert(cuda::std::__referenceable<void(int, float, ...)>);
+static_assert(!cuda::std::__referenceable<void(int, float, ...) const>);
+static_assert(!cuda::std::__referenceable<void(int, float, ...) &>);
+static_assert(!cuda::std::__referenceable<void(int, float, ...) const&>);
+static_assert(!cuda::std::__referenceable<void(int, float, ...) &&>);
+static_assert(!cuda::std::__referenceable<void(int, float, ...) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void(int, float, Foo&, ...)>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&, ...) const>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&, ...) &>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&, ...) const&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&, ...) &&>) );
-static_assert((!cuda::std::__is_referenceable_v<void(int, float, Foo&, ...) const&&>) );
+static_assert(cuda::std::__referenceable<void(int, float, Foo&, ...)>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&, ...) const>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&, ...) &>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&, ...) const&>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&, ...) &&>);
+static_assert(!cuda::std::__referenceable<void(int, float, Foo&, ...) const&&>);
 
 // member functions with or without cv-qualifiers are referenceable
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)()>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)() const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)() &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)() const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)() &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)() const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)()>);
+static_assert(cuda::std::__referenceable<void (Foo::*)() const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)() &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)() const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)() &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)() const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int)>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int) const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int) &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int) const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int) &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int) const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)(int)>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int) const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int) &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int) const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int) &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float)>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float) const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float) &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float) const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float) &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float) const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float)>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float) const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float) &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float) const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float) &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&)>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&) const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&) &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&) const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&) &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&) const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&)>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&) const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&) &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&) const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&) &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(...)>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(...) const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(...) &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(...) const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(...) &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(...) const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)(...)>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(...) const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(...) &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(...) const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(...) &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(...) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, ...)>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, ...) const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, ...) &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, ...) const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, ...) &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, ...) const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, ...)>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, ...) const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, ...) &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, ...) const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, ...) &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, ...) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, ...)>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, ...) const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, ...) &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, ...) const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, ...) &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, ...) const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, ...)>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, ...) const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, ...) &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, ...) const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, ...) &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, ...) const&&>);
 
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&, ...)>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&, ...) const>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&, ...) &>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&, ...) const&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&, ...) &&>) );
-static_assert((cuda::std::__is_referenceable_v<void (Foo::*)(int, float, Foo&, ...) const&&>) );
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&, ...)>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&, ...) const>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&, ...) &>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&, ...) const&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&, ...) &&>);
+static_assert(cuda::std::__referenceable<void (Foo::*)(int, float, Foo&, ...) const&&>);
 
 int main(int, char**)
 {

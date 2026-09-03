@@ -75,8 +75,14 @@ class StorageBase:
 
 class SQLiteStorage(StorageBase):
     def __init__(self, db_path):
+        if sqlite3.threadsafety < 3:
+            raise RuntimeError(
+                "SQLite threadsafety level is {}, but serialized mode (3) is required".format(
+                    sqlite3.threadsafety
+                )
+            )
         self.db_path = db_path
-        self.conn = sqlite3.connect(db_path)
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
 
     def connection(self):
         return self.conn
@@ -224,8 +230,8 @@ if POSTGRES_AVAILABLE:
                 "DataFrame storage for PostgreSQL not yet implemented"
             )
 else:
-    # Define a dummy class when psycopg2 is not available
-    PostgreSQLStorage = None
+    # Placeholder when psycopg2 is not available; callers check for None.
+    PostgreSQLStorage = None  # type: ignore[assignment, misc]
 
 
 class DualStorageWrapper:
@@ -352,6 +358,7 @@ class DualConnectionWrapper:
 
 class Storage:
     _instance = None
+    base: DualStorageWrapper
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:

@@ -845,6 +845,49 @@ _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning(int key_size, int value_si
   return get_sm90_tuning(key_size, value_size, offset_size);
 }
 
+// keys
+_CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning(int key_size, int value_size, int offset_size, type_t key_type)
+  -> ::cuda::std::optional<small_key_tuning_values>
+{
+  if (value_size != 0)
+  {
+    return {};
+  }
+
+  if (offset_size == 4)
+  {
+    // clang-format off
+
+    // ipt_21.tpb_448 0.930  0.959  1.123  1.148
+    if (key_size == 4 && key_type == type_t::float32) return small_key_tuning_values{448, 21};
+
+    // ipt_18.tpb_512 0.943  0.947  1.051  1.056
+    if (key_size == 4) return small_key_tuning_values{512, 18};
+
+    // ipt_24.tpb_480 0.968  0.995  1.020  1.059
+    if (key_size == 16) return small_key_tuning_values{480, 24};
+
+    // clang-format on
+  }
+  else if (offset_size == 8)
+  {
+    // clang-format off
+
+    // ipt_22.tpb_512 0.926  0.934  1.096  1.162
+    if (key_size == 2) return small_key_tuning_values{512, 22};
+
+    // ipt_17.tpb_512 0.962  0.979  1.091  1.115
+    if (key_size == 4 && key_type == type_t::float32) return small_key_tuning_values{512, 17};
+
+    // ipt_20.tpb_512 0.962  0.961  1.087  1.149
+    if (key_size == 4) return small_key_tuning_values{512, 20};
+
+    // clang-format on
+  }
+
+  return {};
+}
+
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
@@ -1741,7 +1784,8 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  make_onesweep_small_key_policy(const small_key_tuning_values& tuning) const -> RadixSortPolicy
+  make_onesweep_small_key_policy(const small_key_tuning_values& tuning, bool use_tuning_for_large_keys = false) const
+    -> RadixSortPolicy
   {
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
     const int single_tile_radix_bits = (key_size > 1) ? 6 : 5;
@@ -1787,7 +1831,8 @@ struct policy_selector
       1,
       8);
 
-    const auto onesweep = key_size < 4 ? onesweep_small_key_policy : onesweep_large_key_policy;
+    const auto onesweep =
+      (key_size < 4 || use_tuning_for_large_keys) ? onesweep_small_key_policy : onesweep_large_key_policy;
 
     // The scan, downsweep and upsweep policies are never run on SM90+, but we have to include them to prevent a
     // compilation error: When we compile e.g. for SM70 **and** SM90, the host compiler will reach calls to those
@@ -1855,6 +1900,14 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RadixSortPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (const auto sm107_tuning = get_sm107_tuning(key_size, value_size, offset_size, key_type))
+      {
+        return make_onesweep_small_key_policy(*sm107_tuning, /*use_tuning_for_large_keys=*/true);
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       return make_onesweep_small_key_policy(get_sm100_tuning(key_size, value_size, offset_size, key_type));
