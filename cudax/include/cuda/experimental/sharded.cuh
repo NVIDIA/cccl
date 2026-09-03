@@ -28,6 +28,7 @@
 
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/adjacent_difference.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/copy_if.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>

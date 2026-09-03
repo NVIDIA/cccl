@@ -352,6 +352,48 @@ _CCCL_CONCEPT self_bound = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
 // Per-call environment (the combine-scope tier)
 // ===========================================================================
 
+// ===========================================================================
+// The composition property (per-call): lane-ordered (default) or bracketed
+// ===========================================================================
+
+//! @brief Per-call composition selector: how an asynchronous call orders
+//! against the call environment's stream.
+enum class composition
+{
+  lane_ordered, //!< default: enqueue on the lanes, no call-stream edges
+  bracketed //!< fork-all/join-all against the call stream, per call
+};
+
+//! @brief Query object for the per-call composition property (defaults to
+//! `composition::lane_ordered` when absent).
+struct get_composition_t
+{
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, get_composition_t>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
+  {
+    return __env.query(*this);
+  }
+};
+_CCCL_GLOBAL_CONSTANT get_composition_t get_composition{};
+
+//! @brief Read the composition property off a call environment
+//! (`composition::lane_ordered` when the environment does not carry one).
+template <class _CallEnv>
+[[nodiscard]] constexpr composition query_composition(const _CallEnv& __env) noexcept
+{
+  if constexpr (::cuda::std::execution::__queryable_with<_CallEnv, get_composition_t>)
+  {
+    return __env.query(get_composition);
+  }
+  else
+  {
+    (void) __env;
+    return composition::lane_ordered;
+  }
+}
+
+
 //! @brief Synchronization policy carried by a per-call environment.
 enum class sync_policy
 {
@@ -393,10 +435,13 @@ template <class _CallEnv>
 
 //! @brief Does this per-call environment select the asynchronous contract?
 //!
-//! Presence of a stream (via `cuda::get_stream`) selects it: the call is
-//! then ordered against that stream, returns after enqueue, and performs no
-//! host synchronization (for the operations whose documented contract offers
-//! the asynchronous form).
+//! Presence of a stream (via `cuda::get_stream`) selects it: the call
+//! returns after enqueue and performs no host synchronization (for the
+//! operations whose documented contract offers the asynchronous form).
+//! Ordering follows the composition contract: lane-ordered by default
+//! (`composition::lane_ordered`), sealed against the call stream under
+//! `composition::bracketed`; combine-bearing terminators deliver their
+//! result on the call stream regardless (their edges are definitional).
 template <class _CallEnv>
 _CCCL_CONCEPT async_call_env = sharded_env<_CallEnv>;
 
