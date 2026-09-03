@@ -49,6 +49,22 @@ struct add_index
     e += static_cast<long long>(i);
   }
 };
+
+struct half_index
+{
+  __host__ __device__ long long operator()(size_t i) const
+  {
+    return static_cast<long long>(i / 2);
+  }
+};
+
+struct keep_even
+{
+  __host__ __device__ bool operator()(long long v) const
+  {
+    return (v & 1) == 0;
+  }
+};
 } // namespace
 
 int main()
@@ -192,6 +208,42 @@ int main()
   }
   EXPECT(threw);
   EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == 8 * tri);
+
+  // Generic compaction over owning_sharded (explicit-envs and self-bound
+  // forms, boundary trim, and the entry probe's contiguous refusal)
+  {
+    tabulate(b, half_index{}); // b[i] = i / 2: consecutive duplicate pairs
+    const size_t m    = ((size_t) n - 1) / 2; // largest value
+    const size_t kept = unique(b, envs); // values 0..m survive
+    EXPECT(kept == m + 1);
+    EXPECT(sum(b) == (long long) m * ((long long) m + 1) / 2);
+    b.reset_sizes_to_capacity();
+
+    iota(b, 0LL);
+    const size_t evens = copy_if(b, keep_even{}); // self-bound
+    EXPECT(evens == ((size_t) n + 1) / 2);
+    b.reset_sizes_to_capacity();
+
+    iota(b, 0LL);
+    EXPECT(remove_if(b, envs, keep_even{}) == (size_t) n / 2); // odds remain
+    b.reset_sizes_to_capacity();
+
+    // Contiguous backing: the commit_sizes entry probe refuses before any
+    // element moves.
+    auto c = sharded_array<long long>::allocate_contiguous(group, 4096);
+    fill(c, 1LL);
+    bool threw = false;
+    try
+    {
+      (void) copy_if(c, keep_even{});
+    }
+    catch (const ::std::invalid_argument&)
+    {
+      threw = true;
+    }
+    EXPECT(threw);
+    EXPECT(reduce(c, ::cuda::std::plus<long long>{}, 0LL) == 4096); // untouched
+  }
 
   cuda_safe_call(cudaStreamDestroy(call_stream));
   return 0;
