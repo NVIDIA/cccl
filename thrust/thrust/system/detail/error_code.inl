@@ -51,6 +51,8 @@ void error_code ::assign(int val, const error_category& cat)
   m_cat = &cat;
 } // end error_code::assign()
 
+// The enable_if_t below is error_code& after substitution, as the MSVC branch spells out.
+// NOLINTBEGIN(misc-unconventional-assign-operator)
 template <typename ErrorCodeEnum>
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
@@ -63,6 +65,7 @@ error_code ::operator=(ErrorCodeEnum e)
   *this = make_error_code(e);
   return *this;
 } // end error_code::operator=()
+// NOLINTEND(misc-unconventional-assign-operator)
 
 void error_code ::clear()
 {

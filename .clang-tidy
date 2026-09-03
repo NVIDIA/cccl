@@ -41,7 +41,6 @@ Checks:
   - '-misc-use-internal-linkage'
   - '-misc-unused-parameters'
   - '-misc-redundant-expression'
-  - '-misc-unconventional-assign-operator'
   - '-misc-throw-by-value-catch-by-reference'
   - '-misc-misplaced-const'
   - '-misc-multiple-inheritance'
@@ -221,7 +220,6 @@ Checks:
   # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
   - '-cppcoreguidelines-narrowing-conversions'
-  # Covered by misc-unconventional-assign-operator
   - '-cppcoreguidelines-c-copy-assignment-signature'
   # Covered by performance-noexcept-swap
   - '-cppcoreguidelines-noexcept-swap'

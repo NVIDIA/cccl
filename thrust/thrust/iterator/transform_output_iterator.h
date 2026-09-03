@@ -38,6 +38,9 @@ public:
       , fun(fun)
   {}
 
+  // Write-only proxy: assignment transforms x and forwards it to the wrapped iterator.
+  // Returning by value keeps the proxy usable in a chained `*it = a = b` expression.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
   _CCCL_HOST_DEVICE transform_output_iterator_proxy operator=(const T& x)
@@ -45,6 +48,7 @@ public:
     *out = fun(x);
     return *this;
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
 private:
   OutputIterator out;
