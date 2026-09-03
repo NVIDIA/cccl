@@ -199,6 +199,9 @@ class WarpExchangeShfl
     }
   }
 
+  // A #pragma unroll'ed for-loop is not sufficient here: on sm_120, for int/short element types at
+  // ITEMS_PER_THREAD 16/32, it makes ptxas allocate a local memory stack frame for vals that a
+  // fold expression over a compile-time index sequence avoids.
   template <size_t... Is>
   _CCCL_DEVICE void copy_into(
     InputT (&vals)[ITEMS_PER_THREAD], const InputT (&input_items)[ITEMS_PER_THREAD], ::cuda::std::index_sequence<Is...>)
