@@ -1,65 +1,56 @@
 #include <thrust/execution_policy.h>
 #include <thrust/uninitialized_fill.h>
 
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/std/cstddef>
+#include <cuda/stream>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator, typename T>
-__global__ void uninitialized_fill_kernel(ExecutionPolicy exec, Iterator first, Iterator last, T val)
+struct uninitialized_fill_kernel
 {
-  thrust::uninitialized_fill(exec, first, last, val);
-}
+  template <typename ExecutionPolicy, typename Data, typename T>
+  __device__ void
+  operator()(ExecutionPolicy exec, Data data, cuda::std::size_t first, cuda::std::size_t last, T value) const
+  {
+    thrust::uninitialized_fill(exec, data.begin() + first, data.begin() + last, value);
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestUninitializedFillDevice(ExecutionPolicy exec)
 {
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  auto v = cuda::make_device_buffer<int>(stream, device, {0, 1, 2, 3, 4});
 
-  uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin() + 1, v.begin() + 4, sub);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  int value = 7;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_kernel{}, exec, v, 1, 4, value);
+  stream.sync();
 
-  Vector ref{0, sub, sub, sub, 4};
-  ASSERT_EQUAL(v, ref);
+  test_runtime::assert_equal(stream, v, {0, value, value, value, 4});
 
-  sub = 8;
+  value = 8;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_kernel{}, exec, v, 0, 3, value);
+  stream.sync();
 
-  uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin() + 0, v.begin() + 3, sub);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  test_runtime::assert_equal(stream, v, {value, value, value, 7, 4});
 
-  ref = {sub, sub, sub, 7, 4};
-  ASSERT_EQUAL(v, ref);
+  value = 9;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_kernel{}, exec, v, 2, v.size(), value);
+  stream.sync();
 
-  sub = 9;
+  test_runtime::assert_equal(stream, v, {8, 8, value, value, 9});
 
-  uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin() + 2, v.end(), sub);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  value = 1;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_kernel{}, exec, v, 0, v.size(), value);
+  stream.sync();
 
-  ref = {8, 8, sub, sub, 9};
-  ASSERT_EQUAL(v, ref);
-
-  sub = 1;
-
-  uninitialized_fill_kernel<<<1, 1>>>(exec, v.begin(), v.end(), sub);
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
-
-  ref = Vector(5, sub);
-  ASSERT_EQUAL(v, ref);
+  test_runtime::assert_equal(stream, v, {value, value, value, value, value});
 }
 
 void TestUninitializedFillDeviceSeq()
@@ -77,97 +68,62 @@ DECLARE_UNITTEST(TestUninitializedFillDeviceDevice);
 
 void TestUninitializedFillCudaStreams()
 {
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  auto v          = cuda::make_device_buffer<int>(stream, device, {0, 1, 2, 3, 4});
+  const int value = 7;
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  thrust::uninitialized_fill(thrust::cuda::par.on(stream.get()), v.begin(), v.end(), value);
+  stream.sync();
 
-  thrust::uninitialized_fill(thrust::cuda::par.on(s), v.begin(), v.end(), sub);
-  cudaStreamSynchronize(s);
-
-  Vector ref(v.size(), sub);
-  ASSERT_EQUAL(v, ref);
-
-  cudaStreamDestroy(s);
+  test_runtime::assert_equal(stream, v, {value, value, value, value, value});
 }
 DECLARE_UNITTEST(TestUninitializedFillCudaStreams);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator1, typename Size, typename T, typename Iterator2>
-__global__ void uninitialized_fill_n_kernel(ExecutionPolicy exec, Iterator1 first, Size n, T val, Iterator2 result)
+struct uninitialized_fill_n_kernel
 {
-  *result = thrust::uninitialized_fill_n(exec, first, n, val);
-}
+  template <typename ExecutionPolicy, typename Data, typename T>
+  __device__ void
+  operator()(ExecutionPolicy exec, Data data, cuda::std::size_t first, cuda::std::size_t count, T value) const
+  {
+    const auto iter = thrust::uninitialized_fill_n(exec, data.begin() + first, count, value);
+    TEST_ASSERT_DEVICE(iter == data.begin() + first + count);
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestUninitializedFillNDevice(ExecutionPolicy exec)
 {
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  auto v = cuda::make_device_buffer<int>(stream, device, {0, 1, 2, 3, 4});
 
-  thrust::device_vector<Vector::iterator> iter_vec(1);
+  int value = 7;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_n_kernel{}, exec, v, 1, 3, value);
+  stream.sync();
 
-  uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin() + 1, 3, sub, iter_vec.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  test_runtime::assert_equal(stream, v, {0, value, value, value, 4});
 
-  Vector::iterator iter = iter_vec[0];
+  value = 8;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_n_kernel{}, exec, v, 0, 3, value);
+  stream.sync();
 
-  Vector ref{0, sub, sub, sub, 4};
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
+  test_runtime::assert_equal(stream, v, {value, value, value, 7, 4});
 
-  sub = 8;
+  value = 9;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_n_kernel{}, exec, v, 2, 3, value);
+  stream.sync();
 
-  uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin() + 0, 3, sub, iter_vec.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
+  test_runtime::assert_equal(stream, v, {8, 8, value, value, 9});
 
-  iter = iter_vec[0];
+  value = 1;
+  cuda::launch(stream, test_runtime::single_thread_config(), uninitialized_fill_n_kernel{}, exec, v, 0, v.size(), value);
+  stream.sync();
 
-  ref = {sub, sub, sub, 7, 4};
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
-
-  sub = 9;
-
-  uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin() + 2, 3, sub, iter_vec.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
-
-  iter = iter_vec[0];
-
-  ref = {8, 8, sub, sub, 9};
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
-
-  sub = 1;
-
-  uninitialized_fill_n_kernel<<<1, 1>>>(exec, v.begin(), v.size(), sub, iter_vec.begin());
-  {
-    cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
-  }
-
-  iter = iter_vec[0];
-
-  ref = Vector(5, sub);
-
-  ASSERT_EQUAL(v, ref);
-  ASSERT_EQUAL_QUIET(v.end(), iter);
+  test_runtime::assert_equal(stream, v, {value, value, value, value, value});
 }
 
 void TestUninitializedFillNDeviceSeq()
@@ -185,21 +141,15 @@ DECLARE_UNITTEST(TestUninitializedFillNDeviceDevice);
 
 void TestUninitializedFillNCudaStreams()
 {
-  using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  Vector v{0, 1, 2, 3, 4};
-  T sub(7);
+  auto v          = cuda::make_device_buffer<int>(stream, device, {0, 1, 2, 3, 4});
+  const int value = 7;
 
-  cudaStream_t s;
-  cudaStreamCreate(&s);
+  thrust::uninitialized_fill_n(thrust::cuda::par.on(stream.get()), v.begin(), v.size(), value);
+  stream.sync();
 
-  thrust::uninitialized_fill_n(thrust::cuda::par.on(s), v.begin(), v.size(), sub);
-  cudaStreamSynchronize(s);
-
-  Vector ref(5, sub);
-  ASSERT_EQUAL(v, ref);
-
-  cudaStreamDestroy(s);
+  test_runtime::assert_equal(stream, v, {value, value, value, value, value});
 }
 DECLARE_UNITTEST(TestUninitializedFillNCudaStreams);
