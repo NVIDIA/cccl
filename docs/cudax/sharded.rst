@@ -109,6 +109,12 @@ environment selects the contract):
   the P totals, then per-shard seeded scans in place;
 - ``adjacent_difference``: per-shard differences with each predecessor's
   boundary element staged through pinned host memory;
+- ``segmented_reduce``: per-segment aggregates via per-shard CUB
+  ``DeviceSegmentedReduce`` — the segments description is two offset views
+  co-partitioned with the output (for CSR-shaped data, shifted aliases of
+  one row-offsets buffer per shard). A member of the map family despite the
+  name: segments are shard-local, there is no cross-shard combine, and the
+  stream-bearing call form records under graph capture;
 - ``count`` / ``count_if``: per-shard CUB transform-reduce plus a host sum;
 - ``histogram_even``: per-shard CUB ``DeviceHistogram`` plus a per-bin sum;
 - ``copy_if`` / ``filter`` / ``remove_if`` / ``unique``: in-place per-shard
