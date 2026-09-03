@@ -67,18 +67,18 @@ struct compare_key_prefix_op
 //! @tparam UnrollBitPasses
 //!   <b>[optional]</b> When true (default), the radix-pass loop may be fully unrolled. Unrolling provides better
 //!   throughput and latency but may come at increased register usage.
-//! @tparam ScatterOriginalKeys
-//!   <b>[optional]</b> When true (default), the partitioning stage scatters a register copy of the original keys, so
-//!   selected keys need no untwiddling and no -0.0 restoration state. When false, keys are untwiddled in place and
-//!   -0.0 is restored through a bitvector. The copy extends the keys' live ranges across the radix passes, so
-//!   disabling it can reduce register pressure.
+//! @tparam MemoizeKeys
+//!   <b>[optional]</b> When true (default), a register copy of the original keys is kept and the partitioning stage
+//!   scatters from that copy, so selected keys need no untwiddling and no -0.0 restoration state. When false, keys
+//!   are untwiddled in place and -0.0 is restored through a bitvector. The copy extends the keys' live ranges across
+//!   the radix passes, so disabling it can reduce register pressure.
 template <typename KeyT,
           int ThreadsPerBlock,
           int ItemsPerThread,
-          typename ValueT          = NullType,
-          int RadixBits            = 8,
-          bool UnrollBitPasses     = true,
-          bool ScatterOriginalKeys = true>
+          typename ValueT      = NullType,
+          int RadixBits        = 8,
+          bool UnrollBitPasses = true,
+          bool MemoizeKeys     = true>
 class block_topk_air
 {
 private:
@@ -181,7 +181,7 @@ private:
       {
         const auto digit  = static_cast<int>(digit_extractor.Digit(key));
         const auto bucket = (SelectDirection == detail::topk::select::min) ? digit : (num_buckets - 1 - digit);
-        atomicAdd(&histogram[bucket], histo_counter_t{1});
+        atomicAdd_block(&histogram[bucket], histo_counter_t{1});
       }
     }
   }
@@ -382,15 +382,16 @@ private:
       _CCCL_ASSERT(valid_items > 0 && valid_items <= tile_items, "valid_items must be in [1, tile_items]");
     }
 
-    // TODO (elstehle): Short-circuit if k is constrained to be positive
+    // TODO (elstehle): Elide this check when k is statically constrained to be positive
     if (k <= 0)
     {
       return;
     }
 
-    // TODO (elstehle): Short-circuit if k is greater than the number of items in the tile
     // Every valid item is selected. The blocked arrangement already places the valid items in
-    // the tile's leading slots, so keys and values can stay where they are
+    // the tile's leading slots, so keys and values can stay where they are.
+    // TODO (elstehle): Elide this check when k is statically constrained to be less than the
+    // number of items in the tile
     if ((!IsFullTile && k >= valid_items) || k >= tile_items)
     {
       return;
@@ -409,9 +410,9 @@ private:
     // Keep a register copy of the original keys: the selected keys are then scattered from the
     // copy, so the keys neither need to be un-twiddled nor does -0.0 need to be tracked and
     // restored (the -0.0 -> +0.0 ranking normalization below is kept, so selection semantics
-    // do not depend on ScatterOriginalKeys).
+    // do not depend on MemoizeKeys).
     [[maybe_unused]] KeyT original_keys[items_per_thread];
-    if constexpr (ScatterOriginalKeys)
+    if constexpr (MemoizeKeys)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
@@ -440,7 +441,7 @@ private:
         unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
         if (unsigned_keys[i] == twiddled_minus_zero)
         {
-          if constexpr (!ScatterOriginalKeys)
+          if constexpr (!MemoizeKeys)
           {
             flip_back_bits[i / 32] |= (1u << (i % 32));
           }
@@ -503,16 +504,16 @@ private:
 
       // Without the original-key copy, untwiddle the key in place before storing it to shared
       // memory
-      if constexpr (!ScatterOriginalKeys)
+      if constexpr (!MemoizeKeys)
       {
         unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
       }
 
       if (is_valid && (is_selected || is_candidate))
       {
-        const auto ticket          = atomicAdd(&storage.selected_offset[item_class], histo_counter_t{1});
+        const auto ticket          = atomicAdd_block(&storage.selected_offset[item_class], histo_counter_t{1});
         const auto selected_offset = (item_class == 1) ? static_cast<histo_counter_t>(total_selected) + ticket : ticket;
-        if constexpr (ScatterOriginalKeys)
+        if constexpr (MemoizeKeys)
         {
           storage.stage.exchange.u.keys[selected_offset] = original_keys[i];
         }
@@ -544,7 +545,7 @@ private:
       {
         keys[i] = storage.stage.exchange.u.keys[buffer_idx];
       }
-      else if constexpr (ScatterOriginalKeys)
+      else if constexpr (MemoizeKeys)
       {
         // The register keys are still bit-twiddled. Restore them from the original copy
         keys[i] = original_keys[i];
