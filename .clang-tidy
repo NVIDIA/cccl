@@ -39,7 +39,6 @@ Checks:
   - '-misc-const-correctness'
   - '-misc-use-anonymous-namespace'
   - '-misc-use-internal-linkage'
-  - '-misc-unused-parameters'
   - '-misc-redundant-expression'
   - '-misc-throw-by-value-catch-by-reference'
   - '-misc-misplaced-const'
@@ -103,6 +102,11 @@ Checks:
   - '-bugprone-implicit-widening-of-multiplication-result'
   - '-misc-include-cleaner'
   - '-misc-header-include-cycle'
+  # Covered by -Wunused-parameter, which is the better tool here. clang-tidy analyzes a
+  # single target branch, so it reports parameters that are used only inside NV_IF_TARGET,
+  # NV_IF_ELSE_TARGET, or inline asm operands as unused. The compiler sees the branch it
+  # actually compiles and does not.
+  - '-misc-unused-parameters'
   - '-modernize-macro-to-enum'
   - '-cppcoreguidelines-macro-to-enum'
   - '-misc-no-recursion'
