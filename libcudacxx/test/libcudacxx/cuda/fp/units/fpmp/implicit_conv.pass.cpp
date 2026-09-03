@@ -38,34 +38,34 @@ using ddouble = cudax::fp64mp2;
 
 // Every source stays constructible whatever the knob does: making a conversion
 // explicit must remove it from copy-initialization, not from the type.
-static_assert(::cuda::std::is_constructible<ffloat, double>::value, "");
-static_assert(::cuda::std::is_constructible<ffloat, long long>::value, "");
-static_assert(::cuda::std::is_constructible<ffloat, unsigned long long>::value, "");
-static_assert(::cuda::std::is_constructible<ddouble, double>::value, "");
+static_assert(::cuda::std::is_constructible_v<ffloat, double>);
+static_assert(::cuda::std::is_constructible_v<ffloat, long long>);
+static_assert(::cuda::std::is_constructible_v<ffloat, unsigned long long>);
+static_assert(::cuda::std::is_constructible_v<ddouble, double>);
 
 // Exact for every value of the source type, so implicit under both settings.
-static_assert(::cuda::std::is_convertible<float, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<float, ddouble>::value, "");
-static_assert(::cuda::std::is_convertible<double, ddouble>::value, "");
-static_assert(::cuda::std::is_convertible<bool, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<char, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<short, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<::cuda::std::int32_t, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<::cuda::std::uint32_t, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<long long, ddouble>::value, "");
-static_assert(::cuda::std::is_convertible<unsigned long long, ddouble>::value, "");
+static_assert(::cuda::std::is_convertible_v<float, ffloat>);
+static_assert(::cuda::std::is_convertible_v<float, ddouble>);
+static_assert(::cuda::std::is_convertible_v<double, ddouble>);
+static_assert(::cuda::std::is_convertible_v<bool, ffloat>);
+static_assert(::cuda::std::is_convertible_v<char, ffloat>);
+static_assert(::cuda::std::is_convertible_v<short, ffloat>);
+static_assert(::cuda::std::is_convertible_v<::cuda::std::int32_t, ffloat>);
+static_assert(::cuda::std::is_convertible_v<::cuda::std::uint32_t, ffloat>);
+static_assert(::cuda::std::is_convertible_v<long long, ddouble>);
+static_assert(::cuda::std::is_convertible_v<unsigned long long, ddouble>);
 
 // Narrowing: needs bits the pair may not have, so the knob decides.
 #if CCCL_FPMP_EXPLICIT_CASTS == 1
-static_assert(!::cuda::std::is_convertible<double, ffloat>::value,
+static_assert(!::cuda::std::is_convertible_v<double, ffloat>,
               "double -> fp32mp2 must be explicit under EXPLICIT_CASTS=1: the implicit path would drop lo");
-static_assert(!::cuda::std::is_convertible<long long, ffloat>::value,
+static_assert(!::cuda::std::is_convertible_v<long long, ffloat>,
               "int64 -> fp32mp2 must be explicit under EXPLICIT_CASTS=1: 63 bits exceed the float pair");
-static_assert(!::cuda::std::is_convertible<unsigned long long, ffloat>::value, "");
+static_assert(!::cuda::std::is_convertible_v<unsigned long long, ffloat>);
 #else
-static_assert(::cuda::std::is_convertible<double, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<long long, ffloat>::value, "");
-static_assert(::cuda::std::is_convertible<unsigned long long, ffloat>::value, "");
+static_assert(::cuda::std::is_convertible_v<double, ffloat>);
+static_assert(::cuda::std::is_convertible_v<long long, ffloat>);
+static_assert(::cuda::std::is_convertible_v<unsigned long long, ffloat>);
 #endif
 
 // ==================== scalar compound assignment =====================
@@ -74,21 +74,19 @@ static_assert(::cuda::std::is_convertible<unsigned long long, ffloat>::value, ""
 // beat operator+=(const fpmp2&) for any narrowing source by standard conversion,
 // then accumulate a value whose low limb was already gone.
 template <class _Tp, class _Up, class = void>
-struct has_plus_equal : ::cuda::std::false_type
-{};
+inline constexpr bool has_plus_equal_v = false;
 template <class _Tp, class _Up>
-struct has_plus_equal<_Tp, _Up, decltype(void(::cuda::std::declval<_Tp&>() += ::cuda::std::declval<_Up>()))>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  has_plus_equal_v<_Tp, _Up, decltype(void(::cuda::std::declval<_Tp&>() += ::cuda::std::declval<_Up>()))> = true;
 
-static_assert(has_plus_equal<ffloat, float>::value, "");
-static_assert(has_plus_equal<ffloat, int>::value, "");
-static_assert(has_plus_equal<ddouble, double>::value, "");
+static_assert(has_plus_equal_v<ffloat, float>);
+static_assert(has_plus_equal_v<ffloat, int>);
+static_assert(has_plus_equal_v<ddouble, double>);
 #if CCCL_FPMP_EXPLICIT_CASTS == 1
-static_assert(!has_plus_equal<ffloat, double>::value,
+static_assert(!has_plus_equal_v<ffloat, double>,
               "fp32mp2 += double must not compile under EXPLICIT_CASTS=1: it would truncate to float first");
 #else
-static_assert(has_plus_equal<ffloat, double>::value, "");
+static_assert(has_plus_equal_v<ffloat, double>);
 #endif
 
 // ========================= compile-time value ========================
