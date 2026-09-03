@@ -94,21 +94,27 @@ template <typename _Tp, typename _Up, typename _AccumT, ::cuda::std::size_t _Np>
   _CCCL_PRAGMA_UNROLL_FULL()
   for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
   {
-    if constexpr (::cuda::std::is_unsigned_v<_Tp> && ::cuda::std::is_unsigned_v<_Up>)
+    if constexpr (::cuda::std::is_unsigned_v<_Tp>)
     {
-      __result = ::cuda::simd::__dp4a_u8x4_u8x4(__lhs_u[__i], __rhs_u[__i], __result);
-    }
-    else if constexpr (::cuda::std::is_unsigned_v<_Tp>)
-    {
-      __result = ::cuda::simd::__dp4a_u8x4_s8x4(__lhs_u[__i], __rhs_u[__i], __result);
-    }
-    else if constexpr (::cuda::std::is_unsigned_v<_Up>)
-    {
-      __result = ::cuda::simd::__dp4a_s8x4_u8x4(__lhs_u[__i], __rhs_u[__i], __result);
+      if constexpr (::cuda::std::is_unsigned_v<_Up>)
+      {
+        __result = ::cuda::simd::__dp4a_u8x4_u8x4(__lhs_u[__i], __rhs_u[__i], __result);
+      }
+      else
+      {
+        __result = ::cuda::simd::__dp4a_u8x4_s8x4(__lhs_u[__i], __rhs_u[__i], __result);
+      }
     }
     else
     {
-      __result = ::cuda::simd::__dp4a_s8x4_s8x4(__lhs_u[__i], __rhs_u[__i], __result);
+      if constexpr (::cuda::std::is_unsigned_v<_Up>)
+      {
+        __result = ::cuda::simd::__dp4a_s8x4_u8x4(__lhs_u[__i], __rhs_u[__i], __result);
+      }
+      else
+      {
+        __result = ::cuda::simd::__dp4a_s8x4_s8x4(__lhs_u[__i], __rhs_u[__i], __result);
+      }
     }
   }
   return __result;
@@ -129,48 +135,54 @@ template <typename _Tp, typename _Up, typename _AccumT, ::cuda::std::size_t _N16
   for (::cuda::std::size_t __i = 0; __i < _N16Bit; ++__i)
   {
     const auto __rhs_u = __rhs_u8[__i / 2];
-    if constexpr (::cuda::std::is_unsigned_v<_Tp> && ::cuda::std::is_unsigned_v<_Up>)
+    if constexpr (::cuda::std::is_unsigned_v<_Tp>)
     {
-      if (__i % 2 == 0)
+      if constexpr (::cuda::std::is_unsigned_v<_Up>)
       {
-        __result = ::cuda::simd::__dp2a_lo_u16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
+        if (__i % 2 == 0)
+        {
+          __result = ::cuda::simd::__dp2a_lo_u16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
+        else
+        {
+          __result = ::cuda::simd::__dp2a_hi_u16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
       }
-      else
+      else // is_signed_v<_Up>
       {
-        __result = ::cuda::simd::__dp2a_hi_u16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
+        if (__i % 2 == 0)
+        {
+          __result = ::cuda::simd::__dp2a_lo_u16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
+        else
+        {
+          __result = ::cuda::simd::__dp2a_hi_u16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
       }
     }
-    else if constexpr (::cuda::std::is_unsigned_v<_Tp>)
+    else // is_signed_v<_Tp>
     {
-      if (__i % 2 == 0)
+      if constexpr (::cuda::std::is_unsigned_v<_Up>)
       {
-        __result = ::cuda::simd::__dp2a_lo_u16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
+        if (__i % 2 == 0)
+        {
+          __result = ::cuda::simd::__dp2a_lo_s16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
+        else
+        {
+          __result = ::cuda::simd::__dp2a_hi_s16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
       }
-      else
+      else // is_signed_v<_Up>
       {
-        __result = ::cuda::simd::__dp2a_hi_u16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
-      }
-    }
-    else if constexpr (::cuda::std::is_unsigned_v<_Up>)
-    {
-      if (__i % 2 == 0)
-      {
-        __result = ::cuda::simd::__dp2a_lo_s16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
-      }
-      else
-      {
-        __result = ::cuda::simd::__dp2a_hi_s16x2_u8x4(__lhs_u16[__i], __rhs_u, __result);
-      }
-    }
-    else
-    {
-      if (__i % 2 == 0)
-      {
-        __result = ::cuda::simd::__dp2a_lo_s16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
-      }
-      else
-      {
-        __result = ::cuda::simd::__dp2a_hi_s16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
+        if (__i % 2 == 0)
+        {
+          __result = ::cuda::simd::__dp2a_lo_s16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
+        else
+        {
+          __result = ::cuda::simd::__dp2a_hi_s16x2_s8x4(__lhs_u16[__i], __rhs_u, __result);
+        }
       }
     }
   }
