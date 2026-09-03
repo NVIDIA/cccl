@@ -63,14 +63,10 @@ __device__ Vec_u8_x4 test_abs_diff_s8_x4(Vec_s8_x4 lhs, Vec_s8_x4 rhs)
 ; SM120: {{.*VIADD\.U8x4.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_abs_diff_s32_x2.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
+; SM90: {{.*VABSDIFF.*}}
+; SM90: {{.*VABSDIFF.*}}
+; SM100: {{.*VABSDIFF.*}}
+; SM100: {{.*VABSDIFF.*}}
 ; SM107: {{.*VIMNMX.*}}
 ; SM107: {{.*VIMNMX.*}}
 ; SM107: {{.*VIMNMX.*}}
@@ -81,14 +77,10 @@ __device__ Vec_u8_x4 test_abs_diff_s8_x4(Vec_s8_x4 lhs, Vec_s8_x4 rhs)
 ; SM120: {{.*VIMNMX.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_abs_diff_u32_x2.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM90: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
-; SM100: {{.*VIMNMX.*}}
+; SM90: {{.*VABSDIFF.*}}
+; SM90: {{.*VABSDIFF.*}}
+; SM100: {{.*VABSDIFF.*}}
+; SM100: {{.*VABSDIFF.*}}
 ; SM107: {{.*VIMNMX.*}}
 ; SM107: {{.*VIMNMX.*}}
 ; SM107: {{.*VIMNMX.*}}
