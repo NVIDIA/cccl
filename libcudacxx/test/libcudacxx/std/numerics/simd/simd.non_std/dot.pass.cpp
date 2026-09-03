@@ -188,10 +188,10 @@ TEST_FUNC constexpr void test_non_integer()
 
 TEST_FUNC void test_complex()
 {
-  using complex = cuda::std::complex<double>;
-  cuda::std::array<complex, 3> lhs_values{complex{1.0, 2.0}, complex{-3.0, 0.5}, complex{2.0, -1.0}};
-  cuda::std::array<complex, 3> rhs_values{complex{0.5, -1.0}, complex{2.0, 3.0}, complex{-1.0, 4.0}};
-  test_values<complex, complex, complex, 3>(lhs_values, rhs_values, complex{1.0, -2.0});
+  using complex = cuda::std::complex<float>;
+  cuda::std::array<complex, 3> lhs_values{complex{1.0f, 2.0f}, complex{-3.0f, 0.5f}, complex{2.0f, -1.0f}};
+  cuda::std::array<complex, 3> rhs_values{complex{0.5f, -1.0f}, complex{2.0f, 3.0f}, complex{-1.0f, 4.0f}};
+  test_values<complex, complex, complex, 3>(lhs_values, rhs_values, complex{1.0f, -2.0f});
 }
 
 TEST_FUNC constexpr bool test_all()
