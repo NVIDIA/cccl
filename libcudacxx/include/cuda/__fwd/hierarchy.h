@@ -69,6 +69,9 @@ struct __hierarchy_level_desc_base
 template <class _Level, class _Exts>
 class hierarchy_level_desc;
 
+template <class _Level, class _Meta>
+class hierarchy_level_desc_meta;
+
 template <class _Tp>
 inline constexpr bool __is_hierarchy_level_desc_v = ::cuda::std::is_base_of_v<__hierarchy_level_desc_base, _Tp>;
 

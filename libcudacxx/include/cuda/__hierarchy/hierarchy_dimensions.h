@@ -25,6 +25,7 @@
 
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/__hierarchy/level_dimensions.h>
+#  include <cuda/__hierarchy/meta_level_dimensions.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/type_list.h>
@@ -284,6 +285,11 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const hierarchy& __lhs, const hierarchy& __rhs) noexcept
   {
     return __lhs.__descs_ != __rhs.__descs_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const ::cuda::std::tuple<_LevelDescs...>& __levels() const noexcept
+  {
+    return __descs_;
   }
 
   /**

@@ -24,6 +24,8 @@ template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
 TEST_DEVICE_FUNC void test_thread(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
+  test_same_level_queries(cuda::gpu_thread, hier);
+
   // 1. Test cuda::gpu_thread.dims(x, hier)
   test_dims(uint3{static_cast<unsigned>(warpSize), 1u, 1u}, cuda::gpu_thread, cuda::warp, hier);
   test_dims(blockDim, cuda::gpu_thread, cuda::block, hier);

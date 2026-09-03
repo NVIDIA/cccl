@@ -36,6 +36,8 @@ TEST_DEVICE_FUNC void test_warp(
   const uint3 dims_in_block{count_in_block, 1, 1};
   const uint3 index_in_block{rank_in_block, 0, 0};
 
+  test_same_level_queries(cuda::warp, hier);
+
   // 1. Test cuda::warp.dims(x, hier)
   test_dims(dims_in_block, cuda::warp, cuda::block, hier);
   {
