@@ -112,6 +112,11 @@ typedef struct cccl_device_copy_build_result_t
   int cc;
   void* payload;
   size_t payload_size;
+  // Owned deep copy of the generated HostJIT source. The buffer is
+  // null-terminated for debugger convenience; source_size excludes that
+  // terminator.
+  char* source;
+  size_t source_size;
   void* jit_compiler;
   void* copy_fn;
   cccl_type_info value_type;

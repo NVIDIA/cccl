@@ -176,6 +176,17 @@ retain_stride_metadata(cccl_device_copy_view_build_t view, size_t rank)
   return retain_axis_metadata(view.strides, rank);
 }
 
+std::unique_ptr<char[]> retain_source(const std::string& source)
+{
+  auto retained = std::make_unique<char[]>(source.size() + 1);
+  for (size_t i = 0; i < source.size(); ++i)
+  {
+    retained[i] = source[i];
+  }
+  retained[source.size()] = '\0';
+  return retained;
+}
+
 bool validate_view_build(cccl_device_copy_view_build_t view, size_t rank)
 {
   if (!is_supported_layout(view.layout))
@@ -702,7 +713,8 @@ try
 
   auto jit_config = hostjit::codegen::CubCall::make_jit_config(
     cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path, device_copy_fn_name);
-  auto source = make_device_copy_source(spec);
+  auto source          = make_device_copy_source(spec);
+  auto retained_source = retain_source(source);
 
   if (const char* dump_path = std::getenv("CUBCALL_DUMP_SOURCE"))
   {
@@ -724,6 +736,8 @@ try
 
   cccl::detail::copy_cubin(compiler->getCubin(), build_ptr->payload, build_ptr->payload_size);
   build_ptr->cc                  = cc_major * 10 + cc_minor;
+  build_ptr->source              = retained_source.release();
+  build_ptr->source_size         = source.size();
   build_ptr->jit_compiler        = compiler.release();
   build_ptr->copy_fn             = reinterpret_cast<void*>(fn);
   build_ptr->value_type          = spec.value_type;
@@ -865,6 +879,9 @@ try
   build_ptr->source_strides = nullptr;
   delete[] build_ptr->shape;
   build_ptr->shape = nullptr;
+  delete[] build_ptr->source;
+  build_ptr->source      = nullptr;
+  build_ptr->source_size = 0;
   cccl::detail::release_jit_artifacts(build_ptr);
   build_ptr->copy_fn = nullptr;
 
