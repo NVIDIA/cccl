@@ -34,7 +34,11 @@ void worker(
     ai(j) += id + b(j);
   };
 
+  // finalize() is non-blocking because the graph_ctx was created relative to
+  // a user-provided CUDA stream, so wait for the graph to complete before the
+  // main thread unfreezes and reads the data
   gctx.finalize();
+  cuda_safe_call(cudaStreamSynchronize(stream));
 }
 
 int main()
