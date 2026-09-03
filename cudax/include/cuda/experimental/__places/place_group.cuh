@@ -242,9 +242,9 @@ inline void check_not_capturing(cudaStream_t stream, const char* what)
 class place_group
 {
 public:
-  /// @brief Sentinel color requesting automatic (round-robin) stream-color
+  /// @brief Sentinel lane_id requesting automatic (round-robin) lane
   /// selection.
-  static constexpr size_t auto_stream_color = static_cast<size_t>(-1);
+  static constexpr size_t auto_lane_id = static_cast<size_t>(-1);
 
   /// @brief Create a group owning its stream pools, over an explicit set of places.
   explicit place_group(::std::vector<exec_place> places)
@@ -352,49 +352,52 @@ public:
   // Streams
   // ==========================================================================
   // Each place carries a pool of streams (its compute pool in the underlying
-  // registry). A stream "color" is an index into that pool: work mapped to
-  // different colors may overlap since it runs on different streams. Streams
-  // are created lazily, on first use of each (place, color) slot.
+  // registry). A "lane" is one ordering domain across the group — one stream
+  // per place, selected by a lane_id indexing into each place's pool: work is
+  // ordered within a lane and may overlap across lanes. Streams are created
+  // lazily, on first use of each (place, lane_id) slot. (Naming: a lane here
+  // is a host-side stream pipeline, not CUDA's intra-warp lane — the
+  // granularity gap keeps the homonym unambiguous in context.)
 
-  /// @brief Number of stream colors available per place.
-  [[nodiscard]] size_t num_stream_colors() const noexcept
+  /// @brief Number of lanes available per place.
+  [[nodiscard]] size_t num_lanes() const noexcept
   {
     return exec_place_default_pool_size;
   }
 
-  /// @brief Get the stream of @p place for a given color (default color 0).
+  /// @brief Get the stream of @p place for a given lane_id (default lane_id 0).
   ///
-  /// Colors wrap modulo the place's ACTUAL stream-pool size (places created
+  /// Lane ids wrap modulo the place's ACTUAL stream-pool size (places created
   /// with custom pool sizes may hold fewer or more streams than
-  /// `exec_place_default_pool_size`; `num_stream_colors()` reports the
+  /// `exec_place_default_pool_size`; `num_lanes()` reports the
   /// default advertised by the group).
-  cudaStream_t get_stream(const exec_place& place, size_t color = 0)
+  cudaStream_t get_stream(const exec_place& place, size_t lane_id = 0)
   {
     const auto& streams = get_or_create_streams(place);
     _CCCL_ASSERT(!streams.empty(), "place has an empty stream pool");
-    return streams[color % streams.size()];
+    return streams[lane_id % streams.size()];
   }
 
-  /// @brief Get the stream of the idx-th place for a given color.
-  cudaStream_t get_stream(size_t place_idx, size_t color = 0)
+  /// @brief Get the stream of the idx-th place for a given lane_id.
+  cudaStream_t get_stream(size_t place_idx, size_t lane_id = 0)
   {
-    return get_stream(place(place_idx), color);
+    return get_stream(place(place_idx), lane_id);
   }
 
   /**
-   * @brief Next stream color, round-robin. Thread-safe.
+   * @brief Next stream lane_id, round-robin. Thread-safe.
    *
    * Use to spread independent operations over the per-place pools.
    */
-  [[nodiscard]] size_t next_stream_color() noexcept
+  [[nodiscard]] size_t next_lane_id() noexcept
   {
-    return stream_color_counter_.fetch_add(1, ::std::memory_order_relaxed) % exec_place_default_pool_size;
+    return lane_counter_.fetch_add(1, ::std::memory_order_relaxed) % exec_place_default_pool_size;
   }
 
-  /// @brief Stream for a place, either at an explicit color or round-robin.
-  cudaStream_t get_colored_stream(const exec_place& place, size_t color = auto_stream_color)
+  /// @brief Stream for a place, either at an explicit lane_id or round-robin.
+  cudaStream_t get_lane_stream(const exec_place& place, size_t lane_id = auto_lane_id)
   {
-    return get_stream(place, color == auto_stream_color ? next_stream_color() : color);
+    return get_stream(place, lane_id == auto_lane_id ? next_lane_id() : lane_id);
   }
 
   /// @brief Synchronize every stream created so far, on every place.
@@ -467,7 +470,7 @@ public:
     return env(place(place_idx).affine_data_place(), stream);
   }
 
-  /// @brief Environment for the idx-th place using the group's stream at color 0.
+  /// @brief Environment for the idx-th place using the group's stream at lane_id 0.
   auto env(size_t place_idx)
   {
     return env(place_idx, get_stream(place_idx));
@@ -477,8 +480,8 @@ public:
    * @brief One environment per place: the per-shard environment range the
    * generic sharded algorithms consume (`algo(view, envs, ...)`).
    *
-   * Each environment carries the place's pool stream at @p color (a fresh
-   * color by default, so repeated calls yield independent lanes — the same
+   * Each environment carries the place's pool stream at @p lane_id (a fresh
+   * lane_id by default, so repeated calls yield independent lanes — the same
    * policy as container allocation) and a memory resource at the place's
    * affine data place. This is how execution environments are manufactured
    * from places: e.g. `place_group(exec_place::all_devices()).envs()` binds
@@ -487,14 +490,14 @@ public:
    * The returned environments borrow the group's pool streams: the group
    * must outlive them.
    */
-  [[nodiscard]] auto envs(size_t color = auto_stream_color)
+  [[nodiscard]] auto envs(size_t lane_id = auto_lane_id)
   {
-    const size_t effective_color = (color == auto_stream_color) ? next_stream_color() : color;
+    const size_t effective_lane = (lane_id == auto_lane_id) ? next_lane_id() : lane_id;
     ::std::vector<decltype(env(::cuda::std::declval<const data_place&>(), cudaStream_t{}))> result;
     result.reserve(places_.size());
     for (size_t i = 0; i < places_.size(); i++)
     {
-      result.push_back(env(place(i).affine_data_place(), get_stream(i, effective_color)));
+      result.push_back(env(place(i).affine_data_place(), get_stream(i, effective_lane)));
     }
     return result;
   }
@@ -526,7 +529,7 @@ public:
       , resources_(other.resources_)
       , keep_alive_(mv(other.keep_alive_))
       , stream_cache_(mv(other.stream_cache_))
-      , stream_color_counter_(other.stream_color_counter_.load(::std::memory_order_relaxed))
+      , lane_counter_(other.lane_counter_.load(::std::memory_order_relaxed))
   {
     other.resources_ = nullptr;
   }
@@ -550,7 +553,7 @@ private:
 
   // Materialize (lazily, once) the per-place streams from the registry's
   // compute pool. The registry owns the streams; the group only caches
-  // handles so (place, color) lookups are stable and cheap.
+  // handles so (place, lane_id) lookups are stable and cheap.
   const ::std::vector<cudaStream_t>& get_or_create_streams(const exec_place& place)
   {
     // Locate the cache slot for this place.
@@ -583,7 +586,7 @@ private:
 
   mutable ::std::mutex mutex_;
   ::std::vector<::std::vector<cudaStream_t>> stream_cache_; // one slot per place
-  ::std::atomic<size_t> stream_color_counter_{0};
+  ::std::atomic<size_t> lane_counter_{0};
 };
 
 #ifdef UNITTESTED_FILE
@@ -627,21 +630,21 @@ UNITTEST("place_group per-place stream pools")
 {
   auto group = place_group::by_locality_domains();
 
-  // A stream can be picked and used on every place, for every color
-  EXPECT(group.num_stream_colors() >= 1UL);
+  // A stream can be picked and used on every place, for every lane_id
+  EXPECT(group.num_lanes() >= 1UL);
   for (size_t i = 0; i < group.size(); i++)
   {
-    for (size_t color = 0; color < group.num_stream_colors(); color++)
+    for (size_t lane_id = 0; lane_id < group.num_lanes(); lane_id++)
     {
-      cudaStream_t s = group.get_stream(i, color);
+      cudaStream_t s = group.get_stream(i, lane_id);
       EXPECT(s != nullptr);
-      // Stable: the same (place, color) always yields the same stream
-      EXPECT(s == group.get_stream(i, color));
+      // Stable: the same (place, lane_id) always yields the same stream
+      EXPECT(s == group.get_stream(i, lane_id));
 
       exec_place_scope scope(group.place(i));
       cuda_safe_call(cudaStreamSynchronize(s));
     }
-    // Different colors are different streams
+    // Different lanes are different streams
     EXPECT(group.get_stream(i, 0) != group.get_stream(i, 1));
   }
 

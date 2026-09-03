@@ -15,7 +15,7 @@
  *        origin stream to every shard stream (`fork_from`), record fill/transform/for_each
  *        with `blocking = false`, join back (`join_into`), instantiate, and replay —
  *        including replays with inputs mutated between launches, a
- *        cross-stream (different-color) captured dependency, and a check that
+ *        cross-stream (different-lane_id) captured dependency, and a check that
  *        the per-place SM confinement of the shard streams survives inside
  *        the instantiated graph.
  */
@@ -76,8 +76,8 @@ __global__ void smid_probe_kernel(unsigned* smids)
 void test_pipeline_capture_and_replay(place_group& group)
 {
   const size_t n = 1 << 20;
-  auto in        = sharded_array<float>::allocate(group, n, /*color*/ 0);
-  auto out       = sharded_array<float>::allocate(group, n, /*color*/ 0);
+  auto in        = sharded_array<float>::allocate(group, n, /*lane_id*/ 0);
+  auto out       = sharded_array<float>::allocate(group, n, /*lane_id*/ 0);
 
   fill(in, 1.0f); // eager warm-up outside capture (modules, pools)
   auto envs = default_envs(out);
@@ -142,18 +142,18 @@ void test_pipeline_capture_and_replay(place_group& group)
 }
 
 // A captured cross-stream dependency: input and output allocated at different
-// stream colors, so the out-of-place transform records event edges between
+// lanes, so the out-of-place transform records event edges between
 // two capturing shard streams.
-void test_cross_color_dependency(place_group& group)
+void test_cross_lane_dependency(place_group& group)
 {
-  if (group.num_stream_colors() < 2)
+  if (group.num_lanes() < 2)
   {
     return;
   }
 
   const size_t n = 100003;
-  auto in        = sharded_array<float>::allocate(group, n, /*color*/ 0);
-  auto out       = sharded_array<float>::allocate(group, n, /*color*/ 1);
+  auto in        = sharded_array<float>::allocate(group, n, /*lane_id*/ 0);
+  auto out       = sharded_array<float>::allocate(group, n, /*lane_id*/ 1);
 
   fill(in, 4.0f);
 
@@ -162,10 +162,10 @@ void test_cross_color_dependency(place_group& group)
 
   const auto origin_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
   const auto ce          = ::cuda::std::execution::env{origin_prop};
-  auto envs_out          = default_envs(out); // color-1 streams
+  auto envs_out          = default_envs(out); // lane_id-1 streams
 
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
-  zip_transform(out, envs_out, scale_op{}, ce, in); // cross-color capture edges via the ce bracket
+  zip_transform(out, envs_out, scale_op{}, ce, in); // cross-lane_id capture edges via the ce bracket
 
   cudaGraph_t graph = nullptr;
   cuda_safe_call(cudaStreamEndCapture(origin, &graph));
@@ -275,7 +275,7 @@ int main()
   auto group = place_group::by_locality_domains();
 
   test_pipeline_capture_and_replay(group);
-  test_cross_color_dependency(group);
+  test_cross_lane_dependency(group);
   test_confinement_in_graph(group);
 
   return 0;

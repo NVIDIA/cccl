@@ -251,12 +251,12 @@ public:
    *
    * Each shard lives on the affine data place of the corresponding group
    * place and gets a reference stream from the group's per-place pool at the
-   * given color (or a round-robin color by default).
+   * given lane_id (or a round-robin lane_id by default).
    *
    * @throws std::invalid_argument when `sizes.size() != group.size()`.
    */
   static sharded_array
-  allocate(place_group& group, const ::std::vector<size_t>& sizes, size_t color = place_group::auto_stream_color)
+  allocate(place_group& group, const ::std::vector<size_t>& sizes, size_t lane_id = place_group::auto_lane_id)
   {
     if (sizes.size() != group.size())
     {
@@ -265,23 +265,23 @@ public:
                     + ") must equal the number of places in the group (" + ::std::to_string(group.size()) + ")");
     }
 
-    const size_t effective_color = (color == place_group::auto_stream_color) ? group.next_stream_color() : color;
+    const size_t effective_lane = (lane_id == place_group::auto_lane_id) ? group.next_lane_id() : lane_id;
 
     ::std::vector<shard_spec> specs;
     specs.reserve(sizes.size());
     for (size_t i = 0; i < sizes.size(); i++)
     {
       const auto& place = group.place(i);
-      specs.emplace_back(sizes[i], place.affine_data_place(), place, group.get_stream(i, effective_color));
+      specs.emplace_back(sizes[i], place.affine_data_place(), place, group.get_stream(i, effective_lane));
     }
     return allocate(specs);
   }
 
   /// @brief Allocate `total_size` elements distributed evenly over a group's
   /// places (remainder to the first shards).
-  static sharded_array allocate(place_group& group, size_t total_size, size_t color = place_group::auto_stream_color)
+  static sharded_array allocate(place_group& group, size_t total_size, size_t lane_id = place_group::auto_lane_id)
   {
-    return allocate(group, split_evenly(total_size, group.size()), color);
+    return allocate(group, split_evenly(total_size, group.size()), lane_id);
   }
 
   // ========== Contiguous (VMM-backed) allocation ==========
@@ -400,17 +400,17 @@ public:
 
   /// @brief Contiguous allocation distributed evenly over a group's places.
   static sharded_array
-  allocate_contiguous(place_group& group, size_t total_size, size_t color = place_group::auto_stream_color)
+  allocate_contiguous(place_group& group, size_t total_size, size_t lane_id = place_group::auto_lane_id)
   {
     const auto sizes             = split_evenly(total_size, group.size());
-    const size_t effective_color = (color == place_group::auto_stream_color) ? group.next_stream_color() : color;
+    const size_t effective_lane = (lane_id == place_group::auto_lane_id) ? group.next_lane_id() : lane_id;
 
     ::std::vector<shard_spec> specs;
     specs.reserve(sizes.size());
     for (size_t i = 0; i < sizes.size(); i++)
     {
       const auto& place = group.place(i);
-      specs.emplace_back(sizes[i], place.affine_data_place(), place, group.get_stream(i, effective_color));
+      specs.emplace_back(sizes[i], place.affine_data_place(), place, group.get_stream(i, effective_lane));
     }
     return allocate_contiguous(specs);
   }
