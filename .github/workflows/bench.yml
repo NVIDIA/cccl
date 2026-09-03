@@ -343,7 +343,7 @@ jobs:
           mapfile -d '' -t bench_args < "/bench_args.txt"
 
           # NVBench compare deps:
-          ./ci/util/retry.sh 5 30 python3 -m pip install 'cuda-bench[compare]>=0.3.0'
+          ./ci/util/retry.sh 5 30 python3 -m pip install colorama jsondiff numpy tabulate
 
           ./ci/bench/bench.sh "${bench_args[@]}"
           EOF
