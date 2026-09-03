@@ -532,9 +532,21 @@ public:
   void copy_to_host(_Tp* host_data) const
   {
     check_not_capturing_any("sharded_array::copy_to_host");
+    // Asynchronous per-shard copies + one join: shards copy concurrently
+    // (mirrors copy_from_host; a pinned destination gets the overlap, a
+    // pageable one degrades per-copy but stays correct and ordered).
     each_shard->*[host_data](const auto& s) {
-      cuda_safe_call(cudaMemcpy(host_data + s.global_offset, s.data, s.size_bytes(), cudaMemcpyDefault));
+      if (s.stream)
+      {
+        cuda_safe_call(
+          cudaMemcpyAsync(host_data + s.global_offset, s.data, s.size_bytes(), cudaMemcpyDefault, s.stream));
+      }
+      else
+      {
+        cuda_safe_call(cudaMemcpy(host_data + s.global_offset, s.data, s.size_bytes(), cudaMemcpyDefault));
+      }
     };
+    sync(); // join all shard streams (the SYNCHRONOUS contract)
   }
 
   // ==========================================================================
