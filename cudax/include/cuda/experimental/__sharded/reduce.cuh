@@ -415,4 +415,66 @@ _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
   return sharded::reduce(data, envs, reduce_op, init_value, call_env);
 }
 
+// Reduction conveniences over the generic tier -------------------------------
+
+/// @brief Sum of all elements (generic).
+_CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+[[nodiscard]] _CCCL_HOST_API view_element_t<_S> sum(const _S& data, const _Envs& envs, const _CallEnv& call_env = {})
+{
+  using elem_t = view_element_t<_S>;
+  return sharded::reduce(data, envs, ::cuda::std::plus<elem_t>{}, elem_t{0}, call_env);
+}
+
+/// @brief Sum of all elements (generic, self-bound).
+_CCCL_TEMPLATE(class _S, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
+  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_CallEnv>>))
+[[nodiscard]] _CCCL_HOST_API view_element_t<_S> sum(const _S& data, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  return sharded::sum(data, envs, call_env);
+}
+
+/// @brief Minimum element (generic).
+_CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+[[nodiscard]] _CCCL_HOST_API view_element_t<_S> min(const _S& data, const _Envs& envs, const _CallEnv& call_env = {})
+{
+  using elem_t = view_element_t<_S>;
+  return sharded::reduce(data, envs, ::cuda::minimum<elem_t>{}, ::cuda::std::numeric_limits<elem_t>::max(), call_env);
+}
+
+/// @brief Minimum element (generic, self-bound).
+_CCCL_TEMPLATE(class _S, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
+  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_CallEnv>>))
+[[nodiscard]] _CCCL_HOST_API view_element_t<_S> min(const _S& data, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  return sharded::min(data, envs, call_env);
+}
+
+/// @brief Maximum element (generic).
+_CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+[[nodiscard]] _CCCL_HOST_API view_element_t<_S> max(const _S& data, const _Envs& envs, const _CallEnv& call_env = {})
+{
+  using elem_t = view_element_t<_S>;
+  return sharded::reduce(data, envs, ::cuda::maximum<elem_t>{}, ::cuda::std::numeric_limits<elem_t>::lowest(), call_env);
+}
+
+/// @brief Maximum element (generic, self-bound).
+_CCCL_TEMPLATE(class _S, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
+  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_CallEnv>>))
+[[nodiscard]] _CCCL_HOST_API view_element_t<_S> max(const _S& data, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  return sharded::max(data, envs, call_env);
+}
+
 } // namespace cuda::experimental::sharded

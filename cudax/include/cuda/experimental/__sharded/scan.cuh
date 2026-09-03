@@ -536,4 +536,50 @@ _CCCL_HOST_API void exclusive_scan(
     ::cuda::std::forward<_S>(data), envs, scan_op, init_value, identity, call_env, "sharded::exclusive_scan");
 }
 
+// Scan conveniences over the generic tier ------------------------------------
+
+/// @brief In-place inclusive sum (generic).
+_CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_HOST_API void inclusive_sum(_S&& data, const _Envs& envs, const _CallEnv& call_env = {})
+{
+  using elem_t = view_element_t<_S>;
+  sharded::inclusive_scan(::cuda::std::forward<_S>(data), envs, ::cuda::std::plus<elem_t>{}, elem_t{0}, call_env);
+}
+
+/// @brief In-place inclusive sum (generic, self-bound).
+_CCCL_TEMPLATE(class _S, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
+  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_CallEnv>>))
+_CCCL_HOST_API void inclusive_sum(_S&& data, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  using elem_t    = view_element_t<_S>;
+  sharded::inclusive_scan(::cuda::std::forward<_S>(data), envs, ::cuda::std::plus<elem_t>{}, elem_t{0}, call_env);
+}
+
+/// @brief In-place exclusive sum (generic).
+_CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
+                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_HOST_API void
+exclusive_sum(_S&& data, const _Envs& envs, view_element_t<_S> init_value = {}, const _CallEnv& call_env = {})
+{
+  using elem_t = view_element_t<_S>;
+  sharded::exclusive_scan(
+    ::cuda::std::forward<_S>(data), envs, ::cuda::std::plus<elem_t>{}, init_value, elem_t{0}, call_env);
+}
+
+/// @brief In-place exclusive sum (generic, self-bound).
+_CCCL_TEMPLATE(class _S, class _CallEnv = default_call_env)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>>)
+_CCCL_HOST_API void exclusive_sum(_S&& data, view_element_t<_S> init_value = {}, const _CallEnv& call_env = {})
+{
+  const auto envs = default_envs(data);
+  using elem_t    = view_element_t<_S>;
+  sharded::exclusive_scan(
+    ::cuda::std::forward<_S>(data), envs, ::cuda::std::plus<elem_t>{}, init_value, elem_t{0}, call_env);
+}
+
 } // namespace cuda::experimental::sharded

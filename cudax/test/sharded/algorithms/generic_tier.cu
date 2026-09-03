@@ -112,6 +112,27 @@ int main()
   inclusive_scan(b, envs, ::cuda::maximum<long long>{});
   EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == (long long) n * ((long long) n - 1) / 2);
 
+  // Counting, histogram and reduction conveniences, generic
+  fill(b, envs, 2LL);
+  EXPECT(count(b, 2LL) == n); // self-bound
+  EXPECT(count(b, envs, 3LL) == 0); // explicit envs
+  EXPECT(sum(b) == 2 * (long long) n);
+  iota(b, 0LL);
+  EXPECT(min(b, envs) == 0LL);
+  EXPECT(max(b) == (long long) n - 1);
+  {
+    const auto h = histogram_even(b, envs, 2, 0LL, (long long) n + 1); // n odd: (n+1)/2 | n - (n-1)/2
+    EXPECT(h.size() == 2);
+    EXPECT(h[0] + h[1] == n);
+    EXPECT(h[0] == ((size_t) n + 1) / 2);
+  }
+  fill(b, 1LL);
+  inclusive_sum(b, envs); // b[i] = i + 1
+  EXPECT(sum(b) == (long long) n * ((long long) n + 1) / 2);
+  fill(b, 1LL);
+  exclusive_sum(b, 7LL); // b[i] = 7 + i (self-bound)
+  EXPECT(sum(b) == 7 * (long long) n + (long long) n * ((long long) n - 1) / 2);
+
   // Generic adjacent_difference: boundary crossing between shards must see
   // the predecessor's last element; iota -> minus gives all-1s except [0].
   iota(b, 5LL); // b = 5, 6, ..., 5 + n - 1
