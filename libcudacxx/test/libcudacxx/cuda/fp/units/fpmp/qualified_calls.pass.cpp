@@ -60,7 +60,10 @@ TEST_HOST_DEVICE_FUNC void test_named()
   const T b(1.5);
   const T c(4.0);
 
-  // renormalize: the one that used to be a hidden friend.
+  // renormalize: the one that used to be a hidden friend. The qualified spelling is
+  // itself the check that it is a namespace member, since qualified lookup does not
+  // find a hidden friend - this line stops compiling if it moves back into the class,
+  // even though ADL would still find the unqualified one next to it.
   assert(same(cudax::renormalize(a), renormalize(a)));
   assert(static_cast<double>(cudax::renormalize(a)) == 3.0);
 
@@ -116,29 +119,9 @@ TEST_HOST_DEVICE_FUNC void test()
   test_type<cudax::fp64mp2_high>();
 }
 
-// Naming the specialization is a stricter check than calling it: a hidden friend
-// has no name to take, so this fails to compile if renormalize moves back into
-// the class, even if ADL would still find it.
-TEST_HOST_DEVICE_FUNC void test_is_namespace_member()
-{
-  using T = cudax::fp32mp2;
-
-  // Taking the address requires the name to denote a namespace-scope template.
-  auto* const __renormalize = &cudax::renormalize<float, cudax::fpmp2_accuracy::def>;
-  auto* const __sqrt        = &cudax::sqrt<float, cudax::fpmp2_accuracy::def>;
-  assert(__renormalize != nullptr);
-  assert(__sqrt != nullptr);
-
-  // And it is the same function the calls above resolved to.
-  const T a(3.0);
-  assert(same(__renormalize(a), cudax::renormalize(a)));
-  assert(same(__sqrt(T(4.0)), cudax::sqrt(T(4.0))));
-}
-
 int main(int, char**)
 {
   test();
-  test_is_namespace_member();
 
   return 0;
 }

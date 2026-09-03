@@ -465,18 +465,11 @@ inline constexpr int __fpmp2_mantissa_bits_v = __fpmp2_is_fp32_v<_Fp> ? 24 : 53;
 // __cccl_is_integer_v keeps __num_bits_v out of the non-integer case entirely.
 */
 template <typename _Tp, bool = ::cuda::std::__cccl_is_integer_v<_Tp>>
-struct __fpmp2_int_value_bits : ::cuda::std::integral_constant<int, -1>
-{};
+inline constexpr int __fpmp2_int_value_bits_v = -1;
 
 template <typename _Tp>
-struct __fpmp2_int_value_bits<_Tp, true>
-    : ::cuda::std::integral_constant<
-        int,
-        static_cast<int>(::cuda::std::__num_bits_v<_Tp>) - static_cast<int>(::cuda::std::is_signed_v<_Tp>)>
-{};
-
-template <typename _Tp>
-inline constexpr int __fpmp2_int_value_bits_v = __fpmp2_int_value_bits<_Tp>::value;
+inline constexpr int __fpmp2_int_value_bits_v<_Tp, true> =
+  static_cast<int>(::cuda::std::__num_bits_v<_Tp>) - static_cast<int>(::cuda::std::is_signed_v<_Tp>);
 
 /*
 // Integer sources that one limb already represents exactly for every value of the type:

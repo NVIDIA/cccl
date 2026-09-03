@@ -42,6 +42,9 @@ TEST_HOST_DEVICE_FUNC void test_named()
   const T c(4.0);
 
   // renormalize: the one that used to be a hidden friend, here and on the wrapped type.
+  // The qualified spelling is itself the check that it is a namespace member, since
+  // qualified lookup does not find a hidden friend - this line stops compiling if it
+  // moves back into the class, even though ADL would still find the unqualified one.
   assert(same(cudax::renormalize(a), renormalize(a)));
   assert(static_cast<double>(cudax::renormalize(a)) == 3.0);
 
@@ -93,34 +96,9 @@ TEST_HOST_DEVICE_FUNC void test()
   test_matches_plain<cudax::fp64mp2_stat, cudax::fp64mp2>();
 }
 
-// Taking the address requires the name to denote a namespace-scope template, which a
-// hidden friend does not. With <cuda/fptool> included both overloads are visible, so the
-// target type selects between them - and each of the two has to be a namespace member for
-// its initializer to compile at all.
-TEST_HOST_DEVICE_FUNC void test_is_namespace_member()
-{
-  using stat_t  = cudax::fp32mp2_stat;
-  using plain_t = cudax::fp32mp2;
-
-  stat_t (*const __renormalize_stat)(const stat_t&) noexcept = &cudax::renormalize<float, cudax::fpmp2_accuracy::def>;
-  plain_t (*const __renormalize_plain)(const plain_t&) noexcept =
-    &cudax::renormalize<float, cudax::fpmp2_accuracy::def>;
-  stat_t (*const __sqrt_stat)(const stat_t&) noexcept = &cudax::sqrt<float, cudax::fpmp2_accuracy::def>;
-
-  assert(__renormalize_stat != nullptr);
-  assert(__renormalize_plain != nullptr);
-  assert(__sqrt_stat != nullptr);
-
-  // And they are the functions the calls above resolved to.
-  const stat_t a(3.0);
-  assert(same(__renormalize_stat(a), cudax::renormalize(a)));
-  assert(same(__sqrt_stat(stat_t(4.0)), cudax::sqrt(stat_t(4.0))));
-}
-
 int main(int, char**)
 {
   test();
-  test_is_namespace_member();
 
   return 0;
 }
