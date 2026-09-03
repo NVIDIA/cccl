@@ -299,10 +299,6 @@ private:
       }
       else
       {
-        if (dist == 0)
-        {
-          return 0;
-        }
         _CCCL_ASSERT(dist % static_cast<difference_type>(stride()) == 0,
                      "Underlying iterator difference must be divisible by the stride");
         return dist / static_cast<difference_type>(stride());
@@ -319,20 +315,12 @@ private:
       {
         // a pointer counter with a stride has an integral distance that must
         // satisfy the same contract as an integral counter
-        if (dist == 0)
-        {
-          return 0;
-        }
         _CCCL_ASSERT(dist % static_cast<decltype(dist)>(stride()) == 0,
                      "Underlying iterator difference must be divisible by the stride");
         return static_cast<difference_type>(dist / static_cast<decltype(dist)>(stride()));
       }
       else
       {
-        if (dist == 0)
-        {
-          return 0;
-        }
         // imprecisions in the floating point domain make truncation unreliable, so round to the nearest position
         return static_cast<difference_type>(::cuda::std::round(dist / static_cast<decltype(dist)>(stride())));
       }
