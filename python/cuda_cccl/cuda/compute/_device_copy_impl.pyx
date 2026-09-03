@@ -494,6 +494,16 @@ def _layout_stride_relaxed():
     return <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
 
 
+cdef _cccl_device_copy_layout_kind_t _device_copy_select_strided_layout(const int64_t* strides, size_t rank) noexcept:
+    cdef size_t axis
+    if strides == NULL:
+        return _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+    for axis in range(rank):
+        if strides[axis] <= 0:
+            return _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+    return _CCCL_DEVICE_COPY_LAYOUT_STRIDE
+
+
 
 
 cdef int64_t _copy_plan_extent(object value) except? -1:
@@ -1162,6 +1172,8 @@ cdef extern from "cccl/c/device_copy.h":
         int cc
         void* payload
         size_t payload_size
+        char* source
+        size_t source_size
         void* jit_compiler
         void* copy_fn
         _cccl_type_info value_type
@@ -1681,6 +1693,8 @@ cdef class _DeviceCopyBuild:
         self._build.cc = 0
         self._build.payload = NULL
         self._build.payload_size = 0
+        self._build.source = NULL
+        self._build.source_size = 0
         self._build.jit_compiler = NULL
         self._build.copy_fn = NULL
         self._build.shape = NULL
@@ -1751,9 +1765,9 @@ cdef class _DeviceCopyBuild:
             spec.value_type = value_type
             spec.rank = rank
             spec.shape = shape_metadata
-            spec.source.layout = _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+            spec.source.layout = _device_copy_select_strided_layout(plan._native_source_strides(), rank)
             spec.source.strides = source_stride_metadata
-            spec.destination.layout = _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+            spec.destination.layout = _device_copy_select_strided_layout(plan._native_destination_strides(), rank)
             spec.destination.strides = destination_stride_metadata
 
             include_options = _device_copy_include_options()
@@ -1964,6 +1978,14 @@ cdef class _DeviceCopy:
 
     def _get_cubin(self):
         return self._build._get_cubin()
+
+    def _get_source(self):
+        cdef _DeviceCopyBuild build = self._build
+        if build._closed:
+            raise RuntimeError("DeviceCopy build result is closed")
+        if build._build.source == NULL or build._build.source_size == 0:
+            return ""
+        return (<char*>build._build.source)[:build._build.source_size].decode("utf-8")
 
     def close(self):
         self._build.close()
