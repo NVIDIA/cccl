@@ -35,13 +35,13 @@
 #include <cuda/stream>
 
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__places/stream_pool.cuh> // is_stream_capturing
 #include <cuda/experimental/__stf/utility/exception_policy.cuh> // SCOPE(fail)
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
-#include <stdexcept>
 #include <stdexcept>
 
 #include <cuda_runtime.h>
@@ -139,7 +139,7 @@ public:
         // capturing (a synchronize would invalidate the capture): the throw
         // is caught below, the free is skipped — a reported leak, never a
         // use-after-free or a broken capture.
-        if (stream_in_capture(stream.get()))
+        if (is_stream_capturing(stream.get()))
         {
           _CCCL_THROW(::std::runtime_error,
                       "place_memory_resource::deallocate: cannot drain a capturing stream "
