@@ -506,6 +506,119 @@ cdef _cccl_device_copy_layout_kind_t _device_copy_select_strided_layout(const in
 
 
 
+cdef tuple _device_copy_normalize_static_extent_axes(object axes):
+    cdef list result = []
+    cdef object seen = set()
+    cdef object iterator
+    cdef object axis_obj
+    cdef object axis
+
+    if axes is None:
+        return ()
+
+    if isinstance(axes, (str, bytes)):
+        raise TypeError("static_extents must be an integer axis or an iterable of integer axes")
+
+    try:
+        iterator = iter(axes)
+    except TypeError:
+        iterator = iter((axes,))
+
+    for axis_obj in iterator:
+        axis = operator.index(axis_obj)
+        if axis < 0:
+            raise ValueError("static extent axes must be non-negative")
+        if axis in seen:
+            raise ValueError("static extent axes must be unique")
+        seen.add(axis)
+        result.append(axis)
+
+    return tuple(result)
+
+
+cdef tuple _device_copy_static_extent_axes_from_extent_spec(object extents):
+    cdef list result = []
+    cdef object kind
+    cdef Py_ssize_t axis
+
+    for axis, kind in enumerate(extents):
+        if kind is None or kind == "runtime" or kind == "dynamic":
+            continue
+        if kind == "static":
+            result.append(axis)
+            continue
+        raise ValueError("extent entries must be 'runtime', 'dynamic', 'static', or None")
+
+    return tuple(result)
+
+
+cdef class _DeviceCopyCompileSpec:
+    cdef bint _all_static_extents
+    cdef tuple _static_extent_axes
+
+    def __init__(self, object extents=None, object static_extents=None):
+        self._all_static_extents = False
+        self._static_extent_axes = ()
+
+        if extents is not None and static_extents is not None:
+            raise TypeError("specify either extents or static_extents, not both")
+
+        if extents is None:
+            self._static_extent_axes = _device_copy_normalize_static_extent_axes(static_extents)
+        elif extents == "runtime" or extents == "dynamic":
+            self._static_extent_axes = ()
+        elif extents == "static":
+            self._all_static_extents = True
+        else:
+            self._static_extent_axes = _device_copy_static_extent_axes_from_extent_spec(extents)
+
+    @property
+    def all_static_extents(self):
+        return bool(self._all_static_extents)
+
+    @property
+    def static_extent_axes(self):
+        return self._static_extent_axes
+
+
+def _device_copy_compile_spec(*, extents=None, static_extents=None):
+    return _DeviceCopyCompileSpec(extents=extents, static_extents=static_extents)
+
+
+cdef _DeviceCopyCompileSpec _device_copy_compile_spec_from_object(object spec):
+    if spec is None:
+        return _DeviceCopyCompileSpec()
+    if isinstance(spec, _DeviceCopyCompileSpec):
+        return <_DeviceCopyCompileSpec>spec
+    raise TypeError("device copy compile spec must be created by _device_copy_compile_spec")
+
+
+cdef void _device_copy_compile_spec_validate_rank(_DeviceCopyCompileSpec spec, size_t rank) except *:
+    cdef Py_ssize_t i
+    cdef object axis
+
+    if spec._all_static_extents:
+        return
+
+    for i in range(len(spec._static_extent_axes)):
+        axis = spec._static_extent_axes[i]
+        if axis >= rank:
+            raise ValueError("static extent axis is out of range for simplified rank")
+
+
+cdef bint _device_copy_compile_spec_axis_is_static(_DeviceCopyCompileSpec spec, size_t axis) except *:
+    cdef Py_ssize_t i
+
+    if spec._all_static_extents:
+        return True
+
+    for i in range(len(spec._static_extent_axes)):
+        if spec._static_extent_axes[i] == axis:
+            return True
+
+    return False
+
+
 cdef int64_t _copy_plan_extent(object value) except? -1:
     cdef int64_t result = <int64_t>value
     if result < 0:
@@ -1081,6 +1194,14 @@ def _make_device_copy_plan(
     )
 
 
+cdef int64_t _device_copy_plan_call_extent(_DeviceCopyPlan plan, size_t axis) noexcept:
+    if plan._rank == 0:
+        return 1
+    if plan._contiguous_1d:
+        return plan._elements
+    return plan._shape[axis]
+
+
 cdef extern from "dlpack/dlpack.h":
     ctypedef struct _DeviceCopyDLDataType "DLDataType":
         uint8_t code
@@ -1134,6 +1255,7 @@ cdef extern from "cccl/c/types.h":
 cdef extern from "cccl/c/device_copy.h":
     ctypedef enum _cccl_device_copy_axis_metadata_kind_t "cccl_device_copy_axis_metadata_kind_t":
         _CCCL_DEVICE_COPY_AXIS_RUNTIME "CCCL_DEVICE_COPY_AXIS_RUNTIME"
+        _CCCL_DEVICE_COPY_AXIS_STATIC "CCCL_DEVICE_COPY_AXIS_STATIC"
 
     ctypedef enum _cccl_device_copy_layout_kind_t "cccl_device_copy_layout_kind_t":
         _CCCL_DEVICE_COPY_LAYOUT_RIGHT "CCCL_DEVICE_COPY_LAYOUT_RIGHT"
@@ -1718,6 +1840,7 @@ cdef class _DeviceCopyBuild:
         _DeviceCopyPlan plan,
         int cc_major,
         int cc_minor,
+        _DeviceCopyCompileSpec compile_spec=None,
     ) except *:
         cdef size_t rank = _device_copy_call_rank(plan)
         cdef _cccl_device_copy_axis_metadata_t* shape_metadata = NULL
@@ -1734,6 +1857,10 @@ cdef class _DeviceCopyBuild:
 
         if rank == 0:
             return
+
+        if compile_spec is None:
+            compile_spec = _DeviceCopyCompileSpec()
+        _device_copy_compile_spec_validate_rank(compile_spec, rank)
 
         shape_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
             rank * sizeof(_cccl_device_copy_axis_metadata_t)
@@ -1755,8 +1882,12 @@ cdef class _DeviceCopyBuild:
 
         try:
             for i in range(rank):
-                shape_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
-                shape_metadata[i].value = 0
+                if _device_copy_compile_spec_axis_is_static(compile_spec, i):
+                    shape_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_STATIC
+                    shape_metadata[i].value = _device_copy_plan_call_extent(plan, i)
+                else:
+                    shape_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                    shape_metadata[i].value = 0
                 source_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
                 source_stride_metadata[i].value = 0
                 destination_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
@@ -1902,7 +2033,15 @@ cdef class _DeviceCopy:
     cdef size_t _alignment
     cdef bint _empty
 
-    def __init__(self, object source, object destination, *, object stream=None, object compute_capability=None):
+    def __init__(
+        self,
+        object source,
+        object destination,
+        *,
+        object stream=None,
+        object compute_capability=None,
+        object compile_spec=None,
+    ):
         cdef object stream_handle
         cdef object source_view
         cdef object destination_view
@@ -1910,8 +2049,10 @@ cdef class _DeviceCopy:
         cdef object destination_dtype_key
         cdef tuple capability
         cdef _cccl_type_info value_type
+        cdef _DeviceCopyCompileSpec compile_options
 
         stream_handle = _device_copy_stream_handle(stream)
+        compile_options = _device_copy_compile_spec_from_object(compile_spec)
         source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
         destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(destination, stream_handle)
 
@@ -1933,7 +2074,13 @@ cdef class _DeviceCopy:
         if not self._empty:
             capability = _device_copy_compute_capability(compute_capability)
             value_type = _device_copy_type_info(source_view)
-            self._build._build_for_plan(value_type, self._plan, <int>capability[0], <int>capability[1])
+            self._build._build_for_plan(
+                value_type,
+                self._plan,
+                <int>capability[0],
+                <int>capability[1],
+                compile_options,
+            )
 
     def __call__(self, object source, object destination, *, object stream=None):
         cdef object stream_handle
@@ -1997,16 +2144,37 @@ cdef class _DeviceCopy:
         self.close()
 
 
-def _make_device_copy(object source, object destination, *, object stream=None, object compute_capability=None):
-    return _DeviceCopy(source, destination, stream=stream, compute_capability=compute_capability)
+def _make_device_copy(
+    object source,
+    object destination,
+    *,
+    object stream=None,
+    object compute_capability=None,
+    object compile_spec=None,
+):
+    return _DeviceCopy(
+        source,
+        destination,
+        stream=stream,
+        compute_capability=compute_capability,
+        compile_spec=compile_spec,
+    )
 
 
-def _copy_into(object source, object destination, *, object stream=None, object compute_capability=None):
+def _copy_into(
+    object source,
+    object destination,
+    *,
+    object stream=None,
+    object compute_capability=None,
+    object compile_spec=None,
+):
     cdef object device_copy = _DeviceCopy(
         source,
         destination,
         stream=stream,
         compute_capability=compute_capability,
+        compile_spec=compile_spec,
     )
     try:
         device_copy(source, destination, stream=stream)
