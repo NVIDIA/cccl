@@ -79,8 +79,6 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
-    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: 'max', cxx: 'gcc', gpu: 'gb300', sm: 'gpu'}
-    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: 'max', cxx: 'gcc', gpu: 'gb300', sm: 'gpu'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
