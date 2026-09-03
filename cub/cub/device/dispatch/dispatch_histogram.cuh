@@ -195,7 +195,12 @@ struct DeviceHistogramKernelSource
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
-      return static_cast<IntArithmeticT>(upper_level[channel] - lower_level[channel])
+      using ArrayLevelT    = typename UpperLevelArrayT::value_type;
+      using ULevelT        = ::cuda::std::make_unsigned_t<ArrayLevelT>;
+
+      const ULevelT range =
+        static_cast<ULevelT>(static_cast<ULevelT>(upper_level[channel]) - static_cast<ULevelT>(lower_level[channel]));
+      return static_cast<IntArithmeticT>(range)
            > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
     else
