@@ -1,0 +1,202 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+import importlib
+import importlib.util
+import inspect
+import sys
+from pathlib import Path
+
+import pytest
+
+import cuda.coop as portable_coop
+import cuda.coop.numba_mlir as coop
+from cuda.coop.numba_mlir import _temp_storage, _thread_data
+from cuda.coop.numba_mlir._compiler import _activation
+
+_PORTABLE_EXPORTS = [
+    "__version__",
+    "Hierarchy",
+    "TempStorage",
+    "TempStorageLike",
+    "ThreadData",
+    "ThreadDataLike",
+    "ThreadGroup",
+    "ThreadHierarchy",
+    "this_block",
+    "this_cluster",
+    "this_grid",
+    "this_thread",
+    "this_warp",
+    "load",
+    "store",
+]
+_QUALIFIED_EXPORTS = [
+    "BlockLoadAlgorithm",
+    "BlockStoreAlgorithm",
+    "Hierarchy",
+    "TempStorage",
+    "ThreadData",
+    "ThreadGroup",
+    "ThreadHierarchy",
+    "load",
+    "local",
+    "shared",
+    "store",
+    "this_block",
+    "this_cluster",
+    "this_grid",
+    "this_thread",
+    "this_warp",
+]
+_EXCLUDED_BACKEND_MODULES = (
+    "cuda.coop.numba_mlir._dataclass",
+    "cuda.coop.numba_mlir._group_reduce",
+    "cuda.coop.numba_mlir._group_scan",
+    "cuda.coop.numba_mlir._stateful_function",
+    "cuda.coop.numba_mlir._compiler._group_reduce",
+    "cuda.coop.numba_mlir._compiler._group_scan",
+    "cuda.coop.numba_mlir._compiler._rewrite_reduce",
+    "cuda.coop.numba_mlir._compiler._rewrite_scan",
+    "cuda.coop.numba_mlir._lowering._reduce",
+    "cuda.coop.numba_mlir._lowering._scan",
+    "cuda.coop.numba_mlir._lowering._thread_group",
+    "cuda.coop.numba_mlir._lowering._warp",
+)
+
+
+def test_public_exports_are_only_the_load_store_foundation():
+    assert portable_coop.__all__ == _PORTABLE_EXPORTS
+    assert dir(portable_coop) == sorted(_PORTABLE_EXPORTS)
+    assert coop.__all__ == _QUALIFIED_EXPORTS
+    assert dir(coop) == sorted(_QUALIFIED_EXPORTS)
+
+    excluded_exports = {
+        "BlockReduceAlgorithm",
+        "BlockScanAlgorithm",
+        "StatefulFunction",
+        "WarpLoadAlgorithm",
+        "WarpStoreAlgorithm",
+        "exclusive_scan",
+        "gpu_dataclass",
+        "inclusive_scan",
+        "reduce",
+        "scan",
+        "sum",
+    }
+    assert excluded_exports.isdisjoint(portable_coop.__all__)
+    assert excluded_exports.isdisjoint(coop.__all__)
+
+    loaded = set(sys.modules)
+    assert "cuda.coop.numba_mlir._group_load_store" in loaded
+    assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
+    assert set(_EXCLUDED_BACKEND_MODULES).isdisjoint(loaded)
+    assert importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
+
+    coop_root = Path(portable_coop.__file__).resolve().parent
+    assert not (coop_root / "cutlass").exists()
+
+
+@pytest.mark.parametrize("module_name", _EXCLUDED_BACKEND_MODULES)
+def test_excluded_backend_implementation_modules_remain_absent(module_name):
+    assert importlib.util.find_spec(module_name) is None
+
+    coop_root = Path(portable_coop.__file__).resolve().parent
+    relative_module = module_name.removeprefix("cuda.coop.")
+    module_path = coop_root.joinpath(*relative_module.split("."))
+    assert not module_path.with_suffix(".py").exists()
+    assert not module_path.is_dir()
+
+
+def test_python_operator_compilation_remains_absent():
+    from cuda.coop.numba_mlir import _types
+
+    assert not hasattr(_types, "_compile_device_ltoir")
+    assert tuple(inspect.signature(_types.numba_type_to_wrapper).parameters) == (
+        "numba_type",
+    )
+
+
+@pytest.mark.parametrize("operation", ("load", "store"))
+def test_group_markers_use_exact_callable_identity(operation):
+    from cuda.coop.numba_mlir._compiler._operations import group_operation_name
+
+    marker = getattr(coop, operation)
+    assert group_operation_name(marker) == operation
+
+    def impostor(*args, **kwargs):
+        del args, kwargs
+
+    impostor.__module__ = marker.__module__
+    impostor.__name__ = marker.__name__
+    impostor.__cuda_coop_backend_member__ = operation
+    assert group_operation_name(impostor) is None
+
+
+@pytest.mark.parametrize("operation", ("load", "store"))
+def test_lowering_factories_use_exact_callable_identity(operation):
+    from cuda.coop.numba_mlir import _lowering
+    from cuda.coop.numba_mlir._compiler._operations import (
+        FactoryOperation,
+        factory_operation,
+    )
+
+    factory = getattr(_lowering, operation)
+    assert factory_operation(factory) == FactoryOperation(
+        operation=operation,
+        namespace="block",
+    )
+
+    def impostor(*args, **kwargs):
+        del args, kwargs
+
+    impostor.__module__ = factory.__module__
+    impostor.__name__ = factory.__name__
+    assert factory_operation(impostor) is None
+
+
+def test_compiler_hooks_are_registered_exactly_once_and_idempotently():
+    group_rewrites = importlib.import_module(
+        "cuda.coop.numba_mlir._compiler._group_planner"
+    )
+    storage_rewrites = importlib.import_module(
+        "cuda.coop.numba_mlir._compiler._rewrite"
+    )
+    planner_registry = importlib.import_module(
+        "numba_cuda_mlir._whole_function_planners"
+    )._planner_registry
+    rewrite_registry = importlib.import_module(
+        "numba_cuda_mlir.numba_cuda.core.rewrites"
+    ).rewrite_registry
+
+    def counts():
+        with planner_registry._lock:
+            planner_counts = (
+                planner_registry._planners.count(
+                    group_rewrites.CoopGroupHierarchyPlanner
+                ),
+                planner_registry._planners.count(
+                    storage_rewrites.CoopWholeFunctionPlanner
+                ),
+            )
+        return (
+            *planner_counts,
+            rewrite_registry.rewrites["before-inference"].count(
+                storage_rewrites.CoopSinglePhaseRewrite
+            ),
+        )
+
+    assert counts() == (1, 1, 1)
+    _activation._initialize_runtime_hooks()
+    _activation._initialize_runtime_hooks()
+    assert counts() == (1, 1, 1)
+
+
+def test_public_runtime_helpers_have_semantic_module_owners():
+    assert coop.local is importlib.import_module("numba_cuda_mlir.cuda").local
+    assert coop.shared is importlib.import_module("numba_cuda_mlir.cuda").shared
+    assert coop.ThreadData is _thread_data.ThreadData
+    assert coop.TempStorage is _temp_storage.TempStorage
+    assert coop.ThreadData.__module__ == "cuda.coop.numba_mlir._thread_data"
+    assert coop.TempStorage.__module__ == "cuda.coop.numba_mlir._temp_storage"
