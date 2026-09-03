@@ -309,17 +309,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get device occupancy for sweep_kernel
-  int histogram_sweep_occupancy           = histogram_sweep_sm_occupancy * sm_count;
-  bool use_cooperative                    = false;
-  int cooperative_smem_bytes              = 0;
-  int cooperative_cache_slots_per_channel = 0;
+  int histogram_sweep_occupancy                            = histogram_sweep_sm_occupancy * sm_count;
+  [[maybe_unused]] const int privatized_storage_grid_limit = histogram_sweep_occupancy;
+  bool use_cooperative                                     = false;
+  int cooperative_smem_bytes                               = 0;
+  int cooperative_cache_slots_per_channel                  = 0;
 
 #if _CCCL_HOSTED()
   NV_IF_TARGET(
     NV_IS_HOST, ({
       if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
       {
-        if (active_policy.high_bin_algorithm == HistogramHighBinAlgorithm::cooperative)
+        const size_t output_histogram_bytes =
+          static_cast<size_t>(max_num_output_bins) * NUM_ACTIVE_CHANNELS * sizeof(LocalCounterT);
+        if (active_policy.high_bin_algorithm == HistogramHighBinAlgorithm::cooperative
+            && output_histogram_bytes > static_cast<size_t>(active_policy.high_bin_min_histogram_bytes))
         {
           if (const auto error = CubDebug(launcher_factory.CooperativeLaunchSupported(use_cooperative)))
           {
@@ -394,7 +398,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                 {
                   return error;
                 }
-                histogram_sweep_occupancy = cooperative_sm_occupancy * sm_count;
+                const int cooperative_grid_capacity = cooperative_sm_occupancy * sm_count;
+                const int tuned_grid_capacity =
+                  active_policy.high_bin_max_blocks_per_sm > 0
+                    ? active_policy.high_bin_max_blocks_per_sm * sm_count
+                    : cooperative_grid_capacity;
+                histogram_sweep_occupancy =
+                  active_policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized
+                    ? ::cuda::std::min(privatized_storage_grid_limit,
+                                       ::cuda::std::min(cooperative_grid_capacity, tuned_grid_capacity))
+                    : ::cuda::std::min(cooperative_grid_capacity, tuned_grid_capacity);
               }
               else
               {
@@ -1095,19 +1108,14 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
-    // Use the search transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
-
     // Use the pass-thru transform op for converting privatized bins to output bins
     using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
 
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
-      privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
       if (num_output_levels[channel] > max_levels)
       {
         max_levels = num_output_levels[channel];
@@ -1120,6 +1128,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     {
       // Too many bins to keep in shared memory.
       constexpr int PRIVATIZED_SMEM_BINS = 0;
+      using PrivatizedDecodeOpT          = typename TransformsT::template CachedSearchTransform<const LevelT*>;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+      }
 
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,
@@ -1152,6 +1166,12 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     {
       // Dispatch shared-privatized approach
       constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
+      using PrivatizedDecodeOpT          = typename TransformsT::template SearchTransform<const LevelT*>;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+      }
 
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,
@@ -1288,15 +1308,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
   {
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
-    // Use the scale transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::ScaleTransform;
-
     // Use the pass-thru transform op for converting privatized bins to output bins
     using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
 
@@ -1312,8 +1328,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
         return cudaErrorInvalidValue;
       }
 
-      privatized_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
-
       if (num_levels > max_levels)
       {
         max_levels = num_levels;
@@ -1324,6 +1338,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     if (max_num_output_bins > max_privatized_smem_bins)
     {
       constexpr int PRIVATIZED_SMEM_BINS = 0;
+      using PrivatizedDecodeOpT          = typename TransformsT::FastScaleTransform;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        privatized_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]);
+      }
 
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,
@@ -1355,6 +1375,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     else
     {
       constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
+      using PrivatizedDecodeOpT          = typename TransformsT::ScaleTransform;
+      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        privatized_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]);
+      }
 
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NUM_CHANNELS,

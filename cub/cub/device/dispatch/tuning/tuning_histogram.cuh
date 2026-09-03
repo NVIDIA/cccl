@@ -130,6 +130,8 @@ struct HistogramPolicy
   int high_bin_pixels_per_thread                     = 4;
   int high_bin_threads_per_block                     = 0; //!< High-bin block size; 0 inherits threads_per_block
   int high_bin_interpolation_min_bins                = 512;
+  int high_bin_min_histogram_bytes                   = 0;
+  int high_bin_max_blocks_per_sm                     = 0; //!< Zero uses the occupancy-derived capacity
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_threads() const noexcept
   {
@@ -151,7 +153,9 @@ struct HistogramPolicy
         && lhs.high_bin_cache_cuckoo_max_bins == rhs.high_bin_cache_cuckoo_max_bins
         && lhs.high_bin_pixels_per_thread == rhs.high_bin_pixels_per_thread
         && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
-        && lhs.high_bin_interpolation_min_bins == rhs.high_bin_interpolation_min_bins;
+        && lhs.high_bin_interpolation_min_bins == rhs.high_bin_interpolation_min_bins
+        && lhs.high_bin_min_histogram_bytes == rhs.high_bin_min_histogram_bytes
+        && lhs.high_bin_max_blocks_per_sm == rhs.high_bin_max_blocks_per_sm;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -174,9 +178,10 @@ struct HistogramPolicy
         << ", .high_bin_cache_entries_per_channel = " << p.high_bin_cache_entries_per_channel
         << ", .high_bin_cache_count_replicas = " << p.high_bin_cache_count_replicas
         << ", .high_bin_cache_cuckoo_max_bins = " << p.high_bin_cache_cuckoo_max_bins
-        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread
-        << ", .high_bin_threads_per_block = " << p.high_bin_threads_per_block
-        << ", .high_bin_interpolation_min_bins = " << p.high_bin_interpolation_min_bins << " }";
+        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread << ", .high_bin_threads_per_block = "
+        << p.high_bin_threads_per_block << ", .high_bin_interpolation_min_bins = " << p.high_bin_interpolation_min_bins
+        << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
+        << ", .high_bin_max_blocks_per_sm = " << p.high_bin_max_blocks_per_sm << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -412,12 +417,29 @@ public:
   {
     if (cc >= ::cuda::compute_capability{10, 0})
     {
+      constexpr int sm100_smem_bytes             = 228352;
+      constexpr int sm120_smem_bytes             = 99 * 1024;
+      constexpr int range_smem_bytes_per_channel = 8192;
+      constexpr int even_smem_bytes_per_channel  = 32768;
+      const int architecture_smem_bytes = cc >= ::cuda::compute_capability{12, 0} ? sm120_smem_bytes : sm100_smem_bytes;
+      const int candidate_smem_bytes =
+        num_active_channels == 1 ? architecture_smem_bytes
+        : is_even                ? even_smem_bytes_per_channel * num_active_channels
+                                 : range_smem_bytes_per_channel * num_active_channels;
+      const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, architecture_smem_bytes);
+      const int high_bin_max_blocks_per_sm   = num_active_channels == 1 ? 2 : 1;
+      const auto with_high_bin_threshold     = [=](HistogramPolicy policy) {
+        policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
+        policy.high_bin_max_blocks_per_sm   = high_bin_max_blocks_per_sm;
+        return policy;
+      };
+
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
       {
         if (is_even)
         {
           // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-          return HistogramPolicy{
+          return with_high_bin_threshold(HistogramPolicy{
             928,
             12,
             1 << 2,
@@ -435,12 +457,12 @@ public:
             1,
             262144,
             4,
-            0};
+            0});
         }
         else
         {
           // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-          return HistogramPolicy{
+          return with_high_bin_threshold(HistogramPolicy{
             448,
             12,
             1 << 2,
@@ -458,14 +480,14 @@ public:
             1,
             262144,
             4,
-            0};
+            0});
         }
       }
 
       if (counter_size == 4 && sample_is_primitive && num_channels == 1 && num_active_channels == 1
           && (sample_size == 4 || sample_size == 8))
       {
-        return HistogramPolicy{
+        return with_high_bin_threshold(HistogramPolicy{
           384,
           t_scale(16),
           4,
@@ -483,12 +505,12 @@ public:
           1,
           262144,
           4,
-          is_even ? 768 : 512};
+          is_even ? 768 : 512});
       }
 
       if (counter_size == 4 && sample_is_primitive && num_channels >= 2)
       {
-        return HistogramPolicy{
+        return with_high_bin_threshold(HistogramPolicy{
           384,
           t_scale(16),
           4,
@@ -502,11 +524,11 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          1024,
+          is_even ? 1024 : 2048,
           4,
           262144,
           4,
-          1024};
+          1024});
       }
 
       // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
