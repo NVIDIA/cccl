@@ -12,6 +12,19 @@ import pytest
 
 from cuda.compute import _mlir
 
+# numba-cuda-mlir's direct MLIR-to-LLVM translation is unconditionally unavailable
+# on Windows (lowering_utilities.llvm_utils._get_capi raises there outright), and
+# it is what every v2 (HostJIT) operator compile depends on -- not just these
+# tests. numba-cuda-mlir's Windows-available alternatives (PTX/LTO-IR via its
+# NVVM-downgrade bridge) target libnvvm's IR dialect, which is not a substitute
+# for the plain LLVM IR HostJIT's own LLVM/Clang consumes. This blocks v2 on
+# Windows entirely at the numba-cuda-mlir layer, independent of CI matrix
+# configuration, until numba-cuda-mlir closes the gap.
+requires_llvm_ir_extraction = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="numba-cuda-mlir cannot translate MLIR to LLVM IR on Windows",
+)
+
 
 def _pointer_signature():
     int32_ptr = _mlir.types.CPointer(_mlir.types.int32)
@@ -22,6 +35,7 @@ def _wrapper(a, r):
     r[0] = a[0] * 3 + 1
 
 
+@requires_llvm_ir_extraction
 @pytest.mark.parametrize("cc", [(7, 5), (8, 9), (10, 0)])
 def test_llvm_ir_extraction_supports_target_arches(cc):
     """LLVM IR is extracted for any target arch.
@@ -35,6 +49,7 @@ def test_llvm_ir_extraction_supports_target_arches(cc):
     assert "define" in text_ir
 
 
+@requires_llvm_ir_extraction
 def test_llvm_ir_extraction_generates_no_device_code(monkeypatch):
     """Extraction stops at LLVM IR rather than generating device code.
 
@@ -60,6 +75,7 @@ def test_llvm_ir_extraction_generates_no_device_code(monkeypatch):
     assert calls == []
 
 
+@requires_llvm_ir_extraction
 def test_stateful_wrapper_accepts_numpy_integer_shapes():
     """A state shape of numpy integers must not leak into the generated source.
 
@@ -113,6 +129,7 @@ def test_missing_backend_error_names_the_backend(monkeypatch):
     "op_name, expected_prefix",
     [("named_op", "wrapped_named_op_"), ("<lambda>", "wrapped__lambda__")],
 )
+@requires_llvm_ir_extraction
 def test_generated_wrapper_compiles_under_its_sanitized_name(op_name, expected_prefix):
     """The wrapper source is exec'd and compiled under the sanitized symbol.
 
@@ -140,6 +157,7 @@ def test_generated_wrapper_compiles_under_its_sanitized_name(op_name, expected_p
     assert f"define void @{wrapper.__name__}" in text_ir
 
 
+@requires_llvm_ir_extraction
 def test_operator_device_code_is_textual_llvm_ir():
     """The v2 backend hands an operator's LLVM IR over as text.
 
@@ -194,14 +212,43 @@ def test_return_type_inference_works_without_a_prior_compile():
     assert result.returncode == 0, result.stderr
 
 
+def _run_without_a_device(program):
+    """Run ``program`` in a fresh interpreter with the devices hidden."""
+    return subprocess.run(
+        [sys.executable, "-c", textwrap.dedent(program)],
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, CUDA_VISIBLE_DEVICES=""),
+    )
+
+
+def test_infers_a_return_type_without_a_device():
+    """Inference does not need a GPU.
+
+    Constructing an operator on a build machine with no device must not fail
+    before a target can even be named.
+    """
+    result = _run_without_a_device(
+        """
+        from cuda.compute import _mlir
+
+        def add_one(a):
+            return a + 1
+
+        assert _mlir.infer_return_type(add_one, (_mlir.types.int32,)) is not None
+        """
+    )
+    assert result.returncode == 0, result.stderr
+
+
+@requires_llvm_ir_extraction
 def test_compiles_for_a_named_target_without_a_device():
     """Naming a target compiles on a machine with no GPU.
 
     Building for a compute capability the build machine does not have is the
-    point of naming one, so neither inference nor IR extraction may require a
-    device. Runs in a subprocess with the devices hidden.
+    point of naming one, so the extraction must not require a device either.
     """
-    program = textwrap.dedent(
+    result = _run_without_a_device(
         """
         from cuda.compute import _mlir
 
@@ -210,11 +257,6 @@ def test_compiles_for_a_named_target_without_a_device():
         def scale(a, r):
             r[0] = a[0] * 3
 
-        def add_one(a):
-            return a + 1
-
-        assert _mlir.infer_return_type(add_one, (types.int32,)) is not None
-
         signature = types.void(
             types.CPointer(types.int32), types.CPointer(types.int32)
         )
@@ -222,12 +264,5 @@ def test_compiles_for_a_named_target_without_a_device():
             scale, signature, "no_device", (8, 9)
         )
         """
-    )
-    environment = dict(os.environ, CUDA_VISIBLE_DEVICES="")
-    result = subprocess.run(
-        [sys.executable, "-c", program],
-        capture_output=True,
-        text=True,
-        env=environment,
     )
     assert result.returncode == 0, result.stderr
