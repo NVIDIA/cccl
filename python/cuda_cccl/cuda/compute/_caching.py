@@ -507,12 +507,17 @@ class _CacheWithRegisteredKeyFunctions:
     arguments using the registered key functions.
     """
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(
+        self, func: Callable | None = None, *, maxsize: int | None = None
+    ) -> Callable:
         """
         Decorator to cache the result of the decorated function.
 
         Args:
             func: The function whose result is to be cached.
+            maxsize: Optional maximum number of cached entries per thread-local
+                wrapper cache. When the cache is full, the least recently used
+                entry is evicted.
 
         Notes
         -----
@@ -520,6 +525,15 @@ class _CacheWithRegisteredKeyFunctions:
         the cache key. Explicit AOT builds include their normalized target
         compute capabilities without querying a device.
         """
+        if maxsize is not None and maxsize <= 0:
+            raise ValueError("maxsize must be positive or None")
+
+        if func is None:
+            return lambda wrapped: self._decorate(wrapped, maxsize=maxsize)
+
+        return self._decorate(func, maxsize=maxsize)
+
+    def _decorate(self, func: Callable, *, maxsize: int | None) -> Callable:
         cache_name = func.__qualname__
 
         @functools.wraps(func)
@@ -557,6 +571,12 @@ class _CacheWithRegisteredKeyFunctions:
             cache_key = (target, user_cache_key)
             thread_caches = _get_thread_caches()
             cache = thread_caches.wrapper_caches.setdefault(cache_name, {})
+            if cache_key in cache:
+                result = cache[cache_key]
+                if maxsize is not None:
+                    cache[cache_key] = cache.pop(cache_key)
+                return result
+
             if cache_key not in cache:
                 # Shared device code (operators, iterators) is compiled to LTO-IR
                 # once and linked into every per-arch build result, so it must target
@@ -578,7 +598,10 @@ class _CacheWithRegisteredKeyFunctions:
                 finally:
                     _thread_local.factory_device_info = previous_device_info
                 cache[cache_key] = result
-            return cache[cache_key]
+                if maxsize is not None and len(cache) > maxsize:
+                    oldest_key = next(iter(cache))
+                    cache.pop(oldest_key)
+            return result
 
         inner.cache_clear = lambda: _clear_wrapper_caches(cache_name)  # type: ignore[attr-defined]
 

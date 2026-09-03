@@ -16,6 +16,10 @@ from libc.stdint cimport INT64_MAX, int32_t, int64_t, uint8_t, uint16_t, uint32_
 
 import operator
 
+from cuda.compute._caching import cache_with_registered_key_functions
+
+_DEVICE_COPY_CACHE_MAXSIZE = 64
+
 
 # Keep these local Cython declarations in sync with DLPack v1.3 dlpack.h.
 cdef extern from *:
@@ -1804,6 +1808,26 @@ cdef tuple _device_copy_prepare_view_and_dtype_key(object array, object stream_h
     )
 
 
+cdef tuple _device_copy_type_info_key(object view):
+    cdef _cccl_type_info value_type = _device_copy_type_info(view)
+    return (
+        <size_t>value_type.size,
+        <size_t>value_type.alignment,
+        <int>value_type.type,
+    )
+
+
+cdef _cccl_type_info _device_copy_type_info_from_key(tuple key) except *:
+    cdef _cccl_type_info value_type
+
+    value_type.size = <size_t>key[0]
+    value_type.alignment = <size_t>key[1]
+    # DeviceCopy uses opaque element storage; keep the type tag in the key so
+    # this can be widened later without changing the cache-key shape.
+    value_type.type = _CCCL_STORAGE
+    return value_type
+
+
 cdef class _DeviceCopyBuild:
     cdef _cccl_device_copy_build_result_t _build
     cdef bint _closed
@@ -1834,6 +1858,85 @@ cdef class _DeviceCopyBuild:
         self._destination_owner = None
         self._scalar_shape = 1
         self._scalar_stride = 1
+
+    cdef void _build_for_rank(
+        self,
+        _cccl_type_info value_type,
+        size_t rank,
+        int cc_major,
+        int cc_minor,
+        _cccl_device_copy_layout_kind_t source_layout,
+        _cccl_device_copy_layout_kind_t destination_layout,
+    ) except *:
+        cdef _cccl_device_copy_axis_metadata_t* shape_metadata = NULL
+        cdef _cccl_device_copy_axis_metadata_t* source_stride_metadata = NULL
+        cdef _cccl_device_copy_axis_metadata_t* destination_stride_metadata = NULL
+        cdef _cccl_device_copy_build_spec_t spec
+        cdef tuple include_options
+        cdef bytes cub_path
+        cdef bytes thrust_path
+        cdef bytes libcudacxx_path
+        cdef bytes cuda_include_path
+        cdef size_t i
+        cdef _CUresult status
+
+        if rank == 0:
+            return
+
+        shape_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        source_stride_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        destination_stride_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        if shape_metadata == NULL or source_stride_metadata == NULL or destination_stride_metadata == NULL:
+            if shape_metadata != NULL:
+                PyMem_Free(shape_metadata)
+            if source_stride_metadata != NULL:
+                PyMem_Free(source_stride_metadata)
+            if destination_stride_metadata != NULL:
+                PyMem_Free(destination_stride_metadata)
+            raise MemoryError()
+
+        try:
+            for i in range(rank):
+                shape_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                shape_metadata[i].value = 0
+                source_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                source_stride_metadata[i].value = 0
+                destination_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                destination_stride_metadata[i].value = 0
+
+            spec.value_type = value_type
+            spec.rank = rank
+            spec.shape = shape_metadata
+            spec.source.layout = source_layout
+            spec.source.strides = source_stride_metadata
+            spec.destination.layout = destination_layout
+            spec.destination.strides = destination_stride_metadata
+
+            include_options = _device_copy_include_options()
+            cub_path, thrust_path, libcudacxx_path, cuda_include_path = include_options
+            status = _cccl_device_copy_build_ex(
+                &self._build,
+                spec,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                cuda_include_path,
+                NULL,
+            )
+            _device_copy_check_cuda(status, "cccl_device_copy_build_ex")
+            self._closed = False
+        finally:
+            PyMem_Free(shape_metadata)
+            PyMem_Free(source_stride_metadata)
+            PyMem_Free(destination_stride_metadata)
 
     cdef void _build_for_plan(
         self,
@@ -1938,6 +2041,13 @@ cdef class _DeviceCopyBuild:
             payload_size,
         )
 
+    def _get_source(self):
+        if self._closed:
+            raise RuntimeError("DeviceCopy build result is closed")
+        if self._build.source == NULL or self._build.source_size == 0:
+            return ""
+        return (<char*>self._build.source)[:self._build.source_size].decode("utf-8")
+
     cdef void _copy(
         self,
         object source,
@@ -1990,9 +2100,6 @@ cdef class _DeviceCopyBuild:
             <size_t>destination.itemsize,
         )
 
-        self._source_owner = source
-        self._destination_owner = destination
-
         source_view.data = <const void*><uintptr_t><uint64_t>source.data_ptr
         source_view.byte_offset = source_byte_offset
         source_view.shape = shape
@@ -2025,7 +2132,74 @@ cdef class _DeviceCopyBuild:
             self._closed = True
 
 
+cdef class _DeviceCopyExecutable:
+    cdef _DeviceCopyBuild _build
+    cdef tuple _type_info_key
+    cdef size_t _rank
+
+    def __init__(self, tuple type_info_key, object rank, *, object compute_capability=None):
+        cdef tuple capability
+        cdef _cccl_type_info value_type
+
+        self._type_info_key = tuple(type_info_key)
+        self._rank = <size_t>rank
+        self._build = _DeviceCopyBuild()
+
+        if self._rank == 0:
+            return
+
+        capability = _device_copy_compute_capability(compute_capability)
+        value_type = _device_copy_type_info_from_key(self._type_info_key)
+        self._build._build_for_rank(
+            value_type,
+            self._rank,
+            <int>capability[0],
+            <int>capability[1],
+            _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED,
+            _CCCL_DEVICE_COPY_LAYOUT_STRIDE,
+        )
+
+    cdef void _copy(
+        self,
+        object source,
+        object destination,
+        _DeviceCopyPlan plan,
+        object stream_handle,
+    ) except *:
+        self._build._copy(source, destination, plan, 0, 0, stream_handle)
+
+    def _get_cubin(self):
+        return self._build._get_cubin()
+
+    def _get_source(self):
+        return self._build._get_source()
+
+    def close(self):
+        if self._use_cached_builds:
+            self._builds_by_rank = ()
+            self._closed = True
+            return
+        self._build.close()
+        self._closed = True
+
+
+@cache_with_registered_key_functions(maxsize=_DEVICE_COPY_CACHE_MAXSIZE)
+def _make_device_copy_executable(tuple type_info_key, object rank, *, object compute_capability=None):
+    return _DeviceCopyExecutable(type_info_key, rank, compute_capability=compute_capability)
+
+
+def _clear_device_copy_cache():
+    _make_device_copy_executable.cache_clear()
+
+
 cdef class _DeviceCopy:
+    cdef tuple _type_info_key
+    cdef object _builds_by_rank
+    cdef object _compute_capability
+    cdef size_t _max_rank
+    cdef bint _use_cached_builds
+    cdef bint _closed
+
     cdef _DeviceCopyBuild _build
     cdef _DeviceCopyPlan _plan
     cdef tuple _dtype_key
@@ -2041,6 +2215,7 @@ cdef class _DeviceCopy:
         object stream=None,
         object compute_capability=None,
         object compile_spec=None,
+        object precompile=None,
     ):
         cdef object stream_handle
         cdef object source_view
@@ -2052,7 +2227,17 @@ cdef class _DeviceCopy:
         cdef _DeviceCopyCompileSpec compile_options
 
         stream_handle = _device_copy_stream_handle(stream)
-        compile_options = _device_copy_compile_spec_from_object(compile_spec)
+        self._use_cached_builds = compile_spec is None
+        if self._use_cached_builds:
+            compile_options = None
+        else:
+            compile_options = _device_copy_compile_spec_from_object(compile_spec)
+        if precompile is None:
+            precompile = "max"
+        if precompile not in ("max", "all"):
+            raise ValueError("device copy precompile must be None, 'max', or 'all'")
+        if not self._use_cached_builds and precompile != "max":
+            raise ValueError("device copy precompile is only supported for default dynamic builds")
         source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
         destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(destination, stream_handle)
 
@@ -2070,16 +2255,42 @@ cdef class _DeviceCopy:
         self._empty = self._plan._empty
 
         self._build = _DeviceCopyBuild()
+        self._closed = False
+        if self._use_cached_builds:
+            self._compute_capability = _device_copy_compute_capability(compute_capability)
+        else:
+            self._compute_capability = compute_capability
+        self._type_info_key = _device_copy_type_info_key(source_view)
+        self._max_rank = <size_t>len(source_view.shape)
+        if self._max_rank == 0:
+            self._max_rank = 1
+        self._builds_by_rank = [None] * (self._max_rank + 1)
         if not self._empty:
-            capability = _device_copy_compute_capability(compute_capability)
-            value_type = _device_copy_type_info(source_view)
-            self._build._build_for_plan(
-                value_type,
-                self._plan,
-                <int>capability[0],
-                <int>capability[1],
-                compile_options,
-            )
+            if self._use_cached_builds:
+                if precompile == "all":
+                    for precompiled_rank in range(1, self._max_rank + 1):
+                        self._builds_by_rank[precompiled_rank] = _make_device_copy_executable(
+                            self._type_info_key,
+                            precompiled_rank,
+                            compute_capability=self._compute_capability,
+                        )
+                else:
+                    self._builds_by_rank[self._max_rank] = _make_device_copy_executable(
+                        self._type_info_key,
+                        self._max_rank,
+                        compute_capability=self._compute_capability,
+                    )
+                self._build = (<_DeviceCopyExecutable>self._builds_by_rank[self._max_rank])._build
+            else:
+                capability = _device_copy_compute_capability(compute_capability)
+                value_type = _device_copy_type_info(source_view)
+                self._build._build_for_plan(
+                    value_type,
+                    self._plan,
+                    <int>capability[0],
+                    <int>capability[1],
+                    compile_options,
+                )
 
     def __call__(self, object source, object destination, *, object stream=None):
         cdef object stream_handle
@@ -2105,7 +2316,28 @@ cdef class _DeviceCopy:
             self._alignment,
         )
         plan = _device_copy_make_plan_from_views(source_view, destination_view, self._itemsize)
-        if _device_copy_call_rank(plan) != _device_copy_call_rank(self._plan):
+        if self._use_cached_builds:
+            if self._closed:
+                raise RuntimeError("DeviceCopy object is closed")
+            if <size_t>len(source_view.shape) > self._max_rank:
+                raise ValueError("device copy runtime rank exceeds prepared rank")
+            if _device_copy_call_rank(plan) > self._max_rank:
+                raise ValueError("device copy simplified rank exceeds prepared rank")
+            if not plan._empty:
+                if self._builds_by_rank[_device_copy_call_rank(plan)] is None:
+                    self._builds_by_rank[_device_copy_call_rank(plan)] = _make_device_copy_executable(
+                        self._type_info_key,
+                        _device_copy_call_rank(plan),
+                        compute_capability=self._compute_capability,
+                    )
+                (<_DeviceCopyExecutable>self._builds_by_rank[_device_copy_call_rank(plan)])._copy(
+                    source_view,
+                    destination_view,
+                    plan,
+                    stream_handle,
+                )
+                return
+        elif _device_copy_call_rank(plan) != _device_copy_call_rank(self._plan):
             raise ValueError("device copy was built for a different simplified rank")
 
         destination_byte_offset_split = _device_copy_split_byte_offset(
@@ -2122,10 +2354,18 @@ cdef class _DeviceCopy:
         )
 
     def _get_cubin(self):
+        if self._use_cached_builds and self._closed:
+            raise RuntimeError("DeviceCopy object is closed")
+        if self._use_cached_builds:
+            return (<_DeviceCopyExecutable>self._builds_by_rank[self._max_rank])._get_cubin()
         return self._build._get_cubin()
 
     def _get_source(self):
         cdef _DeviceCopyBuild build = self._build
+        if self._use_cached_builds and self._closed:
+            raise RuntimeError("DeviceCopy object is closed")
+        if self._use_cached_builds:
+            return (<_DeviceCopyExecutable>self._builds_by_rank[self._max_rank])._get_source()
         if build._closed:
             raise RuntimeError("DeviceCopy build result is closed")
         if build._build.source == NULL or build._build.source_size == 0:
@@ -2133,7 +2373,12 @@ cdef class _DeviceCopy:
         return (<char*>build._build.source)[:build._build.source_size].decode("utf-8")
 
     def close(self):
+        if self._use_cached_builds:
+            self._builds_by_rank = ()
+            self._closed = True
+            return
         self._build.close()
+        self._closed = True
 
     def __enter__(self):
         return self
@@ -2149,6 +2394,7 @@ def _make_device_copy(
     object stream=None,
     object compute_capability=None,
     object compile_spec=None,
+    object precompile=None,
 ):
     return _DeviceCopy(
         source,
@@ -2156,7 +2402,47 @@ def _make_device_copy(
         stream=stream,
         compute_capability=compute_capability,
         compile_spec=compile_spec,
+        precompile=precompile,
     )
+
+
+cdef void _device_copy_cached_copy_into(
+    object source,
+    object destination,
+    object stream,
+    object compute_capability,
+) except *:
+    cdef object stream_handle
+    cdef object source_view
+    cdef object destination_view
+    cdef object source_dtype_key
+    cdef object destination_dtype_key
+    cdef _DeviceCopyPlan plan
+    cdef size_t rank
+    cdef object executable
+
+    stream_handle = _device_copy_stream_handle(stream)
+    source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
+    destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(destination, stream_handle)
+
+    _device_copy_check_views_compatible(
+        source_view,
+        destination_view,
+        source_dtype_key,
+        destination_dtype_key,
+    )
+
+    plan = _device_copy_make_plan_from_views(source_view, destination_view, <size_t>source_view.itemsize)
+    if plan._empty:
+        return
+
+    rank = _device_copy_call_rank(plan)
+    executable = _make_device_copy_executable(
+        _device_copy_type_info_key(source_view),
+        rank,
+        compute_capability=compute_capability,
+    )
+    (<_DeviceCopyExecutable>executable)._copy(source_view, destination_view, plan, stream_handle)
 
 
 def _copy_into(
@@ -2167,7 +2453,13 @@ def _copy_into(
     object compute_capability=None,
     object compile_spec=None,
 ):
-    cdef object device_copy = _DeviceCopy(
+    cdef object device_copy
+
+    if compile_spec is None:
+        _device_copy_cached_copy_into(source, destination, stream, compute_capability)
+        return
+
+    device_copy = _DeviceCopy(
         source,
         destination,
         stream=stream,

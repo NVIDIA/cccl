@@ -23,7 +23,10 @@ def test_DeviceCopy_uses_layout_stride_for_positive_runtime_strides():
     assert "using input_type = ::cuda::std::mdspan" in generated_source
     assert "using output_type = ::cuda::std::mdspan" in generated_source
     assert "::cuda::std::layout_stride" in generated_source
-    assert "source_view_mapping_type{extents, source_view_strides}" in generated_source
+    assert (
+        "destination_view_mapping_type{extents, destination_view_strides}"
+        in generated_source
+    )
     assert (
         "destination_view_mapping_type{extents, destination_view_strides}"
         in generated_source

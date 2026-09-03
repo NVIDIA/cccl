@@ -105,7 +105,11 @@ def test_DeviceCopy_rejects_changed_simplified_rank_before_calling_c_api():
     source = source_base[:, :4]
     destination = cp.empty((3, 4), dtype=cp.int32)
 
-    with impl._make_device_copy(source, destination) as device_copy:
+    compile_spec = impl._device_copy_compile_spec()
+
+    with impl._make_device_copy(
+        source, destination, compile_spec=compile_spec
+    ) as device_copy:
         rank_one_source = cp.arange(12, dtype=cp.int32)
         rank_one_destination = cp.empty_like(rank_one_source)
 
