@@ -176,8 +176,11 @@ class WarpExchangeShfl
     //  A7  B7  C7  D7  E7  F7  G7  H7
     //
 
-    InputT& v = xor_bit_set ? vals[IDX] : vals[IDX + NUM_ENTRIES];
-    v         = __shfl_xor_sync(mask, v, NUM_ENTRIES, LOGICAL_WARP_THREADS);
+    // NOTE: Do *NOT* try to refactor this code to use a reference, since nvcc
+    //       tends to choke on it and then drop everything into local memory.
+    const InputT send_val = (xor_bit_set ? vals[IDX] : vals[IDX + NUM_ENTRIES]);
+    const InputT recv_val = __shfl_xor_sync(mask, send_val, NUM_ENTRIES, LOGICAL_WARP_THREADS);
+    (xor_bit_set ? vals[IDX] : vals[IDX + NUM_ENTRIES]) = recv_val;
 
     constexpr int next_idx = IDX + 1 + ((IDX + 1) % NUM_ENTRIES == 0) * NUM_ENTRIES;
     if constexpr (next_idx < ITEMS_PER_THREAD)
