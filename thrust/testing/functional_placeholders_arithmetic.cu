@@ -44,17 +44,17 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '
       ASSERT_ALMOST_EQUAL(reference, result);                                                                   \
     }                                                                                                           \
   };                                                                                                            \
-  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                                    \
-    TestFunctionalPlaceholders##name,                                                                             \
-    type_list,                                                                                                    \
-    thrust::device_vector,                                                                                        \
-    thrust::device_allocator,                                                                                     \
-    TestFunctionalPlaceholders##name##Device);                                                                    \
-  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                                    \
-    TestFunctionalPlaceholders##name,                                                                             \
-    type_list,                                                                                                    \
-    thrust::host_vector,                                                                                          \
-    std::allocator,                                                                                               \
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                                  \
+    TestFunctionalPlaceholders##name,                                                                           \
+    type_list,                                                                                                  \
+    thrust::device_vector,                                                                                      \
+    thrust::device_allocator,                                                                                   \
+    TestFunctionalPlaceholders##name##Device);                                                                  \
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                                  \
+    TestFunctionalPlaceholders##name,                                                                           \
+    type_list,                                                                                                  \
+    thrust::host_vector,                                                                                        \
+    std::allocator,                                                                                             \
     TestFunctionalPlaceholders##name##Host);
 
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Plus, +, ::cuda::std::plus, ThirtyTwoBitTypes);
