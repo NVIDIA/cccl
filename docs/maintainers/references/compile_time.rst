@@ -1,10 +1,9 @@
 Compile-time benchmark reference
 ================================
 
-The compile-time benchmark builds generated one-include CUDA translation units
-(TUs) and summarizes NVCC ``--fdevice-time-trace`` output. It is a TU
-compile-time benchmark, even when the current input set comes from public
-include-check targets.
+The compile-time benchmark builds CUDA translation units (TUs) and summarizes
+NVCC ``--fdevice-time-trace`` output. Inputs may be generated public
+include-check TUs or CUDA objects from supported third-party projects.
 
 Entry point
 -----------
@@ -15,28 +14,31 @@ The top-level entry point is:
 
   ci/build_compile_time_bench.sh
 
-The wrapper configures a caller-selected CMake preset with compile-time
-instrumentation, builds selected targets, prepares Perfetto-friendly trace
-copies, writes a generated-TU summary CSV, and emits one or more event summary
-CSVs.
+The wrapper builds selected CCCL targets or supported third-party projects with
+compile-time instrumentation, prepares Perfetto-friendly trace copies, and
+emits one or more event summary CSVs. CCCL builds also write a generated-TU
+summary CSV.
 
 Generated outputs
 -----------------
 
-By default, outputs are written under:
+CCCL outputs are written under:
 
 - ``build/<infix>/<preset>/compile_time/tu_summary.csv``
 - ``build/<infix>/<preset>/compile_time/event_reports/``
 - ``build/<infix>/<preset>/compile_time/perfetto_traces/``
 
+Third-party outputs use the project name in place of the preset:
+
+- ``build/<infix>/<project>/compile_time/``
+
 Raw NVCC traces are generated under:
 
-- ``build/<infix>/<preset>/compile_time/raw_traces/``
+- ``build/<infix>/<preset-or-project>/compile_time/raw_traces/``
 
-When ``-baseline-ref`` is used, baseline raw traces are copied out of the
-temporary baseline worktree before cleanup and preserved under:
+When ``-baseline-ref`` is used, baseline raw traces are preserved under:
 
-- ``build/<infix>/<preset>/compile_time/baseline_raw_traces/``
+- ``build/<infix>/<preset-or-project>/compile_time/baseline_raw_traces/``
 
 Build controls
 --------------
@@ -53,12 +55,39 @@ The wrapper accepts build-shape parameters so it behaves like other
 
 Useful build options include:
 
-- ``-preset <name>``
-- ``-cmake-options <args>``
-- ``-target <name>`` (repeatable; replaces the default public include-check target set)
-- ``-baseline-ref <commit-ish>`` (build a temporary baseline worktree for comparison)
-- ``-skip-configure``
+- ``-project <cccl|pytorch|matx|rapids>``
+- ``-preset <name>`` (CCCL only)
+- ``-cmake-options <args>`` (CCCL only)
+- common ``build_common.sh`` compiler, standard, and architecture options
+  (CCCL only)
+- ``-target <name>`` (repeatable build-system target)
+- ``-baseline-ref <commit-ish>`` (build this CCCL revision for comparison)
+- ``-skip-configure`` (CCCL only)
 - ``-skip-build``
+
+``pytorch`` and ``matx`` reuse their existing scripts under ``ci/``. ``rapids``
+uses its existing manifest-generated build commands, builds every manifest C++
+project by default, and treats repeated ``-target`` options as the selected
+RAPIDS libraries. Third-party builds add
+``--fdevice-time-trace=-`` through ``CMAKE_CUDA_FLAGS``; NVCC consequently
+writes each trace next to its object file. The wrapper collects those traces
+with their relative object paths intact before rebuilding the same third-party
+checkout against the baseline CCCL revision. If the current tree is dirty, the
+wrapper constructs a temporary commit containing the tracked working-tree
+contents and non-ignored untracked files. It initializes and populates a
+separate Git index through ``GIT_INDEX_FILE``; it does not stage files in the
+user's index or modify ``HEAD``, the current branch, or any working-tree file.
+Ignored files, including ordinary build artifacts, are not included in the
+snapshot.
+
+The wrapper keeps the temporary commit reachable through a uniquely named local
+``refs/heads/compile-time-bench-snapshot-*`` ref so downstream local clones can
+obtain and check out the commit by SHA. The ref is never checked out or pushed.
+The temporary commit is deliberately unsigned, regardless of the user's signing
+configuration, so the benchmark never prompts for signing credentials.
+It is removed after the benchmark finishes and also when the wrapper handles
+``HUP``, ``INT``, or ``TERM``. If the current tree already matches ``HEAD``, the
+wrapper uses ``HEAD`` directly and creates neither a commit nor a temporary ref.
 
 The default target set is the current public include-check target set:
 
@@ -96,6 +125,10 @@ display ``title``, ``filter``, ``timing`` (``inclusive`` or ``exclusive``),
 slice under ``event_reports/<slice-id>/`` and writes a normalized
 ``event_reports/summary.json`` manifest for PR comment rendering.
 
+Slices may also set ``group_by`` to ``primary-template`` when using one of the
+built-in template-instantiation filters. The default grouping is ``event``,
+which keeps each distinct trace detail as its own row.
+
 Empty slices are represented in the manifest and CSVs. Slices that match no
 events, have no matching trace files, or have no comparable event keys record
 warnings so they are visible in PR comments instead of looking like ordinary
@@ -108,6 +141,7 @@ Single-slice examples:
 
   ci/build_compile_time_bench.sh -skip-build -- -f scanning-function-body -i -n 20
   ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -e -n 15 --tag templates
+  ci/build_compile_time_bench.sh -skip-build -- -f template-instantiation -i -n 25 --group-by primary-template
   ci/build_compile_time_bench.sh -skip-build -- -f 'Scanning|Instantiating' -i -n 25
   ci/build_compile_time_bench.sh -skip-build -- -f code-generation -i --scope-filter ""
 
@@ -115,10 +149,11 @@ Baseline comparisons
 --------------------
 
 Pass ``-baseline-ref <commit-ish>`` to compare the current tree state against a
-baseline commit. The wrapper creates a temporary detached worktree for the
-baseline, builds both the current tree and the baseline with the same preset,
-targets, and common build options, then runs the requested event slice as a
-baseline/current comparison:
+baseline commit. CCCL comparisons build the baseline in a temporary
+detached worktree with the same preset, targets, and common build options.
+Third-party comparisons rebuild the same upstream checkout against each CCCL
+revision. Both flows then run the requested event slice as a baseline/current
+comparison:
 
 .. code-block:: bash
 
@@ -127,7 +162,7 @@ baseline/current comparison:
     -- -f file-processing -e --sort total -n 25 --threshold 0.2
 
 Comparison mode writes three subdirectories under
-``<preset-build-dir>/compile_time/event_reports/``:
+``<preset-or-project-build-dir>/compile_time/event_reports/``:
 
 - ``baseline/``: the normal report for the baseline traces
 - ``current/``: the normal report for the current traces
@@ -160,10 +195,17 @@ Pull-request reporting
 ----------------------
 
 Compile-time PR reporting is configured in ``ci/matrix.yaml`` under
-``compile_time.pull_request``. Each config selects the GPU runner, devcontainer
-launch arguments, baseline ref, preset, targets, wrapper arguments, and report
-slices. ``ci/compile_time/parse_matrix.py`` validates that section and emits the
-GitHub Actions matrix for the reusable compile-time benchmark workflow.
+``compile_time.pull_request``. Each config selects a project, GPU runner,
+devcontainer launch arguments, baseline ref, wrapper arguments, and report
+slices. CCCL configs additionally select a preset and targets; RAPIDS
+configs select the libraries to build. ``ci/compile_time/parse_matrix.py``
+validates that section and emits the GitHub Actions matrix for the reusable
+compile-time benchmark workflow.
+
+The third-party configurations report template-instantiation costs both by
+concrete specialization and grouped by NVCC's primary-template label. The CCCL
+public-target configuration omits the grouped view because downstream
+instantiation patterns are not its subject.
 
 The reusable workflow uploads:
 
@@ -171,14 +213,19 @@ The reusable workflow uploads:
 - current raw traces
 - baseline raw traces
 - Perfetto-friendly traces
-- the rendered PR comment body
+- the rendered configuration fragment for the combined PR comment
 
-``ci/compile_time/render_pr_comment.py`` renders the comment from
-``summary.json``. Regressions and improvements are rendered in separate
+``ci/compile_time/render_pr_comment.py`` renders each configuration fragment
+from ``summary.json``. Regressions and improvements are rendered in separate
 ``<details>`` sections and are never mixed in one table. Slice warnings are
 rendered separately. Empty sections with no warnings are omitted recursively.
-Sticky comments are keyed by ``compile-time-bench-<config-id>``; previous
-comments for the same config are archived as outdated when a new one is posted.
+The parent PR workflow passes the fragments to
+``ci/compile_time/combine_pr_comments.py`` in matrix order and posts one sticky
+comment, with a collapsible section for each enabled configuration. The comment
+is keyed by ``compile-time-bench``; the previous combined comment is archived as
+outdated when a new one is posted. If the detailed fragments would exceed the
+comment body budget, the posted comment keeps each configuration's result
+counts and points to the full fragment artifacts instead.
 
 This reporting is informational and is not part of the aggregate branch
 protection ``CI`` job. Commit messages containing ``[skip-compile-time-bench]``
@@ -204,6 +251,32 @@ Built-in filter names include:
 
 Unknown filters are interpreted as case-insensitive regular expressions over
 event names and event details.
+
+Template grouping
+~~~~~~~~~~~~~~~~~
+
+Pass ``--group-by primary-template`` with ``template-instantiation``,
+``template-class-instantiation``, or ``template-function-instantiation`` to
+aggregate specializations of the same template:
+
+.. code-block:: bash
+
+  ci/compile_time/summarize_events.py <trace-dir> \
+    -f template-instantiation -i --sort total -n 25 \
+    --group-by primary-template
+
+NVCC normally reports template details as ``primary [specialization]``. The
+grouping key is the reported ``primary`` portion; for example,
+``cuda::std::vector<int>`` and ``cuda::std::vector<long>`` contribute to one
+``cuda::std::vector`` row. Function and class instantiation event kinds remain
+distinct. ``event_count`` counts all grouped instantiation events, while timing
+columns aggregate their costs. Because NVCC's primary label is a symbol name,
+overloaded function templates with the same reported name may share a row.
+
+The option applies identically to baseline/current reports and comparisons. In
+comparison mode, a primary template is comparable when its grouped key appears
+in both sides of a matched trace, even when the concrete specializations differ.
+Use ``"group_by": "primary-template"`` for the equivalent multi-slice setting.
 
 Symbol-like events, such as function parsing, template instantiation, function
 IR generation, and optimizer-function events, are scope-filtered by default to

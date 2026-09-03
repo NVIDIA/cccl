@@ -1,7 +1,8 @@
 compile_time:
   pull_request:
-    - id: public-headers-gcc13
-      name: Public headers compile-time bench
+    - id: cccl-gcc13
+      name: CCCL compile-time bench
+      project: cccl
       gpu: rtx2080
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
@@ -12,34 +13,96 @@ compile_time:
         - libcudacxx.test.public_headers
       args: "-arch native"
       slices:
-        - id: total-compilation
+        - &compile_time_total_compilation
+          id: total-compilation
           title: TU total compilation
           filter: total-compilation
           timing: inclusive
           sort: total
           top: 15
           threshold: 3.0
-        - id: file-processing
+        - &compile_time_file_processing
+          id: file-processing
           title: Direct file processing
           filter: file-processing
           timing: exclusive
           sort: total
           top: 15
           threshold: 0.2
-        - id: function-bodies
+        - &compile_time_function_bodies
+          id: function-bodies
           title: Function-body parsing
           filter: scanning-function-body
           timing: inclusive
           sort: total
           top: 15
           threshold: 0.25
-        - id: template-instantiation
+        - &compile_time_template_instantiation
+          id: template-instantiation
           title: Template instantiation
           filter: template-instantiation
           timing: inclusive
           sort: total
           top: 15
           threshold: 0.2
+    - id: pytorch-gcc14
+      name: PyTorch compile-time bench
+      project: pytorch
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
+      baseline_ref: origin/main
+      slices: &compile_time_third_party_slices
+        - *compile_time_total_compilation
+        - *compile_time_file_processing
+        - *compile_time_function_bodies
+        - *compile_time_template_instantiation
+        - id: primary-template-instantiation
+          title: Template instantiation by primary template
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.2
+          group_by: primary-template
+    - id: matx-gcc14
+      name: MatX compile-time bench
+      project: matx
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
+      baseline_ref: origin/main
+      slices: *compile_time_third_party_slices
+    - id: rapids-cudf
+      name: RAPIDS cuDF compile-time bench
+      project: rapids
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      targets: [rmm, ucxx, kvikio, cudf, cudf_kafka]
+      slices: *compile_time_third_party_slices
+    - id: rapids-cuvs
+      name: RAPIDS cuVS compile-time bench
+      project: rapids
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      targets: [rmm, ucxx, raft, cuvs, nvforest, cuml]
+      slices: *compile_time_third_party_slices
+    - id: rapids-cugraph
+      name: RAPIDS cuGraph compile-time bench
+      project: rapids
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      targets: [rmm, ucxx, raft, cuvs, cugraph, wholegraph]
+      slices: *compile_time_third_party_slices
+    - id: rapids-cuopt
+      name: RAPIDS cuOpt compile-time bench
+      project: rapids
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      targets: [cuopt]
+      slices: *compile_time_third_party_slices
 
 # Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells
 # the author to run the benchmarks when the generated code changed.
