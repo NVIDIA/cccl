@@ -1,0 +1,394 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from dataclasses import dataclass
+from types import SimpleNamespace
+
+import pytest
+
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+@pytest.fixture(autouse=True)
+def _restore_private_registries():
+    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop._core.group import _dispatch as core_dispatch
+    from cuda.coop.numba_mlir._compiler import _operations
+
+    registries = (
+        core_dispatch._GROUP_OPERATION_FAMILIES,
+        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_NAME,
+        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_FUNCTION,
+        _operations._GROUP_OPERATIONS,
+        _operations._GROUP_FAMILY_MODULES,
+        _operations._FACTORY_OPERATIONS,
+        _operations._GROUP_PRIMITIVES,
+        _operations._REWRITE_OPERATIONS,
+    )
+    snapshots = tuple(dict(registry) for registry in registries)
+    try:
+        yield
+    finally:
+        for registry, snapshot in zip(registries, snapshots):
+            registry.clear()
+            registry.update(snapshot)
+
+
+@dataclass(frozen=True)
+class _FakeSemantics:
+    token: str
+
+    @property
+    def semantic_key(self):
+        return ("fake-family", self.token)
+
+    @property
+    def result_visibility(self):
+        from cuda.coop._core import ResultVisibility
+
+        return ResultVisibility.PER_MEMBER
+
+    @property
+    def returns_value(self):
+        return True
+
+
+def test_core_family_registration_dispatches_classification_and_planning():
+    from cuda.coop._core import (
+        ArgumentKind,
+        LaunchFacts,
+        ParameterClassification,
+        ParameterRole,
+        make_group_primitive_call,
+        plan_group_primitive,
+        this_block,
+    )
+    from cuda.coop._core.group import _dispatch
+
+    classification = ParameterClassification(
+        "value",
+        ArgumentKind.RUNTIME,
+        ParameterRole.INPUT,
+    )
+    semantics = _FakeSemantics("registered")
+    planned = object()
+    events = []
+
+    def classify(operation):
+        events.append(("classify", operation))
+        return (classification,)
+
+    def plan(call, resolved_group, launch, operation):
+        events.append(("plan", call, resolved_group, launch, operation))
+        return planned
+
+    _dispatch._register_group_operation_family(
+        _FakeSemantics,
+        classifications=classify,
+        planner=plan,
+        group_kinds=frozenset({"block"}),
+        unsupported_group_message="fake family requires a block",
+    )
+
+    call = make_group_primitive_call(this_block(), semantics)
+    launch = LaunchFacts(exact_block_dim=(32, 1, 1))
+
+    assert call.argument_classifications == (classification,)
+    assert plan_group_primitive(call, launch) is planned
+    assert events[0] == ("classify", semantics)
+    _, planned_call, resolved_group, planned_launch, planned_operation = events[1]
+    assert planned_call is call
+    assert resolved_group.kind == "block"
+    assert resolved_group.static_size == 32
+    assert resolved_group.hierarchy.block_dim == (32, 1, 1)
+    assert planned_launch is launch
+    assert planned_operation is semantics
+
+
+def _register_fake_group_frontends(operation):
+    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop.numba_mlir._compiler import _operations
+
+    @portable_dispatch._portable_group_operation(
+        operation,
+        group_kinds=("block",),
+    )
+    def portable_marker(group, value):
+        del group, value
+
+    @_operations.group_operation(operation, family_module=__name__)
+    def qualified_marker(group, value):
+        del group, value
+
+    return portable_marker, qualified_marker
+
+
+def test_group_frontend_registries_require_exact_callable_identity():
+    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        _group_operation_name,
+    )
+
+    operation = "_test_exact_family"
+    portable_marker, qualified_marker = _register_fake_group_frontends(operation)
+
+    assert (
+        portable_dispatch._portable_group_operation_name(portable_marker) == operation
+    )
+    assert _operations.group_operation_name(qualified_marker) == operation
+    assert _group_operation_name(portable_marker) == operation
+    assert _group_operation_name(qualified_marker) == operation
+
+    for marker in (portable_marker, qualified_marker):
+
+        def impostor(group, value):
+            del group, value
+
+        impostor.__module__ = marker.__module__
+        impostor.__name__ = marker.__name__
+        impostor.__cuda_coop_backend_member__ = operation
+        assert portable_dispatch._portable_group_operation_name(impostor) is None
+        assert _operations.group_operation_name(impostor) is None
+        assert _group_operation_name(impostor) is None
+
+
+@pytest.mark.parametrize("portable", [True, False], ids=["portable", "qualified"])
+def test_group_call_planner_selects_registered_family_lowerer(portable):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop as portable_coop
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._group_planner import (
+        _GroupCallPlanner,
+        has_group_markers,
+    )
+
+    operation = "_test_planned_family"
+    portable_marker, qualified_marker = _register_fake_group_frontends(operation)
+    marker = portable_marker if portable else qualified_marker
+    group_factory = portable_coop.this_block if portable else qualified_coop.this_block
+    lowered = []
+
+    def lower(
+        planner,
+        inst,
+        *,
+        operation,
+        group,
+        bound,
+        is_common_root,
+    ):
+        lowered.append(
+            {
+                "planner": planner,
+                "operation": operation,
+                "group": group,
+                "bound": bound,
+                "is_common_root": is_common_root,
+            }
+        )
+        return [ir.Assign(ir.Const(17, inst.loc), inst.target, inst.loc)]
+
+    _operations.register_group_primitive(operation, lower=lower)
+
+    def kernel(value):
+        return marker(group_factory(), value)
+
+    func_ir = run_frontend(kernel)
+    state = SimpleNamespace(func_ir=func_ir, args=(types.int32,))
+    planner = _GroupCallPlanner(
+        state,
+        {"block": (32, 1, 1), "grid": (1, 1, 1), "cluster": None},
+    )
+
+    assert has_group_markers(func_ir)
+    assert planner.run()
+    assert not has_group_markers(func_ir)
+    assert len(lowered) == 1
+    invocation = lowered[0]
+    assert invocation["planner"] is planner
+    assert invocation["operation"] == operation
+    assert invocation["group"].kind == "block"
+    assert invocation["group"].static_size == 32
+    assert invocation["bound"].arguments["group"].name
+    assert invocation["bound"].arguments["value"].name == "value"
+    assert invocation["is_common_root"] is portable
+
+
+class _FakeInvocable:
+    files = ("family-registration-test.ltoir",)
+    specialization = None
+    temp_storage_bytes = 24
+    temp_storage_alignment = 8
+
+    def __call__(self, *args):
+        del args
+
+
+class _TypingContext:
+    def __init__(self):
+        self.refresh_count = 0
+
+    def refresh(self):
+        self.refresh_count += 1
+
+
+def _resolved_calls(func_ir):
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    resolver = object.__new__(CoopSinglePhaseRewrite)
+    resolver._func_ir = func_ir
+    calls = []
+    for block in func_ir.blocks.values():
+        resolver._block_defs = {
+            inst.target.name: inst.value
+            for inst in block.body
+            if isinstance(inst, ir.Assign)
+        }
+        for inst in block.body:
+            value = getattr(inst, "value", None)
+            if isinstance(value, ir.Expr) and value.op == "call":
+                calls.append((resolver._resolve_python_value(value.func), value))
+    return calls
+
+
+def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    operation = "_test_rewrite_family"
+    events = []
+    family_metadata = object()
+    invocable = _FakeInvocable()
+
+    def provider(*runtime_args, **factory_kwargs):
+        assert not runtime_args
+        events.append(("factory", dict(factory_kwargs)))
+        return invocable
+
+    def infer_payload(_rewrite, inference):
+        events.append(("infer", tuple(inference.runtime_args)))
+        inference.infer_kwarg("inferred", "from-callback")
+
+    def analyze_match(
+        _rewrite,
+        *,
+        op_name,
+        runtime_args,
+        factory_kwargs,
+    ):
+        events.append(
+            (
+                "analyze",
+                op_name,
+                tuple(runtime_args),
+                dict(factory_kwargs),
+            )
+        )
+        return family_metadata
+
+    def prepare_runtime_args(
+        _rewrite,
+        block,
+        *,
+        match,
+        runtime_args,
+        scope,
+        loc,
+    ):
+        assert match.family_metadata is family_metadata
+        events.append(("prepare", tuple(runtime_args)))
+        prepared = ir.Var(scope, "__family_prepared_value", loc)
+        block.append(ir.Assign(ir.Const(29, loc), prepared, loc))
+        return [*runtime_args, prepared]
+
+    _operations.register_factory(
+        provider,
+        operation=operation,
+        namespace="block",
+    )
+    _operations.register_rewrite_operation(
+        operation,
+        _operations.RewriteOperationSpec(
+            namespace="block",
+            runtime_arg_counts=frozenset({1}),
+            runtime_factory_kwargs=(),
+            runtime_factory_kw_prerequisites=(),
+            allowed_factory_kwargs=frozenset({"inferred", "token"}),
+            required_factory_kwargs=frozenset({"inferred", "token"}),
+            runtime_temp_storage=False,
+            scalar_binding_kwargs=frozenset(),
+            runtime_offset_kwarg=None,
+            infer_payload=infer_payload,
+            analyze_match=analyze_match,
+            prepare_runtime_args=prepare_runtime_args,
+        ),
+    )
+
+    def kernel(value):
+        return provider(value, token=7)
+
+    func_ir = run_frontend(kernel)
+    typingctx = _TypingContext()
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(types.int32,),
+        typingctx=typingctx,
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        while rewrite.match(func_ir, block, state.typemap, state.calltypes):
+            block = rewrite.apply()
+            func_ir.blocks[label] = block
+
+    calls = _resolved_calls(func_ir)
+    invocable_calls = [call for target, call in calls if target is invocable]
+    assert len(invocable_calls) == 1
+    assert len(invocable_calls[0].args) == 3
+    assert sum(target is cuda.shared.array for target, _ in calls) == 1
+    assert sum(target is cuda.syncthreads for target, _ in calls) == 1
+    assert rewrite._temp_storage_global_plan.total_size == 24
+    assert rewrite._temp_storage_global_plan.max_alignment == 8
+    assert rewrite._implicit_temp_storage_plan.size_in_bytes == 24
+    assert rewrite._implicit_temp_storage_plan.alignment == 8
+    assert typingctx.refresh_count == 1
+
+    factory_events = [event for event in events if event[0] == "factory"]
+    infer_events = [event for event in events if event[0] == "infer"]
+    analyze_events = [event for event in events if event[0] == "analyze"]
+    prepare_events = [event for event in events if event[0] == "prepare"]
+    assert factory_events == [("factory", {"token": 7, "inferred": "from-callback"})]
+    assert len(infer_events) == 2
+    assert all(len(event[1]) == 1 for event in infer_events)
+    assert len(analyze_events) == 2
+    assert all(event[1] == operation for event in analyze_events)
+    assert all(
+        event[3] == {"token": 7, "inferred": "from-callback"}
+        for event in analyze_events
+    )
+    assert len(prepare_events) == 1
+
+    resolver = object.__new__(CoopSinglePhaseRewrite)
+    resolver._func_ir = func_ir
+    resolver._block_defs = {
+        inst.target.name: inst.value
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+    }
+    assert resolver._infer_constant(invocable_calls[0].args[-1]) == 29
