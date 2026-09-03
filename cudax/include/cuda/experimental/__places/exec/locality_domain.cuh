@@ -232,6 +232,14 @@ public:
 
     CUmemoryPool pool = nullptr;
     cuda_try(cuMemPoolCreate(&pool, &props));
+
+    // Retain freed memory in the pool instead of returning it to the OS at
+    // every synchronization (the default threshold of 0): re-backing
+    // algorithm-scale scratch costs milliseconds per call. Mirrors the
+    // unlimited threshold set on the device default pools (machine.cuh).
+    ::cuuint64_t threshold = UINT64_MAX;
+    cuda_try(cuMemPoolSetAttribute(pool, CU_MEMPOOL_ATTR_RELEASE_THRESHOLD, &threshold));
+
     pools_[key] = pool;
     return pool;
   }
