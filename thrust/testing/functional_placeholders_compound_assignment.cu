@@ -31,7 +31,7 @@
       thrust::transform(                                                                                     \
         lhs_reference.begin(),                                                                               \
         lhs_reference.end(),                                                                                 \
-        cuda::make_constant_iterator<T>(1),                                                                \
+        cuda::make_constant_iterator<T>(1),                                                                  \
         reference.begin(),                                                                                   \
         reference_functor<T>());                                                                             \
       thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), result.begin(), _1 op T(1));                    \
@@ -39,9 +39,18 @@
       ASSERT_ALMOST_EQUAL(lhs_reference, lhs);                                                               \
     }                                                                                                        \
   };                                                                                                         \
-  DECLARE_VECTOR_UNITTEST_WITH_TYPES(                                                                        \
-    TestFunctionalPlaceholders##name, type_list, thrust::device_vector, thrust::device_allocator);           \
-  DECLARE_VECTOR_UNITTEST_WITH_TYPES(TestFunctionalPlaceholders##name, type_list, thrust::host_vector, std::allocator);
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                               \
+    TestFunctionalPlaceholders##name,                                                                        \
+    type_list,                                                                                               \
+    thrust::device_vector,                                                                                   \
+    thrust::device_allocator,                                                                                \
+    TestFunctionalPlaceholders##name##Device);                                                               \
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                               \
+    TestFunctionalPlaceholders##name,                                                                        \
+    type_list,                                                                                               \
+    thrust::host_vector,                                                                                     \
+    std::allocator,                                                                                          \
+    TestFunctionalPlaceholders##name##Host);
 
 template <typename T>
 struct plus_equal_reference

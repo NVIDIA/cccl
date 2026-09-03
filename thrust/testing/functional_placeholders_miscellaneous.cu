@@ -40,10 +40,18 @@ struct TestFunctionalPlaceholdersValue
     ASSERT_ALMOST_EQUAL(reference, result);
   }
 };
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(
-  TestFunctionalPlaceholdersValue, ThirtyTwoBitTypes, thrust::device_vector, thrust::device_allocator);
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(
-  TestFunctionalPlaceholdersValue, ThirtyTwoBitTypes, thrust::host_vector, std::allocator);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersValue,
+  ThirtyTwoBitTypes,
+  thrust::device_vector,
+  thrust::device_allocator,
+  TestFunctionalPlaceholdersValueDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersValue,
+  ThirtyTwoBitTypes,
+  thrust::host_vector,
+  std::allocator,
+  TestFunctionalPlaceholdersValueHost);
 
 template <typename Vector>
 struct TestFunctionalPlaceholdersTransformIterator
@@ -72,10 +80,18 @@ struct TestFunctionalPlaceholdersTransformIterator
     ASSERT_ALMOST_EQUAL(reference, result);
   }
 };
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(
-  TestFunctionalPlaceholdersTransformIterator, ThirtyTwoBitTypes, thrust::device_vector, thrust::device_allocator);
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(
-  TestFunctionalPlaceholdersTransformIterator, ThirtyTwoBitTypes, thrust::host_vector, std::allocator);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersTransformIterator,
+  ThirtyTwoBitTypes,
+  thrust::device_vector,
+  thrust::device_allocator,
+  TestFunctionalPlaceholdersTransformIteratorDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestFunctionalPlaceholdersTransformIterator,
+  ThirtyTwoBitTypes,
+  thrust::host_vector,
+  std::allocator,
+  TestFunctionalPlaceholdersTransformIteratorHost);
 
 void TestFunctionalPlaceholdersArgumentValueCategories()
 {

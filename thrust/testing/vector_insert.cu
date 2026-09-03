@@ -92,9 +92,14 @@ struct TestVectorRangeInsertSimple
     ASSERT_EQUAL(10lu, v5.size());
   }
 }; // end TestVectorRangeInsertSimple
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(
-  TestVectorRangeInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator);
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(TestVectorRangeInsertSimple, NumericTypes, thrust::host_vector, std::allocator)
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorRangeInsertSimple,
+  NumericTypes,
+  thrust::device_vector,
+  thrust::device_malloc_allocator,
+  TestVectorRangeInsertSimpleDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorRangeInsertSimple, NumericTypes, thrust::host_vector, std::allocator, TestVectorRangeInsertSimpleHost);
 
 template <class T>
 struct TestVectorRangeInsert
@@ -218,9 +223,14 @@ struct TestVectorFillInsertSimple
     ASSERT_EQUAL(10lu, v4.size());
   }
 }; // end TestVectorFillInsertSimple
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(
-  TestVectorFillInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator);
-DECLARE_VECTOR_UNITTEST_WITH_TYPES(TestVectorFillInsertSimple, NumericTypes, thrust::host_vector, std::allocator);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorFillInsertSimple,
+  NumericTypes,
+  thrust::device_vector,
+  thrust::device_malloc_allocator,
+  TestVectorFillInsertSimpleDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorFillInsertSimple, NumericTypes, thrust::host_vector, std::allocator, TestVectorFillInsertSimpleHost);
 
 template <class T>
 struct TestVectorFillInsert
