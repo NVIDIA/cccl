@@ -198,6 +198,26 @@ class WarpExchangeShfl
     }
   }
 
+  template <int IDX>
+  _CCCL_DEVICE void copy_into(InputT (&vals)[ITEMS_PER_THREAD], const InputT (&input_items)[ITEMS_PER_THREAD])
+  {
+    vals[IDX] = input_items[IDX];
+    if constexpr (IDX + 1 < ITEMS_PER_THREAD)
+    {
+      copy_into<IDX + 1>(vals, input_items);
+    }
+  }
+
+  template <int IDX, typename OutputT>
+  _CCCL_DEVICE void copy_out(OutputT (&output_items)[ITEMS_PER_THREAD], const InputT (&vals)[ITEMS_PER_THREAD])
+  {
+    output_items[IDX] = vals[IDX];
+    if constexpr (IDX + 1 < ITEMS_PER_THREAD)
+    {
+      copy_out<IDX + 1>(output_items, vals);
+    }
+  }
+
   const unsigned int lane_id;
   const unsigned int warp_id;
   const unsigned int member_mask;
@@ -218,20 +238,11 @@ public:
   BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     InputT vals[ITEMS_PER_THREAD];
-
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; i++)
-    {
-      vals[i] = input_items[i];
-    }
+    copy_into<0>(vals, input_items);
 
     transpose<ITEMS_PER_THREAD / 2>(vals, lane_id, member_mask);
 
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < ITEMS_PER_THREAD; i++)
-    {
-      output_items[i] = vals[i];
-    }
+    copy_out<0>(output_items, vals);
   }
 
   template <typename OutputT>
