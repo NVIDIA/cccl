@@ -18,7 +18,7 @@ def test_DeviceCopy_uses_layout_stride_for_positive_runtime_strides():
     device_copy = impl._make_device_copy(source, destination)
 
     generated_source = device_copy._get_source()
-    impl._copy_into(source, destination)
+    device_copy(source, destination)
 
     assert "using input_type = ::cuda::std::mdspan" in generated_source
     assert "using output_type = ::cuda::std::mdspan" in generated_source
