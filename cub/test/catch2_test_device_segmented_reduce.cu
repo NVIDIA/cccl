@@ -408,7 +408,7 @@ struct faulting_reduce
   }
 };
 
-C2H_TEST("Device segmented reduce works without initial value", "[segmented][reduce][device]")
+CUB_TEST("Device segmented reduce works without initial value", "[segmented][reduce][device]", CUB_SMALL)
 {
   SECTION("variable-size segments")
   {
