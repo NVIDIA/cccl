@@ -244,6 +244,10 @@ _CCCL_CONCEPT sharded_view = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
 template <class _S>
 using shard_descriptor_t = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<const _S&>().shard(::std::size_t{0}))>;
 
+//! @brief Element type of a sharded view.
+template <class _S>
+using view_element_t = shard_element_t<shard_descriptor_t<::cuda::std::remove_cvref_t<_S>>>;
+
 template <class _Tp>
 _CCCL_CONCEPT __has_capacity_field = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __d)(
   _Satisfies(__convertible_to_size) __d.capacity);

@@ -191,10 +191,6 @@ _CCCL_HOST_API void for_each(place_group&, sharded_array<_Tp>& data, _Op op, boo
 // sharded_view; the self-bound overloads derive environments via
 // default_envs.
 
-//! @brief Element type of a sharded view.
-template <class _S>
-using view_element_t = shard_element_t<shard_descriptor_t<::cuda::std::remove_cvref_t<_S>>>;
-
 //! @brief Set every element to @p value (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND

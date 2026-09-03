@@ -99,6 +99,19 @@ int main()
   fill(b, envs, 1LL);
   EXPECT(reduce(b, envs, ::cuda::std::plus<long long>{}, 0LL) == (long long) n);
 
+  // Generic scans (reduce-then-scan): cross-shard seeds must fold correctly.
+  fill(b, envs, 1LL);
+  inclusive_scan(b, envs, ::cuda::std::plus<long long>{}); // b[i] = i + 1
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == (long long) n * ((long long) n + 1) / 2);
+  fill(b, 1LL);
+  exclusive_scan(b, ::cuda::std::plus<long long>{}, 10LL); // b[i] = 10 + i (global init, once)
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL)
+         == 10 * (long long) n + (long long) n * ((long long) n - 1) / 2);
+  // Non-commutative sanity through the boundary: max-scan of iota is iota
+  iota(b, 0LL);
+  inclusive_scan(b, envs, ::cuda::maximum<long long>{});
+  EXPECT(reduce(b, ::cuda::std::plus<long long>{}, 0LL) == (long long) n * ((long long) n - 1) / 2);
+
   // Generic adjacent_difference: boundary crossing between shards must see
   // the predecessor's last element; iota -> minus gives all-1s except [0].
   iota(b, 5LL); // b = 5, 6, ..., 5 + n - 1
