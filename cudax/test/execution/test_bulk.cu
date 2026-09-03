@@ -1064,9 +1064,6 @@ C2H_TEST("default bulk_unchunked works with non_default constructible types", "[
 
 #if !defined(__CUDA_ARCH__)
 // TODO: modify these tests to work on device as well
-struct my_domain
-{};
-
 C2H_TEST("late customizing bulk_chunked also changes the behavior of bulk", "[adaptors][then]")
 {
   late_customizing_bulk_chunked_also_changes_the_behavior_of_bulk();
