@@ -421,7 +421,13 @@ public:
         // capture (throwing work follows EndCapture within this scope), so
         // only end a capture that is still active.
         cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        if (cudaStreamIsCapturing(capture_stream, &status) == cudaSuccess && status != cudaStreamCaptureStatusNone)
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
         {
           cudaGraph_t discarded = nullptr;
           cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
@@ -446,7 +452,13 @@ public:
         // graph sits in childGraph until set_child_graph takes ownership
         // (childGraph is nulled right after); destroy it rather than leak.
         cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        if (cudaStreamIsCapturing(capture_stream, &status) == cudaSuccess && status != cudaStreamCaptureStatusNone)
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
         {
           cudaGraph_t discarded = nullptr;
           cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
@@ -811,7 +823,13 @@ public:
         // capture (throwing work follows EndCapture within this scope), so
         // only end a capture that is still active.
         cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        if (cudaStreamIsCapturing(capture_stream, &status) == cudaSuccess && status != cudaStreamCaptureStatusNone)
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
         {
           cudaGraph_t discarded = nullptr;
           cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
@@ -845,7 +863,13 @@ public:
         // graph sits in childGraph until set_child_graph takes ownership
         // (childGraph is nulled right after); destroy it rather than leak.
         cudaStreamCaptureStatus status = cudaStreamCaptureStatusNone;
-        if (cudaStreamIsCapturing(capture_stream, &status) == cudaSuccess && status != cudaStreamCaptureStatusNone)
+        // cuda_safe_call: a failing status query here (e.g. a prior sticky
+        // error surfacing through this API) must not be mistaken for "not
+        // capturing" -- report and abort instead of skipping the EndCapture.
+        cuda_safe_call(cudaStreamIsCapturing(capture_stream, &status));
+        // != None on purpose: an Invalidated capture must still be ended to
+        // restore the stream.
+        if (status != cudaStreamCaptureStatusNone)
         {
           cudaGraph_t discarded = nullptr;
           cuda_safe_call(cudaStreamEndCapture(capture_stream, &discarded));
