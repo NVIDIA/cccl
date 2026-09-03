@@ -95,6 +95,20 @@ struct abs_less_t
   }
 };
 
+CUB_TEST("Device reduce handles vectorized 16-bit input", "[reduce][device]", CUB_SMALL)
+{
+  using input_t  = std::int16_t;
+  using output_t = std::int32_t;
+
+  constexpr int num_items = 8192;
+  c2h::device_vector<input_t> input(num_items, input_t{1});
+  c2h::device_vector<output_t> output(1, thrust::no_init);
+
+  device_sum(thrust::raw_pointer_cast(input.data()), thrust::raw_pointer_cast(output.data()), num_items);
+
+  REQUIRE(output[0] == num_items);
+}
+
 CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
