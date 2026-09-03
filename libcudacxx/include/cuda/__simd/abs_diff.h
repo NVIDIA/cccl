@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/abs_diff.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__internal/features.h>
 #include <cuda/std/__simd/algorithm.h>
