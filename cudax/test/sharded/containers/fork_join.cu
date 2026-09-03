@@ -85,8 +85,8 @@ void test_eager_ordering(place_group& group)
   auto out       = sharded_array<int>::allocate_like(in);
 
   // Sentinels, quiesced before the ordered chain starts.
-  fill(group, in, -1);
-  fill(group, out, -1);
+  fill(in, -1);
+  fill(out, -1);
   in.sync();
   out.sync();
 
@@ -205,7 +205,7 @@ void test_capture(place_group& group)
   const size_t n = 1 << 20;
   auto data      = sharded_array<int>::allocate(group, n);
 
-  iota(group, data, 0);
+  iota(data, 0);
   data.sync();
 
   cudaStream_t caller = nullptr;

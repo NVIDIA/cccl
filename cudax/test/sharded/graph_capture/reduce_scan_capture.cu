@@ -47,7 +47,7 @@ void test_reduce_scan_refuse_under_capture(place_group& group)
 {
   const size_t n = 100003;
   auto data      = sharded_array<long long>::allocate(group, n);
-  iota(group, data, 0LL);
+  iota(data, 0LL);
 
   cudaStream_t origin;
   cuda_safe_call(cudaStreamCreate(&origin));
@@ -59,7 +59,7 @@ void test_reduce_scan_refuse_under_capture(place_group& group)
   bool threw = false;
   try
   {
-    (void) reduce(group, data, ::cuda::std::plus<long long>{}, 0LL);
+    (void) reduce(data, ::cuda::std::plus<long long>{}, 0LL);
   }
   catch (const ::std::runtime_error&)
   {
@@ -71,7 +71,7 @@ void test_reduce_scan_refuse_under_capture(place_group& group)
   threw = false;
   try
   {
-    (void) sum(group, data);
+    (void) sum(data);
   }
   catch (const ::std::runtime_error&)
   {
@@ -83,7 +83,7 @@ void test_reduce_scan_refuse_under_capture(place_group& group)
   threw = false;
   try
   {
-    inclusive_scan(group, data);
+    inclusive_sum(data);
   }
   catch (const ::std::runtime_error&)
   {
@@ -95,7 +95,7 @@ void test_reduce_scan_refuse_under_capture(place_group& group)
   threw = false;
   try
   {
-    exclusive_scan(group, data, 5LL);
+    exclusive_sum(data, 5LL);
   }
   catch (const ::std::runtime_error&)
   {
@@ -105,7 +105,8 @@ void test_reduce_scan_refuse_under_capture(place_group& group)
   EXPECT(capture_active(origin));
 
   // The capture is still usable for supported work: record an elementwise op
-  transform(group, data, plus_one_op{}, /*blocking=*/false);
+  const auto cprop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
+  transform(data, default_envs(data), plus_one_op{}, ::cuda::std::execution::env{cprop});
   data.join_into(origin);
 
   cudaGraph_t graph = nullptr;
@@ -125,11 +126,11 @@ void test_reduce_scan_refuse_under_capture(place_group& group)
   }
 
   // Eager reduce/scan work normally after the capture (state not wedged)
-  const long long total = sum(group, data);
+  const long long total = sum(data);
   // sum of (i+1) for i in [0, n) = n*(n+1)/2
   EXPECT(total == static_cast<long long>(n) * static_cast<long long>(n + 1) / 2);
 
-  inclusive_scan(group, data);
+  inclusive_sum(data);
   data.copy_to_host(host.data());
   long long running = 0;
   for (size_t i = 0; i < n; i++)

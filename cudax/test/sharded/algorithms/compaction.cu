@@ -55,9 +55,9 @@ void test_copy_if(place_group& group)
 {
   const size_t n = 500009;
   auto data      = sharded_array<long long>::allocate(group, n);
-  iota(group, data, 0LL); // 0 .. n-1
+  iota(data, 0LL); // 0 .. n-1
 
-  const size_t kept = copy_if(group, data, is_even{});
+  const size_t kept = copy_if(data, is_even{});
   EXPECT(kept == (n + 1) / 2);
   EXPECT(data.size() == kept);
   EXPECT(data.validate());
@@ -78,19 +78,19 @@ void test_copy_if(place_group& group)
 
   // Empty array
   sharded_array<long long> empty;
-  EXPECT(copy_if(group, empty, is_even{}) == 0UL);
+  EXPECT(copy_if(empty, is_even{}) == 0UL);
 }
 
 void test_copy_if_empty_result_shards(place_group& group)
 {
   const size_t n = 300000;
   auto data      = sharded_array<long long>::allocate(group, n);
-  iota(group, data, 0LL); // values == global indices
+  iota(data, 0LL); // values == global indices
 
   // Keep only values inside the first half of shard 0: every other shard
   // compacts to an EMPTY result
   const long long bound = static_cast<long long>(data.shard(0).size / 2);
-  const size_t kept     = copy_if(group, data, less_than{bound});
+  const size_t kept     = copy_if(data, less_than{bound});
   EXPECT(kept == static_cast<size_t>(bound));
   EXPECT(data.size() == kept);
   EXPECT(data.validate());
@@ -108,8 +108,8 @@ void test_copy_if_empty_result_shards(place_group& group)
 
   // Keep nothing: every shard compacts to empty
   data.reset_sizes_to_capacity();
-  iota(group, data, 0LL);
-  EXPECT(copy_if(group, data, less_than{0}) == 0UL);
+  iota(data, 0LL);
+  EXPECT(copy_if(data, less_than{0}) == 0UL);
   EXPECT(data.size() == 0UL);
   EXPECT(data.validate());
 }
@@ -118,10 +118,10 @@ void test_remove_if_and_filter(place_group& group)
 {
   const size_t n = 100003;
   auto data      = sharded_array<long long>::allocate(group, n);
-  iota(group, data, 0LL);
+  iota(data, 0LL);
 
   // remove_if is the inverse of copy_if: drop the evens, keep the odds
-  const size_t kept = remove_if(group, data, is_even{});
+  const size_t kept = remove_if(data, is_even{});
   EXPECT(kept == n / 2);
   ::std::vector<long long> host(kept);
   data.copy_to_host(host.data());
@@ -132,8 +132,8 @@ void test_remove_if_and_filter(place_group& group)
 
   // filter is an alias for copy_if
   auto other = sharded_array<long long>::allocate(group, n);
-  iota(group, other, 0LL);
-  EXPECT(filter(group, other, is_even{}) == (n + 1) / 2);
+  iota(other, 0LL);
+  EXPECT(filter(other, is_even{}) == (n + 1) / 2);
 }
 
 void test_unique_cross_shard_boundary(place_group& group)
@@ -154,7 +154,7 @@ void test_unique_cross_shard_boundary(place_group& group)
   ::std::vector<long long> ref(host);
   ref.erase(::std::unique(ref.begin(), ref.end()), ref.end());
 
-  const size_t u = unique(group, data);
+  const size_t u = unique(data);
   EXPECT(u == ref.size());
   EXPECT(data.size() == u);
   EXPECT(data.validate());
@@ -170,8 +170,8 @@ void test_unique_cross_shard_boundary(place_group& group)
   // a single element locally, then the boundary trim must chain across every
   // shard boundary, leaving exactly one element in the whole array.
   auto same = sharded_array<long long>::allocate(group, 100000);
-  fill(group, same, 42LL);
-  EXPECT(unique(group, same) == 1UL);
+  fill(same, 42LL);
+  EXPECT(unique(same) == 1UL);
   EXPECT(same.size() == 1UL);
   long long only = 0;
   same.copy_to_host(&only);
@@ -179,7 +179,7 @@ void test_unique_cross_shard_boundary(place_group& group)
 
   // Empty array
   sharded_array<long long> empty;
-  EXPECT(unique(group, empty) == 0UL);
+  EXPECT(unique(empty) == 0UL);
 }
 
 void test_size_mutators_refuse_contiguous(place_group& group)
@@ -192,12 +192,12 @@ void test_size_mutators_refuse_contiguous(place_group& group)
   // untouched.
   const size_t n = (1 << 20) + 99;
   auto data      = sharded_array<long long>::allocate_contiguous(group, n);
-  iota(group, data, 0LL);
+  iota(data, 0LL);
 
   bool threw = false;
   try
   {
-    (void) copy_if(group, data, is_even{});
+    (void) copy_if(data, is_even{});
   }
   catch (const ::std::invalid_argument&)
   {
@@ -208,7 +208,7 @@ void test_size_mutators_refuse_contiguous(place_group& group)
   threw = false;
   try
   {
-    (void) unique(group, data);
+    (void) unique(data);
   }
   catch (const ::std::invalid_argument&)
   {
@@ -219,7 +219,7 @@ void test_size_mutators_refuse_contiguous(place_group& group)
   threw = false;
   try
   {
-    (void) remove_if(group, data, is_even{});
+    (void) remove_if(data, is_even{});
   }
   catch (const ::std::invalid_argument&)
   {
@@ -230,7 +230,7 @@ void test_size_mutators_refuse_contiguous(place_group& group)
   // The refused calls left the array untouched
   EXPECT(data.size() == n);
   EXPECT(data.validate());
-  EXPECT(count(group, data, 1LL) == 1UL); // data intact, read-only path still fine
+  EXPECT(count(data, 1LL) == 1UL); // data intact, read-only path still fine
 }
 } // namespace
 

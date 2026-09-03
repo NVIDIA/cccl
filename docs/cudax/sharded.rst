@@ -36,8 +36,8 @@ placement: a ``data_place``, an ``exec_place`` and a reference stream.
    const size_t n = 1u << 28;
    auto data      = sharded_array<double>::allocate(group, n);
 
-   iota(group, data, 0.0);
-   double total = sum(group, data);   // per-place CUB + combine
+   iota(data, 0.0);
+   double total = sum(data);          // per-shard CUB + combine
 
 Factory naming follows a two-word rule: ``adopt`` = zero-copy view over
 caller-owned memory (the container becomes a view and the caller owes the
@@ -66,7 +66,7 @@ ordering declarations, not synchronizations — the host returns immediately:
 
    producer<<<grid, block, 0, s>>>(...); // writes data's memory on stream s
    data.fork_from(s);                    // shards now depend on the producer
-   transform(group, data, out, op);      // per-shard work on the shard streams
+   zip_transform(out, op, data);         // per-shard work on the shard streams
    out.join_into(s);                     // s now depends on every shard
    consumer<<<grid, block, 0, s>>>(...); // sees all results; no host sync
 
@@ -80,36 +80,55 @@ stream (or graph) and the per-shard work.
 Algorithms
 ----------
 
-The algorithm family:
+Algorithms are written against the concepts (see below), not against the
+container: the container algorithms are one *instantiation* of the concept
+tier, materialized by ``place_group`` — ``sharded_array`` models
+``sharded_view`` and ``self_bound``, so ``algo(a, ...)`` *is* the generic
+algorithm instantiated with the container. (Earlier revisions carried
+``(place_group&, sharded_array&)`` signatures alongside; they were a
+redundant spelling of that instantiation — the group parameter was unused in
+every algorithm body — and have been removed.)
 
-- elementwise: ``fill``, ``sequence``, ``iota``, ``tabulate``, ``generate``,
-  ``for_each``, ``transform`` (in-place, unary, binary) — no cross-place
-  stage;
-- ``reduce`` / ``sum`` / ``min`` / ``max``: per-place CUB ``DeviceReduce``
-  plus a combine of the per-place partials;
-- ``inclusive_scan`` / ``exclusive_scan``: per-place CUB ``DeviceScan``, then
-  per-place prefixes folded back in place;
-- ``adjacent_difference``: local differences plus one boundary element per
-  shard;
-- ``count`` / ``count_if``: per-place CUB transform-reduce plus a sum of the
-  per-place counts;
-- ``histogram_even``: per-place CUB ``DeviceHistogram`` plus a per-bin sum of
-  the per-place histograms;
-- ``copy_if`` / ``filter`` / ``remove_if``: per-place CUB ``DeviceSelect``
-  compaction in place, then shard sizes and offsets are updated;
-- ``unique``: per-place CUB ``DeviceSelect::Unique`` in place, then
-  duplicates straddling shard boundaries are trimmed with an O(1) size
-  decrement per boundary.
+The algorithm family (``view`` = any ``sharded_view``; every algorithm has
+an explicit-environments form ``algo(view, envs, ...)`` and, for self-bound
+structures, the one-argument form ``algo(view, ...)``; a trailing per-call
+environment selects the contract):
 
-Algorithm temporaries are drawn from each shard's place through the group's
-per-place memory resources.
+- elementwise (asynchronous forms available): ``fill``, ``sequence``,
+  ``iota``, ``tabulate``, ``generate``, ``for_each``, ``transform``
+  (in place); ``zip_transform`` is the out-of-place spelling for any arity
+  (``out[i] = op(in1[i], in2[i], ...)``, in-place into an input supported,
+  co-partitioning checked);
+- ``reduce`` / ``sum`` / ``min`` / ``max``: per-shard CUB ``DeviceReduce``
+  plus a deterministic combine — the synchronous forms return the value;
+  ``reduce_into`` is the asynchronous form, writing the aggregate through a
+  device-writable output iterator on the call environment's stream
+  (capture-legal);
+- ``inclusive_scan`` / ``exclusive_scan`` / ``inclusive_sum`` /
+  ``exclusive_sum``: reduce-then-scan — per-shard totals, a host prefix over
+  the P totals, then per-shard seeded scans in place;
+- ``adjacent_difference``: per-shard differences with each predecessor's
+  boundary element staged through pinned host memory;
+- ``count`` / ``count_if``: per-shard CUB transform-reduce plus a host sum;
+- ``histogram_even``: per-shard CUB ``DeviceHistogram`` plus a per-bin sum;
+- ``copy_if`` / ``filter`` / ``remove_if`` / ``unique``: in-place per-shard
+  ``DeviceSelect`` over any ``owning_sharded`` structure, sizes committed
+  through one atomic ``commit_sizes`` (mutation capability probed at entry
+  by committing the current sizes — contiguous backing refuses there,
+  before anything changes).
 
-Concepts and the generic tier
------------------------------
+Algorithm temporaries are drawn from each shard's environment's memory
+resource; host staging for the synchronous combines comes from a memory
+resource on the per-call environment when present, and from a cached pinned
+arena otherwise.
+
+Concepts: what the algorithms are written against
+--------------------------------------------------
 
 ``<cuda/experimental/__sharded/concepts.cuh>`` names the requirements the
-algorithms actually consume, so they can be written against a *concept*
-rather than a concrete container. Three tiers, with three lifecycles:
+algorithms consume — the concepts ARE the API surface; the container is the
+reference model and ``place_group`` the reference provider. Three tiers,
+with three lifecycles:
 
 - **The view** (``sharded_view``): an indexed collection of shard
   descriptors — for each shard a contiguous element range (``data``,
@@ -160,9 +179,11 @@ synchronous ``reduce``:
    const auto env = cuda::std::execution::env{sp};
    sharded::transform(arr, op, env);
 
-The shipped container tier models the concepts as-is (see
-``test/sharded/concepts/models.cu``); the ``place_group``-parameterized
-algorithm signatures remain unchanged.
+The container models the concepts as-is (see
+``test/sharded/concepts/models.cu``), and independently-written structures
+model them with zero adapters (``test/sharded/concepts/foreign_models.cu``:
+a hand-rolled model over raw buffers and caller streams, and a
+``vector<span<T>>`` upgraded by ``make_sharded_view``).
 
 Size-mutating algorithms and the contiguous backing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,25 +208,29 @@ host data or synchronizes refuses cleanly instead of corrupting the capture.
 What captures
 ~~~~~~~~~~~~~
 
-The elementwise algorithms (``fill``, ``sequence``, ``iota``, ``tabulate``,
-``generate``, ``for_each``, ``transform``) called with ``blocking = false``
-are pure per-shard kernel launches on the shards' reference streams, so they
-capture with the containers' fork/join members — the documented way to
-compose sharded work with a caller stream or graph: begin capture on an
-origin stream, ``fork_from(origin)`` so every shard stream depends on it,
-record the pipeline, and ``join_into(origin)`` before ending the capture
-(the record/wait pairs become graph dependencies):
+The asynchronous forms — the elementwise family, ``zip_transform`` and
+``reduce_into`` called with a stream-bearing per-call environment — are pure
+per-shard kernel launches bracketed on the call environment's stream
+(fork/join record/wait pairs become graph dependencies), so a pipeline
+captures directly:
 
 .. code-block:: cpp
 
+   const auto ce = cuda::std::execution::env{
+     cuda::std::execution::prop{cuda::get_stream, stream_ref{origin}}};
+   auto envs = default_envs(out);
+
    cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal);
-   data.fork_from(origin);                          // fork
-
-   transform(group, data, out, op, /*blocking=*/false);
-   for_each(group, out, update, /*blocking=*/false);
-
-   out.join_into(origin);                           // join
+   zip_transform(out, envs, op, ce, data);
+   for_each(out, envs, update, ce);
+   reduce_into(out, envs, residual_slot, cuda::std::plus<>{}, 0.0, ce);
    cudaStreamEndCapture(origin, &graph);
+
+The last line is new capability relative to the container era: the
+asynchronous reduce keeps its cross-shard combine on-device (a deterministic
+fold kernel bitwise-identical to the synchronous host fold), so the whole
+iterate-and-reduce shape replays as one graph, with the aggregate landing in
+a device or pinned location per replay.
 
 The captured graph is placement-faithful: each shard's kernels are recorded
 from that place's stream, and the per-place SM confinement of those streams
@@ -228,14 +253,11 @@ work. The refusing set:
 - container allocation: ``allocate`` (all overloads) and
   ``allocate_contiguous``;
 - host transfers: ``copy_from_host``, ``copy_to_host``, ``copy_between``;
-- synchronization: ``sharded_array::sync`` and ``place_group::sync`` —
-  and therefore the elementwise algorithms when called
-  with ``blocking = true``, which throw at their final sync (their kernels
-  are already recorded; the capture is still valid and can be completed or
-  abandoned);
-- the synchronous algorithms, all of which stage per-place partials through
-  the host: ``reduce`` / ``sum`` / ``min`` / ``max``, ``inclusive_scan`` /
-  ``exclusive_scan``, ``count`` / ``count_if``, ``histogram_even``,
+- synchronization: ``sharded_array::sync`` and ``place_group::sync``;
+- the synchronous forms, all of which stage per-shard partials through the
+  host and refuse at ENTRY, before any work is enqueued: ``reduce`` /
+  ``sum`` / ``min`` / ``max``, the scans, ``count`` / ``count_if``,
+  ``histogram_even``, ``adjacent_difference``,
   ``copy_if`` / ``filter`` / ``remove_if``, ``unique``,
   ``adjacent_difference``.
 

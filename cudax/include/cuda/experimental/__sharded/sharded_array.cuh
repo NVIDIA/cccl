@@ -1210,39 +1210,6 @@ void check_not_capturing(const sharded_array<_Tp>& data, const char* what)
 // Compatibility checks
 // ============================================================================
 
-/**
- * @brief Validate that two sharded arrays have matching structure: same shard
- * count, same per-shard sizes, same per-shard data places.
- *
- * @throws std::invalid_argument on mismatch
- */
-template <typename _Tp, typename _Up>
-void check_compatible(const sharded_array<_Tp>& a, const sharded_array<_Up>& b, const char* context = "operation")
-{
-  if (a.num_shards() != b.num_shards())
-  {
-    _CCCL_THROW(::std::invalid_argument,
-                ::std::string(context) + ": shard count mismatch (" + ::std::to_string(a.num_shards()) + " vs "
-                  + ::std::to_string(b.num_shards()) + ")");
-  }
-
-  for (size_t g = 0; g < a.num_shards(); g++)
-  {
-    if (a.shard(g).size != b.shard(g).size)
-    {
-      _CCCL_THROW(::std::invalid_argument,
-                  ::std::string(context) + ": shard " + ::std::to_string(g) + " size mismatch ("
-                    + ::std::to_string(a.shard(g).size) + " vs " + ::std::to_string(b.shard(g).size) + ")");
-    }
-
-    if (a.shard(g).place != b.shard(g).place)
-    {
-      _CCCL_THROW(::std::invalid_argument,
-                  ::std::string(context) + ": shard " + ::std::to_string(g) + " data_place mismatch");
-    }
-  }
-}
-
 /// @brief Validate that an array has one shard per place of a group.
 /// @throws std::invalid_argument on mismatch
 template <typename _Tp>

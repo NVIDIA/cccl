@@ -41,24 +41,24 @@ void test_count(place_group& group)
 {
   const size_t n = 1000003;
   auto data      = sharded_array<long long>::allocate(group, n);
-  iota(group, data, 0LL); // 0 .. n-1
+  iota(data, 0LL); // 0 .. n-1
 
   // Multiples of 3 in [0, n): ceil(n / 3)
-  EXPECT(count_if(group, data, is_multiple_of_3{}) == (n + 2) / 3);
+  EXPECT(count_if(data, is_multiple_of_3{}) == (n + 2) / 3);
 
   // count == count_if with equality
-  EXPECT(count(group, data, 42LL) == 1UL);
-  EXPECT(count(group, data, static_cast<long long>(n)) == 0UL); // absent value
-  EXPECT(count(group, data, -1LL) == 0UL);
+  EXPECT(count(data, 42LL) == 1UL);
+  EXPECT(count(data, static_cast<long long>(n)) == 0UL); // absent value
+  EXPECT(count(data, -1LL) == 0UL);
 
-  fill(group, data, 7LL);
-  EXPECT(count(group, data, 7LL) == n);
-  EXPECT(count(group, data, 8LL) == 0UL);
+  fill(data, 7LL);
+  EXPECT(count(data, 7LL) == n);
+  EXPECT(count(data, 8LL) == 0UL);
 
   // Empty array
   sharded_array<long long> empty;
-  EXPECT(count_if(group, empty, is_multiple_of_3{}) == 0UL);
-  EXPECT(count(group, empty, 0LL) == 0UL);
+  EXPECT(count_if(empty, is_multiple_of_3{}) == 0UL);
+  EXPECT(count(empty, 0LL) == 0UL);
 }
 
 void test_count_on_contiguous(place_group& group)
@@ -66,24 +66,24 @@ void test_count_on_contiguous(place_group& group)
   // Read-only algorithms stay available on contiguous arrays
   const size_t n = (1 << 20) + 37;
   auto data      = sharded_array<long long>::allocate_contiguous(group, n);
-  iota(group, data, 1LL); // 1 .. n
+  iota(data, 1LL); // 1 .. n
 
-  EXPECT(count(group, data, 5LL) == 1UL);
+  EXPECT(count(data, 5LL) == 1UL);
   // Multiples of 3 in [1, n]: floor(n / 3)
-  EXPECT(count_if(group, data, is_multiple_of_3{}) == n / 3);
+  EXPECT(count_if(data, is_multiple_of_3{}) == n / 3);
 }
 
 void test_histogram(place_group& group)
 {
   const size_t n = 262147;
   auto data      = sharded_array<long long>::allocate(group, n);
-  iota(group, data, 0LL); // 0 .. n-1
+  iota(data, 0LL); // 0 .. n-1
 
   const int num_bins          = 8;
   const long long lower_level = 0;
   const long long upper_level = 262144; // bin width 32768; 3 samples fall outside
 
-  const auto counts = histogram_even(group, data, num_bins, lower_level, upper_level);
+  const auto counts = histogram_even(data, num_bins, lower_level, upper_level);
   EXPECT(counts.size() == static_cast<size_t>(num_bins));
 
   // Host reference
@@ -110,7 +110,7 @@ void test_histogram(place_group& group)
 
   // Empty array: all-zero histogram
   sharded_array<long long> empty;
-  const auto zero = histogram_even(group, empty, 4, 0LL, 100LL);
+  const auto zero = histogram_even(empty, 4, 0LL, 100LL);
   EXPECT(zero.size() == 4UL);
   for (const auto c : zero)
   {
@@ -121,7 +121,7 @@ void test_histogram(place_group& group)
   bool threw = false;
   try
   {
-    (void) histogram_even(group, data, 0, 0LL, 100LL);
+    (void) histogram_even(data, 0, 0LL, 100LL);
   }
   catch (const ::std::invalid_argument&)
   {
@@ -132,7 +132,7 @@ void test_histogram(place_group& group)
   threw = false;
   try
   {
-    (void) histogram_even(group, data, 4, 100LL, 100LL);
+    (void) histogram_even(data, 4, 100LL, 100LL);
   }
   catch (const ::std::invalid_argument&)
   {

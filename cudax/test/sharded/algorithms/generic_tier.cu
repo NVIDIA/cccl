@@ -74,13 +74,13 @@ int main()
   const size_t n = 1000001;
   auto a         = sharded_array<long long>::allocate(group, n);
   auto b         = sharded_array<long long>::allocate(group, n);
-  iota(group, a, 1LL);
-  iota(group, b, 1LL);
+  iota(a, 1LL);
+  iota(b, 1LL);
   const long long tri = (long long) n * ((long long) n + 1) / 2;
 
   // Container-tier reference
-  transform(group, a, times2{}); // a = 2..2n
-  EXPECT(sum(group, a) == 2 * tri);
+  transform(a, times2{}); // a = 2..2n
+  EXPECT(sum(a) == 2 * tri);
 
   // Generic tier, self-bound synchronous form
   transform(b, times2{}); // b = 2..2n
@@ -188,7 +188,7 @@ int main()
 
   // Restore b for the arms below (they expect b == 8..8n trajectory continuity
   // is not required; recompute expectations locally instead)
-  iota(group, b, 1LL);
+  iota(b, 1LL);
   transform(b, times2{});
   transform(b, times2{});
   transform(b, times2{}); // b = 8..8n

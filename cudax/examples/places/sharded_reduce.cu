@@ -44,14 +44,14 @@ int main()
   auto data           = sharded_array<long long>::allocate(group, n);
 
   // data[i] = i + 1 (global index), computed by each place on its shard
-  iota(group, data, 1LL);
+  iota(data, 1LL);
 
   // Per-place CUB reduction + combine across places
-  const long long total    = sum(group, data);
+  const long long total    = sum(data);
   const long long expected = static_cast<long long>(n) * (static_cast<long long>(n) + 1) / 2;
 
   printf("sum(1..%zu) = %lld (expected %lld)\n", n, total, expected);
-  printf("min = %lld, max = %lld\n", min(group, data), max(group, data));
+  printf("min = %lld, max = %lld\n", min(data), max(data));
 
   if (total != expected)
   {

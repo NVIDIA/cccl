@@ -79,19 +79,23 @@ void test_pipeline_capture_and_replay(place_group& group)
   auto in        = sharded_array<float>::allocate(group, n, /*color*/ 0);
   auto out       = sharded_array<float>::allocate(group, n, /*color*/ 0);
 
-  fill(group, in, 1.0f); // eager warm-up outside capture (modules, pools)
+  fill(in, 1.0f); // eager warm-up outside capture (modules, pools)
+  auto envs = default_envs(out);
 
   cudaStream_t origin;
   cuda_safe_call(cudaStreamCreate(&origin));
 
   // Capture the pipeline: fork, then transform(in -> out, x2),
   // transform(out += 0.5 in place), for_each(out += 1), then join
+  const auto origin_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
+  const auto ce          = ::cuda::std::execution::env{origin_prop};
+
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
-  in.fork_from(origin);
-  transform(group, in, out, scale_op{}, /*blocking=*/false);
-  transform(group, out, plus_half_op{}, /*blocking=*/false);
-  for_each(group, out, bump_op{}, /*blocking=*/false);
-  out.join_into(origin);
+  // Asynchronous forms bracket themselves on the origin (the call env's
+  // stream): fork/join become graph dependencies.
+  zip_transform(out, envs, scale_op{}, ce, in);
+  transform(out, envs, plus_half_op{}, ce);
+  for_each(out, envs, bump_op{}, ce);
 
   cudaGraph_t graph = nullptr;
   cuda_safe_call(cudaStreamEndCapture(origin, &graph));
@@ -123,7 +127,7 @@ void test_pipeline_capture_and_replay(place_group& group)
   }
 
   // Clobber the output and replay: the graph recomputes it
-  fill(group, out, -1.0f);
+  fill(out, -1.0f);
   cuda_safe_call(cudaGraphLaunch(exec, origin));
   cuda_safe_call(cudaStreamSynchronize(origin));
   out.copy_to_host(host.data());
@@ -151,17 +155,17 @@ void test_cross_color_dependency(place_group& group)
   auto in        = sharded_array<float>::allocate(group, n, /*color*/ 0);
   auto out       = sharded_array<float>::allocate(group, n, /*color*/ 1);
 
-  fill(group, in, 4.0f);
+  fill(in, 4.0f);
 
   cudaStream_t origin;
   cuda_safe_call(cudaStreamCreate(&origin));
 
+  const auto origin_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
+  const auto ce          = ::cuda::std::execution::env{origin_prop};
+  auto envs_out          = default_envs(out); // color-1 streams
+
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
-  in.fork_from(origin);
-  out.fork_from(origin);
-  transform(group, in, out, scale_op{}, /*blocking=*/false); // records in->out event edges
-  out.join_into(origin);
-  in.join_into(origin);
+  zip_transform(out, envs_out, scale_op{}, ce, in); // cross-color capture edges via the ce bracket
 
   cudaGraph_t graph = nullptr;
   cuda_safe_call(cudaStreamEndCapture(origin, &graph));

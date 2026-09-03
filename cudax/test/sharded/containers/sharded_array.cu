@@ -240,7 +240,9 @@ void test_adoption_and_slice()
   }
 }
 
-void test_check_compatible_throws()
+// Co-partition validation now lives in the concept tier and is exercised
+// through the generic algorithms (was: the container-tier check_compatible).
+void test_copartition_refusal()
 {
   auto a = sharded_array<long long>::allocate({{100, data_place::device(0), exec_place::device(0), nullptr}});
   auto b = sharded_array<long long>::allocate(
@@ -248,29 +250,34 @@ void test_check_compatible_throws()
      {50, data_place::device(0), exec_place::device(0), nullptr}});
   auto c = sharded_array<long long>::allocate({{60, data_place::device(0), exec_place::device(0), nullptr}});
 
+  const auto identity = [] __device__(long long x) {
+    return x;
+  };
+
   bool threw = false;
   try
   {
-    check_compatible(a, b, "test");
+    zip_transform(a, identity, b);
   }
   catch (const ::std::invalid_argument&)
   {
     threw = true;
   }
-  EXPECT(threw); // shard count mismatch
+  EXPECT(threw); // shard count mismatch refused before any launch
 
   threw = false;
   try
   {
-    check_compatible(a, c, "test");
+    zip_transform(a, identity, c);
   }
   catch (const ::std::invalid_argument&)
   {
     threw = true;
   }
-  EXPECT(threw); // shard size mismatch
+  EXPECT(threw); // shard region mismatch refused before any launch
 
-  check_compatible(a, a, "test"); // must not throw
+  zip_transform(a, identity, a); // co-partitioned with itself: must not throw
+  cuda_safe_call(cudaDeviceSynchronize());
 }
 
 void test_uniform_and_host()
@@ -337,7 +344,7 @@ int main()
   test_allocate_like();
   test_copy_between_resharding();
   test_adoption_and_slice();
-  test_check_compatible_throws();
+  test_copartition_refusal();
   test_uniform_and_host();
   test_empty_shard_allocation();
 

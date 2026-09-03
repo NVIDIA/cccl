@@ -41,7 +41,7 @@ int main()
   auto group     = place_group::by_locality_domains();
   const size_t n = 500000;
   auto a         = sharded_array<double>::allocate(group, n);
-  fill(group, a, 1.0);
+  fill(a, 1.0);
   auto envs = default_envs(a);
 
   cudaStream_t cs;
@@ -79,7 +79,7 @@ int main()
   EXPECT(*h_out == 42.0);
 
   // Capture: transform + reduce_into in ONE replayable graph
-  fill(group, a, 1.0);
+  fill(a, 1.0);
   cuda_safe_call(cudaStreamBeginCapture(cs, cudaStreamCaptureModeThreadLocal));
   transform(a, envs, plus2{}, ce); // a += 2
   reduce_into(a, envs, h_out, ::cuda::std::plus<double>{}, 0.0, ce);

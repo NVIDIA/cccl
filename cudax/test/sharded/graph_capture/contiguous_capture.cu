@@ -55,7 +55,7 @@ void test_contiguous_pipeline_capture(place_group& group)
   float* base = data.contiguous_data();
   EXPECT(base != nullptr);
 
-  fill(group, data, 1.0f); // warm-up outside capture
+  fill(data, 1.0f); // warm-up outside capture
 
   cudaStream_t origin;
   cuda_safe_call(cudaStreamCreate(&origin));
@@ -64,7 +64,8 @@ void test_contiguous_pipeline_capture(place_group& group)
   // whole-array kernel on the origin stream through the base pointer
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
   data.fork_from(origin);
-  transform(group, data, triple_op{}, /*blocking=*/false);
+  const auto cprop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
+  transform(data, default_envs(data), triple_op{}, ::cuda::std::execution::env{cprop});
   data.join_into(origin);
   plus_one_all<<<static_cast<unsigned>((n + 255) / 256), 256, 0, origin>>>(base, n);
   cuda_safe_call(cudaGetLastError());
@@ -79,7 +80,7 @@ void test_contiguous_pipeline_capture(place_group& group)
   for (int round = 0; round < 3; round++)
   {
     const float v = static_cast<float>(round + 1);
-    fill(group, data, v); // outside the graph
+    fill(data, v); // outside the graph
     cuda_safe_call(cudaGraphLaunch(exec, origin));
     cuda_safe_call(cudaStreamSynchronize(origin));
 

@@ -45,9 +45,9 @@ int main()
   auto reflected = sharded_array<double>::allocate(group, n);
   auto current   = sharded_array<double>::allocate(group, n);
   auto initial   = sharded_array<double>::allocate(group, n);
-  fill(group, reflected, 8.0);
-  fill(group, current, 4.0);
-  fill(group, initial, 2.0);
+  fill(reflected, 8.0);
+  fill(current, 4.0);
+  fill(initial, 2.0);
 
   // out == current (in-place into one of the inputs, as the solver does)
   zip_transform(current, pdhg_like{}, reflected, current, initial);
