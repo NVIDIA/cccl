@@ -205,8 +205,8 @@ runs:
           echo "::endgroup::"
         done
 
-    # The job container has access to the host Docker daemon. Remove its registry
-    # credentials before running repository-controlled code.
+    # Remove the host Docker CLI's stored GHCR login before repository-controlled
+    # code receives access to the Docker daemon.
     - name: Log out of GHCR
       if: ${{ always() }}
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -216,6 +216,8 @@ runs:
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        # Used by CI artifact helpers to fetch workflow metadata and producer artifacts.
+        GH_TOKEN: ${{ github.token }}
         JOB_IMAGE: ${{ inputs.image }}
         IMAGE_DEPENDENCIES: ${{ inputs.image_dependencies }}
         ENABLE_GPU: ${{ inputs.gpu_count != '0' && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
@@ -281,6 +283,7 @@ runs:
           --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \
           --env "DOCKER_HOST=npipe:////./pipe/docker_engine" \
           --env "HOST_WORKSPACE=${{steps.paths.outputs.HOST_REPO}}" \
+          --env "GH_TOKEN=$GH_TOKEN" \
           --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
           --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \

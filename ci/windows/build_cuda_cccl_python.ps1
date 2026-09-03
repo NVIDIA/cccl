@@ -204,7 +204,7 @@ function Invoke-Cuda13NestedBuild {
 
     Write-Host "Launching nested Docker for CUDA 13 build using image: $Cuda13Image"
     $targetFile = Join-Path $ContainerWorkspace 'ci\windows\build_cuda_cccl_python.ps1'
-    # The workflow pre-pulls this image so registry credentials stay on the host.
+    # The nested container uses the pre-pulled host cache without registry credentials.
     $dockerArgs = @(
         'run', '--rm', '-i', '--pull', 'never',
         '--cpu-count', "$cpuCount",
