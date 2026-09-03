@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -59,10 +59,10 @@ inline constexpr bool HasComma<L, R, cuda::std::void_t<decltype(cuda::std::declv
 
 // Comma operator is deleted for constant_wrapper operands
 static_assert(!HasComma<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 static_assert(!HasComma<cuda::std::__constant_wrapper<WithOps{6}>, cuda::std::__constant_wrapper<WithOps{3}>>);
 static_assert(!HasComma<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // Mixed operands - one constant_wrapper, one runtime type (uses built-in operator)
 static_assert(HasComma<cuda::std::__constant_wrapper<42>, int>);

@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // todo(dabayer): Make this work with MSVC.
 // UNSUPPORTED: msvc
@@ -142,7 +142,7 @@ static_assert(HasSubscript<cuda::std::__constant_wrapper<arr>, cuda::std::__cons
 static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<arr>, int>);
 static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<arr>, cuda::std::__constant_wrapper<1>>);
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 static_assert(HasSubscript<cuda::std::__constant_wrapper<NothrowSubscript{}>, int>);
 static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<NothrowSubscript{}>, int>);
 
@@ -150,7 +150,7 @@ static_assert(HasSubscript<cuda::std::__constant_wrapper<ThrowingSubscript{}>, i
 static_assert(!HasNothrowSubscript<cuda::std::__constant_wrapper<ThrowingSubscript{}>, int>);
 static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<ThrowingSubscript{}>, cuda::std::__constant_wrapper<1>>,
               "the subscript expression is still nothrow because the constexpr path is taken");
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 template <class T>
 struct MustBeInt
@@ -190,7 +190,7 @@ TEST_FUNC constexpr bool test()
     static_assert(result == 2);
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 #  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   {
@@ -269,7 +269,7 @@ TEST_FUNC constexpr bool test()
     assert(result == 42);
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // integral_constant
@@ -279,13 +279,13 @@ TEST_FUNC constexpr bool test()
     static_assert(result == 2);
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
     using T = cuda::std::__constant_wrapper<Poison{}>;
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<MustBeInt<int>{}>> decltype(auto) result =
       TEST_SUBSCRIPT(T, cuda::std::__cw<5>);
   }
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }

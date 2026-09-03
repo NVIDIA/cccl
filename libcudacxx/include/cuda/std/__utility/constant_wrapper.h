@@ -20,28 +20,25 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/auto_cast.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__functional/invoke.h>
-#  include <cuda/std/__type_traits/fold.h>
-#  include <cuda/std/__type_traits/is_constructible.h>
-#  include <cuda/std/__type_traits/remove_const.h>
-#  include <cuda/std/__type_traits/remove_cvref.h>
-#  include <cuda/std/__type_traits/void_t.h>
-#  include <cuda/std/__utility/auto_cast.h>
-#  include <cuda/std/__utility/declval.h>
-#  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/integer_sequence.h>
-
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // operator may not be a static member function
-// a host member cannot be directly read in a __device__/__global__ function
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342, 20094)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(342)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
@@ -259,7 +256,7 @@ struct __cw_operators
   }
 
   // comparisons
-#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
                    _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
@@ -269,7 +266,7 @@ struct __cw_operators
   {
     return {};
   }
-#  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _Lp, class _Rp)
   _CCCL_REQUIRES((__is_cuda_std_constant_wrapper_v<_Lp> || __is_cuda_std_constant_wrapper_v<_Rp>)
                    _CCCL_AND __is_constexpr_param_v<_Lp> _CCCL_AND __is_constexpr_param_v<_Rp>)
@@ -352,29 +349,29 @@ inline constexpr bool __cw_is_constexpr_callable_v<
 
 template <class _Vp, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_indexable_v = false;
-#  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 template <class _Vp, class... _Args>
 inline constexpr bool
   __cw_is_constexpr_indexable_v<_Vp,
                                 void_t<__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Vp::value[_Args::value...])>>,
                                 _Args...> = true;
-#  else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
+#else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
 template <class _Vp, class _Arg>
 inline constexpr bool
   __cw_is_constexpr_indexable_v<_Vp, void_t<__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Vp::value[_Arg::value])>>, _Arg> =
     true;
-#  endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
+#endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
 template <class _Vp, class _Void, class... _Args>
 inline constexpr bool __cw_is_indexable_v = false;
-#  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 template <class _Vp, class... _Args>
 inline constexpr bool
   __cw_is_indexable_v<_Vp, void_t<decltype(_Vp::value[::cuda::std::declval<_Args>()...])>, _Args...> = true;
-#  else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
+#else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
 template <class _Vp, class _Arg>
 inline constexpr bool __cw_is_indexable_v<_Vp, void_t<decltype(_Vp::value[::cuda::std::declval<_Arg>()])>, _Arg> = true;
-#  endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
+#endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
 template <auto _Xp, class _Tp>
 struct __constant_wrapper : __cw_operators
@@ -394,7 +391,12 @@ struct __constant_wrapper : __cw_operators
 
   _CCCL_HOST_DEVICE_API constexpr operator decltype(value)() const noexcept
   {
-    return value;
+    return (_Xp);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr decltype((_Xp)) __get() noexcept
+  {
+    return (_Xp);
   }
 
   _CCCL_TEMPLATE(class... _Args)
@@ -402,7 +404,7 @@ struct __constant_wrapper : __cw_operators
                    __cw_is_constexpr_callable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>)
   _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Args&&...) noexcept
   {
-    return __constant_wrapper<_LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(value, remove_cvref_t<_Args>::value...))>{};
+    return __constant_wrapper<_LIBCUDACXX_AUTO_CAST(::cuda::std::invoke(__get(), remove_cvref_t<_Args>::value...))>{};
   }
 
   _CCCL_TEMPLATE(class... _Args)
@@ -412,21 +414,21 @@ struct __constant_wrapper : __cw_operators
   _CCCL_HOST_DEVICE_API constexpr decltype(auto)
   _CCCL_STATIC_CALL_OPERATOR(_Args&&... __args) noexcept(::cuda::std::is_nothrow_invocable_v<const _Tp&, _Args...>)
   {
-    return ::cuda::std::invoke(value, ::cuda::std::forward<_Args>(__args)...);
+    return ::cuda::std::invoke(__get(), ::cuda::std::forward<_Args>(__args)...);
   }
 
-#  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>)
-#    if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
+#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API constexpr static __constant_wrapper<
     _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Args>::value...])> operator[](_Args&&...) noexcept
-#    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
+#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<
     _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Args>::value...])> operator[](_Args&&...) const noexcept
-#    endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
+#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
   {
     return {};
   }
@@ -434,27 +436,27 @@ struct __constant_wrapper : __cw_operators
   _CCCL_REQUIRES((!(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...>
                     && __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>) )
                    _CCCL_AND __cw_is_indexable_v<__constant_wrapper, void, _Args...>)
-#    if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
+#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
   _CCCL_HOST_DEVICE_API static constexpr decltype(auto) operator[](_Args&&... __args)
-#    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
+#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
   _CCCL_HOST_DEVICE_API constexpr decltype(auto) operator[](_Args&&... __args) const
-#    endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
+#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
     noexcept(noexcept(value[::cuda::std::forward<_Args>(__args)...]))
   {
-    return value[::cuda::std::forward<_Args>(__args)...];
+    return __get()[::cuda::std::forward<_Args>(__args)...];
   }
-#  else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
+#else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_constexpr_param_v<remove_cvref_t<_Arg>> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Arg>>)
-#    if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
+#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
   [[nodiscard]]
   _CCCL_HOST_DEVICE_API constexpr static __constant_wrapper<_LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Arg>::value])>
   operator[](_Arg&&) noexcept
-#    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
+#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<
     _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Arg>::value])> operator[](_Arg&&) const noexcept
-#    endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
+#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
   {
     return {};
   }
@@ -462,16 +464,16 @@ struct __constant_wrapper : __cw_operators
   _CCCL_REQUIRES((!(__is_constexpr_param_v<remove_cvref_t<_Arg>>
                     && __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Arg>>) )
                    _CCCL_AND __cw_is_indexable_v<__constant_wrapper, void, _Arg>)
-#    if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
+#  if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
   _CCCL_HOST_DEVICE_API static constexpr decltype(auto) operator[](_Arg&& __arg)
-#    else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
+#  else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
   _CCCL_HOST_DEVICE_API constexpr decltype(auto) operator[](_Arg&& __arg) const
-#    endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
+#  endif // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
     noexcept(noexcept(value[::cuda::std::forward<_Arg>(__arg)]))
   {
-    return value[::cuda::std::forward<_Arg>(__arg)];
+    return __get()[::cuda::std::forward<_Arg>(__arg)];
   }
-#  endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
+#endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
   _CCCL_TEMPLATE(class _Rp)
   _CCCL_REQUIRES(__is_constexpr_param_v<_Rp>)
@@ -553,8 +555,6 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___UTILITY_CONSTANT_WRAPPER_H

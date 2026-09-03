@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -43,8 +43,6 @@
 
 #include "helpers.h"
 #include "test_macros.h"
-
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
 
 // nvcc 12.0 generates weird input file for host compiler.
 #if TEST_CUDA_COMPILER(NVCC, ==, 12, 0)
@@ -251,7 +249,7 @@ static_assert(HasNoexceptSpaceship<cuda::std::__constant_wrapper<6>, cuda::std::
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // NoOps
 static_assert(!HasEqual<cuda::std::__constant_wrapper<NoOps{}>, cuda::std::__constant_wrapper<NoOps{}>>);
@@ -297,7 +295,7 @@ static_assert(!HasNoexceptGreater<cuda::std::__constant_wrapper<OpsReturnNonStru
 static_assert(!HasNoexceptGreaterEqual<cuda::std::__constant_wrapper<OpsReturnNonStructural{6}>, cuda::std::__constant_wrapper<OpsReturnNonStructural{3}>>);
 // clang-format on
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 TEST_FUNC constexpr bool test()
 {
@@ -402,7 +400,7 @@ TEST_FUNC constexpr bool test()
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // WithOps comparisons - returns constant_wrapper<bool_value>
@@ -491,7 +489,7 @@ TEST_FUNC constexpr bool test()
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // Mix with runtime param: these operators are not used (built-in operators)

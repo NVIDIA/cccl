@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // constant_wrapper
 
@@ -39,8 +39,6 @@
 
 #include "helpers.h"
 #include "test_macros.h"
-
-TEST_NV_DIAG_SUPPRESS(20094) // a host member cannot be directly read in a __device__/__global__ function
 
 // gcc < 14 warns about comparing &value == &value (which is always true).
 #if TEST_COMPILER(GCC, <, 14)
@@ -178,7 +176,7 @@ inline constexpr bool HasNoexceptDeref = false;
 template <class T>
 inline constexpr bool HasNoexceptDeref<T, cuda::std::enable_if_t<noexcept(*cuda::std::declval<T&>())>> = true;
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 static_assert(HasPlus<cuda::std::__constant_wrapper<WithOps{42}>>);
 static_assert(HasMinus<cuda::std::__constant_wrapper<WithOps{42}>>);
@@ -194,7 +192,7 @@ static_assert(HasNoexceptNot<cuda::std::__constant_wrapper<WithOps{42}>>);
 static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<WithOps{42}>>);
 static_assert(HasNoexceptDeref<cuda::std::__constant_wrapper<WithOps{42}>>);
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // Old msvc doesn't evaluate noexcept properly.
 #if !TEST_COMPILER(MSVC, <, 19, 30)
@@ -206,7 +204,7 @@ static_assert(HasNoexceptBitAnd<cuda::std::__constant_wrapper<42>>);
 #endif // !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(!HasDeref<cuda::std::__constant_wrapper<42>>);
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 static_assert(!HasPlus<cuda::std::__constant_wrapper<NoOps{}>>);
 static_assert(!HasMinus<cuda::std::__constant_wrapper<NoOps{}>>);
@@ -234,7 +232,7 @@ static_assert(!HasNoexceptBitAnd<cuda::std::__constant_wrapper<OpsReturnNonStruc
 static_assert(!HasNoexceptDeref<cuda::std::__constant_wrapper<OpsReturnNonStructural{42}>>);
 #  endif // !_CCCL_COMPILER(MSVC)
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 TEST_FUNC constexpr bool test()
 {
@@ -266,32 +264,32 @@ TEST_FUNC constexpr bool test()
 #endif // !_CCCL_COMPILER(MSVC)
   }
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // WithOps
     cuda::std::__constant_wrapper<WithOps{42}> cwWithOps;
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{42}>> decltype(auto) result = +cwWithOps;
-    static_assert(result.value.value == 42);
+    static_assert(result.__get().value == 42);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{-42}>> decltype(auto) result2 =
       -cwWithOps;
-    static_assert(result2.value.value == -42);
+    static_assert(result2.__get().value == -42);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{~42}>> decltype(auto) result3 =
       ~cwWithOps;
-    static_assert(result3.value.value == ~42);
+    static_assert(result3.__get().value == ~42);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{!42}>> decltype(auto) result4 =
       !cwWithOps;
-    static_assert(result4.value.value == !42);
+    static_assert(result4.__get().value == !42);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{84}>> decltype(auto) result5 = &cwWithOps;
-    static_assert(result5.value.value == 84);
+    static_assert(result5.__get().value == 84);
 
     [[maybe_unused]] cuda::std::same_as<cuda::std::__constant_wrapper<WithOps{0}>> decltype(auto) result6 = *cwWithOps;
-    static_assert(result6.value.value == 0);
+    static_assert(result6.__get().value == 0);
   }
 
   {
@@ -321,7 +319,7 @@ TEST_FUNC constexpr bool test()
 #  endif // !_CCCL_COMPILER(MSVC)
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }
