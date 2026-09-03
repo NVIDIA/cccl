@@ -195,15 +195,13 @@ struct DeviceHistogramKernelSource
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
-      // The unary plus promotes plain char to int, which cuda::std::cmp_greater requires
-      if (::cuda::std::cmp_greater(num_bins, +::cuda::std::numeric_limits<CommonT>::max()))
-      {
-        return true;
-      }
-      const auto upper_level_cast = static_cast<IntArithmeticT>(upper_level[channel]);
-      const auto lower_level_cast = static_cast<IntArithmeticT>(lower_level[channel]);
-      const auto range            = static_cast<IntArithmeticT>(upper_level_cast - lower_level_cast);
-      return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+      using ArrayLevelT    = typename UpperLevelArrayT::value_type;
+      using ULevelT        = ::cuda::std::make_unsigned_t<ArrayLevelT>;
+
+      const ULevelT range =
+        static_cast<ULevelT>(static_cast<ULevelT>(upper_level[channel]) - static_cast<ULevelT>(lower_level[channel]));
+      return static_cast<IntArithmeticT>(range)
+           > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
     else
     {
