@@ -109,6 +109,14 @@ environment selects the contract):
   the P totals, then per-shard seeded scans in place;
 - ``adjacent_difference``: per-shard differences with each predecessor's
   boundary element staged through pinned host memory;
+- ``sort``: global in-place sort, each shard keeping its original
+  boundaries (a contiguous array reads as one globally sorted array
+  afterwards). The shared-address-space engine: local per-shard sorts,
+  exact splitters by multi-sequence selection, and a fused gather-merge
+  loading across shard boundaries through the one address space the places
+  share — it requires every shard on device-backed places of one device
+  and refuses otherwise (sorting across separate address spaces is a
+  distinct engine, arriving separately);
 - ``segmented_reduce``: per-segment aggregates via per-shard CUB
   ``DeviceSegmentedReduce`` — the segments description is two offset views
   co-partitioned with the output (for CSR-shaped data, shifted aliases of

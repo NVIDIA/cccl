@@ -39,6 +39,7 @@
 #include <cuda/experimental/__sharded/scan.cuh>
 #include <cuda/experimental/__sharded/segmented_reduce.cuh>
 #include <cuda/experimental/__sharded/shard.cuh>
+#include <cuda/experimental/__sharded/sort.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 #include <cuda/experimental/__sharded/stream_scope.cuh>
 #include <cuda/experimental/__sharded/transform.cuh>
