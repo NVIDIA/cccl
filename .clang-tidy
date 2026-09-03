@@ -109,6 +109,7 @@ Checks:
   # single target branch, so it reports parameters that are used only inside NV_IF_TARGET,
   # NV_IF_ELSE_TARGET, or inline asm operands as unused. The compiler sees the branch it
   # actually compiles and does not.
+  - '-misc-unused-parameters'
   - '-modernize-macro-to-enum'
   - '-cppcoreguidelines-macro-to-enum'
   - '-misc-no-recursion'
