@@ -51,18 +51,16 @@ namespace reserved
 template <typename _Tp, typename _BinaryOp>
 __global__ void adjacent_difference_kernel(const _Tp* input, _Tp* output, size_t n, const _Tp* prev_last, _BinaryOp op)
 {
-  const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (idx >= n)
-  {
-    return;
-  }
+  // Promote before multiplying: blockIdx.x * blockDim.x overflows unsigned
+  // int for grids past 2^32 threads. Callers never launch over empty shards,
+  // so thread 0 writing output[0] unconditionally is safe.
+  const size_t idx = size_t{blockIdx.x} * blockDim.x + threadIdx.x;
 
   if (idx == 0)
   {
     output[0] = prev_last ? op(input[0], *prev_last) : input[0];
   }
-  else
+  else if (idx < n)
   {
     output[idx] = op(input[idx], input[idx - 1]);
   }
