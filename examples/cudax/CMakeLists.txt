@@ -73,3 +73,10 @@ target_link_libraries(vector_add PUBLIC cudax_samples_interface)
 include(CTest)
 enable_testing()
 add_test(NAME vector_add COMMAND vector_add)
+
+# The fp samples demonstrate the extended and reduced precision floating-point types
+foreach (fp_sample IN ITEMS fpmp fpemu fptool_stat fptool_custom)
+  add_executable(${fp_sample} fp/${fp_sample}.cu)
+  target_link_libraries(${fp_sample} PUBLIC cudax_samples_interface)
+  add_test(NAME ${fp_sample} COMMAND ${fp_sample})
+endforeach()
