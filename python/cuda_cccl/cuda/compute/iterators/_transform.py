@@ -105,9 +105,9 @@ class TransformIterator(IteratorBase):
         # _make_output_deref_op) has a pointer to hand the op as its `state`
         # argument.
         op_state = self._transform_op.get_state()
+        underlying_state = bytes(memoryview(self._underlying.state))
         self._op_state_offset: int | None
         if op_state:
-            underlying_state = bytes(memoryview(self._underlying.state))
             state_bytes, state_alignment, offsets = compose_state_blobs(
                 [
                     (underlying_state, self._underlying.state_alignment),
@@ -116,7 +116,7 @@ class TransformIterator(IteratorBase):
             )
             self._op_state_offset = offsets[1]
         else:
-            state_bytes = bytes(self._underlying.state)
+            state_bytes = underlying_state
             state_alignment = self._underlying.state_alignment
             self._op_state_offset = None
 
@@ -144,6 +144,25 @@ class TransformIterator(IteratorBase):
                 output_type,
             )
         return self._compiled_op[key]
+
+    def _op_decl_and_call(
+        self, compiled_op: Op, input_expr: str, output_expr: str
+    ) -> tuple[str, str]:
+        """Return (extern declaration, call statement) for `compiled_op`.
+
+        Handles both the stateless 2-argument `(input, output)` and stateful
+        3-argument `(state, input, output)` calling conventions -- shared by
+        _make_input_deref_op and _make_output_deref_op so the two prototypes
+        only need to agree in one place.
+        """
+        if compiled_op.operator_type == OpKind.STATEFUL:
+            decl = f'extern "C" __device__ void {compiled_op.name}(void* state, void* input, void* output);'
+            state_expr = f"static_cast<char*>(state) + {self._op_state_offset}"
+            call = f"{compiled_op.name}({state_expr}, {input_expr}, {output_expr});"
+        else:
+            decl = f'extern "C" __device__ void {compiled_op.name}(void* input, void* output);'
+            call = f"{compiled_op.name}({input_expr}, {output_expr});"
+        return decl, call
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that delegates to underlying iterator."""
@@ -182,12 +201,7 @@ class TransformIterator(IteratorBase):
         symbol = self._make_input_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
-        if compiled_op.operator_type == OpKind.STATEFUL:
-            op_decl = f'extern "C" __device__ void {compiled_op.name}(void* state, void* input, void* output);'
-            op_call = f"{compiled_op.name}(static_cast<char*>(state) + {self._op_state_offset}, &temp, result);"
-        else:
-            op_decl = f'extern "C" __device__ void {compiled_op.name}(void* input, void* output);'
-            op_call = f"{compiled_op.name}(&temp, result);"
+        op_decl, op_call = self._op_decl_and_call(compiled_op, "&temp", "result")
 
         source = dedent(f"""
             {CUDA_PREAMBLE}
@@ -229,12 +243,7 @@ class TransformIterator(IteratorBase):
         symbol = self._make_output_deref_symbol()
         temp_decl = make_variable_declaration(self._underlying.value_type, "temp")
 
-        if compiled_op.operator_type == OpKind.STATEFUL:
-            op_decl = f'extern "C" __device__ void {compiled_op.name}(void* state, void* input, void* output);'
-            op_call = f"{compiled_op.name}(static_cast<char*>(state) + {self._op_state_offset}, value, &temp);"
-        else:
-            op_decl = f'extern "C" __device__ void {compiled_op.name}(void* input, void* output);'
-            op_call = f"{compiled_op.name}(value, &temp);"
+        op_decl, op_call = self._op_decl_and_call(compiled_op, "value", "&temp")
 
         source = dedent(f"""
             {CUDA_PREAMBLE}
