@@ -62,7 +62,7 @@ _COOP_SPECIALIZATION_COLLECTOR: ContextVar[
     list[tuple[object, int | None, int | tuple[int, ...] | None]] | None
 ] = ContextVar("cuda_coop_numba_mlir_specialization_collector", default=None)
 _DEVICE_LTOIR_CACHE: dict[
-    tuple[object, str, tuple[tuple[str, object], ...]], bytes
+    tuple[object, tuple[int, int], str, tuple[tuple[str, object], ...]], bytes
 ] = {}
 
 
@@ -178,6 +178,42 @@ def _python_operator_symbol_name(
         _symbol_component(dtype) for dtype in arg_dtypes
     )
     return f"cuda_coop_numba_mlir_F{callable_component}_{signature_component}"
+
+
+def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
+    if (
+        not isinstance(compute_capability, (tuple, list))
+        or len(compute_capability) != 2
+    ):
+        raise RuntimeError(
+            "cuda.coop.numba_mlir requires a two-component CUDA compute capability"
+        )
+    major, minor = compute_capability
+    if (
+        isinstance(major, bool)
+        or isinstance(minor, bool)
+        or not isinstance(major, Integral)
+        or not isinstance(minor, Integral)
+        or major < 1
+        or minor < 0
+        or minor > 9
+    ):
+        raise RuntimeError(
+            "cuda.coop.numba_mlir received an invalid CUDA compute capability "
+            f"{compute_capability!r}"
+        )
+    return int(major), int(minor)
+
+
+def _current_compute_capability() -> tuple[int, int]:
+    """Return the exact target used for callback device compilation."""
+
+    return _normalize_compute_capability(cuda.get_current_device().compute_capability)
+
+
+def _compute_capability_number(compute_capability: tuple[int, int]) -> int:
+    major, minor = compute_capability
+    return major * 10 + minor
 
 
 def _align_up(value: int, alignment: int) -> int:
@@ -304,10 +340,12 @@ def _compile_device_ltoir(
     *,
     sig,
     abi_info: dict[str, object],
+    compute_capability: tuple[int, int],
     semantic_identity=None,
 ) -> bytes:
     """Compile one device callable and cache it by semantic source identity."""
 
+    compute_capability = _normalize_compute_capability(compute_capability)
     # numba-cuda-mlir's compile() mutates dispatcher target options when passed
     # an existing dispatcher. Compile the underlying Python function so one
     # dispatcher can safely participate in multiple cooperative specializations.
@@ -315,6 +353,7 @@ def _compile_device_ltoir(
     identity = py_func if semantic_identity is None else semantic_identity
     cache_key = (
         _numba_semantic_token(identity),
+        compute_capability,
         repr(sig),
         tuple(
             sorted(
@@ -332,6 +371,7 @@ def _compile_device_ltoir(
         output="ltoir",
         abi_info=abi_info,
         forceinline=True,
+        cc=compute_capability,
     )
     ltoir_blob = ltoir.encode("utf-8") if isinstance(ltoir, str) else bytes(ltoir)
     _DEVICE_LTOIR_CACHE[cache_key] = ltoir_blob
@@ -759,12 +799,21 @@ class Constant:
 class StatelessOperator(Parameter):
     """A compiled Python callable embedded as a static C++ operator."""
 
-    def __init__(self, name, ret_cpp_type, arg_cpp_types, ltoir):
+    def __init__(
+        self,
+        name,
+        ret_cpp_type,
+        arg_cpp_types,
+        ltoir,
+        *,
+        compute_capability,
+    ):
         super().__init__()
         self.name = name
         self.ret_cpp_type = ret_cpp_type
         self.arg_cpp_types = tuple(arg_cpp_types)
         self.ltoir = bytes(ltoir)
+        self.compute_capability = _normalize_compute_capability(compute_capability)
 
     def __repr__(self) -> str:
         return f"StatelessOperator(name={self.name!r})"
@@ -852,6 +901,7 @@ class DependentPythonOperator:
             arguments_by_pointer,
         )
         mangled_name = _python_operator_symbol_name(op, ret_dtype, arg_dtypes)
+        compute_capability = _current_compute_capability()
         if return_by_pointer:
             operator_signature = signature(
                 types.void,
@@ -864,6 +914,7 @@ class DependentPythonOperator:
             compile_op,
             sig=operator_signature,
             abi_info={"abi_name": mangled_name},
+            compute_capability=compute_capability,
             semantic_identity=compile_identity,
         )
         return StatelessOperator(
@@ -871,6 +922,7 @@ class DependentPythonOperator:
             ret_cpp_type,
             arg_cpp_types,
             ltoir,
+            compute_capability=compute_capability,
         )
 
 
@@ -1088,9 +1140,7 @@ class Algorithm:
         return f"{self.c_name}{namespace}_{self.method_name}"
 
     def _current_provider_compile_identity(self):
-        device = cuda.get_current_device()
-        cc_major, cc_minor = device.compute_capability
-        cc = int(cc_major) * 10 + int(cc_minor)
+        cc = _compute_capability_number(_current_compute_capability())
         return nvrtc.compiler_identity(
             context=self._resolved_compile_context(),
             cc=cc,
@@ -1319,7 +1369,7 @@ class Algorithm:
             f"cuda_coop_numba_mlir_temp_storage_alignment_{suffix}",
         )
 
-    def _collect_support_ltoirs_and_udf_declarations(self):
+    def _collect_support_ltoirs_and_udf_declarations(self, *, provider_cc):
         lto_irs = []
         udf_declarations = OrderedDict()
 
@@ -1331,6 +1381,14 @@ class Algorithm:
             for param in method:
                 if not isinstance(param, StatelessOperator):
                     continue
+                callback_cc = _compute_capability_number(param.compute_capability)
+                if callback_cc != provider_cc:
+                    major, minor = param.compute_capability
+                    raise RuntimeError(
+                        "Python operator LTO IR target does not match its provider: "
+                        f"callback {major}.{minor}, provider {provider_cc // 10}."
+                        f"{provider_cc % 10}"
+                    )
                 declaration = param.forward_decl()
                 previous = udf_declarations.setdefault(param.name, declaration)
                 if previous != declaration:
@@ -1342,13 +1400,15 @@ class Algorithm:
         return _dedupe_ltoirs(lto_irs), udf_declarations
 
     def _source_code(self, threads=None, block_threads=None, *, compile_identity=None):
-        self._qualify_private_symbols(
+        compile_identity = self._qualify_private_symbols(
             threads=threads,
             block_threads=block_threads,
             compile_identity=compile_identity,
         )
         support_lto_irs, udf_declarations = (
-            self._collect_support_ltoirs_and_udf_declarations()
+            self._collect_support_ltoirs_and_udf_declarations(
+                provider_cc=int(compile_identity[0])
+            )
         )
 
         algorithm_name = self.struct_name
@@ -1908,6 +1968,7 @@ def _param_coalesce_key(param):
             param.name,
             param.ret_cpp_type,
             param.arg_cpp_types,
+            param.compute_capability,
             _lto_ir_digest(param.ltoir),
         )
     return (type(param).__name__, repr(param))
