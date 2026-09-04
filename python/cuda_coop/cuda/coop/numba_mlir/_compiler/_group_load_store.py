@@ -8,11 +8,6 @@ This mixin owns only its primitive-family IR rewrite. Shared provenance,
 launch facts, caches, and final orchestration remain in the group planner.
 """
 
-import math
-from numbers import Integral, Real
-
-import numpy as np
-
 from cuda.coop._core import (
     ArgumentBinding,
     BindingKind,
@@ -40,7 +35,7 @@ from ._operations import (
     register_group_primitive,
     register_rewrite_operation,
 )
-from ._parameters import _validate_common_numeric_dtype
+from ._parameters import _validate_common_numeric_dtype, coerce_static_scalar
 from ._rewrite_load_store import (
     analyze_load_store_match,
     infer_load_store_payload,
@@ -148,10 +143,7 @@ class _LoadStorePlanning:
         if binding.kind is BindingKind.RUNTIME:
             value_dtype = self._context.dtype(value)
             if value_dtype is None:
-                raise GroupRewriteError(
-                    "cuda.coop.numba_mlir.load could not infer the runtime "
-                    "oob_default dtype before provider selection"
-                )
+                return binding
             value_dtype = _validate_common_numeric_dtype(
                 value_dtype,
                 operation="load",
@@ -165,32 +157,16 @@ class _LoadStorePlanning:
             return binding
 
         scalar = binding.value
-        if isinstance(scalar, np.generic):
-            scalar_dtype = scalar.dtype
-        elif type(scalar) in {bool, int, float, complex}:
-            scalar_dtype = type(scalar)
-        else:
-            raise TypeError(
-                "cuda.coop.numba_mlir.load static oob_default must be a "
-                "portable numeric scalar"
-            )
-        _validate_common_numeric_dtype(
-            scalar_dtype,
+        resolved, provenance = self._context.try_static_scalar_provenance(value)
+        assert resolved and provenance is not None
+        scalar = coerce_static_scalar(
+            scalar,
+            payload_dtype,
             operation="load",
             parameter="oob_default",
+            source_dtype=provenance.dtype,
         )
-        if isinstance(scalar, Integral):
-            scalar = int(scalar)
-            if not -(1 << 63) <= scalar <= (1 << 64) - 1:
-                raise ValueError(
-                    "cuda.coop.numba_mlir.load static oob_default must fit a "
-                    "64-bit integer"
-                )
-        elif isinstance(scalar, Real) and not math.isfinite(float(scalar)):
-            raise ValueError(
-                "cuda.coop.numba_mlir.load static oob_default must be finite"
-            )
-        return binding
+        return ArgumentBinding.static(scalar)
 
     def _planning_items_per_thread(self, operation: str, payload: Any) -> int:
         is_array = self._context.is_array(operation, payload)
@@ -218,18 +194,33 @@ class _LoadStorePlanning:
         payload_name = "output" if operation == "load" else "value"
         memory_name = "source" if operation == "load" else "destination"
         payload = bound.arguments[payload_name]
+        payload_is_array = self._context.is_array(operation, payload)
         items_per_thread = self._planning_items_per_thread(operation, payload)
         payload_dtype = self._context.dtype(payload)
         if operation == "store" and payload_dtype is None:
             payload_dtype = self._context.store_write_dtype(payload)
         memory_dtype = self._context.dtype(bound.arguments[memory_name])
-        dtype = payload_dtype if payload_dtype is not None else memory_dtype
+        dtype = memory_dtype if memory_dtype is not None else payload_dtype
         if dtype is None:
             raise GroupRewriteError(
                 f"cuda.coop.numba_mlir.{operation} could not infer a dtype "
                 "before provider selection"
             )
         dtype = _validate_common_numeric_dtype(dtype, operation=operation)
+        if operation == "store" and not payload_is_array:
+            resolved, provenance = self._context.try_static_scalar_provenance(payload)
+            if resolved:
+                assert provenance is not None
+                coerce_static_scalar(
+                    provenance.value,
+                    dtype,
+                    operation="store",
+                    parameter="value",
+                    source_dtype=provenance.dtype,
+                )
+                payload_dtype = dtype
+        if payload_dtype is not None:
+            _validate_common_numeric_dtype(payload_dtype, operation=operation)
         if (
             payload_dtype is not None
             and memory_dtype is not None

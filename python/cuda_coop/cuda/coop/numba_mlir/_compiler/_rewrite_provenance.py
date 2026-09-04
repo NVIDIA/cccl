@@ -36,7 +36,10 @@ from ._rewrite_support import (
     normalize_dtype_param,
     operator,
 )
-from ._scalar_provenance import try_resolve_static_scalar
+from ._scalar_provenance import (
+    try_resolve_static_scalar,
+    try_resolve_static_scalar_provenance,
+)
 
 
 class _ProvenanceRewrite:
@@ -107,6 +110,17 @@ class _ProvenanceRewrite:
 
         arg_types = tuple(getattr(self._state, "args", ()) or ())
         resolved, scalar = try_resolve_static_scalar(
+            value,
+            definitions=self._lookup_definitions,
+            argument_type=lambda index: (
+                arg_types[index] if 0 <= index < len(arg_types) else None
+            ),
+        )
+        return scalar if resolved else _UNRESOLVED
+
+    def _resolve_static_scalar_provenance(self, value):
+        arg_types = tuple(getattr(self._state, "args", ()) or ())
+        resolved, scalar = try_resolve_static_scalar_provenance(
             value,
             definitions=self._lookup_definitions,
             argument_type=lambda index: (
