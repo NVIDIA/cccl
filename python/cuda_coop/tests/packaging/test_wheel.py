@@ -36,6 +36,8 @@ _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/_core/api/temp_storage.pyi",
     "cuda/coop/_core/api/thread_data.pyi",
     "cuda/coop/_core/api/thread_group.pyi",
+    "cuda/coop/_core/warp/__init__.py",
+    "cuda/coop/_core/warp/load_store.py",
     "cuda/coop/numba_mlir/__init__.py",
     "cuda/coop/numba_mlir/__init__.pyi",
     "cuda/coop/numba_mlir/_group_load_store.py",
@@ -53,6 +55,8 @@ _REQUIRED_HEADER_MEMBERS = {
     "cuda/coop/_headers/include/cub/version.cuh",
     "cuda/coop/_headers/include/cub/block/block_load.cuh",
     "cuda/coop/_headers/include/cub/block/block_store.cuh",
+    "cuda/coop/_headers/include/cub/warp/warp_load.cuh",
+    "cuda/coop/_headers/include/cub/warp/warp_store.cuh",
     "cuda/coop/_headers/include/cuda/experimental/coop.cuh",
     "cuda/coop/_headers/include/cuda/experimental/group.cuh",
     "cuda/coop/_headers/include/thrust/detail/raw_pointer_cast.h",
@@ -81,6 +85,11 @@ _FORBIDDEN_PACKAGE_MEMBERS = {
     "cuda/coop/numba_mlir/_lowering/_thread_group.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite_reduce.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite_scan.py",
+}
+
+_ALLOWED_WARP_PACKAGE_MEMBERS = {
+    "cuda/coop/_core/warp/__init__.py",
+    "cuda/coop/_core/warp/load_store.py",
 }
 
 
@@ -151,8 +160,11 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
 
         forbidden = _FORBIDDEN_PACKAGE_MEMBERS & names
         assert not forbidden, f"wheel contains excluded implementations: {forbidden}"
+        warp_members = {
+            name for name in names if name.startswith("cuda/coop/_core/warp/")
+        }
+        assert warp_members == _ALLOWED_WARP_PACKAGE_MEMBERS
         assert not any(name.startswith("cuda/coop/cutlass/") for name in names)
-        assert not any(name.startswith("cuda/coop/_core/warp/") for name in names)
         assert "cuda/__init__.py" not in names
 
         native_suffixes = {".a", ".dll", ".dylib", ".exe", ".lib", ".pyd", ".so"}
@@ -171,6 +183,10 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
             archive.read(metadata_name)
         )
         assert metadata["Name"] == "cuda-coop"
+        assert (
+            metadata["Summary"]
+            == "Cooperative CUDA Block and Warp Load and Store for Python DSLs"
+        )
         assert metadata["Requires-Python"] == ">=3.10"
         assert set(metadata.get_all("Provides-Extra", [])) == {
             "numba-cuda-mlir-cu12",

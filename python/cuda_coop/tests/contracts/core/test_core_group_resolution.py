@@ -17,7 +17,6 @@ from cuda.coop._core import (
     this_cluster,
     this_grid,
     this_thread,
-    this_warp,
 )
 from tests.support.group_planning import _load_store, _plan
 
@@ -70,9 +69,9 @@ def test_block_load_store_requires_exact_not_maximum_dimensions():
 
 @pytest.mark.parametrize(
     "group",
-    [this_thread(), this_warp(), this_cluster(), this_grid()],
+    [this_thread(), this_cluster(), this_grid()],
 )
-def test_non_block_targets_are_typed_unsupported_before_resolution(group):
+def test_non_load_store_targets_are_typed_unsupported_before_resolution(group):
     plan = _plan(group, _load_store(), LaunchFacts(exact_block_dim=48))
 
     assert plan.target is GroupLoweringTarget.UNSUPPORTED
