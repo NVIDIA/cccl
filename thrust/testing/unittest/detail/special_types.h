@@ -167,13 +167,9 @@ public:
     fill(other.value[0]);
     return *this;
   }
-
-  // cast to void * instead of bool to fool overload resolution
-  // WTB C++11 explicit conversion operators
-  _CCCL_HOST_DEVICE operator void*() const
+  _CCCL_HOST_DEVICE explicit operator bool() const
   {
-    // static cast first to avoid MSVC warning C4312
-    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0]));
+    return value[0] != 0;
   }
 
 #define DEFINE_OPERATOR(op)                               \
@@ -227,11 +223,11 @@ public:
 
 #define CONCAT(X, Y) X##Y
 
-#define DEFINE_OPERATOR(op)                                                              \
-  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric & other) \
-  {                                                                                      \
-    fill(value[0] op other.value[0]);                                                    \
-    return *this;                                                                        \
+#define DEFINE_OPERATOR(op)                                                             \
+  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric& other) \
+  {                                                                                     \
+    fill(value[0] op other.value[0]);                                                   \
+    return *this;                                                                       \
   }
 
   DEFINE_OPERATOR(+)
