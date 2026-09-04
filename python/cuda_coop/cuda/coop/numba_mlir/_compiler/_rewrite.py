@@ -59,6 +59,7 @@ class CoopSinglePhaseRewrite(
             self._temp_storage_plans = {}
             self._temp_storage_global_plan = None
             self._temp_storage_ctor_order = {}
+            self._temp_storage_ctor_roots = {}
             self._implicit_temp_storage_plan = None
             self._temp_storage_backing_var = None
             self._temp_storage_backing_emitted = False
@@ -155,18 +156,11 @@ class CoopSinglePhaseRewrite(
             # markers remain available for rewriting after caller inlining.
             return False
 
-        entry_block = func_ir.blocks[min(func_ir.blocks)]
-        should_emit_temp_storage_backing = (
-            block is entry_block
-            and self._has_temp_storage_requirements()
-            and not self._temp_storage_backing_emitted
-        )
         return (
             bool(self._matches)
             or bool(self._temp_storage_assigns)
             or bool(self._thread_data_func_vars)
             or bool(self._typed_group_payload_func_vars)
-            or should_emit_temp_storage_backing
         )
 
     def apply(self):
@@ -175,11 +169,8 @@ class CoopSinglePhaseRewrite(
         call_invocable_globals: dict[ir.Assign, tuple[str, object]] = {}
         func_var_names_to_clear: set[str] = set()
         candidate_dead_factory_kw_vars: set[str] = set()
-        temp_storage_global_plan = (
-            self._ensure_temp_storage_global_plan()
-            if self._has_temp_storage_requirements()
-            else None
-        )
+        if self._has_temp_storage_requirements():
+            self._stage_temp_storage_backing()
         for match_inst, match in self._matches.items():
             invocable, created = self._materialize_invocable(match)
             self._record_invocable_specialization(invocable)
@@ -193,13 +184,6 @@ class CoopSinglePhaseRewrite(
             if match.func_var_name_extra is not None:
                 func_var_names_to_clear.add(match.func_var_name_extra)
         new_block = ir.Block(self._block.scope, self._block.loc)
-        entry_block = self._func_ir.blocks[min(self._func_ir.blocks)]
-        if (
-            self._block is entry_block
-            and temp_storage_global_plan is not None
-            and not self._temp_storage_backing_emitted
-        ):
-            self._emit_temp_storage_backing(new_block, plan=temp_storage_global_plan)
         for inst in self._block.body:
             if (
                 isinstance(inst, ir.Assign)
