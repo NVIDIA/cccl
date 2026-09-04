@@ -72,6 +72,7 @@ class _ProvenanceRewrite:
         self._temp_storage_func_vars: set[str] = set()
         self._temp_storage_ctor_specs: dict[str, _TempStorageCtorSpec] = {}
         self._temp_storage_ctor_order: dict[str, int] = {}
+        self._temp_storage_ctor_roots: dict[str, str] = {}
         self._thread_data_func_vars: set[str] = set()
         self._typed_group_payload_func_vars: set[str] = set()
         self._thread_data_specs: dict[str, _ThreadDataSpec] = {}
@@ -695,22 +696,71 @@ class _ProvenanceRewrite:
                 keys.update(self._collect_temp_storage_ctor_keys(definition, seen))
         return keys
 
+    @staticmethod
+    def _temp_storage_contract(
+        spec: _TempStorageCtorSpec,
+    ) -> tuple[int | None, int | None, bool, str]:
+        auto_sync = (
+            False
+            if spec.sharing == "exclusive"
+            else (True if spec.auto_sync is None else spec.auto_sync)
+        )
+        return (
+            spec.size_in_bytes,
+            spec.alignment,
+            auto_sync,
+            spec.sharing,
+        )
+
+    def _canonical_temp_storage_ctor_key(self, key: str) -> str:
+        roots = getattr(self, "_temp_storage_ctor_roots", {})
+        root = roots.get(key, key)
+        while roots.get(root, root) != root:
+            root = roots[root]
+        if key != root:
+            roots[key] = root
+        return root
+
+    def _merge_temp_storage_ctor_keys(self, keys: set[str]) -> str:
+        roots = {self._canonical_temp_storage_ctor_key(key) for key in keys}
+        contracts = {
+            self._temp_storage_contract(self._temp_storage_ctor_specs[key])
+            for key in roots
+        }
+        if len(contracts) != 1:
+            ordered_keys = sorted(
+                roots,
+                key=lambda key: (
+                    self._temp_storage_ctor_order.get(key, 1 << 30),
+                    key,
+                ),
+            )
+            names = ", ".join(ordered_keys)
+            raise CoopSinglePhaseRewriteError(
+                "TempStorage aliases have inconsistent contracts across "
+                f"constructor instances ({names})."
+            )
+        canonical = min(
+            roots,
+            key=lambda key: (
+                self._temp_storage_ctor_order.get(key, 1 << 30),
+                key,
+            ),
+        )
+        for key, root in tuple(self._temp_storage_ctor_roots.items()):
+            if self._canonical_temp_storage_ctor_key(root) in roots:
+                self._temp_storage_ctor_roots[key] = canonical
+        for key in roots | keys:
+            self._temp_storage_ctor_roots[key] = canonical
+        return canonical
+
     def _resolve_temp_storage_ctor_key(self, value: ir.Var) -> str | None:
         if not isinstance(value, ir.Var):
             return None
         keys = self._collect_temp_storage_ctor_keys(value, seen=set())
         if not keys:
             return None
-        if len(keys) == 1:
-            return next(iter(keys))
-        ordered_keys = sorted(
-            keys, key=lambda key: (self._temp_storage_ctor_order.get(key, 1 << 30), key)
-        )
-        names = ", ".join(ordered_keys)
-        raise CoopSinglePhaseRewriteError(
-            "TempStorage provenance merges distinct constructor instances "
-            f"({names}); aliases must provably originate from one constructor."
-        )
+        return self._merge_temp_storage_ctor_keys(keys)
 
     def _resolve_temp_storage_plan(self, value: ir.Var) -> _TempStoragePlan | None:
         key = self._resolve_temp_storage_ctor_key(value)
@@ -721,6 +771,7 @@ class _ProvenanceRewrite:
         return self._finalize_temp_storage_plan_for_var(key)
 
     def _finalize_temp_storage_plan_for_var(self, var_name: str) -> _TempStoragePlan:
+        var_name = self._canonical_temp_storage_ctor_key(var_name)
         cached = self._temp_storage_plans.get(var_name)
         if cached is not None:
             return cached

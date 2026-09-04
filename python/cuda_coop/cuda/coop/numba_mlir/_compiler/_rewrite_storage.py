@@ -73,7 +73,10 @@ class _StorageRewrite:
         if cached is not None:
             return cached
         ordered_keys = sorted(
-            self._temp_storage_ctor_specs.keys(),
+            {
+                self._canonical_temp_storage_ctor_key(key)
+                for key in self._func_temp_storage_requirements
+            },
             key=lambda name: (self._temp_storage_ctor_order.get(name, 1 << 30), name),
         )
         offset = 0
@@ -140,6 +143,31 @@ class _StorageRewrite:
         )
         self._temp_storage_global_plan = plan
         return plan
+
+    def _stage_temp_storage_backing(self) -> ir.Var:
+        """Insert the aggregate allocation before rewriting any consumer."""
+
+        if self._temp_storage_backing_emitted:
+            if self._temp_storage_backing_var is None:
+                raise CoopSinglePhaseRewriteError(
+                    "TempStorage backing was marked emitted without an IR value."
+                )
+            return self._temp_storage_backing_var
+        plan = self._ensure_temp_storage_global_plan()
+        entry_block = self._func_ir.blocks[min(self._func_ir.blocks)]
+        staged = ir.Block(entry_block.scope, entry_block.loc)
+        backing = self._emit_temp_storage_backing(staged, plan=plan)
+        insert_at = 0
+        while insert_at < len(entry_block.body):
+            statement = entry_block.body[insert_at]
+            if not (
+                isinstance(statement, ir.Assign) and isinstance(statement.value, ir.Arg)
+            ):
+                break
+            insert_at += 1
+        entry_block.body[insert_at:insert_at] = staged.body
+        entry_block.verify()
+        return backing
 
     def _emit_temp_storage_backing(
         self, block: ir.Block, *, plan: _TempStorageGlobalPlan
@@ -403,11 +431,7 @@ class _StorageRewrite:
         keys = [self._resolve_temp_storage_ctor_key(source) for source in sources]
         if any(key is None for key in keys):
             return None
-        unique_keys = set(keys)
-        if len(unique_keys) != 1:
-            self._resolve_temp_storage_ctor_key(inst.target)
-            return None
-        return next(iter(unique_keys))
+        return self._resolve_temp_storage_ctor_key(inst.target)
 
     def _validate_temp_storage_uses(
         self, func_ir, matches: dict[ir.Assign, _RewriteMatch]
@@ -487,7 +511,14 @@ class _StorageRewrite:
                     f"involving {names!r} would escape to runtime."
                 )
 
-        unconsumed = set(self._temp_storage_ctor_specs) - consumed_ctor_keys
+        constructor_keys = {
+            self._canonical_temp_storage_ctor_key(key)
+            for key in self._temp_storage_ctor_specs
+        }
+        consumed_ctor_keys = {
+            self._canonical_temp_storage_ctor_key(key) for key in consumed_ctor_keys
+        }
+        unconsumed = constructor_keys - consumed_ctor_keys
         if unconsumed:
             names = ", ".join(sorted(unconsumed))
             raise CoopSinglePhaseRewriteError(
@@ -505,6 +536,7 @@ class _StorageRewrite:
         saved_block = self._block
         self._temp_storage_ctor_specs = {}
         self._temp_storage_ctor_order = {}
+        self._temp_storage_ctor_roots = {}
         self._implicit_temp_storage_requirements = _TempStorageRequirementSummary()
         self._implicit_temp_storage_plan = None
         try:
@@ -607,6 +639,8 @@ class _StorageRewrite:
             self._validate_temp_storage_uses(func_ir, matches_by_assign)
             self._prepare_ltoir_bundle_for_matches(all_matches)
             for source_order, inst, match, ctor_key in storage_uses:
+                if ctor_key is not None:
+                    ctor_key = self._canonical_temp_storage_ctor_key(ctor_key)
                 invocable, _ = self._materialize_invocable(match)
                 size_in_bytes = max(
                     1, int(getattr(invocable, "temp_storage_bytes", 0) or 0)
