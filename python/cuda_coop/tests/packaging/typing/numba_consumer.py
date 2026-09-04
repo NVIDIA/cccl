@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import operator
 from typing import Generic, Literal, TypeVar
 
 import numpy as np
@@ -210,6 +211,11 @@ def check_numba_surface(source: object, destination: object) -> None:
     )
     assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
     assert_type(coop.reduce(cluster, values, binary_op="min"), np.uint16)
+    assert_type(coop.reduce(cluster, values, binary_op=np.maximum), np.uint16)
+    assert_type(
+        coop.reduce(mapped_warps, np.int32(4), binary_op=operator.add),
+        np.int32,
+    )
     assert_type(
         coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
         np.int32,
