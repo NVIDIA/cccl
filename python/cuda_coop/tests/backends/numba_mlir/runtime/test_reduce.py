@@ -171,6 +171,9 @@ def _mixed_thread_data_builtins(source, observed, preserved):
     qualified_xor = qualified_coop.reduce(
         qualified_coop.this_block(), payload, binary_op="bit_xor"
     )
+    qualified_or = qualified_coop.reduce(
+        qualified_coop.this_block(), payload, binary_op="bit_or"
+    )
     qualified_scalar_minimum = qualified_coop.reduce(
         qualified_coop.this_block(), source[thread], binary_op="min"
     )
@@ -178,7 +181,8 @@ def _mixed_thread_data_builtins(source, observed, preserved):
     observed[0 * _BLOCK_THREADS + thread] = portable_sum
     observed[1 * _BLOCK_THREADS + thread] = qualified_maximum
     observed[2 * _BLOCK_THREADS + thread] = qualified_xor
-    observed[3 * _BLOCK_THREADS + thread] = qualified_scalar_minimum
+    observed[3 * _BLOCK_THREADS + thread] = qualified_or
+    observed[4 * _BLOCK_THREADS + thread] = qualified_scalar_minimum
     for item in range(_ITEMS_PER_THREAD):
         preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
@@ -187,7 +191,7 @@ def test_consecutive_portable_and_qualified_builtins_preserve_thread_data():
     source = (
         (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 13) % 251
     ) - 117
-    observed = np.full(4 * _BLOCK_THREADS, -1, dtype=np.int32)
+    observed = np.full(5 * _BLOCK_THREADS, -1, dtype=np.int32)
     preserved = np.full_like(source, -1)
 
     _mixed_thread_data_builtins[1, _BLOCK_THREADS](source, observed, preserved)
@@ -207,12 +211,17 @@ def test_consecutive_portable_and_qualified_builtins_preserve_thread_data():
             ),
             np.full(
                 _BLOCK_THREADS,
+                np.bitwise_or.reduce(source),
+                dtype=np.int32,
+            ),
+            np.full(
+                _BLOCK_THREADS,
                 source[:_BLOCK_THREADS].min(),
                 dtype=np.int32,
             ),
         )
     )
-    np.testing.assert_array_equal(observed.reshape(4, _BLOCK_THREADS), expected)
+    np.testing.assert_array_equal(observed.reshape(5, _BLOCK_THREADS), expected)
     np.testing.assert_array_equal(preserved, source)
 
 
@@ -425,25 +434,67 @@ _device_maximum = cuda.jit(device=True)(_maximum)
 
 
 @cuda.jit
-def _stateless_callback_reduce(source, output):
+def _stateless_callback_reductions(
+    source,
+    block_output,
+    logical_output,
+    preserved,
+):
     thread = cuda.threadIdx.x
-    maximum = qualified_coop.reduce(
+    payload = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
+
+    block_maximum = qualified_coop.reduce(
         qualified_coop.this_block(),
-        source[thread],
+        payload,
         binary_op=_device_maximum,
         broadcast=False,
     )
     if thread == 0:
-        output[0] = maximum
+        block_output[0] = block_maximum
+
+    logical_maximum = qualified_coop.reduce(
+        qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+        source[thread * _ITEMS_PER_THREAD],
+        binary_op=_device_maximum,
+        broadcast=False,
+        valid_items=_RUNTIME_LOGICAL_VALID,
+    )
+    if thread % _LOGICAL_WARP_THREADS == 0:
+        logical_output[thread // _LOGICAL_WARP_THREADS] = logical_maximum
+
+    for item in range(_ITEMS_PER_THREAD):
+        preserved[thread * _ITEMS_PER_THREAD + item] = payload[item]
 
 
-def test_qualified_stateless_callback_reduces_at_runtime():
-    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 29) % 313) - 173
-    output = np.full(1, -1, dtype=np.int32)
+def test_qualified_callbacks_cover_block_arrays_and_logical_warp_prefixes():
+    source = (
+        (np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int32) * 29) % 313
+    ) - 173
+    block_output = np.full(1, -1, dtype=np.int32)
+    logical_output = np.full(
+        _BLOCK_THREADS // _LOGICAL_WARP_THREADS,
+        -1,
+        dtype=np.int32,
+    )
+    preserved = np.full_like(source, -1)
 
-    _stateless_callback_reduce[1, _BLOCK_THREADS](source, output)
+    _stateless_callback_reductions[1, _BLOCK_THREADS](
+        source,
+        block_output,
+        logical_output,
+        preserved,
+    )
 
-    assert output[0] == source.max()
+    logical_input = source[::_ITEMS_PER_THREAD].reshape(
+        -1,
+        _LOGICAL_WARP_THREADS,
+    )
+    expected_logical = logical_input[:, :_RUNTIME_LOGICAL_VALID].max(axis=1)
+    assert block_output[0] == source.max()
+    np.testing.assert_array_equal(logical_output, expected_logical)
+    np.testing.assert_array_equal(preserved, source)
 
 
 def _run_invalid_runtime_prefix_probe(
