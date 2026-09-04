@@ -41,6 +41,7 @@
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/fork_join.cuh>
 #include <cuda/experimental/__sharded/shard.cuh>
 
@@ -58,7 +59,6 @@
 
 namespace cuda::experimental::sharded
 {
-using ::cuda::experimental::places::cuda_safe_call;
 using ::cuda::experimental::places::exec_place_scope;
 using ::cuda::experimental::places::mv;
 using ::cuda::experimental::places::place_group;

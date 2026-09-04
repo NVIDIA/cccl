@@ -76,6 +76,7 @@
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
 #include <functional>
