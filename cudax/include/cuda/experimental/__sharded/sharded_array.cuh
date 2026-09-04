@@ -38,6 +38,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
+#include <cuda/experimental/__places/exec/locality_domain.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__places/places.cuh>
@@ -60,6 +61,7 @@
 namespace cuda::experimental::sharded
 {
 using ::cuda::experimental::places::exec_place_scope;
+using ::cuda::experimental::places::make_locality_domain_grid;
 using ::cuda::experimental::places::mv;
 using ::cuda::experimental::places::place_group;
 

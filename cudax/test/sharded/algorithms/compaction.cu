@@ -29,6 +29,7 @@
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::cuda_try;
+using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -338,7 +339,7 @@ int main()
   cuda_try(cuInit(0));
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group::by_locality_domains();
+  auto group = place_group{make_locality_domain_grid()};
 
   test_copy_if(group);
   test_copy_if_empty_result_shards(group);

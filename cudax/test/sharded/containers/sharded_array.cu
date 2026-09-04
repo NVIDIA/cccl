@@ -26,6 +26,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
+using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -97,7 +98,7 @@ void test_multi_shard_roundtrip()
 
 void test_place_group_allocation()
 {
-  auto group     = place_group::by_locality_domains({0});
+  auto group     = place_group{make_locality_domain_grid(0)};
   const size_t n = 10000;
 
   auto arr = sharded_array<long long>::allocate(group, n);
@@ -133,7 +134,7 @@ void test_place_group_allocation()
 
 void test_allocate_like()
 {
-  auto group = place_group::by_locality_domains({0});
+  auto group = place_group{make_locality_domain_grid(0)};
   auto src   = sharded_array<long long>::allocate(group, 999);
 
   auto dst = sharded_array<long long>::allocate_like(src);
@@ -196,7 +197,7 @@ void test_adoption_and_slice()
   const size_t n = 700;
   auto input     = sequential<long long>(n);
 
-  auto group = place_group::by_locality_domains({0});
+  auto group = place_group{make_locality_domain_grid(0)};
   auto owner = sharded_array<long long>::allocate(group, n);
   owner.copy_from_host(input.data());
 
@@ -306,7 +307,7 @@ void test_uniform_and_host()
 
 void test_empty_shard_allocation()
 {
-  auto group = place_group::by_locality_domains();
+  auto group = place_group{make_locality_domain_grid()};
   if (group.size() < 2)
   {
     return; // needs at least two places so one can be empty

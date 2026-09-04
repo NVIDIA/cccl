@@ -35,9 +35,12 @@
  * context's `async_resources_handle` stream-pool registry instead of owning
  * its own, so there is exactly one pool owner per program:
  *
+ * WHERE is always spelled with the existing place vocabulary (grids,
+ * partitions); a `place_group` only attaches resources to it:
+ *
  * @code
  * // Standalone: the group owns its stream pools.
- * auto group = place_group::by_locality_domains();
+ * place_group group{make_locality_domain_grid()};
  *
  * // Coexisting with STF: borrow the context's pools (one pool owner).
  * cuda::experimental::stf::context ctx;
@@ -65,14 +68,15 @@
 #include <cuda/experimental/__places/exec_place_resources.cuh>
 #include <cuda/experimental/__places/machine.cuh>
 #include <cuda/experimental/__places/place_memory_resource.cuh>
-#include <cuda/experimental/__places/place_partition.cuh>
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 // Used only by the UNITTEST blocks below, never by the implementation: the
-// borrowing tests exercise the seam against a real STF resource handle.
+// borrowing tests exercise the seam against a real STF resource handle, and
+// the construction tests spell their place layouts with the grid vocabulary.
 #ifdef UNITTESTED_FILE
+#  include <cuda/experimental/__places/exec/locality_domain.cuh>
 #  include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #endif
 
@@ -95,30 +99,6 @@ namespace cuda::experimental::places
 
 namespace reserved
 {
-/// @brief Device ordinals of every visible CUDA device.
-inline ::std::vector<int> all_device_ids()
-{
-  const int ndevs = cuda_try<cudaGetDeviceCount>();
-  ::std::vector<int> ids(static_cast<size_t>(ndevs));
-  for (int d = 0; d < ndevs; d++)
-  {
-    ids[static_cast<size_t>(d)] = d;
-  }
-  return ids;
-}
-
-/// @brief One `exec_place` per listed device ordinal.
-inline ::std::vector<exec_place> places_from_devices(const ::std::vector<int>& device_ids)
-{
-  ::std::vector<exec_place> result;
-  result.reserve(device_ids.size());
-  for (int id : device_ids)
-  {
-    result.push_back(exec_place::device(id));
-  }
-  return result;
-}
-
 /// @brief Flatten an `exec_place` grid (or a scalar place) into a vector of places.
 inline ::std::vector<exec_place> places_from_grid(const exec_place& grid)
 {
@@ -129,30 +109,6 @@ inline ::std::vector<exec_place> places_from_grid(const exec_place& grid)
     result.push_back(grid.get_place(i));
   }
   return result;
-}
-
-/**
- * @brief One `exec_place` per locality domain of every listed device
- * (device-major order); an empty list means all visible devices.
- *
- * Devices without locality-domain support contribute a single whole-device
- * place, so this is safe on every machine.
- */
-inline ::std::vector<exec_place> places_from_locality_domains(::std::vector<int> device_ids = {})
-{
-  if (device_ids.empty())
-  {
-    device_ids = reserved::all_device_ids();
-  }
-
-  ::std::vector<::std::shared_ptr<exec_place>> devices;
-  devices.reserve(device_ids.size());
-  for (int d : device_ids)
-  {
-    devices.push_back(::std::make_shared<exec_place>(exec_place::device(d)));
-  }
-  place_partition partition(devices, place_partition_scope::locality_domain);
-  return ::std::vector<exec_place>(partition.begin(), partition.end());
 }
 
 // Detects handle types exposing `get_place_resources() -> exec_place_resources&`
@@ -292,35 +248,6 @@ public:
     resources_  = &holder->get_place_resources();
     keep_alive_ = mv(holder);
     init();
-  }
-
-  // ==========================================================================
-  // One-call factories for the common place layouts
-  // ==========================================================================
-
-  /**
-   * @brief Group with one place per device: all visible devices, or the
-   * listed ones.
-   */
-  static place_group by_devices(::std::vector<int> device_ids = {})
-  {
-    if (device_ids.empty())
-    {
-      device_ids = reserved::all_device_ids();
-    }
-    return place_group(reserved::places_from_devices(device_ids));
-  }
-
-  /**
-   * @brief Group with one place per locality domain of every device (or of
-   * the listed devices) — compute and memory co-located per domain.
-   *
-   * Devices without locality-domain support contribute a single whole-device
-   * place, so this is safe everywhere.
-   */
-  static place_group by_locality_domains(::std::vector<int> device_ids = {})
-  {
-    return place_group(reserved::places_from_locality_domains(mv(device_ids)));
   }
 
   // ==========================================================================
@@ -591,7 +518,7 @@ private:
 
 #ifdef UNITTESTED_FILE
 
-UNITTEST("place_group construction and factories")
+UNITTEST("place_group construction from the place vocabulary")
 {
   // From an explicit vector of places
   place_group g1(::std::vector<exec_place>{exec_place::device(0)});
@@ -606,29 +533,26 @@ UNITTEST("place_group construction and factories")
   place_group g3(exec_place::device(0));
   EXPECT(g3.size() == 1UL);
 
-  // by_devices covers every visible device
+  // The all-devices grid covers every visible device
   const size_t ndevs = static_cast<size_t>(cuda_try<cudaGetDeviceCount>());
-  auto g4            = place_group::by_devices();
+  place_group g4{exec_place::all_devices()};
   EXPECT(g4.size() == ndevs);
 
-  auto g5 = place_group::by_devices({0});
-  EXPECT(g5.size() == 1UL);
-
-  // by_locality_domains covers every domain of every device (>= one place
-  // per device even without domain support)
+  // The all-devices locality-domain grid covers every domain of every device
+  // (>= one place per device even without domain support)
   size_t total_domains = 0;
   for (size_t d = 0; d < ndevs; d++)
   {
     total_domains += locality_domain_count(static_cast<int>(d));
   }
-  auto g6 = place_group::by_locality_domains();
-  EXPECT(g6.size() == total_domains);
-  EXPECT(g6.size() >= ndevs);
+  place_group g5{make_locality_domain_grid()};
+  EXPECT(g5.size() == total_domains);
+  EXPECT(g5.size() >= ndevs);
 };
 
 UNITTEST("place_group per-place stream pools")
 {
-  auto group = place_group::by_locality_domains();
+  place_group group{make_locality_domain_grid()};
 
   // A stream can be picked and used on every place, for every lane_id
   EXPECT(group.num_lanes() >= 1UL);
@@ -675,7 +599,7 @@ UNITTEST("place_group per-place stream pools")
 
 UNITTEST("place_group per-place memory resources")
 {
-  auto group = place_group::by_devices({0});
+  place_group group{exec_place::device(0)};
 
   auto mr        = group.memory_resource(0);
   cudaStream_t s = group.get_stream(0);

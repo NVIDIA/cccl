@@ -25,6 +25,7 @@
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::cuda_try;
+using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -65,7 +66,7 @@ __global__ void write_shard_kernel(long long* data, size_t n, size_t global_offs
 
 void test_layout_contract()
 {
-  auto group = place_group::by_locality_domains({0});
+  auto group = place_group{make_locality_domain_grid(0)};
   // Odd size so shards are uneven and boundaries are not granule-aligned
   const size_t n = (1 << 21) + 12345;
 
@@ -109,7 +110,7 @@ void test_layout_contract()
 
 void test_whole_kernel_visibility()
 {
-  auto group     = place_group::by_locality_domains({0});
+  auto group     = place_group{make_locality_domain_grid(0)};
   const size_t n = (1 << 21) + 999;
 
   auto arr        = sharded_array<long long>::allocate_contiguous(group, n);
@@ -160,7 +161,7 @@ void test_non_affine_spec_refused()
   // The contiguous backing places physical blocks at each spec's exec
   // place's affine data place; a spec naming any other data_place must
   // throw rather than be silently ignored.
-  auto group = place_group::by_locality_domains({0});
+  auto group = place_group{make_locality_domain_grid(0)};
   auto place = group.place(0);
   bool threw = false;
   try
@@ -183,7 +184,7 @@ void test_empty_and_cleanup()
   EXPECT(empty.size() == 0UL);
 
   // clear() releases the VMM backing
-  auto group = place_group::by_locality_domains({0});
+  auto group = place_group{make_locality_domain_grid(0)};
   auto arr   = sharded_array<long long>::allocate_contiguous(group, 1 << 20);
   EXPECT(arr.is_contiguous());
   arr.clear();

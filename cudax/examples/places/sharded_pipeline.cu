@@ -35,6 +35,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
+using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -50,7 +51,7 @@ struct is_odd
 
 int main()
 {
-  auto group = place_group::by_locality_domains();
+  auto group = place_group{make_locality_domain_grid()};
 
   const size_t n = size_t{1} << 24; // 16M values across all domains
   auto data      = sharded_array<long long>::allocate(group, n);

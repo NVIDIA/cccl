@@ -21,7 +21,7 @@
  *    store lives in domain `i` (`CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN`,
  *    both VMM physical handles and stream-ordered memory pools),
  *  - `make_locality_domain_grid(dev)` builds a grid over every domain of a
- *    device,
+ *    device; `make_locality_domain_grid()` over every domain of every device,
  *  - `locality_domain_helper` enumerates the domains of a device.
  *
  * `exec_place::locality_domain(d, i)` and `data_place::locality_domain(d, i)`
@@ -961,6 +961,33 @@ make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_
   for (unsigned int i = 0; i < num_domains; i++)
   {
     domains.push_back(exec_place::locality_domain(dev_id, static_cast<int>(i), split));
+  }
+  return make_grid(mv(domains));
+}
+
+/**
+ * @brief Create a grid of execution places over every locality domain of
+ * every visible device, in device-major order.
+ *
+ * Devices without locality-domain support (or with the fallback backend)
+ * contribute a single whole-device place, so this is safe on every machine.
+ *
+ * @param split SM split method applied to every place of the grid; see
+ *        `locality_domain_sm_split`.
+ * @return exec_place grid with one place per locality domain per device
+ */
+inline exec_place make_locality_domain_grid(locality_domain_sm_split split = locality_domain_sm_split::backfill)
+{
+  const int ndevs = cuda_try<cudaGetDeviceCount>();
+
+  ::std::vector<exec_place> domains;
+  for (int d = 0; d < ndevs; d++)
+  {
+    const unsigned int num_domains = locality_domain_count(d);
+    for (unsigned int i = 0; i < num_domains; i++)
+    {
+      domains.push_back(exec_place::locality_domain(d, static_cast<int>(i), split));
+    }
   }
   return make_grid(mv(domains));
 }

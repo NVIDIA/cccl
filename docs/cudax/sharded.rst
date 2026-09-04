@@ -32,7 +32,7 @@ placement: a ``data_place``, an ``exec_place`` and a reference stream.
 
    using namespace cuda::experimental::sharded;
 
-   auto group     = place_group::by_locality_domains(); // re-exported from places
+   auto group     = place_group{make_locality_domain_grid()}; // both re-exported from places
    const size_t n = 1u << 28;
    auto data      = sharded_array<double>::allocate(group, n);
 

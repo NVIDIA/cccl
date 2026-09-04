@@ -26,6 +26,7 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
+using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
 
 namespace
@@ -246,7 +247,7 @@ void test_group_materialization_records_nothing()
   cudaStream_t origin;
   cuda_safe_call(cudaStreamCreate(&origin));
 
-  auto group = place_group::by_locality_domains();
+  auto group = place_group{make_locality_domain_grid()};
 
   cuda_safe_call(cudaStreamBeginCapture(origin, cudaStreamCaptureModeGlobal));
   cudaStream_t s0 = group.get_stream(0); // lazy pool materialization
@@ -278,7 +279,7 @@ int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group::by_locality_domains();
+  auto group = place_group{make_locality_domain_grid()};
 
   test_refusals(group);
   test_lane_ordered_capture_guard(group);

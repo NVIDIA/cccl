@@ -415,13 +415,14 @@ attached state).
     #include <cuda/experimental/places.cuh>
     using namespace cuda::experimental::places;
 
-    // One place per locality domain of every device (whole devices where
-    // domains are unsupported)
-    auto group = place_group::by_locality_domains();
+    // WHERE is spelled with the usual place vocabulary (grids, partitions);
+    // the group only attaches resources to it. One place per locality domain
+    // of every device (whole devices where domains are unsupported):
+    place_group group{make_locality_domain_grid()};
 
-    // Alternatives: one place per device, an explicit vector, or a grid
-    auto by_dev    = place_group::by_devices();
-    auto from_grid = place_group{make_locality_domain_grid(0)};
+    // Alternatives: one place per device, a single device, or an explicit vector
+    place_group by_dev{exec_place::all_devices()};
+    place_group one_dev{make_locality_domain_grid(0)};
 
     // Per-place streams (stable per (place, color)) and memory resources
     cudaStream_t s = group.get_stream(/*place_idx=*/0, /*color=*/0);
