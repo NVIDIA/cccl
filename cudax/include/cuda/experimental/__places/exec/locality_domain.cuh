@@ -93,6 +93,8 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 
+#include <cuda/__memory_pool/memory_pool_base.h>
+
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
 #include <cuda/experimental/__places/exec/green_context.cuh>
@@ -213,32 +215,30 @@ public:
       return it->second;
     }
 
-    CUmemPoolProps props = {};
-    props.allocType      = CU_MEM_ALLOCATION_TYPE_PINNED;
+    // Use the driver's DEFAULT pool for the location instead of creating a
+    // private one: `cuda::__get_default_memory_pool` is the library-wide
+    // owner of default-pool policy (it repairs a zero release threshold to
+    // unbounded, so freed memory is retained instead of being returned to
+    // the OS at every synchronization — re-backing algorithm-scale scratch
+    // costs milliseconds per call). One pool per location shared with every
+    // other consumer of that location in the process, one policy site.
+    ::CUmemLocation location = {};
     // Plain device memory when localization is disabled, or when the driver
     // cannot answer the locality-domain query (whole-device degrade: the
     // localized location type would be rejected).
     if (locality_domain_memory_disabled() || locality_domain_native_raw_count(dev_id) <= 0)
     {
-      props.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-      props.location.id   = dev_id;
+      location.type = CU_MEM_LOCATION_TYPE_DEVICE;
+      location.id   = dev_id;
     }
     else
     {
-      props.location.type                       = CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
-      props.location.localized.deviceId         = static_cast<unsigned char>(dev_id);
-      props.location.localized.localityDomainId = static_cast<unsigned char>(domain_id);
+      location.type                       = CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
+      location.localized.deviceId         = static_cast<unsigned char>(dev_id);
+      location.localized.localityDomainId = static_cast<unsigned char>(domain_id);
     }
 
-    CUmemoryPool pool = nullptr;
-    cuda_try(cuMemPoolCreate(&pool, &props));
-
-    // Retain freed memory in the pool instead of returning it to the OS at
-    // every synchronization (the default threshold of 0): re-backing
-    // algorithm-scale scratch costs milliseconds per call. Mirrors the
-    // unlimited threshold set on the device default pools (machine.cuh).
-    ::cuuint64_t threshold = UINT64_MAX;
-    cuda_try(cuMemPoolSetAttribute(pool, CU_MEMPOOL_ATTR_RELEASE_THRESHOLD, &threshold));
+    CUmemoryPool pool = ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
 
     pools_[key] = pool;
     return pool;
