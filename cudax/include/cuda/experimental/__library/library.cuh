@@ -74,7 +74,7 @@ struct library : public library_ref
 
   //! @brief Destroy the `library` object
   //!
-  //! @note If the library fails to unload, the error is silently ignored
+  //! @note If the library fails to unload, the error is silently ignored or an assertion is triggered when enabled.
   ~library()
   {
     if (__library_ != value_type{})
