@@ -465,6 +465,7 @@ __get_logical_endpoint_limits(const ::CUlogicalEndpointProp& __prop)
       return false;
     }
 
+#  if _CCCL_CTK_AT_LEAST(13, 4)
     int __supported_handle_types{};
     if (::cuda::__driver::__deviceGetAttributeNoThrow(
           &__supported_handle_types, ::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_SUPPORTED_HANDLE_TYPES, __native_device)
@@ -476,6 +477,7 @@ __get_logical_endpoint_limits(const ::CUlogicalEndpointProp& __prop)
     {
       return false;
     }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
   }
 
   if ((static_cast<unsigned>(__flags) & static_cast<unsigned>(logical_endpoint_flag::counted_ops)) != 0)
