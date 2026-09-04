@@ -374,8 +374,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
               {
                 const int cooperative_grid_capacity = cooperative_sm_occupancy * sm_count;
                 const int tuned_grid_capacity =
-                  active_policy.high_bin_max_blocks_per_sm > 0
-                    ? active_policy.high_bin_max_blocks_per_sm * sm_count
+                  active_policy.high_bin_blocks_per_sm > 0
+                    ? active_policy.high_bin_blocks_per_sm * sm_count
                     : cooperative_grid_capacity;
                 histogram_sweep_occupancy =
                   active_policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized
