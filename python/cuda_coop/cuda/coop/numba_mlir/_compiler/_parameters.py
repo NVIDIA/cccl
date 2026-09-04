@@ -12,7 +12,7 @@ infer launch metadata, or own persistent cache formats.
 import math
 import operator
 from collections import namedtuple
-from numbers import Integral, Real
+from numbers import Real
 from typing import Union
 
 import numpy as np
@@ -247,34 +247,91 @@ def _validate_runtime_integer_dtype(dtype, *, operation: str, parameter: str):
     return dtype
 
 
-def _validate_static_oob_default(value: object) -> None:
-    """Validate one compile-time Load default before provider construction."""
+def coerce_static_scalar(
+    value: object,
+    dtype,
+    *,
+    operation: str,
+    parameter: str,
+    source_dtype=None,
+):
+    """Validate and normalize one trace-static scalar for a target dtype."""
 
-    if isinstance(value, np.generic):
-        value_dtype = value.dtype
-        scalar = value.item()
-    elif type(value) in {bool, int, float, complex}:
-        value_dtype = type(value)
-        scalar = value
-    else:
+    target_dtype = _validate_common_numeric_dtype(
+        dtype,
+        operation=operation,
+        parameter=parameter,
+    )
+    target_numpy_dtype = np.dtype(_NUMBA_MLIR_DTYPE_NAMES[target_dtype])
+
+    if source_dtype is None and isinstance(value, np.generic):
+        source_dtype = value.dtype
+    if source_dtype is not None:
+        try:
+            normalized_source = normalize_dtype_param(source_dtype)
+        except (TypeError, ValueError) as exc:
+            raise TypeError(
+                f"cuda.coop.{operation} {parameter} must be a numeric scalar"
+            ) from exc
+        if normalized_source != target_dtype:
+            raise TypeError(
+                f"cuda.coop.{operation} {parameter} dtype "
+                f"{normalized_source} does not match payload dtype {target_dtype}"
+            )
+        scalar = value.item() if isinstance(value, np.generic) else value
+        if isinstance(scalar, Real) and not math.isfinite(float(scalar)):
+            raise ValueError(f"cuda.coop.{operation} {parameter} must be finite")
+        return target_numpy_dtype.type(value)
+
+    if isinstance(value, bool) or type(value) is bool:
+        raise TypeError(f"cuda.coop.{operation} {parameter} must not be bool")
+    if type(value) not in {int, float}:
         raise TypeError(
-            "cuda.coop.numba_mlir.load static oob_default must be a "
-            "portable numeric scalar"
+            f"cuda.coop.{operation} {parameter} must be an ordinary Python "
+            "numeric literal or an exactly typed NumPy/compiler scalar"
         )
 
-    _validate_common_numeric_dtype(
-        value_dtype,
+    if np.issubdtype(target_numpy_dtype, np.integer):
+        if type(value) is float:
+            raise TypeError(
+                f"cuda.coop.{operation} {parameter} does not permit "
+                "float-to-integer conversion"
+            )
+        bounds = np.iinfo(target_numpy_dtype)
+        if not bounds.min <= value <= bounds.max:
+            raise ValueError(
+                f"cuda.coop.{operation} {parameter} value {value} is outside "
+                f"the range of {target_numpy_dtype.name}"
+            )
+        return target_numpy_dtype.type(value)
+
+    if type(value) is float and not math.isfinite(value):
+        raise ValueError(f"cuda.coop.{operation} {parameter} must be finite")
+    maximum = float(np.finfo(target_numpy_dtype).max)
+    if not -maximum <= value <= maximum:
+        raise ValueError(
+            f"cuda.coop.{operation} {parameter} value {value} is outside "
+            f"the finite range of {target_numpy_dtype.name}"
+        )
+    with np.errstate(over="ignore", invalid="ignore"):
+        result = target_numpy_dtype.type(value)
+    if not np.isfinite(result):
+        raise ValueError(
+            f"cuda.coop.{operation} {parameter} value {value} is outside "
+            f"the finite range of {target_numpy_dtype.name}"
+        )
+    return result
+
+
+def _validate_static_oob_default(value: object, dtype):
+    """Normalize one compile-time Load default before provider construction."""
+
+    return coerce_static_scalar(
+        value,
+        dtype,
         operation="load",
         parameter="oob_default",
     )
-    if isinstance(scalar, Integral):
-        normalized = int(scalar)
-        if not -(1 << 63) <= normalized <= (1 << 64) - 1:
-            raise ValueError(
-                "cuda.coop.numba_mlir.load static oob_default must fit a 64-bit integer"
-            )
-    elif isinstance(scalar, Real) and not math.isfinite(float(scalar)):
-        raise ValueError("cuda.coop.numba_mlir.load static oob_default must be finite")
 
 
 def _scalar_cpp_literal(value):
