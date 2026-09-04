@@ -9,7 +9,9 @@ the documented root export order and compiler-backend marker contract. It does
 not own semantic lowering, provider rendering, or backend compiler state.
 """
 
+from .exchange import exchange  # noqa: F401
 from .load_store import load, store  # noqa: F401
+from .shuffle import shuffle  # noqa: F401
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -51,6 +53,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "exchange",
     "load",
+    "shuffle",
     "store",
 ]
