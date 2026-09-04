@@ -7,7 +7,6 @@
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
-#include "catch2_test_helper.h"
 #include "unittest/unittest.h"
 
 template <class Vector>

@@ -6,7 +6,6 @@
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
 
-#include "catch2_test_helper.h"
 #include "unittest/unittest.h"
 
 _CCCL_DIAG_PUSH
