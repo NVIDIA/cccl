@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cub/device/device_for.cuh>
+#include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_transform.cuh>
 
@@ -36,6 +37,7 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
@@ -467,6 +469,36 @@ public:
       __env);
 
     return __output_begin + __read_counter(__counter, __stream);
+  }
+
+  //! @brief Gets the number of elements in the container.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param __stream CUDA stream used to get the number of elements
+  //!
+  //! @return The number of elements in the container
+  [[nodiscard]] _CCCL_HOST_API __size_type size(::cuda::stream_ref __stream) const
+  {
+    auto __counter = __make_counter(__stream);
+
+    const auto __input_begin = ::cuda::make_transform_iterator(
+      ::cuda::counting_iterator<__size_type>{0}, __get_slot<__has_payload, __storage_ref_type>{storage_ref()});
+    const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
+    const auto __env       = ::cuda::std::execution::env{__stream, __memory_resource};
+
+    _CCCL_TRY_CUDA_API(
+      CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
+      "cuco: failed to get the number of elements",
+      __input_begin,
+      __counter.data(),
+      capacity(),
+      ::cuda::std::plus<__size_type>{},
+      __is_filled,
+      __size_type{0},
+      __env);
+
+    return __read_counter(__counter, __stream);
   }
 
   //! @brief Returns the total number of slots.
