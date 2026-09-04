@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "cuda-coop"
-description = "Cooperative CUDA Block Load and Store primitives for Python DSLs"
+description = "Cooperative CUDA Block and Warp Load and Store for Python DSLs"
 authors = [{ name = "NVIDIA Corporation" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
