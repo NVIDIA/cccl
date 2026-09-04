@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from inspect import signature
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,6 +15,12 @@ import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringSelector(str, Enum):
+    INCLUSIVE = "inclusive"
+    RAKING = "raking"
+    MAX = "max"
 
 
 def _plan(function, *, arg_types=(), block=(64, 1, 1)):
@@ -172,9 +179,11 @@ def test_public_signatures_keep_portable_surface_narrow_and_omit_n6_callbacks():
         ("scan_op", "max"),
     ),
 )
+@pytest.mark.parametrize("selector_kind", ("object", "string-enum"))
 def test_portable_python_entry_point_rejects_non_string_scan_selectors(
     parameter,
     token,
+    selector_kind,
 ):
     import importlib
 
@@ -183,13 +192,18 @@ def test_portable_python_entry_point_rejects_non_string_scan_selectors(
 
     scan_api = importlib.import_module("cuda.coop._core.api.scan")
     group = this_block()
+    selector = (
+        SimpleNamespace(value=token)
+        if selector_kind == "object"
+        else _StringSelector(token)
+    )
 
     with _dispatch._compiler_scope("test.backend"):
         with pytest.raises(TypeError, match=rf"{parameter} must be .*string"):
             scan_api.scan(
                 group,
                 np.int32(1),
-                **{parameter: SimpleNamespace(value=token)},
+                **{parameter: selector},
             )
 
 
@@ -202,11 +216,13 @@ def test_portable_python_entry_point_rejects_non_string_scan_selectors(
         ("scan_op", "max"),
     ),
 )
+@pytest.mark.parametrize("selector_kind", ("object", "string-enum"))
 def test_scan_planning_rejects_non_string_selectors_before_provider(
     monkeypatch,
     api,
     parameter,
     token,
+    selector_kind,
 ):
     from numba_cuda_mlir import types
 
@@ -215,7 +231,11 @@ def test_scan_planning_rejects_non_string_selectors_before_provider(
     from cuda.coop.numba_mlir._compiler import _group_scan
 
     coop = portable if api == "portable" else qualified
-    selector = SimpleNamespace(value=token)
+    selector = (
+        SimpleNamespace(value=token)
+        if selector_kind == "object"
+        else _StringSelector(token)
+    )
     monkeypatch.setattr(
         _group_scan._ScanPlanning,
         "_provider",
@@ -249,8 +269,11 @@ def test_private_scan_selector_validation_does_not_unwrap_value_objects():
 
     cases = (
         (_scan._scan_mode, SimpleNamespace(value="inclusive")),
+        (_scan._scan_mode, _StringSelector.INCLUSIVE),
         (_scan._block_scan_algorithm, SimpleNamespace(value="raking")),
+        (_scan._block_scan_algorithm, _StringSelector.RAKING),
         (_scan.normalize_scan_operation, SimpleNamespace(value="max")),
+        (_scan.normalize_scan_operation, _StringSelector.MAX),
     )
     for validate, value in cases:
         with pytest.raises(TypeError, match="must be .*string"):
