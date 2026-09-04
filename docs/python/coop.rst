@@ -5,9 +5,9 @@
 
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
 The initial backend integrates with Numba-CUDA-MLIR and supports Load, Store,
-Exchange, and Shuffle across blocks, complete physical warps, and power-of-two
-logical warps. Its portable descriptors and planning records let primitive
-families share one dispatch, storage, and compilation model.
+Exchange, Shuffle, Reduce, and Scan across their supported thread-group scopes.
+Its portable descriptors and planning records let primitive families share one
+dispatch, storage, and compilation model.
 
 Installation
 ------------
@@ -184,19 +184,20 @@ Groups and thread data
 :func:`cuda.coop.this_block` describes the current CUDA thread block, and
 :func:`cuda.coop.this_warp` describes the current 32-thread physical warp. A
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
-consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store, and
-Exchange support all three forms; Shuffle is block-only. The enclosing block
-must contain a multiple of 32
+consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
+Exchange, and Scan support block, physical-Warp, and logical-Warp forms;
+Shuffle is block-only. The enclosing block must contain a multiple of 32
 threads, with no incomplete final physical warp. For a multidimensional block,
 threads are linearized in x-major order. Every member of a participating group
 must reach its collective; complete sibling logical groups may take different
 control-flow paths.
 
 The portable group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, but those are not targets for these operations.
-``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
-compile-time vocabulary for describing a static partition. Runtime query,
-membership, and synchronization methods such as
+groups of physical warps. Full built-in Reduce uses the thread, cluster, and
+mapped forms; data movement and Scan do not. Grid collectives remain
+unsupported. ``ThreadGroup`` objects are descriptor-only in this release.
+``group_by`` is compile-time vocabulary for describing a static partition.
+Runtime query, membership, and synchronization methods such as
 ``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
 ``is_member`` are not exposed.
 
@@ -381,6 +382,52 @@ untrusted distances before launching a kernel. Array values remain limited to
 unit ``up`` and ``down``; boundary-output projections are not part of this
 release.
 
+Scan semantics
+--------------
+
+The five portable spellings are ``scan``, ``exclusive_scan``,
+``inclusive_scan``, ``exclusive_sum``, and ``inclusive_sum``. ``scan`` chooses
+its form with ``mode="exclusive"`` or ``mode="inclusive"``. Every spelling
+returns a fresh value with the same scalar or per-thread-array shape and dtype
+as its input; the input remains unchanged.
+
+Block Scan accepts a scalar or fixed-size ``ThreadData`` payload and supports
+``raking``, ``raking_memoize``, and ``warp_scans``. The qualified
+:mod:`cuda.coop.numba_mlir` spelling also accepts fixed local arrays and the
+corresponding ``BlockScanAlgorithm`` enum. Physical and logical Warp Scan
+accept one scalar per lane and have no algorithm or explicit-storage selector.
+
+Sum is the default operation. The three general Scan spellings accept the same
+built-in string aliases as Reduce. The qualified spelling also recognizes the
+corresponding Python ``operator`` functions and NumPy ufuncs, and accepts a
+stateless device callback. Non-sum exclusive Scan requires an
+``initial_value`` matching the payload dtype; ordinary Python literals are
+checked and converted in that context. Inclusive Scan rejects an initial
+value.
+
+The qualified spelling adds ``aggregate_output``, an exact-dtype one-item
+``ThreadData`` or local array populated with the group aggregate. That
+aggregate excludes an exclusive initial value. Warp forms also accept
+``valid_items`` to scan the first N lanes by group rank, with
+``1 <= N <= warp_width``; only those N result lanes are defined. The initial
+value and ``valid_items`` must be uniform across all participating members.
+Invalid runtime values execute a device trap before CUB's integer argument is
+formed and invalidate the current CUDA context. Block Scan rejects
+``valid_items``. These two controls are intentionally absent from the portable
+root API.
+
+All Scan forms use CUB temporary storage. Block calls may use compiler-owned,
+caller-owned, or dynamic shared storage and append ``syncthreads`` unless a
+caller-owned descriptor explicitly sets ``auto_sync=False``. Physical and
+logical Warp calls use one compiler-owned slice per Warp and append
+``syncwarp`` with the participating mask. Prefix callbacks and running-prefix
+state are deferred.
+
+.. literalinclude:: ../../python/cuda_coop/examples/numba_mlir/block_scan.py
+   :language: python
+   :start-after: docs: start numba-block-scan
+   :end-before: docs: end numba-block-scan
+
 Temporary storage
 -----------------
 
@@ -415,12 +462,13 @@ caller when it is reused. The generated provider remains authoritative for the
 required byte count and alignment, and the backend validates the descriptor
 against the concrete lowering plan.
 
-Warp ``transpose`` and Warp Exchange use compiler-owned storage with one
-disjoint slice per physical or logical group. The compiler inserts
-``syncwarp`` with the exact logical-group mask. Exchange and Shuffle always
-use compiler-owned storage and append a group-scoped reuse barrier. Both the
-portable and qualified APIs reject explicit ``TempStorage`` for every Warp
-Load and Store algorithm, including the storage-free modes.
+Warp ``transpose``, Warp Exchange, and Warp Scan use compiler-owned storage
+with one disjoint slice per physical or logical group. The compiler inserts
+``syncwarp`` with the exact logical-group mask. Exchange and Shuffle always use
+compiler-owned storage and append a group-scoped reuse barrier. Block Scan may
+instead use implicit, caller-owned, or dynamic storage. Both the portable and
+qualified APIs reject explicit ``TempStorage`` for every Warp Load and Store
+algorithm, including the storage-free modes, and for Warp Scan.
 
 Compilation and headers
 -----------------------

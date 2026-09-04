@@ -321,6 +321,66 @@ Grid Reduce and Sum are unsupported because a grid reduction requires hidden
 per-launch workspace; use a separate kernel or explicitly managed multi-stage
 reduction instead.
 
+## Scan
+
+The Scan family has five spellings: `scan`, `exclusive_scan`,
+`inclusive_scan`, `exclusive_sum`, and `inclusive_sum`. `scan` selects its form
+with `mode="exclusive"` or `mode="inclusive"`; the other names make that choice
+explicit. Every form returns a fresh scalar or per-thread payload and leaves
+the input unchanged.
+
+Block Scan accepts a numeric scalar, fixed-size `ThreadData`, or, in the
+qualified `cuda.coop.numba_mlir` API, a fixed-size `cuda.local.array`. The
+`raking`, `raking_memoize`, and `warp_scans` algorithms are available for
+blocks. Physical- and logical-Warp Scan accept one scalar per thread and have
+no algorithm selector.
+
+Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
+accept the same built-in string aliases as Reduce. The qualified API also
+recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
+accepts stateless device callbacks. A non-sum exclusive scan requires an
+`initial_value` matching the payload dtype; ordinary Python literals are
+checked and converted in that context. Inclusive scans reject an initial
+value. The aggregate reports only the input reduction and does not include the
+exclusive initial value.
+
+The portable root API intentionally exposes only the common surface above. The
+qualified API additionally accepts `aggregate_output`, an exact-dtype one-item
+`ThreadData` or local array populated with the group aggregate. Warp forms also
+accept `valid_items`, which selects the first N lanes by group rank and requires
+`1 <= N <= warp_width`; only those N result lanes are defined. The initial
+value and `valid_items` must be uniform across participating members. Invalid
+runtime values execute a deterministic device trap before CUB's 32-bit
+parameter is formed, invalidating the current CUDA context.
+
+All Scan providers use CUB temporary storage. Block calls may use implicit,
+caller-owned, or dynamic `TempStorage` and append a block reuse barrier unless
+a caller-owned descriptor explicitly sets `auto_sync=False`. Physical and
+logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
+for the exact participating mask. Prefix callback and running-prefix state APIs
+are not part of this release.
+
+This portable example loads a block tile, computes its exclusive sum, and
+stores the out-of-place result:
+
+```python
+import numpy as np
+from numba_cuda_mlir import cuda
+
+from cuda import coop
+
+
+@cuda.jit
+def block_scan_kernel(values, prefixes):
+    block = coop.this_block()
+    items = coop.ThreadData(2, dtype=np.int32)
+    loaded = coop.load(block, values, items)
+    scanned = coop.exclusive_sum(block, loaded)
+    coop.store(block, prefixes, scanned)
+```
+
+The complete runnable form is in `examples/numba_mlir/block_scan.py`.
+
 ## Exchange and Shuffle
 
 `exchange(group, value, mode=...)` returns a fresh payload and leaves `value`
