@@ -20,11 +20,7 @@ def _load_store(kind="load", **overrides):
     algorithm = GroupLoadStoreAlgorithm(
         overrides.pop("algorithm", GroupLoadStoreAlgorithm.DIRECT)
     )
-    default_storage_ownership = (
-        StorageOwnership.NONE
-        if algorithm is GroupLoadStoreAlgorithm.DIRECT
-        else StorageOwnership.IMPLEMENTATION
-    )
+    default_storage_ownership = StorageOwnership.IMPLEMENTATION
     operation = GroupLoadStoreSemantics(
         kind=GroupLoadStoreKind(kind),
         dtype=overrides.pop("dtype", "int"),
@@ -39,7 +35,7 @@ def _load_store(kind="load", **overrides):
         storage_alignment=overrides.pop("storage_alignment", None),
         storage_auto_sync=overrides.pop(
             "storage_auto_sync",
-            default_storage_ownership is not StorageOwnership.NONE,
+            True,
         ),
     )
     assert not overrides
