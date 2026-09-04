@@ -199,6 +199,17 @@ portable.reduce(  # expected-error: [call-overload]
     binary_op=select_left,
     broadcast=False,
 )
+portable.reduce(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    binary_op=0,
+)
+portable.sum(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    broadcast=False,
+    algorithm=0,
+)
 portable.sum(  # expected-error: [call-overload]
     portable_block,
     np.complex64(1),
@@ -211,6 +222,17 @@ coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.complex64(1),
     binary_op="sum",
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=0,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    broadcast=False,
+    algorithm=0,
 )
 complex_values = cast(portable.ThreadDataLike[np.complex64], object())
 coop.sum(  # expected-error: [type-var]
