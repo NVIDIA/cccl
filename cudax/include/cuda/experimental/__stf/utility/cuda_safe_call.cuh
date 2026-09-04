@@ -443,8 +443,17 @@ UNITTEST("cuda_try1")
  *
  * @snippet this cuda_try2
  */
-template <auto fun, typename... Ps>
-auto cuda_try(Ps&&... ps)
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace reserved
+{
+// Shared engine for the introspected call forms of `cuda_try<fun>` and `cuda_safe_call<fun>`:
+// selects among the direct / first-output / last-output shapes at compile time and hands the
+// raw status to `check` (a stateless callable: throw for cuda_try, report-and-abort for
+// cuda_safe_call). Known wart, inherited by both fronts: the status checker's defaulted
+// source_location fires HERE rather than at the user's call site, because a parameter pack
+// followed by a defaulted parameter makes the pack non-deduced in C++17. Revisit with C++20.
+template <auto fun, typename Check, typename... Ps>
+auto checked_api_call(Check check, Ps&&... ps)
 {
   constexpr bool direct_form = ::cuda::std::is_invocable_v<decltype(fun), Ps...>;
 
@@ -461,29 +470,61 @@ auto cuda_try(Ps&&... ps)
   // When no user args are supplied, the first- and last-output forms produce the same call
   // `fun(&result)`, so they are not ambiguous. Otherwise, both matching is a real ambiguity.
   static_assert(!(first_output_form && last_output_form) || sizeof...(Ps) == 0,
-                "Ambiguous cuda_try: both first- and last-output forms apply; "
+                "Ambiguous cuda_try/cuda_safe_call: both first- and last-output forms apply; "
                 "call the function explicitly to disambiguate.");
 
   if constexpr (direct_form)
   {
-    cuda_try(fun(::cuda::std::forward<Ps>(ps)...));
+    check(fun(::cuda::std::forward<Ps>(ps)...));
   }
   else if constexpr (first_output_form)
   {
     ::cuda::std::remove_pointer_t<reserved::first_param<fun>> result{};
-    cuda_try(fun(&result, ::cuda::std::forward<Ps>(ps)...));
+    check(fun(&result, ::cuda::std::forward<Ps>(ps)...));
     return result;
   }
   else if constexpr (last_output_form)
   {
     ::cuda::std::remove_pointer_t<reserved::last_param<fun>> result{};
-    cuda_try(fun(::cuda::std::forward<Ps>(ps)..., &result));
+    check(fun(::cuda::std::forward<Ps>(ps)..., &result));
     return result;
   }
   else
   {
-    static_assert(reserved::dependent_false<Ps...>, "No valid cuda_try invocation form for this function.");
+    static_assert(reserved::dependent_false<Ps...>,
+                  "No valid cuda_try/cuda_safe_call invocation form for this function.");
   }
+}
+} // namespace reserved
+#endif // !_CCCL_DOXYGEN_INVOKED
+
+template <auto fun, typename... Ps>
+auto cuda_try(Ps&&... ps)
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status) {
+      cuda_try(status);
+    },
+    ::cuda::std::forward<Ps>(ps)...);
+}
+
+/**
+ * @brief As @ref cuda_try with the same three call shapes and the same limitations, but a
+ * failing status reports and aborts instead of throwing (the `cuda_safe_call` reaction).
+ *
+ * The two spellings are deliberately parallel so migrating a call site between the aborting
+ * and throwing regimes is a one-token change: `cuda_safe_call<f>(a)` <-> `cuda_try<f>(a)`.
+ *
+ * @snippet this cuda_safe_call2
+ */
+template <auto fun, typename... Ps>
+auto cuda_safe_call(Ps&&... ps)
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status) {
+      cuda_safe_call(status);
+    },
+    ::cuda::std::forward<Ps>(ps)...);
 }
 
 #ifdef UNITTESTED_FILE
@@ -507,6 +548,16 @@ UNITTEST("cuda_try2")
   EXPECT(cuda_try<test_first_output_param>() == 1);
   EXPECT(cuda_try<test_last_output_param>(2.0) == 2);
   //! [cuda_try2]
+};
+
+UNITTEST("cuda_safe_call2")
+{
+  //! [cuda_safe_call2]
+  int dev = cuda_safe_call<cudaGetDevice>(); // aborting sibling of cuda_try<cudaGetDevice>()
+  cuda_safe_call(cudaGetDevice(&dev)); // equivalent to the line above
+  EXPECT(cuda_safe_call<test_first_output_param>() == 1);
+  EXPECT(cuda_safe_call<test_last_output_param>(2.0) == 2);
+  //! [cuda_safe_call2]
 };
 #endif // UNITTESTED_FILE
 
