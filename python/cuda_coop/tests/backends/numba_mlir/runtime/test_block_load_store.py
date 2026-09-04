@@ -5,6 +5,9 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+import textwrap
 from functools import lru_cache
 
 import numpy as np
@@ -34,6 +37,8 @@ _TILE_ITEMS = _THREADS * _ITEMS_PER_THREAD
 _BLOCK_SHAPES = (_THREADS, (8, 4), (4, 4, 2))
 _LOAD_OFFSET = 5
 _STORE_OFFSET = 7
+_GRID_STRIDE_BLOCKS = 3
+_GRID_STRIDE_ITEMS = 7 * _TILE_ITEMS + 11
 
 _DTYPES = (
     pytest.param(np.dtype(np.int8), types.int8, id="int8"),
@@ -287,6 +292,176 @@ def test_store_writes_only_the_valid_prefix_at_an_independent_offset(valid_items
     )
 
     np.testing.assert_array_equal(destination, expected)
+
+
+@cuda.jit
+def _portable_grid_stride_load_store(source, destination):
+    tile_offset = cuda.blockIdx.x * _TILE_ITEMS
+    grid_stride = cuda.gridDim.x * _TILE_ITEMS
+    while tile_offset < source.size:
+        valid_items = source.size - tile_offset
+        if valid_items > _TILE_ITEMS:
+            valid_items = _TILE_ITEMS
+        payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+        loaded = root_coop.load(
+            root_coop.this_block(),
+            source,
+            payload,
+            valid_items=valid_items,
+            offset=tile_offset,
+        )
+        root_coop.store(
+            root_coop.this_block(),
+            destination,
+            loaded,
+            valid_items=valid_items,
+            offset=tile_offset,
+        )
+        tile_offset += grid_stride
+
+
+@cuda.jit
+def _qualified_grid_stride_load_store(source, destination):
+    tile_offset = cuda.blockIdx.x * _TILE_ITEMS
+    grid_stride = cuda.gridDim.x * _TILE_ITEMS
+    while tile_offset < source.size:
+        valid_items = source.size - tile_offset
+        if valid_items > _TILE_ITEMS:
+            valid_items = _TILE_ITEMS
+        payload = qualified_coop.ThreadData(
+            _ITEMS_PER_THREAD,
+            dtype=types.int32,
+        )
+        loaded = qualified_coop.load(
+            qualified_coop.this_block(),
+            source,
+            payload,
+            valid_items=valid_items,
+            offset=tile_offset,
+        )
+        qualified_coop.store(
+            qualified_coop.this_block(),
+            destination,
+            loaded,
+            valid_items=valid_items,
+            offset=tile_offset,
+        )
+        tile_offset += grid_stride
+
+
+@pytest.mark.parametrize(
+    "kernel",
+    (
+        pytest.param(_portable_grid_stride_load_store, id="portable"),
+        pytest.param(_qualified_grid_stride_load_store, id="qualified"),
+    ),
+)
+def test_multi_block_grid_stride_load_store_handles_a_partial_tail(kernel):
+    source = _values(np.dtype(np.int32), _GRID_STRIDE_ITEMS, shift=19)
+    destination = np.full(_GRID_STRIDE_ITEMS, -1, dtype=np.int32)
+
+    kernel[_GRID_STRIDE_BLOCKS, _THREADS](source, destination)
+
+    np.testing.assert_array_equal(destination, source)
+
+
+def _run_invalid_runtime_valid_items_probe(
+    operation: str,
+    valid_items: int,
+) -> subprocess.CompletedProcess[str]:
+    # A device trap poisons its CUDA context, so invalid launches must run in
+    # disposable child processes rather than the pytest worker.
+    operation_body = textwrap.indent(
+        textwrap.dedent(
+            {
+                "load": """
+            payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+            root_coop.load(
+                root_coop.this_block(),
+                source,
+                payload,
+                valid_items=valid_items,
+            )
+        """,
+                "store": """
+            payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
+            root_coop.store(
+                root_coop.this_block(),
+                destination,
+                payload,
+                valid_items=valid_items,
+            )
+        """,
+            }[operation]
+        ).strip(),
+        " " * 4,
+    )
+    script = f"""\
+import numpy as np
+import numba_cuda_mlir.cuda as cuda
+from numba_cuda_mlir import types
+
+import cuda.coop.numba_mlir as qualified_coop  # noqa: F401
+from cuda import coop as root_coop
+
+_THREADS = {_THREADS}
+_ITEMS_PER_THREAD = {_ITEMS_PER_THREAD}
+
+@cuda.jit
+def kernel(source, destination, valid_items):
+    thread = cuda.threadIdx.x
+{operation_body}
+
+source = np.arange(
+    _THREADS * _ITEMS_PER_THREAD,
+    dtype=np.int32,
+)
+destination = np.full_like(source, -1)
+kernel[1, _THREADS](source, destination, np.int64({valid_items}))
+cuda.synchronize()
+raise AssertionError("invalid valid_items did not trap")
+"""
+    return subprocess.run(
+        [sys.executable, "-B", "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+
+
+@pytest.mark.parametrize("operation", ("load", "store"))
+@pytest.mark.parametrize(
+    "valid_items",
+    (
+        pytest.param(-1, id="negative"),
+        pytest.param(_TILE_ITEMS + 1, id="beyond-tile"),
+    ),
+)
+def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
+    operation,
+    valid_items,
+):
+    result = _run_invalid_runtime_valid_items_probe(operation, valid_items)
+    output = result.stdout + result.stderr
+
+    assert result.returncode != 0, output
+    # Drivers report PTX ``trap;`` as either an illegal instruction or the
+    # more general launch failure. Both are deterministic device-side faults.
+    assert any(
+        error in output
+        for error in (
+            "CUDA_ERROR_ILLEGAL_INSTRUCTION",
+            "CUDA_ERROR_LAUNCH_FAILED",
+        )
+    ), output
+
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=23)
+    observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
+    _full_load_kernel(types.int32)[1, _THREADS](source, observed)
+    np.testing.assert_array_equal(observed, source)
 
 
 @cuda.jit

@@ -41,6 +41,7 @@ from ._group_planner_support import (
 )
 from ._group_planning import GroupPlanningContext
 from ._operations import group_primitive
+from ._scalar_provenance import try_resolve_static_scalar
 
 
 class _GroupCallPlanner:
@@ -174,6 +175,20 @@ class _GroupCallPlanner:
             return (True, self._constant(value))
         except (ForceLiteralArg, GroupRewriteError):
             return (False, None)
+
+    def _try_static_scalar(
+        self,
+        value: Any,
+    ) -> tuple[bool, Any]:
+        """Resolve only values whose IR provenance is explicitly static."""
+
+        return try_resolve_static_scalar(
+            value,
+            definitions=self._all_definitions,
+            argument_type=lambda index: (
+                self.state.args[index] if 0 <= index < len(self.state.args) else None
+            ),
+        )
 
     def _bind(self, function: Any, call: ir.Expr) -> inspect.BoundArguments:
         if call.vararg is not None or call.varkwarg is not None:
