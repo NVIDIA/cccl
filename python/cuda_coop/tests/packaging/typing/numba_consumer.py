@@ -75,6 +75,8 @@ def check_numba_surface(
     read_only_values = _ReadOnlyThreadData(np.uint16(1))
     read_only_ranks = _ReadOnlyThreadData(np.int32(0))
     read_only_flags = _ReadOnlyThreadData(np.uint8(1))
+    int32_aggregate = coop.ThreadData(1, np.int32)
+    uint16_aggregate = coop.ThreadData(1, np.uint16)
     storage = coop.TempStorage(alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
@@ -241,6 +243,63 @@ def check_numba_surface(
             binary_op="max",
             broadcast=False,
             algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.scan(
+            block,
+            np.int32(4),
+            mode="inclusive",
+            scan_op=np.maximum,
+            algorithm=coop.BlockScanAlgorithm.RAKING_MEMOIZE,
+            aggregate_output=int32_aggregate,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            warp,
+            np.int32(4),
+            scan_op=operator.mul,
+            initial_value=np.int32(1),
+            valid_items=np.int32(7),
+            aggregate_output=int32_aggregate,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            block,
+            np.int32(4),
+            scan_op="max",
+            initial_value=-17,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.inclusive_scan(
+            logical_warp,
+            np.int32(4),
+            scan_op=_select_left_int32,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_sum(
+            block,
+            values,
+            algorithm="warp_scans",
+            aggregate_output=uint16_aggregate,
+        ),
+        ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.inclusive_sum(
+            logical_warp,
+            np.int32(4),
+            valid_items=np.int32(7),
+            aggregate_output=int32_aggregate,
         ),
         np.int32,
     )
