@@ -260,8 +260,9 @@ private:
     compute_histograms<SelectDirection, IsFullTile>(unsigned_keys, valid_items, digit_extractor, filter_op, histogram);
     if (zero_next_histogram)
     {
-      // Re-zero the other buffer for the next pass. Its last read preceded the previous pass's
-      // state barrier, so this shares the histogram phase instead of needing one of its own
+      // Zero the other buffer for the next pass. It is untouched during the first pass and its
+      // last read otherwise preceded the previous pass's state barrier, so this shares the
+      // histogram phase instead of needing one of its own
       zero_histogram(storage.stage.passes.histogram[(pass + 1) % 2]);
     }
     __syncthreads();
@@ -315,10 +316,9 @@ private:
     // The total number of selected items
     total_selected = 0;
 
-    // Zero both histogram buffers once. Later passes re-zero the respectively other buffer
-    // inside their histogram phase, so no per-pass init phase (and barrier) is needed
+    // Zero the first pass's histogram buffer. Every pass but the last re-zeroes the respectively
+    // other buffer inside its histogram phase, so no per-pass init phase (and barrier) is needed
     zero_histogram(storage.stage.passes.histogram[0]);
-    zero_histogram(storage.stage.passes.histogram[1]);
     __syncthreads();
 
     constexpr int num_passes = ::cuda::ceil_div(max_bit, RadixBits);
@@ -336,7 +336,7 @@ private:
         pass,
         pass_begin_bit,
         pass_end_bit - pass_begin_bit,
-        pass > 0 && pass + 1 < num_passes,
+        pass + 1 < num_passes,
         decomposer);
     };
 
