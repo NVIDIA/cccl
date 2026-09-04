@@ -47,20 +47,20 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   # todo: prune is_catch2_test
   cccl_add_executable(${test_target} SOURCES "${real_test_src}" ADD_CTEST)
   target_link_libraries(
-          ${test_target}
-          PRIVATE #
-          ${thrust_target}
-          Catch2::Catch2WithMain
+    ${test_target}
+    PRIVATE #
+      ${thrust_target}
+      Catch2::Catch2WithMain
   )
   target_include_directories(
-          ${test_target}
-          PRIVATE "${Thrust_SOURCE_DIR}/testing"
+    ${test_target}
+    PRIVATE "${Thrust_SOURCE_DIR}/testing"
   )
   target_compile_definitions(
-          ${test_target}
-          PRIVATE
-          $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:THRUST_TEST_DEVICE_SIDE>
-          CCCL_ENABLE_ASSERTIONS
+    ${test_target}
+    PRIVATE
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:THRUST_TEST_DEVICE_SIDE>
+      CCCL_ENABLE_ASSERTIONS
   )
 
   # Run OMP/TBB tests in serial. Multiple OMP processes will massively
