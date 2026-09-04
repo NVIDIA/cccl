@@ -5,6 +5,7 @@
 from typing import Literal
 
 from ._core.api.load_store import load, store
+from ._core.api.reduce import reduce, sum
 from ._core.api.temp_storage import TempStorage, TempStorageLike
 from ._core.api.thread_data import ThreadData, ThreadDataLike
 from ._core.api.thread_group import (
@@ -35,7 +36,9 @@ __all__ = [
     "__version__",
     "load",
     "register",
+    "reduce",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

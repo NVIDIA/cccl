@@ -55,6 +55,31 @@ WarpLoadStoreAlgorithm: TypeAlias = Literal[
     "transpose",
 ]
 LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm
+ReduceAlgorithm: TypeAlias = Literal[
+    "raking_commutative_only",
+    "raking",
+    "warp_reductions",
+]
+ReduceOperator: TypeAlias = Literal[
+    "+",
+    "sum",
+    "add",
+    "plus",
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -158,13 +183,21 @@ class TempStorageLike(Protocol):
         """Consume the descriptor and return its complete shared array."""
 
 __all__ = [
+    "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "ExchangeMode",
     "LoadStoreAlgorithm",
+    "ReduceAlgorithm",
+    "ReduceOperator",
+    "ScalarShuffleMode",
+    "ShuffleMode",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
+    "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
     "_CommonNumericT",
+    'CommonShuffleMode',
 ]
