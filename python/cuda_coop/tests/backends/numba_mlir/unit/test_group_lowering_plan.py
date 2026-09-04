@@ -543,11 +543,11 @@ def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
         GroupPlanningContext._validate_provider_contract(plan, object())
 
 
-def test_logical_warp_plan_is_typed_before_provider_selection(monkeypatch):
+def test_logical_warp_plan_selects_typed_cub_provider(monkeypatch):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
-    from cuda.coop._core import GroupLoweringTarget, UnsupportedReasonCode
+    from cuda.coop._core import GroupLoweringTarget
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
     plans = []
@@ -570,22 +570,17 @@ def test_logical_warp_plan_is_typed_before_provider_selection(monkeypatch):
 
     array_type = types.Array(types.int32, 1, "C")
     planner = _planner(memory, arg_types=(array_type,))
-    monkeypatch.setattr(
-        _group_load_store._LoadStorePlanning,
-        "_scope_factory",
-        lambda *_args, **_kwargs: pytest.fail(
-            "unsupported plan reached provider selection"
-        ),
-    )
-    with pytest.raises(NotImplementedError, match="complete physical this_warp"):
-        planner.run()
+    assert planner.run()
 
     assert len(plans) == 1
     plan = plans[0]
-    assert plan.target is GroupLoweringTarget.UNSUPPORTED
-    assert plan.unsupported is not None
-    assert plan.unsupported.code is UnsupportedReasonCode.GROUP_KIND
-    assert plan.artifact_key is None
+    assert plan.target is GroupLoweringTarget.CUB_WARP
+    assert plan.unsupported is None
+    assert plan.topology is not None
+    assert plan.topology.group_kind == "threads_within_warp"
+    assert plan.topology.logical_width == 8
+    assert plan.topology.instances == 8
+    assert plan.artifact_key is not None
 
 
 @pytest.mark.parametrize(

@@ -36,11 +36,6 @@ portable.load(  # expected-error: [call-overload]
     portable_values,
     algorithm="stripd",
 )
-portable.load(
-    portable.this_warp().group_by(8),  # expected-error: [arg-type]
-    object(),
-    portable_values,
-)
 portable.load(  # expected-error: [call-overload]
     portable.this_warp(),
     object(),
@@ -53,16 +48,17 @@ portable.load(
     portable_values,
     temp_storage=portable.TempStorage(),
 )
+portable.load(
+    portable.this_warp().group_by(8),  # expected-error: [arg-type]
+    object(),
+    portable_values,
+    temp_storage=portable.TempStorage(),
+)
 portable.store(  # expected-error: [call-overload]
     portable.this_warp(),
     object(),
     portable_values,
     algorithm="warp_transpose",
-)
-coop.load(
-    coop.this_warp().group_by(8),  # expected-error: [arg-type]
-    object(),
-    values,
 )
 coop.load(  # expected-error: [call-overload]
     coop.this_warp(),
@@ -72,6 +68,12 @@ coop.load(  # expected-error: [call-overload]
 )
 coop.load(
     coop.this_warp(),  # expected-error: [arg-type]
+    object(),
+    values,
+    temp_storage=coop.TempStorage(),
+)
+coop.load(
+    coop.this_warp().group_by(8),  # expected-error: [arg-type]
     object(),
     values,
     temp_storage=coop.TempStorage(),

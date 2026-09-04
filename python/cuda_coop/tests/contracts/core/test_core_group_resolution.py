@@ -77,7 +77,7 @@ def test_non_load_store_targets_are_typed_unsupported_before_resolution(group):
     assert plan.target is GroupLoweringTarget.UNSUPPORTED
     assert plan.unsupported.code is UnsupportedReasonCode.GROUP_KIND
     assert plan.artifact_key is None
-    assert "only this_block()" in plan.unsupported.message
+    assert "supports this_block()" in plan.unsupported.message
 
 
 @pytest.mark.parametrize(

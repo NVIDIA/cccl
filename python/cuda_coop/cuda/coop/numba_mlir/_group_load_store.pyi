@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and physical-Warp Load/Store signatures for Numba-CUDA-MLIR."""
+"""Block and Warp Load/Store signatures for Numba-CUDA-MLIR."""
 
-from typing import Literal, overload
+from typing import overload
 
 from typing_extensions import TypeVar
 
@@ -18,7 +18,7 @@ from .._typing import (
     ValidItems,
     WarpLoadStoreAlgorithm,
 )
-from ._thread_group import BlockGroup, ThreadGroup
+from ._thread_group import BlockGroup, WarpGroup
 
 _PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
@@ -50,7 +50,7 @@ def load(
 ) -> ThreadDataLike[_PortableNumericT]: ...
 @overload
 def load(
-    group: ThreadGroup[Literal["warp"]],
+    group: WarpGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
@@ -63,7 +63,7 @@ def load(
 ) -> ThreadDataLike[_PortableNumericT]: ...
 @overload
 def load(
-    group: ThreadGroup[Literal["warp"]],
+    group: WarpGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
@@ -88,7 +88,7 @@ def store(
 ) -> None: ...
 @overload
 def store(
-    group: ThreadGroup[Literal["warp"]],
+    group: WarpGroup,
     destination: object,
     value: _PortableNumericT | PortableThreadDataLike[_PortableNumericT],
     /,
