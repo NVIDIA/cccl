@@ -14,11 +14,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/fpemu>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/random>
+
+#include <cuda/experimental/fpemu>
 
 #if _CCCL_HOST_COMPILATION()
 #  include <cfenv>

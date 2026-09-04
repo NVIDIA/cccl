@@ -22,11 +22,12 @@
 // nvcc doesn't currently support _Float64 in device code.
 // UNSUPPORTED: nvcc
 
-#include <cuda/fpemu>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/fpemu>
 
 #include "test_macros.h"
 

@@ -10,8 +10,8 @@
 //  namespace cuda::std, such a call would silently narrow the fpmp2 argument to
 //  double (via the implicit conversion) and compute a native-double result. This
 //  test verifies that:
-//    - cuda::std::sqrt / fma (from <cuda/fpmp>) and the standard <cmath>-named
-//      functions (from <cuda/fpmp_math>) select the emulated implementation,
+//    - cuda::std::sqrt / fma (from <cuda/experimental/fpmp>) and the standard <cmath>-named
+//      functions (from <cuda/experimental/fpmp_math>) select the emulated implementation,
 //    - the RETURN TYPE is the emulated type (not double) -- the compile-time
 //      guard proving the double fallback overload was not chosen,
 //    - mixed fpmp2 + built-in arithmetic operands are handled (fma),
@@ -22,10 +22,11 @@
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 
-#include <cuda/fpmp>
-#include <cuda/fpmp_math>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/fpmp>
+#include <cuda/experimental/fpmp_math>
 
 #include "test_macros.h"
 
@@ -42,11 +43,11 @@ TEST_HOST_DEVICE_FUNC bool run_test()
   // If the emulated overloads were missing, cuda::std::<fn> would narrow the
   // fpmp2 argument to double and return double; these static_asserts fail to
   // compile in that case.
-  // sqrt / fma live in <cuda/fpmp>:
+  // sqrt / fma live in <cuda/experimental/fpmp>:
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::sqrt(a)), T>);
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::fma(a, b, c)), T>);
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::fma(a, 3.0f, c)), T>); // mixed
-  // Standard <cmath>-named functions live in <cuda/fpmp_math>:
+  // Standard <cmath>-named functions live in <cuda/experimental/fpmp_math>:
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::exp(a)), T>);
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::log(a)), T>);
   static_assert(::cuda::std::is_same_v<decltype(::cuda::std::sin(a)), T>);

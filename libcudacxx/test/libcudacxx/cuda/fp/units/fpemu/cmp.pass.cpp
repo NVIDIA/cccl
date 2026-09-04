@@ -16,11 +16,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/fpemu>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/random>
+
+#include <cuda/experimental/fpemu>
 
 #include "test_macros.h"
 

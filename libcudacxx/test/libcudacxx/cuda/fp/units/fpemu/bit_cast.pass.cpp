@@ -21,12 +21,13 @@
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 
-#include <cuda/fpemu>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/fpemu>
 
 #include "test_macros.h"
 

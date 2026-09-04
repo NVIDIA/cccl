@@ -32,7 +32,7 @@
 //! ## Quick Start
 //!
 //! ```cpp
-//! #include <cuda/fptool>
+//! #include <cuda/experimental/fptool>
 //!
 //! using namespace cuda::experimental;
 //!

@@ -36,7 +36,7 @@
 //! ## Quick Start
 //!
 //! ```cpp
-//! #include <cuda/fptool>
+//! #include <cuda/experimental/fptool>
 //!
 //! using namespace cuda::experimental;
 //!
@@ -1001,7 +1001,7 @@ public:
   // === arithmetic, with precision reduction ===
   //
   // The CUDA intrinsics are called as ::__dadd_rn etc. because this class lives in
-  // cuda::experimental, where <cuda/fpemu> declares same-named overloads for its own
+  // cuda::experimental, where <cuda/experimental/fpemu> declares same-named overloads for its own
   // types: unqualified lookup would stop there and never reach the global scope.
 
   //! @brief Addition with precision reduction

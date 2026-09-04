@@ -3,7 +3,7 @@
 
 //===----------------------------------------------------------------------===//
 //
-//  Unit test: <cuda/fpemu> and <cuda/fpmp> used in one translation unit.
+//  Unit test: <cuda/experimental/fpemu> and <cuda/experimental/fpmp> used in one translation unit.
 //
 //  Both libraries live in namespace cuda::experimental, and fpemu declares
 //  overloads named after the CUDA rounding intrinsics (__dadd_rn, __dmul_rn,
@@ -26,11 +26,12 @@
 // error: calling a __host__ __device__ function in tile is not allowed
 
 // Include order is load-bearing here; see above.
-#include <cuda/fpemu>
-#include <cuda/fpmp>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/fpemu>
+#include <cuda/experimental/fpmp>
 
 #include "test_macros.h"
 
