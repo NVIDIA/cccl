@@ -23,7 +23,7 @@ def reduce(
     /,
     *,
     binary_op: Any = None,
-    broadcast: Any = True,
+    broadcast: bool = True,
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> Any:
@@ -49,7 +49,7 @@ def sum(
     value: Any,
     /,
     *,
-    broadcast: Any = True,
+    broadcast: bool = True,
     valid_items: Any = None,
     algorithm: Any = None,
 ) -> Any:

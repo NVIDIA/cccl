@@ -11,9 +11,9 @@ from typing_extensions import TypeVar
 
 from .._typing import (
     PortableNumericScalar,
+    PortableThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
-    ThreadDataLike,
     ValidItems,
 )
 from ._thread_group import BlockGroup, ReductionGroup, WarpGroup
@@ -51,7 +51,7 @@ _CallbackReduceAlgorithm: TypeAlias = Literal["raking", "warp_reductions"]
 @overload
 def reduce(
     group: ReductionGroup,
-    value: ThreadDataLike[_ItemT],
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _CudaxReduceOperator | None = None,
@@ -73,7 +73,7 @@ def reduce(
 @overload
 def reduce(
     group: BlockGroup,
-    value: ThreadDataLike[_ItemT],
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _CudaxReduceOperator | None = None,
@@ -84,7 +84,7 @@ def reduce(
 @overload
 def reduce(
     group: BlockGroup,
-    value: ThreadDataLike[_ItemT],
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
     binary_op: Callable[[_ItemT, _ItemT], _ItemT],
@@ -130,7 +130,7 @@ def reduce(
 @overload
 def sum(
     group: ReductionGroup,
-    value: ThreadDataLike[_ItemT],
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
     broadcast: bool = True,
@@ -150,7 +150,7 @@ def sum(
 @overload
 def sum(
     group: BlockGroup,
-    value: ThreadDataLike[_ItemT],
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
     broadcast: Literal[False],
