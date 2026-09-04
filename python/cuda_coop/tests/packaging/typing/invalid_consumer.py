@@ -150,6 +150,12 @@ coop.exchange(  # expected-error: [call-overload]
     values,
     mode="warp_striped_to_blocked",
 )
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_warp(),
+    values,
+    mode="scatter_to_striped",
+    ranks=coop.ThreadData(2, np.int32),
+)
 coop.shuffle(  # expected-error: [call-overload]
     coop.this_block(),
     values,
