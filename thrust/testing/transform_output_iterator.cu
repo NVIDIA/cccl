@@ -40,7 +40,7 @@ void TestTransformOutputIteratorTraits()
 DECLARE_UNITTEST(TestTransformOutputIteratorTraits);
 
 template <class Vector>
-void TestTransformOutputIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformOutputIterator()
 {
   using T = typename Vector::value_type;
 
@@ -65,7 +65,7 @@ void TestTransformOutputIterator()
 DECLARE_VECTOR_UNITTEST(TestTransformOutputIterator);
 
 template <class Vector>
-void TestMakeTransformOutputIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformOutputIterator()
 {
   using T = typename Vector::value_type;
 
