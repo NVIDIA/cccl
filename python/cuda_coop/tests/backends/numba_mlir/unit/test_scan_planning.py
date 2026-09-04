@@ -170,7 +170,6 @@ def test_public_signatures_keep_portable_surface_narrow_and_add_n6_callbacks():
             "valid_items",
             "aggregate_output",
             "prefix_op",
-            "block_prefix_callback_op",
         )
 
     package = Path(qualified.__file__).parent
@@ -272,37 +271,27 @@ def test_all_qualified_scan_spellings_plan_stateless_prefix_callbacks(spelling: 
     assert classification.role is ParameterRole.OPERATOR
 
 
-def test_legacy_prefix_keyword_canonicalizes_to_one_provider_identity():
+def test_removed_prefix_keyword_is_rejected_during_binding():
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
-    from cuda.coop.numba_mlir._lowering import _scan
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
 
     def prefix_from_aggregate(block_aggregate):
         return block_aggregate
 
-    def canonical(value):
-        return coop.inclusive_sum(
-            coop.this_block(), value, prefix_op=prefix_from_aggregate
-        )
-
-    def compatibility(value):
+    def kernel(value):
         return coop.inclusive_sum(
             coop.this_block(),
             value,
             block_prefix_callback_op=prefix_from_aggregate,
         )
 
-    identities = []
-    for kernel in (canonical, compatibility):
-        func_ir, planner = _plan(kernel, arg_types=(types.int32,))
-        assert planner.run()
-        call = _provider_call(func_ir, _scan.block_scan_scalar)
-        kwargs = dict(call.kws)
-        assert "block_prefix_callback_op" not in kwargs
-        assert _kwarg_value(func_ir, call, "prefix_op") is prefix_from_aggregate
-        identities.append(tuple(sorted(kwargs)))
-    assert identities[0] == identities[1]
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(GroupRewriteError, match="unexpected keyword argument"):
+        planner.run()
 
 
 @pytest.mark.parametrize(
@@ -412,7 +401,6 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
 @pytest.mark.parametrize(
     ("case", "match"),
     (
-        ("both_aliases", "mutually exclusive"),
         ("state_without_callback", "requires a prefix callback"),
         ("stateful_without_state", "require a third positional"),
         ("stateless_with_state", "do not accept prefix_state"),
@@ -443,17 +431,7 @@ def test_scan_prefix_validation_fails_during_planning(case: str, match: str):
 
     running = coop.StatefulFunction(carry_prefix, types.int64)
 
-    if case == "both_aliases":
-
-        def kernel(value):
-            return coop.inclusive_sum(
-                coop.this_block(),
-                value,
-                prefix_op=prefix_from_aggregate,
-                block_prefix_callback_op=prefix_from_aggregate,
-            )
-
-    elif case == "state_without_callback":
+    if case == "state_without_callback":
 
         def kernel(value):
             state = coop.ThreadData(1, dtype=types.int64)

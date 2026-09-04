@@ -205,47 +205,33 @@ _RUNNING_PREFIX_INT64 = qualified_coop.StatefulFunction(
 
 
 @cuda.jit
-def _block_scan_prefix_aliases(source, canonical, compatibility):
+def _block_scan_prefix(source, output):
     thread = cuda.threadIdx.x
     values = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
     for item in range(_ITEMS_PER_THREAD):
         index = thread * _ITEMS_PER_THREAD + item
         values[item] = source[index]
 
-    canonical_values = qualified_coop.exclusive_scan(
+    scanned = qualified_coop.exclusive_scan(
         qualified_coop.this_block(),
         values,
         scan_op=_device_maximum,
         prefix_op=_prefix_after_block_aggregate,
         algorithm="raking_memoize",
     )
-    compatibility_values = qualified_coop.exclusive_scan(
-        qualified_coop.this_block(),
-        values,
-        scan_op=_device_maximum,
-        block_prefix_callback_op=_prefix_after_block_aggregate,
-        algorithm="raking_memoize",
-    )
     for item in range(_ITEMS_PER_THREAD):
         index = thread * _ITEMS_PER_THREAD + item
-        canonical[index] = canonical_values[item]
-        compatibility[index] = compatibility_values[item]
+        output[index] = scanned[item]
 
 
-def test_stateless_prefix_aliases_match_for_custom_array_scan_without_initial():
+def test_stateless_prefix_custom_array_scan_without_initial():
     source = ((np.arange(_TILE_ITEMS, dtype=np.int32) * 19) % 101) - 37
-    canonical = np.full_like(source, -1)
-    compatibility = np.full_like(source, -1)
+    output = np.full_like(source, -1)
 
-    _block_scan_prefix_aliases[1, _BLOCK_THREADS](
-        source,
-        canonical,
-        compatibility,
-    )
+    _block_scan_prefix[1, _BLOCK_THREADS](source, output)
 
     expected = np.full_like(source, source.max() + 7)
-    np.testing.assert_array_equal(canonical, expected)
-    np.testing.assert_array_equal(compatibility, expected)
+    np.testing.assert_array_equal(output, expected)
 
 
 @cache
