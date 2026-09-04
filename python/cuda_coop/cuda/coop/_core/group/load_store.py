@@ -123,7 +123,37 @@ class GroupLoadStoreSemantics:
             raise ValueError("oob_default requires valid_items")
         if self.storage_sharing not in {None, "shared", "exclusive"}:
             raise ValueError("storage_sharing must be shared or exclusive")
-        if self.storage_ownership is StorageOwnership.IMPLEMENTATION:
+        for name in ("storage_size_in_bytes", "storage_alignment"):
+            value = getattr(self, name)
+            if value is not None and (
+                not isinstance(value, int) or isinstance(value, bool) or value <= 0
+            ):
+                raise ValueError(f"{name} must be a positive integer or None")
+        if not isinstance(self.storage_auto_sync, bool):
+            raise TypeError("storage_auto_sync must be a bool")
+        if self.storage_sharing == "exclusive" and self.storage_auto_sync:
+            raise ValueError("exclusive storage cannot request automatic sync")
+        if self.algorithm is GroupLoadStoreAlgorithm.DIRECT:
+            object.__setattr__(self, "storage_ownership", StorageOwnership.NONE)
+            object.__setattr__(self, "storage_sharing", None)
+            object.__setattr__(self, "storage_size_in_bytes", None)
+            object.__setattr__(self, "storage_alignment", None)
+            object.__setattr__(self, "storage_auto_sync", False)
+        if self.storage_ownership is StorageOwnership.NONE:
+            if any(
+                value is not None
+                for value in (
+                    self.storage_sharing,
+                    self.storage_size_in_bytes,
+                    self.storage_alignment,
+                )
+            ):
+                raise ValueError("storage-free operations cannot carry storage layout")
+            if self.storage_auto_sync:
+                raise ValueError(
+                    "storage-free operations cannot request automatic sync"
+                )
+        elif self.storage_ownership is StorageOwnership.IMPLEMENTATION:
             if any(
                 value is not None
                 for value in (
@@ -137,16 +167,6 @@ class GroupLoadStoreSemantics:
                 )
         elif self.storage_sharing is None:
             raise ValueError("caller-owned storage requires storage_sharing")
-        for name in ("storage_size_in_bytes", "storage_alignment"):
-            value = getattr(self, name)
-            if value is not None and (
-                not isinstance(value, int) or isinstance(value, bool) or value <= 0
-            ):
-                raise ValueError(f"{name} must be a positive integer or None")
-        if not isinstance(self.storage_auto_sync, bool):
-            raise TypeError("storage_auto_sync must be a bool")
-        if self.storage_sharing == "exclusive" and self.storage_auto_sync:
-            raise ValueError("exclusive storage cannot request automatic sync")
 
     @property
     def has_valid_items(self) -> bool:
@@ -170,7 +190,7 @@ class GroupLoadStoreSemantics:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
-        return (
+        common = (
             f"group_{self.kind.value}",
             semantic_token(self.dtype),
             self.items_per_thread,
@@ -178,6 +198,11 @@ class GroupLoadStoreSemantics:
             self.valid_items.semantic_key,
             self.oob_default.semantic_key,
             self.offset.semantic_key,
+        )
+        if self.storage_ownership is StorageOwnership.NONE:
+            return (*common, StorageOwnership.NONE.value)
+        return (
+            *common,
             self.storage_ownership.value,
             self.storage_sharing,
             self.storage_size_in_bytes,

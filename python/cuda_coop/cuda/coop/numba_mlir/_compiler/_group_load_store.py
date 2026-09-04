@@ -16,7 +16,6 @@ from cuda.coop._core import (
     GroupLoadStoreSemantics,
     GroupLoweringPlan,
     GroupLoweringTarget,
-    StorageOwnership,
     make_group_primitive_call,
     plan_group_primitive,
 )
@@ -245,25 +244,14 @@ class _LoadStorePlanning:
             operation=operation,
         )
         temp_storage_value = bound.arguments["temp_storage"]
-        if self._context.is_none(temp_storage_value):
-            storage_kwargs: dict[str, Any] = {
-                "storage_ownership": StorageOwnership.IMPLEMENTATION,
-            }
-        else:
-            storage = self._context.temp_storage(temp_storage_value)
-            if storage is None:
-                raise GroupRewriteError(
-                    f"cuda.coop.numba_mlir.{operation} temp_storage must "
-                    "resolve to a compile-time TempStorage descriptor"
-                )
-            size_in_bytes, alignment, auto_sync, sharing = storage
-            storage_kwargs = {
-                "storage_ownership": StorageOwnership.CALLER,
-                "storage_sharing": sharing,
-                "storage_size_in_bytes": size_in_bytes,
-                "storage_alignment": alignment,
-                "storage_auto_sync": auto_sync,
-            }
+        if (
+            not self._context.is_none(temp_storage_value)
+            and self._context.temp_storage(temp_storage_value) is None
+        ):
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir.{operation} temp_storage must "
+                "resolve to a compile-time TempStorage descriptor"
+            )
 
         semantics = GroupLoadStoreSemantics(
             kind=GroupLoadStoreKind(operation),
@@ -273,7 +261,6 @@ class _LoadStorePlanning:
             valid_items=self._context.planning_binding(bound.arguments["valid_items"]),
             oob_default=oob_default,
             offset=self._context.planning_binding(bound.arguments["offset"]),
-            **storage_kwargs,
         )
         plan = plan_group_primitive(
             make_group_primitive_call(group, semantics),

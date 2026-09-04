@@ -51,6 +51,7 @@ class PreconditionEnforcement(str, Enum):
 
 
 class StorageOwnership(str, Enum):
+    NONE = "none"
     IMPLEMENTATION = "implementation"
     CALLER = "caller"
 
@@ -410,7 +411,29 @@ class TempStorageContract:
         object.__setattr__(self, "ownership", StorageOwnership(self.ownership))
         if self.sharing not in {None, "shared", "exclusive"}:
             raise ValueError("temporary storage sharing must be shared or exclusive")
-        if self.ownership is StorageOwnership.IMPLEMENTATION:
+        if not isinstance(self.auto_sync, bool):
+            raise TypeError("auto_sync must be a bool")
+        if self.ownership is StorageOwnership.NONE:
+            if any(
+                value is not None
+                for value in (
+                    self.address_space,
+                    self.cpp_type,
+                    self.instances,
+                    self.instance_index,
+                    self.sharing,
+                    self.requested_size_in_bytes,
+                    self.requested_alignment,
+                )
+            ):
+                raise ValueError("storage-free contracts cannot carry storage layout")
+            if self.exact_layout_required:
+                raise ValueError(
+                    "storage-free contracts cannot require an exact layout"
+                )
+            if self.auto_sync:
+                raise ValueError("storage-free contracts cannot request automatic sync")
+        elif self.ownership is StorageOwnership.IMPLEMENTATION:
             if self.sharing is not None:
                 raise ValueError("implementation-owned storage has no sharing mode")
             if self.requested_size_in_bytes is not None:
@@ -427,8 +450,6 @@ class TempStorageContract:
                 not isinstance(value, int) or isinstance(value, bool) or value <= 0
             ):
                 raise ValueError(f"{name} must be a positive integer or None")
-        if not isinstance(self.auto_sync, bool):
-            raise TypeError("auto_sync must be a bool")
         if self.sharing == "exclusive" and self.auto_sync:
             raise ValueError("exclusive storage cannot request automatic sync")
 
