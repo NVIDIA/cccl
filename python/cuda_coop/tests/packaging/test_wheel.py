@@ -202,6 +202,12 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
 
         forbidden = _FORBIDDEN_PACKAGE_MEMBERS & names
         assert not forbidden, f"wheel contains excluded implementations: {forbidden}"
+        enum_members = {
+            "cuda/coop/numba_mlir/_enums.py",
+            "cuda/coop/numba_mlir/_enums.pyi",
+        } & names
+        for member in enum_members:
+            assert b"BlockScanAlgorithm" not in archive.read(member)
         warp_members = {
             name for name in names if name.startswith("cuda/coop/_core/warp/")
         }
