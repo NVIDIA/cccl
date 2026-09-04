@@ -336,7 +336,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             using privatized_decode_op_t = typename CooperativeSecondLevelArrayT::value_type;
             const auto cooperative_kernel =
               kernel_source.template HistogramCooperativeKernel<PolicySelector, privatized_decode_op_t>();
-            const int cache_slots_floor =
+            cooperative_cache_slots_per_channel =
               active_policy.high_bin_cache == HistogramCacheAlgorithm::none
                 ? 0
                 : active_policy.high_bin_cache_entries_per_channel;
@@ -352,59 +352,36 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
               return error;
             }
             const int max_slots_by_smem = cache_bytes_per_slot == 0 ? 0 : max_dynamic_smem_bytes / cache_bytes_per_slot;
-            if (cache_slots_floor > max_slots_by_smem)
+            if (cooperative_cache_slots_per_channel > max_slots_by_smem)
             {
               use_cooperative = false;
             }
             else
             {
-              const auto occupancy_for_slots = [&](int slots, int& occupancy) {
-                const int smem_bytes = slots * cache_bytes_per_slot;
-                cudaError_t error    = launcher_factory.set_max_dynamic_smem_size_for(cooperative_kernel, smem_bytes);
-                if (error == cudaSuccess)
-                {
-                  error = launcher_factory.MaxSmOccupancy(
-                    occupancy, cooperative_kernel, high_bin_threads_per_block, smem_bytes);
-                }
+              cooperative_smem_bytes = cooperative_cache_slots_per_channel * cache_bytes_per_slot;
+              if (const auto error = CubDebug(
+                    launcher_factory.set_max_dynamic_smem_size_for(cooperative_kernel, cooperative_smem_bytes)))
+              {
                 return error;
-              };
-
+              }
               int cooperative_sm_occupancy = 0;
-              if (const auto error = CubDebug(occupancy_for_slots(cache_slots_floor, cooperative_sm_occupancy)))
+              if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+                    cooperative_sm_occupancy, cooperative_kernel, high_bin_threads_per_block, cooperative_smem_bytes)))
               {
                 return error;
               }
               if (cooperative_sm_occupancy > 0)
               {
-                cooperative_cache_slots_per_channel = cache_slots_floor;
-                const int floor_occupancy           = cooperative_sm_occupancy;
-                for (int candidate = cache_slots_floor == 0 ? 0 : cache_slots_floor << 1;
-                     candidate > 0 && candidate <= max_slots_by_smem;
-                     candidate <<= 1)
-                {
-                  int candidate_occupancy = 0;
-                  if (const auto error = CubDebug(occupancy_for_slots(candidate, candidate_occupancy)))
-                  {
-                    return error;
-                  }
-                  if (candidate_occupancy < floor_occupancy)
-                  {
-                    break;
-                  }
-                  cooperative_cache_slots_per_channel = candidate;
-                  cooperative_sm_occupancy            = candidate_occupancy;
-                }
-                cooperative_smem_bytes = cooperative_cache_slots_per_channel * cache_bytes_per_slot;
-                if (const auto error = CubDebug(
-                      launcher_factory.set_max_dynamic_smem_size_for(cooperative_kernel, cooperative_smem_bytes)))
-                {
-                  return error;
-                }
                 const int cooperative_grid_capacity = cooperative_sm_occupancy * sm_count;
+                const int tuned_grid_capacity =
+                  active_policy.high_bin_max_blocks_per_sm > 0
+                    ? active_policy.high_bin_max_blocks_per_sm * sm_count
+                    : cooperative_grid_capacity;
                 histogram_sweep_occupancy =
                   active_policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized
-                    ? ::cuda::std::min(privatized_storage_grid_limit, cooperative_grid_capacity)
-                    : cooperative_grid_capacity;
+                    ? ::cuda::std::min(privatized_storage_grid_limit,
+                                       ::cuda::std::min(cooperative_grid_capacity, tuned_grid_capacity))
+                    : ::cuda::std::min(cooperative_grid_capacity, tuned_grid_capacity);
               }
               else
               {

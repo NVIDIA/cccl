@@ -415,20 +415,20 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
-    if (cc >= ::cuda::compute_capability{10, 0})
+    if (cc == ::cuda::compute_capability{10, 0})
     {
       constexpr int sm100_smem_bytes             = 228352;
-      constexpr int sm120_smem_bytes             = 99 * 1024;
       constexpr int range_smem_bytes_per_channel = 8192;
       constexpr int even_smem_bytes_per_channel  = 32768;
-      const int architecture_smem_bytes = cc >= ::cuda::compute_capability{12, 0} ? sm120_smem_bytes : sm100_smem_bytes;
       const int candidate_smem_bytes =
-        num_active_channels == 1 ? architecture_smem_bytes
+        num_active_channels == 1 ? sm100_smem_bytes
         : is_even                ? even_smem_bytes_per_channel * num_active_channels
                                  : range_smem_bytes_per_channel * num_active_channels;
-      const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, architecture_smem_bytes);
+      const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
+      const int high_bin_max_blocks_per_sm   = num_active_channels == 1 ? 2 : 0;
       const auto with_high_bin_threshold     = [=](HistogramPolicy policy) {
         policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
+        policy.high_bin_max_blocks_per_sm   = high_bin_max_blocks_per_sm;
         return policy;
       };
 
