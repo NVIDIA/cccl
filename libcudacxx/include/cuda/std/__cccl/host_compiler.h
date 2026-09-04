@@ -28,22 +28,31 @@
 //!
 //! The macro supports the following forms:
 //!
-//! - ``CCCL_HOST_COMPILER(COMPILER)``: Detect whether `COMPILER` is the current host compiler.
+//! - ``CCCL_HOST_COMPILER(COMPILER)``: Detect whether ``COMPILER`` is the current host compiler.
 //! - ``CCCL_HOST_COMPILER(COMPILER, OP, MAJOR)``: Compare the compiler's major version.
 //! - ``CCCL_HOST_COMPILER(COMPILER, OP, MAJOR, MINOR)``: Compare the compiler's major and minor version.
 //!
 //! @warning When used without specifying a minor version, the macro compares only the compiler's
 //! major version. For example, when the compiler is GCC 9.1, ``CCCL_HOST_COMPILER(GCC, >, 9)``
-//! is `false` even though version 9.1 is greater than 9.
+//! is ``false`` even though version 9.1 is greater than 9.
+//!
+//! @warning Passing any other value will result in an undefined expansion, which may or may not be
+//! diagnosed by the compiler.
+//! <br>
+//! In addition, the macro is intended to support all host compilers that are supported by CUDA Toolkit.
+//! See the Host Compiler Support Policy for
+//! [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy) and
+//! [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements) for
+//! more details.
 //!
 //! @note This macro is made available when including any libcu++ header. Users that wish to
-//! include the smallest possible header for this macro should include `<cuda/std/version>`.
+//! include the smallest possible header for this macro should include ``<cuda/std/version>``.
 //!
-//! For supported host compilers, the macro expands to an implementation-defined `true` value if the
-//! current host compiler and optional version comparison match, or `false` otherwise. These values
+//! For supported host compilers, the macro expands to an implementation-defined ``true`` value if the
+//! current host compiler and optional version comparison match, or ``false`` otherwise. These values
 //! may be used in boolean expressions (preprocessor or otherwise), but no other guarantees are made.
 //!
-//! Available values for `COMPILER` include:
+//! Available values for ``COMPILER`` include:
 //!
 //! - ``NVHPC``: NVIDIA HPC C++ compiler.
 //! - ``CLANG``: Clang.
@@ -52,9 +61,6 @@
 //! - ``MSVC2019``: Microsoft Visual C++ 2019.
 //! - ``MSVC2022``: Microsoft Visual C++ 2022.
 //! - ``MSVC2026``: Microsoft Visual C++ 2026.
-//!
-//! Passing any other value will result in an undefined expansion, which may or may not be
-//! diagnosed by the compiler.
 //!
 //! @par Example
 //! @code
@@ -67,7 +73,7 @@
 //! #endif
 //! @endcode
 //!
-//! @return `true` if the specified host compiler and optional version comparison match, `false` otherwise.
+//! @return ``true`` if the specified host compiler and optional version comparison match, ``false`` otherwise.
 #ifdef _CCCL_DOXYGEN_INVOKED
 #  define CCCL_HOST_COMPILER(...) /* implementation defined */
 #else
