@@ -59,6 +59,10 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         """Return the statically known group extent, if any."""
 
     @property
+    def group_thread_count(self) -> int:
+        """Return the group extent, requiring it to be statically known."""
+
+    @property
     def is_current(self) -> bool:
         """Return whether this descriptor refers to the current hierarchy."""
 

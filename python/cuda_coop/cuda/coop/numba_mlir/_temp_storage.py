@@ -4,6 +4,10 @@
 
 """Describe explicit shared-memory storage for cooperative operations."""
 
+from enum import Enum
+
+from .._core.api._payload import _normalize_alignment
+
 
 class TempStorage:
     """Shared-memory requirements for cooperative operations in one kernel."""
@@ -11,6 +15,7 @@ class TempStorage:
     def __init__(
         self,
         size_in_bytes=None,
+        *,
         alignment=None,
         auto_sync=None,
         sharing="shared",
@@ -23,15 +28,9 @@ class TempStorage:
                     "TempStorage size_in_bytes must be a positive integer."
                 )
 
-        if alignment is not None:
-            if not isinstance(alignment, int) or isinstance(alignment, bool):
-                raise TypeError("TempStorage alignment must be an integer or None.")
-            if alignment <= 0:
-                raise ValueError("TempStorage alignment must be a positive integer.")
-            if alignment & (alignment - 1):
-                raise ValueError("TempStorage alignment must be a power of 2.")
+        alignment = _normalize_alignment(alignment)
 
-        if not isinstance(sharing, str):
+        if not isinstance(sharing, str) or isinstance(sharing, Enum):
             raise TypeError(
                 "TempStorage sharing must be a string: 'shared' or 'exclusive'."
             )

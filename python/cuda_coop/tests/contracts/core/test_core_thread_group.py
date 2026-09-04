@@ -65,7 +65,6 @@ def test_resolved_thread_hierarchy_normalizes_dimensions_and_identity():
     assert hierarchy.grid_dim == (3, 1, 1)
     assert hierarchy.cluster_dim == (2, 1, 1)
     assert hierarchy.block_thread_count == 32
-    assert hierarchy.thread_count == 32
     assert ThreadGroup(kind="cluster", hierarchy=hierarchy).static_size == 64
     assert ThreadGroup(kind="grid", hierarchy=hierarchy).static_size == 192
     assert hierarchy.block_dim_token == "b8x4"
@@ -93,7 +92,6 @@ def test_current_group_can_be_resolved_without_changing_its_backend_type():
 
     assert type(current) is BackendGroup
     assert current.is_current
-    assert current.static_thread_count is None
     assert current.static_size is None
     assert current.block_dim_token == "current"
     assert current.symbol_suffix == "block_current"
@@ -107,7 +105,6 @@ def test_current_group_can_be_resolved_without_changing_its_backend_type():
     assert resolved.is_static
     assert resolved.block_dim == (8, 4, 1)
     assert resolved.group_thread_count == 32
-    assert resolved.thread_count == 32
     assert resolved.source == "inferred_launch"
     assert resolved.block_dim_token == "b8x4"
     assert resolved.symbol_suffix == "block_b8x4"
@@ -128,7 +125,6 @@ def test_core_this_helpers_only_build_current_launch_groups():
     assert block.static_size is None
     assert warp.is_current
     assert warp.static_size == 32
-    assert warp.thread_count == 32
 
     with pytest.raises(TypeError):
         this_block((16, 2))

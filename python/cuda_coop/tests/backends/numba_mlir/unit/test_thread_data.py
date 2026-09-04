@@ -3,13 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import struct
+from enum import Enum
 
+import numpy as np
 import pytest
 
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _thread_data
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringSharing(str, Enum):
+    SHARED = "shared"
 
 
 class _FakeLocal:
@@ -40,21 +46,13 @@ def test_thread_data_accepts_canonical_extent_forms(fake_runtime):
         dtype="int32",
         alignment=16,
     )
-    compatible = coop.ThreadData(1, "int16", alignas=16)
+    compatible = coop.ThreadData(1, "int16", alignment=16)
     inferred = coop.ThreadData(2)
 
     assert result == (4, "int32", 16, {})
     assert compatible == (1, "int16", 16, {})
-    assert inferred == (2, None, 8, {})
+    assert inferred == (2, None, None, {})
     assert fake_runtime.local.calls == [result, compatible, inferred]
-
-
-def test_thread_data_rejects_conflicting_alignment_aliases(fake_runtime):
-    del fake_runtime
-    with pytest.raises(ValueError, match="alignas and alignment must match"):
-        coop.ThreadData(1, alignas=16, alignment=32)
-    with pytest.raises(ValueError, match="alignas and alignment must match"):
-        coop.ThreadData(1, alignas=8, alignment=16)
 
 
 @pytest.mark.parametrize(
@@ -94,16 +92,11 @@ def test_thread_data_validates_extent(
 @pytest.mark.parametrize(
     ("alignment", "error_type", "message"),
     [
-        (True, TypeError, "alignment must be an integer"),
-        (1.5, TypeError, "alignment must be an integer"),
+        (True, TypeError, "alignment must be an integer or None"),
+        (1.5, TypeError, "alignment must be an integer or None"),
         (0, ValueError, "alignment must be a positive integer"),
         (-1, ValueError, "alignment must be a positive integer"),
         (3, ValueError, "alignment must be a power of 2"),
-        (
-            struct.calcsize("P") // 2,
-            ValueError,
-            f"alignment must be a multiple of {struct.calcsize('P')}",
-        ),
     ],
 )
 def test_thread_data_validates_alignment(
@@ -117,6 +110,21 @@ def test_thread_data_validates_alignment(
         coop.ThreadData(1, alignment=alignment)
 
 
+@pytest.mark.parametrize("alignment", [None, 1, 2, 4, 8, 16, np.int64(32)])
+def test_thread_data_normalizes_minimum_alignment(fake_runtime, alignment):
+    result = coop.ThreadData(2, "int32", alignment=alignment)
+    expected = None if alignment is None else max(struct.calcsize("P"), alignment)
+    assert result == (2, "int32", expected, {})
+    assert fake_runtime.local.calls == [result]
+
+
+@pytest.mark.parametrize("alignment", [None, 1, 2, 4, 8, 16, np.int64(32)])
+def test_temp_storage_accepts_minimum_alignment(alignment):
+    storage = coop.TempStorage(alignment=alignment)
+    assert storage.alignment == alignment
+    assert storage.alignment is None or type(storage.alignment) is int
+
+
 def test_temp_storage_uses_canonical_defaults_and_normalization():
     shared = coop.TempStorage(sharing=" SHARED ")
     exclusive = coop.TempStorage(sharing=" Exclusive ")
@@ -125,6 +133,11 @@ def test_temp_storage_uses_canonical_defaults_and_normalization():
     assert shared.auto_sync is True
     assert exclusive.sharing == "exclusive"
     assert exclusive.auto_sync is False
+
+
+def test_temp_storage_rejects_string_enum_sharing():
+    with pytest.raises(TypeError, match="sharing must be a string"):
+        coop.TempStorage(sharing=_StringSharing.SHARED)
 
 
 @pytest.mark.parametrize(
@@ -143,12 +156,12 @@ def test_temp_storage_uses_canonical_defaults_and_normalization():
         (
             {"alignment": False},
             TypeError,
-            "TempStorage alignment must be an integer or None",
+            "alignment must be an integer or None",
         ),
         (
             {"alignment": 3},
             ValueError,
-            "TempStorage alignment must be a power of 2",
+            "alignment must be a power of 2",
         ),
         (
             {"auto_sync": 1},

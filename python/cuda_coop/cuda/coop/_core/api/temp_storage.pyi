@@ -10,6 +10,7 @@ __all__ = ["TempStorage", "TempStorageLike"]
 
 def TempStorage(
     size_in_bytes: int | None = None,
+    *,
     alignment: int | None = None,
     auto_sync: bool | None = None,
     sharing: TempStorageSharing = "shared",

@@ -71,7 +71,7 @@ scope. If that name already refers to the object imported by
 Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
 qualified namespace. Its shared operations use the same signatures, selector
 strings, and inference rules as the portable namespace; it adds only backend
-memory namespaces and payload-alignment controls in this release.
+memory namespaces in this release.
 
 Configuration
 -------------
@@ -191,12 +191,21 @@ partition. Runtime query, membership, and synchronization methods such as
 ``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
 ``is_member`` are not exposed.
 
-``ThreadData(items_per_thread, dtype=None)`` describes the fixed-size register
-payload owned by each participating thread. Portable and qualified calls use
+``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
+fixed-size register payload owned by each participating thread. Portable and
+qualified calls use
 the same inference rules: an untyped Load output infers its dtype from the
 source, and Store combines the destination dtype with payload writes. Load
 returns the identical output object supplied by the caller; it does not
 allocate or substitute another container.
+
+Both namespaces accept ``alignment`` as a compile-time positive power of two
+in bytes. It specifies minimum alignment when the compiler materializes
+payload storage; ``None`` lets the compiler choose. For example,
+``coop.ThreadData(4, dtype=np.float32, alignment=16)`` requests at least
+16-byte alignment. The backend may use stronger alignment, including for
+requests smaller than its minimum allocation alignment. This option does not
+assert alignment of source or destination arrays passed to Load or Store.
 
 Supported payload types are signed and unsigned 8-, 16-, 32-, and 64-bit
 integers plus 32- and 64-bit floating-point values. Boolean, 16-bit floating
@@ -287,6 +296,13 @@ Load and Store accept an optional ``TempStorage`` descriptor:
        auto_sync=None,
        sharing="shared",
    )
+
+Only ``size_in_bytes`` may be positional; ``alignment``, ``auto_sync``, and
+``sharing`` are keyword-only. As with ``ThreadData``, ``alignment=None`` lets
+the compiler choose. An explicit positive power of two sets minimum alignment
+in bytes. The planner may strengthen it to satisfy every primitive using the
+storage. Integer-like values implementing ``__index__`` are accepted. An
+explicit ``size_in_bytes`` must still be large enough for the planned storage.
 
 The current DIRECT Block Load and Store providers are storage-free. They
 default-construct the CUB primitive, report zero temporary bytes, and emit no
