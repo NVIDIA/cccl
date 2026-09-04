@@ -35,6 +35,7 @@ from cuda.coop._core import (
     Dependency,
     Pointer,
     PointerOffset,
+    PythonOperator,
     Reference,
     SynchronizationScope,
     TempStorageParameter,
@@ -44,6 +45,7 @@ from cuda.coop._core import (
 
 from .. import _types as backend
 from .._compiler._operations import StorageABI
+from .._semantic import _normalize_numba_callable
 
 
 @dataclass(frozen=True)
@@ -265,10 +267,13 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         *,
         specialization: AlgorithmSpec,
     ) -> Any:
-        del operator, specialization
-        raise NotImplementedError(
-            "Python operator compilation is not supported by the "
-            "cuda.coop Numba-CUDA-MLIR backend"
+        del specialization
+        if not isinstance(operator, PythonOperator):
+            raise TypeError(f"expected PythonOperator, got {operator!r}")
+        return backend.DependentPythonOperator(
+            self._resolvable(operator.ret_dtype),
+            tuple(self._resolvable(dtype) for dtype in operator.arg_dtypes),
+            backend.Constant(_normalize_numba_callable(operator.op)),
         )
 
     def lower_stateful_operator(
