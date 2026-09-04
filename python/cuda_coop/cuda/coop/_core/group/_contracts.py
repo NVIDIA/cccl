@@ -133,7 +133,7 @@ def _contracts(
     storage_sharing: str | None = None,
     requested_size_in_bytes: int | None = None,
     requested_alignment: int | None = None,
-    auto_sync: bool = True,
+    auto_sync: bool | None = None,
     uniform_arguments: tuple[str, ...] = (),
     valid_member_selection: str | None = None,
     argument_preconditions: tuple[ArgumentPrecondition, ...] = (),
@@ -148,6 +148,8 @@ def _contracts(
     topology = _group_topology(resolved_group, launch)
     storage_ownership = StorageOwnership(storage_ownership)
     storage_free = storage_ownership is StorageOwnership.NONE
+    if auto_sync is None:
+        auto_sync = not storage_free
     barrier = (
         SynchronizationScope.NONE
         if storage_free or not auto_sync

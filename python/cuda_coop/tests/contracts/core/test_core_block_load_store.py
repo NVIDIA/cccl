@@ -254,6 +254,35 @@ def test_block_load_store_call_semantics_are_dimension_independent():
     ]
 
 
+def test_block_load_store_normalizes_numpy_item_count():
+    call = make_block_load_store_semantics(
+        kind="load",
+        dtype="i32",
+        items_per_thread=np.int64(2),
+        algorithm="direct",
+    )
+
+    assert call.items_per_thread == 2
+    assert type(call.items_per_thread) is int
+
+    plain = make_block_load_spec(
+        dtype="i32",
+        block_dim=(32, 1, 1),
+        items_per_thread=2,
+        algorithm="direct",
+    )
+    numpy = make_block_load_spec(
+        dtype="i32",
+        block_dim=(32, 1, 1),
+        items_per_thread=np.int64(2),
+        algorithm="direct",
+    )
+
+    assert numpy.specialization.template_arguments["ITEMS_PER_THREAD"] == 2
+    assert type(numpy.specialization.template_arguments["ITEMS_PER_THREAD"]) is int
+    assert plain.semantic_key == numpy.semantic_key
+
+
 def test_block_load_store_semantic_identity_tracks_kind_algorithm_and_shape():
     def make(*, kind="load", algorithm="direct", items=2, valid=False):
         return make_block_load_store_semantics(

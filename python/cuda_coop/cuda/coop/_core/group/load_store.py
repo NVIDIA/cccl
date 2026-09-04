@@ -133,12 +133,6 @@ class GroupLoadStoreSemantics:
             raise TypeError("storage_auto_sync must be a bool")
         if self.storage_sharing == "exclusive" and self.storage_auto_sync:
             raise ValueError("exclusive storage cannot request automatic sync")
-        if self.algorithm is GroupLoadStoreAlgorithm.DIRECT:
-            object.__setattr__(self, "storage_ownership", StorageOwnership.NONE)
-            object.__setattr__(self, "storage_sharing", None)
-            object.__setattr__(self, "storage_size_in_bytes", None)
-            object.__setattr__(self, "storage_alignment", None)
-            object.__setattr__(self, "storage_auto_sync", False)
         if self.storage_ownership is StorageOwnership.NONE:
             if self.algorithm is not GroupLoadStoreAlgorithm.DIRECT:
                 raise ValueError(
@@ -203,7 +197,7 @@ class GroupLoadStoreSemantics:
             self.oob_default.semantic_key,
             self.offset.semantic_key,
         )
-        if self.storage_ownership is StorageOwnership.NONE:
+        if self.algorithm is GroupLoadStoreAlgorithm.DIRECT:
             return (*common, StorageOwnership.NONE.value)
         return (
             *common,
@@ -358,16 +352,21 @@ def _plan_load_store(
                 ),
             )
         )
+    storage_free = operation.algorithm is GroupLoadStoreAlgorithm.DIRECT
     contracts = _contracts(
         resolved,
         launch,
         result=result,
-        storage_ownership=operation.storage_ownership,
+        storage_ownership=(
+            StorageOwnership.NONE if storage_free else operation.storage_ownership
+        ),
         cpp_type=None,
-        storage_sharing=operation.storage_sharing,
-        requested_size_in_bytes=operation.storage_size_in_bytes,
-        requested_alignment=operation.storage_alignment,
-        auto_sync=operation.storage_auto_sync,
+        storage_sharing=None if storage_free else operation.storage_sharing,
+        requested_size_in_bytes=(
+            None if storage_free else operation.storage_size_in_bytes
+        ),
+        requested_alignment=(None if storage_free else operation.storage_alignment),
+        auto_sync=False if storage_free else operation.storage_auto_sync,
         uniform_arguments=(
             *(("valid_items",) if operation.has_valid_items else ()),
             *(("oob_default",) if operation.has_oob_default else ()),
