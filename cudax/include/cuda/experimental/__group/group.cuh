@@ -87,9 +87,6 @@ class group
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
-  // todo(dabayer): Allow groups stacking and remove this.
-  static_assert(__is_this_group_v<_ParentGroup>);
-
   using _Hierarchy           = typename _ParentGroup::hierarchy_type;
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   static_assert(__group_mapping_result<_MappingResult>);

@@ -131,6 +131,13 @@
   ((_CCCL_HAS_SIMD_VABSDIFF_PTX() || _CCCL_HAS_SIMD_VABSDIFF_INTRINSICS()) && _CCCL_CUDA_COMPILATION() \
    && !_CCCL_TILE_COMPILATION())
 
+// _dp4a/__dp2a were introduced in CUDA 8
+#define _CCCL_HAS_SIMD_IDOT_INTRINSICS() _CCCL_HAS_CTK()
+#define _CCCL_HAS_SIMD_IDOT_PTX()        (__cccl_ptx_isa >= 700ULL)
+#define _CCCL_HAS_SIMD_IDOT()                                                                  \
+  ((_CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()) && _CCCL_CUDA_COMPILATION() \
+   && !_CCCL_TILE_COMPILATION())
+
 // Third party libraries
 
 #if (__has_include(<dlpack/dlpack.h>) || __has_include(<dlpack.h>)) && \

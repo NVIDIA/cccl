@@ -79,7 +79,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     );
     if constexpr (InPlace::value)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Flagged,
         "DeviceSelect::Flagged failed",
         d_in,
@@ -90,7 +90,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Flagged,
         "DeviceSelect::Flagged failed",
         static_cast<const T*>(d_in),

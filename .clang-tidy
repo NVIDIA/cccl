@@ -39,7 +39,6 @@ Checks:
   - '-misc-const-correctness'
   - '-misc-use-anonymous-namespace'
   - '-misc-use-internal-linkage'
-  - '-misc-throw-by-value-catch-by-reference'
   - '-misc-anonymous-namespace-in-header'
   # END REMOVE ME
   # TODO(jfaibussowit):

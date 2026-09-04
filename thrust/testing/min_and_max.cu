@@ -33,7 +33,7 @@ struct TestMin
     ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::min(two_and_three, two_and_two, ::cuda::std::greater<KV>()));
   }
 };
-SimpleUnitTest<TestMin, NumericTypes> TestMinInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestMin, NumericTypes);
 
 template <typename T>
 struct TestMax
@@ -66,4 +66,4 @@ struct TestMax
     ASSERT_EQUAL_QUIET(two_and_three, ::cuda::std::max(two_and_three, two_and_two, ::cuda::std::greater<KV>()));
   }
 };
-SimpleUnitTest<TestMax, NumericTypes> TestMaxInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestMax, NumericTypes);
