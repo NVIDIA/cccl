@@ -48,7 +48,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 //! @brief The environment type manufactured for one shard: answers
 //! `cuda::get_stream` (the shard's reference stream) and
 //! `cuda::mr::get_memory_resource` (a `place_memory_resource` at the shard's
@@ -75,5 +74,4 @@ template <class _Tp>
   }
   return __envs;
 }
-
 } // namespace cuda::experimental::sharded

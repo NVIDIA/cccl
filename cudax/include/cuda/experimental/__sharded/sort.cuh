@@ -58,7 +58,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 /**
  * @brief Sort a sharded array in place into globally ascending order (by
  * @p comp), each shard keeping its original boundaries.
@@ -92,5 +91,4 @@ void sort(place_group& group, sharded_array<_Tp>& data, _Compare comp = {})
 
   reserved::sort_shared_va(group, data, comp);
 }
-
 } // namespace cuda::experimental::sharded

@@ -28,7 +28,6 @@ using cuda::experimental::places::place_group;
 
 namespace
 {
-
 struct sum_op
 {
   __host__ __device__ float operator()(float a, float b) const
@@ -101,11 +100,11 @@ void test_ragged_correctness(place_group& group)
     stream_scope sc(strm.get());
     auto mr  = ::cuda::mr::get_memory_resource(env);
     d_off[g] = static_cast<int*>(mr.allocate(strm, c.h_off[g].size() * sizeof(int), 256));
-    d_in[g] = static_cast<float*>(mr.allocate(strm, (c.h_in[g].empty() ? 1 : c.h_in[g].size()) * sizeof(float), 256));
+    d_in[g]  = static_cast<float*>(mr.allocate(strm, (c.h_in[g].empty() ? 1 : c.h_in[g].size()) * sizeof(float), 256));
     cuda_safe_call(cudaMemcpyAsync(
       d_off[g], c.h_off[g].data(), c.h_off[g].size() * sizeof(int), cudaMemcpyHostToDevice, strm.get()));
-    cuda_safe_call(cudaMemcpyAsync(
-      d_in[g], c.h_in[g].data(), c.h_in[g].size() * sizeof(float), cudaMemcpyHostToDevice, strm.get()));
+    cuda_safe_call(
+      cudaMemcpyAsync(d_in[g], c.h_in[g].data(), c.h_in[g].size() * sizeof(float), cudaMemcpyHostToDevice, strm.get()));
     cuda_safe_call(cudaStreamSynchronize(strm.get()));
     lo[g]  = {d_off[g], c.seg_sizes[g]};
     hi[g]  = {d_off[g] + 1, c.seg_sizes[g]};
@@ -166,15 +165,15 @@ void test_ragged_correctness(place_group& group)
 
 void test_refusals(place_group& group)
 {
-  auto envs = group.envs(0);
+  auto envs             = group.envs(0);
   const ::std::size_t P = group.size();
 
   ::std::vector<::std::size_t> two_per(P, 2), three_per(P, 3);
-  auto out      = sharded_array<int>::allocate(group, two_per, 0);
-  auto out3     = sharded_array<int>::allocate(group, three_per, 0);
-  auto in       = sharded_array<int>::allocate(group, three_per, 0);
-  auto seg_b    = sharded_array<int>::allocate(group, two_per, 0);
-  auto seg_e    = sharded_array<int>::allocate(group, two_per, 0);
+  auto out   = sharded_array<int>::allocate(group, two_per, 0);
+  auto out3  = sharded_array<int>::allocate(group, three_per, 0);
+  auto in    = sharded_array<int>::allocate(group, three_per, 0);
+  auto seg_b = sharded_array<int>::allocate(group, two_per, 0);
+  auto seg_e = sharded_array<int>::allocate(group, two_per, 0);
   fill(seg_b, 0);
   fill(seg_e, 0); // empty segments everywhere: valid, results = init
 
@@ -296,7 +295,6 @@ void test_async_capture(place_group& group)
   cuda_safe_call(cudaGraphDestroy(graph));
   cuda_safe_call(cudaStreamDestroy(origin));
 }
-
 } // namespace
 
 int main()

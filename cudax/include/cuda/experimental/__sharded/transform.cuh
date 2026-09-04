@@ -69,8 +69,8 @@ namespace cuda::experimental::sharded
  *         supplied.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _UnaryOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallEnv& call_env = {})
 {
   __detail::__generic_map(data, envs, call_env, "sharded::transform", [&](const auto& d, cudaStream_t s) {
@@ -84,9 +84,9 @@ _CCCL_HOST_API void transform(_S&& data, _Envs&& envs, _UnaryOp op, const _CallE
  * environments derived via `default_envs`.
  */
 _CCCL_TEMPLATE(class _S, class _UnaryOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_env_range<::cuda::std::remove_cvref_t<_UnaryOp>>) _CCCL_AND(
-  !sharded_view<::cuda::std::remove_cvref_t<_UnaryOp>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_env_range<::cuda::std::remove_cvref_t<_UnaryOp>>)
+    _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_UnaryOp>>))
 _CCCL_HOST_API void transform(_S&& data, _UnaryOp op, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
@@ -108,7 +108,6 @@ struct __tuple_result_op
       __op(::cuda::std::forward<_Args>(__args)...)};
   }
 };
-
 } // namespace reserved
 
 /**
@@ -132,10 +131,9 @@ struct __tuple_result_op
  *         mismatch.
  */
 _CCCL_TEMPLATE(class _SOut, class _Envs, class _Op, class _CallEnv, class... _SIn)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SOut>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
-_CCCL_HOST_API void
-zip_transform(_SOut&& out, const _Envs& envs, _Op op, const _CallEnv& call_env, const _SIn&... ins)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_SOut>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const _CallEnv& call_env, const _SIn&... ins)
 {
   static_assert(sizeof...(_SIn) >= 1, "zip_transform needs at least one input view");
   const ::std::size_t num_shards = static_cast<::std::size_t>(out.num_shards());
@@ -212,5 +210,4 @@ _CCCL_HOST_API void zip_transform(_SOut&& out, _Op op, const _SIn&... ins)
   const auto envs = default_envs(out);
   sharded::zip_transform(::cuda::std::forward<_SOut>(out), envs, op, default_call_env{}, ins...);
 }
-
 } // namespace cuda::experimental::sharded

@@ -39,7 +39,6 @@ using cuda::experimental::places::place_group;
 
 namespace foreign
 {
-
 // A hand-rolled stream-ordered memory resource (cuda::mr::resource shape).
 struct raw_async_mr
 {
@@ -108,7 +107,6 @@ struct raw_sharded
 {
   return v.envs_;
 }
-
 } // namespace foreign
 
 static_assert(sharded_view<foreign::raw_sharded>, "foreign model is a sharded_view");
@@ -117,7 +115,6 @@ static_assert(sharded_alloc_env<foreign::raw_env>, "foreign env models sharded_a
 
 namespace
 {
-
 struct times3
 {
   __host__ __device__ double operator()(double v) const
@@ -236,12 +233,10 @@ void test_adopted_model()
   cuda_safe_call(cudaStreamDestroy(s0));
   cuda_safe_call(cudaStreamDestroy(s1));
 }
-
 } // namespace
 
 namespace
 {
-
 // "Is a vector<span> a sharded view?" — almost: it is exactly the DATA of
 // one, missing the two facts the algorithms consume beyond the bytes
 // (global offsets — the running sum, and place identities — defaulted to
@@ -318,7 +313,6 @@ void test_envs_from_places()
 
   cuda_safe_call(cudaFree(d));
 }
-
 } // namespace
 
 static_assert(sharded_view<basic_sharded_view<double>>, "the make_sharded_view result models sharded_view");

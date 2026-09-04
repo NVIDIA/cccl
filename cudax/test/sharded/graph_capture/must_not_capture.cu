@@ -213,7 +213,8 @@ void test_adoption_is_benign(place_group& group)
   EXPECT(view.is_view());
   EXPECT(capture_active(origin));
   const auto view_prop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
-  fill(view, default_envs(view), 2.0f, ::cuda::std::execution::env{view_prop}); // captured through the view (async form)
+  fill(view, default_envs(view), 2.0f, ::cuda::std::execution::env{view_prop}); // captured through the view (async
+                                                                                // form)
 
   owner.join_into(origin);
   cudaGraph_t graph = nullptr;

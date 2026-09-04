@@ -27,7 +27,6 @@ using cuda::experimental::places::place_group;
 
 namespace
 {
-
 struct plus_one_op
 {
   __host__ __device__ long long operator()(long long x) const
@@ -265,7 +264,6 @@ void test_lane_sync(place_group& group)
   }
   EXPECT(threw);
 }
-
 } // namespace
 
 int main()

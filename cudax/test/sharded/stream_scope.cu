@@ -32,10 +32,10 @@
  * reported, not gated (it depends on the SM split method and backend).
  */
 
-#include <cuda/experimental/sharded.cuh>
-
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
+
+#include <cuda/experimental/sharded.cuh>
 
 #include <algorithm>
 #include <cstdio>
@@ -48,7 +48,6 @@ using cuda::experimental::places::place_group;
 
 namespace
 {
-
 __global__ void smid_probe(unsigned* smids, float* data, int n)
 {
   unsigned s;
@@ -85,7 +84,6 @@ bool check_data(const float* d_data, cudaStream_t s, float expect)
     return v == expect;
   });
 }
-
 } // namespace
 
 int main()
@@ -155,7 +153,7 @@ int main()
     cuda_safe_call(cudaGetLastError());
     stream_scope scope(streams[i]);
     launch(i); // (x + 1) * 2 + 1
-    smD[i] = collect_smids(d_smids[i], streams[i]);
+    smD[i]             = collect_smids(d_smids[i], streams[i]);
     const float expect = P >= 2 ? 17.0f : 9.0f; // arm C skipped when P == 1
     EXPECT(check_data(d_data[i], streams[i], expect));
     EXPECT(smD[i] == smA[i]);

@@ -182,7 +182,6 @@ void test_unique_cross_shard_boundary(place_group& group)
   EXPECT(unique(empty) == 0UL);
 }
 
-
 // Out-of-place selection: source untouched, destination ragged, capacity
 // contract enforced at entry, self-bound and explicit-envs forms agree.
 void test_copy_if_out_of_place(place_group& group)

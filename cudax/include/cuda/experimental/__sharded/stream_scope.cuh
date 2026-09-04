@@ -51,7 +51,6 @@
 #endif // no system header
 
 #include <cuda/__stream/stream_ref.h>
-
 #include <cuda/std/__functional/invoke.h> // is_invocable_v
 
 #include <cuda/experimental/__places/place_group.cuh> // check_not_capturing
@@ -65,7 +64,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 /**
  * @brief RAII device scope derived from a stream: makes the stream's device
  * current for the scope's lifetime and restores the previous device on exit.
@@ -257,5 +255,4 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
   }
 }
 } // namespace __detail
-
 } // namespace cuda::experimental::sharded

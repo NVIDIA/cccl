@@ -72,7 +72,6 @@ struct negate_pred_fn
     return !pred(val);
   }
 };
-
 } // namespace reserved
 
 // ============================================================================
@@ -124,14 +123,14 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
   }
   data.commit_sizes(new_sizes);
 
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  count_type* h_new_sizes = nullptr;
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  count_type* h_new_sizes     = nullptr;
   if constexpr (__env_has_mr)
   {
     auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
-    h_new_sizes = static_cast<count_type*>(staging_mr.allocate_sync(num_shards * sizeof(count_type), alignof(count_type)));
+    h_new_sizes =
+      static_cast<count_type*>(staging_mr.allocate_sync(num_shards * sizeof(count_type), alignof(count_type)));
   }
   else
   {
@@ -274,10 +273,9 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
   }
   dst.commit_sizes(new_sizes);
 
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  count_type* h_new_sizes = nullptr;
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  count_type* h_new_sizes     = nullptr;
   if constexpr (__env_has_mr)
   {
     auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
@@ -374,9 +372,9 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
  * current sizes before anything changes).
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND(
-                   !sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
+_CCCL_REQUIRES(
+  owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>
+    _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
 [[nodiscard]] _CCCL_HOST_API size_t copy_if(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
 {
   return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::copy_if");
@@ -384,10 +382,9 @@ _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
 
 /// @brief Keep only the elements satisfying @p pred (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-                   !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>) _CCCL_AND(
-                   !sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
+_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_S>>
+                 _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>)
+                   _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
 [[nodiscard]] _CCCL_HOST_API size_t copy_if(_S&& data, _Pred pred, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
@@ -396,9 +393,9 @@ _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
 
 /// @brief Alias of `copy_if` (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND(
-                   !sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
+_CCCL_REQUIRES(
+  owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>
+    _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
 [[nodiscard]] _CCCL_HOST_API size_t filter(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
 {
   return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::filter");
@@ -406,10 +403,9 @@ _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
 
 /// @brief Alias of `copy_if` (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-                   !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>) _CCCL_AND(
-                   !sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
+_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_S>>
+                 _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>)
+                   _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
 [[nodiscard]] _CCCL_HOST_API size_t filter(_S&& data, _Pred pred, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
@@ -418,9 +414,9 @@ _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
 
 /// @brief Remove the elements satisfying @p pred (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND(
-                   !sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
+_CCCL_REQUIRES(
+  owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>
+    _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
 [[nodiscard]] _CCCL_HOST_API size_t remove_if(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
@@ -430,10 +426,9 @@ _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
 
 /// @brief Remove the elements satisfying @p pred (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-                   !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>) _CCCL_AND(
-                   !sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
+_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_S>>
+                 _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>)
+                   _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
 [[nodiscard]] _CCCL_HOST_API size_t remove_if(_S&& data, _Pred pred, const _CallEnv& call_env = {})
 {
   using elem_t    = view_element_t<_S>;
@@ -476,15 +471,14 @@ copy_if(const _SIn& src, const _Envs& envs, _SOut&& dst, _Pred pred, const _Call
 /// @brief Out-of-place selection with environments derived from the
 /// self-bound destination.
 _CCCL_TEMPLATE(class _SIn, class _SOut, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND
-                 owning_sharded<::cuda::std::remove_cvref_t<_SOut>> _CCCL_AND
-                   self_bound<::cuda::std::remove_cvref_t<_SOut>> _CCCL_AND(
-                     !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_SOut>>))
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND owning_sharded<::cuda::std::remove_cvref_t<_SOut>> _CCCL_AND
+    self_bound<::cuda::std::remove_cvref_t<_SOut>> _CCCL_AND(
+      !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_SOut>>))
 [[nodiscard]] _CCCL_HOST_API size_t copy_if(const _SIn& src, _SOut&& dst, _Pred pred, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(dst);
   return reserved::__copy_if_into_generic(
     src, envs, ::cuda::std::forward<_SOut>(dst), pred, call_env, "sharded::copy_if (out-of-place)");
 }
-
 } // namespace cuda::experimental::sharded

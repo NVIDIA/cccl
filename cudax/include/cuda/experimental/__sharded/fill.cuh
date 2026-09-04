@@ -90,8 +90,6 @@ struct for_each_fn
 };
 } // namespace reserved
 
-
-
 // ============================================================================
 // Concept-generic tier: the elementwise family over any sharded_view
 // ============================================================================
@@ -106,8 +104,8 @@ struct for_each_fn
 
 //! @brief Set every element to @p value (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void fill(_S&& data, const _Envs& envs, const _Tp& value, const _CallEnv& call_env = {})
 {
   __detail::__generic_map(data, envs, call_env, "sharded::fill", [&](const auto& d, cudaStream_t s) {
@@ -118,8 +116,8 @@ _CCCL_HOST_API void fill(_S&& data, const _Envs& envs, const _Tp& value, const _
 
 //! @brief Set every element to @p value (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Tp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_env_range<::cuda::std::remove_cvref_t<_Tp>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_env_range<::cuda::std::remove_cvref_t<_Tp>>))
 _CCCL_HOST_API void fill(_S&& data, const _Tp& value, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
@@ -128,14 +126,14 @@ _CCCL_HOST_API void fill(_S&& data, const _Tp& value, const _CallEnv& call_env =
 
 //! @brief data[i] = start + i * step for the GLOBAL index i (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void sequence(
   _S&& data,
   const _Envs& envs,
-  view_element_t<_S> start        = {},
-  view_element_t<_S> step         = view_element_t<_S>{1},
-  const _CallEnv& call_env        = {})
+  view_element_t<_S> start = {},
+  view_element_t<_S> step  = view_element_t<_S>{1},
+  const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
   __detail::__generic_map(data, envs, call_env, "sharded::sequence", [&](const auto& d, cudaStream_t s) {
@@ -158,8 +156,8 @@ _CCCL_HOST_API void iota(_S&& data, view_element_t<_S> start = {}, const _CallEn
 
 //! @brief data[i] = f(i) for the GLOBAL index i; `f` device-callable (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _Fn, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void tabulate(_S&& data, const _Envs& envs, _Fn f, const _CallEnv& call_env = {})
 {
   __detail::__generic_map(data, envs, call_env, "sharded::tabulate", [&](const auto& d, cudaStream_t s) {
@@ -173,8 +171,8 @@ _CCCL_HOST_API void tabulate(_S&& data, const _Envs& envs, _Fn f, const _CallEnv
 
 //! @brief data[i] = f(i) (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Fn, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_env_range<::cuda::std::remove_cvref_t<_Fn>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_env_range<::cuda::std::remove_cvref_t<_Fn>>))
 _CCCL_HOST_API void tabulate(_S&& data, _Fn f, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
@@ -183,8 +181,8 @@ _CCCL_HOST_API void tabulate(_S&& data, _Fn f, const _CallEnv& call_env = {})
 
 //! @brief data[i] = gen() with a stateless, device-callable generator (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _Gen, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void generate(_S&& data, const _Envs& envs, _Gen gen, const _CallEnv& call_env = {})
 {
   __detail::__generic_map(data, envs, call_env, "sharded::generate", [&](const auto& d, cudaStream_t s) {
@@ -195,8 +193,8 @@ _CCCL_HOST_API void generate(_S&& data, const _Envs& envs, _Gen gen, const _Call
 
 //! @brief data[i] = gen() (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Gen, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_env_range<::cuda::std::remove_cvref_t<_Gen>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_env_range<::cuda::std::remove_cvref_t<_Gen>>))
 _CCCL_HOST_API void generate(_S&& data, _Gen gen, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
@@ -205,8 +203,8 @@ _CCCL_HOST_API void generate(_S&& data, _Gen gen, const _CallEnv& call_env = {})
 
 //! @brief Apply `op(element&, global_index)` to every element (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _Op, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void for_each(_S&& data, const _Envs& envs, _Op op, const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
@@ -222,12 +220,11 @@ _CCCL_HOST_API void for_each(_S&& data, const _Envs& envs, _Op op, const _CallEn
 
 //! @brief Apply `op(element&, global_index)` (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Op, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_env_range<::cuda::std::remove_cvref_t<_Op>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_env_range<::cuda::std::remove_cvref_t<_Op>>))
 _CCCL_HOST_API void for_each(_S&& data, _Op op, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
   sharded::for_each(::cuda::std::forward<_S>(data), envs, op, call_env);
 }
-
 } // namespace cuda::experimental::sharded

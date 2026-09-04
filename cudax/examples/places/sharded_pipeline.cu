@@ -71,15 +71,19 @@ int main()
   // Host reference over the same pipeline.
   std::sort(host.begin(), host.end());
   host.erase(std::unique(host.begin(), host.end()), host.end());
-  host.erase(std::remove_if(host.begin(), host.end(), [](long long x) { return x % 2 == 0; }), host.end());
+  host.erase(std::remove_if(host.begin(),
+                            host.end(),
+                            [](long long x) {
+                              return x % 2 == 0;
+                            }),
+             host.end());
   long long ref_sum = 0;
   for (long long v : host)
   {
     ref_sum += v;
   }
 
-  std::printf("%zu values -> %zu distinct -> %zu odd, sum = %lld (expected %lld)\n",
-              n, distinct, odds, total, ref_sum);
+  std::printf("%zu values -> %zu distinct -> %zu odd, sum = %lld (expected %lld)\n", n, distinct, odds, total, ref_sum);
 
   if (distinct == 0 || odds != host.size() || total != ref_sum)
   {

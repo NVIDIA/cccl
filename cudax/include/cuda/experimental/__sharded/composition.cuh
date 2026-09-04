@@ -63,7 +63,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 // ===========================================================================
 // The synchronization verbs (concepts-tier free functions over env ranges)
 // ===========================================================================
@@ -141,7 +140,9 @@ _CCCL_TEMPLATE(class _EnvsTo, class _EnvsFrom)
 _CCCL_REQUIRES(sharded_env_range<::cuda::std::remove_cvref_t<_EnvsTo>> _CCCL_AND
                  sharded_env_range<::cuda::std::remove_cvref_t<_EnvsFrom>>)
 _CCCL_HOST_API void lane_wait(
-  const _EnvsTo& envs_to, ::std::size_t target, const _EnvsFrom& envs_from,
+  const _EnvsTo& envs_to,
+  ::std::size_t target,
+  const _EnvsFrom& envs_from,
   ::std::initializer_list<::std::size_t> sources)
 {
   if (target >= static_cast<::std::size_t>(envs_to.size()))
@@ -176,5 +177,4 @@ _CCCL_HOST_API void lane_sync(const _Envs& envs, ::std::size_t i, const _PolicyE
   places::check_not_capturing(s, "sharded::lane_sync");
   cuda_safe_call(cudaStreamSynchronize(s));
 }
-
 } // namespace cuda::experimental::sharded

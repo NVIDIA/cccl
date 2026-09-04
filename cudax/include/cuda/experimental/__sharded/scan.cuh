@@ -28,17 +28,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/device_reduce.cuh>
 #include <cub/device/device_scan.cuh>
 
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
 
+#include <cuda/__functional/operator_properties.h> // identity_element
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
-
-#include <cub/device/device_reduce.cuh>
-
-#include <cuda/__functional/operator_properties.h> // identity_element
 
 #include <cuda/experimental/__places/place_group.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
@@ -85,7 +83,13 @@ namespace reserved
 //! x_0..x_{i-1})` — init enters the fold exactly once.
 template <bool _Inclusive, class _S, class _Envs, class _ScanOp, class _Tp, class _CallEnv>
 _CCCL_HOST_API void __scan_generic(
-  _S&& data, const _Envs& envs, _ScanOp scan_op, _Tp init_value, _Tp identity, const _CallEnv& call_env, const char* what)
+  _S&& data,
+  const _Envs& envs,
+  _ScanOp scan_op,
+  _Tp init_value,
+  _Tp identity,
+  const _CallEnv& call_env,
+  const char* what)
 {
   const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
   if (static_cast<::std::size_t>(envs.size()) < num_shards)
@@ -108,10 +112,9 @@ _CCCL_HOST_API void __scan_generic(
   // Per-shard totals staging (host-accessible; call-env resource override,
   // pinned arena default). Prefilled with the identity so empty shards
   // contribute nothing to the prefix.
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  _Tp* h_totals = nullptr;
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  _Tp* h_totals               = nullptr;
   if constexpr (__env_has_mr)
   {
     auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
@@ -177,44 +180,43 @@ _CCCL_HOST_API void __scan_generic(
 
   // Phase 3: per-shard in-place seeded scans through the shared driver
   // (its synchronous tail provides this form's final join).
-  __detail::__generic_map(
-    data, envs, call_env, what, [&](::std::size_t g, const auto& d, cudaStream_t s) {
-      const auto& env = envs[g];
-      auto mr         = ::cuda::mr::get_memory_resource(env);
+  __detail::__generic_map(data, envs, call_env, what, [&](::std::size_t g, const auto& d, cudaStream_t s) {
+    const auto& env = envs[g];
+    auto mr         = ::cuda::mr::get_memory_resource(env);
 
-      auto run_two_call = [&](auto&& launch) {
-        ::std::size_t temp_bytes = 0;
-        launch(nullptr, temp_bytes);
-        void* d_temp = mr.allocate(::cuda::stream_ref{s}, temp_bytes, alignof(::std::max_align_t));
-        launch(d_temp, temp_bytes);
-        mr.deallocate(::cuda::stream_ref{s}, d_temp, temp_bytes, alignof(::std::max_align_t));
-      };
+    auto run_two_call = [&](auto&& launch) {
+      ::std::size_t temp_bytes = 0;
+      launch(nullptr, temp_bytes);
+      void* d_temp = mr.allocate(::cuda::stream_ref{s}, temp_bytes, alignof(::std::max_align_t));
+      launch(d_temp, temp_bytes);
+      mr.deallocate(::cuda::stream_ref{s}, d_temp, temp_bytes, alignof(::std::max_align_t));
+    };
 
-      if constexpr (_Inclusive)
+    if constexpr (_Inclusive)
+    {
+      if (has_seed[g])
       {
-        if (has_seed[g])
-        {
-          run_two_call([&](void* t, ::std::size_t& b) {
-            cuda_safe_call(cub::DeviceScan::InclusiveScanInit(
-              t, b, d.data, d.data, scan_op, seed[g], static_cast<::cuda::std::int64_t>(d.size), s));
-          });
-        }
-        else
-        {
-          run_two_call([&](void* t, ::std::size_t& b) {
-            cuda_safe_call(cub::DeviceScan::InclusiveScan(
-              t, b, d.data, d.data, scan_op, static_cast<::cuda::std::int64_t>(d.size), s));
-          });
-        }
+        run_two_call([&](void* t, ::std::size_t& b) {
+          cuda_safe_call(cub::DeviceScan::InclusiveScanInit(
+            t, b, d.data, d.data, scan_op, seed[g], static_cast<::cuda::std::int64_t>(d.size), s));
+        });
       }
       else
       {
         run_two_call([&](void* t, ::std::size_t& b) {
-          cuda_safe_call(cub::DeviceScan::ExclusiveScan(
-            t, b, d.data, d.data, scan_op, seed[g], static_cast<::cuda::std::int64_t>(d.size), s));
+          cuda_safe_call(cub::DeviceScan::InclusiveScan(
+            t, b, d.data, d.data, scan_op, static_cast<::cuda::std::int64_t>(d.size), s));
         });
       }
-    });
+    }
+    else
+    {
+      run_two_call([&](void* t, ::std::size_t& b) {
+        cuda_safe_call(cub::DeviceScan::ExclusiveScan(
+          t, b, d.data, d.data, scan_op, seed[g], static_cast<::cuda::std::int64_t>(d.size), s));
+      });
+    }
+  });
 
   if constexpr (__env_has_mr)
   {
@@ -234,8 +236,8 @@ _CCCL_HOST_API void __scan_generic(
  * `cuda::identity_element` knows the operator; custom operators supply it.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _ScanOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void inclusive_scan(
   _S&& data,
   const _Envs& envs,
@@ -249,8 +251,8 @@ _CCCL_HOST_API void inclusive_scan(
 
 /// @brief In-place inclusive scan (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _ScanOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_ScanOp>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_ScanOp>>))
 _CCCL_HOST_API void inclusive_scan(
   _S&& data,
   _ScanOp scan_op,
@@ -268,8 +270,8 @@ _CCCL_HOST_API void inclusive_scan(
  * global semantics, init entering the fold exactly once.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _ScanOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void exclusive_scan(
   _S&& data,
   const _Envs& envs,
@@ -284,8 +286,8 @@ _CCCL_HOST_API void exclusive_scan(
 
 /// @brief In-place exclusive scan (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _ScanOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_ScanOp>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_ScanOp>>))
 _CCCL_HOST_API void exclusive_scan(
   _S&& data,
   _ScanOp scan_op,
@@ -302,8 +304,8 @@ _CCCL_HOST_API void exclusive_scan(
 
 /// @brief In-place inclusive sum (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void inclusive_sum(_S&& data, const _Envs& envs, const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
@@ -323,8 +325,8 @@ _CCCL_HOST_API void inclusive_sum(_S&& data, const _CallEnv& call_env = {})
 
 /// @brief In-place exclusive sum (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void
 exclusive_sum(_S&& data, const _Envs& envs, view_element_t<_S> init_value = {}, const _CallEnv& call_env = {})
 {
@@ -343,5 +345,4 @@ _CCCL_HOST_API void exclusive_sum(_S&& data, view_element_t<_S> init_value = {},
   sharded::exclusive_scan(
     ::cuda::std::forward<_S>(data), envs, ::cuda::std::plus<elem_t>{}, init_value, elem_t{0}, call_env);
 }
-
 } // namespace cuda::experimental::sharded

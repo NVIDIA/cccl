@@ -47,7 +47,6 @@ using cuda::experimental::places::place_group;
 
 namespace
 {
-
 struct decay_op // x <- a*x + b (kept uniform so the reference is closed-form)
 {
   __device__ float operator()(float v) const
@@ -65,7 +64,6 @@ struct couple_op // y <- y + s / n, s read from the reduction's device slot
     return v + (*s_slot) * inv_n;
   }
 };
-
 } // namespace
 
 int main()

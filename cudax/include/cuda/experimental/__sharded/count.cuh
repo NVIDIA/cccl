@@ -38,8 +38,8 @@
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
 #include <cuda/experimental/__sharded/pinned_staging.cuh>
-#include <cuda/experimental/__sharded/stream_scope.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
+#include <cuda/experimental/__sharded/stream_scope.cuh>
 
 #include <algorithm>
 #include <vector>
@@ -89,8 +89,8 @@ struct equals_value_fn
  * call environment's resource when present, the pinned arena otherwise.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API size_t
 count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
 {
@@ -113,10 +113,9 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::count_if");
   }
 
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  size_t* h_counts = nullptr;
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  size_t* h_counts            = nullptr;
   if constexpr (__env_has_mr)
   {
     auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
@@ -178,8 +177,8 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
 
 /// @brief Count elements satisfying @p pred (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-  !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>))
+_CCCL_REQUIRES(
+  self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>))
 [[nodiscard]] _CCCL_HOST_API size_t count_if(const _S& data, _Pred pred, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
@@ -188,8 +187,8 @@ _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
 
 /// @brief Count elements equal to @p value (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API size_t
 count(const _S& data, const _Envs& envs, view_element_t<_S> value, const _CallEnv& call_env = {})
 {

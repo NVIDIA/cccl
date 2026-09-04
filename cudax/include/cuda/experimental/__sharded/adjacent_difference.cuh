@@ -97,9 +97,9 @@ __global__ void adjacent_difference_kernel(const _Tp* input, _Tp* output, size_t
  *         environment shortfall.
  */
 _CCCL_TEMPLATE(class _SIn, class _Envs, class _SOut, class _BinaryOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND
-                 sharded_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND
-                   sharded_view<::cuda::std::remove_cvref_t<_SOut>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND
+    sharded_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND sharded_view<::cuda::std::remove_cvref_t<_SOut>>)
 _CCCL_HOST_API void
 adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op, const _CallEnv& call_env = {})
 {
@@ -136,10 +136,9 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
 
   // Boundary staging: one element per shard, host-accessible, from the call
   // environment's resource when present, the cached pinned arena otherwise.
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  elem_t* h_last = nullptr;
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  elem_t* h_last              = nullptr;
   if constexpr (__env_has_mr)
   {
     auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
@@ -209,14 +208,12 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
  * environments derived from the output via `default_envs`.
  */
 _CCCL_TEMPLATE(class _SIn, class _SOut, class _BinaryOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND
-                 self_bound<::cuda::std::remove_cvref_t<_SOut>> _CCCL_AND(
-                   !sharded_env_range<::cuda::std::remove_cvref_t<_BinaryOp>>) _CCCL_AND(
-                   !sharded_view<::cuda::std::remove_cvref_t<_BinaryOp>>))
+_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_SOut>>
+                 _CCCL_AND(!sharded_env_range<::cuda::std::remove_cvref_t<_BinaryOp>>)
+                   _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_BinaryOp>>))
 _CCCL_HOST_API void adjacent_difference(const _SIn& in, _SOut&& out, _BinaryOp op, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(out);
   sharded::adjacent_difference(in, envs, ::cuda::std::forward<_SOut>(out), op, call_env);
 }
-
 } // namespace cuda::experimental::sharded

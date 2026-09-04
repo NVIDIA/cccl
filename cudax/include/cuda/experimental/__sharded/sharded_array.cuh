@@ -402,7 +402,7 @@ public:
   static sharded_array
   allocate_contiguous(place_group& group, size_t total_size, size_t lane_id = place_group::auto_lane_id)
   {
-    const auto sizes             = split_evenly(total_size, group.size());
+    const auto sizes            = split_evenly(total_size, group.size());
     const size_t effective_lane = (lane_id == place_group::auto_lane_id) ? group.next_lane_id() : lane_id;
 
     ::std::vector<shard_spec> specs;

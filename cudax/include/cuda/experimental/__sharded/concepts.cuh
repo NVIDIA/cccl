@@ -84,7 +84,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 // ===========================================================================
 // Helper unary concepts (the C++17 emulation needs named unary concepts for
 // _Satisfies; see __multi_gpu/concepts.h for the precedent)
@@ -133,7 +132,7 @@ using shard_element_t = ::cuda::std::remove_pointer_t<::cuda::std::remove_cvref_
 template <class _Tp, class _PlaceId = int>
 struct basic_shard_view
 {
-  _Tp* data                  = nullptr; //!< pointer to the shard's elements
+  _Tp* data                   = nullptr; //!< pointer to the shard's elements
   ::std::size_t size          = 0; //!< number of elements
   ::std::size_t global_offset = 0; //!< first global index covered
   _PlaceId place{}; //!< equality-comparable place identity
@@ -194,8 +193,7 @@ template <class _SpanLike, class _PlaceId = int>
   ::std::size_t __idx    = 0;
   for (const auto& __p : __pieces)
   {
-    __v.shards.push_back(
-      {__p.data(), static_cast<::std::size_t>(__p.size()), __offset, static_cast<_PlaceId>(__idx)});
+    __v.shards.push_back({__p.data(), static_cast<::std::size_t>(__p.size()), __offset, static_cast<_PlaceId>(__idx)});
     __offset += static_cast<::std::size_t>(__p.size());
     ++__idx;
   }
@@ -204,8 +202,7 @@ template <class _SpanLike, class _PlaceId = int>
 
 //! @brief As above, with caller-supplied place identities (one per piece).
 template <class _SpanLike, class _PlaceId>
-[[nodiscard]] auto
-make_sharded_view(const ::std::vector<_SpanLike>& __pieces, const ::std::vector<_PlaceId>& __places)
+[[nodiscard]] auto make_sharded_view(const ::std::vector<_SpanLike>& __pieces, const ::std::vector<_PlaceId>& __places)
 {
   using _Tp = ::cuda::std::remove_pointer_t<decltype(::cuda::std::declval<const _SpanLike&>().data())>;
   if (__places.size() != __pieces.size())
@@ -242,15 +239,16 @@ _CCCL_CONCEPT sharded_view = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
 
 //! @brief Descriptor type of a sharded view.
 template <class _S>
-using shard_descriptor_t = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<const _S&>().shard(::std::size_t{0}))>;
+using shard_descriptor_t =
+  ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<const _S&>().shard(::std::size_t{0}))>;
 
 //! @brief Element type of a sharded view.
 template <class _S>
 using view_element_t = shard_element_t<shard_descriptor_t<::cuda::std::remove_cvref_t<_S>>>;
 
 template <class _Tp>
-_CCCL_CONCEPT __has_capacity_field = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __d)(
-  _Satisfies(__convertible_to_size) __d.capacity);
+_CCCL_CONCEPT __has_capacity_field =
+  _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __d)(_Satisfies(__convertible_to_size) __d.capacity);
 
 //! @brief An owning sharded structure: a `sharded_view` whose shards
 //! additionally expose `capacity` (allocated element count, >= size) and
@@ -267,11 +265,10 @@ _CCCL_CONCEPT __has_capacity_field = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __d)(
 //! Capacities never change through this interface: no growth, no
 //! reallocation — redistribution stays an explicit rebuild.
 template <class _S>
-_CCCL_CONCEPT owning_sharded =
-  _CCCL_REQUIRES_EXPR((_S), _S& __s, const ::std::vector<::std::size_t>& __sizes)(
-    requires(sharded_view<_S>),
-    requires(__has_capacity_field<::cuda::std::remove_cvref_t<decltype(__s.shard(::std::size_t{0}))>>),
-    _Same_as(void) __s.commit_sizes(__sizes));
+_CCCL_CONCEPT owning_sharded = _CCCL_REQUIRES_EXPR((_S), _S& __s, const ::std::vector<::std::size_t>& __sizes)(
+  requires(sharded_view<_S>),
+  requires(__has_capacity_field<::cuda::std::remove_cvref_t<decltype(__s.shard(::std::size_t{0}))>>),
+  _Same_as(void) __s.commit_sizes(__sizes));
 
 //! @brief Check the `sharded_view` semantic guarantees at runtime (debug
 //! aid; concepts cannot express semantics).
@@ -306,8 +303,8 @@ _CCCL_REQUIRES(sharded_view<_S>)
 //! `.get_stream()` member, a `query(get_stream_t)` env, or something
 //! convertible to `stream_ref`).
 template <class _Env>
-_CCCL_CONCEPT sharded_env = _CCCL_REQUIRES_EXPR((_Env), const _Env& __e)(
-  _Satisfies(__convertible_to_stream_ref) ::cuda::get_stream(__e));
+_CCCL_CONCEPT sharded_env =
+  _CCCL_REQUIRES_EXPR((_Env), const _Env& __e)(_Satisfies(__convertible_to_stream_ref)::cuda::get_stream(__e));
 
 template <class _Tp>
 _CCCL_CONCEPT __not_void = !::cuda::std::is_void_v<_Tp>;
@@ -318,8 +315,7 @@ _CCCL_CONCEPT __not_void = !::cuda::std::is_void_v<_Tp>;
 //! `sharded_env`.
 template <class _Env>
 _CCCL_CONCEPT sharded_alloc_env = _CCCL_REQUIRES_EXPR((_Env), const _Env& __e)(
-  requires(sharded_env<_Env>),
-  _Satisfies(__not_void) ::cuda::mr::get_memory_resource(__e));
+  requires(sharded_env<_Env>), _Satisfies(__not_void)::cuda::mr::get_memory_resource(__e));
 
 //! @brief An indexed family of per-shard environments: `size()` and
 //! `operator[](i)` yielding a `sharded_env`. `envs[i]` binds shard `i`.
@@ -345,8 +341,7 @@ _CCCL_CONCEPT sharded_alloc_env_range = _CCCL_REQUIRES_EXPR((_Range), const _Ran
 //! model it and are used through the explicit-environment overloads.
 template <class _S>
 _CCCL_CONCEPT self_bound = _CCCL_REQUIRES_EXPR((_S), const _S& __s)(
-  requires(sharded_view<_S>),
-  requires(sharded_env_range<::cuda::std::remove_cvref_t<decltype(default_envs(__s))>>));
+  requires(sharded_view<_S>), requires(sharded_env_range<::cuda::std::remove_cvref_t<decltype(default_envs(__s))>>));
 
 // ===========================================================================
 // Per-call environment (the combine-scope tier)
@@ -392,7 +387,6 @@ template <class _CallEnv>
     return composition::lane_ordered;
   }
 }
-
 
 //! @brief Synchronization policy carried by a per-call environment.
 enum class sync_policy
@@ -457,9 +451,10 @@ void require_sync_allowed(const _CallEnv& __env, const char* __what)
 {
   if (query_sync_policy(__env) == sync_policy::forbid)
   {
-    throw ::std::runtime_error(::std::string(__what)
-                               + ": operation would synchronize with the host, but the call "
-                                 "environment carries sync_policy::forbid");
+    throw ::std::runtime_error(
+      ::std::string(__what)
+      + ": operation would synchronize with the host, but the call "
+        "environment carries sync_policy::forbid");
   }
 }
 
@@ -489,7 +484,6 @@ void __check_copartitioned(const _SA& __a, const _SB& __b, const char* __what)
   }
 }
 } // namespace reserved
-
 } // namespace cuda::experimental::sharded
 
 // NOLINTEND(bugprone-reserved-identifier)

@@ -38,8 +38,8 @@
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
 #include <cuda/experimental/__sharded/pinned_staging.cuh>
-#include <cuda/experimental/__sharded/stream_scope.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
+#include <cuda/experimental/__sharded/stream_scope.cuh>
 
 #include <algorithm>
 #include <stdexcept>
@@ -62,8 +62,8 @@ namespace cuda::experimental::sharded
  * environment's resource when present, the pinned arena otherwise.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API ::std::vector<size_t> histogram_even(
   const _S& data,
   const _Envs& envs,
@@ -101,12 +101,11 @@ _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::histogram_even");
   }
 
-  using counter_type = unsigned long long; // device-atomics-capable bin counter
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  const size_t host_bytes = num_shards * bins * sizeof(counter_type);
-  counter_type* h_hists   = nullptr;
+  using counter_type          = unsigned long long; // device-atomics-capable bin counter
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  const size_t host_bytes     = num_shards * bins * sizeof(counter_type);
+  counter_type* h_hists       = nullptr;
   if constexpr (__env_has_mr)
   {
     auto staging_mr = ::cuda::mr::get_memory_resource(call_env);

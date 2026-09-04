@@ -58,7 +58,6 @@ static_assert(!sharded_env<int>, "int is not a shard env");
 
 namespace
 {
-
 // A foreign, unbound view: descriptor shape only — models sharded_view but
 // NOT self_bound (no environments anywhere).
 struct foreign_view
@@ -95,7 +94,6 @@ struct foreign_bound_view : foreign_view
 {
   return v.envs_;
 }
-
 } // namespace
 
 static_assert(sharded_view<foreign_view>, "foreign struct with descriptor shape models sharded_view");
@@ -112,7 +110,6 @@ static_assert(self_bound<foreign_bound_view>, "foreign view + ADL default_envs i
 
 namespace
 {
-
 _CCCL_TEMPLATE(class _S)
 _CCCL_REQUIRES(sharded_view<_S>)
 ::std::size_t total_elements(const _S& s)
@@ -191,8 +188,8 @@ void test_container_model(place_group& group)
   EXPECT(query_sync_policy(sync_env) == sync_policy::allow);
   require_sync_allowed(sync_env, "models test"); // must not throw
 
-  const auto forbid_env = ::cuda::std::execution::env{
-    ::cuda::std::execution::prop{get_sync_policy_t{}, sync_policy::forbid}};
+  const auto forbid_env =
+    ::cuda::std::execution::env{::cuda::std::execution::prop{get_sync_policy_t{}, sync_policy::forbid}};
   EXPECT(query_sync_policy(forbid_env) == sync_policy::forbid);
   bool threw = false;
   try
@@ -239,7 +236,6 @@ void test_foreign_model()
   overlap.shards_.push_back({nullptr, 5, 8, 1}); // overlaps [8, 10)
   EXPECT(!validate(overlap));
 }
-
 } // namespace
 
 int main()

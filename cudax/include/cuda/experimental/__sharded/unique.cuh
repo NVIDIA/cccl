@@ -39,12 +39,12 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/place_group.cuh>
-#include <cuda/experimental/__stf/utility/exception_policy.cuh> // SCOPE
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
 #include <cuda/experimental/__sharded/pinned_staging.cuh>
-#include <cuda/experimental/__sharded/stream_scope.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
+#include <cuda/experimental/__sharded/stream_scope.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh> // SCOPE
 
 #include <algorithm>
 #include <stdexcept>
@@ -79,8 +79,8 @@ namespace reserved
  * failure leaves the structure VALID and EMPTY.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API size_t unique(_S&& data, const _Envs& envs, const _CallEnv& call_env = {})
 {
   using elem_t                   = view_element_t<_S>;
@@ -115,13 +115,12 @@ _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
   // Host staging: two boundary-element blocks (_Tp leads) + the count block
   // at an offset rounded to its alignment; the backing (arena or call-env
   // resource) is at least max_align-aligned.
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  const size_t tp_bytes     = 2 * num_shards * sizeof(elem_t);
-  const size_t count_offset = (tp_bytes + alignof(count_type) - 1) / alignof(count_type) * alignof(count_type);
-  const size_t host_bytes   = count_offset + num_shards * sizeof(count_type);
-  unsigned char* h_base     = nullptr;
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  const size_t tp_bytes       = 2 * num_shards * sizeof(elem_t);
+  const size_t count_offset   = (tp_bytes + alignof(count_type) - 1) / alignof(count_type) * alignof(count_type);
+  const size_t host_bytes     = count_offset + num_shards * sizeof(count_type);
+  unsigned char* h_base       = nullptr;
   if constexpr (__env_has_mr)
   {
     auto staging_mr = ::cuda::mr::get_memory_resource(call_env);
@@ -248,9 +247,8 @@ _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
 
 /// @brief Remove consecutive duplicates (generic, self-bound).
 _CCCL_TEMPLATE(class _S, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
-                   !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_CallEnv>>))
+_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_S>>
+                 _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_CallEnv>>))
 [[nodiscard]] _CCCL_HOST_API size_t unique(_S&& data, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);

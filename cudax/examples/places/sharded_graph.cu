@@ -60,7 +60,6 @@ using cuda::experimental::places::place_group;
 
 namespace
 {
-
 struct degree_op
 {
   __device__ int operator()(int hi, int lo) const
@@ -116,7 +115,6 @@ struct sharded_csr_graph
 };
 static_assert(sharded_view<decltype(sharded_csr_graph{}.offsets_lo)>, "components model the concept");
 static_assert(sharded_view<decltype(sharded_csr_graph{}.values)>, "components model the concept");
-
 } // namespace
 
 int main()
@@ -124,7 +122,7 @@ int main()
   cuda_safe_call(cuInit(0));
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group::by_locality_domains();
+  auto group            = place_group::by_locality_domains();
   const ::std::size_t P = group.size();
   auto envs             = group.envs(0);
   ::std::printf("place_group with %zu place(s)\n", P);
@@ -192,12 +190,12 @@ int main()
     d_off[g] = static_cast<int*>(mr.allocate(strm, h_off[g].size() * sizeof(int), 256));
     d_col[g] = static_cast<int*>(mr.allocate(strm, (h_col[g].empty() ? 1 : h_col[g].size()) * sizeof(int), 256));
     d_val[g] = static_cast<float*>(mr.allocate(strm, (h_val[g].empty() ? 1 : h_val[g].size()) * sizeof(float), 256));
-    cuda_safe_call(cudaMemcpyAsync(
-      d_off[g], h_off[g].data(), h_off[g].size() * sizeof(int), cudaMemcpyHostToDevice, strm.get()));
-    cuda_safe_call(cudaMemcpyAsync(
-      d_col[g], h_col[g].data(), h_col[g].size() * sizeof(int), cudaMemcpyHostToDevice, strm.get()));
-    cuda_safe_call(cudaMemcpyAsync(
-      d_val[g], h_val[g].data(), h_val[g].size() * sizeof(float), cudaMemcpyHostToDevice, strm.get()));
+    cuda_safe_call(
+      cudaMemcpyAsync(d_off[g], h_off[g].data(), h_off[g].size() * sizeof(int), cudaMemcpyHostToDevice, strm.get()));
+    cuda_safe_call(
+      cudaMemcpyAsync(d_col[g], h_col[g].data(), h_col[g].size() * sizeof(int), cudaMemcpyHostToDevice, strm.get()));
+    cuda_safe_call(
+      cudaMemcpyAsync(d_val[g], h_val[g].data(), h_val[g].size() * sizeof(float), cudaMemcpyHostToDevice, strm.get()));
     cuda_safe_call(cudaStreamSynchronize(strm.get()));
   }
 
@@ -211,10 +209,10 @@ int main()
     for (::std::size_t g = 0; g < P; g++)
     {
       const ::std::size_t nv = v_begin[g + 1] - v_begin[g];
-      lo[g]  = {d_off[g], nv};
-      hi[g]  = {d_off[g] + 1, nv}; // the shifted alias
-      col[g] = {d_col[g], h_col[g].size()};
-      val[g] = {d_val[g], h_val[g].size()};
+      lo[g]                  = {d_off[g], nv};
+      hi[g]                  = {d_off[g] + 1, nv}; // the shifted alias
+      col[g]                 = {d_col[g], h_col[g].size()};
+      val[g]                 = {d_val[g], h_val[g].size()};
     }
     graph.offsets_lo   = make_sharded_view(lo);
     graph.offsets_hi   = make_sharded_view(hi);
@@ -231,10 +229,11 @@ int main()
     vsizes[g] = v_begin[g + 1] - v_begin[g];
     esizes[g] = h_col[g].size();
   }
-  auto deg = sharded_array<int>::allocate_contiguous(group, V, 0); // contiguous: the frontier predicate gathers by vertex id
-  auto y   = sharded_array<float>::allocate(group, vsizes, 0);
-  auto z   = sharded_array<float>::allocate(group, esizes, 0);
-  auto x   = sharded_array<float>::allocate_contiguous(group, V, 0);
+  auto deg = sharded_array<int>::allocate_contiguous(group, V, 0); // contiguous: the frontier predicate gathers by
+                                                                   // vertex id
+  auto y = sharded_array<float>::allocate(group, vsizes, 0);
+  auto z = sharded_array<float>::allocate(group, esizes, 0);
+  auto x = sharded_array<float>::allocate_contiguous(group, V, 0);
 
   ::std::vector<float> h_x(V);
   for (::std::size_t v = 0; v < V; v++)
@@ -302,7 +301,7 @@ int main()
   // =========================================================================
   auto ids = sharded_array<int>::allocate(group, vsizes, 0);
   iota(ids, 0); // ids[v] = v (global vertex id)
-  auto frontier_ids = sharded_array<int>::allocate(group, vsizes, 0); // capacity = worst case
+  auto frontier_ids   = sharded_array<int>::allocate(group, vsizes, 0); // capacity = worst case
   const int* deg_base = static_cast<const int*>(deg.shard(0).data); // contiguous base
 
   const size_t f_kept = copy_if(ids, frontier_ids, frontier_pred{deg_base});
@@ -324,7 +323,8 @@ int main()
     ok = ok && (k == f_kept);
   }
   ::std::printf("frontier contents as ragged copy_if: %s (%zu ids, per-shard sizes data-dependent)\n",
-                ok ? "OK" : "MISMATCH", f_kept);
+                ok ? "OK" : "MISMATCH",
+                f_kept);
 
   for (::std::size_t g = 0; g < P; g++)
   {

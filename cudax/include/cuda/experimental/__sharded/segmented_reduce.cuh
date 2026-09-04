@@ -56,7 +56,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 /**
  * @brief Segmented reduce over sharded views: per shard `g` and segment `i`,
  * `out.shard(g)[i] = op(init, in.shard(g)[seg_begin.shard(g)[i]] ... )` —
@@ -94,13 +93,18 @@ namespace cuda::experimental::sharded
  *         count mismatch.
  */
 _CCCL_TEMPLATE(
-  class _SIn, class _Envs, class _SBegin, class _SEnd, class _SOut, class _ReduceOp, class _Tp,
+  class _SIn,
+  class _Envs,
+  class _SBegin,
+  class _SEnd,
+  class _SOut,
+  class _ReduceOp,
+  class _Tp,
   class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND
-                   sharded_view<::cuda::std::remove_cvref_t<_SBegin>> _CCCL_AND
-                     sharded_view<::cuda::std::remove_cvref_t<_SEnd>> _CCCL_AND
-                       sharded_view<::cuda::std::remove_cvref_t<_SOut>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>
+    _CCCL_AND sharded_view<::cuda::std::remove_cvref_t<_SBegin>> _CCCL_AND
+      sharded_view<::cuda::std::remove_cvref_t<_SEnd>> _CCCL_AND sharded_view<::cuda::std::remove_cvref_t<_SOut>>)
 _CCCL_HOST_API void segmented_reduce(
   const _SIn& in,
   _Envs&& envs,
@@ -164,16 +168,19 @@ _CCCL_HOST_API void segmented_reduce(
  */
 _CCCL_TEMPLATE(
   class _SIn, class _SBegin, class _SEnd, class _SOut, class _ReduceOp, class _Tp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND
-                 sharded_view<::cuda::std::remove_cvref_t<_SBegin>> _CCCL_AND
-                   sharded_view<::cuda::std::remove_cvref_t<_SEnd>> _CCCL_AND
-                     self_bound<::cuda::std::remove_cvref_t<_SOut>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND sharded_view<::cuda::std::remove_cvref_t<_SBegin>> _CCCL_AND
+    sharded_view<::cuda::std::remove_cvref_t<_SEnd>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_SOut>>)
 _CCCL_HOST_API void segmented_reduce(
-  const _SIn& in, const _SBegin& seg_begin, const _SEnd& seg_end, _SOut&& out, _ReduceOp op, _Tp init,
+  const _SIn& in,
+  const _SBegin& seg_begin,
+  const _SEnd& seg_end,
+  _SOut&& out,
+  _ReduceOp op,
+  _Tp init,
   const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(out);
   sharded::segmented_reduce(in, envs, seg_begin, seg_end, ::cuda::std::forward<_SOut>(out), op, init, call_env);
 }
-
 } // namespace cuda::experimental::sharded

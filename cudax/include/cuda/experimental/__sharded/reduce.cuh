@@ -53,7 +53,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 // ============================================================================
 // Concept-generic tier (pilot): any sharded_view + allocating environments
 // ============================================================================
@@ -77,8 +76,8 @@ namespace cuda::experimental::sharded
  *         supplied.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API _Tp
 reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
 {
@@ -105,10 +104,9 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   // costs close to a millisecond (page pinning), which would dominate the
   // whole combine — the default is a cached thread-local pinned arena,
   // overridable by a memory resource carried on the call environment.
-  constexpr bool __env_has_mr =
-    ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
-    || ::cuda::mr::__has_member_get_resource<_CallEnv>;
-  _Tp* h_partials = nullptr;
+  constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
+                             || ::cuda::mr::__has_member_get_resource<_CallEnv>;
+  _Tp* h_partials             = nullptr;
   if constexpr (__env_has_mr)
   {
     auto __staging_mr = ::cuda::mr::get_memory_resource(call_env);
@@ -139,8 +137,8 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
     const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
     stream_scope scope(shard_stream.get());
 
-    auto mr    = ::cuda::mr::get_memory_resource(env);
-    _Tp* d_out = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
+    auto mr      = ::cuda::mr::get_memory_resource(env);
+    _Tp* d_out   = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
     d_outputs[g] = __scratch{d_out, sizeof(_Tp)};
 
     cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_out, s.size, reduce_op, init_value, env));
@@ -240,8 +238,8 @@ __global__ void __fold_partials_kernel(
 _CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _OutIt, class _CallEnv)
 _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
                  sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND async_call_env<_CallEnv>)
-_CCCL_HOST_API void
-reduce_into(const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
+_CCCL_HOST_API void reduce_into(
+  const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
 {
   const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
   if (static_cast<::std::size_t>(envs.size()) < num_shards)
@@ -266,8 +264,8 @@ reduce_into(const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, 
 
   // P-element partials scratch, stream-ordered on the call stream (visible
   // to every shard's stream through unified addressing).
-  auto scratch_mr  = ::cuda::mr::get_memory_resource(envs[0]);
-  _Tp* d_partials  = static_cast<_Tp*>(scratch_mr.allocate(call_stream, num_shards * sizeof(_Tp), alignof(_Tp)));
+  auto scratch_mr = ::cuda::mr::get_memory_resource(envs[0]);
+  _Tp* d_partials = static_cast<_Tp*>(scratch_mr.allocate(call_stream, num_shards * sizeof(_Tp), alignof(_Tp)));
   ::cuda::std::uint64_t mask = 0;
 
   // Fork + enqueue first, join second: all shards' work is ordered after the
@@ -315,7 +313,8 @@ reduce_into(const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, 
  */
 _CCCL_TEMPLATE(class _S, class _Tp, class _ReduceOp, class _OutIt, class _CallEnv)
 _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND async_call_env<_CallEnv>)
-_CCCL_HOST_API void reduce_into(const _S& data, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
+_CCCL_HOST_API void
+reduce_into(const _S& data, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
 {
   const auto envs = default_envs(data);
   sharded::reduce_into(data, envs, out, reduce_op, init_value, call_env);
@@ -328,7 +327,8 @@ _CCCL_HOST_API void reduce_into(const _S& data, _OutIt out, _ReduceOp reduce_op,
 _CCCL_TEMPLATE(class _S, class _Tp, class _ReduceOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
   !sharded_alloc_env_range<::cuda::std::remove_cvref_t<_ReduceOp>>))
-[[nodiscard]] _CCCL_HOST_API _Tp reduce(const _S& data, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
+[[nodiscard]] _CCCL_HOST_API _Tp
+reduce(const _S& data, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
   return sharded::reduce(data, envs, reduce_op, init_value, call_env);
@@ -338,8 +338,8 @@ _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
 
 /// @brief Sum of all elements (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API view_element_t<_S> sum(const _S& data, const _Envs& envs, const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
@@ -358,8 +358,8 @@ _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
 
 /// @brief Minimum element (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API view_element_t<_S> min(const _S& data, const _Envs& envs, const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
@@ -378,8 +378,8 @@ _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
 
 /// @brief Maximum element (generic).
 _CCCL_TEMPLATE(class _S, class _Envs, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
-                 sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 [[nodiscard]] _CCCL_HOST_API view_element_t<_S> max(const _S& data, const _Envs& envs, const _CallEnv& call_env = {})
 {
   using elem_t = view_element_t<_S>;
@@ -395,5 +395,4 @@ _CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>> _CCCL_AND(
   const auto envs = default_envs(data);
   return sharded::max(data, envs, call_env);
 }
-
 } // namespace cuda::experimental::sharded
