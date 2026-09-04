@@ -400,7 +400,6 @@ def test_common_direct_block_load_store_lowers_to_private_factories():
 
 
 @pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
-@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     ("algorithm", "storage_free", "mutates_store_payload"),
@@ -472,7 +471,6 @@ def test_group_planner_selects_algorithm_storage_provider(
 
 
 @pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
-@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
 @pytest.mark.parametrize("operation", ("load", "store"))
 def test_group_planner_normalizes_algorithm_strings(qualified, operation):
     from numba_cuda_mlir import types
@@ -519,6 +517,7 @@ def test_group_planner_normalizes_algorithm_strings(qualified, operation):
 
 
 @pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     ("algorithm", "storage_free", "mutates_store_payload"),
@@ -654,7 +653,11 @@ def test_qualified_planner_rejects_non_string_algorithm(
 
 @pytest.mark.parametrize(
     ("group_kind", "algorithm"),
-    (("block", "stripd"), ("warp", "warp_transpose")),
+    (
+        ("block", "stripd"),
+        ("warp", "warp_transpose"),
+        ("logical_warp", "warp_transpose"),
+    ),
 )
 @pytest.mark.parametrize("operation", ("load", "store"))
 def test_qualified_planner_rejects_unsupported_algorithm(
@@ -666,19 +669,23 @@ def test_qualified_planner_rejects_unsupported_algorithm(
 
     import cuda.coop.numba_mlir as coop
 
-    group_factory = getattr(coop, f"this_{group_kind}")
+    group = (
+        coop.this_warp().group_by(8)
+        if group_kind == "logical_warp"
+        else getattr(coop, f"this_{group_kind}")()
+    )
 
     if operation == "load":
 
         def memory(values):
             payload = coop.ThreadData(2, dtype=types.int32)
-            coop.load(group_factory(), values, payload, algorithm=algorithm)
+            coop.load(group, values, payload, algorithm=algorithm)
 
     else:
 
         def memory(values):
             payload = coop.ThreadData(2, dtype=types.int32)
-            coop.store(group_factory(), values, payload, algorithm=algorithm)
+            coop.store(group, values, payload, algorithm=algorithm)
 
     array_type = types.Array(types.int32, 1, "C")
     _, planner = _plan(memory, arg_types=(array_type,))
