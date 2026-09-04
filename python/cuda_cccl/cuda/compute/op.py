@@ -51,6 +51,11 @@ class _OpAdapter:
         """
         return b""
 
+    @property
+    def state_alignment(self) -> int:
+        """Return the alignment requirement of the op's state bytes."""
+        return 1
+
     def get_return_type(self, input_types):
         """Get the return type for this op given input types."""
         raise NotImplementedError(
@@ -166,6 +171,11 @@ class RawOp(_OpAdapter):
     def get_state(self) -> bytes:
         """Return the op's state bytes."""
         return self._state
+
+    @property
+    def state_alignment(self) -> int:
+        """Return the alignment requirement of the op's state bytes."""
+        return self._state_alignment
 
     @property
     def _identity(self):
