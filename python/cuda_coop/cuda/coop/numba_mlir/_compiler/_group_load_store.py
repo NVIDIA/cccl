@@ -2,12 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load and store IR planning.
+"""Block and physical-Warp Load/Store IR planning.
 
 This mixin owns only its primitive-family IR rewrite. Shared provenance,
 launch facts, caches, and final orchestration remain in the group planner.
 """
 
+import operator
 from enum import Enum
 
 from cuda.coop._core import (
@@ -28,6 +29,7 @@ from ._group_planner_support import (
     Any,
     GroupRewriteError,
     ThreadGroup,
+    _cuda_module,
     inspect,
     ir,
 )
@@ -56,6 +58,7 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
         "warp_transpose_timesliced",
     }
 )
+_WARP_LOAD_STORE_ALGORITHMS = frozenset({"direct", "striped", "vectorize", "transpose"})
 _MUTATING_STORE_ALGORITHMS = frozenset(
     {
         "transpose",
@@ -65,15 +68,26 @@ _MUTATING_STORE_ALGORITHMS = frozenset(
 )
 
 
-def _load_store_algorithm(value: object, *, operation: str) -> str:
+def _load_store_algorithm(
+    value: object,
+    *,
+    operation: str,
+    group_kind: str,
+) -> str:
     if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"cuda.coop.numba_mlir.{operation} algorithm must be a string")
     token = value.strip().lower().replace("-", "_")
-    if token in _BLOCK_LOAD_STORE_ALGORITHMS:
+    allowed = (
+        _WARP_LOAD_STORE_ALGORITHMS
+        if group_kind == "warp"
+        else _BLOCK_LOAD_STORE_ALGORITHMS
+    )
+    if token in allowed:
         return token
-    choices = ", ".join(sorted(_BLOCK_LOAD_STORE_ALGORITHMS))
+    choices = ", ".join(sorted(allowed))
     raise ValueError(
-        f"cuda.coop.numba_mlir.{operation} algorithm must be one of: {choices}"
+        f"cuda.coop.numba_mlir.{operation} algorithm for {group_kind} groups "
+        f"must be one of: {choices}"
     )
 
 
@@ -94,6 +108,24 @@ _CUB_PLAN_ROUTES = {
         "CUB",
         "cub/block/block_store.cuh",
         "cub::BlockStore",
+        "Store",
+    ): "store",
+    (
+        "CUB",
+        "cub/warp/warp_load.cuh",
+        "cub::WarpLoad",
+        "Load",
+    ): "load",
+    (
+        "CUB",
+        "cub/warp/warp_load.cuh",
+        "cub::CudaCoopWarpLoadPreservingInvalid",
+        "Load",
+    ): "load",
+    (
+        "CUB",
+        "cub/warp/warp_store.cuh",
+        "cub::WarpStore",
         "Store",
     ): "store",
 }
@@ -122,11 +154,6 @@ class _LoadStorePlanning:
     ) -> tuple[Any, dict[str, Any]]:
         group = plan.resolved_group
         assert group.hierarchy is not None
-        if group.kind != "block":
-            raise NotImplementedError(
-                f"cuda.coop.numba_mlir.{operation} currently lowers only "
-                "this_block() groups through CUB"
-            )
         block_dim = group.hierarchy.block_dim
         if block_dim is None:
             raise GroupRewriteError(
@@ -137,14 +164,33 @@ class _LoadStorePlanning:
         from .._lowering import _load_store
 
         assert plan.temp_storage is not None
-        factory_name = (
-            operation
-            if plan.temp_storage.ownership is StorageOwnership.NONE
-            else f"_{operation}_with_storage"
-        )
+        storage_free = plan.temp_storage.ownership is StorageOwnership.NONE
+        if plan.target is GroupLoweringTarget.CUB_BLOCK:
+            factory_name = operation if storage_free else f"_{operation}_with_storage"
+            factory_kwargs = {"threads_per_block": block_dim}
+        elif plan.target is GroupLoweringTarget.CUB_WARP:
+            if plan.topology is None or plan.topology.logical_width != 32:
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir physical Warp Load/Store requires "
+                    "a 32-thread lowering topology"
+                )
+            factory_name = (
+                f"warp_{operation}"
+                if storage_free
+                else f"_warp_{operation}_with_storage"
+            )
+            factory_kwargs = {
+                "threads_per_block": block_dim,
+                "threads_in_warp": plan.topology.logical_width,
+            }
+        else:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir Load/Store received an unsupported "
+                f"lowering target {plan.target.value!r}"
+            )
         return (
             getattr(_load_store, factory_name),
-            {"threads_per_block": block_dim},
+            factory_kwargs,
         )
 
     def _planning_oob_default(
@@ -259,8 +305,15 @@ class _LoadStorePlanning:
         algorithm = _load_store_algorithm(
             self._context.constant(bound.arguments["algorithm"]),
             operation=operation,
+            group_kind=group.kind,
         )
         temp_storage_value = bound.arguments["temp_storage"]
+        if group.kind == "warp" and not self._context.is_none(temp_storage_value):
+            raise ValueError(
+                f"cuda.coop.numba_mlir.{operation} temp_storage is not "
+                "supported for physical Warp groups; omit it so the "
+                "implementation can provide per-Warp storage"
+            )
         storage_options: dict[str, Any] = {}
         if not self._context.is_none(temp_storage_value):
             descriptor = self._context.temp_storage(temp_storage_value)
@@ -292,17 +345,14 @@ class _LoadStorePlanning:
             make_group_primitive_call(group, semantics),
             self._context.launch,
         )
-        try:
-            return plan.require_supported()
-        except NotImplementedError as exc:
-            raise NotImplementedError(
-                f"cuda.coop.numba_mlir.{operation} currently lowers only "
-                f"this_block() groups through CUB: {exc}"
-            ) from exc
+        return plan.require_supported()
 
     @staticmethod
     def _plan_provider_operation(plan: GroupLoweringPlan) -> str:
-        if plan.target is not GroupLoweringTarget.CUB_BLOCK:
+        if plan.target not in {
+            GroupLoweringTarget.CUB_BLOCK,
+            GroupLoweringTarget.CUB_WARP,
+        }:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir Load/Store received an unsupported "
                 f"lowering target {plan.target.value!r}"
@@ -322,6 +372,112 @@ class _LoadStorePlanning:
         runtime_value: Any,
     ) -> Any:
         return runtime_value if binding.kind is BindingKind.RUNTIME else binding
+
+    def _physical_warp_effective_offset(
+        self,
+        statements: list[Any],
+        *,
+        inst: ir.Assign,
+        plan: GroupLoweringPlan,
+        binding: ArgumentBinding,
+        runtime_value: Any,
+        items_per_thread: int,
+    ) -> ir.Var:
+        """Add this physical Warp's tile origin to the user base offset."""
+
+        topology = plan.topology
+        participation = plan.participation
+        if (
+            topology is None
+            or topology.group_kind != "warp"
+            or topology.logical_width != 32
+            or participation is None
+            or participation.exact_block_dim is None
+        ):
+            raise GroupRewriteError(
+                "physical Warp Load/Store requires exact 32-thread topology"
+            )
+        scope = inst.target.scope
+        loc = inst.loc
+
+        def new_var(stem: str) -> ir.Var:
+            return self._context.new_var(scope, loc, f"warp_tile_{stem}")
+
+        def value_var(value: Any, stem: str) -> ir.Var:
+            return self._context.value_var(
+                statements,
+                scope=scope,
+                loc=loc,
+                stem=f"warp_tile_{stem}",
+                value=value,
+            )
+
+        def binary(function: Any, lhs: ir.Var, rhs: ir.Var, stem: str) -> ir.Var:
+            result = new_var(stem)
+            statements.append(
+                ir.Assign(ir.Expr.binop(function, lhs, rhs, loc), result, loc)
+            )
+            return result
+
+        module = value_var(_cuda_module, "cuda")
+        thread_idx = new_var("thread_idx")
+        statements.append(
+            ir.Assign(ir.Expr.getattr(module, "threadIdx", loc), thread_idx, loc)
+        )
+
+        def component(axis: str) -> ir.Var:
+            result = new_var(f"thread_idx_{axis}")
+            statements.append(
+                ir.Assign(ir.Expr.getattr(thread_idx, axis, loc), result, loc)
+            )
+            return result
+
+        block_dim = participation.exact_block_dim
+        linear_rank = component("x")
+        if block_dim[1] > 1 or block_dim[2] > 1:
+            y = component("y")
+            z = component("z")
+            yz = binary(
+                operator.mul,
+                value_var(block_dim[1], "block_y"),
+                z,
+                "linear_yz",
+            )
+            yz = binary(operator.add, y, yz, "linear_y")
+            yz = binary(
+                operator.mul,
+                value_var(block_dim[0], "block_x"),
+                yz,
+                "linear_x_stride",
+            )
+            linear_rank = binary(operator.add, linear_rank, yz, "linear_rank")
+        group_index = binary(
+            operator.floordiv,
+            linear_rank,
+            value_var(topology.logical_width, "group_width"),
+            "group_index",
+        )
+        tile_origin = binary(
+            operator.mul,
+            group_index,
+            value_var(
+                topology.logical_width * items_per_thread,
+                "group_tile_items",
+            ),
+            "origin",
+        )
+        if binding.kind is BindingKind.OMITTED:
+            base_offset = 0
+        elif binding.kind is BindingKind.STATIC:
+            base_offset = binding.value
+        else:
+            base_offset = runtime_value
+        return binary(
+            operator.add,
+            tile_origin,
+            value_var(base_offset, "base_offset"),
+            "effective_offset",
+        )
 
     def _lower_load_store(
         self,
@@ -373,23 +529,37 @@ class _LoadStorePlanning:
         if is_common_root:
             factory_kwargs["_common_root_operation"] = operation
         semantics = plan.call.operation
+        requires_runtime_effective_offset = bool(
+            plan.implementation.metadata.get("requires_runtime_effective_offset", False)
+        )
+        statements: list[Any] = []
         for public_name, factory_name in (
             ("valid_items", "num_valid_items"),
             ("oob_default", "oob_default"),
             ("offset", "offset"),
         ):
             binding = getattr(semantics, public_name)
+            if public_name == "offset" and requires_runtime_effective_offset:
+                continue
             if binding.kind is BindingKind.OMITTED:
                 continue
             factory_kwargs[factory_name] = self._planned_argument(
                 binding,
                 bound.arguments[public_name],
             )
+        if requires_runtime_effective_offset:
+            factory_kwargs["offset"] = self._physical_warp_effective_offset(
+                statements,
+                inst=inst,
+                plan=plan,
+                binding=semantics.offset,
+                runtime_value=bound.arguments["offset"],
+                items_per_thread=semantics.items_per_thread,
+            )
         if operation == "store":
             factory_kwargs["_group_root_store"] = True
         if not self._context.is_none(bound.arguments["temp_storage"]):
             factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
-        statements: list[Any] = []
         if operation == "load":
             runtime_args = [bound.arguments["source"], bound.arguments["output"]]
             return_alias = bound.arguments["output"]
@@ -470,13 +640,14 @@ _COMMON_REWRITE_KWARGS = frozenset(
         "num_valid_items",
         "offset",
         "threads_per_block",
+        "threads_in_warp",
         "_common_root_operation",
     }
 )
 register_rewrite_operation(
     "load",
     RewriteOperationSpec(
-        factory_namespaces=frozenset({"block"}),
+        factory_namespaces=frozenset({"block", "warp"}),
         dtype_factory_kwargs=frozenset({"dtype"}),
         runtime_arg_counts=frozenset({2, 3, 4}),
         runtime_factory_kwargs=("num_valid_items", "oob_default"),
@@ -495,7 +666,7 @@ register_rewrite_operation(
 register_rewrite_operation(
     "store",
     RewriteOperationSpec(
-        factory_namespaces=frozenset({"block"}),
+        factory_namespaces=frozenset({"block", "warp"}),
         dtype_factory_kwargs=frozenset({"dtype"}),
         runtime_arg_counts=frozenset({2, 3}),
         runtime_factory_kwargs=("num_valid_items",),

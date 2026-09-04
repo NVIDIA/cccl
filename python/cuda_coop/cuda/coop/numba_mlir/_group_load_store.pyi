@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block Load/Store signatures for the Numba-CUDA-MLIR backend."""
+"""Block and physical-Warp Load/Store signatures for Numba-CUDA-MLIR."""
 
-from typing import overload
+from typing import Literal, overload
 
 from typing_extensions import TypeVar
 
@@ -16,8 +16,9 @@ from .._typing import (
     TempStorageLike,
     ThreadDataLike,
     ValidItems,
+    WarpLoadStoreAlgorithm,
 )
-from ._thread_group import BlockGroup
+from ._thread_group import BlockGroup, ThreadGroup
 
 _PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
@@ -47,6 +48,33 @@ def load(
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_PortableNumericT]: ...
+@overload
+def load(
+    group: ThreadGroup[Literal["warp"]],
+    source: object,
+    output: ThreadDataLike[_PortableNumericT],
+    /,
+    *,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> ThreadDataLike[_PortableNumericT]: ...
+@overload
+def load(
+    group: ThreadGroup[Literal["warp"]],
+    source: object,
+    output: ThreadDataLike[_PortableNumericT],
+    /,
+    *,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems,
+    oob_default: _PortableNumericT | int | float,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
+) -> ThreadDataLike[_PortableNumericT]: ...
+@overload
 def store(
     group: BlockGroup,
     destination: object,
@@ -57,4 +85,16 @@ def store(
     valid_items: ValidItems | None = None,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
+) -> None: ...
+@overload
+def store(
+    group: ThreadGroup[Literal["warp"]],
+    destination: object,
+    value: _PortableNumericT | PortableThreadDataLike[_PortableNumericT],
+    /,
+    *,
+    algorithm: WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: None = None,
 ) -> None: ...

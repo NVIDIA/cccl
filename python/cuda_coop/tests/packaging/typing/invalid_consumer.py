@@ -36,10 +36,69 @@ portable.load(  # expected-error: [call-overload]
     portable_values,
     algorithm="stripd",
 )
+portable.load(
+    portable.this_warp().group_by(8),  # expected-error: [arg-type]
+    object(),
+    portable_values,
+)
+portable.load(  # expected-error: [call-overload]
+    portable.this_warp(),
+    object(),
+    portable_values,
+    algorithm="warp_transpose",
+)
+portable.load(
+    portable.this_warp(),  # expected-error: [arg-type]
+    object(),
+    portable_values,
+    temp_storage=portable.TempStorage(),
+)
+portable.store(  # expected-error: [call-overload]
+    portable.this_warp(),
+    object(),
+    portable_values,
+    algorithm="warp_transpose",
+)
+coop.load(
+    coop.this_warp().group_by(8),  # expected-error: [arg-type]
+    object(),
+    values,
+)
+coop.load(  # expected-error: [call-overload]
+    coop.this_warp(),
+    object(),
+    values,
+    algorithm="warp_transpose",
+)
 coop.load(
     coop.this_warp(),  # expected-error: [arg-type]
     object(),
     values,
+    temp_storage=coop.TempStorage(),
+)
+coop.load(  # expected-error: [call-overload]
+    coop.this_warp(),
+    object(),
+    values,
+    algorithm=0,
+)
+coop.store(  # expected-error: [call-overload]
+    coop.this_warp(),
+    object(),
+    values,
+    algorithm=True,
+)
+coop.load(  # expected-error: [call-overload]
+    coop.this_block(),
+    object(),
+    values,
+    algorithm=0,
+)
+coop.store(  # expected-error: [call-overload]
+    coop.this_block(),
+    object(),
+    values,
+    algorithm=True,
 )
 coop.load(  # expected-error: [call-overload]
     coop.this_block(),
@@ -59,15 +118,13 @@ coop.load(  # expected-error: [call-overload]
     values,
     oob_default=0,
 )
-coop.store(
+coop.store(  # expected-error: [call-overload]
     coop.this_block(),
     object(),
     values,
-    offset="1",  # expected-error: [arg-type]
+    offset="1",
 )
-coop.load(  # expected-error: [call-overload]
-    coop.this_block(),
-    object(),
-    values,
-    algorithm=0,
-)
+coop.BlockLoadAlgorithm  # expected-error: [attr-defined]
+coop.BlockStoreAlgorithm  # expected-error: [attr-defined]
+coop.WarpLoadAlgorithm  # expected-error: [attr-defined]
+coop.WarpStoreAlgorithm  # expected-error: [attr-defined]
