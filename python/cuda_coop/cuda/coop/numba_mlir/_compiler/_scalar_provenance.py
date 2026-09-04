@@ -12,7 +12,10 @@ from typing import Any
 
 import numpy as np
 from numba_cuda_mlir import types
-from numba_cuda_mlir.numbair_transforms import ir
+
+from ._numba_mlir_compat import _get_numba_mlir_compat
+
+ir = _get_numba_mlir_compat().numba_ir
 
 
 @dataclass(frozen=True)

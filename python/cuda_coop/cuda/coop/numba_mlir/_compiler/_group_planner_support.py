@@ -28,7 +28,6 @@ from numba_cuda_mlir.extending import (
     register_planner,
     require_launch_config,
 )
-from numba_cuda_mlir.numbair_transforms import ir
 
 import cuda.coop._core.api as _portable_api
 import cuda.coop._core.api._dispatch as _portable_dispatch
@@ -42,9 +41,11 @@ from cuda.coop._core import (
 )
 
 from .. import _thread_group as _thread_groups
+from ._numba_mlir_compat import _get_numba_mlir_compat
 from ._operations import group_operation_name
 
 _cuda_module = cuda
+ir = _get_numba_mlir_compat().numba_ir
 
 _NAME_COUNTER = count()
 _PAYLOAD_DTYPE_LIKE = "like"

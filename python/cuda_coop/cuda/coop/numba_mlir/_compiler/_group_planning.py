@@ -10,7 +10,6 @@ from numbers import Integral
 from typing import Any
 
 from numba_cuda_mlir import types
-from numba_cuda_mlir.numbair_transforms import ir
 
 import cuda.coop._core.api as _portable_api
 from cuda.coop._core import (
@@ -26,6 +25,7 @@ from ._group_planner_support import (
     GroupRewriteError,
     _cuda_module,
     _typed_group_payload_like,
+    ir,
 )
 from ._operations import StorageABI, factory_operation
 from ._parameters import (
