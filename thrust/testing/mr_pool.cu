@@ -109,7 +109,7 @@ public:
 
   tracked_pointer<void> do_allocate(std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    REQUIRE((id_to_allocate || id_to_allocate == -1u));
+    ASSERT_EQUAL(id_to_allocate || id_to_allocate == -1u, true);
 
     void* raw = upstream.do_allocate(n, alignment);
     tracked_pointer<void> ret(raw);
@@ -351,7 +351,7 @@ void TestGlobalPool()
 {
   using Pool = PoolTemplate<thrust::mr::new_delete_resource>;
 
-  REQUIRE(thrust::mr::get_global_resource<Pool>() != nullptr);
+  ASSERT_EQUAL(thrust::mr::get_global_resource<Pool>() != nullptr, true);
 }
 
 void TestUnsynchronizedGlobalPool()
