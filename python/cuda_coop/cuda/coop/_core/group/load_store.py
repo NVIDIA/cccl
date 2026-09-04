@@ -60,6 +60,15 @@ class GroupLoadStoreAlgorithm(str, Enum):
     WARP_TRANSPOSE_TIMESLICED = "warp_transpose_timesliced"
 
 
+_STORAGE_FREE_ALGORITHMS = frozenset(
+    {
+        GroupLoadStoreAlgorithm.DIRECT,
+        GroupLoadStoreAlgorithm.STRIPED,
+        GroupLoadStoreAlgorithm.VECTORIZE,
+    }
+)
+
+
 @dataclass(frozen=True, eq=False)
 class GroupLoadStoreSemantics:
     kind: GroupLoadStoreKind
@@ -128,9 +137,10 @@ class GroupLoadStoreSemantics:
         if not isinstance(self.storage_auto_sync, bool):
             raise TypeError("storage_auto_sync must be a bool")
         if self.storage_ownership is StorageOwnership.NONE:
-            if self.algorithm is not GroupLoadStoreAlgorithm.DIRECT:
+            if self.algorithm not in _STORAGE_FREE_ALGORITHMS:
                 raise ValueError(
-                    "storage-free group Load/Store is valid only for DIRECT"
+                    "storage-free group Load/Store is valid only for direct, "
+                    "striped, or vectorize algorithms"
                 )
             if any(
                 value is not None
@@ -191,7 +201,7 @@ class GroupLoadStoreSemantics:
             self.oob_default.semantic_key,
             self.offset.semantic_key,
         )
-        if self.algorithm is GroupLoadStoreAlgorithm.DIRECT:
+        if self.algorithm in _STORAGE_FREE_ALGORITHMS:
             return (*common, StorageOwnership.NONE.value)
         return (
             *common,
@@ -326,13 +336,9 @@ def _plan_load_store(
         include_pointer_offset=operation.offset,
     ).specialization
     target = GroupLoweringTarget.CUB_BLOCK
-    cpp_class = (
-        "cub::BlockLoad"
-        if operation.kind is GroupLoadStoreKind.LOAD
-        else "cub::BlockStore"
-    )
+    cpp_class = f"cub::{spec.struct_name}"
     header = f"cub/block/block_{operation.kind.value}.cuh"
-    storage_free = operation.algorithm is GroupLoadStoreAlgorithm.DIRECT
+    storage_free = operation.algorithm in _STORAGE_FREE_ALGORITHMS
     contracts = _contracts(
         resolved,
         launch,
