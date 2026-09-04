@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from ..dtype_policy import validate_portable_integer_value_dtype_name
@@ -35,7 +36,7 @@ _WARP_GROUP_KINDS = frozenset({"warp", "threads_within_warp"})
 def _portable_scan_operator(operation: str, value: Any) -> Any:
     if _backend_module_name() is None or value is None:
         return value
-    if not isinstance(value, str):
+    if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(
             f"cuda.coop.{operation} scan_op must be a string; use a "
             "backend-qualified import for custom operators"
