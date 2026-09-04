@@ -11,7 +11,6 @@ capability diagnostics and rollback-safe compiler registry mutation.
 from __future__ import annotations
 
 import importlib
-import importlib.metadata
 import sys
 from threading import RLock
 from typing import Any
@@ -21,14 +20,9 @@ from ._numba_mlir_compat import (
     _NumbaMlirBackendImportError,
     _NumbaMlirCompilerCompat,
     _RegistrationSnapshot,
+    _runtime_requirement,
 )
 
-_MINIMUM_RUNTIME_VERSION = "0.5.0"
-_MAXIMUM_RUNTIME_VERSION = "0.6"
-_RUNTIME_INSTALL_HINT = (
-    "'cuda-coop[numba-cuda-mlir-cu12]' for CUDA 12 or "
-    "'cuda-coop[numba-cuda-mlir-cu13]' for CUDA 13"
-)
 _BACKEND_PACKAGE = __package__.removesuffix("._compiler")
 _REGISTRATION_MODULES = frozenset(
     {
@@ -37,24 +31,6 @@ _REGISTRATION_MODULES = frozenset(
     }
 )
 _activation_lock = RLock()
-
-
-def _runtime_requirement(runtime=None) -> str:
-    version = getattr(runtime, "__version__", None)
-    if not isinstance(version, str) or not version:
-        try:
-            version = importlib.metadata.version("numba-cuda-mlir")
-        except importlib.metadata.PackageNotFoundError:
-            version = None
-
-    detected = "no Numba-CUDA-MLIR distribution was detected"
-    if isinstance(version, str) and version:
-        detected = f"detected numba-cuda-mlir=={version}"
-    return (
-        f"{detected}; the supported series is numba-cuda-mlir>="
-        f"{_MINIMUM_RUNTIME_VERSION},<{_MAXIMUM_RUNTIME_VERSION}. Install "
-        f"{_RUNTIME_INSTALL_HINT}."
-    )
 
 
 def _load_runtime() -> tuple[Any, _NumbaMlirBackendImportError | None]:

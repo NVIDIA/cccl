@@ -20,7 +20,17 @@ from collections.abc import MutableMapping, MutableSequence
 from dataclasses import dataclass
 from typing import Any
 
-_SUPPORTED_VERSION = re.compile(r"^0\.5(?:\.|$)")
+_MINIMUM_RUNTIME_VERSION = "0.5.0"
+_MAXIMUM_RUNTIME_VERSION = "0.6"
+_SUPPORTED_RUNTIME_SERIES_PREFIX = _MINIMUM_RUNTIME_VERSION.rsplit(".", 1)[0]
+_SUPPORTED_RUNTIME_SERIES = f"{_SUPPORTED_RUNTIME_SERIES_PREFIX}.x"
+_SUPPORTED_VERSION = re.compile(
+    rf"^{re.escape(_SUPPORTED_RUNTIME_SERIES_PREFIX)}(?:\.|$)"
+)
+_RUNTIME_INSTALL_HINT = (
+    "'cuda-coop[numba-cuda-mlir-cu12]' for CUDA 12 or "
+    "'cuda-coop[numba-cuda-mlir-cu13]' for CUDA 13"
+)
 
 
 class _NumbaMlirBackendImportError(ImportError):
@@ -142,6 +152,30 @@ def _detected_version(runtime: Any) -> str | None:
         return None
 
 
+def _is_supported_runtime_version(version: str | None) -> bool:
+    """Return whether ``version`` is covered by the private compatibility shim."""
+
+    return (
+        isinstance(version, str)
+        and bool(version)
+        and _SUPPORTED_VERSION.match(version) is not None
+    )
+
+
+def _runtime_requirement(runtime: Any = None) -> str:
+    """Describe the supported runtime series and the detected installation."""
+
+    version = _detected_version(runtime)
+    detected = "no Numba-CUDA-MLIR distribution was detected"
+    if version is not None:
+        detected = f"detected numba-cuda-mlir=={version}"
+    return (
+        f"{detected}; the supported series is numba-cuda-mlir>="
+        f"{_MINIMUM_RUNTIME_VERSION},<{_MAXIMUM_RUNTIME_VERSION}. Install "
+        f"{_RUNTIME_INSTALL_HINT}."
+    )
+
+
 def _import_compat_module(module_name: str) -> Any:
     try:
         return importlib.import_module(module_name)
@@ -160,14 +194,15 @@ def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
     """Load and validate the private compiler shape supported by this shim."""
 
     version = _detected_version(runtime)
-    if version is None or _SUPPORTED_VERSION.match(version) is None:
+    if not _is_supported_runtime_version(version):
         detected = "an unknown version" if version is None else f"version {version}"
         raise _NumbaMlirBackendImportError(
             "unsupported-runtime-version",
-            "cuda.coop.numba_mlir supports numba-cuda-mlir 0.5.x, but "
+            "cuda.coop.numba_mlir supports numba-cuda-mlir "
+            f"{_SUPPORTED_RUNTIME_SERIES}, but "
             f"{detected} was detected.",
             detected_version=version,
-            supported_series="0.5.x",
+            supported_series=_SUPPORTED_RUNTIME_SERIES,
         )
 
     extending = _import_compat_module("numba_cuda_mlir.extending")
