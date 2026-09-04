@@ -59,6 +59,7 @@ ReduceAlgorithm: TypeAlias = Literal[
     "raking",
     "warp_reductions",
 ]
+ScanAlgorithm: TypeAlias = Literal["raking", "raking_memoize", "warp_scans"]
 ReduceOperator: TypeAlias = Literal[
     "+",
     "sum",
@@ -79,6 +80,25 @@ ReduceOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
+SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
+NonSumScanOperator: TypeAlias = Literal[
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
+ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
+ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -190,16 +210,27 @@ class TempStorageLike(Protocol):
     sharing: TempStorageSharing
 
 __all__ = [
+    "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "ExchangeMode",
     "LoadStoreAlgorithm",
     "ReduceAlgorithm",
     "ReduceOperator",
+    "ScanAlgorithm",
+    "ScanMode",
+    "ScanOperator",
+    "SumScanOperator",
+    "NonSumScanOperator",
+    "ScalarShuffleMode",
+    "ShuffleMode",
     "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
+    "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
     "_CommonNumericT",
+    'CommonShuffleMode',
 ]

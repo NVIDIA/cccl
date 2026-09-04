@@ -4,6 +4,7 @@
 
 from .load_store import load, store
 from .reduce import reduce, sum
+from .scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -25,8 +26,13 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
+    "scan",
     "store",
     "sum",
     "this_block",
