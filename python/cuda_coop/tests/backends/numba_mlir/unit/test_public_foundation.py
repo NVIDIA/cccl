@@ -52,12 +52,8 @@ _QUALIFIED_EXPORTS = [
 _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
     "cuda.coop.numba_mlir._enums",
-    "cuda.coop.numba_mlir._group_scan",
     "cuda.coop.numba_mlir._scan_op",
     "cuda.coop.numba_mlir._stateful_function",
-    "cuda.coop.numba_mlir._compiler._group_scan",
-    "cuda.coop.numba_mlir._compiler._rewrite_scan",
-    "cuda.coop.numba_mlir._lowering._scan",
     "cuda.coop.numba_mlir._lowering._thread_group",
     "cuda.coop.numba_mlir._lowering._warp",
 )
@@ -120,6 +116,23 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         "valid_flags",
         "warp_time_slicing",
     )
+
+    for operation in (
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "scan",
+    ):
+        portable_scan = inspect.signature(getattr(portable_coop, operation))
+        qualified_scan = inspect.signature(getattr(coop, operation))
+        for name, parameter in portable_scan.parameters.items():
+            assert qualified_scan.parameters[name] == parameter
+        assert qualified_scan.return_annotation == portable_scan.return_annotation
+        assert tuple(qualified_scan.parameters)[len(portable_scan.parameters) :] == (
+            "valid_items",
+            "aggregate_output",
+        )
 
     assert call_shape(coop.TempStorage) == call_shape(portable_coop.TempStorage)
     for constructor in (
