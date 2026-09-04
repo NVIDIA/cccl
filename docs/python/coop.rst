@@ -21,8 +21,11 @@ Install the extra matching the CUDA major version used to compile the kernel:
 
 The base ``cuda-coop`` distribution contains the portable API, type
 declarations, and a coherent bundle of CUB, Thrust, libcu++, and CUDAX headers.
-Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or an accessible
-GPU.
+Installed-wheel compilation uses that bundle by default. Development from a
+CCCL source checkout uses the matching checkout headers, and
+``CUDA_COOP_CCCL_ROOT`` can select another source checkout or ``cuda-coop``
+header bundle. Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or
+an accessible GPU.
 
 Backend activation
 ------------------
@@ -48,8 +51,68 @@ compiling a kernel:
    from cuda import coop
    import cuda.coop.numba_mlir  # Activate support for portable coop calls.
 
+Importing :mod:`cuda.coop` first and compiling without that explicit
+activation is unsupported. Numba-CUDA-MLIR then reports the portable marker as
+unknown, typically as ``Unknown attribute 'this_block'``, because its compiler
+hooks were not registered.
+
 Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
 qualified namespace and its backend-specific controls.
+
+Configuration
+-------------
+
+Runtime environment variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
+   A truthy value disables automatic backend activation during
+   :mod:`cuda.coop` import. Explicit qualified-backend import still works.
+
+``CUDA_COOP_CCCL_ROOT``
+   Selects a CCCL source checkout or a ``cuda-coop`` header bundle. An invalid
+   configured root is an error; resolution does not fall back to another CCCL
+   source.
+
+``CUDA_COOP_ENABLE_CACHE``
+   A truthy value enables the persistent compiler cache under
+   ``~/.cache/cccl``. The value is read when the backend cache module is
+   imported.
+
+``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR``
+   Writes content-addressed pre-NVRTC CUDA source files to this directory for
+   compiler diagnostics.
+
+``CUDA_PATH``
+   Supplies ``<value>/include`` as a CUDA header candidate if
+   ``cuda-pathfinder`` does not resolve one.
+
+``CUDA_HOME``
+   Supplies ``<value>/include`` after ``CUDA_PATH`` under the same fallback
+   rule.
+
+``CUDA_ROOT``
+   Supplies ``<value>/include`` after ``CUDA_HOME`` under the same fallback
+   rule.
+
+For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
+``no``, ``off``, and the empty string are false.
+
+Build-time CMake variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``CUDA_COOP_INSTALL_HEADER_BUNDLE``
+   Defaults to ``ON``. Installs the private CCCL header and CMake-package
+   bundle into the wheel.
+
+``CUDA_COOP_ALLOW_DIRTY_HEADER_BUNDLE``
+   Defaults to ``OFF``. Allows a Git-worktree bundle when selected inputs are
+   changed or ``git status`` cannot verify them, and records its source
+   revision as ``unknown``.
+
+``CUDA_COOP_CCCL_SOURCE_REVISION``
+   Defaults to empty. Supplies the revision token recorded instead of deriving
+   it from Git. A dirty or unverifiable Git worktree still records ``unknown``.
 
 Kernel API
 ----------
@@ -99,7 +162,11 @@ Groups and thread data
 portable group vocabulary also includes thread, warp, cluster, grid, and
 mapped-group descriptors, but this release lowers Load and Store only for
 ``this_block()``. Other targets produce a structured unsupported plan before
-provider compilation.
+provider compilation. ``ThreadGroup`` objects are descriptor-only in this
+release. ``group_by`` remains compile-time vocabulary for describing a static
+partition. Runtime query, membership, and synchronization methods such as
+``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
+``is_member`` are not exposed.
 
 ``ThreadData(items_per_thread, dtype=None)`` describes the fixed-size register
 payload owned by each participating thread. An untyped Load output infers its
@@ -157,7 +224,7 @@ unsupported plan before provider compilation.
 Temporary storage
 -----------------
 
-Use ``TempStorage`` to control scratch ownership explicitly:
+Load and Store accept an optional ``TempStorage`` descriptor:
 
 .. code-block:: python
 
@@ -168,24 +235,26 @@ Use ``TempStorage`` to control scratch ownership explicitly:
        sharing="shared",
    )
 
-Omitted storage is planned from the provider requirements. Caller-provided
-storage is checked for sufficient size and alignment before code generation.
-Shared storage may reuse a slice and defaults to automatic block
-synchronization. Exclusive storage receives a distinct slice and cannot
-request automatic synchronization.
+The current DIRECT Block Load and Store providers are storage-free. They
+default-construct the CUB primitive, report zero temporary bytes, and emit no
+shared-memory allocation, storage pointer, or synchronization barrier. An
+explicit descriptor, including an unsized descriptor, is validated as
+compile-time vocabulary but does not change DIRECT code generation.
 
-The compiler uses static shared memory within the default limit and requests
-the exact dynamic-memory requirement above it. A requirement beyond the
-device's opt-in limit is rejected before launch.
+The backend retains generic planning for future registered providers that do
+declare a leading storage-pointer ABI. For those providers, capacity,
+alignment, shared or exclusive ownership, reuse synchronization, and static or
+dynamic shared-memory limits are validated from the concrete lowering plan.
 
 Compilation and headers
 -----------------------
 
-``cuda-coop`` compiles providers only against its bundled CCCL headers; it
-never substitutes the CUDA Toolkit's copy of CUB. CUDA headers, NVRTC,
-``nvrtc-builtins``, and nvJitLink must resolve to a compatible toolkit root.
-The resulting compiler artifacts and caches include the launch dimensions,
-dtype and item extent, storage ABI, compute capability, compiler options,
-ordered header identity, and toolkit-library identity.
+``cuda-coop`` compiles providers against its configured CCCL root, the active
+source checkout during in-tree development, or its installed header bundle, in
+that order. It never substitutes the CUDA Toolkit's copy of CUB. CUDA headers,
+NVRTC, ``nvrtc-builtins``, and nvJitLink must resolve to a compatible toolkit
+root. The resulting compiler artifacts and caches include the launch
+dimensions, dtype and item extent, storage ABI, compute capability, compiler
+options, ordered header identity, and toolkit-library identity.
 
 See :doc:`coop_api` for the public API reference.
