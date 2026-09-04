@@ -266,3 +266,40 @@ def test_compiles_for_a_named_target_without_a_device():
         """
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_operator_compiles_after_the_backend_has_already_compiled():
+    """An operator still compiles when something else compiled first.
+
+    The JIT backend builds its typing and target contexts on first use and then
+    freezes them, so the wrapper's conversion has to be registered before
+    anything else compiles or be re-read afterwards. Runs in a fresh interpreter
+    because the ordering is the whole point.
+    """
+    program = textwrap.dedent(
+        """
+        import numpy as np
+        from numba_cuda_mlir import cuda as backend_cuda
+
+        @backend_cuda.jit
+        def touch(a):
+            i = backend_cuda.grid(1)
+            if i < a.size:
+                a[i] += 1
+
+        backend_cuda.to_device(np.zeros(4, dtype=np.int32))
+        touch[1, 4](backend_cuda.to_device(np.zeros(4, dtype=np.int32)))
+
+        # Only now import cuda.compute and compile an operator through it.
+        from cuda.compute import _mlir
+        from cuda.compute._jit import _compile_op_impl
+        from cuda.compute._caching import CachableFunction
+
+        int32 = _mlir.types.int32
+        _compile_op_impl(CachableFunction(lambda x: x + 1), (int32,), int32, (8, 9))
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", program], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr

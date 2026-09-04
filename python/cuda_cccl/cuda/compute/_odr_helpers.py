@@ -131,6 +131,11 @@ _mlir.typing_registry.register_global(
 _mlir.lowering_registry.lower(_convert_to_declared_type, types.Any, types.NumberClass)(
     _lower_convert_to_declared_type
 )
+# numba-cuda-mlir builds its typing and target contexts on first use and then
+# freezes them, so a registration made after something else has already compiled
+# is invisible: every operator then fails to resolve _convert.  Re-read the
+# registries now, as the struct registration does for the same reason.
+_mlir.refresh_contexts()
 
 
 def _is_gpu_struct_type(numba_type):
