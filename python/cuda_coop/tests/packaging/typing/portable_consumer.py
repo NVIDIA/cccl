@@ -42,6 +42,8 @@ def check_portable_surface(source: object, destination: object) -> None:
     block = coop.this_block()
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
+    mapped_warps = block.group_by(2)
+    cluster = coop.this_cluster()
     values = coop.ThreadData(2, np.int16)
     read_only_values = _ReadOnlyThreadData(np.int16(1))
     storage = coop.TempStorage(sharing="shared")
@@ -118,4 +120,19 @@ def check_portable_surface(source: object, destination: object) -> None:
     assert_type(
         coop.shuffle(block, read_only_values, mode="down"),
         coop.ThreadDataLike[np.int16],
+    )
+    assert_type(coop.sum(block, np.int32(4)), np.int32)
+    assert_type(
+        coop.reduce(logical_warp, np.float32(4), binary_op="max"),
+        np.float32,
+    )
+    assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
+    assert_type(coop.reduce(cluster, values, binary_op="min"), np.int16)
+    assert_type(
+        coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
+        np.int32,
+    )
+    assert_type(
+        coop.sum(block, values, broadcast=False, algorithm="raking"),
+        np.int16,
     )
