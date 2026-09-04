@@ -133,9 +133,15 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         for name, parameter in portable_scan.parameters.items():
             assert qualified_scan.parameters[name] == parameter
         assert qualified_scan.return_annotation == portable_scan.return_annotation
-        assert tuple(qualified_scan.parameters)[len(portable_scan.parameters) :] == (
+        portable_names = tuple(portable_scan.parameters)
+        assert tuple(qualified_scan.parameters) == (
+            "group",
+            "value",
+            "prefix_state",
+            *portable_names[2:],
             "valid_items",
             "aggregate_output",
+            "prefix_op",
         )
 
     assert call_shape(coop.TempStorage) == call_shape(portable_coop.TempStorage)
