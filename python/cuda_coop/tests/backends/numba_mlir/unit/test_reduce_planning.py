@@ -2,9 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import operator
 from inspect import signature
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
@@ -264,6 +266,42 @@ def test_full_builtin_reduce_selects_fixed_scope_cudax_provider(
     assert _kwarg_value(func_ir, call, "value_kind") == "scalar"
     assert _kwarg_value(func_ir, call, "binary_op") == "max"
     assert _kwarg_value(func_ir, call, "broadcast") is False
+
+
+@pytest.mark.parametrize(
+    ("binary_op", "canonical"),
+    (
+        pytest.param(operator.add, "sum", id="operator-add"),
+        pytest.param(operator.mul, "multiplies", id="operator-mul"),
+        pytest.param(operator.and_, "bit_and", id="operator-and"),
+        pytest.param(operator.or_, "bit_or", id="operator-or"),
+        pytest.param(operator.xor, "bit_xor", id="operator-xor"),
+        pytest.param(np.add, "sum", id="numpy-add"),
+        pytest.param(np.multiply, "multiplies", id="numpy-multiply"),
+        pytest.param(np.minimum, "min", id="numpy-minimum"),
+        pytest.param(np.maximum, "max", id="numpy-maximum"),
+        pytest.param(np.bitwise_and, "bit_and", id="numpy-bitwise-and"),
+        pytest.param(np.bitwise_or, "bit_or", id="numpy-bitwise-or"),
+        pytest.param(np.bitwise_xor, "bit_xor", id="numpy-bitwise-xor"),
+    ),
+)
+def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
+    binary_op,
+    canonical,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._lowering import _reduce
+
+    def kernel(value):
+        return coop.reduce(coop.this_block(), value, binary_op=binary_op)
+
+    func_ir, planner = _plan(kernel, arg_types=(types.int32,))
+    assert planner.run()
+    call = _provider_call(func_ir, _reduce.group_reduce_block)
+    expected = None if canonical == "sum" else canonical
+    assert _kwarg_value(func_ir, call, "binary_op") == expected
 
 
 def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
