@@ -19,6 +19,7 @@ _FAMILY_MODULE = "cuda.coop.numba_mlir._compiler._group_scan"
 def scan(
     group: ThreadGroup,
     value: Any,
+    prefix_state: Any = None,
     /,
     *,
     mode: str = "exclusive",
@@ -28,8 +29,14 @@ def scan(
     temp_storage: Any = None,
     valid_items: Any = None,
     aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
 ) -> Any:
-    """Scan values across a block or warp group."""
+    """Scan values across a block or warp group.
+
+    Prefix callbacks are block-only. A ``StatefulFunction`` callback requires
+    its one-item running state as the third positional argument.
+    """
 
     return group_primitive_marker(
         "scan",
@@ -42,6 +49,9 @@ def scan(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -49,6 +59,7 @@ def scan(
 def exclusive_scan(
     group: ThreadGroup,
     value: Any,
+    prefix_state: Any = None,
     /,
     *,
     scan_op: Any = None,
@@ -57,6 +68,8 @@ def exclusive_scan(
     temp_storage: Any = None,
     valid_items: Any = None,
     aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an exclusive scan across a block or warp group."""
 
@@ -70,6 +83,9 @@ def exclusive_scan(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -77,6 +93,7 @@ def exclusive_scan(
 def inclusive_scan(
     group: ThreadGroup,
     value: Any,
+    prefix_state: Any = None,
     /,
     *,
     scan_op: Any = None,
@@ -84,6 +101,8 @@ def inclusive_scan(
     temp_storage: Any = None,
     valid_items: Any = None,
     aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an inclusive scan across a block or warp group."""
 
@@ -96,6 +115,9 @@ def inclusive_scan(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -103,12 +125,15 @@ def inclusive_scan(
 def exclusive_sum(
     group: ThreadGroup,
     value: Any,
+    prefix_state: Any = None,
     /,
     *,
     algorithm: Any = None,
     temp_storage: Any = None,
     valid_items: Any = None,
     aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an exclusive prefix sum across a block or warp group."""
 
@@ -120,6 +145,9 @@ def exclusive_sum(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -127,12 +155,15 @@ def exclusive_sum(
 def inclusive_sum(
     group: ThreadGroup,
     value: Any,
+    prefix_state: Any = None,
     /,
     *,
     algorithm: Any = None,
     temp_storage: Any = None,
     valid_items: Any = None,
     aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an inclusive prefix sum across a block or warp group."""
 
@@ -144,6 +175,9 @@ def inclusive_sum(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 

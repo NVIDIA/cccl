@@ -22,6 +22,7 @@ from cuda.coop._core import (
     GroupScanSemantics,
     PythonOperator,
     Reference,
+    StatefulOperator,
     StorageOwnership,
     SynchronizationScope,
     make_group_primitive_call,
@@ -49,6 +50,7 @@ from ._parameters import (
     _validate_runtime_integer_dtype,
     coerce_static_scalar,
     make_typed_cpp_literal,
+    normalize_dtype_param,
 )
 from ._rewrite_scan import infer_scan_payload, validate_scan_runtime_controls
 
@@ -205,6 +207,110 @@ class _ScanPlanning:
             ),
         )
 
+    def _prefix_callback(
+        self,
+        operation: str,
+        group: ThreadGroup,
+        bound: inspect.BoundArguments,
+    ) -> tuple[
+        Any | None,
+        PythonOperator | StatefulOperator | None,
+        Any | None,
+    ]:
+        prefix_ref = bound.arguments.get("prefix_op")
+        legacy_ref = bound.arguments.get("block_prefix_callback_op")
+        has_prefix = not self._context.is_none(prefix_ref)
+        has_legacy = not self._context.is_none(legacy_ref)
+        if has_prefix and has_legacy:
+            raise ValueError(
+                "cuda.coop.numba_mlir scan prefix_op and "
+                "block_prefix_callback_op are mutually exclusive"
+            )
+
+        state = bound.arguments.get("prefix_state")
+        has_state = not self._context.is_none(state)
+        if not has_prefix and not has_legacy:
+            if has_state:
+                raise ValueError(
+                    "cuda.coop.numba_mlir scan prefix_state requires a prefix callback"
+                )
+            return None, None, None
+        if group.kind != "block":
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir scan prefix callbacks apply only to block groups"
+            )
+
+        callback_ref = prefix_ref if has_prefix else legacy_ref
+        callback = self._context.constant(callback_ref)
+        from .._stateful_function import StatefulFunction
+
+        if isinstance(callback, StatefulFunction):
+            if not has_state:
+                raise ValueError(
+                    "cuda.coop.numba_mlir scan StatefulFunction prefix callbacks "
+                    "require a third positional prefix_state argument"
+                )
+            if not self._context.is_array(operation, state):
+                raise TypeError(
+                    "cuda.coop.numba_mlir scan prefix_state must be a one-item "
+                    "ThreadData or local array"
+                )
+            if self._context.array_extent(state) != 1:
+                raise ValueError(
+                    "cuda.coop.numba_mlir scan prefix_state must contain "
+                    "exactly one item"
+                )
+            descriptor_dtype = _validate_common_numeric_dtype(
+                normalize_dtype_param(callback.dtype),
+                operation="scan",
+                parameter="prefix_state",
+            )
+            state_dtype = self._context.dtype(state)
+            if state_dtype is None:
+                state_dtype = self._context.payload_write_dtype(state)
+            if state_dtype is not None:
+                state_dtype = _validate_common_numeric_dtype(
+                    state_dtype,
+                    operation="scan",
+                    parameter="prefix_state",
+                )
+                if state_dtype != descriptor_dtype:
+                    raise TypeError(
+                        "cuda.coop.numba_mlir scan prefix_state dtype "
+                        f"{state_dtype} does not match StatefulFunction dtype "
+                        f"{descriptor_dtype}"
+                    )
+            operator = StatefulOperator(
+                op=callback.op,
+                state_dtype=descriptor_dtype,
+                ret_dtype=Dependency("T"),
+                arg_dtypes=(Dependency("T"),),
+                name="prefix_op",
+            )
+            return callback_ref, operator, state
+
+        if has_state:
+            raise ValueError(
+                "cuda.coop.numba_mlir scan stateless prefix callbacks do not "
+                "accept prefix_state"
+            )
+        normalized = _normalize_numba_callable(callback)
+        if not callable(normalized):
+            raise TypeError(
+                "cuda.coop.numba_mlir scan prefix_op must be a stateless "
+                "device callable or StatefulFunction"
+            )
+        return (
+            callback_ref,
+            PythonOperator(
+                ret_dtype=Dependency("T"),
+                arg_dtypes=(Dependency("T"),),
+                op=normalized,
+                name="prefix_op",
+            ),
+            None,
+        )
+
     def _aggregate_output(self, operation: str, value: Any, dtype: Any) -> bool:
         if self._context.is_none(value):
             return False
@@ -275,7 +381,15 @@ class _ScanPlanning:
         group: ThreadGroup,
         bound: inspect.BoundArguments,
         is_common_root: bool,
-    ) -> tuple[GroupLoweringPlan, str, Any, ArgumentBinding, bool]:
+    ) -> tuple[
+        GroupLoweringPlan,
+        str,
+        Any,
+        ArgumentBinding,
+        bool,
+        Any | None,
+        Any | None,
+    ]:
         mode, raw_scan_op = self._operation_options(operation, bound)
         from .._lowering._scan import _block_scan_algorithm, _scan_mode
 
@@ -328,6 +442,11 @@ class _ScanPlanning:
             dtype=dtype,
             is_common_root=is_common_root,
         )
+        prefix_callback, prefix_operator, prefix_state = self._prefix_callback(
+            operation,
+            group,
+            bound,
+        )
 
         initial_raw = bound.arguments.get("initial_value")
         initial_binding, initial_value = self._initial_binding(
@@ -339,12 +458,26 @@ class _ScanPlanning:
             mode == "exclusive"
             and operator_kind != "sum"
             and initial_binding.kind is BindingKind.OMITTED
+            and prefix_operator is None
         ):
             raise ValueError(
                 "cuda.coop.numba_mlir non-sum exclusive scans require initial_value"
             )
         aggregate_raw = bound.arguments.get("aggregate_output")
         aggregate = self._aggregate_output(operation, aggregate_raw, dtype)
+        if (
+            prefix_operator is not None
+            and initial_binding.kind is not BindingKind.OMITTED
+        ):
+            raise ValueError(
+                "cuda.coop.numba_mlir scan initial_value and prefix callbacks "
+                "are mutually exclusive"
+            )
+        if prefix_operator is not None and aggregate:
+            raise ValueError(
+                "cuda.coop.numba_mlir scan aggregate_output and prefix callbacks "
+                "are mutually exclusive"
+            )
 
         valid_raw = bound.arguments.get("valid_items")
         valid_items = self._context.planning_binding(valid_raw)
@@ -375,6 +508,7 @@ class _ScanPlanning:
                 scan_operator=scan_operator,
                 initial_value=initial_value,
                 aggregate=aggregate,
+                prefix_callback=prefix_operator,
             ),
             cub_algorithm=algorithm,
             valid_items=valid_items,
@@ -393,7 +527,15 @@ class _ScanPlanning:
                     "a compile-time TempStorage descriptor"
                 )
             plan = self._caller_storage_plan(plan, descriptor)
-        return plan, operator_kind, scan_op, initial_binding, is_array
+        return (
+            plan,
+            operator_kind,
+            scan_op,
+            initial_binding,
+            is_array,
+            prefix_callback,
+            prefix_state,
+        )
 
     @staticmethod
     def _provider(plan: GroupLoweringPlan, *, is_array: bool) -> Any:
@@ -455,7 +597,15 @@ class _ScanPlanning:
         bound: inspect.BoundArguments,
         is_common_root: bool,
     ) -> list[Any]:
-        plan, operator_kind, scan_op, initial_binding, is_array = self._plan(
+        (
+            plan,
+            operator_kind,
+            scan_op,
+            initial_binding,
+            is_array,
+            prefix_callback,
+            prefix_state,
+        ) = self._plan(
             operation=operation,
             group=group,
             bound=bound,
@@ -533,6 +683,10 @@ class _ScanPlanning:
                 initial_binding,
                 bound.arguments.get("initial_value"),
             )
+        if prefix_callback is not None:
+            factory_kwargs["prefix_op"] = prefix_callback
+        if prefix_state is not None:
+            factory_kwargs["prefix_state"] = prefix_state
         aggregate_output = bound.arguments.get("aggregate_output")
         if not self._context.is_none(aggregate_output):
             aggregate_name = (
@@ -597,6 +751,8 @@ _BLOCK_REWRITE_KWARGS = frozenset(
         "initial_value",
         "items_per_thread",
         "mode",
+        "prefix_op",
+        "prefix_state",
         "scan_op",
         "threads_per_block",
         "value_kind",
@@ -612,8 +768,12 @@ for _operation, _runtime_counts in (
             factory_namespaces=frozenset({"block"}),
             dtype_factory_kwargs=frozenset({"dtype"}),
             runtime_arg_counts=_runtime_counts,
-            runtime_factory_kwargs=("initial_value", "block_aggregate"),
-            runtime_factory_kw_prerequisites=(),
+            runtime_factory_kwargs=(
+                "initial_value",
+                "prefix_state",
+                "block_aggregate",
+            ),
+            runtime_factory_kw_prerequisites=(("prefix_state", "prefix_op"),),
             allowed_factory_kwargs=_BLOCK_REWRITE_KWARGS,
             required_factory_kwargs=frozenset(
                 {
