@@ -43,7 +43,7 @@ from .._types import (
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
 )
-from ._operations import factory_operation
+from ._operations import FactoryOperation, factory_operation
 from ._parameters import normalize_dim_param, normalize_dtype_param
 
 _INFERENCE_EXCEPTIONS = (
@@ -167,6 +167,7 @@ def _query_device_shared_memory_limits() -> dict[str, int]:
 class _RewriteMatch:
     op_name: str
     factory: object
+    factory_metadata: FactoryOperation
     func_var_name: str
     func_var_name_extra: str | None
     runtime_args: tuple[ir.Var, ...]
@@ -180,10 +181,14 @@ class _RewriteMatch:
 @dataclass(frozen=True)
 class _ResolvedCallTarget:
     factory: object
-    operation: str
+    factory_metadata: FactoryOperation
     func_var_name: str
     func_var_name_extra: str | None
     getitem_temp_storage: ir.Var | None
+
+    @property
+    def operation(self) -> str:
+        return self.factory_metadata.operation
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,7 @@ across focused rewrite mixins. This module owns registration, the stable
 operation specification table, match/apply ordering, and whole-function retry.
 """
 
+from ._operations import StorageABI
 from ._rewrite_arguments import _ArgumentRewrite
 from ._rewrite_group_metadata import _GroupMetadataRewrite
 from ._rewrite_invocables import _InvocableRewrite
@@ -137,6 +138,7 @@ class CoopSinglePhaseRewrite(
             self._matches[inst] = _RewriteMatch(
                 op_name=op_name,
                 factory=target.factory,
+                factory_metadata=target.factory_metadata,
                 func_var_name=target.func_var_name,
                 func_var_name_extra=target.func_var_name_extra,
                 runtime_args=runtime_args,
@@ -386,6 +388,11 @@ class CoopSinglePhaseRewrite(
                     raise CoopSinglePhaseRewriteError(
                         f"Missing TempStorage metadata for '{inst.target.name}'."
                     )
+                if ctor_key not in self._func_temp_storage_requirements:
+                    new_block.append(
+                        ir.Assign(ir.Const(None, inst.loc), inst.target, inst.loc)
+                    )
+                    continue
                 plan = self._finalize_temp_storage_plan_for_var(ctor_key)
                 backing_var = self._temp_storage_backing_var
                 if backing_var is None:
@@ -410,23 +417,23 @@ class CoopSinglePhaseRewrite(
                 loc=match.loc,
             )
             runtime_temp_storage_plan = None
-            if match.runtime_temp_storage_var is not None:
-                runtime_temp_storage_arg, runtime_temp_storage_plan = (
-                    self._runtime_temp_storage_arg_for_call(
+            if match.factory_metadata.storage_abi is StorageABI.LEADING_POINTER:
+                if match.runtime_temp_storage_var is not None:
+                    runtime_temp_storage_arg, runtime_temp_storage_plan = (
+                        self._runtime_temp_storage_arg_for_call(
+                            new_block,
+                            source_var=match.runtime_temp_storage_var,
+                            call_assign=inst,
+                        )
+                    )
+                else:
+                    (
+                        runtime_temp_storage_arg,
+                        runtime_temp_storage_plan,
+                    ) = self._implicit_temp_storage_arg_for_call(
                         new_block,
-                        source_var=match.runtime_temp_storage_var,
                         call_assign=inst,
                     )
-                )
-                rewritten_runtime_args.insert(0, runtime_temp_storage_arg)
-            else:
-                (
-                    runtime_temp_storage_arg,
-                    runtime_temp_storage_plan,
-                ) = self._implicit_temp_storage_arg_for_call(
-                    new_block,
-                    call_assign=inst,
-                )
                 rewritten_runtime_args.insert(0, runtime_temp_storage_arg)
             call_func = inst.value.func
             call_invocable = call_invocable_globals.get(inst)
@@ -459,7 +466,9 @@ class CoopSinglePhaseRewrite(
                     new_block,
                     scope=inst.target.scope,
                     loc=inst.loc,
-                    sync_attr="syncthreads",
+                    synchronization_scope=(
+                        match.factory_metadata.synchronization_scope
+                    ),
                 )
         used_var_names: set[str] = set()
         for stmt in new_block.body:

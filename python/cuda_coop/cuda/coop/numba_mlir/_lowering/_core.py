@@ -35,12 +35,14 @@ from cuda.coop._core import (
     Pointer,
     PointerOffset,
     Reference,
+    SynchronizationScope,
     TempStorageParameter,
     Value,
     lower_method_parameters,
 )
 
 from .. import _types as backend
+from .._compiler._operations import StorageABI
 
 
 @dataclass(frozen=True)
@@ -287,7 +289,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         self,
         specialization: AlgorithmSpec,
         *,
-        include_temp_storage: bool = True,
+        storage_abi: StorageABI,
+        execution_scope: SynchronizationScope,
+        synchronization_scope: SynchronizationScope,
         extra_type_definitions: tuple[Any, ...] = (),
         **kwargs: Any,
     ) -> Any:
@@ -296,6 +300,11 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             raise TypeError(
                 f"unexpected Numba-CUDA-MLIR materialization options: {unexpected}"
             )
+
+        storage_abi = StorageABI(storage_abi)
+        execution_scope = SynchronizationScope(execution_scope)
+        synchronization_scope = SynchronizationScope(synchronization_scope)
+        include_temp_storage = storage_abi is StorageABI.LEADING_POINTER
 
         parameters_by_name = {
             name: tuple(
@@ -368,6 +377,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                 for parameter in specialization.template_parameters
             ],
             methods,
+            storage_abi=storage_abi,
+            execution_scope=execution_scope,
+            synchronization_scope=synchronization_scope,
             type_definitions=definitions,
             fake_return=specialization.fake_return,
             output_by_reference=specialization.output_by_reference,

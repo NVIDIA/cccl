@@ -24,7 +24,7 @@ class _InvocableRewrite:
     @staticmethod
     def _invocable_cache_key(
         factory: object,
-        op_name: str,
+        factory_metadata,
         factory_kwargs: dict[str, object],
     ) -> tuple[str, tuple[tuple[str, str, str], ...]]:
 
@@ -37,10 +37,16 @@ class _InvocableRewrite:
         # This cache is compiler-state-local. Object identity deliberately keeps
         # separately registered providers apart even when their public operation
         # name and specialization arguments are identical.
+        provider_contract = (
+            factory_metadata.namespace,
+            factory_metadata.storage_abi.value,
+            factory_metadata.execution_scope.value,
+            factory_metadata.synchronization_scope.value,
+        )
         return (
             (
                 f"{type(factory).__module__}.{type(factory).__qualname__}:"
-                f"{id(factory)}:{op_name}"
+                f"{id(factory)}:{factory_metadata.operation}:{provider_contract!r}"
             ),
             tuple(
                 sorted(
@@ -53,10 +59,32 @@ class _InvocableRewrite:
         )
 
     @staticmethod
-    def _validate_invocable(invocable, op_name: str):
+    def _validate_invocable(invocable, factory_metadata):
+        op_name = factory_metadata.operation
         if not callable(invocable) or not hasattr(invocable, "files"):
             raise CoopSinglePhaseRewriteError(
                 f"coop single-phase factory for '{op_name}' did not produce a coop invocable; got {type(invocable)!r}."
+            )
+        expected_contract = {
+            "storage_abi": factory_metadata.storage_abi,
+            "execution_scope": factory_metadata.execution_scope,
+            "synchronization_scope": factory_metadata.synchronization_scope,
+        }
+        mismatches = []
+        for name, expected in expected_contract.items():
+            observed = getattr(invocable, name, None)
+            try:
+                observed = type(expected)(observed)
+            except (TypeError, ValueError):
+                pass
+            if observed != expected:
+                mismatches.append(
+                    f"{name}={observed!r} (registered {expected.value!r})"
+                )
+        if mismatches:
+            details = ", ".join(mismatches)
+            raise CoopSinglePhaseRewriteError(
+                f"coop provider '{op_name}' returned incompatible metadata: {details}."
             )
 
     def _prepare_ltoir_bundle_for_matches(self, matches: list[_RewriteMatch]) -> None:
@@ -73,7 +101,7 @@ class _InvocableRewrite:
         for match in matches:
             key = self._invocable_cache_key(
                 match.factory,
-                match.op_name,
+                match.factory_metadata,
                 match.factory_kwargs,
             )
             if key not in unique_matches:
@@ -113,7 +141,7 @@ class _InvocableRewrite:
     def _materialize_invocable(self, match: _RewriteMatch):
         key = self._invocable_cache_key(
             match.factory,
-            match.op_name,
+            match.factory_metadata,
             match.factory_kwargs,
         )
         if key in self._invocable_cache:
@@ -123,7 +151,7 @@ class _InvocableRewrite:
         )
         if key in compile_cache:
             invocable = compile_cache[key]
-            self._validate_invocable(invocable, match.op_name)
+            self._validate_invocable(invocable, match.factory_metadata)
             self._invocable_cache[key] = invocable
             return (invocable, False)
         try:
@@ -139,7 +167,7 @@ class _InvocableRewrite:
             raise CoopSinglePhaseRewriteError(
                 f"Failed to evaluate coop single-phase factory at compile time for '{match.op_name}'."
             ) from e
-        self._validate_invocable(invocable, match.op_name)
+        self._validate_invocable(invocable, match.factory_metadata)
         self._invocable_cache[key] = invocable
         compile_cache[key] = invocable
         return (invocable, True)

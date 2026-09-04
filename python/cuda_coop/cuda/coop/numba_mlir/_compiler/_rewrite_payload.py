@@ -24,7 +24,6 @@ class PayloadInference:
 
     _COMMON_OPERATION_ALIASES: dict[str, str] = {}
     _OPERATION_ALIASES: dict[str, str] = {}
-    _DTYPE_FACTORY_KWARGS = frozenset({"dtype"})
 
     def __init__(
         self,
@@ -34,6 +33,7 @@ class PayloadInference:
         allowed_factory_kwargs: set[str],
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
+        dtype_factory_kwargs: frozenset[str],
     ) -> None:
         self.rewrite = rewrite
         self.op_name = self._OPERATION_ALIASES.get(op_name, op_name)
@@ -42,12 +42,13 @@ class PayloadInference:
         self.allowed_factory_kwargs = allowed_factory_kwargs
         self.seen_factory_kwargs = seen_factory_kwargs
         self.factory_kwargs = factory_kwargs
+        self.dtype_factory_kwargs = dtype_factory_kwargs
 
     def factory_value(self, name: str):
         return self.factory_kwargs.get(name)
 
     def _factory_kwarg_matches(self, name: str, actual, expected) -> bool:
-        if name in self._DTYPE_FACTORY_KWARGS:
+        if name in self.dtype_factory_kwargs:
             try:
                 actual = normalize_dtype_param(actual)
                 expected = normalize_dtype_param(expected)
@@ -126,6 +127,12 @@ class _PayloadRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
+        operation = PayloadInference._OPERATION_ALIASES.get(op_name, op_name)
+        spec = rewrite_operation(operation)
+        if spec is None:
+            raise CoopSinglePhaseRewriteError(
+                f"unsupported Numba-CUDA-MLIR operation {operation!r}"
+            )
         inference = PayloadInference(
             self,
             op_name,
@@ -133,13 +140,8 @@ class _PayloadRewrite:
             allowed_factory_kwargs,
             seen_factory_kwargs,
             factory_kwargs,
+            spec.dtype_factory_kwargs,
         )
-        operation = inference.op_name
-        spec = rewrite_operation(operation)
-        if spec is None:
-            raise CoopSinglePhaseRewriteError(
-                f"unsupported Numba-CUDA-MLIR operation {operation!r}"
-            )
         spec.infer_payload(self, inference)
 
 

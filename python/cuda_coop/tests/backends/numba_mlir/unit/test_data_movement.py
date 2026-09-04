@@ -219,6 +219,9 @@ def test_fixed_capacity_temp_storage_is_forwarded_to_load_and_store():
         files = ("movement-test.ltoir",)
         temp_storage_bytes = 64
         temp_storage_alignment = 16
+        storage_abi = "leading_pointer"
+        execution_scope = "block"
+        synchronization_scope = "block"
 
         def __call__(self, *args):
             del args
@@ -304,6 +307,17 @@ def _parameter_names(specialization):
     ]
 
 
+def _block_provider_metadata():
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
+
+    return {
+        "storage_abi": StorageABI.LEADING_POINTER,
+        "execution_scope": SynchronizationScope.BLOCK,
+        "synchronization_scope": SynchronizationScope.BLOCK,
+    }
+
+
 def test_block_load_store_adapters_preserve_offset_overloads():
     pytest.importorskip("numba_cuda_mlir")
     from numba_cuda_mlir import types
@@ -321,7 +335,8 @@ def test_block_load_store_adapters_preserve_offset_overloads():
             oob_default=True,
             include_full_tile=True,
             include_pointer_offset=True,
-        ).specialization
+        ).specialization,
+        **_block_provider_metadata(),
     )
     assert _parameter_names(load) == [
         ["Pointer", "Pointer", "Array"],
@@ -344,7 +359,8 @@ def test_block_load_store_adapters_preserve_offset_overloads():
             items_per_thread=2,
             algorithm="direct",
             include_pointer_offset=True,
-        ).specialization
+        ).specialization,
+        **_block_provider_metadata(),
     )
     assert _parameter_names(store) == [
         ["Pointer", "Pointer", "Array"],
@@ -371,7 +387,8 @@ def test_static_movement_controls_are_absent_from_numba_runtime_abi():
             valid_items=ArgumentBinding.static(17),
             oob_default=ArgumentBinding.static(-1),
             include_pointer_offset=ArgumentBinding.static(3),
-        ).specialization
+        ).specialization,
+        **_block_provider_metadata(),
     )
     assert len(load.parameters) == 1
     method = load.parameters[0]
@@ -393,7 +410,8 @@ def test_static_movement_controls_are_absent_from_numba_runtime_abi():
             items_per_thread=2,
             algorithm="direct",
             include_pointer_offset=ArgumentBinding.static(4),
-        ).specialization
+        ).specialization,
+        **_block_provider_metadata(),
     )
     static_five = adapter.materialize(
         make_block_store_spec(
@@ -402,7 +420,8 @@ def test_static_movement_controls_are_absent_from_numba_runtime_abi():
             items_per_thread=2,
             algorithm="direct",
             include_pointer_offset=ArgumentBinding.static(5),
-        ).specialization
+        ).specialization,
+        **_block_provider_metadata(),
     )
     assert static_four.mangled_name(static_four.parameters[0]) != (
         static_five.mangled_name(static_five.parameters[0])
@@ -416,7 +435,8 @@ def test_static_movement_controls_are_absent_from_numba_runtime_abi():
             items_per_thread=2,
             algorithm="direct",
             include_pointer_offset=ArgumentBinding.runtime(),
-        ).specialization
+        ).specialization,
+        **_block_provider_metadata(),
     )
     runtime_source = runtime._source_code()[0]
     assert "::cuda::std::int64_t param_2" in runtime_source

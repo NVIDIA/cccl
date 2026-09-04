@@ -211,6 +211,9 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
         files = ()
         temp_storage_bytes = 1
         temp_storage_alignment = 1
+        storage_abi = "leading_pointer"
+        execution_scope = "block"
+        synchronization_scope = "block"
 
         def __call__(self, source, output):
             del source, output

@@ -20,11 +20,12 @@ pytest.importorskip("numba_cuda_mlir")
 
 from numba_cuda_mlir import types
 
-from cuda.coop._core import ArgumentBinding
+from cuda.coop._core import ArgumentBinding, SynchronizationScope
 from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
 from cuda.coop.numba_mlir import _types
 from cuda.coop.numba_mlir._compiler import _caching, _nvrtc
 from cuda.coop.numba_mlir._compiler._artifacts import find_unsigned
+from cuda.coop.numba_mlir._compiler._operations import StorageABI
 from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
@@ -76,6 +77,9 @@ def _algorithm(
     )
     algorithm = adapter.materialize(
         spec.specialization,
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.BLOCK,
         extra_type_definitions=(_types.numba_type_to_wrapper(dtype),),
     )
     algorithm._compile_context = context

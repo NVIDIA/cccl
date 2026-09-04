@@ -72,7 +72,7 @@ class _ArgumentRewrite:
                 seen_factory_kwargs.add(name)
                 seen_runtime_factory_kwargs.add(name)
         for name, value_var in call.kws:
-            if name == "temp_storage" and spec.runtime_temp_storage:
+            if name == "temp_storage" and spec.accepts_temp_storage:
                 if runtime_temp_storage is not None:
                     raise CoopSinglePhaseRewriteError(
                         f"Duplicate coop movement '{op_name}' runtime temp storage."
@@ -92,7 +92,7 @@ class _ArgumentRewrite:
                     raise CoopSinglePhaseRewriteError(
                         f"coop movement {name} must be a variable."
                     )
-                value = self._resolve_factory_kwarg_value(name, value_var)
+                value = self._resolve_factory_kwarg_value(op_name, name, value_var)
                 if value is not _UNRESOLVED:
                     if value is not None:
                         factory_kwargs[name] = (
@@ -118,7 +118,7 @@ class _ArgumentRewrite:
                         f"coop partial-tile argument '{name}' must be a variable."
                     )
                 if name in scalar_binding_kwargs:
-                    value = self._resolve_factory_kwarg_value(name, value_var)
+                    value = self._resolve_factory_kwarg_value(op_name, name, value_var)
                     if value is not _UNRESOLVED:
                         if value is not None:
                             factory_kwargs[name] = (
@@ -143,7 +143,7 @@ class _ArgumentRewrite:
                     f"Duplicate coop movement '{op_name}' factory keyword '{name}'."
                 )
             seen_factory_kwargs.add(name)
-            value = self._resolve_factory_kwarg_value(name, value_var)
+            value = self._resolve_factory_kwarg_value(op_name, name, value_var)
             if value is _UNRESOLVED:
                 raise CoopSinglePhaseRewriteError(
                     f"Failed to evaluate coop movement factory argument '{name}' for '{op_name}' as a compile-time constant."
@@ -222,7 +222,7 @@ class _ArgumentRewrite:
             raise CoopSinglePhaseRewriteError(
                 f"coop operation '{op_name}' requires explicit factory keywords: {missing_csv}."
             )
-        if runtime_temp_storage is not None and not spec.runtime_temp_storage:
+        if runtime_temp_storage is not None and not spec.accepts_temp_storage:
             raise CoopSinglePhaseRewriteError(
                 f"coop movement '{op_name}' does not support runtime temp_storage."
             )
