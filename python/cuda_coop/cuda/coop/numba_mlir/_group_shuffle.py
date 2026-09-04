@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .._core.api._payload import ThreadDataLike, _ReadableThreadDataLike
 from ._compiler._operations import group_operation
 from ._group_marker import group_primitive_marker
 from ._thread_group import ThreadGroup
@@ -19,12 +20,12 @@ from ._thread_group import ThreadGroup
 )
 def shuffle(
     group: ThreadGroup,
-    value: Any,
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
     mode: Any = "down",
     distance: Any = 1,
-) -> Any:
+) -> ThreadDataLike[Any]:
     """Shuffle a scalar or fixed-size per-thread payload within a block."""
 
     return group_primitive_marker(
