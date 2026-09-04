@@ -138,6 +138,8 @@
   ((_CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()) && _CCCL_CUDA_COMPILATION() \
    && !_CCCL_TILE_COMPILATION())
 
+#define _CCCL_HAS_SIMD_MIN_MAX_RELU() (_CCCL_HAS_CTK() && _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION())
+
 // Third party libraries
 
 #if (__has_include(<dlpack/dlpack.h>) || __has_include(<dlpack.h>)) && \
