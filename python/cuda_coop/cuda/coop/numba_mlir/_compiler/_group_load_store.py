@@ -55,16 +55,9 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
 
 
 def _direct_algorithm(value: object, *, operation: str) -> str:
-    if isinstance(value, bool):
-        raise TypeError(f"{operation} algorithm must not be bool")
-    if isinstance(value, str):
-        token = value.strip().lower().replace("-", "_")
-    elif hasattr(value, "name"):
-        token = str(getattr(value, "name")).lower()
-    elif isinstance(value, int):
-        token = "direct" if value == 0 else None
-    else:
-        token = None
+    if not isinstance(value, str):
+        raise TypeError(f"cuda.coop.numba_mlir.{operation} algorithm must be a string")
+    token = value.strip().lower().replace("-", "_")
     if token == "direct":
         return token
     if token in _BLOCK_LOAD_STORE_ALGORITHMS:

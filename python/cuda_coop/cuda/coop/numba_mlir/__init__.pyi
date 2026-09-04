@@ -4,7 +4,7 @@
 
 """Numba-CUDA-MLIR-qualified group-first cooperative primitives."""
 
-from ._enums import BlockLoadAlgorithm, BlockStoreAlgorithm
+from .._core.api import TempStorageLike, ThreadDataLike
 from ._group_load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData, local, shared
@@ -20,11 +20,11 @@ from ._thread_group import (
 )
 
 __all__ = [
-    "BlockLoadAlgorithm",
-    "BlockStoreAlgorithm",
     "Hierarchy",
     "TempStorage",
+    "TempStorageLike",
     "ThreadData",
+    "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
     "load",

@@ -226,9 +226,9 @@ class _GroupCallPlanner:
         token = self._constant(value)
         if token is None and allow_none:
             return None
-        token = getattr(token, "value", token)
-        if isinstance(token, str):
-            token = token.strip().lower().replace("-", "_")
+        if not isinstance(token, str):
+            raise TypeError(f"cuda.coop.{operation} {parameter} must be a string")
+        token = token.strip().lower().replace("-", "_")
         if token not in allowed:
             choices = ", ".join(sorted(allowed))
             raise ValueError(
@@ -1098,6 +1098,44 @@ def has_group_markers(func_ir) -> bool:
     analyzer.func_ir = func_ir
     analyzer._group_cache = {}
     analyzer._hierarchy_cache = {}
+
+    def is_group_descriptor(value: Any, seen: set[str]) -> bool:
+        if isinstance(value, ThreadGroup):
+            return True
+        if not isinstance(value, ir.Var) or value.name in seen:
+            return False
+        seen = {*seen, value.name}
+        for definition in analyzer._all_definitions(value):
+            if isinstance(definition, ir.Var) and is_group_descriptor(definition, seen):
+                return True
+            if isinstance(definition, (ir.Global, ir.FreeVar, ir.Const)):
+                if isinstance(definition.value, ThreadGroup):
+                    return True
+                continue
+            if not isinstance(definition, ir.Expr):
+                continue
+            if definition.op == "cast" and is_group_descriptor(definition.value, seen):
+                return True
+            if definition.op == "phi" and any(
+                is_group_descriptor(incoming, seen)
+                for incoming in getattr(definition, "incoming_values", ())
+            ):
+                return True
+            if definition.op != "call":
+                continue
+            function = analyzer._callable(definition.func)
+            if function in _GROUP_CONSTRUCTORS:
+                return True
+            function_definition = analyzer._definition(definition.func)
+            if (
+                isinstance(function_definition, ir.Expr)
+                and function_definition.op == "getattr"
+                and function_definition.attr == "group_by"
+                and is_group_descriptor(function_definition.value, seen)
+            ):
+                return True
+        return False
+
     for block in func_ir.blocks.values():
         for inst in block.body:
             if not isinstance(inst, ir.Assign):
@@ -1117,7 +1155,7 @@ def has_group_markers(func_ir) -> bool:
                 isinstance(function_definition, ir.Expr)
                 and function_definition.op == "getattr"
                 and (function_definition.attr == "group_by")
-                and (analyzer._group(function_definition.value) is not None)
+                and is_group_descriptor(function_definition.value, set())
             ):
                 return True
     return False

@@ -59,7 +59,9 @@ that name already refers to the object imported by
 `@cuda.jit` uses the wrong module.
 
 Using `import cuda.coop.numba_mlir as coop` instead activates the backend and
-selects its qualified namespace.
+selects its qualified namespace. Shared operations retain the portable
+signatures, string selectors, and inference rules; the qualified namespace
+adds backend memory namespaces and payload-alignment controls.
 
 ## Configuration
 
@@ -74,6 +76,9 @@ Runtime configuration is controlled by these environment variables:
 | `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
 | `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
+
+If those mechanisms do not resolve CUDA headers, `/usr/local/cuda/include` is
+tried last.
 
 The build recognizes these CMake cache variables:
 
@@ -99,7 +104,7 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(2, dtype=types.int32)
+items = coop.ThreadData(2)
 tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
@@ -132,6 +137,13 @@ offset. Runtime offsets are caller-validated. Source and destination arrays
 must be one-dimensional and contiguous. Without `oob_default`, invalid Load
 slots retain their previous values.
 
+Runtime `valid_items` and `offset` accept signed integer types through 64 bits
+and unsigned integer types through 32 bits. Boolean, floating-point, and
+`uint64` runtime values are rejected. A runtime `oob_default` is already typed
+by the compiler and must exactly match the Load payload dtype. Ordinary Python
+integer and floating-point literals are converted contextually and checked
+against that dtype before provider generation.
+
 > **`valid_items` must satisfy
 > `0 <= valid_items <= group_size * items_per_thread`.** Static values outside
 > that range are rejected while planning. Runtime values are checked rather
@@ -150,9 +162,11 @@ value = types.int32(source[cuda.threadIdx.x] + 1)
 coop.store(block, destination, value, algorithm="direct")
 ```
 
-The public Block Load and Store enums retain the complete CUB algorithm
-vocabulary. This release executes only `DIRECT`; selecting another member is
-rejected by the Numba-CUDA-MLIR capability layer before provider compilation.
+Both portable and qualified entry points use the same lowercase string
+algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
+`warp_transpose`, and `warp_transpose_timesliced`. This release executes only
+`direct`; selecting another string is rejected by the Numba-CUDA-MLIR
+capability layer before provider compilation.
 Load and Store currently support only `this_block()` even though the portable
 API exposes the broader thread-group descriptor vocabulary. `ThreadGroup`
 objects are descriptor-only in this release. `group_by` remains compile-time
@@ -180,6 +194,8 @@ An explicit descriptor, including an unsized descriptor, is validated as
 compile-time vocabulary but does not change DIRECT code generation. Generic
 capacity, alignment, ownership, synchronization, and dynamic-memory planning
 remains available to future registered providers that declare a storage ABI.
+Construct `TempStorage` inside the kernel; the current Numba-CUDA-MLIR frontend
+does not resolve module-global storage descriptors.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.

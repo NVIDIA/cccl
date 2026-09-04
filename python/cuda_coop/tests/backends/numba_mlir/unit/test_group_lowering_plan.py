@@ -326,6 +326,61 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
     assert semantics.oob_default.value == -1
 
 
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize("operation", ["load", "store"])
+def test_load_store_infer_untyped_payloads_symmetrically(
+    monkeypatch,
+    qualified,
+    operation,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+    from cuda.coop.numba_mlir._compiler import _group_load_store
+
+    module = qualified_coop if qualified else root_coop
+    plans = []
+    plan_group_primitive = _group_load_store.plan_group_primitive
+
+    def capture_plan(call, launch):
+        plan = plan_group_primitive(call, launch)
+        plans.append(plan)
+        return plan
+
+    monkeypatch.setattr(_group_load_store, "plan_group_primitive", capture_plan)
+
+    if operation == "load":
+
+        def memory(source, destination):
+            output = module.ThreadData(2)
+            return module.load(
+                module.this_block(),
+                source,
+                output,
+                algorithm="direct",
+            )
+
+    else:
+
+        def memory(source, destination):
+            output = module.ThreadData(2)
+            output[0] = source[0]
+            output[1] = source[1]
+            module.store(
+                module.this_block(),
+                destination,
+                output,
+                algorithm="direct",
+            )
+
+    array_type = types.Array(types.int32, 1, "C")
+    assert _planner(memory, arg_types=(array_type, array_type)).run()
+
+    assert len(plans) == 1
+    assert plans[0].call.operation.dtype == types.int32
+
+
 @pytest.mark.parametrize(
     ("metadata_overrides", "diagnostic"),
     [

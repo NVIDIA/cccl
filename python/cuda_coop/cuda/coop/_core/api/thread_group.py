@@ -31,6 +31,13 @@ _core_this_grid = this_grid
 _core_this_thread = this_thread
 _core_this_warp = this_warp
 
+# These names support explicit imports used by the adjacent typing stubs. They
+# are overload helpers, not additional root-package exports.
+MemoryGroup = ThreadGroup
+ReductionGroup = ThreadGroup
+BlockGroup = ThreadGroup
+WarpGroup = ThreadGroup
+
 
 def _group_constructor(
     name: str,

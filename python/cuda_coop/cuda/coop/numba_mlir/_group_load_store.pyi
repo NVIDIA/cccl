@@ -4,7 +4,7 @@
 
 """Block Load/Store signatures for the Numba-CUDA-MLIR backend."""
 
-from typing import Literal, overload
+from typing import overload
 
 from typing_extensions import TypeVar
 
@@ -12,49 +12,49 @@ from .._typing import (
     BlockLoadStoreAlgorithm,
     IntegerValue,
     PortableNumericScalar,
+    PortableThreadDataLike,
+    TempStorageLike,
     ThreadDataLike,
     ValidItems,
 )
-from ._enums import BlockLoadAlgorithm, BlockStoreAlgorithm
-from ._temp_storage import TempStorage
-from ._thread_group import ThreadGroup
+from ._thread_group import BlockGroup
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
 @overload
 def load(
-    group: ThreadGroup[Literal["block"]],
+    group: BlockGroup,
     source: object,
-    output: ThreadDataLike[_ItemT],
+    output: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    algorithm: BlockLoadStoreAlgorithm | BlockLoadAlgorithm = "direct",
+    algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     oob_default: None = None,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorage | None = None,
-) -> ThreadDataLike[_ItemT]: ...
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadDataLike[_PortableNumericT]: ...
 @overload
 def load(
-    group: ThreadGroup[Literal["block"]],
+    group: BlockGroup,
     source: object,
-    output: ThreadDataLike[_ItemT],
+    output: ThreadDataLike[_PortableNumericT],
     /,
     *,
-    algorithm: BlockLoadStoreAlgorithm | BlockLoadAlgorithm = "direct",
+    algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems,
-    oob_default: _ItemT | int | float,
+    oob_default: _PortableNumericT | int | float,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorage | None = None,
-) -> ThreadDataLike[_ItemT]: ...
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadDataLike[_PortableNumericT]: ...
 def store(
-    group: ThreadGroup[Literal["block"]],
+    group: BlockGroup,
     destination: object,
-    value: _ItemT | ThreadDataLike[_ItemT],
+    value: _PortableNumericT | PortableThreadDataLike[_PortableNumericT],
     /,
     *,
-    algorithm: BlockLoadStoreAlgorithm | BlockStoreAlgorithm = "direct",
+    algorithm: BlockLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
     offset: IntegerValue | None = None,
-    temp_storage: TempStorage | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> None: ...

@@ -46,8 +46,6 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_compiler/_group_planner.py",
     "cuda/coop/numba_mlir/_compiler/_nvrtc.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite.py",
-    "cuda/coop/numba_mlir/_enums.py",
-    "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/numba_mlir/_group_load_store.py",
     "cuda/coop/numba_mlir/_group_load_store.pyi",
     "cuda/coop/numba_mlir/_lowering/_load_store.py",
@@ -84,6 +82,8 @@ _OBSOLETE_LAYOUT_COMPONENTS = {"_block", "_dsl", "_internal", "_warp"}
 _NATIVE_SUFFIXES = {".a", ".dll", ".dylib", ".exe", ".lib", ".pyd", ".so"}
 _FORBIDDEN_PACKAGE_FILES = {
     "cuda/coop/_aot_cli.py",
+    "cuda/coop/numba_mlir/_enums.py",
+    "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/_core/api/reduce.py",
     "cuda/coop/_core/api/reduce.pyi",
     "cuda/coop/_core/api/scan.py",
@@ -170,8 +170,9 @@ def _validate_provenance(archive: zipfile.ZipFile) -> None:
             "cuda-coop header provenance must contain only cccl_source_commit"
         )
     revision = provenance["cccl_source_commit"]
-    if not isinstance(revision, str) or (
-        revision != "unknown" and re.fullmatch(r"[0-9a-f]{40}", revision) is None
+    if (
+        not isinstance(revision, str)
+        or re.fullmatch(r"[0-9A-Za-z._+-]+", revision) is None
     ):
         raise SystemExit("cuda-coop header provenance has an invalid source revision")
 

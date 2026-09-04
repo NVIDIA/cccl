@@ -163,9 +163,9 @@ def _portable_selector(
         return value
     if value is None and allow_none:
         return None
-    token = getattr(value, "value", value)
-    if isinstance(token, str):
-        token = token.strip().lower().replace("-", "_")
+    if not isinstance(value, str):
+        raise TypeError(f"cuda.coop.{operation} {parameter} must be a string")
+    token = value.strip().lower().replace("-", "_")
     try:
         is_allowed = token in allowed
     except TypeError:

@@ -18,6 +18,8 @@ from cuda.coop.numba_mlir._compiler._group_planner import (
     has_group_markers,
 )
 
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
 _GROUP_KINDS = (
     ("this_thread", "thread"),
     ("this_warp", "warp"),
@@ -25,6 +27,8 @@ _GROUP_KINDS = (
     ("this_cluster", "cluster"),
     ("this_grid", "grid"),
 )
+_GLOBAL_BLOCK_GROUP = coop.this_block()
+_ALTERNATE_GLOBAL_BLOCK_GROUP = coop.this_block()
 
 
 def _state(function, args=()):
@@ -53,6 +57,36 @@ def test_group_marker_detection_distinguishes_group_ir():
 
     assert has_group_markers(run_frontend(group_marker_function))
     assert not has_group_markers(run_frontend(plain_function))
+
+
+def test_group_marker_detection_does_not_semantically_resolve_group_by(monkeypatch):
+    def grouped(count):
+        return _GLOBAL_BLOCK_GROUP.group_by(count)
+
+    monkeypatch.setattr(
+        _GroupCallPlanner,
+        "_group",
+        lambda *_args: pytest.fail("marker detection resolved group semantics"),
+    )
+
+    assert has_group_markers(run_frontend(grouped))
+
+
+def test_group_marker_detection_follows_merged_group_by_receivers(monkeypatch):
+    def grouped(count, choose_alternate):
+        if choose_alternate:
+            parent = _ALTERNATE_GLOBAL_BLOCK_GROUP
+        else:
+            parent = _GLOBAL_BLOCK_GROUP
+        return parent.group_by(count)
+
+    monkeypatch.setattr(
+        _GroupCallPlanner,
+        "_group",
+        lambda *_args: pytest.fail("marker detection resolved group semantics"),
+    )
+
+    assert has_group_markers(run_frontend(grouped))
 
 
 @pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
