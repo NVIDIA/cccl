@@ -11,16 +11,15 @@ descriptors can also be created on the host and used as kernel globals.
 Construct TempStorage inside each kernel. During compilation, the compiler
 rebuilds the descriptor from its compile-time constant arguments and
 validates them. The compiler rejects a descriptor that comes from a module
-global. The ``local`` and ``shared`` namespaces and the Reduce and Sum
-markers load on first access.
+global. The ``local`` and ``shared`` namespaces and the Exchange, Shuffle,
+Reduce, and Sum markers load on first access.
 """
 
 import importlib
-from typing import TYPE_CHECKING
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import _initialize_runtime_hooks
-from ._group._load_store import load, store
+from ._group_load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -34,10 +33,6 @@ from ._thread_group import (
     this_warp,
 )
 
-if TYPE_CHECKING:
-    from ._group._reduce import reduce, sum
-    from ._thread_data import local, shared
-
 __all__ = [
     "Hierarchy",
     "TempStorage",
@@ -46,17 +41,22 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "load",
-    "local",
-    "reduce",
-    "shared",
-    "store",
-    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
+    "load",
+    "reduce",
+    "scan",
+    "store",
+    "sum",
+    "local",
+    "shared",
 ]
 
 
@@ -68,10 +68,23 @@ def __getattr__(name):
     Unknown names raise ``AttributeError`` as normal module lookup requires.
     """
 
-    if name in {"reduce", "sum"}:
+    if name in {
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "reduce",
+        "scan",
+        "sum",
+    }:
         module_name = {
-            "reduce": "_group._reduce",
-            "sum": "_group._reduce",
+            "exclusive_scan": "_group_scan",
+            "exclusive_sum": "_group_scan",
+            "inclusive_scan": "_group_scan",
+            "inclusive_sum": "_group_scan",
+            "reduce": "_group_reduce",
+            "scan": "_group_scan",
+            "sum": "_group_reduce",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name
