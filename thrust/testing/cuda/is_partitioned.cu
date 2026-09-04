@@ -108,7 +108,7 @@ struct is_even_no_const
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator()(const int x) noexcept
   {
-    return (x & 1) == 0;
+    return x % 2 == 0;
   }
 };
 
