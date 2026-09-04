@@ -104,7 +104,9 @@ def load(
     block_dim = normalize_dim_param(threads_per_block)
     dtype = _validate_common_numeric_dtype(dtype, operation="load")
     if oob_default_binding.kind is BindingKind.STATIC:
-        _validate_static_oob_default(oob_default_binding.value)
+        oob_default_binding = ArgumentBinding.static(
+            _validate_static_oob_default(oob_default_binding.value, dtype)
+        )
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
     algorithm = _resolve_algorithm(algorithm, BlockLoadAlgorithm, "block load")
     adapter = NumbaMlirCoreAdapter()

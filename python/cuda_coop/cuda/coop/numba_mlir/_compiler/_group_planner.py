@@ -41,7 +41,10 @@ from ._group_planner_support import (
 )
 from ._group_planning import GroupPlanningContext
 from ._operations import group_primitive
-from ._scalar_provenance import try_resolve_static_scalar
+from ._scalar_provenance import (
+    try_resolve_static_scalar,
+    try_resolve_static_scalar_provenance,
+)
 
 
 class _GroupCallPlanner:
@@ -183,6 +186,15 @@ class _GroupCallPlanner:
         """Resolve only values whose IR provenance is explicitly static."""
 
         return try_resolve_static_scalar(
+            value,
+            definitions=self._all_definitions,
+            argument_type=lambda index: (
+                self.state.args[index] if 0 <= index < len(self.state.args) else None
+            ),
+        )
+
+    def _try_static_scalar_provenance(self, value: Any) -> tuple[bool, Any]:
+        return try_resolve_static_scalar_provenance(
             value,
             definitions=self._all_definitions,
             argument_type=lambda index: (
