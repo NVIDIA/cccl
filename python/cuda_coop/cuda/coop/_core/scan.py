@@ -30,6 +30,35 @@ class ScanValueKind(str, Enum):
 
 _SCAN_OPERATORS = (CxxOperator, PythonOperator)
 _INITIAL_VALUES = (CxxFunction, Reference)
+_SCAN_OPERATOR_ALIASES = {
+    "+": "sum",
+    "sum": "sum",
+    "add": "sum",
+    "plus": "sum",
+    "*": "multiplies",
+    "mul": "multiplies",
+    "multiply": "multiplies",
+    "multiplies": "multiplies",
+    "min": "min",
+    "minimum": "min",
+    "max": "max",
+    "maximum": "max",
+    "&": "bit_and",
+    "bit_and": "bit_and",
+    "|": "bit_or",
+    "bit_or": "bit_or",
+    "^": "bit_xor",
+    "bit_xor": "bit_xor",
+}
+
+
+def normalize_scan_operator_alias(value: object) -> str | None:
+    """Normalize one string alias shared by every public Scan spelling."""
+
+    if not isinstance(value, str):
+        raise TypeError("scan_op must be a string")
+    token = value.strip().lower().replace("-", "_")
+    return _SCAN_OPERATOR_ALIASES.get(token)
 
 
 def _initial_dtype_matches(dtype: Any, initial_value: CxxFunction | Reference) -> bool:
@@ -127,4 +156,5 @@ __all__ = [
     "ScanSemantics",
     "ScanValueKind",
     "make_scan_semantics",
+    "normalize_scan_operator_alias",
 ]

@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..dtype_policy import validate_portable_integer_value_dtype_name
+from ..scan import normalize_scan_operator_alias
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
@@ -27,26 +28,6 @@ from ._payload import (
 _PORTABLE_SCAN_GROUP_KINDS = ("block", "warp", "threads_within_warp")
 _PORTABLE_SCAN_MODES = frozenset({"exclusive", "inclusive"})
 _PORTABLE_SCAN_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
-_PORTABLE_OPERATOR_ALIASES = {
-    "+": "sum",
-    "sum": "sum",
-    "add": "sum",
-    "plus": "sum",
-    "*": "multiplies",
-    "mul": "multiplies",
-    "multiply": "multiplies",
-    "multiplies": "multiplies",
-    "min": "min",
-    "minimum": "min",
-    "max": "max",
-    "maximum": "max",
-    "&": "bit_and",
-    "bit_and": "bit_and",
-    "|": "bit_or",
-    "bit_or": "bit_or",
-    "^": "bit_xor",
-    "bit_xor": "bit_xor",
-}
 _BITWISE_OPERATORS = frozenset({"bit_and", "bit_or", "bit_xor"})
 _WARP_GROUP_KINDS = frozenset({"warp", "threads_within_warp"})
 
@@ -54,17 +35,19 @@ _WARP_GROUP_KINDS = frozenset({"warp", "threads_within_warp"})
 def _portable_scan_operator(operation: str, value: Any) -> Any:
     if _backend_module_name() is None or value is None:
         return value
-    token = getattr(value, "value", value)
-    if isinstance(token, str):
-        token = token.strip().lower().replace("-", "_")
-    try:
-        return _PORTABLE_OPERATOR_ALIASES[token]
-    except (KeyError, TypeError):
-        choices = ", ".join(sorted(set(_PORTABLE_OPERATOR_ALIASES.values())))
+    if not isinstance(value, str):
+        raise TypeError(
+            f"cuda.coop.{operation} scan_op must be a string; use a "
+            "backend-qualified import for custom operators"
+        )
+    operator = normalize_scan_operator_alias(value)
+    if operator is None:
+        choices = "bit_and, bit_or, bit_xor, max, min, multiplies, sum"
         raise ValueError(
             f"cuda.coop.{operation} scan_op must be one of: "
             f"{choices}; use a backend-qualified import for custom operators"
         ) from None
+    return operator
 
 
 def _validate_portable_scan_value(
