@@ -8,9 +8,7 @@ import importlib.util
 import inspect
 import sys
 from pathlib import Path
-from typing import get_args
 
-import numpy as np
 import pytest
 
 import cuda.coop as common_coop
@@ -52,6 +50,7 @@ _QUALIFIED_EXPORTS = [
         for name in _COMMON_EXPORTS
         if name not in {"__version__", "register"}
     ),
+    "StatefulFunction",
     "local",
     "shared",
 ]
@@ -59,7 +58,6 @@ _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
     "cuda.coop.numba_mlir._enums",
     "cuda.coop.numba_mlir._scan_op",
-    "cuda.coop.numba_mlir._stateful_function",
     "cuda.coop.numba_mlir._lowering._warp",
 )
 
@@ -75,7 +73,6 @@ def test_public_exports_are_only_the_supported_group_families():
         "BlockReduceAlgorithm",
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",
-        "StatefulFunction",
         "gpu_dataclass",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
@@ -83,9 +80,11 @@ def test_public_exports_are_only_the_supported_group_families():
     assert excluded_exports.isdisjoint(common_coop.__all__)
     assert excluded_exports.isdisjoint(coop.__all__)
     assert not hasattr(coop, "BlockScanAlgorithm")
+    assert "StatefulFunction" not in common_coop.__all__
+    assert "StatefulFunction" in coop.__all__
 
     loaded = set(sys.modules)
-    assert "cuda.coop.numba_mlir._group._load_store" in loaded
+    assert "cuda.coop.numba_mlir._group_load_store" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert set(_EXCLUDED_BACKEND_MODULES).isdisjoint(loaded)
     assert (
@@ -97,7 +96,11 @@ def test_public_exports_are_only_the_supported_group_families():
 
 
 def test_qualified_surface_is_common_plus_backend_extensions():
-    assert set(coop.__all__) - set(common_coop.__all__) == {"local", "shared"}
+    assert set(coop.__all__) - set(common_coop.__all__) == {
+        "StatefulFunction",
+        "local",
+        "shared",
+    }
     assert set(common_coop.__all__) - set(coop.__all__) == {
         "__version__",
         "register",
@@ -147,9 +150,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
             qualified_parameter = qualified_scan.parameters[name]
             assert qualified_parameter.kind == parameter.kind
             assert qualified_parameter.default == parameter.default
-        assert (
-            qualified_scan.return_annotation == common_scan.return_annotation
-        )
+        assert qualified_scan.return_annotation == common_scan.return_annotation
         assert tuple(qualified_scan.parameters)[
             len(common_scan.parameters) :
         ] == (
@@ -212,10 +213,10 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         coop.load,
         eval_str=True,
     )
-    assert set(get_args(qualified_load_annotations["output"])) == {
-        common_load_annotations["output"],
-        np.ndarray,
-    }
+    assert (
+        qualified_load_annotations["output"]
+        == common_load_annotations["output"]
+    )
     assert (
         qualified_load_annotations["return"]
         == common_load_annotations["return"]
@@ -233,7 +234,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         ]
 
     assert stub_signatures(
-        coop_root / "numba_mlir" / "_group" / "_load_store.pyi"
+        coop_root / "numba_mlir" / "_group_load_store.pyi"
     ) == (stub_signatures(coop_root / "_core" / "api" / "load_store.pyi"))
 
 
@@ -269,13 +270,14 @@ def test_excluded_backend_implementation_modules_remain_absent(module_name):
     assert not module_path.is_dir()
 
 
-def test_python_operator_compilation_is_stateless_only():
+def test_python_operator_compilation_supports_explicit_state():
     from cuda.coop.numba_mlir import _types
 
     assert hasattr(_types, "_compile_device_ltoir")
     assert hasattr(_types, "DependentPythonOperator")
     assert hasattr(_types, "StatelessOperator")
-    assert not hasattr(_types, "StatefulOperator")
+    assert hasattr(_types, "DependentStatefulOperator")
+    assert hasattr(_types, "StatefulOperator")
     assert tuple(
         inspect.signature(_types.numba_type_to_wrapper).parameters
     ) == ("numba_type",)
