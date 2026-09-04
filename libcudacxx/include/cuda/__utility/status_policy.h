@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___FWD_BARRIER_H
-#define _CUDA___FWD_BARRIER_H
+#ifndef _CUDA___UTILITY_STATUS_POLICY_H
+#define _CUDA___UTILITY_STATUS_POLICY_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,27 +21,31 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__barrier/empty_completion.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-template <thread_scope _Sco, class _CompletionF = ::cuda::std::__empty_completion>
-class barrier;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT return_status_t
+{
+  _CCCL_HIDE_FROM_ABI explicit return_status_t() = default;
+};
 
-class shared_barrier;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT ignore_status_t
+{
+  _CCCL_HIDE_FROM_ABI explicit ignore_status_t() = default;
+};
 
-template <class _Tp>
-inline constexpr bool __is_cuda_barrier_v = false;
-template <thread_scope _Sco, class _ComplFn>
-inline constexpr bool __is_cuda_barrier_v<barrier<_Sco, _ComplFn>> = true;
-template <>
-inline constexpr bool __is_cuda_barrier_v<shared_barrier> = true;
+enum class status_source
+{
+  tma_validity_check,
+  fabric_push_reduction,
+};
+
+_CCCL_GLOBAL_CONSTANT return_status_t return_status{};
+_CCCL_GLOBAL_CONSTANT ignore_status_t ignore_status{};
 
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___FWD_BARRIER_H
+#endif // _CUDA___UTILITY_STATUS_POLICY_H
