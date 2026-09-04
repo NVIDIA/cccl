@@ -10,11 +10,6 @@
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/__cccl_config> // IWYU pragma: export
 
-// Deprecation warnings may be silenced by defining the following macro:
-// - CCCL_IGNORE_DEPRECATED_COMPILER
-//   Ignore deprecation warnings when using deprecated compilers.
-//   Compiling with deprecated C++ dialects will still issue warnings.
-//
 // Note: Checks must happen before marking this header and its includes as system
 // headers, otherwise GCC and Clang silently drop diagnostics, including
 // explicit `#pragma GCC warning` originating from system headers.
@@ -26,8 +21,7 @@ _CCCL_WARNING("Thrust requires at least GCC 7.0. Define CCCL_IGNORE_DEPRECATED_C
 _CCCL_WARNING("Thrust requires at least Clang 7.0. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message.")
 #  elif _CCCL_COMPILER(MSVC, <, 19, 10)
 _CCCL_WARNING("Thrust requires at least MSVC 2019(19.20 / 16.0 / 14.20). Define CCCL_IGNORE_DEPRECATED_COMPILER to "
-              "suppress "
-              "this message.")
+              "suppress this message.")
 #  endif
 #endif // CCCL_IGNORE_DEPRECATED_COMPILER
 
