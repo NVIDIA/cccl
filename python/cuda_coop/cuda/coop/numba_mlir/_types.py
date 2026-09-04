@@ -170,10 +170,16 @@ def _python_operator_symbol_name(
     binary_op: Callable,
     ret_dtype: types.Type,
     arg_dtypes: Sequence[types.Type],
+    *,
+    state_dtype: types.Type | None = None,
 ) -> str:
-    """Name a compiled stateless operator without relying on object identity."""
+    """Name a compiled Python operator without relying on object identity."""
 
     callable_component = _callable_symbol_component(binary_op)
+    if state_dtype is not None:
+        callable_component = (
+            f"stateful_{_symbol_component(state_dtype)}_{callable_component}"
+        )
     signature_component = f"{_symbol_component(ret_dtype)}__" + "_".join(
         _symbol_component(dtype) for dtype in arg_dtypes
     )
@@ -859,6 +865,78 @@ class StatelessOperator(Parameter):
         return False
 
 
+class StatefulOperator(Parameter):
+    """A compiled Python callable closed over a runtime state pointer."""
+
+    def __init__(
+        self,
+        name,
+        state_dtype,
+        ret_cpp_type,
+        arg_cpp_types,
+        ltoir,
+        *,
+        compute_capability,
+    ):
+        super().__init__()
+        self.name = name
+        self.state_dtype = state_dtype
+        self.ret_cpp_type = ret_cpp_type
+        self.arg_cpp_types = tuple(arg_cpp_types)
+        self.ltoir = bytes(ltoir)
+        self.compute_capability = _normalize_compute_capability(compute_capability)
+
+    def __repr__(self) -> str:
+        return f"StatefulOperator(name={self.name!r}, state_dtype={self.state_dtype})"
+
+    def mangled_name(self):
+        return self.name
+
+    def forward_decl(self):
+        return_type = "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
+        arg_decls = ["char *state"]
+        arg_decls.extend(
+            "const void*" if arg == "storage_t" else arg for arg in self.arg_cpp_types
+        )
+        if self.ret_cpp_type == "storage_t":
+            arg_decls.append("void*")
+        return (
+            f'extern "C" __device__ {return_type} {self.name}({", ".join(arg_decls)});'
+        )
+
+    def cpp_decl(self, name):
+        return f"char *{name}_state"
+
+    def dtype(self):
+        return types.Array(self.state_dtype, 1, "C")
+
+    def wrap_decl(self, name):
+        param_decls = []
+        param_refs = []
+        for index, arg_type in enumerate(self.arg_cpp_types):
+            arg_name = f"wp_{index}"
+            param_decls.append(f"const {arg_type}& {arg_name}")
+            param_refs.append(f"&{arg_name}" if arg_type == "storage_t" else arg_name)
+
+        state_name = f"{name}_state"
+        buf = StringIO()
+        w = buf.write
+        w(f"auto {name} = [{state_name}]({', '.join(param_decls)}) {{\n")
+        if self.ret_cpp_type == "storage_t":
+            w("    storage_t result;\n")
+            call_args = ", ".join((state_name, *param_refs, "&result"))
+            w(f"    {self.name}({call_args});\n")
+            w("    return result;\n")
+        else:
+            call_args = ", ".join((state_name, *param_refs))
+            w(f"    return {self.name}({call_args});\n")
+        w("};\n")
+        return buf.getvalue()
+
+    def is_provided_by_user(self):
+        return True
+
+
 class DependentPythonOperator:
     """A stateless Python operator resolved after dtype specialization."""
 
@@ -919,6 +997,70 @@ class DependentPythonOperator:
         )
         return StatelessOperator(
             mangled_name,
+            ret_cpp_type,
+            arg_cpp_types,
+            ltoir,
+            compute_capability=compute_capability,
+        )
+
+
+class DependentStatefulOperator:
+    """A stateful Python operator resolved after dtype specialization."""
+
+    def __init__(self, state_dtype, ret_dtype, arg_dtypes, op, *, name=None):
+        self.state_dtype = state_dtype
+        self.ret_dtype = ret_dtype
+        self.arg_dtypes = tuple(arg_dtypes)
+        self.op = op
+        self.name = name
+
+    def specialize(self, template_arguments):
+        state_dtype = self.state_dtype.resolve(template_arguments)
+        ret_dtype = self.ret_dtype.resolve(template_arguments)
+        arg_dtypes = tuple(
+            dtype.resolve(template_arguments) for dtype in self.arg_dtypes
+        )
+        op = self.op.resolve(template_arguments)
+        if not callable(op):
+            raise TypeError("Stateful Python operator must be callable")
+
+        ret_cpp_type = numba_type_to_cpp(ret_dtype)
+        arg_cpp_types = tuple(numba_type_to_cpp(dtype) for dtype in arg_dtypes)
+        if ret_cpp_type == "storage_t" or "storage_t" in arg_cpp_types:
+            raise TypeError(
+                "cuda.coop.numba_mlir stateful Python operators support "
+                "numeric payload dtypes only"
+            )
+
+        operator_py_func = op.__call__ if isinstance(op, type) else op
+        operator_py_func = getattr(operator_py_func, "py_func", operator_py_func)
+        compute_capability = _current_compute_capability()
+        mangled_name = _python_operator_symbol_name(
+            operator_py_func,
+            ret_dtype,
+            arg_dtypes,
+            state_dtype=state_dtype,
+        )
+        operator_signature = signature(
+            ret_dtype,
+            types.CPointer(state_dtype),
+            *arg_dtypes,
+        )
+        compile_identity = (
+            "numba-cuda-mlir-stateful-python-operator-abi-v1",
+            operator_py_func,
+            _numba_semantic_token(state_dtype),
+        )
+        ltoir = _compile_device_ltoir(
+            operator_py_func,
+            sig=operator_signature,
+            abi_info={"abi_name": mangled_name},
+            compute_capability=compute_capability,
+            semantic_identity=compile_identity,
+        )
+        return StatefulOperator(
+            mangled_name,
+            state_dtype,
             ret_cpp_type,
             arg_cpp_types,
             ltoir,
@@ -1300,7 +1442,10 @@ class Algorithm:
 
         for user_pid, (pid, param) in enumerate(user_params):
             abi_name = f"abi_param_{user_pid}"
-            if isinstance(param, (Pointer, Array, PointerReference)):
+            if isinstance(
+                param,
+                (Pointer, Array, PointerReference, StatefulOperator),
+            ):
                 abi_param_decls.append(f"void *{abi_name}")
                 cast_name = f"abi_cast_{pid}"
                 if (
@@ -1313,6 +1458,10 @@ class Algorithm:
                         "    "
                         f"{temp_storage_type_name} *{cast_name} = "
                         f"reinterpret_cast<{temp_storage_type_name} *>({abi_name});"
+                    )
+                elif isinstance(param, StatefulOperator):
+                    body_lines.append(
+                        f"    char *{cast_name} = reinterpret_cast<char *>({abi_name});"
                     )
                 else:
                     pointee_type = numba_type_to_cpp(param.value_dtype)
@@ -1379,7 +1528,7 @@ class Algorithm:
 
         for method in self.parameters:
             for param in method:
-                if not isinstance(param, StatelessOperator):
+                if not isinstance(param, (StatelessOperator, StatefulOperator)):
                     continue
                 callback_cc = _compute_capability_number(param.compute_capability)
                 if callback_cc != provider_cc:
@@ -1474,6 +1623,11 @@ class Algorithm:
                         param.wrap_decl(f"param_{pid}").rstrip().splitlines()
                     )
                     param_args.append(f"param_{pid}")
+                elif isinstance(param, StatefulOperator):
+                    name = f"param_{pid}"
+                    func_decls.extend(param.wrap_decl(name).rstrip().splitlines())
+                    param_args.append(name)
+                    param_decls.append(param.cpp_decl(name))
                 elif isinstance(param, CxxFunction):
                     param_args.append(param.cpp)
                 else:
@@ -1823,7 +1977,10 @@ class Algorithm:
                 continue
 
             expected_input_parameters.append(param)
-            if isinstance(param, (Pointer, Array, PointerReference)):
+            if isinstance(
+                param,
+                (Pointer, Array, PointerReference, StatefulOperator),
+            ):
                 abi_input_types.append(types.CPointer(types.none))
                 arg_transforms.append("ptr")
             else:
@@ -1895,7 +2052,7 @@ def _collect_udf_decls(algo):
     udf_decls = OrderedDict()
     for method in algo.parameters:
         for param in method:
-            if not isinstance(param, StatelessOperator):
+            if not isinstance(param, (StatelessOperator, StatefulOperator)):
                 continue
             declaration = param.forward_decl()
             previous = udf_decls.setdefault(param.name, declaration)
@@ -1966,6 +2123,16 @@ def _param_coalesce_key(param):
         return (
             "StatelessOperator",
             param.name,
+            param.ret_cpp_type,
+            param.arg_cpp_types,
+            param.compute_capability,
+            _lto_ir_digest(param.ltoir),
+        )
+    if isinstance(param, StatefulOperator):
+        return (
+            "StatefulOperator",
+            param.name,
+            str(param.state_dtype),
             param.ret_cpp_type,
             param.arg_cpp_types,
             param.compute_capability,

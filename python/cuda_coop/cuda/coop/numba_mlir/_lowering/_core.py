@@ -36,6 +36,7 @@ from cuda.coop._core import (
     PointerOffset,
     PythonOperator,
     Reference,
+    StatefulOperator,
     SynchronizationScope,
     TempStorageParameter,
     Value,
@@ -286,10 +287,15 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         *,
         specialization: AlgorithmSpec,
     ) -> Any:
-        del operator, specialization
-        raise NotImplementedError(
-            "stateful callbacks are not supported by the cuda.coop "
-            "Numba-CUDA-MLIR backend"
+        del specialization
+        if not isinstance(operator, StatefulOperator):
+            raise TypeError(f"expected StatefulOperator, got {operator!r}")
+        return backend.DependentStatefulOperator(
+            self._resolvable(operator.state_dtype),
+            self._resolvable(operator.ret_dtype),
+            tuple(self._resolvable(dtype) for dtype in operator.arg_dtypes),
+            backend.Constant(_normalize_numba_callable(operator.op)),
+            name=operator.name,
         )
 
     def lower_temp_storage(
