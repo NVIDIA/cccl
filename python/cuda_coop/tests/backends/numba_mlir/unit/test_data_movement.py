@@ -58,6 +58,76 @@ def _planned_factory_calls(func_ir, ir):
     ]
 
 
+def _resolved_python_call_targets(func_ir, ir):
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    resolver = object.__new__(CoopSinglePhaseRewrite)
+    resolver._func_ir = func_ir
+    targets = []
+    for block in func_ir.blocks.values():
+        resolver._block_defs = {
+            inst.target.name: inst.value
+            for inst in block.body
+            if isinstance(inst, ir.Assign)
+        }
+        targets.extend(
+            resolver._resolve_python_value(inst.value.func)
+            for inst in block.body
+            if isinstance(inst, ir.Assign)
+            and isinstance(inst.value, ir.Expr)
+            and inst.value.op == "call"
+        )
+    return targets
+
+
+class _MovementInvocable:
+    files = ("movement-test.ltoir",)
+    storage_abi = "leading_pointer"
+    execution_scope = "block"
+    synchronization_scope = "block"
+
+    def __init__(self, temp_storage_bytes):
+        self.temp_storage_bytes = temp_storage_bytes
+        self.temp_storage_alignment = 16
+
+    def __call__(self, *args):
+        del args
+
+
+def _rewrite_planned_movement(function, *, arg_types):
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    func_ir, planner = _plan(function, arg_types=arg_types)
+    assert planner.run()
+
+    class TypingContext:
+        def refresh(self):
+            pass
+
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=arg_types,
+        typingctx=TypingContext(),
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    invocables = {
+        "load": _MovementInvocable(48),
+        "store": _MovementInvocable(64),
+    }
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
+    rewrite._materialize_invocable = lambda match: (invocables[match.op_name], False)
+    rewrite._record_invocable_specialization = lambda _invocable: None
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        while rewrite.match(func_ir, block, state.typemap, state.calltypes):
+            block = rewrite.apply()
+            func_ir.blocks[label] = block
+    return func_ir, rewrite, tuple(invocables.values())
+
+
 def _run_single_phase_to_provider_boundary(
     function,
     *,
@@ -265,6 +335,106 @@ def test_common_direct_block_load_store_lowers_to_private_factories():
     assert Counter(factory for factory, _ in calls) == Counter(expected)
 
 
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("operation", ("load", "store"))
+@pytest.mark.parametrize(
+    ("algorithm", "storage_free", "mutates_store_payload"),
+    (
+        ("direct", True, False),
+        ("striped", True, False),
+        ("vectorize", True, False),
+        ("transpose", False, True),
+        ("warp_transpose", False, True),
+        ("warp_transpose_timesliced", False, True),
+    ),
+)
+def test_group_planner_selects_algorithm_storage_provider(
+    qualified, operation, algorithm, storage_free, mutates_store_payload
+):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+    from cuda.coop.numba_mlir._lowering import _load_store
+
+    module = numba_coop if qualified else coop
+
+    if operation == "load":
+
+        def memory(values):
+            payload = module.ThreadData(2, dtype=types.int32)
+            module.load(
+                module.this_block(),
+                values,
+                payload,
+                algorithm=algorithm,
+            )
+
+    else:
+
+        def memory(values):
+            payload = module.ThreadData(2, dtype=types.int32)
+            module.store(
+                module.this_block(),
+                values,
+                payload,
+                algorithm=algorithm,
+            )
+
+    array_type = types.Array(types.int32, 1, "C")
+    func_ir, planner = _plan(memory, arg_types=(array_type,))
+    assert planner.run()
+
+    expected = getattr(
+        _load_store,
+        operation if storage_free else f"_{operation}_with_storage",
+    )
+    calls = [
+        call
+        for factory, call in _planned_factory_calls(func_ir, ir)
+        if factory is expected
+    ]
+    assert len(calls) == 1
+    preserved_payloads = {
+        inst.target.name
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+        and "store_preserved_value_payload" in inst.target.name
+    }
+    assert bool(preserved_payloads) is (operation == "store" and mutates_store_payload)
+
+
+def test_qualified_store_recovers_keyword_local_array_extent():
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda.coop.numba_mlir._lowering import _load_store
+
+    def memory(values):
+        payload = cuda.local.array(shape=2, dtype=types.int32)
+        numba_coop.store(
+            numba_coop.this_block(),
+            values,
+            payload,
+            algorithm="transpose",
+        )
+
+    array_type = types.Array(types.int32, 1, "C")
+    func_ir, planner = _plan(memory, arg_types=(array_type,))
+    assert planner.run()
+
+    calls = [
+        call
+        for factory, call in _planned_factory_calls(func_ir, ir)
+        if factory is _load_store._store_with_storage
+    ]
+    assert len(calls) == 1
+    assert len(calls[0].args) == 2
+
+
 @pytest.mark.parametrize("qualified", [False, True], ids=["portable", "qualified"])
 @pytest.mark.parametrize(
     "group_factory",
@@ -313,7 +483,8 @@ def test_nonblock_load_returns_typed_unsupported_plan_before_compile(
         planner.run()
 
 
-def test_direct_load_store_accept_temp_storage_without_using_it():
+@pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize"))
+def test_storage_free_load_store_accept_temp_storage_without_using_it(algorithm):
     pytest.importorskip("numba_cuda_mlir")
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -348,18 +519,21 @@ def test_direct_load_store_accept_temp_storage_without_using_it():
             coop.this_block(),
             source,
             output,
+            algorithm=algorithm,
             temp_storage=shared_storage,
         )
         coop.store(
             coop.this_block(),
             destination,
             loaded,
+            algorithm=algorithm,
             temp_storage=exclusive_storage,
         )
         coop.load(
             coop.this_block(),
             source,
             extra_output,
+            algorithm=algorithm,
             temp_storage=oversized_storage,
         )
 
@@ -392,28 +566,184 @@ def test_direct_load_store_accept_temp_storage_without_using_it():
     invocable_calls = [call for factory, call in calls if factory is invocable]
     assert len(invocable_calls) == 3
     assert all(len(call.args) == 2 for call in invocable_calls)
-    resolver = object.__new__(CoopSinglePhaseRewrite)
-    resolver._func_ir = func_ir
-    resolved_calls = []
-    for block in func_ir.blocks.values():
-        resolver._block_defs = {
-            inst.target.name: inst.value
-            for inst in block.body
-            if isinstance(inst, ir.Assign)
-        }
-        resolved_calls.extend(
-            resolver._resolve_python_value(inst.value.func)
-            for inst in block.body
-            if isinstance(inst, ir.Assign)
-            and isinstance(inst.value, ir.Expr)
-            and inst.value.op == "call"
-        )
+    resolved_calls = _resolved_python_call_targets(func_ir, ir)
     assert cuda.shared.array not in resolved_calls
     assert cuda.syncthreads not in resolved_calls
     assert cuda.syncwarp not in resolved_calls
     assert rewrite._temp_storage_global_plan is None
     assert rewrite._temp_storage_backing_var is None
     assert rewrite._temp_storage_plans == {}
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    ("storage_kind", "expected_size", "expected_barriers"),
+    (
+        ("implicit", 64, 2),
+        ("shared", 64, 2),
+        ("exclusive", 128, 0),
+        ("unsized", 64, 2),
+    ),
+)
+def test_transpose_storage_contract_reaches_whole_function_rewrite(
+    qualified, storage_kind, expected_size, expected_barriers
+):
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+
+    module = numba_coop if qualified else coop
+
+    if storage_kind == "implicit":
+
+        def memory(source, destination):
+            output = module.ThreadData(2, dtype=types.int32)
+            loaded = module.load(
+                module.this_block(),
+                source,
+                output,
+                algorithm="transpose",
+            )
+            module.store(
+                module.this_block(),
+                destination,
+                loaded,
+                algorithm="transpose",
+            )
+
+    elif storage_kind == "shared":
+
+        def memory(source, destination):
+            storage = module.TempStorage(
+                64,
+                alignment=16,
+                auto_sync=True,
+                sharing="shared",
+            )
+            output = module.ThreadData(2, dtype=types.int32)
+            loaded = module.load(
+                module.this_block(),
+                source,
+                output,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+            module.store(
+                module.this_block(),
+                destination,
+                loaded,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+
+    elif storage_kind == "exclusive":
+
+        def memory(source, destination):
+            storage = module.TempStorage(
+                128,
+                alignment=16,
+                auto_sync=False,
+                sharing="exclusive",
+            )
+            output = module.ThreadData(2, dtype=types.int32)
+            loaded = module.load(
+                module.this_block(),
+                source,
+                output,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+            module.store(
+                module.this_block(),
+                destination,
+                loaded,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+
+    else:
+
+        def memory(source, destination):
+            storage = module.TempStorage()
+            output = module.ThreadData(2, dtype=types.int32)
+            loaded = module.load(
+                module.this_block(),
+                source,
+                output,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+            module.store(
+                module.this_block(),
+                destination,
+                loaded,
+                algorithm="transpose",
+                temp_storage=storage,
+            )
+
+    array_type = types.Array(types.int32, 1, "C")
+    func_ir, rewrite, invocables = _rewrite_planned_movement(
+        memory,
+        arg_types=(array_type, array_type),
+    )
+    targets = _resolved_python_call_targets(func_ir, ir)
+    invocable_calls = [
+        call
+        for factory, call in _planned_factory_calls(func_ir, ir)
+        if factory in invocables
+    ]
+
+    assert targets.count(cuda.shared.array) == 1
+    assert targets.count(cuda.syncthreads) == expected_barriers
+    assert targets.count(cuda.syncwarp) == 0
+    assert len(invocable_calls) == 2
+    assert all(len(call.args) == 3 for call in invocable_calls)
+    assert rewrite._temp_storage_backing_emitted
+    assert rewrite._temp_storage_global_plan.total_size == expected_size
+    assert rewrite._temp_storage_global_plan.max_alignment == 16
+    assert {invocable.temp_storage_bytes for invocable in invocables} == {48, 64}
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(
+    ("size_in_bytes", "alignment", "error"),
+    (
+        (47, 16, "smaller than required"),
+        (64, 8, "alignment is smaller"),
+    ),
+    ids=("undersized", "misaligned"),
+)
+def test_transpose_storage_contract_rejects_invalid_layout_before_codegen(
+    qualified, size_in_bytes, alignment, error
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewriteError
+
+    module = numba_coop if qualified else coop
+
+    def memory(source):
+        storage = module.TempStorage(
+            size_in_bytes,
+            alignment=alignment,
+            sharing="shared",
+        )
+        output = module.ThreadData(2, dtype=types.int32)
+        return module.load(
+            module.this_block(),
+            source,
+            output,
+            algorithm="transpose",
+            temp_storage=storage,
+        )
+
+    array_type = types.Array(types.int32, 1, "C")
+    with pytest.raises(CoopSinglePhaseRewriteError, match=error):
+        _rewrite_planned_movement(memory, arg_types=(array_type,))
 
 
 def _parameter_names(specialization):
@@ -1427,33 +1757,58 @@ def test_public_algorithms_require_plain_strings(qualified, operation):
 
 @pytest.mark.parametrize("operation", ["load", "store"])
 @pytest.mark.parametrize(
-    "algorithm",
+    ("algorithm", "storage_free"),
     [
-        "striped",
-        "vectorize",
-        "transpose",
-        "warp_transpose",
-        "warp_transpose_timesliced",
+        ("direct", True),
+        ("striped", True),
+        ("vectorize", True),
+        ("transpose", False),
+        ("warp_transpose", False),
+        ("warp_transpose_timesliced", False),
     ],
 )
-def test_non_direct_block_algorithms_fail_before_provider_materialization(
-    monkeypatch, operation, algorithm
+def test_block_algorithms_use_their_declared_provider(
+    monkeypatch, operation, algorithm, storage_free
 ):
     from numba_cuda_mlir import types
 
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
     from cuda.coop.numba_mlir._lowering import _load_store
 
+    materializations = []
     monkeypatch.setattr(
         _load_store.NumbaMlirCoreAdapter,
         "materialize",
-        lambda *args, **kwargs: pytest.fail(
-            "unsupported algorithm reached provider materialization"
+        lambda _self, specialization, **kwargs: (
+            materializations.append((specialization, kwargs)) or specialization
         ),
     )
-    factory = getattr(_load_store, operation)
+    monkeypatch.setattr(
+        _load_store,
+        "make_invocable_from_specialization",
+        lambda specialization: specialization,
+    )
+    factory = getattr(
+        _load_store,
+        operation if storage_free else f"_{operation}_with_storage",
+    )
 
-    with pytest.raises(NotImplementedError, match="only 'direct'"):
-        factory(types.int32, threads_per_block=32, algorithm=algorithm)
+    specialization = factory(
+        types.int32,
+        threads_per_block=32,
+        algorithm=algorithm,
+    )
+
+    assert specialization.metadata["algorithm"] == algorithm
+    assert len(materializations) == 1
+    assert materializations[0][1]["storage_abi"] is (
+        StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER
+    )
+    assert materializations[0][1]["execution_scope"] is SynchronizationScope.BLOCK
+    assert materializations[0][1]["synchronization_scope"] is (
+        SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
+    )
 
 
 @pytest.mark.parametrize("operation", ["load", "store"])
