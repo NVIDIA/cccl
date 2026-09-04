@@ -342,10 +342,20 @@ def test_block_load_store_adapters_preserve_offset_overloads():
     pytest.importorskip("numba_cuda_mlir")
     from numba_cuda_mlir import types
 
+    from cuda.coop._core import ArgumentBinding
     from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
     from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+    from cuda.coop.numba_mlir._lowering._load_store import _load_store_value_abis
 
-    load = NumbaMlirCoreAdapter().materialize(
+    load = NumbaMlirCoreAdapter(
+        value_abis=_load_store_value_abis(
+            dtype=types.int32,
+            block_dim=(16, 2, 1),
+            items_per_thread=3,
+            valid_items=ArgumentBinding.runtime(),
+            oob_default=ArgumentBinding.runtime(),
+        )
+    ).materialize(
         make_block_load_spec(
             dtype=types.int32,
             block_dim=(16, 2, 1),
@@ -363,13 +373,13 @@ def test_block_load_store_adapters_preserve_offset_overloads():
         [
             "Pointer",
             "Array",
-            "CheckedValidItems",
+            "BoundedInteger",
             "ExactValue",
         ],
         [
             "Pointer",
             "Array",
-            "CheckedValidItems",
+            "BoundedInteger",
             "ExactValue",
             "PointerOffset",
         ],
@@ -473,9 +483,17 @@ def test_runtime_valid_items_is_checked_before_cub_integer_narrowing():
     from cuda.coop._core import ArgumentBinding
     from cuda.coop._core.block import make_block_load_spec
     from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
-    from cuda.coop.numba_mlir._types import CheckedValidItems, algo_coalesce_key
+    from cuda.coop.numba_mlir._lowering._load_store import _load_store_value_abis
+    from cuda.coop.numba_mlir._types import BoundedInteger, algo_coalesce_key
 
-    adapter = NumbaMlirCoreAdapter()
+    adapter = NumbaMlirCoreAdapter(
+        value_abis=_load_store_value_abis(
+            dtype=types.int32,
+            block_dim=(16, 2, 1),
+            items_per_thread=3,
+            valid_items=ArgumentBinding.runtime(),
+        )
+    )
     load = adapter.materialize(
         make_block_load_spec(
             dtype=types.int32,
@@ -487,9 +505,10 @@ def test_runtime_valid_items_is_checked_before_cub_integer_narrowing():
         **_block_provider_metadata(),
     )
     valid_items = load.parameters[0][-1]
-    assert isinstance(valid_items, CheckedValidItems)
+    assert isinstance(valid_items, BoundedInteger)
     assert valid_items.dtype() == types.int64
-    assert valid_items.tile_items == 96
+    assert valid_items.provider_dtype == types.int32
+    assert (valid_items.minimum, valid_items.maximum) == (0, 96)
     assert all(
         valid_items.accepts_actual_type(dtype, None)
         for dtype in (
@@ -521,7 +540,15 @@ def test_runtime_valid_items_is_checked_before_cub_integer_narrowing():
     assert source.index(narrowing) < source.index(invocation)
     assert "checked_param_2);" in source
 
-    narrower_tile = adapter.materialize(
+    narrower_adapter = NumbaMlirCoreAdapter(
+        value_abis=_load_store_value_abis(
+            dtype=types.int32,
+            block_dim=(16, 1, 1),
+            items_per_thread=3,
+            valid_items=ArgumentBinding.runtime(),
+        )
+    )
+    narrower_tile = narrower_adapter.materialize(
         make_block_load_spec(
             dtype=types.int32,
             block_dim=(16, 1, 1),
@@ -532,6 +559,133 @@ def test_runtime_valid_items_is_checked_before_cub_integer_narrowing():
         **_block_provider_metadata(),
     )
     assert algo_coalesce_key(load) != algo_coalesce_key(narrower_tile)
+    assert load.mangled_name(load.parameters[0]) != narrower_tile.mangled_name(
+        narrower_tile.parameters[0]
+    )
+
+
+def test_arbitrary_primitive_declares_bounded_and_exact_value_abis():
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core import (
+        FLOAT32,
+        INT32,
+        Algorithm,
+        SynchronizationScope,
+        Value,
+    )
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
+    from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+    from cuda.coop.numba_mlir._types import (
+        BoundedInteger,
+        ExactValue,
+        algo_coalesce_key,
+    )
+
+    specialization = Algorithm(
+        struct_name="FuturePrimitive",
+        method_name="Run",
+        c_name="test_future_primitive",
+        includes=(),
+        template_parameters=(),
+        parameters=(
+            (
+                Value(INT32, name="remaining"),
+                Value(FLOAT32, name="fill"),
+            ),
+        ),
+    ).specialize({}, metadata={"primitive": "not_load_or_store"})
+    bounded = BoundedInteger(types.int32, minimum=-2, maximum=7)
+    exact = ExactValue(types.float32)
+    algorithm = NumbaMlirCoreAdapter(
+        value_abis={"remaining": bounded, "fill": exact}
+    ).materialize(
+        specialization,
+        storage_abi=StorageABI.NONE,
+        execution_scope=SynchronizationScope.NONE,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+
+    assert algorithm.parameters == [[bounded, exact]]
+    assert bounded.provider_dtype == types.int32
+    assert bounded.dtype() == types.int64
+    assert bounded.accepts_actual_type(types.uint32, None)
+    assert not bounded.accepts_actual_type(types.uint64, None)
+    assert exact.accepts_actual_type(types.float32, None)
+    assert not exact.accepts_actual_type(types.float64, None)
+
+    source = algorithm._source_code()[0]
+    guard = "if (param_0 < -2 || param_0 > 7)"
+    trap = 'asm volatile("trap;" : : :);'
+    narrowing = (
+        "::cuda::std::int32_t checked_param_0 = "
+        "static_cast<::cuda::std::int32_t>(param_0);"
+    )
+    assert source.index(guard) < source.index(trap) < source.index(narrowing)
+    assert "checked_param_0, param_1);" in source
+
+    wider = NumbaMlirCoreAdapter(
+        value_abis={
+            "remaining": BoundedInteger(types.int32, minimum=-2, maximum=8),
+            "fill": exact,
+        }
+    ).materialize(
+        specialization,
+        storage_abi=StorageABI.NONE,
+        execution_scope=SynchronizationScope.NONE,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+    assert algo_coalesce_key(algorithm) != algo_coalesce_key(wider)
+    assert algorithm.mangled_name(algorithm.parameters[0]) != wider.mangled_name(
+        wider.parameters[0]
+    )
+
+
+def test_value_abi_declarations_fail_closed_during_materialization():
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core import INT32, Algorithm, Pointer, SynchronizationScope, Value
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
+    from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+    from cuda.coop.numba_mlir._types import ExactValue
+
+    def specialization(parameter):
+        return Algorithm(
+            struct_name="FuturePrimitive",
+            method_name="Run",
+            c_name="test_value_abi_validation",
+            includes=(),
+            template_parameters=(),
+            parameters=((parameter,),),
+        ).specialize({})
+
+    def materialize(parameter, value_abis):
+        return NumbaMlirCoreAdapter(value_abis=value_abis).materialize(
+            specialization(parameter),
+            storage_abi=StorageABI.NONE,
+            execution_scope=SynchronizationScope.NONE,
+            synchronization_scope=SynchronizationScope.NONE,
+        )
+
+    with pytest.raises(ValueError, match="unknown .* value ABI"):
+        materialize(Value(INT32, name="value"), {"missing": ExactValue(types.int32)})
+    with pytest.raises(ValueError, match="require scalar Value parameters"):
+        materialize(
+            Pointer(INT32, name="value"),
+            {"value": ExactValue(types.int32)},
+        )
+    with pytest.raises(ValueError, match="provider dtypes do not match"):
+        materialize(
+            Value(INT32, name="value"),
+            {"value": ExactValue(types.float32)},
+        )
+    with pytest.raises(ValueError, match="output roles do not match"):
+        materialize(
+            Value(INT32, name="value", is_output=True),
+            {"value": ExactValue(types.int32)},
+        )
+    with pytest.raises(TypeError, match="backend Value instances"):
+        materialize(Value(INT32, name="value"), {"value": object()})
 
 
 def test_runtime_offsets_reject_bool_float_and_uint64_types():
