@@ -1980,7 +1980,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
        ", .high_bin_cache_count_replicas = 1, .high_bin_cache_cuckoo_max_bins = 262144"
        ", .high_bin_pixels_per_thread = 4, .high_bin_threads_per_block = 0"
        ", .high_bin_interpolation_min_bins = 512, .high_bin_min_histogram_bytes = 0"
-       ", .high_bin_blocks_per_sm = 0 }");
+       ", .high_bin_blocks_per_sm = 0, .high_bin_grid_pixels_per_block = 0 }");
 
   constexpr auto high_bin_policy = [] {
     auto policy =
@@ -1990,5 +1990,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   }();
   STATIC_REQUIRE(high_bin_policy.high_bin_threads() == 512);
   STATIC_REQUIRE(p1.high_bin_threads() == p1.threads_per_block);
+  STATIC_REQUIRE(high_bin_policy.high_bin_grid_pixels() == 512 * high_bin_policy.high_bin_pixels_per_thread);
+  STATIC_REQUIRE(p1.high_bin_grid_pixels() == p1.high_bin_threads() * p1.high_bin_pixels_per_thread);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
