@@ -157,6 +157,8 @@ ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
 )
 IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
+SignedIntegerScalar: TypeAlias = int | numpy.signedinteger[Any] | CompilerIntegerLike
+IntegralScalar: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
 ThreadGroupQueryScalar: TypeAlias = (
     numpy.int8
     | numpy.uint8
