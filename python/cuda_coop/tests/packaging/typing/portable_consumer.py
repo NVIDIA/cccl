@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Strict consumer of the portable Block Load and Store surface."""
+"""Strict consumer of the portable cooperative data-movement surface."""
 
 from __future__ import annotations
 
@@ -75,4 +75,16 @@ def check_portable_surface(source: object, destination: object) -> None:
     assert_type(
         coop.store(logical_warp, destination, values, algorithm="striped"),
         None,
+    )
+    assert_type(
+        coop.exchange(block, values, mode="blocked_to_striped"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exchange(logical_warp, values, mode="striped_to_blocked"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.shuffle(block, values, mode="up", distance=1),
+        coop.ThreadDataLike[np.int16],
     )

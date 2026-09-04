@@ -32,16 +32,33 @@ _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/_typing.pyi",
     "cuda/coop/py.typed",
     "cuda/coop/_core/api/__init__.pyi",
+    "cuda/coop/_core/api/exchange.pyi",
     "cuda/coop/_core/api/load_store.pyi",
+    "cuda/coop/_core/api/shuffle.pyi",
     "cuda/coop/_core/api/temp_storage.pyi",
     "cuda/coop/_core/api/thread_data.pyi",
     "cuda/coop/_core/api/thread_group.pyi",
+    "cuda/coop/_core/block/exchange.py",
+    "cuda/coop/_core/block/shuffle.py",
+    "cuda/coop/_core/group/exchange.py",
+    "cuda/coop/_core/group/shuffle.py",
     "cuda/coop/_core/warp/__init__.py",
+    "cuda/coop/_core/warp/exchange.py",
     "cuda/coop/_core/warp/load_store.py",
     "cuda/coop/numba_mlir/__init__.py",
     "cuda/coop/numba_mlir/__init__.pyi",
+    "cuda/coop/numba_mlir/_compiler/_group_exchange.py",
+    "cuda/coop/numba_mlir/_compiler/_group_shuffle.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_exchange.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_shuffle.py",
+    "cuda/coop/numba_mlir/_group_exchange.py",
+    "cuda/coop/numba_mlir/_group_exchange.pyi",
     "cuda/coop/numba_mlir/_group_load_store.py",
     "cuda/coop/numba_mlir/_group_load_store.pyi",
+    "cuda/coop/numba_mlir/_group_shuffle.py",
+    "cuda/coop/numba_mlir/_group_shuffle.pyi",
+    "cuda/coop/numba_mlir/_lowering/_exchange.py",
+    "cuda/coop/numba_mlir/_lowering/_shuffle.py",
     "cuda/coop/numba_mlir/_temp_storage.py",
     "cuda/coop/numba_mlir/_temp_storage.pyi",
     "cuda/coop/numba_mlir/_thread_data.py",
@@ -53,8 +70,11 @@ _REQUIRED_PACKAGE_MEMBERS = {
 _REQUIRED_HEADER_MEMBERS = {
     "cuda/coop/_headers/cccl-bundle-provenance.json",
     "cuda/coop/_headers/include/cub/version.cuh",
+    "cuda/coop/_headers/include/cub/block/block_exchange.cuh",
     "cuda/coop/_headers/include/cub/block/block_load.cuh",
+    "cuda/coop/_headers/include/cub/block/block_shuffle.cuh",
     "cuda/coop/_headers/include/cub/block/block_store.cuh",
+    "cuda/coop/_headers/include/cub/warp/warp_exchange.cuh",
     "cuda/coop/_headers/include/cub/warp/warp_load.cuh",
     "cuda/coop/_headers/include/cub/warp/warp_store.cuh",
     "cuda/coop/_headers/include/cuda/experimental/coop.cuh",
@@ -89,6 +109,7 @@ _FORBIDDEN_PACKAGE_MEMBERS = {
 
 _ALLOWED_WARP_PACKAGE_MEMBERS = {
     "cuda/coop/_core/warp/__init__.py",
+    "cuda/coop/_core/warp/exchange.py",
     "cuda/coop/_core/warp/load_store.py",
 }
 
@@ -183,9 +204,8 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
             archive.read(metadata_name)
         )
         assert metadata["Name"] == "cuda-coop"
-        assert (
-            metadata["Summary"]
-            == "Cooperative CUDA Block and Warp Load and Store for Python DSLs"
+        assert metadata["Summary"] == (
+            "Cooperative CUDA group primitives for Python DSLs"
         )
         assert metadata["Requires-Python"] == ">=3.10"
         assert set(metadata.get_all("Provides-Extra", [])) == {
