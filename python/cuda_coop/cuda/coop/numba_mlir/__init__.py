@@ -5,21 +5,21 @@
 """Expose cooperative operations and activate their Numba-CUDA-MLIR planner.
 
 Import this qualified API on the host before compiling kernels. Importing it
-loads the supported compiler runtime and registers the whole-function planner.
-Load, Store, and ThreadData are kernel constructs. Group descriptors can also
-be created on the host and used as kernel globals. Construct TempStorage
-inside each kernel. During compilation, the compiler rebuilds the descriptor
-from its compile-time constant arguments and validates them. The compiler
-rejects a descriptor that comes from a module global. The ``local`` and
-``shared`` array namespaces are resolved and cached on first access.
+loads the supported compiler runtime and registers the whole-function
+planner. Load, Store, Reduce, Sum, and ThreadData are kernel
+constructs. Group descriptors can also be created on the host and used as
+kernel globals. Construct TempStorage inside each kernel. During
+compilation, the compiler rebuilds the descriptor from its compile-time
+constant arguments and validates them. The compiler rejects a descriptor
+that comes from a module global. The ``local`` and ``shared`` namespaces and
+the Reduce and Sum markers load on first access.
 """
 
 import importlib
-from typing import TYPE_CHECKING
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import _initialize_runtime_hooks
-from ._group._load_store import load, store
+from ._group_load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -33,9 +33,6 @@ from ._thread_group import (
     this_warp,
 )
 
-if TYPE_CHECKING:
-    from ._thread_data import local, shared
-
 __all__ = [
     "Hierarchy",
     "TempStorage",
@@ -46,8 +43,10 @@ __all__ = [
     "ThreadHierarchy",
     "load",
     "local",
+    "reduce",
     "shared",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -57,7 +56,23 @@ __all__ = [
 
 
 def __getattr__(name):
-    """Resolve and cache the runtime array namespaces on first access."""
+    """Load optional operation markers and allocation helpers on first use.
+
+    Cache the resolved export in this module so later access reuses the same
+    callable. This keeps their imports out of basic namespace initialization.
+    Unknown names raise ``AttributeError`` as normal module lookup requires.
+    """
+
+    if name in {"reduce", "sum"}:
+        module_name = {
+            "reduce": "_group_reduce",
+            "sum": "_group_reduce",
+        }[name]
+        value = getattr(
+            importlib.import_module(f"{__name__}.{module_name}"), name
+        )
+        globals()[name] = value
+        return value
     if name in {"local", "shared"}:
         value = getattr(
             importlib.import_module(f"{__name__}._thread_data"), name
