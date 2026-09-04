@@ -26,6 +26,13 @@ class ThreadGroup(PortableThreadGroup):
         return super().group_by(count, exhaustive=exhaustive)
 
 
+# These names support explicit imports used by the adjacent typing stubs. They
+# remain private to this module rather than expanding the qualified facade.
+ReductionGroup = ThreadGroup
+BlockGroup = ThreadGroup
+WarpGroup = ThreadGroup
+
+
 def _make_group(kind: str) -> ThreadGroup:
     return make_thread_group(
         kind,
