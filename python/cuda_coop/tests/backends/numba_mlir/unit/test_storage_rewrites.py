@@ -264,7 +264,9 @@ def test_temp_storage_aliases_from_one_constructor_are_accepted():
         for block in func_ir.blocks.values()
         for inst in block.body
     )
-    assert cuda.shared.array in _call_targets(func_ir)
+    targets = _call_targets(func_ir)
+    assert cuda.shared.array not in targets
+    assert cuda.syncthreads not in targets
 
 
 def test_temp_storage_phi_rejects_distinct_constructors_before_compile():
@@ -368,7 +370,7 @@ def test_mixed_temp_storage_primitive_and_escape_fails_before_compile():
         )
 
 
-def test_implicit_storage_uses_the_explicit_abi_and_automatic_sync():
+def test_direct_provider_uses_no_implicit_storage_or_automatic_sync():
     from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
 
     def kernel(source):
@@ -385,9 +387,9 @@ def test_implicit_storage_uses_the_explicit_abi_and_automatic_sync():
     func_ir, rewrite = _rewrite_with_fake_invocable(kernel, invocable)
     targets = _call_targets(func_ir)
 
-    assert targets.count(cuda.shared.array) == 1
-    assert targets.count(cuda.syncthreads) == 1
-    assert rewrite._temp_storage_global_plan.total_size == 64
+    assert cuda.shared.array not in targets
+    assert cuda.syncthreads not in targets
+    assert rewrite._temp_storage_global_plan is None
     resolver = object.__new__(CoopSinglePhaseRewrite)
     resolver._func_ir = func_ir
     invocable_calls = []
@@ -406,10 +408,10 @@ def test_implicit_storage_uses_the_explicit_abi_and_automatic_sync():
             and resolver._resolve_python_value(inst.value.func) is invocable
         )
     assert len(invocable_calls) == 1
-    assert len(invocable_calls[0].args) == 3
+    assert len(invocable_calls[0].args) == 2
 
 
-def test_implicit_and_explicit_storage_emit_one_shared_backing():
+def test_direct_provider_ignores_implicit_and_explicit_storage():
     from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
 
     def kernel(source_a, source_b):
@@ -436,9 +438,9 @@ def test_implicit_and_explicit_storage_emit_one_shared_backing():
     func_ir, rewrite = _rewrite_with_fake_invocable(kernel, invocable)
     targets = _call_targets(func_ir)
 
-    assert targets.count(cuda.shared.array) == 1
-    assert targets.count(cuda.syncthreads) == 2
-    assert rewrite._temp_storage_global_plan.total_size == 128
+    assert cuda.shared.array not in targets
+    assert cuda.syncthreads not in targets
+    assert rewrite._temp_storage_global_plan is None
 
 
 def test_getitem_temp_storage_syntax_is_not_an_accepted_descriptor_use():
