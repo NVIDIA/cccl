@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import ast
 import importlib
 import importlib.util
 import inspect
@@ -14,6 +15,8 @@ import cuda.coop as portable_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _temp_storage, _thread_data
 from cuda.coop.numba_mlir._compiler import _activation, _numba_mlir_compat
+
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 _PORTABLE_EXPORTS = [
     "__version__",
@@ -33,11 +36,11 @@ _PORTABLE_EXPORTS = [
     "store",
 ]
 _QUALIFIED_EXPORTS = [
-    "BlockLoadAlgorithm",
-    "BlockStoreAlgorithm",
     "Hierarchy",
     "TempStorage",
+    "TempStorageLike",
     "ThreadData",
+    "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
     "load",
@@ -74,7 +77,9 @@ def test_public_exports_are_only_the_load_store_foundation():
 
     excluded_exports = {
         "BlockReduceAlgorithm",
+        "BlockLoadAlgorithm",
         "BlockScanAlgorithm",
+        "BlockStoreAlgorithm",
         "StatefulFunction",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
@@ -96,6 +101,48 @@ def test_public_exports_are_only_the_load_store_foundation():
 
     coop_root = Path(portable_coop.__file__).resolve().parent
     assert not (coop_root / "cutlass").exists()
+
+
+def test_qualified_surface_is_portable_plus_backend_extensions():
+    assert set(coop.__all__) - set(portable_coop.__all__) == {"local", "shared"}
+    assert set(portable_coop.__all__) - set(coop.__all__) == {"__version__"}
+
+    def call_shape(function):
+        return tuple(
+            (name, parameter.kind, parameter.default)
+            for name, parameter in inspect.signature(function).parameters.items()
+        )
+
+    for operation in ("load", "store"):
+        assert call_shape(getattr(coop, operation)) == call_shape(
+            getattr(portable_coop, operation)
+        )
+
+    coop_root = Path(portable_coop.__file__).resolve().parent
+
+    def stub_signatures(path):
+        module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        return [
+            (node.name, ast.dump(node.args), ast.dump(node.returns))
+            for node in module.body
+            if isinstance(node, ast.FunctionDef) and node.name in {"load", "store"}
+        ]
+
+    assert stub_signatures(coop_root / "numba_mlir" / "_group_load_store.pyi") == (
+        stub_signatures(coop_root / "_core" / "api" / "load_store.pyi")
+    )
+
+
+def test_stub_only_group_aliases_exist_at_runtime_without_becoming_exports():
+    from cuda.coop._core.api import thread_group as portable_groups
+    from cuda.coop.numba_mlir import _thread_group as qualified_groups
+
+    for name in ("MemoryGroup", "ReductionGroup", "BlockGroup", "WarpGroup"):
+        assert getattr(portable_groups, name) is portable_groups.ThreadGroup
+        assert name not in portable_groups.__all__
+    for name in ("ReductionGroup", "BlockGroup", "WarpGroup"):
+        assert getattr(qualified_groups, name) is qualified_groups.ThreadGroup
+        assert name not in qualified_groups.__all__
 
 
 @pytest.mark.parametrize("module_name", _EXCLUDED_BACKEND_MODULES)

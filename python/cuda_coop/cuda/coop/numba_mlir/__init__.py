@@ -6,6 +6,7 @@
 
 import importlib
 
+from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import _initialize_runtime_hooks
 from ._group_load_store import load, store
 from ._temp_storage import TempStorage
@@ -22,11 +23,11 @@ from ._thread_group import (
 )
 
 __all__ = [
-    "BlockLoadAlgorithm",
-    "BlockStoreAlgorithm",
     "Hierarchy",
     "TempStorage",
+    "TempStorageLike",
     "ThreadData",
+    "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
     "load",
@@ -44,10 +45,6 @@ __all__ = [
 def __getattr__(name):
     if name in {"local", "shared"}:
         value = getattr(importlib.import_module(f"{__name__}._thread_data"), name)
-        globals()[name] = value
-        return value
-    if name in {"BlockLoadAlgorithm", "BlockStoreAlgorithm"}:
-        value = getattr(importlib.import_module(f"{__name__}._enums"), name)
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

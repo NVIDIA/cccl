@@ -25,10 +25,6 @@ from .._compiler._parameters import (
     _validate_static_oob_default,
     normalize_dim_param,
 )
-from .._enums import (
-    BlockLoadAlgorithm,
-    BlockStoreAlgorithm,
-)
 from .._types import (
     BoundedInteger,
     ExactValue,
@@ -50,29 +46,30 @@ def _positive_int(value, *, name: str) -> int:
     return value
 
 
-def _resolve_algorithm(algorithm, enum_type, primitive_name: str) -> str:
-    if isinstance(algorithm, bool):
-        raise TypeError(f"{primitive_name} algorithm must not be bool")
-    member = algorithm if isinstance(algorithm, enum_type) else None
-    if member is None and isinstance(algorithm, str):
-        member = enum_type.__members__.get(algorithm.strip().upper())
-    if member is None:
-        try:
-            member = enum_type(operator.index(algorithm))
-        except (TypeError, ValueError):
-            pass
-    if member is not None and member is enum_type.DIRECT:
-        return str(member)
-    if member is not None:
+def _resolve_algorithm(algorithm, primitive_name: str) -> str:
+    if not isinstance(algorithm, str):
+        raise TypeError(f"{primitive_name} algorithm must be a string")
+    token = algorithm.strip().lower().replace("-", "_")
+    allowed = {
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+        "warp_transpose",
+        "warp_transpose_timesliced",
+    }
+    if token == "direct":
+        return token
+    if token in allowed:
         raise NotImplementedError(
-            f"{primitive_name} algorithm {member.name.lower()!r} is not "
+            f"{primitive_name} algorithm {token!r} is not "
             "executable with the Numba-CUDA-MLIR backend; only 'direct' is "
             "currently supported"
         )
-    allowed = sorted(member.name.lower() for member in enum_type)
+    choices = ", ".join(sorted(allowed))
     raise ValueError(
         f"Unsupported {primitive_name} algorithm {algorithm!r}; expected one "
-        f"of {allowed} or {enum_type.__name__}"
+        f"of: {choices}"
     )
 
 
@@ -140,7 +137,7 @@ def load(
             _validate_static_oob_default(oob_default_binding.value, dtype)
         )
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
-    algorithm = _resolve_algorithm(algorithm, BlockLoadAlgorithm, "block load")
+    algorithm = _resolve_algorithm(algorithm, "block load")
     adapter = NumbaMlirCoreAdapter(
         value_abis=_load_store_value_abis(
             dtype=dtype,
@@ -193,7 +190,7 @@ def store(
     block_dim = normalize_dim_param(threads_per_block)
     dtype = _validate_common_numeric_dtype(dtype, operation="store")
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
-    algorithm = _resolve_algorithm(algorithm, BlockStoreAlgorithm, "block store")
+    algorithm = _resolve_algorithm(algorithm, "block store")
     adapter = NumbaMlirCoreAdapter(
         value_abis=_load_store_value_abis(
             dtype=dtype,
