@@ -17,6 +17,7 @@ from .._types import (
     Pointer,
     PythonOperator,
     Reference,
+    StatefulOperator,
     TemplateParameter,
     TempStorageParameter,
 )
@@ -72,6 +73,18 @@ class BlockScanSpec:
         return self.call.items_per_thread
 
     @property
+    def has_initial_value(self) -> bool:
+        return self.call.initial_value is not None
+
+    @property
+    def has_block_aggregate(self) -> bool:
+        return self.call.aggregate
+
+    @property
+    def has_prefix_callback(self) -> bool:
+        return self.call.prefix_callback is not None
+
+    @property
     def method_name(self) -> str:
         return self.specialization.method_name
 
@@ -115,6 +128,8 @@ def _block_scan_parameters(call: ScanSemantics) -> tuple[Any, ...]:
         parameters.append(call.initial_value)
     if call.scan_operator is not None:
         parameters.append(call.scan_operator)
+    if call.prefix_callback is not None:
+        parameters.append(call.prefix_callback)
     if call.aggregate:
         parameters.append(
             Pointer(
@@ -139,6 +154,7 @@ def make_block_scan_spec(
     value_kind: str | ScanValueKind,
     scan_operator: CxxOperator | PythonOperator | None = None,
     initial_value: CxxFunction | Reference | None = None,
+    prefix_operator: PythonOperator | StatefulOperator | None = None,
     block_aggregate: bool = False,
 ) -> BlockScanSpec:
     """Build canonical BlockScan semantics from frontend-normalized inputs."""
@@ -159,6 +175,7 @@ def make_block_scan_spec(
         scan_operator=scan_operator,
         initial_value=initial_value,
         aggregate=block_aggregate,
+        prefix_callback=prefix_operator,
     )
     if call.initial_value is not None and call.scan_operator is None:
         raise ValueError(
@@ -205,6 +222,11 @@ def make_block_scan_spec(
                 None
                 if call.scan_operator is None
                 else type(call.scan_operator).__qualname__
+            ),
+            "prefix_callback": (
+                None
+                if call.prefix_callback is None
+                else type(call.prefix_callback).__qualname__
             ),
             "aggregate": call.aggregate,
             "aggregate_excludes_initial": call.aggregate,
