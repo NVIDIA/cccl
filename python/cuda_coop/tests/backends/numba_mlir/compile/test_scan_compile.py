@@ -130,7 +130,7 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
                 "items_per_thread": 3,
                 "value_kind": "array",
                 "mode": "exclusive",
-                "scan_op": "max",
+                "scan_op": "maximum",
                 "initial_value": ArgumentBinding.static(-7),
                 "block_aggregate": True,
                 "algorithm": "warp_scans",

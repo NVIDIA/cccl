@@ -261,6 +261,32 @@ coop.reduce(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking_commutative_only",
 )
+coop.BlockScanAlgorithm  # expected-error: [attr-defined]
+portable.scan(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    mode=object(),
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    algorithm=object(),
+)
+coop.inclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    scan_op=object(),
+)
+bad_portable_scan: np.int32 = portable.exclusive_scan(
+    portable_block,
+    np.int32(1),
+    initial_value=np.float32(0),  # expected-error: [arg-type]
+)
+bad_qualified_scan: portable.ThreadDataLike[np.int32] = coop.exclusive_scan(
+    qualified_block,
+    values,
+    initial_value=np.float32(0),  # expected-error: [arg-type]
+)
 portable.scan(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
