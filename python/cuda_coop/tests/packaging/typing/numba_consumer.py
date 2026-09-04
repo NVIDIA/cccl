@@ -217,6 +217,36 @@ def check_numba_surface(source: object, destination: object) -> None:
         np.int32,
     )
     assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op="max",
+            broadcast=False,
+            algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op=np.maximum,
+            broadcast=False,
+            algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op=operator.add,
+            broadcast=False,
+            algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
         coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
         np.int32,
     )
@@ -239,6 +269,17 @@ def check_numba_surface(source: object, destination: object) -> None:
             values,
             binary_op=_select_left_uint16,
             broadcast=False,
+            algorithm="warp_reductions",
         ),
         np.uint16,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op=_select_left_int32,
+            broadcast=False,
+            algorithm="raking",
+        ),
+        np.int32,
     )
