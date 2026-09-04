@@ -149,7 +149,7 @@ def _local_array_numpy_scan(source, output, preserved, aggregates):
         qualified_coop.this_block(),
         value,
         scan_op=np.maximum,
-        algorithm=qualified_coop.BlockScanAlgorithm.RAKING_MEMOIZE,
+        algorithm="raking_memoize",
         aggregate_output=aggregate,
     )
     for item in range(_ITEMS_PER_THREAD):

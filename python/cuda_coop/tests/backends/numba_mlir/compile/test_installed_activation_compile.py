@@ -99,6 +99,8 @@ _COMPILE_PROBE = textwrap.dedent(
     assert {"exchange", "reduce", "shuffle", "sum", *scan_names} <= set(
         qualified_coop.__all__
     )
+    assert "BlockScanAlgorithm" not in qualified_coop.__all__
+    assert not hasattr(qualified_coop, "BlockScanAlgorithm")
     assert callable(qualified_coop.exchange)
     assert callable(qualified_coop.shuffle)
     assert callable(qualified_coop.reduce)

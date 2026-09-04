@@ -277,11 +277,9 @@ class _ScanPlanning:
         is_common_root: bool,
     ) -> tuple[GroupLoweringPlan, str, Any, ArgumentBinding, bool]:
         mode, raw_scan_op = self._operation_options(operation, bound)
-        mode = self._context.constant(mode)
-        if mode not in _PORTABLE_MODES:
-            raise ValueError(
-                "cuda.coop.numba_mlir.scan mode must be 'exclusive' or 'inclusive'"
-            )
+        from .._lowering._scan import _block_scan_algorithm, _scan_mode
+
+        mode = _scan_mode(self._context.constant(mode))
         scan_op = None if raw_scan_op is None else self._context.constant(raw_scan_op)
 
         value = bound.arguments["value"]
@@ -366,8 +364,6 @@ class _ScanPlanning:
         algorithm_raw = bound.arguments.get("algorithm")
         algorithm = None
         if not self._context.is_none(algorithm_raw):
-            from .._lowering._scan import _block_scan_algorithm
-
             algorithm = _block_scan_algorithm(self._context.constant(algorithm_raw))
 
         semantics = GroupScanSemantics(
@@ -493,15 +489,23 @@ class _ScanPlanning:
             )
             runtime_args.append(result_payload)
 
+        provider_scan_op = operator_kind
+        if operator_kind == "sum":
+            provider_scan_op = None
+        elif operator_kind == "callback":
+            provider_scan_op = scan_op
+
         factory_kwargs: dict[str, Any] = {
             "dtype": primitive.dtype,
             "mode": primitive.mode.value,
-            "scan_op": None if operator_kind == "sum" else scan_op,
+            "scan_op": provider_scan_op,
         }
         if plan.target is GroupLoweringTarget.CUB_BLOCK:
+            algorithm = plan.call.operation.cub_algorithm
+            assert algorithm is not None
             factory_kwargs.update(
                 {
-                    "algorithm": plan.call.operation.cub_algorithm,
+                    "algorithm": algorithm.name.lower(),
                     "items_per_thread": primitive.items_per_thread,
                     "threads_per_block": block_dim,
                     "value_kind": primitive.value_kind.value,
