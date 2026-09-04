@@ -165,6 +165,130 @@ def test_public_signatures_keep_portable_surface_narrow_and_omit_n6_callbacks():
 
 
 @pytest.mark.parametrize(
+    ("parameter", "token"),
+    (
+        ("mode", "inclusive"),
+        ("algorithm", "raking"),
+        ("scan_op", "max"),
+    ),
+)
+def test_portable_python_entry_point_rejects_non_string_scan_selectors(
+    parameter,
+    token,
+):
+    import importlib
+
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.thread_group import this_block
+
+    scan_api = importlib.import_module("cuda.coop._core.api.scan")
+    group = this_block()
+
+    with _dispatch._compiler_scope("test.backend"):
+        with pytest.raises(TypeError, match=rf"{parameter} must be .*string"):
+            scan_api.scan(
+                group,
+                np.int32(1),
+                **{parameter: SimpleNamespace(value=token)},
+            )
+
+
+@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize(
+    ("parameter", "token"),
+    (
+        ("mode", "inclusive"),
+        ("algorithm", "raking"),
+        ("scan_op", "max"),
+    ),
+)
+def test_scan_planning_rejects_non_string_selectors_before_provider(
+    monkeypatch,
+    api,
+    parameter,
+    token,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified
+    from cuda import coop as portable
+    from cuda.coop.numba_mlir._compiler import _group_scan
+
+    coop = portable if api == "portable" else qualified
+    selector = SimpleNamespace(value=token)
+    monkeypatch.setattr(
+        _group_scan._ScanPlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "non-string selector reached provider selection"
+        ),
+    )
+
+    if parameter == "mode":
+
+        def kernel(value):
+            return coop.scan(coop.this_block(), value, mode=selector)
+
+    elif parameter == "algorithm":
+
+        def kernel(value):
+            return coop.inclusive_sum(coop.this_block(), value, algorithm=selector)
+
+    else:
+
+        def kernel(value):
+            return coop.inclusive_scan(coop.this_block(), value, scan_op=selector)
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(TypeError, match=rf"{parameter} must be .*string"):
+        planner.run()
+
+
+def test_private_scan_selector_validation_does_not_unwrap_value_objects():
+    from cuda.coop.numba_mlir._lowering import _scan
+
+    cases = (
+        (_scan._scan_mode, SimpleNamespace(value="inclusive")),
+        (_scan._block_scan_algorithm, SimpleNamespace(value="raking")),
+        (_scan.normalize_scan_operation, SimpleNamespace(value="max")),
+    )
+    for validate, value in cases:
+        with pytest.raises(TypeError, match="must be .*string"):
+            validate(value)
+
+
+@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize(
+    ("alias", "canonical"),
+    (
+        (" maximum ", "max"),
+        ("multiply", "multiplies"),
+        ("BIT-OR", "bit_or"),
+    ),
+)
+def test_shared_scan_operator_aliases_normalize_identically(
+    api,
+    alias,
+    canonical,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified
+    from cuda import coop as portable
+    from cuda.coop.numba_mlir._lowering import _scan
+
+    coop = portable if api == "portable" else qualified
+
+    def kernel(value):
+        return coop.inclusive_scan(coop.this_block(), value, scan_op=alias)
+
+    func_ir, planner = _plan(kernel, arg_types=(types.int32,))
+    assert planner.run()
+    call = _provider_call(func_ir, _scan.block_scan_scalar)
+    assert _kwarg_value(func_ir, call, "scan_op") == canonical
+
+
+@pytest.mark.parametrize(
     ("spelling", "expected_mode", "expected_operator"),
     (
         ("scan", "inclusive", "max"),
