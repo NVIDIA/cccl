@@ -47,6 +47,14 @@
  * portable descriptor value type — or through a thin wrapper. Lifting the
  * access layer to CPOs is a mechanical follow-up if a foreign type ever
  * cannot provide the shape.
+ *
+ * Descriptor `.data` is pointer-only in v1: views double as the storage and
+ * transport currency, where addresses are load-bearing (aliasing validation,
+ * contiguity, ABI). The planned relaxation is a wider sibling concept for
+ * ALGORITHM ARGUMENTS whose `.data` may be any random-access iterator (both
+ * input and output positions, constrained per parameter by readability /
+ * writability), so per-shard CUB can consume fancy iterators — additive, and
+ * the compute paths already use pure iterator arithmetic in anticipation.
  */
 
 #pragma once
