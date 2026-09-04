@@ -12,19 +12,56 @@ function names are diagnostic metadata only and never establish identity.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from importlib import import_module
 from threading import RLock
 from typing import Any, Callable, TypeVar
 
+from cuda.coop._core import SynchronizationScope
+
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
+
+
+class StorageABI(str, Enum):
+    """How a generated provider receives temporary storage."""
+
+    NONE = "none"
+    LEADING_POINTER = "leading_pointer"
 
 
 @dataclass(frozen=True)
 class FactoryOperation:
-    """Semantic operation and execution scope for one lowering factory."""
+    """Declarative contract for one registered lowering factory."""
 
     operation: str
     namespace: str
+    storage_abi: StorageABI
+    execution_scope: SynchronizationScope
+    synchronization_scope: SynchronizationScope
+
+    def __post_init__(self) -> None:
+        for name in ("operation", "namespace"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value:
+                raise ValueError(f"{name} must be a non-empty string")
+        object.__setattr__(self, "storage_abi", StorageABI(self.storage_abi))
+        object.__setattr__(
+            self,
+            "execution_scope",
+            SynchronizationScope(self.execution_scope),
+        )
+        object.__setattr__(
+            self,
+            "synchronization_scope",
+            SynchronizationScope(self.synchronization_scope),
+        )
+        if self.synchronization_scope not in {
+            SynchronizationScope.NONE,
+            self.execution_scope,
+        }:
+            raise ValueError(
+                "synchronization_scope must be NONE or match execution_scope"
+            )
 
 
 @dataclass(frozen=True)
@@ -57,21 +94,58 @@ class GroupPrimitiveRegistration:
 
 @dataclass(frozen=True)
 class RewriteOperationSpec:
-    """Before-inference ABI and family hooks for one provider operation."""
+    """Before-inference call grammar and hooks for one operation."""
 
-    namespace: str
+    factory_namespaces: frozenset[str]
+    dtype_factory_kwargs: frozenset[str]
     runtime_arg_counts: frozenset[int]
     runtime_factory_kwargs: tuple[str, ...]
     runtime_factory_kw_prerequisites: tuple[tuple[str, str], ...]
     allowed_factory_kwargs: frozenset[str]
     required_factory_kwargs: frozenset[str]
-    runtime_temp_storage: bool
+    accepts_temp_storage: bool
     scalar_binding_kwargs: frozenset[str]
     runtime_offset_kwarg: str | None
     infer_payload: Callable[[Any, Any], None]
     analyze_match: Callable[..., Any] | None = None
     prepare_runtime_args: Callable[..., list[Any]] | None = None
     validate_runtime_controls: Callable[..., None] | None = None
+
+    def __post_init__(self) -> None:
+        for name in (
+            "factory_namespaces",
+            "dtype_factory_kwargs",
+            "runtime_arg_counts",
+            "allowed_factory_kwargs",
+            "required_factory_kwargs",
+            "scalar_binding_kwargs",
+        ):
+            object.__setattr__(self, name, frozenset(getattr(self, name)))
+        if not self.factory_namespaces or any(
+            not isinstance(namespace, str) or not namespace
+            for namespace in self.factory_namespaces
+        ):
+            raise ValueError("factory_namespaces must contain non-empty strings")
+        if any(
+            not isinstance(name, str) or not name for name in self.dtype_factory_kwargs
+        ):
+            raise ValueError("dtype_factory_kwargs must contain non-empty strings")
+        unknown_dtype_kwargs = self.dtype_factory_kwargs - self.allowed_factory_kwargs
+        if unknown_dtype_kwargs:
+            names = ", ".join(sorted(unknown_dtype_kwargs))
+            raise ValueError(
+                f"dtype_factory_kwargs must be allowed factory kwargs: {names}"
+            )
+        unknown_required_kwargs = (
+            self.required_factory_kwargs - self.allowed_factory_kwargs
+        )
+        if unknown_required_kwargs:
+            names = ", ".join(sorted(unknown_required_kwargs))
+            raise ValueError(
+                f"required_factory_kwargs must be allowed factory kwargs: {names}"
+            )
+        if not isinstance(self.accepts_temp_storage, bool):
+            raise TypeError("accepts_temp_storage must be a bool")
 
 
 _GROUP_OPERATIONS: dict[Callable[..., Any], str] = {}
@@ -182,10 +256,19 @@ def register_factory(
     *,
     operation: str,
     namespace: str,
+    storage_abi: StorageABI,
+    execution_scope: SynchronizationScope,
+    synchronization_scope: SynchronizationScope,
 ) -> _CallableT:
     """Register a primitive provider without relying on its import path."""
 
-    metadata = FactoryOperation(operation=operation, namespace=namespace)
+    metadata = FactoryOperation(
+        operation=operation,
+        namespace=namespace,
+        storage_abi=storage_abi,
+        execution_scope=execution_scope,
+        synchronization_scope=synchronization_scope,
+    )
     existing = _FACTORY_OPERATIONS.get(function)
     if existing is not None and existing != metadata:
         raise RuntimeError(
@@ -206,6 +289,7 @@ __all__ = [
     "GroupPrimitiveRegistration",
     "GroupResultSource",
     "RewriteOperationSpec",
+    "StorageABI",
     "factory_operation",
     "group_primitive",
     "group_operation",

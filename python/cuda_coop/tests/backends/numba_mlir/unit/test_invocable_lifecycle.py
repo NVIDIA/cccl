@@ -14,8 +14,10 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 def _make_invocable():
     from numba_cuda_mlir import types
 
+    from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir import _types
     from cuda.coop.numba_mlir._compiler._artifacts import make_binary_tempfile
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
 
     algorithm = _types.Algorithm(
         struct_name="BlockLoad",
@@ -24,6 +26,9 @@ def _make_invocable():
         includes=(),
         template_parameters=(),
         parameters=((_types.Pointer(types.uint8), _types.Value(types.int32)),),
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.BLOCK,
     )
     artifact = make_binary_tempfile(b"test-ltoir", ".ltoir")
     return _types.Invocable(

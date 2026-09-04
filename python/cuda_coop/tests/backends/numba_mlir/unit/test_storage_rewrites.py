@@ -186,6 +186,9 @@ def test_temp_storage_is_an_opaque_primitive_descriptor(kernel):
 
 class _FakeInvocable:
     files = ("storage-rewrite-test.ltoir",)
+    storage_abi = "leading_pointer"
+    execution_scope = "block"
+    synchronization_scope = "block"
 
     def __init__(self, *, size_in_bytes=64, alignment=16):
         self.temp_storage_bytes = size_in_bytes
