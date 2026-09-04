@@ -24,7 +24,6 @@ from cuda.coop._core import ArgumentBinding, SynchronizationScope
 from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
 from cuda.coop.numba_mlir import _types
 from cuda.coop.numba_mlir._compiler import _caching, _nvrtc
-from cuda.coop.numba_mlir._compiler._artifacts import find_unsigned
 from cuda.coop.numba_mlir._compiler._operations import StorageABI
 from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
 
@@ -77,9 +76,9 @@ def _algorithm(
     )
     algorithm = adapter.materialize(
         spec.specialization,
-        storage_abi=StorageABI.LEADING_POINTER,
+        storage_abi=StorageABI.NONE,
         execution_scope=SynchronizationScope.BLOCK,
-        synchronization_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.NONE,
         extra_type_definitions=(_types.numba_type_to_wrapper(dtype),),
     )
     algorithm._compile_context = context
@@ -112,7 +111,7 @@ def _stat_identity(path: Path) -> tuple[int, int, int]:
     return stat.st_ino, stat.st_mtime_ns, stat.st_size
 
 
-def test_direct_load_store_compile_to_one_lto_bundle_with_storage_metadata(
+def test_direct_load_store_compile_without_temp_storage_or_barriers(
     compile_context: _nvrtc.CompileContext,
     _fixed_current_device: list[tuple[int, int]],
 ) -> None:
@@ -135,7 +134,6 @@ def test_direct_load_store_compile_to_one_lto_bundle_with_storage_metadata(
         assert "static_cast<::cuda::std::int32_t>(param_2)" in source
         assert "checked_param_2);" in source
 
-    symbol_sets = []
     for algorithm, source in zip(algorithms, sources):
         explicit_wrappers = tuple(
             f"{algorithm.mangled_name(method)}__abi" for method in algorithm.parameters
@@ -146,12 +144,14 @@ def test_direct_load_store_compile_to_one_lto_bundle_with_storage_metadata(
         )
         storage_symbols = algorithm._temp_storage_symbol_names()
         assert all(symbol in source for symbol in explicit_wrappers)
-        assert all(symbol in source for symbol in implicit_wrappers)
-        assert all(symbol in source for symbol in storage_symbols)
-        symbol_sets.append(
-            frozenset((*explicit_wrappers, *implicit_wrappers, *storage_symbols))
-        )
-    assert symbol_sets[0].isdisjoint(symbol_sets[1])
+        assert all(symbol not in source for symbol in implicit_wrappers)
+        assert all(symbol not in source for symbol in storage_symbols)
+        assert "TempStorage" not in source
+        assert "temp_storage" not in source
+        assert "__syncthreads" not in source
+        assert "__syncwarp" not in source
+    assert "().Load(" in sources[0]
+    assert "().Store(" in sources[1]
 
     ltoir = _types.prepare_ltoir_bundle(
         algorithms,
@@ -165,16 +165,10 @@ def test_direct_load_store_compile_to_one_lto_bundle_with_storage_metadata(
     cc = 10 * _FIXED_COMPUTE_CAPABILITY[0] + _FIXED_COMPUTE_CAPABILITY[1]
     ptx = _types._ltoir_to_ptx(ltoir, name="load_store_metadata", cc=cc)
     assert ".version" in ptx
-    for algorithm in algorithms:
-        bytes_symbol, alignment_symbol = algorithm._temp_storage_symbol_names()
-        storage_bytes = find_unsigned(bytes_symbol, ptx)
-        storage_alignment = find_unsigned(alignment_symbol, ptx)
-        assert storage_bytes == algorithm.temp_storage_bytes
-        assert storage_alignment == algorithm.temp_storage_alignment
-        assert storage_bytes > 0
-        assert storage_alignment > 0
-        assert storage_alignment & (storage_alignment - 1) == 0
-        assert storage_bytes % storage_alignment == 0
+    assert ".shared" not in ptx
+    assert "bar.sync" not in ptx
+    assert all(algorithm.temp_storage_bytes == 0 for algorithm in algorithms)
+    assert all(algorithm.temp_storage_alignment == 1 for algorithm in algorithms)
 
     shared_artifact = algorithms[0]._precompiled_ltoir_files[0]
     assert algorithms[1]._precompiled_ltoir_files[0] is shared_artifact

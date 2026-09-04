@@ -217,7 +217,7 @@ def test_nonblock_load_returns_typed_unsupported_plan_before_compile(
         planner.run()
 
 
-def test_fixed_capacity_temp_storage_is_forwarded_to_load_and_store():
+def test_direct_load_store_accept_temp_storage_without_using_it():
     pytest.importorskip("numba_cuda_mlir")
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -233,29 +233,38 @@ def test_fixed_capacity_temp_storage_is_forwarded_to_load_and_store():
 
     class FakeInvocable:
         files = ("movement-test.ltoir",)
-        temp_storage_bytes = 64
-        temp_storage_alignment = 16
-        storage_abi = "leading_pointer"
+        temp_storage_bytes = 0
+        temp_storage_alignment = 1
+        storage_abi = "none"
         execution_scope = "block"
-        synchronization_scope = "block"
+        synchronization_scope = "none"
 
         def __call__(self, *args):
             del args
 
     def memory(source, destination):
-        storage = coop.TempStorage(4096, alignment=16)
+        shared_storage = coop.TempStorage(sharing="shared")
+        exclusive_storage = coop.TempStorage(sharing="exclusive")
+        oversized_storage = coop.TempStorage(128 * 1024, alignment=16)
         output = coop.ThreadData(2, dtype=types.int32)
+        extra_output = coop.ThreadData(2, dtype=types.int32)
         loaded = coop.load(
             coop.this_block(),
             source,
             output,
-            temp_storage=storage,
+            temp_storage=shared_storage,
         )
         coop.store(
             coop.this_block(),
             destination,
             loaded,
-            temp_storage=storage,
+            temp_storage=exclusive_storage,
+        )
+        coop.load(
+            coop.this_block(),
+            source,
+            extra_output,
+            temp_storage=oversized_storage,
         )
 
     array_type = types.Array(types.int32, 1, "C")
@@ -285,35 +294,30 @@ def test_fixed_capacity_temp_storage_is_forwarded_to_load_and_store():
 
     calls = _planned_factory_calls(func_ir, ir)
     invocable_calls = [call for factory, call in calls if factory is invocable]
-    assert len(invocable_calls) == 2
-    assert all(len(call.args) == 3 for call in invocable_calls)
+    assert len(invocable_calls) == 3
+    assert all(len(call.args) == 2 for call in invocable_calls)
     resolver = object.__new__(CoopSinglePhaseRewrite)
     resolver._func_ir = func_ir
-    shared_array_calls = []
+    resolved_calls = []
     for block in func_ir.blocks.values():
         resolver._block_defs = {
             inst.target.name: inst.value
             for inst in block.body
             if isinstance(inst, ir.Assign)
         }
-        shared_array_calls.extend(
-            inst.value
+        resolved_calls.extend(
+            resolver._resolve_python_value(inst.value.func)
             for inst in block.body
             if isinstance(inst, ir.Assign)
             and isinstance(inst.value, ir.Expr)
             and inst.value.op == "call"
-            and resolver._resolve_python_value(inst.value.func) is cuda.shared.array
         )
-    assert len(shared_array_calls) == 1
-    assert tuple(name for name, _ in shared_array_calls[0].kws) == ("alignment",)
-    resolver._block_defs = {
-        inst.target.name: inst.value
-        for block in func_ir.blocks.values()
-        for inst in block.body
-        if isinstance(inst, ir.Assign)
-    }
-    assert resolver._infer_constant(shared_array_calls[0].args[0]) == 4096
-    assert resolver._infer_constant(dict(shared_array_calls[0].kws)["alignment"]) == 16
+    assert cuda.shared.array not in resolved_calls
+    assert cuda.syncthreads not in resolved_calls
+    assert cuda.syncwarp not in resolved_calls
+    assert rewrite._temp_storage_global_plan is None
+    assert rewrite._temp_storage_backing_var is None
+    assert rewrite._temp_storage_plans == {}
 
 
 def _parameter_names(specialization):
@@ -328,9 +332,9 @@ def _block_provider_metadata():
     from cuda.coop.numba_mlir._compiler._operations import StorageABI
 
     return {
-        "storage_abi": StorageABI.LEADING_POINTER,
+        "storage_abi": StorageABI.NONE,
         "execution_scope": SynchronizationScope.BLOCK,
-        "synchronization_scope": SynchronizationScope.BLOCK,
+        "synchronization_scope": SynchronizationScope.NONE,
     }
 
 
@@ -355,23 +359,21 @@ def test_block_load_store_adapters_preserve_offset_overloads():
         **_block_provider_metadata(),
     )
     assert _parameter_names(load) == [
-        ["Pointer", "Pointer", "Array"],
+        ["Pointer", "Array"],
         [
-            "Pointer",
             "Pointer",
             "Array",
             "CheckedValidItems",
             "ExactValue",
         ],
         [
-            "Pointer",
             "Pointer",
             "Array",
             "CheckedValidItems",
             "ExactValue",
             "PointerOffset",
         ],
-        ["Pointer", "Pointer", "Array", "PointerOffset"],
+        ["Pointer", "Array", "PointerOffset"],
     ]
 
     store = NumbaMlirCoreAdapter().materialize(
@@ -385,8 +387,8 @@ def test_block_load_store_adapters_preserve_offset_overloads():
         **_block_provider_metadata(),
     )
     assert _parameter_names(store) == [
-        ["Pointer", "Pointer", "Array"],
-        ["Pointer", "Pointer", "Array", "PointerOffset"],
+        ["Pointer", "Array"],
+        ["Pointer", "Array", "PointerOffset"],
     ]
 
 
@@ -418,7 +420,7 @@ def test_static_movement_controls_are_absent_from_numba_runtime_abi():
     assert isinstance(offset, PointerOffset)
     assert offset.static_value == 3
     assert not offset.is_provided_by_user()
-    assert sum(parameter.is_provided_by_user() for parameter in method) == 3
+    assert sum(parameter.is_provided_by_user() for parameter in method) == 2
 
     source = load._source_code()[0]
     assert ".Load((param_0 + 3)," in source
