@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from enum import Enum
+
 from numba_cuda_mlir import types
 
 from cuda.coop._core import (
@@ -48,7 +50,7 @@ _WARP_MODES = _PORTABLE_MODES
 
 
 def _mode_token(value: object, *, group_kind: str) -> str:
-    if not isinstance(value, str):
+    if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(
             "cuda.coop.numba_mlir.exchange mode must be a compile-time string"
         )
