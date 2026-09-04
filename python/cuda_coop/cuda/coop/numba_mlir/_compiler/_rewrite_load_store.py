@@ -184,7 +184,7 @@ class _LoadStoreRewrite:
         if len(runtime_args) > cursor:
             checks.append(("offset", cursor))
 
-        from numba_cuda_mlir import types as numba_mlir_types
+        from ._parameters import _validate_runtime_integer_dtype
 
         for parameter, index in checks:
             if index >= len(runtime_args) or not isinstance(
@@ -196,13 +196,16 @@ class _LoadStoreRewrite:
             value_type = self._resolve_var_numba_type(runtime_args[index])
             if value_type is None:
                 value_type = self._resolve_var_dtype(runtime_args[index])
-            if isinstance(value_type, numba_mlir_types.Boolean) or not isinstance(
-                value_type, numba_mlir_types.Integer
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    f"coop {op_name} {parameter} must be an integer, not bool "
-                    "or a noninteger scalar"
+            if value_type is None:
+                continue
+            try:
+                _validate_runtime_integer_dtype(
+                    value_type,
+                    operation=op_name,
+                    parameter=parameter,
                 )
+            except TypeError as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
 
         if op_name == "load":
             self._validate_oob_default(

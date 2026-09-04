@@ -43,7 +43,8 @@ class _ArgumentRewrite:
             raise CoopSinglePhaseRewriteError(
                 f"coop movement '{op_name}' expects positional runtime argument count in {{{expected_csv}}}; got {runtime_arg_count}."
             )
-        runtime_args = list(call.args)
+        base_runtime_arg_count = min(spec.runtime_arg_counts)
+        runtime_args = list(call.args[:base_runtime_arg_count])
         factory_kw_value_vars: list[ir.Var] = []
         allowed_factory_kwargs = set(spec.allowed_factory_kwargs)
         required_factory_kwargs = spec.required_factory_kwargs
@@ -53,7 +54,6 @@ class _ArgumentRewrite:
         runtime_factory_kwargs = spec.runtime_factory_kwargs
         runtime_factory_kw_prerequisites = dict(spec.runtime_factory_kw_prerequisites)
         scalar_binding_kwargs = spec.scalar_binding_kwargs
-        base_runtime_arg_count = min(spec.runtime_arg_counts)
         extra_runtime_arg_count = runtime_arg_count - base_runtime_arg_count
         seen_runtime_factory_kwargs: set[str] = set()
         runtime_factory_kw_vars: dict[str, ir.Var] = {}
@@ -66,6 +66,21 @@ class _ArgumentRewrite:
             for index, name in enumerate(
                 runtime_factory_kwargs[:extra_runtime_arg_count]
             ):
+                value_var = call.args[base_runtime_arg_count + index]
+                if name in scalar_binding_kwargs:
+                    value = self._resolve_static_scalar_value(value_var)
+                    if value is not _UNRESOLVED:
+                        if value is not None:
+                            factory_kwargs[name] = (
+                                value
+                                if isinstance(value, ArgumentBinding)
+                                else ArgumentBinding.static(value)
+                            )
+                            seen_factory_kwargs.add(name)
+                        if isinstance(value_var, ir.Var):
+                            factory_kw_value_vars.append(value_var)
+                        continue
+                runtime_args.append(value_var)
                 factory_kwargs[name] = (
                     ArgumentBinding.runtime() if name in scalar_binding_kwargs else True
                 )
@@ -92,7 +107,7 @@ class _ArgumentRewrite:
                     raise CoopSinglePhaseRewriteError(
                         f"coop movement {name} must be a variable."
                     )
-                value = self._resolve_factory_kwarg_value(op_name, name, value_var)
+                value = self._resolve_static_scalar_value(value_var)
                 if value is not _UNRESOLVED:
                     if value is not None:
                         factory_kwargs[name] = (
@@ -118,7 +133,7 @@ class _ArgumentRewrite:
                         f"coop partial-tile argument '{name}' must be a variable."
                     )
                 if name in scalar_binding_kwargs:
-                    value = self._resolve_factory_kwarg_value(op_name, name, value_var)
+                    value = self._resolve_static_scalar_value(value_var)
                     if value is not _UNRESOLVED:
                         if value is not None:
                             factory_kwargs[name] = (

@@ -322,6 +322,9 @@ class Parameter:
     def is_provided_by_user(self):
         return not self.is_output
 
+    def accepts_actual_type(self, actual_type, typing_context):
+        return typing_context.can_convert(actual_type, self.dtype()) is not None
+
 
 class Value(Parameter):
     def __init__(self, value_type, is_output=False):
@@ -339,6 +342,54 @@ class Value(Parameter):
 
     def mangled_name(self):
         return f"{self.value_type}"
+
+
+class ExactValue(Value):
+    """A scalar whose compiler dtype must exactly match the provider ABI."""
+
+    def __repr__(self) -> str:
+        return f"ExactValue(dtype={self.value_type}, out={self.is_output})"
+
+    def mangled_name(self):
+        return f"Exact{self.value_type}"
+
+    def accepts_actual_type(self, actual_type, typing_context):
+        del typing_context
+        literal_type = getattr(actual_type, "literal_type", actual_type)
+        return literal_type == self.value_type
+
+
+def _accepts_runtime_control_integer(actual_type) -> bool:
+    actual_type = getattr(actual_type, "literal_type", actual_type)
+    return (
+        isinstance(actual_type, types.Integer)
+        and actual_type.bitwidth <= 64
+        and (actual_type.signed or actual_type.bitwidth <= 32)
+    )
+
+
+class CheckedValidItems(Value):
+    """A signed 64-bit tail count checked before CUB's integer narrowing."""
+
+    def __init__(self, tile_items):
+        if (
+            not isinstance(tile_items, int)
+            or isinstance(tile_items, bool)
+            or not 1 <= tile_items <= (1 << 31) - 1
+        ):
+            raise ValueError("tile_items must be a positive signed 32-bit integer")
+        self.tile_items = tile_items
+        super().__init__(types.int64)
+
+    def __repr__(self) -> str:
+        return f"CheckedValidItems(tile_items={self.tile_items})"
+
+    def mangled_name(self):
+        return f"CheckedValidItems{self.tile_items}"
+
+    def accepts_actual_type(self, actual_type, typing_context):
+        del typing_context
+        return _accepts_runtime_control_integer(actual_type)
 
 
 class PointerOffset(Value):
@@ -368,6 +419,10 @@ class PointerOffset(Value):
 
     def is_provided_by_user(self):
         return self.static_value is None
+
+    def accepts_actual_type(self, actual_type, typing_context):
+        del typing_context
+        return _accepts_runtime_control_integer(actual_type)
 
 
 class Pointer(Parameter):
@@ -1084,7 +1139,20 @@ class Algorithm:
                             f"({param_args[pointer_arg_pos]} + {offset_expression})"
                         )
                         continue
-                    if isinstance(param, TransformedArray):
+                    if isinstance(param, CheckedValidItems):
+                        checked_name = f"checked_{name}"
+                        param_decls.append(param.cpp_decl(name))
+                        func_decls.append(
+                            f"if ({name} < 0 || {name} > {param.tile_items}) {{"
+                        )
+                        func_decls.append('  asm volatile("trap;" : : :);')
+                        func_decls.append("}")
+                        func_decls.append(
+                            "::cuda::std::int32_t "
+                            f"{checked_name} = static_cast<::cuda::std::int32_t>({name});"
+                        )
+                        param_arg = checked_name
+                    elif isinstance(param, TransformedArray):
                         source_type = numba_type_to_cpp(param.value_dtype)
                         target_type = numba_type_to_cpp(param.target_dtype)
                         transformed_name = f"transformed_{name}"
@@ -1382,7 +1450,7 @@ class Algorithm:
         )
         returns_value = any(param.is_output for param in method)
         link_files = getattr(func_to_overload, "files", [])
-        expected_input_types = []
+        expected_input_parameters = []
         abi_input_types = []
         arg_transforms = []
         ret_type = types.void
@@ -1395,7 +1463,7 @@ class Algorithm:
                     ret_type = param.dtype()
                 continue
 
-            expected_input_types.append(param.dtype())
+            expected_input_parameters.append(param)
             if isinstance(param, (Pointer, Array, PointerReference)):
                 abi_input_types.append(types.CPointer(types.none))
                 arg_transforms.append("ptr")
@@ -1411,11 +1479,11 @@ class Algorithm:
         )
 
         def algorithm_impl(*args):
-            if len(args) != len(expected_input_types):
+            if len(args) != len(expected_input_parameters):
                 return None
             typingctx = mlir_target.typing_context
-            for actual_type, expected_type in zip(args, expected_input_types):
-                if typingctx.can_convert(actual_type, expected_type) is None:
+            for actual_type, parameter in zip(args, expected_input_parameters):
+                if not parameter.accepts_actual_type(actual_type, typingctx):
                     return None
             impl = war_introspection_call_with_transforms(
                 extern_fn, arg_transforms, returns_value=returns_value
@@ -1510,6 +1578,10 @@ def _param_coalesce_key(param):
             param.static_value,
             param.is_output,
         )
+    if isinstance(param, CheckedValidItems):
+        return ("CheckedValidItems", param.tile_items)
+    if isinstance(param, ExactValue):
+        return ("ExactValue", str(param.value_type), param.is_output)
     if isinstance(param, Value):
         return ("Value", str(param.value_type), param.is_output)
     if isinstance(param, CxxFunction):

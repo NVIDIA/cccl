@@ -167,6 +167,86 @@ def _validate_common_numeric_dtype(
     return dtype
 
 
+def _python_scalar_dtype(value):
+    """Return the compiler dtype of an ordinary or NumPy scalar."""
+
+    if type(value) not in {bool, int, float, complex} and not isinstance(
+        value, np.generic
+    ):
+        return None
+    try:
+        return normalize_dtype_param(np.asarray(value).dtype)
+    except (TypeError, ValueError):
+        return None
+
+
+def _scalar_cast_dtype(function):
+    """Return the dtype named by a scalar cast callable, if any."""
+
+    if isinstance(function, numba_mlir_types.Type):
+        try:
+            return normalize_dtype_param(function)
+        except (TypeError, ValueError):
+            return None
+    try:
+        np_dtype = np.dtype(function)
+    except (TypeError, ValueError):
+        return None
+    if np_dtype.subdtype is not None or np_dtype.fields is not None:
+        return None
+    try:
+        return normalize_dtype_param(np_dtype)
+    except (TypeError, ValueError):
+        return None
+
+
+def _scalar_operator_result_dtype(function, *operand_dtypes):
+    """Ask the active Numba typing context for an expression result dtype."""
+
+    if (
+        function is None
+        or not operand_dtypes
+        or any(dtype is None for dtype in operand_dtypes)
+    ):
+        return None
+    try:
+        normalized = tuple(normalize_dtype_param(dtype) for dtype in operand_dtypes)
+        from numba_cuda_mlir.descriptor import mlir_target
+
+        mlir_target.ensure_initialized()
+        signature = mlir_target.typing_context.resolve_function_type(
+            function,
+            normalized,
+            {},
+        )
+        if signature is None:
+            return None
+        return normalize_dtype_param(signature.return_type)
+    except Exception:
+        # This is best-effort provenance, not the authoritative typing pass.
+        return None
+
+
+def _validate_runtime_integer_dtype(dtype, *, operation: str, parameter: str):
+    """Validate the runtime integer domain accepted by Load/Store controls."""
+
+    if isinstance(dtype, numba_mlir_types.Literal):
+        dtype = dtype.literal_type
+    if isinstance(dtype, numba_mlir_types.Boolean) or not isinstance(
+        dtype, numba_mlir_types.Integer
+    ):
+        raise TypeError(
+            f"coop {operation} {parameter} must be an integer, not bool "
+            "or a noninteger scalar"
+        )
+    if dtype.bitwidth > 64 or (not dtype.signed and dtype.bitwidth > 32):
+        raise TypeError(
+            f"coop {operation} {parameter} must be a signed integer up to "
+            "64 bits or an unsigned integer up to 32 bits"
+        )
+    return dtype
+
+
 def _validate_static_oob_default(value: object) -> None:
     """Validate one compile-time Load default before provider construction."""
 

@@ -18,8 +18,8 @@ from ._rewrite_support import (
     _align_up,
     _cuda_module,
     _default_temp_storage_alignment,
+    _dtype_values_match,
     _normalize_temp_storage_alignment,
-    _numba_typeof,
     _phi_incoming_values,
     _portable_api,
     _ResolvedCallTarget,
@@ -34,9 +34,9 @@ from ._rewrite_support import (
     factory_operation,
     ir,
     normalize_dtype_param,
-    np,
     operator,
 )
+from ._scalar_provenance import try_resolve_static_scalar
 
 
 class _ProvenanceRewrite:
@@ -98,6 +98,22 @@ class _ProvenanceRewrite:
             if isinstance(definition, (ir.Const, ir.Global, ir.FreeVar)):
                 return definition.value
         return self._func_ir.infer_constant(value)
+
+    def _resolve_static_scalar_value(
+        self,
+        value,
+    ):
+        """Resolve only scalar values with explicitly static IR provenance."""
+
+        arg_types = tuple(getattr(self._state, "args", ()) or ())
+        resolved, scalar = try_resolve_static_scalar(
+            value,
+            definitions=self._lookup_definitions,
+            argument_type=lambda index: (
+                arg_types[index] if 0 <= index < len(arg_types) else None
+            ),
+        )
+        return scalar if resolved else _UNRESOLVED
 
     def _build_arg_type_map(self) -> dict[str, object]:
         arg_names = tuple(getattr(self._func_ir, "arg_names", ()) or ())
@@ -1025,10 +1041,127 @@ class _ProvenanceRewrite:
                     func_obj = None
         if func_obj is None:
             return None
-        try:
-            return np.dtype(func_obj).type
-        except (TypeError, ValueError):
+        from ._parameters import (
+            _scalar_cast_dtype,
+            _scalar_operator_result_dtype,
+        )
+
+        cast_dtype = _scalar_cast_dtype(func_obj)
+        if cast_dtype is None:
             return None
+        if len(definition.args) == 1 and isinstance(definition.args[0], ir.Var):
+            inferred = _scalar_operator_result_dtype(
+                func_obj,
+                self._resolve_var_dtype(definition.args[0]),
+            )
+            if inferred is not None:
+                return inferred
+        return cast_dtype
+
+    @staticmethod
+    def _merge_scalar_dtypes(dtypes):
+        candidates = list(dtypes)
+        if not candidates or any(dtype is None for dtype in candidates):
+            return None
+        resolved = []
+        for dtype in candidates:
+            try:
+                dtype = normalize_dtype_param(dtype)
+            except (TypeError, ValueError):
+                pass
+            if any(_dtype_values_match(dtype, existing) for existing in resolved):
+                continue
+            resolved.append(dtype)
+        return resolved[0] if len(resolved) == 1 else None
+
+    def _cuda_index_dtype(self, definition: ir.Expr):
+        if definition.op != "getattr":
+            return None
+        chain = self._resolve_attribute_chain(definition.value)
+        if chain is None:
+            return None
+        root, attributes = chain
+        full_attributes = (*attributes, definition.attr)
+        if root is _cuda_module and full_attributes in {
+            (index, component)
+            for index in ("blockDim", "blockIdx", "gridDim", "threadIdx")
+            for component in ("x", "y", "z")
+        }:
+            from numba_cuda_mlir import types as numba_mlir_types
+
+            return numba_mlir_types.int32
+        return None
+
+    def _resolve_definition_dtype(self, definition, *, seen: set[str]):
+        from ._parameters import (
+            _python_scalar_dtype,
+            _scalar_operator_result_dtype,
+        )
+
+        if isinstance(definition, ir.Arg):
+            arg_types = tuple(getattr(self._state, "args", ()) or ())
+            if 0 <= definition.index < len(arg_types):
+                arg_type = arg_types[definition.index]
+                return getattr(arg_type, "dtype", arg_type)
+            return None
+        if isinstance(definition, (ir.Const, ir.Global, ir.FreeVar)):
+            return _python_scalar_dtype(definition.value)
+        if isinstance(definition, ir.Var):
+            return self._resolve_var_dtype(definition, seen=set(seen))
+        if not isinstance(definition, ir.Expr):
+            return None
+        if definition.op in {"cast", "exhaust_iter"}:
+            source = getattr(definition, "value", None)
+            if isinstance(source, ir.Var):
+                return self._resolve_var_dtype(source, seen=set(seen))
+            return None
+        if definition.op == "getattr":
+            cuda_dtype = self._cuda_index_dtype(definition)
+            if cuda_dtype is not None:
+                return cuda_dtype
+            if definition.attr == "dtype" and isinstance(definition.value, ir.Var):
+                return self._resolve_var_dtype(definition.value, seen=set(seen))
+            return None
+        if definition.op in {"getitem", "static_getitem"}:
+            base_value = getattr(definition, "value", None)
+            if isinstance(base_value, ir.Var):
+                return self._resolve_var_dtype(base_value, seen=set(seen))
+            return None
+        if definition.op in {"binop", "inplace_binop"}:
+            lhs = getattr(definition, "lhs", None)
+            rhs = getattr(definition, "rhs", None)
+            lhs_dtype = (
+                self._resolve_var_dtype(lhs, seen=set(seen))
+                if isinstance(lhs, ir.Var)
+                else None
+            )
+            rhs_dtype = (
+                self._resolve_var_dtype(rhs, seen=set(seen))
+                if isinstance(rhs, ir.Var)
+                else None
+            )
+            return _scalar_operator_result_dtype(
+                getattr(definition, "fn", None),
+                lhs_dtype,
+                rhs_dtype,
+            )
+        if definition.op == "unary":
+            unary_value = getattr(definition, "value", None)
+            if isinstance(unary_value, ir.Var):
+                return _scalar_operator_result_dtype(
+                    getattr(definition, "fn", None),
+                    self._resolve_var_dtype(unary_value, seen=set(seen)),
+                )
+            return None
+        if definition.op == "phi":
+            return self._merge_scalar_dtypes(
+                self._resolve_var_dtype(incoming, seen=set(seen))
+                for incoming in _phi_incoming_values(definition)
+                if isinstance(incoming, ir.Var)
+            )
+        if definition.op == "call":
+            return self._resolve_call_result_dtype(definition)
+        return None
 
     def _infer_thread_data_dtype_from_writes(self, value: ir.Var):
         spec = self._resolve_thread_data_spec(value)
@@ -1156,67 +1289,10 @@ class _ProvenanceRewrite:
             return dtype
         if var_type is not None and hasattr(var_type, "bitwidth"):
             return var_type
-        definition = self._lookup_definition(value)
-        if isinstance(definition, ir.Const):
-            try:
-                return _numba_typeof(definition.value)
-            except (TypeError, ValueError):
-                return None
-        if isinstance(definition, ir.Var):
-            return self._resolve_var_dtype(definition, seen)
-        if isinstance(definition, ir.Expr) and definition.op == "getattr":
-            if definition.attr == "dtype" and isinstance(definition.value, ir.Var):
-                return self._resolve_var_dtype(definition.value, seen)
-        if isinstance(definition, ir.Expr) and definition.op in {
-            "getitem",
-            "static_getitem",
-        }:
-            base_value = getattr(definition, "value", None)
-            if isinstance(base_value, ir.Var):
-                return self._resolve_var_dtype(base_value, seen)
-        if isinstance(definition, ir.Expr) and definition.op in {
-            "binop",
-            "inplace_binop",
-        }:
-            lhs = getattr(definition, "lhs", None)
-            rhs = getattr(definition, "rhs", None)
-            lhs_dtype = (
-                self._resolve_var_dtype(lhs, seen) if isinstance(lhs, ir.Var) else None
-            )
-            rhs_dtype = (
-                self._resolve_var_dtype(rhs, seen) if isinstance(rhs, ir.Var) else None
-            )
-            if (
-                lhs_dtype is not None
-                and rhs_dtype is not None
-                and (lhs_dtype != rhs_dtype)
-            ):
-                return None
-            return lhs_dtype if lhs_dtype is not None else rhs_dtype
-        if isinstance(definition, ir.Expr) and definition.op == "unary":
-            unary_value = getattr(definition, "value", None)
-            if isinstance(unary_value, ir.Var):
-                return self._resolve_var_dtype(unary_value, seen)
-        if isinstance(definition, ir.Expr) and definition.op == "phi":
-            inferred = None
-            for incoming in _phi_incoming_values(definition):
-                if not isinstance(incoming, ir.Var):
-                    continue
-                incoming_dtype = self._resolve_var_dtype(incoming, seen)
-                if incoming_dtype is None:
-                    continue
-                if inferred is None:
-                    inferred = incoming_dtype
-                    continue
-                if inferred != incoming_dtype:
-                    return None
-            if inferred is not None:
-                return inferred
-        if isinstance(definition, ir.Expr) and definition.op == "call":
-            call_dtype = self._resolve_call_result_dtype(definition)
-            if call_dtype is not None:
-                return call_dtype
-        return None
+        return self._merge_scalar_dtypes(
+            self._resolve_definition_dtype(definition, seen=set(seen))
+            for definition in self._lookup_definitions(value)
+        )
 
     def _resolve_dtype_ref(self, value_ref):
         try:
