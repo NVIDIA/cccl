@@ -153,7 +153,7 @@ void TestTabulateOutputIterator()
 }
 DECLARE_VECTOR_UNITTEST(TestTabulateOutputIterator);
 
-void TestTabulateOutputIterator()
+void TestTabulateOutputIteratorSubscript()
 {
   using vector_t = thrust::host_vector<int>;
   using vec_it_t = typename vector_t::iterator;
@@ -175,4 +175,4 @@ void TestTabulateOutputIterator()
   ASSERT_EQUAL(out, ref);
 }
 
-DECLARE_UNITTEST(TestTabulateOutputIterator);
+DECLARE_UNITTEST(TestTabulateOutputIteratorSubscript);
