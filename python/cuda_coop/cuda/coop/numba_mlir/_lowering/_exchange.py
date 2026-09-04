@@ -50,14 +50,12 @@ def _positive_int(value: Any, *, name: str) -> int:
 
 
 def _mode(value: Any, enum_type: type, *, operation: str):
-    if isinstance(value, bool):
-        raise TypeError(f"{operation} mode must not be bool")
-    token = getattr(value, "value", value)
-    if isinstance(token, str):
-        token = token.strip().lower().replace("-", "_")
+    if not isinstance(value, str):
+        raise TypeError(f"{operation} mode must be a string")
+    token = value.strip().lower().replace("-", "_")
     try:
         return enum_type(token)
-    except (TypeError, ValueError) as exc:
+    except ValueError as exc:
         choices = ", ".join(member.value for member in enum_type)
         raise ValueError(f"{operation} mode must be one of: {choices}") from exc
 
