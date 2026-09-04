@@ -5,7 +5,7 @@
 """Reduction signatures for supported thread groups."""
 
 from collections.abc import Callable
-from typing import Literal, overload
+from typing import Literal, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
@@ -21,13 +21,39 @@ from ._thread_group import BlockGroup, ReductionGroup, WarpGroup
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _ScalarT = TypeVar("_ScalarT", bound=PortableNumericScalar)
 
+_NumpyReduceUfuncName: TypeAlias = Literal[
+    "add",
+    "multiply",
+    "minimum",
+    "maximum",
+    "bitwise_and",
+    "bitwise_or",
+    "bitwise_xor",
+]
+
+class _NumpyReduceUfunc(Protocol):
+    @property
+    def __name__(self) -> _NumpyReduceUfuncName: ...
+    @property
+    def nin(self) -> Literal[2]: ...
+    @property
+    def nout(self) -> Literal[1]: ...
+
+# Typeshed exposes ``operator.*`` functions as ``(Any, Any) -> Any``. An
+# object-wide signature accepts those aliases while keeping dtype-specific
+# custom callbacks on the CUB-only, ``broadcast=False`` overloads below.
+_OperatorReduceAlias: TypeAlias = Callable[[object, object], object]
+_CudaxReduceOperator: TypeAlias = (
+    ReduceOperator | _OperatorReduceAlias | _NumpyReduceUfunc
+)
+
 @overload
 def reduce(
     group: ReductionGroup,
     value: ThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: ReduceOperator | None = None,
+    binary_op: _CudaxReduceOperator | None = None,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
@@ -38,7 +64,7 @@ def reduce(
     value: _ScalarT,
     /,
     *,
-    binary_op: ReduceOperator | None = None,
+    binary_op: _CudaxReduceOperator | None = None,
     broadcast: bool = True,
     valid_items: None = None,
     algorithm: None = None,
