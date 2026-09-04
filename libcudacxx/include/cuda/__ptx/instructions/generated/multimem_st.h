@@ -17,7 +17,7 @@ __device__ static inline void multimem_st(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void multimem_st(::cuda::ptx::sem_weak_t, _B32* __addr, _B32 __val)
+_CCCL_DEVICE_API void multimem_st(::cuda::ptx::sem_weak_t, _B32* __addr, _B32 __val)
 {
   // __sem == sem_weak (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -44,7 +44,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 multimem_st(::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, _B32* __addr, _B32 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");
@@ -120,7 +120,7 @@ __device__ static inline void multimem_st(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void multimem_st(::cuda::ptx::sem_weak_t, _B64* __addr, _B64 __val)
+_CCCL_DEVICE_API void multimem_st(::cuda::ptx::sem_weak_t, _B64* __addr, _B64 __val)
 {
   // __sem == sem_weak (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -147,7 +147,7 @@ template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 multimem_st(::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, _B64* __addr, _B64 __val)
 {
   static_assert(__sem == sem_relaxed || __sem == sem_release, "");

@@ -10,7 +10,7 @@
 
 // clang-format off
 // %PARAM% TEMPLATE,SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE api vcad=vca,tsd,GPU,non_block:vcard=vcar,tsd,GPU,non_block
-// %PARAM% TYPE,SASS_TYPE type i32=int32_t,.S32:u32=uint32_t,:i64=int64_t,.64:u64=uint64_t,.64
+// %PARAM% TYPE,FILECHECK_PREFIX_WIDTH type i32=int32_t,word:u32=uint32_t,word:i64=int64_t,dword:u64=uint64_t,dword
 // %PARAM% OP op fetch_add:fetch_sub
 // %PARAM% ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order relaxed=mor,,non_seq_cst,no_acquire,no_membar:acquire=moa,,non_seq_cst,acquire,no_membar:release=more,ALL,non_seq_cst,no_acquire,membar:acq_rel=moar,ALL,non_seq_cst,acquire,membar:seq_cst=mosc,SC,seq_cst,acquire,membar
 // %FILECHECK% PREFIX_COMBINE non_block,seq_cst
@@ -28,19 +28,20 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<TYPE, SCOPE>& atom, TYPE
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD[[SASS_TYPE]]{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; MEMBAR: {{.*}}MEMBAR.[[SASS_MEMBAR]].[[SASS_SCOPE]]{{.*}}
 ; NON_BLOCK_SEQ_CST: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD[[SASS_TYPE]]{{.*}}
-; NON_BLOCK: {{.*}}ATOM.E.ADD[[SASS_TYPE]].STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{.*}}
+; WORD: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
+; DWORD: {{.*}}ATOM.E.ADD.64.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
 ; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD[[SASS_TYPE]]{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */

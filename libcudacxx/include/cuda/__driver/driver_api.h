@@ -284,7 +284,8 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 #  if _CCCL_CTK_AT_LEAST(12, 4)
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __deviceGetDevResource(::CUdevice __dev, ::CUdevResourceType __type)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDevResource);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDeviceGetDevResource, cuDeviceGetDevResource, 12, 4);
   ::CUdevResource __resource{};
 
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the device SM resource", __dev, &__resource, __type);
@@ -292,17 +293,18 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-#  if _CCCL_CTK_AT_LEAST(13, 4)
+#  if _CCCL_CTK_AT_LEAST(13, 1)
 // Note: this function doesn't need to be [[nodiscard]]. The returned remainder is technically
 // an optional output (and can be NULL in the actual driver call), the true return value is
 // __groups.
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __devSmResourceSplit(
   ::CUdevResource* __groups,
   unsigned int __n_groups,
-  const ::CUdevResource& __input,
+  const ::CUdevResource& __in_resource,
   ::CU_DEV_SM_RESOURCE_GROUP_PARAMS* __params)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevSmResourceSplit);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDevSmResourceSplit, cuDevSmResourceSplit, 13, 1);
   ::CUdevResource __remainder{};
 
   ::cuda::__driver::__call_driver_fn(
@@ -310,19 +312,20 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
     "Failed to split the SM resource",
     __groups,
     __n_groups,
-    &__input,
+    &__in_resource,
     &__remainder,
     /*__flags*/ 0U,
     __params);
   return __remainder;
 }
-#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+#  endif // _CCCL_CTK_AT_LEAST(13, 1)
 
-#  if _CCCL_CTK_AT_LEAST(12, 5)
+#  if _CCCL_CTK_AT_LEAST(12, 4)
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResourceDesc
 __devResourceGenerateDesc(::CUdevResource* __resources, unsigned int __num_resources)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevResourceGenerateDesc);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDevResourceGenerateDesc, cuDevResourceGenerateDesc, 12, 4);
   ::CUdevResourceDesc __ret{};
 
   ::cuda::__driver::__call_driver_fn(
@@ -810,30 +813,31 @@ struct __ctx_from_stream
   };
 
   __kind __ctx_kind_;
-  union
-  {
-    ::CUcontext __ctx_device_;
-    ::CUgreenCtx __ctx_green_;
-  };
+  ::CUcontext __ctx_device_;
+  ::CUgreenCtx __ctx_green_;
 };
 
 [[nodiscard]] _CCCL_HOST_API inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
 
-  ::CUcontext __ctx   = nullptr;
-  ::CUgreenCtx __gctx = nullptr;
-  __ctx_from_stream __result;
-  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
-  if (__gctx)
+  __ctx_from_stream __result{};
+
+  _CCCLRT_CALL_STREAM_DRIVER_FN(
+    __driver_fn,
+    __stream,
+    "Failed to get context from a stream",
+    __stream,
+    &__result.__ctx_device_,
+    &__result.__ctx_green_);
+
+  if (__result.__ctx_green_)
   {
-    __result.__ctx_kind_  = __ctx_from_stream::__kind::__green;
-    __result.__ctx_green_ = __gctx;
+    __result.__ctx_kind_ = __ctx_from_stream::__kind::__green;
   }
   else
   {
-    __result.__ctx_kind_   = __ctx_from_stream::__kind::__device;
-    __result.__ctx_device_ = __ctx;
+    __result.__ctx_kind_ = __ctx_from_stream::__kind::__device;
   }
   return __result;
 }

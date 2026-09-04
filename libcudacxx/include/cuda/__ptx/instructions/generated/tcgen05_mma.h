@@ -25,7 +25,7 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32, ::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma(
+_CCCL_DEVICE_API void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_1_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -102,7 +102,7 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32, ::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma(
+_CCCL_DEVICE_API void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_2_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -188,7 +188,7 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma(
+_CCCL_DEVICE_API void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_1_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -301,7 +301,7 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma(
+_CCCL_DEVICE_API void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_2_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -432,7 +432,7 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32, ::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma(
+_CCCL_DEVICE_API void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -532,7 +532,7 @@ __device__ static inline void tcgen05_mma(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma(
+_CCCL_DEVICE_API void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -693,7 +693,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32, ::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_1_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -770,7 +770,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32, ::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_2_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -856,7 +856,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_1_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -969,7 +969,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_2_t,
   ::cuda::std::uint32_t __d_tmem,
@@ -1102,7 +1102,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32, ::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1202,7 +1202,7 @@ __device__ static inline void tcgen05_mma_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1363,7 +1363,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1436,7 +1436,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2x(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1547,7 +1547,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1620,7 +1620,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1693,7 +1693,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1840,7 +1840,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_tmem_a(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -1913,7 +1913,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2024,7 +2024,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_tmem_a(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2097,7 +2097,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_tmem_a(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_tmem_a(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2170,7 +2170,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_tmem_a(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_tmem_a(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2317,7 +2317,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_collector_a_fill(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2390,7 +2390,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2x_collector_a_fill(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2501,7 +2501,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_collector_a_fill(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2574,7 +2574,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_collector_a_fill(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2647,7 +2647,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_collector_a_fill(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_collector_a_fill(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2796,7 +2796,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2869,7 +2869,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_f
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -2980,7 +2980,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3053,7 +3053,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3126,7 +3126,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3275,7 +3275,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_collector_a_use(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3348,7 +3348,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2x_collector_a_use(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3459,7 +3459,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_collector_a_use(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3532,7 +3532,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_collector_a_use(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_collector_a_use(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3605,7 +3605,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_collector_a_use(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_collector_a_use(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3754,7 +3754,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3827,7 +3827,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_u
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -3938,7 +3938,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4011,7 +4011,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_tmem_a_collector_a_use(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4084,7 +4084,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a_use(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_tmem_a_collector_a_use(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4233,7 +4233,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastuse
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_collector_a_lastuse(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4306,7 +4306,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastuse
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2x_collector_a_lastuse(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4417,7 +4417,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastuse
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_collector_a_lastuse(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4490,7 +4490,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_collector_a_lastus
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_collector_a_lastuse(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4563,7 +4563,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_collector_a_lastus
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_collector_a_lastuse(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4712,7 +4712,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4785,7 +4785,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_l
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4896,7 +4896,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -4970,7 +4970,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5044,7 +5044,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5193,7 +5193,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_collector_a_discard
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_collector_a_discard(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5266,7 +5266,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2x_collector_a_discard
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2x_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2x_collector_a_discard(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5377,7 +5377,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_collector_a_discard
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_collector_a_discard(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5450,7 +5450,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_collector_a_discar
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_collector_a_discard(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5523,7 +5523,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_collector_a_discar
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_collector_a_discard(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5672,7 +5672,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard(
   ::cuda::ptx::kind_mxf8f6f4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5745,7 +5745,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_d
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5856,7 +5856,7 @@ __device__ static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -5930,7 +5930,7 @@ __device__ static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard(
   ::cuda::ptx::kind_mxf4nvf4_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
@@ -6004,7 +6004,7 @@ __device__ static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard(
+_CCCL_DEVICE_API void tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard(
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
   ::cuda::std::uint32_t __d_tmem,
