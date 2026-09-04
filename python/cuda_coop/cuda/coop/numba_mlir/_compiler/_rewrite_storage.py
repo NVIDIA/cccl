@@ -638,7 +638,7 @@ class _StorageRewrite:
                         storage_uses.append((current_order, inst, match, ctor_key))
             self._validate_temp_storage_uses(func_ir, matches_by_assign)
             self._prepare_ltoir_bundle_for_matches(all_matches)
-            for source_order, inst, match, ctor_key in storage_uses:
+            for use_order, inst, match, ctor_key in storage_uses:
                 if ctor_key is not None:
                     ctor_key = self._canonical_temp_storage_ctor_key(ctor_key)
                 invocable, _ = self._materialize_invocable(match)
@@ -662,7 +662,7 @@ class _StorageRewrite:
                 summary.uses.append(
                     _TempStorageUseRequirement(
                         call_assign=inst,
-                        order=source_order,
+                        order=use_order,
                         size_in_bytes=size_in_bytes,
                         alignment=alignment,
                     )
