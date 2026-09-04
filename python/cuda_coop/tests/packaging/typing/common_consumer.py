@@ -4,12 +4,38 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 
 import numpy as np
 from typing_extensions import assert_type
 
 from cuda import coop
+
+_ItemT = TypeVar("_ItemT")
+
+
+class _ReadOnlyThreadData(Generic[_ItemT]):
+    """Check readable-input protocols without requiring mutable item access.
+
+    These consumers check static declarations; they do not compile kernels
+    with this custom Python payload.
+    """
+
+    items_per_thread: int
+    dtype: object | None
+
+    def __init__(self, value: _ItemT) -> None:
+        self.items_per_thread = 1
+        self.dtype = type(value)
+        self._value = value
+
+    def __len__(self) -> int:
+        return self.items_per_thread
+
+    def __getitem__(self, index: int, /) -> _ItemT:
+        if index != 0:
+            raise IndexError(index)
+        return self._value
 
 
 def check_common_surface(source: object, destination: object) -> None:
@@ -18,7 +44,9 @@ def check_common_surface(source: object, destination: object) -> None:
     block = coop.this_block()
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
-    values = coop.ThreadData(items_per_thread=2, dtype=np.int16, alignment=16)
+    mapped_warps = block.group_by(2)
+    cluster = coop.this_cluster()
+    values = coop.ThreadData(2, np.int16, alignment=16)
     storage = coop.TempStorage(64, alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
@@ -73,4 +101,19 @@ def check_common_surface(source: object, destination: object) -> None:
     assert_type(
         coop.store(logical_warp, destination, values, algorithm="striped"),
         None,
+    )
+    assert_type(coop.sum(block, np.int32(4)), np.int32)
+    assert_type(
+        coop.reduce(logical_warp, np.float32(4), binary_op="max"),
+        np.float32,
+    )
+    assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
+    assert_type(coop.reduce(cluster, values, binary_op="min"), np.int16)
+    assert_type(
+        coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
+        np.int32,
+    )
+    assert_type(
+        coop.sum(block, values, broadcast=False, algorithm="raking"),
+        np.int16,
     )

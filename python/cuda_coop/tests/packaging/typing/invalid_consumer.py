@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 import cuda.coop as common
@@ -132,3 +134,52 @@ coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+
+
+def select_left(left: np.int32, right: np.int32) -> np.int32:
+    del right
+    return left
+
+
+common.reduce(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=False,
+)
+common.sum(  # expected-error: [call-overload]
+    common_block,
+    np.complex64(1),
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.bool_(True),
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.complex64(1),
+    binary_op="sum",
+)
+complex_values = cast(common.ThreadDataLike[np.complex64], object())
+coop.sum(  # expected-error: [type-var]
+    qualified_block,
+    complex_values,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    values,
+    broadcast=False,
+    valid_items=2,
+)
+coop.sum(  # expected-error: [call-overload]
+    coop.this_warp(),
+    np.int32(1),
+    broadcast=False,
+    algorithm="raking",
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=True,
+)
