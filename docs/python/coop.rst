@@ -27,6 +27,12 @@ CCCL source checkout uses the matching checkout headers, and
 header bundle. Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or
 an accessible GPU.
 
+The Numba backend is intentionally limited to
+``numba-cuda-mlir>=0.5.0,<0.6``. It currently uses a guarded compatibility shim
+for private 0.5.x compiler registration APIs, so another runtime series is
+rejected before compiler registries are changed. Replacing that shim with an
+upstream public API is follow-up work.
+
 Backend activation
 ------------------
 
@@ -49,12 +55,18 @@ compiling a kernel:
 .. code-block:: python
 
    from cuda import coop
-   import cuda.coop.numba_mlir  # Activate support for portable coop calls.
+   import cuda.coop.numba_mlir as _coop_numba_mlir  # Activate portable calls.
 
 Importing :mod:`cuda.coop` first and compiling without that explicit
 activation is unsupported. Numba-CUDA-MLIR then reports the portable marker as
 unknown, typically as ``Unknown attribute 'this_block'``, because its compiler
 hooks were not registered.
+
+Keep the alias on the qualified activation import. A bare
+``import cuda.coop.numba_mlir`` binds the name ``cuda`` in the importing
+scope. If that name already refers to the object imported by
+``from numba_cuda_mlir import cuda``, the bare import replaces it and later
+``@cuda.jit`` uses the wrong module.
 
 Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
 qualified namespace and its backend-specific controls.
@@ -122,27 +134,34 @@ The portable root and qualified backend expose matching entry points:
 .. code-block:: python
 
    import numpy as np
-   from numba_cuda_mlir import cuda
+   from numba_cuda_mlir import cuda, types
 
    from cuda import coop
 
    # Inside a Numba-CUDA-MLIR kernel:
    block = coop.this_block()
    items = coop.ThreadData(2, dtype=np.int32)
+   tile_items = cuda.blockDim.x * 2
+   tile_offset = cuda.blockIdx.x * tile_items
+   valid_items = count - tile_offset
+   if valid_items < 0:
+       valid_items = 0
+   elif valid_items > tile_items:
+       valid_items = tile_items
    loaded = coop.load(
        block,
        source,
        items,
-       valid_items=count,
+       valid_items=valid_items,
        oob_default=0,
-       offset=source_offset,
+       offset=tile_offset,
    )
    coop.store(
        block,
        destination,
        loaded,
-       valid_items=count,
-       offset=destination_offset,
+       valid_items=valid_items,
+       offset=tile_offset,
    )
 
 Use the qualified namespace when backend-specific types or controls are
@@ -208,12 +227,32 @@ unchanged unless ``oob_default`` is supplied. A default is valid only when
 ``valid_items`` is present. With Store, elements outside the valid prefix are
 not written.
 
+.. warning::
+
+   ``valid_items`` must satisfy
+   ``0 <= valid_items <= group_size * items_per_thread``. Static values outside
+   that range are rejected while planning. Runtime values are checked rather
+   than saturated; do not rely on CUB's oversized-count behavior. An invalid
+   runtime value executes a deterministic device trap before narrowing to
+   CUB's integer parameter, and that trap poisons the current CUDA context.
+   Clamp grid-stride and tail counts as in the example above. Run intentional
+   failure probes in disposable processes.
+
 ``offset`` is an element offset into the source or destination. It is
 independent of ``valid_items`` and is not measured in bytes. Static offsets
 must be nonnegative; a runtime offset is a caller-enforced nonnegative
 precondition. Source and destination arrays must be one-dimensional and
 contiguous. Store accepts both scalar values and multi-item ``ThreadData``
 payloads.
+
+Store payloads must have exactly the destination dtype. Numba-CUDA-MLIR may
+promote integer arithmetic even when its operands are 32-bit. Cast a computed
+value explicitly before storing it:
+
+.. code-block:: python
+
+   value = types.int32(source[cuda.threadIdx.x] + 1)
+   coop.store(block, destination, value, algorithm="direct")
 
 The public algorithm vocabulary includes ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
