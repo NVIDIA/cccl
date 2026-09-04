@@ -547,7 +547,7 @@ def _storage_load_kernel(storage_mode: str):
             for item in range(_ITEMS_PER_THREAD):
                 observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
 
-    else:
+    elif storage_mode == "exclusive":
 
         @cuda.jit
         def kernel(source, observed):
@@ -557,6 +557,26 @@ def _storage_load_kernel(storage_mode: str):
                 alignment=16,
                 sharing="exclusive",
             )
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = qualified_coop.load(
+                qualified_coop.this_block(),
+                source,
+                payload,
+                algorithm="direct",
+                temp_storage=storage,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+    else:
+
+        @cuda.jit
+        def kernel(source, observed):
+            thread = cuda.threadIdx.x
+            storage = qualified_coop.TempStorage(128 * 1024, alignment=16)
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
                 dtype=types.int32,
@@ -614,7 +634,7 @@ def _storage_store_kernel(storage_mode: str):
                 temp_storage=storage,
             )
 
-    else:
+    elif storage_mode == "exclusive":
 
         @cuda.jit
         def kernel(source, destination):
@@ -638,10 +658,32 @@ def _storage_store_kernel(storage_mode: str):
                 temp_storage=storage,
             )
 
+    else:
+
+        @cuda.jit
+        def kernel(source, destination):
+            thread = cuda.threadIdx.x
+            storage = qualified_coop.TempStorage(128 * 1024, alignment=16)
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                payload[item] = source[thread * _ITEMS_PER_THREAD + item]
+            qualified_coop.store(
+                qualified_coop.this_block(),
+                destination,
+                payload,
+                algorithm="direct",
+                temp_storage=storage,
+            )
+
     return kernel
 
 
-@pytest.mark.parametrize("storage_mode", ("implicit", "shared", "exclusive"))
+@pytest.mark.parametrize(
+    "storage_mode", ("implicit", "shared", "exclusive", "oversized")
+)
 def test_load_storage_modes_match_an_independent_oracle(storage_mode):
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=31)
     observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
@@ -651,7 +693,9 @@ def test_load_storage_modes_match_an_independent_oracle(storage_mode):
     np.testing.assert_array_equal(observed, source)
 
 
-@pytest.mark.parametrize("storage_mode", ("implicit", "shared", "exclusive"))
+@pytest.mark.parametrize(
+    "storage_mode", ("implicit", "shared", "exclusive", "oversized")
+)
 def test_store_storage_modes_match_an_independent_oracle(storage_mode):
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=37)
     destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
@@ -659,6 +703,29 @@ def test_store_storage_modes_match_an_independent_oracle(storage_mode):
     _storage_store_kernel(storage_mode)[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
+
+
+@cuda.jit
+def _divergent_direct_load_store(source, destination, observed):
+    thread = cuda.threadIdx.x
+    if thread & 1:
+        payload = root_coop.ThreadData(1, dtype=types.int32)
+        loaded = root_coop.load(root_coop.this_block(), source, payload)
+        root_coop.store(root_coop.this_block(), destination, loaded)
+        observed[thread] = loaded[0]
+
+
+def test_direct_load_store_are_safe_in_divergent_control_flow():
+    source = _values(np.dtype(np.int32), _THREADS, shift=43)
+    destination = np.full(_THREADS, -1, dtype=np.int32)
+    observed = np.full(_THREADS, -1, dtype=np.int32)
+    expected = np.full(_THREADS, -1, dtype=np.int32)
+    expected[1::2] = source[1::2]
+
+    _divergent_direct_load_store[1, _THREADS](source, destination, observed)
+
+    np.testing.assert_array_equal(destination, expected)
+    np.testing.assert_array_equal(observed, expected)
 
 
 @cuda.jit
