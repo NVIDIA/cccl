@@ -167,6 +167,9 @@ def test_group_call_planner_selects_registered_family_lowerer(portable):
         _GroupCallPlanner,
         has_group_markers,
     )
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
 
     operation = "_test_planned_family"
     portable_marker, qualified_marker = _register_fake_group_frontends(operation)
@@ -175,7 +178,7 @@ def test_group_call_planner_selects_registered_family_lowerer(portable):
     lowered = []
 
     def lower(
-        planner,
+        context,
         inst,
         *,
         operation,
@@ -185,7 +188,7 @@ def test_group_call_planner_selects_registered_family_lowerer(portable):
     ):
         lowered.append(
             {
-                "planner": planner,
+                "context": context,
                 "operation": operation,
                 "group": group,
                 "bound": bound,
@@ -211,13 +214,99 @@ def test_group_call_planner_selects_registered_family_lowerer(portable):
     assert not has_group_markers(func_ir)
     assert len(lowered) == 1
     invocation = lowered[0]
-    assert invocation["planner"] is planner
+    assert isinstance(invocation["context"], GroupPlanningContext)
+    assert invocation["context"] is planner.context
+    assert invocation["context"].launch.exact_block_dim == (32, 1, 1)
+    assert not hasattr(invocation["context"], "_group_cache")
     assert invocation["operation"] == operation
     assert invocation["group"].kind == "block"
     assert invocation["group"].static_size == 32
     assert invocation["bound"].arguments["group"].name
     assert invocation["bound"].arguments["value"].name == "value"
     assert invocation["is_common_root"] is portable
+
+
+@pytest.mark.parametrize("portable", [True, False], ids=["portable", "qualified"])
+@pytest.mark.parametrize(
+    ("result_index", "expected_dtype", "expected_array", "expected_extent"),
+    [
+        (0, "int32", False, 1),
+        (1, "float32", True, 3),
+    ],
+    ids=["scalar", "array"],
+)
+def test_registered_result_sources_drive_tuple_provenance(
+    portable,
+    result_index,
+    expected_dtype,
+    expected_array,
+    expected_extent,
+):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop as portable_coop
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+
+    operation = "_test_result_family"
+
+    @portable_dispatch._portable_group_operation(
+        operation,
+        group_kinds=("block",),
+    )
+    def portable_marker(group, keys, values):
+        del group, keys, values
+
+    @_operations.group_operation(operation, family_module=__name__)
+    def qualified_marker(group, keys, values):
+        del group, keys, values
+
+    _operations.register_group_primitive(
+        operation,
+        lower=lambda *args, **kwargs: [],
+        results=(
+            _operations.GroupResultSource("keys", None),
+            _operations.GroupResultSource("values", "values"),
+        ),
+    )
+
+    marker = portable_marker if portable else qualified_marker
+    module = portable_coop if portable else qualified_coop
+
+    def kernel():
+        keys = module.ThreadData(2, dtype=types.int32)
+        values = module.ThreadData(3, dtype=types.float32)
+        pair = marker(module.this_block(), keys, values)
+        return pair[result_index]
+
+    func_ir = run_frontend(kernel)
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=()),
+        {"block": (32, 1, 1), "grid": (1, 1, 1), "cluster": None},
+    )
+    return_value = next(
+        statement.value
+        for block in func_ir.blocks.values()
+        for statement in block.body
+        if isinstance(statement, ir.Return)
+    )
+
+    assert str(planner.context.dtype(return_value)) == expected_dtype
+    assert planner.context.is_array(operation, return_value) is expected_array
+    assert planner.context.array_extent(return_value) == expected_extent
+
+
+def test_group_result_source_rejects_invalid_parameter_names():
+    from cuda.coop.numba_mlir._compiler._operations import GroupResultSource
+
+    with pytest.raises(ValueError, match="dtype_parameter"):
+        GroupResultSource("", None)
+    with pytest.raises(ValueError, match="array_parameter"):
+        GroupResultSource(None, 7)
 
 
 class _FakeInvocable:
