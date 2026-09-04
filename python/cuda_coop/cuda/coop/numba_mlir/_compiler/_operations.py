@@ -134,9 +134,15 @@ class GroupPrimitiveRegistration:
     validate_common_arguments: Callable[..., None] | None = None
 
     def __post_init__(self) -> None:
+        if not callable(self.lower):
+            raise TypeError("lower must be callable")
         object.__setattr__(self, "results", tuple(self.results))
         if any(not isinstance(result, GroupResultSource) for result in self.results):
             raise TypeError("results must contain GroupResultSource records")
+        if self.validate_common_arguments is not None and not callable(
+            self.validate_common_arguments
+        ):
+            raise TypeError("validate_common_arguments must be callable or None")
 
 
 @dataclass(frozen=True)
@@ -168,15 +174,97 @@ class RewriteOperationSpec:
             "scalar_binding_kwargs",
         ):
             object.__setattr__(self, name, frozenset(getattr(self, name)))
+        object.__setattr__(
+            self,
+            "runtime_factory_kwargs",
+            tuple(self.runtime_factory_kwargs),
+        )
+        raw_prerequisites = tuple(self.runtime_factory_kw_prerequisites)
+        prerequisites: list[tuple[str, str]] = []
+        for prerequisite in raw_prerequisites:
+            if not isinstance(prerequisite, (tuple, list)) or len(prerequisite) != 2:
+                raise TypeError(
+                    "runtime_factory_kw_prerequisites must contain name pairs"
+                )
+            name, required_name = prerequisite
+            if not isinstance(name, str) or not name:
+                raise ValueError(
+                    "runtime_factory_kw_prerequisite names must be non-empty strings"
+                )
+            if not isinstance(required_name, str) or not required_name:
+                raise ValueError(
+                    "runtime_factory_kw_prerequisite names must be non-empty strings"
+                )
+            prerequisites.append((name, required_name))
+        object.__setattr__(
+            self,
+            "runtime_factory_kw_prerequisites",
+            tuple(prerequisites),
+        )
         if not self.factory_namespaces or any(
             not isinstance(namespace, str) or not namespace
             for namespace in self.factory_namespaces
         ):
             raise ValueError("factory_namespaces must contain non-empty strings")
-        if any(
-            not isinstance(name, str) or not name for name in self.dtype_factory_kwargs
+        for field_name in (
+            "dtype_factory_kwargs",
+            "allowed_factory_kwargs",
+            "required_factory_kwargs",
+            "scalar_binding_kwargs",
         ):
-            raise ValueError("dtype_factory_kwargs must contain non-empty strings")
+            if any(
+                not isinstance(name, str) or not name
+                for name in getattr(self, field_name)
+            ):
+                raise ValueError(f"{field_name} must contain non-empty strings")
+        if not self.runtime_arg_counts:
+            raise ValueError("runtime_arg_counts must not be empty")
+        if any(
+            not isinstance(count, int) or isinstance(count, bool) or count < 0
+            for count in self.runtime_arg_counts
+        ):
+            raise ValueError("runtime_arg_counts must contain non-negative integers")
+        if any(
+            not isinstance(name, str) or not name
+            for name in self.runtime_factory_kwargs
+        ):
+            raise ValueError("runtime_factory_kwargs must contain non-empty strings")
+        if len(set(self.runtime_factory_kwargs)) != len(self.runtime_factory_kwargs):
+            raise ValueError("runtime_factory_kwargs must be unique")
+        runtime_factory_kwargs = frozenset(self.runtime_factory_kwargs)
+        unknown_runtime_kwargs = runtime_factory_kwargs - self.allowed_factory_kwargs
+        if unknown_runtime_kwargs:
+            names = ", ".join(sorted(unknown_runtime_kwargs))
+            raise ValueError(
+                f"runtime_factory_kwargs must be allowed factory kwargs: {names}"
+            )
+        base_runtime_arg_count = min(self.runtime_arg_counts)
+        if max(self.runtime_arg_counts) - base_runtime_arg_count > len(
+            self.runtime_factory_kwargs
+        ):
+            raise ValueError(
+                "runtime_arg_counts require more trailing runtime arguments than "
+                "runtime_factory_kwargs declares"
+            )
+        prerequisite_names = [name for name, _ in prerequisites]
+        if len(set(prerequisite_names)) != len(prerequisite_names):
+            raise ValueError("runtime_factory_kw_prerequisite names must be unique")
+        known_prerequisites = runtime_factory_kwargs | self.allowed_factory_kwargs
+        for name, required_name in prerequisites:
+            if name not in runtime_factory_kwargs:
+                raise ValueError(
+                    "runtime_factory_kw_prerequisite targets must be runtime "
+                    f"factory kwargs: {name}"
+                )
+            if required_name not in known_prerequisites:
+                raise ValueError(
+                    "runtime_factory_kw_prerequisite requirements must be known "
+                    f"factory kwargs: {required_name}"
+                )
+            if name == required_name:
+                raise ValueError(
+                    "runtime_factory_kw_prerequisites cannot require themselves"
+                )
         unknown_dtype_kwargs = self.dtype_factory_kwargs - self.allowed_factory_kwargs
         if unknown_dtype_kwargs:
             names = ", ".join(sorted(unknown_dtype_kwargs))
@@ -191,8 +279,40 @@ class RewriteOperationSpec:
             raise ValueError(
                 f"required_factory_kwargs must be allowed factory kwargs: {names}"
             )
+        unknown_scalar_kwargs = self.scalar_binding_kwargs - runtime_factory_kwargs
+        if unknown_scalar_kwargs:
+            names = ", ".join(sorted(unknown_scalar_kwargs))
+            raise ValueError(
+                f"scalar_binding_kwargs must be runtime factory kwargs: {names}"
+            )
+        if self.runtime_offset_kwarg is not None:
+            if (
+                not isinstance(self.runtime_offset_kwarg, str)
+                or not self.runtime_offset_kwarg
+            ):
+                raise ValueError(
+                    "runtime_offset_kwarg must be a non-empty string or None"
+                )
+            if self.runtime_offset_kwarg not in self.allowed_factory_kwargs:
+                raise ValueError(
+                    "runtime_offset_kwarg must be an allowed factory kwarg"
+                )
+            if self.runtime_offset_kwarg in runtime_factory_kwargs:
+                raise ValueError(
+                    "runtime_offset_kwarg must not also be a runtime factory kwarg"
+                )
         if not isinstance(self.accepts_temp_storage, bool):
             raise TypeError("accepts_temp_storage must be a bool")
+        if not callable(self.infer_payload):
+            raise TypeError("infer_payload must be callable")
+        for name in (
+            "analyze_match",
+            "prepare_runtime_args",
+            "validate_runtime_controls",
+        ):
+            hook = getattr(self, name)
+            if hook is not None and not callable(hook):
+                raise TypeError(f"{name} must be callable or None")
 
 
 _GROUP_OPERATIONS: dict[Callable[..., Any], str] = {}
@@ -309,6 +429,8 @@ def register_factory(
 ) -> _CallableT:
     """Register a primitive provider without relying on its import path."""
 
+    if not callable(function):
+        raise TypeError("lowering factory must be callable")
     metadata = FactoryOperation(
         operation=operation,
         namespace=namespace,
