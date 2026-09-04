@@ -340,6 +340,12 @@ class Value(Parameter):
     def dtype(self):
         return self.value_type
 
+    @property
+    def provider_dtype(self):
+        """Return the scalar dtype received by the underlying provider."""
+
+        return self.value_type
+
     def cpp_decl(self, name):
         return numba_type_to_cpp(self.value_type) + " " + name
 
@@ -371,24 +377,54 @@ def _accepts_runtime_control_integer(actual_type) -> bool:
     )
 
 
-class CheckedValidItems(Value):
-    """A signed 64-bit tail count checked before CUB's integer narrowing."""
+class BoundedInteger(Value):
+    """A signed 64-bit integer checked before provider-type narrowing."""
 
-    def __init__(self, tile_items):
-        if (
-            not isinstance(tile_items, int)
-            or isinstance(tile_items, bool)
-            or not 1 <= tile_items <= (1 << 31) - 1
+    def __init__(self, provider_dtype, *, minimum, maximum):
+        if not isinstance(provider_dtype, types.Integer) or isinstance(
+            provider_dtype, types.IntegerLiteral
         ):
-            raise ValueError("tile_items must be a positive signed 32-bit integer")
-        self.tile_items = tile_items
+            raise TypeError("provider_dtype must be a non-literal integer dtype")
+        for name, bound in (("minimum", minimum), ("maximum", maximum)):
+            if not isinstance(bound, Integral) or isinstance(bound, bool):
+                raise TypeError(f"{name} must be an integer")
+        minimum = int(minimum)
+        maximum = int(maximum)
+        if minimum > maximum:
+            raise ValueError("minimum must not exceed maximum")
+
+        if provider_dtype.signed:
+            provider_minimum = -(1 << (provider_dtype.bitwidth - 1))
+            provider_maximum = (1 << (provider_dtype.bitwidth - 1)) - 1
+        else:
+            provider_minimum = 0
+            provider_maximum = (1 << provider_dtype.bitwidth) - 1
+        if not provider_minimum <= minimum <= maximum <= provider_maximum:
+            raise ValueError(
+                "bounded integer limits must fit the provider integer dtype"
+            )
+        if not -(1 << 63) <= minimum <= maximum <= (1 << 63) - 1:
+            raise ValueError("bounded integer limits must fit the signed 64-bit ABI")
+
+        self._provider_dtype = provider_dtype
+        self.minimum = minimum
+        self.maximum = maximum
         super().__init__(types.int64)
 
     def __repr__(self) -> str:
-        return f"CheckedValidItems(tile_items={self.tile_items})"
+        return (
+            "BoundedInteger("
+            f"provider_dtype={self.provider_dtype}, minimum={self.minimum}, "
+            f"maximum={self.maximum})"
+        )
+
+    @property
+    def provider_dtype(self):
+        return self._provider_dtype
 
     def mangled_name(self):
-        return f"CheckedValidItems{self.tile_items}"
+        bounds = internal_mangle_cpp(f"{self.minimum}_{self.maximum}")
+        return f"Bounded{self.value_type}To{self.provider_dtype}_{bounds}"
 
     def accepts_actual_type(self, actual_type, typing_context):
         del typing_context
@@ -1142,17 +1178,19 @@ class Algorithm:
                             f"({param_args[pointer_arg_pos]} + {offset_expression})"
                         )
                         continue
-                    if isinstance(param, CheckedValidItems):
+                    if isinstance(param, BoundedInteger):
                         checked_name = f"checked_{name}"
                         param_decls.append(param.cpp_decl(name))
                         func_decls.append(
-                            f"if ({name} < 0 || {name} > {param.tile_items}) {{"
+                            f"if ({name} < {param.minimum} || "
+                            f"{name} > {param.maximum}) {{"
                         )
                         func_decls.append('  asm volatile("trap;" : : :);')
                         func_decls.append("}")
+                        provider_cpp = numba_type_to_cpp(param.provider_dtype)
                         func_decls.append(
-                            "::cuda::std::int32_t "
-                            f"{checked_name} = static_cast<::cuda::std::int32_t>({name});"
+                            f"{provider_cpp} {checked_name} = "
+                            f"static_cast<{provider_cpp}>({name});"
                         )
                         param_arg = checked_name
                     elif isinstance(param, TransformedArray):
@@ -1581,8 +1619,15 @@ def _param_coalesce_key(param):
             param.static_value,
             param.is_output,
         )
-    if isinstance(param, CheckedValidItems):
-        return ("CheckedValidItems", param.tile_items)
+    if isinstance(param, BoundedInteger):
+        return (
+            "BoundedInteger",
+            str(param.value_type),
+            str(param.provider_dtype),
+            param.minimum,
+            param.maximum,
+            param.is_output,
+        )
     if isinstance(param, ExactValue):
         return ("ExactValue", str(param.value_type), param.is_output)
     if isinstance(param, Value):

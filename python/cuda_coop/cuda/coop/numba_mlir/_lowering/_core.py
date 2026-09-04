@@ -88,8 +88,10 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         self,
         *,
         input_transforms: Mapping[str, NumbaMlirArrayInputTransform] | None = None,
+        value_abis: Mapping[str, backend.Value] | None = None,
     ) -> None:
         self._input_transforms = dict(input_transforms or {})
+        self._value_abis = dict(value_abis or {})
 
     def normalize_dtype(self, dtype: Any) -> Any:
         if isinstance(dtype, BuiltinDType):
@@ -212,22 +214,9 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                     "Numba-CUDA-MLIR does not support dependent scalar values"
                 )
             normalized_dtype = self.normalize_dtype(dtype)
-            primitive = specialization.metadata.get("primitive")
-            if (
-                primitive in {"load", "store"}
-                and parameter.name == "num_valid_items"
-                and normalized_dtype == types.int32
-            ):
-                arguments = specialization.template_arguments
-                tile_items = (
-                    arguments["BLOCK_DIM_X"]
-                    * arguments["BLOCK_DIM_Y"]
-                    * arguments["BLOCK_DIM_Z"]
-                    * arguments["ITEMS_PER_THREAD"]
-                )
-                return backend.CheckedValidItems(tile_items)
-            if primitive == "load" and parameter.name == "oob_default":
-                return backend.ExactValue(normalized_dtype)
+            value_abi = self._value_abis.get(parameter.name)
+            if value_abi is not None:
+                return value_abi
             return backend.Value(
                 normalized_dtype,
                 is_output=self._is_backend_output(parameter),
@@ -322,6 +311,83 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         execution_scope = SynchronizationScope(execution_scope)
         synchronization_scope = SynchronizationScope(synchronization_scope)
         include_temp_storage = storage_abi is StorageABI.LEADING_POINTER
+
+        invalid_value_abis = {
+            name
+            for name, value_abi in self._value_abis.items()
+            if (
+                not isinstance(name, str)
+                or not name
+                or not isinstance(value_abi, backend.Value)
+            )
+        }
+        if invalid_value_abis:
+            names = ", ".join(sorted(repr(name) for name in invalid_value_abis))
+            raise TypeError(
+                "Numba-CUDA-MLIR value ABI declarations require non-empty "
+                f"parameter names and backend Value instances: {names}"
+            )
+        value_parameters_by_name = {
+            name: tuple(
+                parameter
+                for method in specialization.parameters
+                for parameter in method
+                if parameter.name == name
+            )
+            for name in self._value_abis
+        }
+        unknown_value_abis = {
+            name
+            for name, parameters in value_parameters_by_name.items()
+            if not parameters
+        }
+        if unknown_value_abis:
+            names = ", ".join(sorted(unknown_value_abis))
+            raise ValueError(f"unknown Numba-CUDA-MLIR value ABI(s): {names}")
+        invalid_value_targets = {
+            name
+            for name, parameters in value_parameters_by_name.items()
+            if any(
+                not isinstance(parameter, Value)
+                or isinstance(parameter, PointerOffset)
+                or parameter.is_inout
+                for parameter in parameters
+            )
+        }
+        if invalid_value_targets:
+            names = ", ".join(sorted(invalid_value_targets))
+            raise ValueError(
+                f"Numba-CUDA-MLIR value ABIs require scalar Value parameters: {names}"
+            )
+        dtype_mismatches = {
+            name
+            for name, parameters in value_parameters_by_name.items()
+            if any(
+                self.normalize_dtype(parameter.dtype)
+                != self._value_abis[name].provider_dtype
+                for parameter in parameters
+            )
+        }
+        if dtype_mismatches:
+            names = ", ".join(sorted(dtype_mismatches))
+            raise ValueError(
+                "Numba-CUDA-MLIR value ABI provider dtypes do not match "
+                f"core Value dtypes: {names}"
+            )
+        output_mismatches = {
+            name
+            for name, parameters in value_parameters_by_name.items()
+            if any(
+                self._is_backend_output(parameter) != self._value_abis[name].is_output
+                for parameter in parameters
+            )
+        }
+        if output_mismatches:
+            names = ", ".join(sorted(output_mismatches))
+            raise ValueError(
+                "Numba-CUDA-MLIR value ABI output roles do not match core "
+                f"Value parameters: {names}"
+            )
 
         parameters_by_name = {
             name: tuple(

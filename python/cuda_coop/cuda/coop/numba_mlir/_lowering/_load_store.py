@@ -10,6 +10,8 @@ and launch facts.
 
 import operator
 
+from numba_cuda_mlir import types
+
 from cuda.coop._core import ArgumentBinding, BindingKind, SynchronizationScope
 from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
 
@@ -27,7 +29,12 @@ from .._enums import (
     BlockLoadAlgorithm,
     BlockStoreAlgorithm,
 )
-from .._types import make_invocable_from_specialization, numba_type_to_wrapper
+from .._types import (
+    BoundedInteger,
+    ExactValue,
+    make_invocable_from_specialization,
+    numba_type_to_wrapper,
+)
 from ._core import NumbaMlirCoreAdapter, _optional_binding
 
 
@@ -80,6 +87,31 @@ def _registered_provider_metadata(factory):
     }
 
 
+def _load_store_value_abis(
+    *,
+    dtype,
+    block_dim,
+    items_per_thread,
+    valid_items,
+    oob_default=None,
+):
+    """Declare family-owned runtime scalar ABIs for one specialization."""
+
+    value_abis = {}
+    if valid_items.kind is BindingKind.RUNTIME:
+        tile_items = items_per_thread
+        for dimension in block_dim:
+            tile_items *= dimension
+        value_abis["num_valid_items"] = BoundedInteger(
+            types.int32,
+            minimum=0,
+            maximum=tile_items,
+        )
+    if oob_default is not None and oob_default.kind is BindingKind.RUNTIME:
+        value_abis["oob_default"] = ExactValue(dtype)
+    return value_abis
+
+
 def load(
     dtype,
     threads_per_block=None,
@@ -109,7 +141,15 @@ def load(
         )
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
     algorithm = _resolve_algorithm(algorithm, BlockLoadAlgorithm, "block load")
-    adapter = NumbaMlirCoreAdapter()
+    adapter = NumbaMlirCoreAdapter(
+        value_abis=_load_store_value_abis(
+            dtype=dtype,
+            block_dim=block_dim,
+            items_per_thread=items_per_thread,
+            valid_items=valid_items_binding,
+            oob_default=oob_default_binding,
+        )
+    )
     core_spec = make_block_load_spec(
         dtype=adapter.core_dtype(dtype),
         block_dim=tuple(block_dim),
@@ -154,7 +194,14 @@ def store(
     dtype = _validate_common_numeric_dtype(dtype, operation="store")
     items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
     algorithm = _resolve_algorithm(algorithm, BlockStoreAlgorithm, "block store")
-    adapter = NumbaMlirCoreAdapter()
+    adapter = NumbaMlirCoreAdapter(
+        value_abis=_load_store_value_abis(
+            dtype=dtype,
+            block_dim=block_dim,
+            items_per_thread=items_per_thread,
+            valid_items=valid_items_binding,
+        )
+    )
     core_spec = make_block_store_spec(
         dtype=adapter.core_dtype(dtype),
         block_dim=tuple(block_dim),

@@ -26,6 +26,7 @@ from cuda.coop.numba_mlir import _types
 from cuda.coop.numba_mlir._compiler import _caching, _nvrtc
 from cuda.coop.numba_mlir._compiler._operations import StorageABI
 from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+from cuda.coop.numba_mlir._lowering._load_store import _load_store_value_abis
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
@@ -65,7 +66,14 @@ def _algorithm(
 ) -> _types.Algorithm:
     if valid_items is None:
         valid_items = ArgumentBinding.runtime()
-    adapter = NumbaMlirCoreAdapter()
+    adapter = NumbaMlirCoreAdapter(
+        value_abis=_load_store_value_abis(
+            dtype=dtype,
+            block_dim=block_dim,
+            items_per_thread=items_per_thread,
+            valid_items=valid_items,
+        )
+    )
     factory = make_block_load_spec if operation == "load" else make_block_store_spec
     spec = factory(
         dtype=adapter.core_dtype(dtype),
