@@ -40,14 +40,6 @@ class _BackendUnavailable(ImportError):
     """The optional backend's top-level runtime is genuinely absent."""
 
 
-class _IncompatibleBackend(ImportError):
-    """A detected backend is missing capabilities required by cuda.coop."""
-
-    def __init__(self, message: str, *, missing_capabilities: tuple[str, ...]):
-        super().__init__(message)
-        self.missing_capabilities = missing_capabilities
-
-
 @dataclass(frozen=True)
 class _Candidate:
     display_name: str
@@ -78,49 +70,10 @@ def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
         raise
 
 
-def _require_callables(
-    modules: dict[str, object],
-    requirements: dict[str, tuple[str, ...]],
-) -> None:
-    missing = tuple(
-        f"{module_name}.{name}"
-        for module_name, names in requirements.items()
-        for name in names
-        if not callable(getattr(modules[module_name], name, None))
-    )
-    if missing:
-        raise _IncompatibleBackend(
-            "missing required callable features: " + ", ".join(missing),
-            missing_capabilities=missing,
-        )
-
-
 def _activate_numba_mlir() -> ModuleType:
-    """Preflight compiler APIs, then transactionally register coop rewrites."""
+    """Load the runtime, then let the qualified backend validate and activate."""
 
     _import_optional("numba_cuda_mlir", top_level="numba_cuda_mlir")
-    importlib.import_module("numba_cuda_mlir.cuda")
-    extending = importlib.import_module("numba_cuda_mlir.extending")
-    rewrites = importlib.import_module("numba_cuda_mlir.numba_cuda.core.rewrites")
-    _require_callables(
-        {
-            "numba_cuda_mlir.extending": extending,
-            "numba_cuda_mlir.numba_cuda.core.rewrites": rewrites,
-        },
-        {
-            "numba_cuda_mlir.extending": (
-                "WholeFunctionPlanner",
-                "refresh_registries",
-                "register_planner",
-                "require_launch_config",
-                "set_required_dynamic_shared_memory",
-            ),
-            "numba_cuda_mlir.numba_cuda.core.rewrites": (
-                "Rewrite",
-                "register_rewrite",
-            ),
-        },
-    )
     return importlib.import_module("cuda.coop.numba_mlir")
 
 

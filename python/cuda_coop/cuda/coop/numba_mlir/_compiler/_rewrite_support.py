@@ -28,9 +28,6 @@ from numba_cuda_mlir.extending import (
     require_launch_config,
     set_required_dynamic_shared_memory,
 )
-from numba_cuda_mlir.numba_cuda.core import errors as _numba_errors
-from numba_cuda_mlir.numba_cuda.core.rewrites import Rewrite, register_rewrite
-from numba_cuda_mlir.numba_cuda.typing.typeof import typeof as _numba_typeof
 from numba_cuda_mlir.numbair_transforms import ir
 
 from cuda.coop._core import api as _portable_api
@@ -43,8 +40,18 @@ from .._types import (
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
 )
+from ._numba_mlir_compat import (
+    _get_numba_mlir_compat,
+    _get_numba_mlir_devices,
+)
 from ._operations import FactoryOperation, factory_operation
 from ._parameters import normalize_dim_param, normalize_dtype_param
+
+_numba_mlir_compat = _get_numba_mlir_compat()
+_numba_errors = _numba_mlir_compat.numba_errors
+_numba_typeof = _numba_mlir_compat.numba_typeof
+Rewrite = _numba_mlir_compat.rewrite_type
+register_rewrite = _numba_mlir_compat.register_rewrite
 
 _INFERENCE_EXCEPTIONS = (
     KeyError,
@@ -135,10 +142,9 @@ def _check_driver_error(err, op: str) -> None:
 
 
 def _query_device_shared_memory_limits() -> dict[str, int]:
-    from numba_cuda_mlir.numba_cuda.cudadrv import devices
-
     from cuda.bindings import driver
 
+    devices = _get_numba_mlir_devices()
     context = devices.get_context()
     (err,) = driver.cuInit(0)
     _check_driver_error(err, "cuInit")
