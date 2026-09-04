@@ -103,10 +103,23 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
             for name, parameter in inspect.signature(function).parameters.items()
         )
 
-    for operation in ("load", "store"):
-        assert call_shape(getattr(coop, operation)) == call_shape(
+    for operation in ("load", "shuffle", "store"):
+        assert inspect.signature(getattr(coop, operation)) == inspect.signature(
             getattr(portable_coop, operation)
         )
+
+    portable_exchange = inspect.signature(portable_coop.exchange)
+    qualified_exchange = inspect.signature(coop.exchange)
+    for name, parameter in portable_exchange.parameters.items():
+        assert qualified_exchange.parameters[name] == parameter
+    assert qualified_exchange.return_annotation == portable_exchange.return_annotation
+    assert tuple(qualified_exchange.parameters)[
+        len(portable_exchange.parameters) :
+    ] == (
+        "ranks",
+        "valid_flags",
+        "warp_time_slicing",
+    )
 
     assert call_shape(coop.TempStorage) == call_shape(portable_coop.TempStorage)
     for constructor in (
