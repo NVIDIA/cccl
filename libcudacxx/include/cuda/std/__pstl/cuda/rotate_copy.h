@@ -96,7 +96,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
 
     // Determine temporary device storage requirements for cub::DevicePartition::Flagged
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::Flagged,
       "__pstl_cuda_rotate_copy: determination of device storage for cub::DevicePartition::Flagged failed",
       static_cast<void*>(nullptr),
@@ -113,7 +113,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel, we use the flagged kernel because we know the exact ordering we want
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::Flagged,
         "__pstl_cuda_rotate_copy: kernel launch of cub::DevicePartition::Flagged failed",
         __storage.__get_temp_storage(),

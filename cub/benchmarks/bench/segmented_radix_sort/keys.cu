@@ -42,7 +42,7 @@ void seg_radix_sort(nvbench::state& state,
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
                const auto env = cub_bench_env(alloc, launch);
-               _CCCL_TRY_CUDA_API(
+               _CCCL_TRY_RUNTIME_API(
                  cub::DeviceSegmentedRadixSort::SortKeys,
                  "SortKeys failed",
                  d_keys_1,

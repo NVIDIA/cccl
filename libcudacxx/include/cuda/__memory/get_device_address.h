@@ -43,10 +43,11 @@ template <class _Tp>
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::cuda::std::addressof(__device_object);), ({
                       void* __device_ptr = nullptr; //
-                      _CCCL_TRY_CUDA_API(::cudaGetSymbolAddress,
-                                         "failed to call cudaGetSymbolAddress in cuda::get_device_address",
-                                         &__device_ptr,
-                                         __device_object);
+                      _CCCL_TRY_RUNTIME_API(
+                        ::cudaGetSymbolAddress,
+                        "failed to call cudaGetSymbolAddress in cuda::get_device_address",
+                        &__device_ptr,
+                        __device_object);
                       return static_cast<_Tp*>(__device_ptr);
                     }))
 }
@@ -65,10 +66,11 @@ template <class _Tp>
 {
   __ensure_current_context __ctx{__device};
   void* __device_ptr{};
-  _CCCL_TRY_CUDA_API(::cudaGetSymbolAddress,
-                     "failed to call cudaGetSymbolAddress in cuda::get_device_address",
-                     &__device_ptr,
-                     __device_object);
+  _CCCL_TRY_RUNTIME_API(
+    ::cudaGetSymbolAddress,
+    "failed to call cudaGetSymbolAddress in cuda::get_device_address",
+    &__device_ptr,
+    __device_object);
   return static_cast<_Tp*>(__device_ptr);
 }
 #  endif // !_CCCL_COMPILER(NVRTC)

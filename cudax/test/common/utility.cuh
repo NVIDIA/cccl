@@ -25,8 +25,6 @@
 
 #include "testing.cuh"
 
-namespace
-{
 namespace test
 {
 constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
@@ -40,7 +38,7 @@ public:
   explicit _malloc_pinned(std::size_t size)
   {
     cuda::__ensure_current_context guard(cuda::device_ref{0});
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
+    _CCCL_TRY_RUNTIME_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()
@@ -147,5 +145,4 @@ struct empty_kernel
   __device__ void operator()() const noexcept {}
 };
 } // namespace test
-} // namespace
 #endif // __COMMON_UTILITY_H__
