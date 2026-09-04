@@ -111,13 +111,18 @@ def verify_sass(request):
     )
 
 
+# Import roots that pull in a JIT backend; a test marked no_numba must not
+# reach any of them.
+_JIT_BACKEND_MODULES = ("numba", "numba_cuda_mlir")
+
+
 @pytest.fixture
 def raise_on_numba_import(monkeypatch):
-    """This fixture will raise if a test attempts to import numba"""
+    """This fixture will raise if a test attempts to import a JIT backend"""
     real_import = builtins.__import__
 
     def guarded_import(name, *args, **kwargs):
-        if name == "numba" or name.startswith("numba."):
+        if name.split(".")[0] in _JIT_BACKEND_MODULES:
             raise ModuleNotFoundError(
                 "This test is marked 'no_numba' but attempted to import it"
             )
@@ -128,15 +133,15 @@ def raise_on_numba_import(monkeypatch):
 
 def pytest_collection_modifyitems(config, items):
     """Runs after pytest collects the tests. Makes a test marked no_numba fail
-    if it imports numba, and skips a test marked serialization when running on
-    the v2 (HostJIT) backend."""
+    if it imports a JIT backend, and skips a test marked serialization when
+    running on the v2 (HostJIT) backend."""
     serialization_skip = pytest.mark.skip(
         reason="serialization not supported on v2 (HostJIT) backend"
     )
 
-    # Tests marked no_numba must not import numba. We enforce that by attaching
-    # the raise_on_numba_import fixture defined above to each one; it raises if
-    # numba is imported.
+    # Tests marked no_numba must not import a JIT backend. We enforce that by
+    # attaching the raise_on_numba_import fixture defined above to each one; it
+    # raises if one is imported.
     #
     # We skip attaching it during a real pytest-run-parallel sweep of more than
     # one thread: the fixture uses monkeypatch, which pytest-run-parallel

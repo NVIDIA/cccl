@@ -1049,3 +1049,66 @@ def test_default_build_on_second_same_cc_device_clones_payload(monkeypatch):
     assert result_a is not None and result_b is not None
     assert result_b is not result_a
     assert result_b._loaded
+
+
+def test_operator_device_code_targets_the_requested_cc(monkeypatch):
+    """The operator's device code is compiled for the cc it is given.
+
+    Without an explicit target the arch comes from whichever device happens to
+    be present, so a build for a specific compute capability would silently
+    follow the build machine instead.
+    """
+    from cuda.compute import _jit
+    from cuda.compute._caching import CachableFunction
+
+    if not _jit.USING_V2:
+        pytest.skip("v1 compiles the operator through a different entry point")
+
+    import numba_cuda_mlir.compiler as backend_compiler
+
+    recorded = {}
+    original = backend_compiler._compile_only
+
+    def record_chip(pyfunc, sig=None, targetoptions=None):
+        recorded.setdefault("chip", (targetoptions or {}).get("chip"))
+        return original(pyfunc, sig, targetoptions)
+
+    monkeypatch.setattr(backend_compiler, "_compile_only", record_chip)
+
+    def add_one(x):
+        return x + 1
+
+    int32 = from_numpy_dtype(np.dtype(np.int32))
+    _jit._compile_op_impl.cache_clear()
+    _jit._compile_op_impl(CachableFunction(add_one), (int32,), int32, (7, 5))
+
+    assert recorded["chip"] == "sm_75"
+
+
+def test_return_type_inference_does_not_generate_code(monkeypatch):
+    """Inferring an operator's return type must not generate code.
+
+    The return type follows from typing alone, so inference needs neither a
+    target arch nor a device; generating code for it would make every build
+    depend on the current device before its compute capability can apply.
+    """
+    from cuda.compute import _jit
+
+    generated = []
+    original = _jit._mlir.cuda.compile
+
+    def record(*args, **kwargs):
+        generated.append(kwargs.get("output"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(_jit._mlir.cuda, "compile", record)
+
+    def add_one(x):
+        return x + 1
+
+    int32 = from_numpy_dtype(np.dtype(np.int32))
+    _jit._infer_return_type.cache_clear()
+    inferred = _jit._infer_return_type(add_one, (int32,))
+
+    assert inferred == from_numpy_dtype(np.dtype(np.int64))
+    assert generated == []
