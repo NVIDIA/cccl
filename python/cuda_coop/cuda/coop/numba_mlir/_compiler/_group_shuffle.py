@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from numbers import Integral
 
 from numba_cuda_mlir import types
@@ -56,7 +57,7 @@ _ALL_MODES = _ARRAY_MODES | _SCALAR_MODES
 
 
 def _mode_token(value: object) -> str:
-    if not isinstance(value, str):
+    if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(
             "cuda.coop.numba_mlir.shuffle mode must be a compile-time string"
         )
@@ -147,7 +148,7 @@ class _ShufflePlanning:
             resolved, distance = self._context.try_static_scalar(distance_value)
             if (
                 not resolved
-                or isinstance(distance, bool)
+                or isinstance(distance, (bool, Enum))
                 or not isinstance(distance, Integral)
                 or int(distance) != 1
             ):
@@ -176,7 +177,9 @@ class _ShufflePlanning:
                 )
             if distance_binding.kind is BindingKind.STATIC:
                 distance = distance_binding.value
-                if isinstance(distance, bool) or not isinstance(distance, Integral):
+                if isinstance(distance, (bool, Enum)) or not isinstance(
+                    distance, Integral
+                ):
                     raise TypeError(
                         "cuda.coop.numba_mlir.shuffle distance must be an integer"
                     )
