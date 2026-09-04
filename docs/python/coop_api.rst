@@ -24,24 +24,32 @@ Numba-CUDA-MLIR-qualified API
 
 .. py:module:: cuda.coop.numba_mlir
 
-The qualified module provides the matching Block, physical Warp, and logical
-Warp Load and Store entry points, group descriptors, ``ThreadData``, and
-``TempStorage``. It additionally exposes backend memory namespaces and
-payload-alignment controls. Portable and qualified calls use the same lowercase
-string selectors. Block calls support ``direct``, ``striped``, ``vectorize``,
-``transpose``, ``warp_transpose``, and ``warp_transpose_timesliced``. Physical
-and logical Warp calls support ``direct``, ``striped``, ``vectorize``, and
-``transpose``. Use ``this_warp()`` for the
-physical width of 32 or ``this_warp().group_by(width)`` for a logical width of
-1, 2, 4, 8, 16, or 32. The enclosing block must contain a multiple of 32
-threads.
+The qualified module provides matching Block, physical Warp, and logical Warp
+Load, Store, and Exchange entry points plus block Shuffle, group descriptors,
+``ThreadData``, and ``TempStorage``. It additionally exposes backend memory
+namespaces and payload-alignment controls. Portable and qualified calls use the
+same lowercase string selectors. Block Load and Store support ``direct``,
+``striped``, ``vectorize``, ``transpose``, ``warp_transpose``, and
+``warp_transpose_timesliced``. Physical and logical Warp calls support
+``direct``, ``striped``, ``vectorize``, and ``transpose``. Use
+``this_warp()`` for the physical width of 32 or
+``this_warp().group_by(width)`` for a logical width of 1, 2, 4, 8, 16, or 32.
+The enclosing block must contain a multiple of 32 threads.
 
 ``direct``, ``striped``, and ``vectorize`` are storage-free at both scopes.
-Warp ``transpose``
-uses compiler-owned storage with one disjoint slice per physical or logical
-group and a masked ``syncwarp`` reuse barrier. Explicit ``TempStorage`` is
-rejected for every Warp algorithm. Transpose Store operations preserve their
-caller-owned input payload while CUB performs its internal reordering.
+Warp ``transpose`` uses compiler-owned storage with one disjoint slice per
+physical or logical group and a masked ``syncwarp`` reuse barrier. Explicit
+``TempStorage`` is rejected for every Warp algorithm. Transpose Store
+operations preserve their caller-owned input payload while CUB performs its
+internal reordering.
+
+Exchange returns a fresh payload and preserves its input. The portable modes
+are ``striped_to_blocked`` and ``blocked_to_striped``. The qualified API adds
+block-only warp-striped and scatter layouts, signed rank payloads, non-boolean
+integer validity flags, and warp time slicing. Physical and logical Warp
+Exchange retain the two portable modes. Shuffle returns a fresh block payload
+for unit ``up`` and ``down`` modes, or a scalar for the qualified ``offset`` and
+``rotate`` modes. Boundary-output projections are not exposed.
 
 Each Warp group receives an automatic memory origin of
 ``group_index * (group_size * items_per_thread)`` before the caller's element

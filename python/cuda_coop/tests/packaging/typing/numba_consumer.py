@@ -6,12 +6,34 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 
 import numpy as np
 from typing_extensions import assert_type
 
 import cuda.coop.numba_mlir as coop
+
+_ItemT = TypeVar("_ItemT")
+
+
+class _ReadOnlyThreadData(Generic[_ItemT]):
+    """Structural readable payload without mutable item access."""
+
+    items_per_thread: int
+    dtype: object | None
+
+    def __init__(self, value: _ItemT) -> None:
+        self.items_per_thread = 1
+        self.dtype = type(value)
+        self._value = value
+
+    def __len__(self) -> int:
+        return self.items_per_thread
+
+    def __getitem__(self, index: int, /) -> _ItemT:
+        if index != 0:
+            raise IndexError(index)
+        return self._value
 
 
 def check_numba_surface(source: object, destination: object) -> None:
@@ -22,6 +44,11 @@ def check_numba_surface(source: object, destination: object) -> None:
     logical_warp = warp.group_by(8)
     byte_values = coop.ThreadData(1, np.int8)
     values = coop.ThreadData(2, np.uint16, alignas=16)
+    ranks = coop.ThreadData(2, np.int32)
+    flags = coop.ThreadData(2, np.uint8)
+    read_only_values = _ReadOnlyThreadData(np.uint16(1))
+    read_only_ranks = _ReadOnlyThreadData(np.int32(0))
+    read_only_flags = _ReadOnlyThreadData(np.uint8(1))
     storage = coop.TempStorage(alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
@@ -82,6 +109,51 @@ def check_numba_surface(source: object, destination: object) -> None:
         ),
         None,
     )
+    assert_type(
+        coop.exchange(block, values, mode="blocked_to_warp_striped"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            block,
+            values,
+            mode="scatter_to_striped_flagged",
+            ranks=ranks,
+            valid_flags=flags,
+        ),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            logical_warp,
+            values,
+            mode="blocked_to_striped",
+        ),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.shuffle(block, values, mode="down"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(block, read_only_values, mode="blocked_to_striped"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            block,
+            read_only_values,
+            mode="scatter_to_striped_flagged",
+            ranks=read_only_ranks,
+            valid_flags=read_only_flags,
+        ),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.shuffle(block, read_only_values, mode="up"),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(coop.shuffle(block, np.int32(4), mode="rotate"), np.int32)
     assert_type(coop.store(block, destination, byte_values), None)
     assert_type(
         coop.load(

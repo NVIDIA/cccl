@@ -1,0 +1,773 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from enum import Enum, IntEnum
+from inspect import signature
+from types import SimpleNamespace
+
+import pytest
+
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringMode(str, Enum):
+    BLOCKED_TO_STRIPED = "blocked_to_striped"
+    DOWN = "down"
+
+
+class _UnitDistance(IntEnum):
+    ONE = 1
+
+
+class _ReadOnlyPayload:
+    items_per_thread = 1
+    dtype = int
+
+    def __len__(self):
+        return self.items_per_thread
+
+    def __getitem__(self, index):
+        if index != 0:
+            raise IndexError(index)
+        return 0
+
+
+def _plan(function, *, arg_types=(), block=(64, 1, 1)):
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+
+    func_ir = run_frontend(function)
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=arg_types),
+        {"block": block, "grid": (1, 1, 1), "cluster": None},
+    )
+    return func_ir, planner
+
+
+def _planned_factory_calls(func_ir):
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    globals_by_name = {
+        statement.target.name: statement.value.value
+        for block in func_ir.blocks.values()
+        for statement in block.body
+        if isinstance(statement, ir.Assign) and isinstance(statement.value, ir.Global)
+    }
+    return [
+        (globals_by_name.get(statement.value.func.name), statement.value)
+        for block in func_ir.blocks.values()
+        for statement in block.body
+        if isinstance(statement, ir.Assign)
+        and isinstance(statement.value, ir.Expr)
+        and statement.value.op == "call"
+    ]
+
+
+def _provider_call(func_ir, provider):
+    calls = [
+        call for target, call in _planned_factory_calls(func_ir) if target is provider
+    ]
+    assert len(calls) == 1
+    return calls[0]
+
+
+def _match_before_inference(func_ir, *, arg_types):
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    class _Invocable:
+        files = ("exchange-shuffle-test.ltoir",)
+        temp_storage_bytes = 64
+        temp_storage_alignment = 16
+        storage_abi = "leading_pointer"
+        execution_scope = "block"
+        synchronization_scope = "block"
+
+        def __call__(self, *args):
+            del args
+
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=arg_types,
+        typemap={},
+        calltypes={},
+        metadata={},
+        typingctx=SimpleNamespace(refresh=lambda: None),
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
+    rewrite._materialize_invocable = lambda _match: (_Invocable(), False)
+    matched = False
+    for label in sorted(func_ir.blocks):
+        matched |= rewrite.match(
+            func_ir,
+            func_ir.blocks[label],
+            state.typemap,
+            state.calltypes,
+        )
+    assert matched
+
+
+def test_exchange_and_shuffle_register_declarative_result_and_rewrite_contracts():
+    from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
+    from cuda.coop.numba_mlir._compiler._operations import (
+        GroupResultSource,
+        group_primitive,
+        rewrite_operation,
+    )
+
+    del _group_exchange, _group_shuffle
+    assert group_primitive("exchange").results == (GroupResultSource("value", "value"),)
+    assert group_primitive("shuffle").results == (GroupResultSource("value", "value"),)
+    assert rewrite_operation("exchange").runtime_arg_counts == frozenset({2})
+    assert rewrite_operation("exchange_ranked").runtime_arg_counts == frozenset({3})
+    assert rewrite_operation("exchange_flagged").runtime_arg_counts == frozenset({4})
+    assert rewrite_operation("shuffle_scalar").runtime_arg_counts == frozenset({1, 2})
+    assert rewrite_operation("shuffle_array").runtime_arg_counts == frozenset({2})
+
+
+def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
+    import cuda.coop.numba_mlir as qualified
+    from cuda import coop as portable
+
+    assert tuple(signature(qualified.shuffle).parameters) == (
+        "group",
+        "value",
+        "mode",
+        "distance",
+    )
+    assert tuple(signature(portable.shuffle).parameters) == (
+        "group",
+        "value",
+        "mode",
+        "distance",
+    )
+
+
+@pytest.mark.parametrize(
+    ("operation", "mode"),
+    (
+        ("exchange", SimpleNamespace(value="blocked_to_striped")),
+        ("exchange", _StringMode.BLOCKED_TO_STRIPED),
+        ("shuffle", SimpleNamespace(value="down")),
+        ("shuffle", _StringMode.DOWN),
+    ),
+)
+def test_portable_python_entry_points_require_plain_string_modes(operation, mode):
+    import importlib
+
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.thread_group import this_block
+
+    api = importlib.import_module(f"cuda.coop._core.api.{operation}")
+    group = this_block()
+
+    with _dispatch._compiler_scope("test.backend"):
+        with pytest.raises(TypeError, match="mode must be a string"):
+            getattr(api, operation)(group, object(), mode=mode)
+
+
+@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize("mode_kind", ("value_object", "string_enum"))
+@pytest.mark.parametrize(
+    ("operation", "valid_mode"),
+    (("exchange", "blocked_to_striped"), ("shuffle", "down")),
+)
+def test_public_modes_reject_non_plain_strings_before_provider(
+    monkeypatch,
+    api,
+    operation,
+    valid_mode,
+    mode_kind,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified
+    from cuda import coop as portable
+    from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
+
+    coop = portable if api == "portable" else qualified
+    mode = (
+        SimpleNamespace(value=valid_mode)
+        if mode_kind == "value_object"
+        else _StringMode(valid_mode)
+    )
+    planning = (
+        _group_exchange._ExchangePlanning
+        if operation == "exchange"
+        else _group_shuffle._ShufflePlanning
+    )
+    monkeypatch.setattr(
+        planning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "non-string mode reached provider selection"
+        ),
+    )
+
+    if operation == "exchange":
+
+        def kernel(value):
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            return coop.exchange(coop.this_block(), items, mode=mode)
+
+    else:
+
+        def kernel(value):
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            return coop.shuffle(coop.this_block(), items, mode=mode)
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(TypeError, match="mode must be .*string"):
+        planner.run()
+
+
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+@pytest.mark.parametrize("mode_kind", ("value_object", "string_enum"))
+def test_private_lowering_mode_validation_requires_plain_strings(operation, mode_kind):
+    from cuda.coop._core.block.exchange import BlockExchangeMode
+    from cuda.coop._core.block.shuffle import BlockShuffleMode
+    from cuda.coop.numba_mlir._lowering import _exchange, _shuffle
+
+    if operation == "exchange":
+        mode = (
+            SimpleNamespace(value="blocked_to_striped")
+            if mode_kind == "value_object"
+            else _StringMode.BLOCKED_TO_STRIPED
+        )
+        with pytest.raises(TypeError, match="mode must be a string"):
+            _exchange._mode(
+                mode,
+                BlockExchangeMode,
+                operation="block exchange",
+            )
+    else:
+        mode = (
+            SimpleNamespace(value="down")
+            if mode_kind == "value_object"
+            else _StringMode.DOWN
+        )
+        with pytest.raises(TypeError, match="mode must be a string"):
+            _shuffle._mode(
+                mode,
+                allowed=frozenset({BlockShuffleMode.UP, BlockShuffleMode.DOWN}),
+            )
+
+
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+def test_rewrite_mode_validation_requires_plain_strings(operation):
+    from cuda.coop.numba_mlir._compiler import _rewrite_exchange, _rewrite_shuffle
+    from cuda.coop.numba_mlir._compiler._rewrite_support import (
+        CoopSinglePhaseRewriteError,
+    )
+
+    rewrite = _rewrite_exchange if operation == "exchange" else _rewrite_shuffle
+    token = "blocked_to_striped" if operation == "exchange" else "down"
+    string_enum = _StringMode(token)
+    for mode in (SimpleNamespace(value=token), string_enum, 0):
+        with pytest.raises(CoopSinglePhaseRewriteError, match="compile-time string"):
+            rewrite._mode_token(mode)
+
+
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+def test_portable_frontends_accept_read_only_thread_data(monkeypatch, operation):
+    import importlib
+
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.thread_group import this_block
+
+    api = importlib.import_module(f"cuda.coop._core.api.{operation}")
+    monkeypatch.setattr(
+        api,
+        "_group_primitive_marker",
+        lambda *_args, **_kwargs: "validated",
+    )
+
+    kwargs = {"mode": "blocked_to_striped" if operation == "exchange" else "down"}
+    group = this_block()
+    with _dispatch._compiler_scope("test.backend"):
+        assert (
+            getattr(api, operation)(
+                group,
+                _ReadOnlyPayload(),
+                **kwargs,
+            )
+            == "validated"
+        )
+
+
+@pytest.mark.parametrize(
+    "distance",
+    (SimpleNamespace(value=1), _UnitDistance.ONE),
+    ids=("value-impostor", "integer-enum"),
+)
+def test_portable_shuffle_validates_the_actual_distance(distance):
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.shuffle import shuffle
+    from cuda.coop._core.api.thread_group import this_block
+
+    group = this_block()
+    with _dispatch._compiler_scope("test.backend"):
+        with pytest.raises(ValueError, match="distance must be exactly 1"):
+            shuffle(group, _ReadOnlyPayload(), distance=distance)
+
+
+@pytest.mark.parametrize(
+    "distance",
+    (SimpleNamespace(value=1), _UnitDistance.ONE),
+    ids=("value-impostor", "integer-enum"),
+)
+def test_qualified_array_shuffle_rejects_enum_and_impostor_distance(
+    monkeypatch,
+    distance,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler import _group_shuffle
+
+    def shuffle(value):
+        items = coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = value
+        return coop.shuffle(coop.this_block(), items, distance=distance)
+
+    monkeypatch.setattr(
+        _group_shuffle._ShufflePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid array distance reached provider selection"
+        ),
+    )
+    _, planner = _plan(shuffle, arg_types=(types.int32,))
+    with pytest.raises(ValueError, match="compile-time unit distance"):
+        planner.run()
+
+
+@pytest.mark.parametrize(
+    ("group_kind", "mode", "provider_name"),
+    [
+        ("block", "blocked_to_striped", "exchange"),
+        ("warp", "blocked_to_striped", "warp_exchange"),
+        ("logical_warp", "blocked_to_striped", "warp_exchange"),
+        ("block", "scatter_to_blocked", "exchange_ranked"),
+        ("block", "scatter_to_striped_flagged", "exchange_flagged"),
+    ],
+)
+def test_exchange_selects_fixed_arity_provider(
+    group_kind,
+    mode,
+    provider_name,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._lowering import _exchange
+
+    uses_ranks = mode.startswith("scatter_to_")
+    uses_flags = mode == "scatter_to_striped_flagged"
+    group = {
+        "block": coop.this_block(),
+        "warp": coop.this_warp(),
+        "logical_warp": coop.this_warp().group_by(8),
+    }[group_kind]
+
+    if uses_flags:
+
+        def exchange(value):
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            ranks = coop.ThreadData(2, dtype=types.int32)
+            ranks[0] = 0
+            ranks[1] = 1
+            flags = coop.ThreadData(2, dtype=types.uint8)
+            flags[0] = 1
+            flags[1] = 1
+            return coop.exchange(
+                group,
+                items,
+                mode=mode,
+                ranks=ranks,
+                valid_flags=flags,
+            )
+
+    elif uses_ranks:
+
+        def exchange(value):
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            ranks = coop.ThreadData(2, dtype=types.int32)
+            ranks[0] = 0
+            ranks[1] = 1
+            return coop.exchange(group, items, mode=mode, ranks=ranks)
+
+    else:
+
+        def exchange(value):
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            return coop.exchange(group, items, mode=mode)
+
+    func_ir, planner = _plan(exchange, arg_types=(types.int32,))
+    assert planner.run()
+    provider = getattr(_exchange, provider_name)
+    call = _provider_call(func_ir, provider)
+    assert len(call.args) == 2 + int(uses_ranks) + int(uses_flags)
+
+
+@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
+def test_warp_exchange_rejects_block_only_scatter_before_provider(
+    monkeypatch,
+    logical_width,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler import _group_exchange
+
+    group = coop.this_warp()
+    if logical_width is not None:
+        group = group.group_by(logical_width)
+
+    def exchange(value):
+        items = coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = value
+        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks[0] = 0
+        ranks[1] = 1
+        return coop.exchange(
+            group,
+            items,
+            mode="scatter_to_striped",
+            ranks=ranks,
+        )
+
+    monkeypatch.setattr(
+        _group_exchange._ExchangePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "unsupported Warp mode reached provider selection"
+        ),
+    )
+    _, planner = _plan(exchange, arg_types=(types.int32,))
+    with pytest.raises(ValueError, match="mode for .* groups must be one of"):
+        planner.run()
+
+
+@pytest.mark.parametrize(
+    ("rank_dtype", "items_per_thread", "error"),
+    [
+        ("boolean", 2, "signed integer dtype"),
+        ("float32", 2, "signed integer dtype"),
+        ("uint32", 2, "signed integer dtype"),
+        ("int32", 3, "same items_per_thread extent"),
+    ],
+)
+def test_exchange_rejects_invalid_ranks_before_provider(
+    monkeypatch,
+    rank_dtype,
+    items_per_thread,
+    error,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler import _group_exchange
+
+    rank_type = getattr(types, rank_dtype)
+
+    def exchange(value):
+        items = coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = value
+        ranks = coop.ThreadData(
+            items_per_thread,
+            dtype=rank_type,
+        )
+        return coop.exchange(
+            coop.this_block(),
+            items,
+            mode="scatter_to_blocked",
+            ranks=ranks,
+        )
+
+    monkeypatch.setattr(
+        _group_exchange._ExchangePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid ranks reached provider selection"
+        ),
+    )
+    _, planner = _plan(exchange, arg_types=(types.int32,))
+    with pytest.raises((TypeError, ValueError), match=error):
+        planner.run()
+
+
+@pytest.mark.parametrize(
+    ("flag_dtype", "items_per_thread", "error"),
+    [
+        ("boolean", 2, "integral non-bool dtype"),
+        ("float32", 2, "integral non-bool dtype"),
+        ("uint8", 3, "same items_per_thread extent"),
+    ],
+)
+def test_exchange_rejects_invalid_flags_before_provider(
+    monkeypatch,
+    flag_dtype,
+    items_per_thread,
+    error,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler import _group_exchange
+
+    flag_type = getattr(types, flag_dtype)
+
+    def exchange(value):
+        items = coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = value
+        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks[0] = 0
+        ranks[1] = 1
+        flags = coop.ThreadData(items_per_thread, dtype=flag_type)
+        return coop.exchange(
+            coop.this_block(),
+            items,
+            mode="scatter_to_striped_flagged",
+            ranks=ranks,
+            valid_flags=flags,
+        )
+
+    monkeypatch.setattr(
+        _group_exchange._ExchangePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid valid_flags reached provider selection"
+        ),
+    )
+    _, planner = _plan(exchange, arg_types=(types.int32,))
+    with pytest.raises((TypeError, ValueError), match=error):
+        planner.run()
+
+
+@pytest.mark.parametrize(
+    ("kind", "mode", "provider_name", "runtime_distance"),
+    [
+        ("scalar", "offset", "shuffle_scalar", True),
+        ("scalar", "rotate", "shuffle_scalar", False),
+        ("array", "up", "shuffle_array", False),
+        ("array", "down", "shuffle_array", False),
+    ],
+)
+def test_shuffle_selects_scalar_or_array_provider(
+    kind,
+    mode,
+    provider_name,
+    runtime_distance,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._lowering import _shuffle
+
+    if kind == "scalar":
+        if runtime_distance:
+
+            def shuffle(value, distance):
+                return coop.shuffle(
+                    coop.this_block(),
+                    value,
+                    mode=mode,
+                    distance=distance,
+                )
+
+        else:
+
+            def shuffle(value, distance):
+                del distance
+                return coop.shuffle(
+                    coop.this_block(),
+                    value,
+                    mode=mode,
+                    distance=3,
+                )
+
+    else:
+
+        def shuffle(value, distance):
+            del distance
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            return coop.shuffle(coop.this_block(), items, mode=mode)
+
+    func_ir, planner = _plan(
+        shuffle,
+        arg_types=(types.int32, types.int32),
+    )
+    assert planner.run()
+    provider = getattr(_shuffle, provider_name)
+    call = _provider_call(func_ir, provider)
+    assert len(call.args) == (2 if kind == "array" else 1)
+    if runtime_distance:
+        assert "shuffle_distance_i64" in dict(call.kws)["distance"].name
+        assert any(
+            target is types.int64 for target, _ in _planned_factory_calls(func_ir)
+        )
+
+
+@pytest.mark.parametrize("distance", [0, 64, -1])
+def test_static_rotate_bounds_reject_before_provider(monkeypatch, distance):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler import _group_shuffle
+
+    def shuffle(value):
+        return coop.shuffle(
+            coop.this_block(),
+            value,
+            mode="rotate",
+            distance=distance,
+        )
+
+    monkeypatch.setattr(
+        _group_shuffle._ShufflePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid rotate distance reached provider selection"
+        ),
+    )
+    _, planner = _plan(shuffle, arg_types=(types.int32,))
+    with pytest.raises(ValueError, match="1 <= distance < block_threads"):
+        planner.run()
+
+
+def test_runtime_shuffle_distance_rejects_noninteger_dtype():
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    from cuda.coop._core import ArgumentBinding
+    from cuda.coop.numba_mlir._compiler._rewrite_shuffle import (
+        validate_shuffle_scalar_runtime_controls,
+    )
+    from cuda.coop.numba_mlir._compiler._rewrite_support import (
+        CoopSinglePhaseRewriteError,
+    )
+
+    scope = ir.Scope(parent=None, loc=ir.Loc("test", 1))
+    value = ir.Var(scope, "value", scope.loc)
+    distance = ir.Var(scope, "distance", scope.loc)
+    context = SimpleNamespace(
+        numba_type=lambda var: types.float32 if var is distance else types.int32,
+        dtype=lambda _var: None,
+    )
+    with pytest.raises(CoopSinglePhaseRewriteError, match="must be an integer"):
+        validate_shuffle_scalar_runtime_controls(
+            context,
+            op_name="shuffle_scalar",
+            runtime_args=[value, distance],
+            factory_kwargs={
+                "distance": ArgumentBinding.runtime(),
+                "mode": "offset",
+                "threads_per_block": (64, 1, 1),
+            },
+        )
+
+
+@pytest.mark.parametrize(
+    "distance_dtype",
+    (
+        pytest.param("boolean", id="bool"),
+        pytest.param("float32", id="float"),
+        pytest.param("uint64", id="uint64"),
+    ),
+)
+def test_shuffle_planner_rejects_invalid_runtime_distance_before_cast(
+    monkeypatch,
+    distance_dtype,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler import _group_shuffle
+
+    def shuffle(value, distance):
+        return coop.shuffle(
+            coop.this_block(),
+            value,
+            mode="offset",
+            distance=distance,
+        )
+
+    monkeypatch.setattr(
+        _group_shuffle._ShufflePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid runtime distance reached provider selection"
+        ),
+    )
+    _, planner = _plan(
+        shuffle,
+        arg_types=(types.int32, getattr(types, distance_dtype)),
+    )
+    with pytest.raises(TypeError, match="must be an integer|unsigned integer"):
+        planner.run()
+
+
+def test_planned_exchange_and_shuffle_calls_match_before_inference():
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+
+    def flagged(value):
+        items = coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = value
+        ranks = coop.ThreadData(2, dtype=types.int32)
+        ranks[0] = 0
+        ranks[1] = 1
+        flags = coop.ThreadData(2, dtype=types.uint8)
+        flags[0] = 1
+        flags[1] = 1
+        return coop.exchange(
+            coop.this_block(),
+            items,
+            mode="scatter_to_striped_flagged",
+            ranks=ranks,
+            valid_flags=flags,
+        )
+
+    def scalar(value, distance):
+        return coop.shuffle(
+            coop.this_block(),
+            value,
+            mode="offset",
+            distance=distance,
+        )
+
+    def array(value):
+        items = coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = value
+        return coop.shuffle(coop.this_block(), items, mode="down")
+
+    for function, arg_types in (
+        (flagged, (types.int32,)),
+        (scalar, (types.int32, types.int64)),
+        (array, (types.int32,)),
+    ):
+        func_ir, planner = _plan(function, arg_types=arg_types)
+        assert planner.run()
+        _match_before_inference(func_ir, arg_types=arg_types)
