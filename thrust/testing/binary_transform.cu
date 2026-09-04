@@ -7,7 +7,7 @@
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
-#include "unittest/unittest.h"
+#include <unittest/unittest.h>
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_binary_simple()

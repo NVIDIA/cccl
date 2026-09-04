@@ -6,7 +6,7 @@
 #include <cuda/iterator>
 #include <cuda/std/cstdint>
 
-#include "unittest/unittest.h"
+#include <unittest/unittest.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
