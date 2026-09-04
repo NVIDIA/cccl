@@ -9,14 +9,20 @@ from ._dispatch import (
 )
 from ._model import (
     ArgumentPrecondition,
+    CudaxCallDescription,
+    CudaxReturnKind,
     GroupExecutionRequirements,
     GroupLoweringPlan,
     GroupLoweringTarget,
+    GroupOperandKind,
     GroupPrimitiveCall,
     GroupTopologyRequirements,
     ImplementationProvenance,
+    LogicalResultContract,
     ParticipationRequirements,
     PreconditionEnforcement,
+    ResultContract,
+    ResultOwnership,
     ResultVisibility,
     StorageOwnership,
     SynchronizationRequirements,
@@ -27,26 +33,37 @@ from ._model import (
     UnsupportedReasonCode,
 )
 from ._resolution import resolve_thread_group
+from .exchange import GroupExchangeMode, GroupExchangeSemantics
 from .load_store import (
     GroupLoadStoreAlgorithm,
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
 )
+from .shuffle import GroupShuffleSemantics
 
 __all__ = [
     "ArgumentPrecondition",
+    "CudaxCallDescription",
+    "CudaxReturnKind",
+    "GroupExchangeMode",
+    "GroupExchangeSemantics",
     "GroupExecutionRequirements",
     "GroupLoadStoreAlgorithm",
     "GroupLoadStoreKind",
     "GroupLoadStoreSemantics",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
+    "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupShuffleSemantics",
     "GroupTopologyRequirements",
     "ImplementationProvenance",
+    "LogicalResultContract",
     "ParticipationRequirements",
     "PreconditionEnforcement",
+    "ResultContract",
+    "ResultOwnership",
     "ResultVisibility",
     "StorageOwnership",
     "SynchronizationRequirements",
