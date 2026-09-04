@@ -7,8 +7,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "catch2_test_helper.h"
-#include <unittest/detail/random.h>
 #include <unittest/unittest.h>
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possible loss of data
