@@ -120,7 +120,7 @@ struct HistogramPolicy
   bool use_work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
-  HistogramHighBinAlgorithm high_bin_algorithm       = HistogramHighBinAlgorithm::cooperative;
+  HistogramHighBinAlgorithm high_bin_algorithm       = HistogramHighBinAlgorithm::global_memory_privatized;
   HistogramCacheAlgorithm high_bin_cache             = HistogramCacheAlgorithm::single_probe;
   HistogramSpillAlgorithm high_bin_spill             = HistogramSpillAlgorithm::global_memory_privatized;
   HistogramAggregationAlgorithm high_bin_aggregation = HistogramAggregationAlgorithm::rle;
@@ -524,7 +524,7 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          is_even ? 1024 : 2048,
+          1024,
           4,
           262144,
           4,
@@ -541,71 +541,17 @@ public:
       {
         if (sample_size == 1)
         {
-          return HistogramPolicy{
-            768,
-            12,
-            1 << 2,
-            BLOCK_LOAD_DIRECT,
-            LOAD_LDG,
-            false,
-            SMEM,
-            false,
-            2048,
-            HistogramHighBinAlgorithm::cooperative,
-            HistogramCacheAlgorithm::single_probe,
-            HistogramSpillAlgorithm::global_memory_privatized,
-            HistogramAggregationAlgorithm::rle,
-            is_even ? 4096 : 2048,
-            1,
-            262144,
-            4,
-            0};
+          return HistogramPolicy{768, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
         }
         else if (sample_size == 2)
         {
-          return HistogramPolicy{
-            960,
-            10,
-            1 << 2,
-            BLOCK_LOAD_DIRECT,
-            LOAD_DEFAULT,
-            true,
-            SMEM,
-            false,
-            2048,
-            HistogramHighBinAlgorithm::cooperative,
-            HistogramCacheAlgorithm::single_probe,
-            HistogramSpillAlgorithm::global_memory_privatized,
-            HistogramAggregationAlgorithm::rle,
-            is_even ? 4096 : 2048,
-            1,
-            262144,
-            4,
-            0};
+          return HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
         }
       }
     }
 
     // fallback from SM50
-    return HistogramPolicy{
-      384,
-      t_scale(16),
-      4,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      true,
-      SMEM,
-      false,
-      0,
-      HistogramHighBinAlgorithm::cooperative,
-      HistogramCacheAlgorithm::single_probe,
-      HistogramSpillAlgorithm::global_memory_privatized,
-      HistogramAggregationAlgorithm::rle,
-      num_active_channels == 1 ? 4096 : 1024,
-      num_active_channels == 1 ? 1 : 4,
-      262144,
-      4,
-      0};
+    return HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0};
   }
 };
 
