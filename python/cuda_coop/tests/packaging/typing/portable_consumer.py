@@ -11,7 +11,7 @@ from typing import Generic, Literal, TypeVar
 import numpy as np
 from typing_extensions import assert_type
 
-import cuda.coop as coop
+from cuda import coop
 
 _ItemT = TypeVar("_ItemT")
 
@@ -136,3 +136,32 @@ def check_portable_surface(source: object, destination: object) -> None:
         coop.sum(block, values, broadcast=False, algorithm="raking"),
         np.int16,
     )
+    assert_type(
+        coop.scan(
+            block,
+            np.int32(4),
+            mode="inclusive",
+            scan_op="max",
+            algorithm="raking_memoize",
+            temp_storage=storage,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            logical_warp,
+            np.float32(4),
+            scan_op="multiplies",
+            initial_value=1.0,
+        ),
+        np.float32,
+    )
+    assert_type(
+        coop.inclusive_scan(warp, np.int16(4), scan_op="min"),
+        np.int16,
+    )
+    assert_type(
+        coop.exclusive_sum(block, values, algorithm="warp_scans"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(coop.inclusive_sum(warp, np.uint32(4)), np.uint32)

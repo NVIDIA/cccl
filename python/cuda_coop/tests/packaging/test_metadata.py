@@ -76,16 +76,10 @@ def test_excluded_python_implementations_are_absent() -> None:
     forbidden = (
         "_aot_cli.py",
         "cutlass",
-        "_core/block/scan.py",
-        "_core/group/scan.py",
-        "_core/api/scan.py",
-        "_core/api/scan.pyi",
         "numba_mlir/_dataclass.py",
+        "numba_mlir/_scan_op.py",
         "numba_mlir/_stateful_function.py",
-        "numba_mlir/_group_scan.py",
-        "numba_mlir/_lowering/_scan.py",
         "numba_mlir/_lowering/_thread_group.py",
-        "numba_mlir/_compiler/_rewrite_scan.py",
     )
 
     assert not [relative for relative in forbidden if (package / relative).exists()]
@@ -100,4 +94,5 @@ def test_excluded_python_implementations_are_absent() -> None:
         "exchange.py",
         "load_store.py",
         "reduce.py",
+        "scan.py",
     }

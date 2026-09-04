@@ -55,6 +55,7 @@ ReduceAlgorithm: TypeAlias = Literal[
     "raking",
     "warp_reductions",
 ]
+ScanAlgorithm: TypeAlias = Literal["raking", "raking_memoize", "warp_scans"]
 ReduceOperator: TypeAlias = Literal[
     "+",
     "sum",
@@ -75,6 +76,25 @@ ReduceOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
+SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
+NonSumScanOperator: TypeAlias = Literal[
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
+ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
+ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
 ExchangeMode: TypeAlias = Literal[
     "striped_to_blocked",
     "blocked_to_striped",
@@ -127,6 +147,7 @@ PortableNumericScalar: TypeAlias = (
     | numpy.float64
     | CompilerScalarLike
 )
+ContextualInitialValue: TypeAlias = ItemT | int | float
 _ReadableItemT = TypeVar("_ReadableItemT", bound=PortableNumericScalar, covariant=True)
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
@@ -181,11 +202,17 @@ class TempStorageLike(Protocol):
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
     "PortableShuffleMode",
     "ReduceAlgorithm",
     "ReduceOperator",
+    "ScanAlgorithm",
+    "ScanMode",
+    "ScanOperator",
+    "SumScanOperator",
+    "NonSumScanOperator",
     "ScalarShuffleMode",
     "ShuffleMode",
     "TempStorageLike",
