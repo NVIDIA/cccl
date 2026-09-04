@@ -4,6 +4,8 @@
 
 """Exchange payload inference and pre-provider validation."""
 
+from enum import Enum
+
 from numba_cuda_mlir import types
 
 from ._group_rewriting import GroupRewriteContext
@@ -22,7 +24,7 @@ _SCATTER_MODES = frozenset(
 
 
 def _mode_token(value: object) -> str:
-    if isinstance(value, str):
+    if isinstance(value, str) and not isinstance(value, Enum):
         return value.strip().lower().replace("-", "_")
     raise CoopSinglePhaseRewriteError(
         "coop exchange mode must be a compile-time string"
