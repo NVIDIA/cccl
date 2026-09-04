@@ -57,7 +57,12 @@ def _registry_sizes():
 
 def test_invocable_typing_is_local_to_compiler_owners():
     from numba_cuda_mlir.descriptor import mlir_target
-    from numba_cuda_mlir.extending import _NumbaCudaMlirOverloadFunctionTemplate
+
+    from cuda.coop.numba_mlir._compiler._numba_mlir_compat import (
+        _get_numba_mlir_compat,
+    )
+
+    overload_template = _get_numba_mlir_compat().overload_function_template
 
     registry_sizes = _registry_sizes()
     first = _make_invocable()
@@ -72,8 +77,7 @@ def test_invocable_typing_is_local_to_compiler_owners():
 
     assert len(first_type.templates) == 2
     assert all(
-        issubclass(template, _NumbaCudaMlirOverloadFunctionTemplate)
-        for template in first_type.templates
+        issubclass(template, overload_template) for template in first_type.templates
     )
     assert first_type is mlir_target.typing_context.resolve_value_type(first)
     assert second_type is mlir_target.typing_context.resolve_value_type(second)

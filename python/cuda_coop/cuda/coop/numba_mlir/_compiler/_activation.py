@@ -13,11 +13,18 @@ from __future__ import annotations
 import importlib
 import importlib.metadata
 import sys
-from dataclasses import dataclass
 from threading import RLock
 from typing import Any
 
+from ._numba_mlir_compat import (
+    _get_numba_mlir_compat,
+    _NumbaMlirBackendImportError,
+    _NumbaMlirCompilerCompat,
+    _RegistrationSnapshot,
+)
+
 _MINIMUM_RUNTIME_VERSION = "0.5.0"
+_MAXIMUM_RUNTIME_VERSION = "0.6"
 _RUNTIME_INSTALL_HINT = (
     "'cuda-coop[numba-cuda-mlir-cu12]' for CUDA 12 or "
     "'cuda-coop[numba-cuda-mlir-cu13]' for CUDA 13"
@@ -32,26 +39,6 @@ _REGISTRATION_MODULES = frozenset(
 _activation_lock = RLock()
 
 
-@dataclass(frozen=True)
-class _RegistrationSnapshot:
-    planner_registry: Any
-    planners: tuple[type, ...]
-    rewrite_registry: Any
-    rewrites: dict[str, tuple[type, ...]]
-
-
-class _NumbaMlirBackendImportError(ImportError):
-    """Structured qualified-backend import failure."""
-
-    def __init__(self, reason_code, message, *, cause=None, **details):
-        super().__init__(message)
-        self.backend = "numba-cuda-mlir"
-        self.reason_code = reason_code
-        self.details = details
-        if cause is not None:
-            self.__cause__ = cause
-
-
 def _runtime_requirement(runtime=None) -> str:
     version = getattr(runtime, "__version__", None)
     if not isinstance(version, str) or not version:
@@ -64,8 +51,9 @@ def _runtime_requirement(runtime=None) -> str:
     if isinstance(version, str) and version:
         detected = f"detected numba-cuda-mlir=={version}"
     return (
-        f"{detected}; the public package floor is numba-cuda-mlir>="
-        f"{_MINIMUM_RUNTIME_VERSION}. Install {_RUNTIME_INSTALL_HINT}."
+        f"{detected}; the supported series is numba-cuda-mlir>="
+        f"{_MINIMUM_RUNTIME_VERSION},<{_MAXIMUM_RUNTIME_VERSION}. Install "
+        f"{_RUNTIME_INSTALL_HINT}."
     )
 
 
@@ -176,50 +164,8 @@ def _initialize_runtime_hooks_transaction() -> None:
     """Run one compiler-hook registration transaction."""
 
     _require_runtime()
-    try:
-        extending = importlib.import_module("numba_cuda_mlir.extending")
-        rewrites = importlib.import_module("numba_cuda_mlir.numba_cuda.core.rewrites")
-    except ImportError as exc:
-        raise _NumbaMlirBackendImportError(
-            "runtime-hook-api-import-failed",
-            "cuda.coop.numba_mlir could not import the required compiler "
-            "hook API from numba-cuda-mlir.",
-            cause=exc,
-            missing=getattr(exc, "name", None),
-        ) from exc
-
-    required = {
-        "numba_cuda_mlir.extending": (
-            "WholeFunctionPlanner",
-            "refresh_registries",
-            "register_planner",
-            "require_launch_config",
-            "set_required_dynamic_shared_memory",
-        ),
-        "numba_cuda_mlir.numba_cuda.core.rewrites": (
-            "Rewrite",
-            "register_rewrite",
-        ),
-    }
-    modules = {
-        "numba_cuda_mlir.extending": extending,
-        "numba_cuda_mlir.numba_cuda.core.rewrites": rewrites,
-    }
-    missing = tuple(
-        f"{module_name}.{name}"
-        for module_name, names in required.items()
-        for name in names
-        if not callable(getattr(modules[module_name], name, None))
-    )
-    if missing:
-        raise _NumbaMlirBackendImportError(
-            "incomplete-runtime-hook-api",
-            "cuda.coop.numba_mlir requires compiler capabilities that are "
-            "missing from the installed runtime: " + ", ".join(missing),
-            missing_capabilities=missing,
-        )
-
-    snapshot = _snapshot_registrations(rewrites)
+    compat = _get_numba_mlir_compat()
+    snapshot = _snapshot_registrations(compat)
     package_name = _BACKEND_PACKAGE
     loaded_backend_modules = frozenset(
         name for name in sys.modules if name.startswith(f"{package_name}.")
@@ -233,6 +179,7 @@ def _initialize_runtime_hooks_transaction() -> None:
             snapshot,
             planner_module,
             group_planner_module,
+            compat=compat,
         )
     except BaseException:
         _restore_registrations(snapshot)
@@ -249,6 +196,8 @@ def _verify_registration_postconditions(
     snapshot: _RegistrationSnapshot,
     planner_module: Any,
     group_planner_module: Any,
+    *,
+    compat: _NumbaMlirCompilerCompat | None = None,
 ) -> None:
     expected_planners = (
         (
@@ -260,25 +209,16 @@ def _verify_registration_postconditions(
             getattr(planner_module, "CoopWholeFunctionPlanner", None),
         ),
     )
-    expected_rewrite = getattr(planner_module, "CoopSinglePhaseRewrite", None)
-    with snapshot.planner_registry._lock:
-        planner_counts = {
-            name: snapshot.planner_registry._planners.count(planner)
-            if planner is not None
-            else 0
-            for name, planner in expected_planners
-        }
-    rewrite_count = (
-        snapshot.rewrite_registry.rewrites.get("before-inference", []).count(
-            expected_rewrite
-        )
-        if expected_rewrite is not None
-        else 0
+    if compat is None:
+        compat = _get_numba_mlir_compat()
+    registration_counts = compat.registration_counts(
+        snapshot,
+        expected_planners,
+        (
+            "CoopSinglePhaseRewrite",
+            getattr(planner_module, "CoopSinglePhaseRewrite", None),
+        ),
     )
-    registration_counts = {
-        **planner_counts,
-        "CoopSinglePhaseRewrite": rewrite_count,
-    }
     invalid = tuple(
         f"{name}={count}" for name, count in registration_counts.items() if count != 1
     )
@@ -292,35 +232,22 @@ def _verify_registration_postconditions(
         )
 
 
-def _snapshot_registrations(rewrites: Any) -> _RegistrationSnapshot:
+def _snapshot_registrations(
+    compat: _NumbaMlirCompilerCompat | None = None,
+) -> _RegistrationSnapshot:
     """Snapshot compiler registries populated during backend activation."""
 
+    if compat is None:
+        compat = _get_numba_mlir_compat()
     try:
-        planner_module = importlib.import_module(
-            "numba_cuda_mlir._whole_function_planners"
-        )
-        planner_registry = planner_module._planner_registry
-        rewrite_registry = rewrites.rewrite_registry
-        with planner_registry._lock:
-            planners = tuple(planner_registry._planners)
-        rewrite_lists = rewrite_registry.rewrites.copy()
-        registered_rewrites = {
-            kind: tuple(rewrite_classes)
-            for kind, rewrite_classes in rewrite_lists.items()
-        }
-    except (ImportError, AttributeError, TypeError) as exc:
+        return compat.snapshot_registrations()
+    except (AttributeError, TypeError) as exc:
         raise _NumbaMlirBackendImportError(
             "registration-transaction-unavailable",
             "cuda.coop.numba_mlir cannot transactionally register its "
             "planners and rewrite with the installed numba-cuda-mlir runtime.",
             cause=exc,
         ) from exc
-    return _RegistrationSnapshot(
-        planner_registry=planner_registry,
-        planners=planners,
-        rewrite_registry=rewrite_registry,
-        rewrites=registered_rewrites,
-    )
 
 
 def _restore_registrations(snapshot: _RegistrationSnapshot) -> None:
@@ -334,44 +261,10 @@ def _restore_registrations(snapshot: _RegistrationSnapshot) -> None:
     place, including ones appended concurrently during rollback.
     """
 
-    with snapshot.planner_registry._lock:
-        _remove_backend_additions(
-            snapshot.planner_registry._planners,
-            snapshot.planners,
-        )
-
-    registered_rewrites = snapshot.rewrite_registry.rewrites
-    for kind, rewrite_classes in registered_rewrites.copy().items():
-        _remove_backend_additions(
-            rewrite_classes,
-            snapshot.rewrites.get(kind, ()),
-        )
-
-
-def _remove_backend_additions(
-    registrations: list[type],
-    baseline: tuple[type, ...],
-) -> None:
-    """Delete post-snapshot backend registrations without replacing a list."""
-
-    baseline_counts: dict[int, int] = {}
-    for registration in baseline:
-        identity = id(registration)
-        baseline_counts[identity] = baseline_counts.get(identity, 0) + 1
-
-    removal_indices: list[int] = []
-    for index, registration in enumerate(registrations):
-        identity = id(registration)
-        remaining = baseline_counts.get(identity, 0)
-        if remaining:
-            baseline_counts[identity] = remaining - 1
-        elif getattr(registration, "__module__", None) in _REGISTRATION_MODULES:
-            removal_indices.append(index)
-
-    # Public registration APIs append to these lists.  Removing by index from
-    # the tail preserves any foreign append that races with this cleanup.
-    for index in reversed(removal_indices):
-        del registrations[index]
+    _NumbaMlirCompilerCompat.restore_registrations(
+        snapshot,
+        owned_modules=_REGISTRATION_MODULES,
+    )
 
 
 __all__: tuple[str, ...] = ()

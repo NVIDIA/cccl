@@ -13,7 +13,7 @@ import pytest
 import cuda.coop as portable_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _temp_storage, _thread_data
-from cuda.coop.numba_mlir._compiler import _activation
+from cuda.coop.numba_mlir._compiler import _activation, _numba_mlir_compat
 
 _PORTABLE_EXPORTS = [
     "__version__",
@@ -168,29 +168,28 @@ def test_compiler_hooks_are_registered_exactly_once_and_idempotently():
     storage_rewrites = importlib.import_module(
         "cuda.coop.numba_mlir._compiler._rewrite"
     )
-    planner_registry = importlib.import_module(
-        "numba_cuda_mlir._whole_function_planners"
-    )._planner_registry
-    rewrite_registry = importlib.import_module(
-        "numba_cuda_mlir.numba_cuda.core.rewrites"
-    ).rewrite_registry
+    compat = _numba_mlir_compat._get_numba_mlir_compat()
+    snapshot = compat.snapshot_registrations()
 
     def counts():
-        with planner_registry._lock:
-            planner_counts = (
-                planner_registry._planners.count(
-                    group_rewrites.CoopGroupHierarchyPlanner
+        registration_counts = compat.registration_counts(
+            snapshot,
+            (
+                (
+                    "CoopGroupHierarchyPlanner",
+                    group_rewrites.CoopGroupHierarchyPlanner,
                 ),
-                planner_registry._planners.count(
-                    storage_rewrites.CoopWholeFunctionPlanner
+                (
+                    "CoopWholeFunctionPlanner",
+                    storage_rewrites.CoopWholeFunctionPlanner,
                 ),
-            )
-        return (
-            *planner_counts,
-            rewrite_registry.rewrites["before-inference"].count(
-                storage_rewrites.CoopSinglePhaseRewrite
+            ),
+            (
+                "CoopSinglePhaseRewrite",
+                storage_rewrites.CoopSinglePhaseRewrite,
             ),
         )
+        return tuple(registration_counts.values())
 
     assert counts() == (1, 1, 1)
     _activation._initialize_runtime_hooks()

@@ -24,15 +24,21 @@ from typing import BinaryIO, Sequence
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.compiler import ExternFunction
 from numba_cuda_mlir.descriptor import mlir_target
-from numba_cuda_mlir.extending import _NumbaCudaMlirOverloadFunctionTemplate
-from numba_cuda_mlir.numba_cuda.typing.templates import make_overload_template
 from numba_cuda_mlir.types import signature
 
 from cuda.coop._core import SynchronizationScope
 
 from ._compiler import _nvrtc as nvrtc
+from ._compiler._numba_mlir_compat import (
+    _get_numba_mlir_compat,
+    _get_numba_mlir_datamodel_compat,
+)
 from ._compiler._operations import StorageABI
 from ._semantic import _numba_semantic_token
+
+_numba_mlir_compat = _get_numba_mlir_compat()
+_NumbaCudaMlirOverloadFunctionTemplate = _numba_mlir_compat.overload_function_template
+make_overload_template = _numba_mlir_compat.make_overload_template
 
 NUMBA_TYPES_TO_CPP = {
     types.boolean: "bool",
@@ -168,12 +174,9 @@ def _registered_struct_member_types(numba_type):
     """Return matching CUDA/MLIR ``StructModel`` members, or ``None``."""
 
     from numba_cuda_mlir import models as mlir_models
-    from numba_cuda_mlir._mlir import ir as mlir_ir
-    from numba_cuda_mlir.numba_cuda.datamodel import default_manager
-    from numba_cuda_mlir.numba_cuda.datamodel.models import (
-        StructModel as CudaStructModel,
-    )
-    from numba_cuda_mlir.numba_cuda.models import cuda_data_manager
+
+    compat = _get_numba_mlir_datamodel_compat()
+    mlir_ir = compat.mlir_ir
 
     def get_member_types(manager, model_type):
         try:
@@ -184,8 +187,8 @@ def _registered_struct_member_types(numba_type):
             return None
         return tuple(model.get_type(index) for index in range(model.field_count))
 
-    cuda_manager = cuda_data_manager.chain(default_manager)
-    cuda_members = get_member_types(cuda_manager, CudaStructModel)
+    cuda_manager = compat.cuda_data_manager.chain(compat.default_manager)
+    cuda_members = get_member_types(cuda_manager, compat.cuda_struct_model)
     if cuda_members is None:
         return None
 
