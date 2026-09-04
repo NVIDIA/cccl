@@ -217,14 +217,14 @@ def _block_scan_prefix_aliases(source, canonical, compatibility):
         values,
         scan_op=_device_maximum,
         prefix_op=_prefix_after_block_aggregate,
-        algorithm=qualified_coop.BlockScanAlgorithm.RAKING_MEMOIZE,
+        algorithm="raking_memoize",
     )
     compatibility_values = qualified_coop.exclusive_scan(
         qualified_coop.this_block(),
         values,
         scan_op=_device_maximum,
         block_prefix_callback_op=_prefix_after_block_aggregate,
-        algorithm=qualified_coop.BlockScanAlgorithm.RAKING_MEMOIZE,
+        algorithm="raking_memoize",
     )
     for item in range(_ITEMS_PER_THREAD):
         index = thread * _ITEMS_PER_THREAD + item

@@ -582,7 +582,7 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
             source[thread],
             state,
             prefix_op=running,
-            algorithm=coop.BlockScanAlgorithm.RAKING,
+            algorithm="raking",
         )
         state_int32 = cuda.local.array(1, dtype=types.int32)
         state_int32[0] = 5
@@ -591,7 +591,7 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
             source[thread],
             state_int32,
             prefix_op=running_int32,
-            algorithm=coop.BlockScanAlgorithm.RAKING_MEMOIZE,
+            algorithm="raking_memoize",
         )
         values = cuda.local.array(2, dtype=types.int32)
         values[0] = source[thread * 2]
@@ -600,7 +600,7 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
             coop.this_block(),
             values,
             prefix_op=stateless_prefix,
-            algorithm=coop.BlockScanAlgorithm.WARP_SCANS,
+            algorithm="warp_scans",
         )
         destination[2 * _BLOCK_THREADS + thread * 2] = scanned[0]
         destination[2 * _BLOCK_THREADS + thread * 2 + 1] = scanned[1]
