@@ -55,9 +55,12 @@ endforeach()
 ## Header hygiene: every `__sharded` header must compile on its own, so that
 ## no header silently depends on a name another header happens to introduce
 ## first. One compile-only target per header, each including just that one.
-file(GLOB sharded_headers
-  RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded/*.cuh")
+file(
+  GLOB sharded_headers
+  RELATIVE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded/*.cuh"
+)
 
 foreach (header IN LISTS sharded_headers)
   get_filename_component(header_name "${header}" NAME_WE)
@@ -66,6 +69,8 @@ foreach (header IN LISTS sharded_headers)
   cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
   cudax_places_configure_target(${test_target})
   target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
-  target_compile_definitions(${test_target}
-    PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/${header}>")
+  target_compile_definitions(
+    ${test_target}
+    PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/${header}>"
+  )
 endforeach()

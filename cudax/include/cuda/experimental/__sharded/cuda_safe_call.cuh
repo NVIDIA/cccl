@@ -35,8 +35,6 @@
 
 namespace cuda::experimental::sharded
 {
-
 using ::cuda::experimental::stf::cuda_safe_call;
 using ::cuda::experimental::stf::cuda_try;
-
 } // namespace cuda::experimental::sharded
