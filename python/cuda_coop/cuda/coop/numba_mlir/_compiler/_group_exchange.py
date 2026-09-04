@@ -38,23 +38,16 @@ from ._parameters import _validate_common_numeric_dtype, normalize_dtype_param
 from ._rewrite_exchange import infer_exchange_payload
 
 _BLOCK_MODES = frozenset(mode.value for mode in BlockExchangeMode)
-_WARP_MODES = frozenset(
-    {
-        BlockExchangeMode.STRIPED_TO_BLOCKED.value,
-        BlockExchangeMode.BLOCKED_TO_STRIPED.value,
-        BlockExchangeMode.SCATTER_TO_STRIPED.value,
-    }
-)
 _PORTABLE_MODES = frozenset(
     {
         BlockExchangeMode.STRIPED_TO_BLOCKED.value,
         BlockExchangeMode.BLOCKED_TO_STRIPED.value,
     }
 )
+_WARP_MODES = _PORTABLE_MODES
 
 
 def _mode_token(value: object, *, group_kind: str) -> str:
-    value = getattr(value, "value", value)
     if not isinstance(value, str):
         raise TypeError(
             "cuda.coop.numba_mlir.exchange mode must be a compile-time string"

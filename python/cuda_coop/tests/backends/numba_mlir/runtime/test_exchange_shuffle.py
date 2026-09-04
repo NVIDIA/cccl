@@ -42,7 +42,6 @@ _WARP_THREADS = 32
 _LOGICAL_WARP_THREADS = 8
 _ITEMS_PER_THREAD = 3
 _TILE_ITEMS = _BLOCK_THREADS * _ITEMS_PER_THREAD
-_WARP_PADDING_ITEMS = 8
 _BLOCK_MODES = (
     "striped_to_blocked",
     "blocked_to_striped",
@@ -534,110 +533,6 @@ def test_block_exchange_warp_time_slicing_matches_the_full_storage_oracle(
     np.testing.assert_array_equal(preserved, source)
     if mode.startswith("scatter_"):
         np.testing.assert_array_equal(ranks_out, ranks)
-
-
-@lru_cache(maxsize=None)
-def _qualified_warp_scatter_kernel(width: int, items_per_thread: int):
-    @cuda.jit
-    def kernel(source, ranks_source, observed, preserved, ranks_out):
-        thread = cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(
-            items_per_thread,
-            dtype=types.int32,
-        )
-        ranks = qualified_coop.ThreadData(
-            items_per_thread,
-            dtype=types.int32,
-        )
-        for item in range(items_per_thread):
-            index = thread * items_per_thread + item
-            payload[item] = source[index]
-            ranks[item] = ranks_source[index]
-        result = qualified_coop.exchange(
-            qualified_coop.this_warp().group_by(width),
-            payload,
-            mode="scatter_to_striped",
-            ranks=ranks,
-        )
-        for item in range(items_per_thread):
-            index = thread * items_per_thread + item
-            observed[index] = result[item]
-            preserved[index] = payload[item]
-            ranks_out[index] = ranks[item]
-
-    return kernel
-
-
-@pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
-def test_warp_scatter_supports_every_logical_width_and_preserves_ranks(
-    width: int,
-) -> None:
-    items_per_thread = _ITEMS_PER_THREAD
-    item_count = _BLOCK_THREADS * items_per_thread
-    source = _values(item_count, shift=113)
-    ranks = _reversed_ranks(
-        thread_count=_BLOCK_THREADS,
-        group_width=width,
-        items_per_thread=items_per_thread,
-    )
-    expected, compared = _scatter_exchange_oracle(
-        source,
-        ranks,
-        group_width=width,
-        items_per_thread=items_per_thread,
-        mode="scatter_to_striped",
-    )
-    observed = np.full(item_count, -2031, dtype=np.int32)
-    preserved = np.full(item_count, -2033, dtype=np.int32)
-    ranks_out = np.full(item_count, -2037, dtype=np.int32)
-
-    _qualified_warp_scatter_kernel(width, items_per_thread)[1, _BLOCK_THREADS](
-        source,
-        ranks,
-        observed,
-        preserved,
-        ranks_out,
-    )
-
-    assert np.all(compared)
-    np.testing.assert_array_equal(observed, expected)
-    np.testing.assert_array_equal(preserved, source)
-    np.testing.assert_array_equal(ranks_out, ranks)
-
-
-def test_warp_scatter_preserves_ranks_when_smem_padding_is_active() -> None:
-    width = _LOGICAL_WARP_THREADS
-    items_per_thread = _WARP_PADDING_ITEMS
-    item_count = _BLOCK_THREADS * items_per_thread
-    source = _values(item_count, shift=127)
-    ranks = _reversed_ranks(
-        thread_count=_BLOCK_THREADS,
-        group_width=width,
-        items_per_thread=items_per_thread,
-    )
-    expected, compared = _scatter_exchange_oracle(
-        source,
-        ranks,
-        group_width=width,
-        items_per_thread=items_per_thread,
-        mode="scatter_to_striped",
-    )
-    observed = np.full(item_count, -2041, dtype=np.int32)
-    preserved = np.full(item_count, -2043, dtype=np.int32)
-    ranks_out = np.full(item_count, -2047, dtype=np.int32)
-
-    _qualified_warp_scatter_kernel(width, items_per_thread)[1, _BLOCK_THREADS](
-        source,
-        ranks,
-        observed,
-        preserved,
-        ranks_out,
-    )
-
-    assert np.all(compared)
-    np.testing.assert_array_equal(observed, expected)
-    np.testing.assert_array_equal(preserved, source)
-    np.testing.assert_array_equal(ranks_out, ranks)
 
 
 @lru_cache(maxsize=None)
