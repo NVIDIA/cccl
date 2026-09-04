@@ -1425,9 +1425,12 @@ def test_non_direct_block_algorithms_fail_before_provider_materialization(
 
 
 @pytest.mark.parametrize("operation", ["load", "store"])
-@pytest.mark.parametrize("algorithm", [True, "stripd", object()])
+@pytest.mark.parametrize(
+    ("algorithm", "error_type"),
+    [(True, TypeError), ("stripd", ValueError), (object(), TypeError)],
+)
 def test_invalid_block_algorithm_values_fail_before_provider_materialization(
-    monkeypatch, operation, algorithm
+    monkeypatch, operation, algorithm, error_type
 ):
     from numba_cuda_mlir import types
 
@@ -1441,8 +1444,6 @@ def test_invalid_block_algorithm_values_fail_before_provider_materialization(
         ),
     )
     factory = getattr(_load_store, operation)
-    error_type = TypeError if algorithm is True else ValueError
-
     with pytest.raises(error_type):
         factory(types.int32, threads_per_block=32, algorithm=algorithm)
 
