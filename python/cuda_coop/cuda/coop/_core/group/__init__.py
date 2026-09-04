@@ -34,16 +34,20 @@ from ._model import (
     UnsupportedReasonCode,
 )
 from ._resolution import resolve_thread_group
+from .exchange import GroupExchangeMode, GroupExchangeSemantics
 from .load_store import (
     GroupLoadStoreAlgorithm,
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
 )
+from .shuffle import GroupShuffleSemantics
 
 __all__ = [
     "ArgumentPrecondition",
     "CudaxCallDescription",
     "CudaxReturnKind",
+    "GroupExchangeMode",
+    "GroupExchangeSemantics",
     "GroupLoadStoreAlgorithm",
     "GroupLoadStoreKind",
     "GroupLoadStoreSemantics",
@@ -52,6 +56,7 @@ __all__ = [
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupShuffleSemantics",
     "GroupTopologyContract",
     "ImplementationProvenance",
     "LogicalResultContract",
