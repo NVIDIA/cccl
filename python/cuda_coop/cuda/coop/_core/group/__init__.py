@@ -36,6 +36,7 @@ from .load_store import (
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
 )
+from .reduce import GroupReduceSemantics
 
 __all__ = [
     "ArgumentPrecondition",
@@ -48,6 +49,7 @@ __all__ = [
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupReduceSemantics",
     "GroupTopologyRequirements",
     "ImplementationProvenance",
     "LogicalResultContract",
