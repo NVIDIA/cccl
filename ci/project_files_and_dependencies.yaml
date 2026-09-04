@@ -173,7 +173,6 @@ projects:
     include_regexes:
     - "python/cuda_cccl/"
     - "python/cuda_stf/"
-    - "^LICENSE$"
     - "pyproject.toml"
     exclude_regexes: []
 
@@ -199,7 +198,7 @@ projects:
     - "^cudax/LICENSE\\.TXT$"
     - "^libcudacxx/LICENSE\\.TXT$"
     - "^thrust/LICENSE$"
-    - "pyproject.toml"
+    - "^pyproject\\.toml$"
     exclude_regexes: []
 
   packaging:

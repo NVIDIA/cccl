@@ -1,2 +1,2 @@
-FULL_BUILD=python cuda_coop_python
+FULL_BUILD=cuda_coop_python
 LITE_BUILD=
