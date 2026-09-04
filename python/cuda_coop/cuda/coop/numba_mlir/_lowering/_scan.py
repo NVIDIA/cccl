@@ -24,6 +24,7 @@ from cuda.coop._core import (
     make_warp_scan_spec,
     normalize_block_scan_algorithm,
 )
+from cuda.coop._core.scan import normalize_scan_operator_alias
 
 from .._compiler._operations import (
     StorageABI,
@@ -53,27 +54,6 @@ _BUILTIN_SCAN_OPERATORS = {
     "bit_or": "::cuda::std::bit_or<T>",
     "bit_xor": "::cuda::std::bit_xor<T>",
 }
-_SCAN_OPERATOR_ALIASES = {
-    None: "sum",
-    "+": "sum",
-    "sum": "sum",
-    "add": "sum",
-    "plus": "sum",
-    "*": "multiplies",
-    "mul": "multiplies",
-    "multiply": "multiplies",
-    "multiplies": "multiplies",
-    "min": "min",
-    "minimum": "min",
-    "max": "max",
-    "maximum": "max",
-    "&": "bit_and",
-    "bit_and": "bit_and",
-    "|": "bit_or",
-    "bit_or": "bit_or",
-    "^": "bit_xor",
-    "bit_xor": "bit_xor",
-}
 _CALLABLE_SCAN_OPERATOR_ALIASES = {
     operator.add: "sum",
     operator.mul: "multiplies",
@@ -94,19 +74,24 @@ _BITWISE_SCAN_OPERATORS = frozenset({"bit_and", "bit_or", "bit_xor"})
 def normalize_scan_operation(scan_op: Any) -> str | None:
     """Return a canonical built-in token or ``None`` for a callback."""
 
-    try:
-        return _SCAN_OPERATOR_ALIASES[scan_op]
-    except (KeyError, TypeError):
-        pass
+    if scan_op is None:
+        return "sum"
+    if isinstance(scan_op, str):
+        operation = normalize_scan_operator_alias(scan_op)
+        if operation is not None:
+            return operation
+        raise ValueError(
+            "cuda.coop.numba_mlir scan_op must name sum, multiplies, min, "
+            "max, bit_and, bit_or, or bit_xor"
+        )
     try:
         return _CALLABLE_SCAN_OPERATOR_ALIASES[scan_op]
     except (KeyError, TypeError):
         pass
     if callable(scan_op):
         return None
-    raise NotImplementedError(
-        "cuda.coop.numba_mlir scan supports sum, multiplies, min, max, "
-        "bit_and, bit_or, and bit_xor built-ins, or a stateless device callback"
+    raise TypeError(
+        "cuda.coop.numba_mlir scan_op must be a string or stateless device callback"
     )
 
 
@@ -139,13 +124,23 @@ def _positive_int(value: Any, *, name: str) -> int:
 
 
 def _block_scan_algorithm(algorithm: Any) -> Any:
-    from .._enums import BlockScanAlgorithm
+    if not isinstance(algorithm, str):
+        raise TypeError("block scan algorithm must be a string")
+    token = algorithm.strip().lower().replace("-", "_")
+    if token not in {"raking", "raking_memoize", "warp_scans"}:
+        raise ValueError(
+            "block scan algorithm must be one of: raking, raking_memoize, warp_scans"
+        )
+    return normalize_block_scan_algorithm(token)
 
-    if isinstance(algorithm, bool):
-        raise TypeError("block scan algorithm must not be bool")
-    if isinstance(algorithm, BlockScanAlgorithm):
-        algorithm = str(algorithm)
-    return normalize_block_scan_algorithm(algorithm)
+
+def _scan_mode(mode: Any) -> str:
+    if not isinstance(mode, str):
+        raise TypeError("scan mode must be a string")
+    token = mode.strip().lower().replace("-", "_")
+    if token not in {"exclusive", "inclusive"}:
+        raise ValueError("scan mode must be 'exclusive' or 'inclusive'")
+    return token
 
 
 def _provider_metadata(factory: Any, *, namespace: str) -> dict[str, Any]:
@@ -222,8 +217,7 @@ def _block_scan(
         )
     if value_kind == "scalar" and items_per_thread != 1:
         raise ValueError("scalar block scan requires items_per_thread == 1")
-    if mode not in {"exclusive", "inclusive"}:
-        raise ValueError("scan mode must be 'exclusive' or 'inclusive'")
+    mode = _scan_mode(mode)
 
     dtype = normalize_dtype_param(dtype)
     dtype = validate_scan_operator_dtype(scan_op, dtype)
@@ -289,8 +283,7 @@ def warp_scan(
         raise ValueError("threads_per_block must be provided")
     block_dim = normalize_dim_param(threads_per_block)
     threads_in_warp = _positive_int(threads_in_warp, name="threads_in_warp")
-    if mode not in {"exclusive", "inclusive"}:
-        raise ValueError("scan mode must be 'exclusive' or 'inclusive'")
+    mode = _scan_mode(mode)
     dtype = normalize_dtype_param(dtype)
     dtype = validate_scan_operator_dtype(scan_op, dtype)
     initial_binding = _optional_binding(initial_value)

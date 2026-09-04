@@ -94,6 +94,8 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         assert {"exchange", "reduce", "shuffle", "sum", *scan_names} <= set(
             qualified_coop.__all__
         )
+        assert "BlockScanAlgorithm" not in qualified_coop.__all__
+        assert not hasattr(qualified_coop, "BlockScanAlgorithm")
         assert callable(qualified_coop.exchange)
         assert callable(qualified_coop.shuffle)
         assert callable(qualified_coop.reduce)
