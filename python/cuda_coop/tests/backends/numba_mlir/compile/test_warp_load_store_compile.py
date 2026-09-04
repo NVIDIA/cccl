@@ -248,9 +248,6 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
     compiler_cuda = _production_compile_environment(monkeypatch)
 
     def qualified_kernel(algorithm: str):
-        load_algorithm = qualified_coop.WarpLoadAlgorithm[algorithm.upper()]
-        store_algorithm = qualified_coop.WarpStoreAlgorithm[algorithm.upper()]
-
         @compiler_cuda.jit(chip="sm_90")
         def kernel(
             load_source,
@@ -268,7 +265,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
                 qualified_coop.this_warp(),
                 load_source,
                 load_payload,
-                algorithm=load_algorithm,
+                algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=types.int32(-17),
                 offset=offset,
@@ -285,7 +282,7 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
                 qualified_coop.this_warp(),
                 destination,
                 payload,
-                algorithm=store_algorithm,
+                algorithm=algorithm,
                 valid_items=valid_items,
                 offset=offset,
             )
@@ -386,7 +383,7 @@ def test_warp_scalar_literal_store_compiles_with_destination_dtype(
                 qualified_coop.this_warp(),
                 destination,
                 23,
-                algorithm=qualified_coop.WarpStoreAlgorithm.DIRECT,
+                algorithm="direct",
             )
 
     else:
@@ -426,7 +423,7 @@ def test_warp_scalar_runtime_expression_rejects_implicit_narrowing(
                 qualified_coop.this_warp(),
                 destination,
                 source[thread] + 1,
-                algorithm=qualified_coop.WarpStoreAlgorithm.DIRECT,
+                algorithm="direct",
             )
 
     else:
