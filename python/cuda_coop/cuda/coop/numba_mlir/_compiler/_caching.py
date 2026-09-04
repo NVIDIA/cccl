@@ -104,6 +104,8 @@ def _read_cache(path):
     try:
         with open(path, encoding="utf-8") as f:
             cached = json.load(f)
+        if not isinstance(cached, dict):
+            return _CACHE_MISS
         if cached.get("version") != _CACHE_SCHEMA_VERSION:
             return _CACHE_MISS
         value = _decode_cache_value(cached["value"])
