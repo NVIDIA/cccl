@@ -165,6 +165,10 @@ class GroupPlanningContext:
         ]
         planned_synchronization = expected["synchronization_scope"]
         allowed_synchronization = {planned_synchronization}
+        # The provider's convenience ``_alloc`` wrapper owns its declared
+        # reuse barrier. Pointer rewrites bypass that wrapper, and the compiler
+        # rewrite emits the descriptor-selected barrier only when auto_sync is
+        # enabled.
         if (
             planned_synchronization is SynchronizationScope.NONE
             and lowering_plan.temp_storage.ownership is StorageOwnership.CALLER
