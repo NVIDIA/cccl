@@ -3,146 +3,22 @@
 
 #pragma once
 
+#include <cuda/std/detail/__config>
+
 #include <thrust/device_allocator.h>
 #include <thrust/mr/new.h>
-#include <thrust/system/cuda/memory.h>
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/system/cuda/pointer.h>
 
-#include <cstdlib>
-#include <iostream>
+#include <cstddef>
 #include <new>
-#include <optional>
-#include <string>
 
 #include <cuda_runtime_api.h>
 
+#include <c2h/detail/checked_memory.cuh>
+
 namespace c2h
 {
-namespace detail
-{
-inline std::optional<std::string> get_env(const char* name)
-{
-#ifdef _WIN32
-  char* buf       = nullptr;
-  std::size_t len = 0;
-  if (_dupenv_s(&buf, &len, name) || !buf)
-  {
-    return std::nullopt;
-  }
-  std::string val(buf);
-  free(buf);
-  return val;
-#else
-  if (const char* v = std::getenv(name))
-  {
-    return std::string(v);
-  }
-  return std::nullopt;
-#endif
-}
-
-struct memory_info
-{
-  std::size_t free{};
-  std::size_t total{};
-  bool override{false};
-};
-
-// If the environment variable C2H_DEVICE_MEMORY_LIMIT is set, the total device memory
-// will be limited to this number of bytes.
-inline std::size_t get_device_memory_limit()
-{
-  static std::optional<std::string> override_str = get_env("C2H_DEVICE_MEMORY_LIMIT");
-  static std::size_t result =
-    override_str ? static_cast<std::size_t>(std::strtoll(override_str->c_str(), nullptr, 10)) : 0;
-  return result;
-}
-
-inline bool get_debug_checked_allocs()
-{
-  static std::optional<std::string> debug_checked_allocs = get_env("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
-  static bool result = debug_checked_allocs && (std::strtol(debug_checked_allocs->c_str(), nullptr, 10) != 0);
-  return result;
-}
-
-inline cudaError_t get_device_memory(memory_info& info)
-{
-  static std::size_t device_memory_limit = get_device_memory_limit();
-
-  cudaError_t status = cudaMemGetInfo(&info.free, &info.total);
-  if (status != cudaSuccess)
-  {
-    return status;
-  }
-
-  if (device_memory_limit > 0)
-  {
-    info.free  = (std::max) (std::size_t{0}, static_cast<std::size_t>(info.free - (info.total - device_memory_limit)));
-    info.total = device_memory_limit;
-    info.override = true;
-  }
-
-  return cudaSuccess;
-}
-
-inline cudaError_t check_free_device_memory(std::size_t bytes)
-{
-  memory_info info;
-  cudaError_t status = get_device_memory(info);
-  if (status != cudaSuccess)
-  {
-    return status;
-  }
-
-  // Avoid allocating all available memory:
-  constexpr std::size_t padding = 16 * 1024 * 1024; // 16 MiB
-  if (info.free < (bytes + padding))
-  {
-    if (get_debug_checked_allocs())
-    {
-      const double total_GiB     = static_cast<double>(info.total) / (1024 * 1024 * 1024);
-      const double free_GiB      = static_cast<double>(info.free) / (1024 * 1024 * 1024);
-      const double requested_GiB = static_cast<double>(bytes) / (1024 * 1024 * 1024);
-      const double padded_GiB    = static_cast<double>(bytes + padding) / (1024 * 1024 * 1024);
-
-      std::cerr << "Device memory allocation failed due to insufficient free device memory.\n";
-
-      if (info.override)
-      {
-        std::cerr
-          << "Available device memory has been limited (env var C2H_DEVICE_MEMORY_LIMIT=" << get_device_memory_limit()
-          << ").\n";
-      }
-
-      std::cerr
-        << "Total device mem:     " << total_GiB << " GiB\n" //
-        << "Free device mem:      " << free_GiB << " GiB\n" //
-        << "Requested device mem: " << requested_GiB << " GiB\n" //
-        << "Padded device mem:    " << padded_GiB << " GiB\n";
-    }
-
-    return cudaErrorMemoryAllocation;
-  }
-
-  return cudaSuccess;
-}
-
-// Check available memory prior to calling cudaMalloc.
-// This avoids hangups and slowdowns from allocating swap / non-device memory
-// on some platforms, namely tegra.
-inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
-{
-  auto status = check_free_device_memory(bytes);
-  if (status != cudaSuccess)
-  {
-    return status;
-  }
-
-  return cudaMalloc(ptr, bytes);
-}
-} // namespace detail
-
 using checked_cuda_memory_resource = THRUST_NS_QUALIFIER::system::cuda::detail::
   cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, THRUST_NS_QUALIFIER::cuda::pointer<void>>;
 
@@ -179,18 +55,24 @@ public:
 
 struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_delete_resource_base
 {
-  void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
+  [[nodiscard]] _CCCL_HOST_API void*
+  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
   {
     // Some systems with integrated host/device memory have issues with allocating more memory
     // than is available. Check the amount of free memory before attempting to allocate on
     // integrated systems.
     int device = 0;
-    CubDebugExit(cudaGetDevice(&device));
-    cudaDeviceProp prop;
-    CubDebugExit(cudaGetDeviceProperties(&prop, device));
-    if (prop.integrated)
+    if (cudaGetDevice(&device) != cudaSuccess)
     {
-      auto status = detail::check_free_device_memory(bytes + alignment + sizeof(std::size_t));
+      throw std::bad_alloc{};
+    }
+
+    // Validate allocation-size arithmetic before delegating to new_delete_resource_base.
+    const std::size_t allocation_size = detail::checked_host_allocation_size(bytes, alignment);
+
+    if (detail::is_integrated_device(device))
+    {
+      const auto status = detail::check_free_device_memory(allocation_size);
       if (status != cudaSuccess)
       {
         throw std::bad_alloc{};

@@ -7,10 +7,23 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__algorithm/copy.h>
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/optional>
+#include <cuda/std/span>
+#include <cuda/stream>
 
-#include "catch2_test_memory_resources.h"
-#include <c2h/catch2_test_helper.h>
+#include <cstddef>
+#include <cstdint>
+
+#include <cuda_runtime_api.h>
+
+#include <c2h/catch2_test_macros.h>
+#include <c2h/checked_memory_resource.cuh>
+#include <c2h/utility.h>
+#include <catch2_test_memory_resources.h>
 
 //! @file
 //! This file contains utilities for device-scope API tests of environment APIs.
@@ -154,7 +167,7 @@ struct stream_registry_factory_t
 
   CUB_RUNTIME_FUNCTION cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
-    int device_ordinal;
+    int device_ordinal{};
     cudaError_t error = cudaGetDevice(&device_ordinal);
     if (cudaSuccess != error)
     {
@@ -178,7 +191,7 @@ struct stream_registry_factory_t
 
   CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
   {
-    int device = 0;
+    int device{0};
     auto error = cudaGetDevice(&device);
     if (error != cudaSuccess)
     {
@@ -242,6 +255,27 @@ auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, const En
 {
   return cuda::std::make_tuple(cuda::std::get<Is>(tpl)..., env);
 }
+
+namespace env_launch_helper_detail
+{
+inline cuda::device_ref current_device()
+{
+  int device{0};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
+  return cuda::device_ref{device};
+}
+
+template <typename T>
+T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
+{
+  REQUIRE(buffer.size() == 1);
+
+  T result{};
+  cuda::copy_bytes(stream, buffer, cuda::std::span<T>{&result, 1});
+  stream.sync();
+  return result;
+}
+} // namespace env_launch_helper_detail
 
 #define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT) \
   TMPL_HEAD_OPT                                                                \
@@ -400,20 +434,26 @@ void launch(ActionT action, Args... args)
 
   const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
-  c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
-  c2h::device_vector<std::size_t> d_temp_storage(expected_bytes_allocated);
-  c2h::device_vector<std::size_t> d_allocated(1, 0);
-  c2h::device_vector<std::size_t> d_deallocated(1, 0);
+  const auto device = env_launch_helper_detail::current_device();
+  auto stream       = cuda::stream{device};
+  auto d_error      = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
+  auto d_temp_storage =
+    c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, expected_bytes_allocated, cuda::no_init);
+
+  auto d_allocated   = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, std::size_t{0});
+  auto d_deallocated = c2h::make_device_buffer<cuda::std::size_t>(stream, device, 1, std::size_t{0});
+
+  auto* const d_error_ptr       = d_error.data();
+  auto* const d_allocated_ptr   = d_allocated.data();
+  auto* const d_deallocated_ptr = d_deallocated.data();
+  stream.sync();
 
   // Host-side stream is unusable in device code, force it to be 0
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{cudaStream_t{}}};
 
   static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");
-  auto mr = device_side_memory_resource{
-    thrust::raw_pointer_cast(d_temp_storage.data()),
-    thrust::raw_pointer_cast(d_allocated.data()),
-    thrust::raw_pointer_cast(d_deallocated.data())};
+  auto mr        = device_side_memory_resource{d_temp_storage.data(), d_allocated_ptr, d_deallocated_ptr};
   auto mr_env    = cuda::std::execution::prop{cuda::mr::get_memory_resource_t{}, mr};
   auto fixed_env = cuda::std::execution::env{mr_env, stream_env, env};
 
@@ -421,13 +461,17 @@ void launch(ActionT action, Args... args)
 
   cuda::std::apply(
     [&](auto... args) {
-      device_side_api_launch_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_error.data()), action, args...);
-      REQUIRE(cudaSuccess == d_error[0]);
+      device_side_api_launch_kernel<<<1, 1>>>(d_error_ptr, action, args...);
+      REQUIRE(cudaSuccess == cudaPeekAtLastError());
+      REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+      REQUIRE(cudaSuccess == env_launch_helper_detail::read_single(stream, d_error));
     },
     fixed_args);
 
-  REQUIRE(d_allocated[0] == expected_bytes_allocated);
-  REQUIRE(d_allocated[0] == d_deallocated[0]);
+  const auto allocated   = env_launch_helper_detail::read_single(stream, d_allocated);
+  const auto deallocated = env_launch_helper_detail::read_single(stream, d_deallocated);
+  REQUIRE(allocated == expected_bytes_allocated);
+  REQUIRE(allocated == deallocated);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
