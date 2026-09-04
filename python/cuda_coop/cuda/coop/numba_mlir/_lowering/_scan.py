@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import operator
+from enum import Enum
 from typing import Any
 
 import numpy as np
@@ -76,7 +77,7 @@ def normalize_scan_operation(scan_op: Any) -> str | None:
 
     if scan_op is None:
         return "sum"
-    if isinstance(scan_op, str):
+    if isinstance(scan_op, str) and not isinstance(scan_op, Enum):
         operation = normalize_scan_operator_alias(scan_op)
         if operation is not None:
             return operation
@@ -124,7 +125,7 @@ def _positive_int(value: Any, *, name: str) -> int:
 
 
 def _block_scan_algorithm(algorithm: Any) -> Any:
-    if not isinstance(algorithm, str):
+    if not isinstance(algorithm, str) or isinstance(algorithm, Enum):
         raise TypeError("block scan algorithm must be a string")
     token = algorithm.strip().lower().replace("-", "_")
     if token not in {"raking", "raking_memoize", "warp_scans"}:
@@ -135,7 +136,7 @@ def _block_scan_algorithm(algorithm: Any) -> Any:
 
 
 def _scan_mode(mode: Any) -> str:
-    if not isinstance(mode, str):
+    if not isinstance(mode, str) or isinstance(mode, Enum):
         raise TypeError("scan mode must be a string")
     token = mode.strip().lower().replace("-", "_")
     if token not in {"exclusive", "inclusive"}:
