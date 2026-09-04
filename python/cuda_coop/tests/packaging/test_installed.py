@@ -172,18 +172,16 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
                 "valid_items",
                 "aggregate_output",
                 "prefix_op",
-                "block_prefix_callback_op",
             )
             assert (
                 qualified_parameters["prefix_state"].kind
                 is inspect.Parameter.POSITIONAL_ONLY
             )
-            for parameter in ("prefix_op", "block_prefix_callback_op"):
-                assert (
-                    qualified_parameters[parameter].kind
-                    is inspect.Parameter.KEYWORD_ONLY
-                )
-                assert qualified_parameters[parameter].default is None
+            assert (
+                qualified_parameters["prefix_op"].kind
+                is inspect.Parameter.KEYWORD_ONLY
+            )
+            assert qualified_parameters["prefix_op"].default is None
             assert qualified_parameters["prefix_state"].default is None
 
         assert importlib.util.find_spec("cuda.coop.numba_mlir._scan_op") is None
