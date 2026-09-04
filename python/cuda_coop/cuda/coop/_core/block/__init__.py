@@ -4,6 +4,14 @@
 
 from .._bindings import ArgumentBinding, BindingKind, binding
 from ._common import normalize_block_dim, normalize_positive_int
+from .exchange import (
+    BlockExchangeMode,
+    BlockExchangeSemantics,
+    BlockExchangeSpecialization,
+    BlockExchangeValueForm,
+    make_block_exchange_semantics,
+    make_block_exchange_specialization,
+)
 from .load_store import (
     BlockLoadAlgorithm,
     BlockLoadStoreAlgorithm,
@@ -62,11 +70,23 @@ from .scan import (
     make_block_scan_specialization,
     normalize_block_scan_algorithm,
 )
+from .shuffle import (
+    BlockShuffleMode,
+    BlockShuffleSemantics,
+    BlockShuffleSpecialization,
+    BlockShuffleValueKind,
+    make_block_shuffle_semantics,
+    make_block_shuffle_specialization,
+)
 from .topk import BlockTopKSpecialization, make_block_topk_specialization
 
 __all__ = [
     "ArgumentBinding",
     "BindingKind",
+    "BlockExchangeMode",
+    "BlockExchangeSemantics",
+    "BlockExchangeSpecialization",
+    "BlockExchangeValueForm",
     "BlockLoadAlgorithm",
     "BlockLoadStoreAlgorithm",
     "BlockLoadStoreKind",
@@ -89,12 +109,18 @@ __all__ = [
     "BlockReduceValueKind",
     "BlockScanAlgorithm",
     "BlockScanSpecialization",
+    "BlockShuffleMode",
+    "BlockShuffleSemantics",
+    "BlockShuffleSpecialization",
+    "BlockShuffleValueKind",
     "BlockStoreAlgorithm",
     "BlockTopKSpecialization",
     "RadixBitRange",
     "RadixOrder",
     "binding",
     "block_radix_rank_bins_per_thread",
+    "make_block_exchange_semantics",
+    "make_block_exchange_specialization",
     "make_block_load_specialization",
     "make_block_load_store_semantics",
     "make_block_load_store_specialization",
@@ -107,6 +133,8 @@ __all__ = [
     "make_block_reduce_semantics",
     "make_block_reduce_specialization",
     "make_block_scan_specialization",
+    "make_block_shuffle_semantics",
+    "make_block_shuffle_specialization",
     "make_block_store_specialization",
     "make_block_topk_specialization",
     "make_radix_bit_range",
