@@ -261,3 +261,73 @@ coop.reduce(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking_commutative_only",
 )
+portable.scan(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    valid_items=1,
+)
+portable.inclusive_sum(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    aggregate_output=portable.ThreadData(1, np.int32),
+)
+portable.inclusive_scan(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    scan_op=select_left,
+)
+portable.exclusive_scan(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    scan_op="max",
+)
+portable.scan(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    mode="inclusive",
+    initial_value=np.int32(0),
+)
+coop.exclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    scan_op="max",
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    mode="inclusive",
+    initial_value=np.int32(0),
+)
+coop.inclusive_sum(
+    coop.this_warp(),  # expected-error: [arg-type]
+    values,
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    coop.this_warp(),
+    np.int32(1),
+    algorithm="raking",
+)
+coop.inclusive_sum(
+    qualified_block,  # expected-error: [arg-type]
+    np.int32(1),
+    valid_items=1,
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    aggregate_output=np.int32(0),
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.bool_(True),
+)
+coop.inclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.complex64(1),
+    scan_op="max",
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    prefix_op=select_left,
+)
