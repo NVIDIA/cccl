@@ -91,6 +91,8 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_lowering/_scan.py",
     "cuda/coop/numba_mlir/_lowering/_shuffle.py",
     "cuda/coop/numba_mlir/_lowering/_thread_group.py",
+    "cuda/coop/numba_mlir/_stateful_function.py",
+    "cuda/coop/numba_mlir/_stateful_function.pyi",
     "cuda/coop/numba_mlir/_temp_storage.py",
     "cuda/coop/numba_mlir/_temp_storage.pyi",
     "cuda/coop/numba_mlir/_thread_data.py",
@@ -143,7 +145,6 @@ _FORBIDDEN_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_enums.py",
     "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/numba_mlir/_scan_op.py",
-    "cuda/coop/numba_mlir/_stateful_function.py",
 }
 
 
