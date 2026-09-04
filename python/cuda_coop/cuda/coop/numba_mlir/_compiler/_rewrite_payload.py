@@ -21,9 +21,6 @@ from ._rewrite_support import (
 class PayloadInference:
     """Mutable context shared by the primitive-specific inference handlers."""
 
-    _COMMON_OPERATION_ALIASES: dict[str, str] = {}
-    _OPERATION_ALIASES: dict[str, str] = {}
-
     def __init__(
         self,
         context: GroupRewriteContext,
@@ -35,8 +32,7 @@ class PayloadInference:
         dtype_factory_kwargs: frozenset[str],
     ) -> None:
         self.context = context
-        self.op_name = self._OPERATION_ALIASES.get(op_name, op_name)
-        self.portable_op_name = self._COMMON_OPERATION_ALIASES.get(op_name)
+        self.op_name = op_name
         self.runtime_args = runtime_args
         self.allowed_factory_kwargs = allowed_factory_kwargs
         self.seen_factory_kwargs = seen_factory_kwargs
@@ -61,8 +57,9 @@ class PayloadInference:
         if name in self.seen_factory_kwargs:
             if not self._factory_kwarg_matches(name, self.factory_kwargs[name], value):
                 raise CoopSinglePhaseRewriteError(
-                    f"coop movement {self.op_name!r} {name} does not match "
-                    "the value inferred from ThreadData."
+                    f"cooperative group operation {self.op_name!r} factory "
+                    f"argument {name!r} does not match the value inferred "
+                    "from the payload."
                 )
             return
         self.factory_kwargs[name] = value
@@ -79,7 +76,8 @@ class PayloadInference:
             spec is None or spec.items_per_thread is None
         ):
             raise CoopSinglePhaseRewriteError(
-                f"coop movement {self.op_name!r} could not infer the static "
+                f"cooperative group operation {self.op_name!r} could not "
+                "infer the static "
                 "extent of a typed group payload"
             )
         return (value, spec)
@@ -97,7 +95,8 @@ class PayloadInference:
             spec is None or spec.items_per_thread is None
         ):
             raise CoopSinglePhaseRewriteError(
-                f"coop movement {self.op_name!r} could not infer the static "
+                f"cooperative group operation {self.op_name!r} could not "
+                "infer the static "
                 "extent of a typed group payload"
             )
         return (value, spec)
@@ -118,7 +117,7 @@ class PayloadInference:
 class _PayloadRewrite:
     """Dispatch payload inference to the owning primitive-family mixin."""
 
-    def _infer_factory_kwargs_from_thread_data(
+    def _infer_factory_kwargs_from_payload(
         self,
         op_name: str,
         runtime_args: list[ir.Var],
@@ -126,11 +125,10 @@ class _PayloadRewrite:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
     ) -> None:
-        operation = PayloadInference._OPERATION_ALIASES.get(op_name, op_name)
-        spec = rewrite_operation(operation)
+        spec = rewrite_operation(op_name)
         if spec is None:
             raise CoopSinglePhaseRewriteError(
-                f"unsupported Numba-CUDA-MLIR operation {operation!r}"
+                f"unsupported Numba-CUDA-MLIR operation {op_name!r}"
             )
         inference = PayloadInference(
             GroupRewriteContext(self),

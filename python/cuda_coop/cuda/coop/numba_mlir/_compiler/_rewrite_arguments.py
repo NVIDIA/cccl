@@ -36,13 +36,15 @@ class _ArgumentRewrite:
             )
         if call.vararg is not None or call.varkwarg is not None:
             raise CoopSinglePhaseRewriteError(
-                "coop movement calls do not support *args or **kwargs."
+                "cooperative group calls do not support *args or **kwargs."
             )
         runtime_arg_count = len(call.args)
         if runtime_arg_count not in spec.runtime_arg_counts:
             expected_csv = ", ".join((str(v) for v in sorted(spec.runtime_arg_counts)))
             raise CoopSinglePhaseRewriteError(
-                f"coop movement '{op_name}' expects positional runtime argument count in {{{expected_csv}}}; got {runtime_arg_count}."
+                f"cooperative group operation {op_name!r} expects a positional "
+                f"runtime argument count in {{{expected_csv}}}; got "
+                f"{runtime_arg_count}."
             )
         base_runtime_arg_count = min(spec.runtime_arg_counts)
         runtime_args = list(call.args[:base_runtime_arg_count])
@@ -62,7 +64,8 @@ class _ArgumentRewrite:
         if runtime_factory_kwargs:
             if extra_runtime_arg_count > len(runtime_factory_kwargs):
                 raise CoopSinglePhaseRewriteError(
-                    f"coop movement '{op_name}' received too many positional partial-tile arguments."
+                    f"cooperative group operation {op_name!r} received too "
+                    "many positional runtime arguments."
                 )
             for index, name in enumerate(
                 runtime_factory_kwargs[:extra_runtime_arg_count]
@@ -91,22 +94,25 @@ class _ArgumentRewrite:
             if name == "temp_storage" and spec.accepts_temp_storage:
                 if runtime_temp_storage is not None:
                     raise CoopSinglePhaseRewriteError(
-                        f"Duplicate coop movement '{op_name}' runtime temp storage."
+                        f"cooperative group operation {op_name!r} received "
+                        "duplicate temp_storage arguments."
                     )
                 if not isinstance(value_var, ir.Var):
                     raise CoopSinglePhaseRewriteError(
-                        "coop movement temp_storage must be a variable."
+                        "cooperative group temp_storage must be a variable."
                     )
                 runtime_temp_storage = value_var
                 continue
             if name == spec.runtime_offset_kwarg:
                 if runtime_offset_var is not None or name in seen_factory_kwargs:
                     raise CoopSinglePhaseRewriteError(
-                        f"Duplicate coop movement '{op_name}' runtime offset."
+                        f"cooperative group operation {op_name!r} received a "
+                        f"duplicate runtime argument {name!r}."
                     )
                 if not isinstance(value_var, ir.Var):
                     raise CoopSinglePhaseRewriteError(
-                        f"coop movement {name} must be a variable."
+                        f"cooperative group runtime argument {name!r} must be "
+                        "a variable."
                     )
                 value = self._resolve_static_scalar_value(value_var)
                 if value is not _UNRESOLVED:
@@ -127,11 +133,13 @@ class _ArgumentRewrite:
                     or name in runtime_factory_kw_vars
                 ):
                     raise CoopSinglePhaseRewriteError(
-                        f"Duplicate coop movement '{op_name}' runtime argument '{name}'."
+                        f"cooperative group operation {op_name!r} received a "
+                        f"duplicate runtime argument {name!r}."
                     )
                 if not isinstance(value_var, ir.Var):
                     raise CoopSinglePhaseRewriteError(
-                        f"coop partial-tile argument '{name}' must be a variable."
+                        f"cooperative group runtime argument {name!r} must be "
+                        "a variable."
                     )
                 if name in scalar_binding_kwargs:
                     value = self._resolve_static_scalar_value(value_var)
@@ -152,17 +160,21 @@ class _ArgumentRewrite:
                     sorted(set(allowed_factory_kwargs) | set(runtime_factory_kwargs))
                 )
                 raise CoopSinglePhaseRewriteError(
-                    f"Unsupported coop movement '{op_name}' factory keyword '{name}'. Allowed keywords are: {allowed}."
+                    f"cooperative group operation {op_name!r} does not support "
+                    f"factory keyword {name!r}. Allowed keywords are: {allowed}."
                 )
             if name in seen_factory_kwargs:
                 raise CoopSinglePhaseRewriteError(
-                    f"Duplicate coop movement '{op_name}' factory keyword '{name}'."
+                    f"cooperative group operation {op_name!r} received a "
+                    f"duplicate factory keyword {name!r}."
                 )
             seen_factory_kwargs.add(name)
             value = self._resolve_factory_kwarg_value(op_name, name, value_var)
             if value is _UNRESOLVED:
                 raise CoopSinglePhaseRewriteError(
-                    f"Failed to evaluate coop movement factory argument '{name}' for '{op_name}' as a compile-time constant."
+                    f"Failed to evaluate cooperative group operation "
+                    f"{op_name!r} factory argument {name!r} as a compile-time "
+                    "constant."
                 )
             factory_kwargs[name] = value
             if isinstance(value_var, ir.Var):
@@ -179,7 +191,8 @@ class _ArgumentRewrite:
                 and prerequisite not in seen_factory_kwargs
             ):
                 raise CoopSinglePhaseRewriteError(
-                    f"coop movement '{op_name}' runtime argument '{name}' requires '{prerequisite}'."
+                    f"cooperative group operation {op_name!r} runtime argument "
+                    f"{name!r} requires {prerequisite!r}."
                 )
             runtime_args.append(value_var)
             factory_kwargs[name] = (
@@ -189,7 +202,7 @@ class _ArgumentRewrite:
             seen_runtime_factory_kwargs.add(name)
         if runtime_offset_var is not None:
             runtime_args.append(runtime_offset_var)
-        self._infer_factory_kwargs_from_thread_data(
+        self._infer_factory_kwargs_from_payload(
             op_name,
             runtime_args,
             allowed_factory_kwargs,
@@ -240,7 +253,8 @@ class _ArgumentRewrite:
             )
         if runtime_temp_storage is not None and not spec.accepts_temp_storage:
             raise CoopSinglePhaseRewriteError(
-                f"coop movement '{op_name}' does not support runtime temp_storage."
+                f"cooperative group operation {op_name!r} does not support "
+                "runtime temp_storage."
             )
         return (
             tuple(runtime_args),
