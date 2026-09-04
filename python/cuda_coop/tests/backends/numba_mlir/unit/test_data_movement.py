@@ -3,12 +3,17 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from collections import Counter
+from enum import Enum
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringAlgorithm(str, Enum):
+    DIRECT = "direct"
 
 
 @pytest.fixture(autouse=True)
@@ -1389,6 +1394,37 @@ def test_static_oob_default_rejects_before_provider_materialization(
         )
 
 
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize("operation", ["load", "store"])
+def test_public_algorithms_require_plain_strings(qualified, operation):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(array):
+        payload = module.ThreadData(2, dtype=types.int32)
+        if operation == "load":
+            return module.load(
+                module.this_block(),
+                array,
+                payload,
+                algorithm=_StringAlgorithm.DIRECT,
+            )
+        module.store(
+            module.this_block(),
+            array,
+            payload,
+            algorithm=_StringAlgorithm.DIRECT,
+        )
+
+    array_type = types.Array(types.int32, 1, "C")
+    with pytest.raises(TypeError, match="algorithm must be a string"):
+        _plan(memory, arg_types=(array_type,))[1].run()
+
+
 @pytest.mark.parametrize("operation", ["load", "store"])
 @pytest.mark.parametrize(
     "algorithm",
@@ -1423,7 +1459,12 @@ def test_non_direct_block_algorithms_fail_before_provider_materialization(
 @pytest.mark.parametrize("operation", ["load", "store"])
 @pytest.mark.parametrize(
     ("algorithm", "error_type"),
-    [(True, TypeError), ("stripd", ValueError), (object(), TypeError)],
+    [
+        (True, TypeError),
+        (_StringAlgorithm.DIRECT, TypeError),
+        ("stripd", ValueError),
+        (object(), TypeError),
+    ],
 )
 def test_invalid_block_algorithm_values_fail_before_provider_materialization(
     monkeypatch, operation, algorithm, error_type

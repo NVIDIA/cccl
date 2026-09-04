@@ -8,6 +8,8 @@ This mixin owns only its primitive-family IR rewrite. Shared provenance,
 launch facts, caches, and final orchestration remain in the group planner.
 """
 
+from enum import Enum
+
 from cuda.coop._core import (
     ArgumentBinding,
     BindingKind,
@@ -55,7 +57,7 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
 
 
 def _direct_algorithm(value: object, *, operation: str) -> str:
-    if not isinstance(value, str):
+    if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"cuda.coop.numba_mlir.{operation} algorithm must be a string")
     token = value.strip().lower().replace("-", "_")
     if token == "direct":

@@ -10,14 +10,12 @@ provider materialization live in ``_compiler`` and ``_lowering`` respectively.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from .._core.api import ThreadDataLike
 from ._compiler._operations import group_operation
 from ._group_marker import group_primitive_marker
 from ._thread_group import ThreadGroup
-
-if TYPE_CHECKING:
-    from ._thread_data import ThreadData
 
 
 @group_operation(
@@ -27,7 +25,7 @@ if TYPE_CHECKING:
 def load(
     group: ThreadGroup,
     source: Any,
-    output: ThreadData,
+    output: ThreadDataLike[Any],
     /,
     *,
     algorithm: Any = "direct",
@@ -35,7 +33,7 @@ def load(
     oob_default: Any = None,
     offset: Any = None,
     temp_storage: Any = None,
-) -> ThreadData:
+) -> ThreadDataLike[Any]:
     """Load a per-thread tile through a block group."""
 
     return group_primitive_marker(

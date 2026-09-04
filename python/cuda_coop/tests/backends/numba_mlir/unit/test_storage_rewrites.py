@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from enum import Enum
 from types import SimpleNamespace
 
 import numpy as np
@@ -28,6 +29,10 @@ from cuda.coop.numba_mlir._compiler._rewrite_support import (
 )
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringSharing(str, Enum):
+    SHARED = "shared"
 
 
 class _TypingContext:
@@ -104,13 +109,12 @@ def test_qualified_thread_data_lowers_to_a_compiler_array():
     [16, np.int64(16)],
     ids=["builtin-int", "index-integer"],
 )
-def test_thread_data_rewrite_matches_runtime_alignment_aliases(alignment):
+def test_thread_data_rewrite_uses_alignment(alignment):
     def kernel():
         data = coop.ThreadData(
             2,
             types.int32,
             alignas=alignment,
-            alignment=alignment,
         )
         return data[0]
 
@@ -119,20 +123,20 @@ def test_thread_data_rewrite_matches_runtime_alignment_aliases(alignment):
     assert cuda.local.array in _call_targets(func_ir)
 
 
-def test_thread_data_rewrite_rejects_conflicting_alignment_aliases():
+def test_thread_data_rewrite_rejects_removed_alignment_alias():
     def kernel():
-        return coop.ThreadData(2, types.int32, alignas=16, alignment=32)
+        return coop.ThreadData(2, types.int32, alignment=16)
 
     with pytest.raises(
         CoopSinglePhaseRewriteError,
-        match="alignas and alignment must match when both are set",
+        match=r"ThreadData got unexpected keyword\(s\): alignment",
     ):
         _rewrite(kernel)
 
 
 def test_thread_data_rewrite_accepts_explicit_default_alignment():
     def kernel():
-        data = coop.ThreadData(2, types.int32, alignment=None)
+        data = coop.ThreadData(2, types.int32, alignas=8)
         return data[0]
 
     func_ir, _ = _rewrite(kernel)
@@ -152,11 +156,11 @@ def test_common_thread_data_uses_only_the_portable_signature():
 
 def test_common_thread_data_rejects_qualified_alignment_control():
     def kernel():
-        return common_coop.ThreadData(2, types.int32, alignment=16)
+        return common_coop.ThreadData(2, types.int32, alignas=16)
 
     with pytest.raises(
         CoopSinglePhaseRewriteError,
-        match=r"cuda\.coop\.ThreadData got unexpected keyword.*alignment",
+        match=r"cuda\.coop\.ThreadData got unexpected keyword.*alignas",
     ):
         _rewrite(kernel)
 
@@ -198,6 +202,17 @@ def test_temp_storage_is_an_opaque_primitive_descriptor(kernel):
     with pytest.raises(
         CoopSinglePhaseRewriteError,
         match="opaque compile-time descriptors",
+    ):
+        _rewrite(kernel)
+
+
+def test_temp_storage_rewrite_rejects_string_enum_sharing():
+    def kernel():
+        return coop.TempStorage(sharing=_StringSharing.SHARED)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="TempStorage sharing must be a string",
     ):
         _rewrite(kernel)
 

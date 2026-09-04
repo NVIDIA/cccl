@@ -61,7 +61,8 @@ that name already refers to the object imported by
 Using `import cuda.coop.numba_mlir as coop` instead activates the backend and
 selects its qualified namespace. Shared operations retain the portable
 signatures, string selectors, and inference rules; the qualified namespace
-adds backend memory namespaces and payload-alignment controls.
+adds backend memory namespaces and the `ThreadData(..., alignas=...)`
+payload-alignment control.
 
 ## Configuration
 

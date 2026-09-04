@@ -11,16 +11,6 @@ import struct
 
 from ._compiler._activation import _require_runtime
 
-
-class _DefaultThreadDataAlignment:
-    """Distinguish an omitted legacy keyword while preserving its signature."""
-
-    def __repr__(self):
-        return "8"
-
-
-_DEFAULT_THREAD_DATA_ALIGNMENT = _DefaultThreadDataAlignment()
-
 # Annotations keep the runtime namespaces lazy while documenting module
 # ownership for introspection and static analysis.
 local: object
@@ -31,8 +21,7 @@ def ThreadData(
     items_per_thread,
     dtype=None,
     *,
-    alignas=_DEFAULT_THREAD_DATA_ALIGNMENT,
-    alignment=None,
+    alignas=8,
 ):
     """Create fixed-size thread-local storage for cooperative operations."""
 
@@ -44,11 +33,6 @@ def ThreadData(
         raise TypeError("items_per_thread must be an integer") from exc
     if items_per_thread <= 0:
         raise ValueError("items_per_thread must be a positive integer")
-
-    if alignas is _DEFAULT_THREAD_DATA_ALIGNMENT:
-        alignas = 8 if alignment is None else alignment
-    elif alignment is not None and alignas != alignment:
-        raise ValueError("alignas and alignment must match when both are set")
 
     if isinstance(alignas, bool):
         raise TypeError("alignment must be an integer")

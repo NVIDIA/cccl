@@ -296,7 +296,7 @@ class CoopSinglePhaseRewrite(
                 rewritten_kws = [
                     ("shape" if name == "items_per_thread" else name, value)
                     for name, value in rewritten_kws
-                    if name not in {"alignas", "alignment"}
+                    if name != "alignas"
                 ]
                 if thread_data_spec.items_per_thread is None:
                     raise CoopSinglePhaseRewriteError(

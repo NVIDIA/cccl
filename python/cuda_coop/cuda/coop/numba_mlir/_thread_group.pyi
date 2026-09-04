@@ -19,7 +19,7 @@ _GroupKindT_co = TypeVar(
     default=ThreadGroupKind,
 )
 
-Hierarchy = ThreadHierarchy
+Hierarchy: TypeAlias = ThreadHierarchy
 
 class ThreadGroup(
     PortableThreadGroup[_GroupKindT_co],

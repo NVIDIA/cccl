@@ -9,6 +9,8 @@ result construction, and orchestration. Primitive-specific lowering methods
 live in the adjacent semantic group mixins.
 """
 
+from enum import Enum
+
 import cuda.coop._core.api._dispatch as _portable_dispatch
 
 from .._thread_data import ThreadData
@@ -226,7 +228,7 @@ class _GroupCallPlanner:
         token = self._constant(value)
         if token is None and allow_none:
             return None
-        if not isinstance(token, str):
+        if not isinstance(token, str) or isinstance(token, Enum):
             raise TypeError(f"cuda.coop.{operation} {parameter} must be a string")
         token = token.strip().lower().replace("-", "_")
         if token not in allowed:

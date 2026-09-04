@@ -118,6 +118,46 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
             getattr(portable_coop, operation)
         )
 
+    assert call_shape(coop.TempStorage) == call_shape(portable_coop.TempStorage)
+    for constructor in (
+        "this_thread",
+        "this_warp",
+        "this_block",
+        "this_cluster",
+        "this_grid",
+    ):
+        assert call_shape(getattr(coop, constructor)) == call_shape(
+            getattr(portable_coop, constructor)
+        )
+
+    portable_thread_data = call_shape(portable_coop.ThreadData)
+    qualified_thread_data = call_shape(coop.ThreadData)
+    assert qualified_thread_data[:-1] == portable_thread_data
+    assert qualified_thread_data[-1] == (
+        "alignas",
+        inspect.Parameter.KEYWORD_ONLY,
+        8,
+    )
+    assert call_shape(coop.ThreadGroup.group_by) == call_shape(
+        portable_coop.ThreadGroup.group_by
+    )
+
+    assert coop.ThreadDataLike is portable_coop.ThreadDataLike
+    assert coop.TempStorageLike is portable_coop.TempStorageLike
+    assert coop.ThreadHierarchy is portable_coop.ThreadHierarchy
+    assert coop.Hierarchy is portable_coop.Hierarchy
+
+    portable_load_annotations = inspect.get_annotations(
+        portable_coop.load,
+        eval_str=True,
+    )
+    qualified_load_annotations = inspect.get_annotations(
+        coop.load,
+        eval_str=True,
+    )
+    assert qualified_load_annotations["output"] == portable_load_annotations["output"]
+    assert qualified_load_annotations["return"] == portable_load_annotations["return"]
+
     coop_root = Path(portable_coop.__file__).resolve().parent
 
     def stub_signatures(path):
@@ -131,6 +171,15 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
     assert stub_signatures(coop_root / "numba_mlir" / "_group_load_store.pyi") == (
         stub_signatures(coop_root / "_core" / "api" / "load_store.pyi")
     )
+
+
+def test_group_descriptors_expose_only_canonical_extent_names():
+    assert not hasattr(portable_coop.ThreadHierarchy, "thread_count")
+    for group_type in (portable_coop.ThreadGroup, coop.ThreadGroup):
+        assert not hasattr(group_type, "static_thread_count")
+        assert not hasattr(group_type, "thread_count")
+        assert hasattr(group_type, "static_size")
+        assert hasattr(group_type, "group_thread_count")
 
 
 def test_stub_only_group_aliases_exist_at_runtime_without_becoming_exports():
