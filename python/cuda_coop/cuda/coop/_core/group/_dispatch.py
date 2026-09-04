@@ -116,6 +116,32 @@ def plan_group_primitive(
             UnsupportedReasonCode.GROUP_KIND,
             family.unsupported_group_message,
         )
+    cluster_dim = launch.exact_cluster_dim
+    uses_multi_block_cluster = cluster_dim is not None and cluster_dim != (1, 1, 1)
+    if call.group.kind in {"cluster", "grid"} and uses_multi_block_cluster:
+        if launch.cluster_launch is not True or not launch.is_verified(
+            "cluster_launch"
+        ):
+            return _unsupported(
+                call,
+                call.group,
+                UnsupportedReasonCode.LAUNCH_CAPABILITY,
+                "multi-block cluster lowering requires verified cluster launch "
+                f"capability; observed {launch.cluster_launch!r} with verified="
+                f"{launch.is_verified('cluster_launch')!r}",
+            )
+    if call.group.kind == "grid":
+        if launch.cooperative_launch is not True or not launch.is_verified(
+            "cooperative_launch"
+        ):
+            return _unsupported(
+                call,
+                call.group,
+                UnsupportedReasonCode.LAUNCH_CAPABILITY,
+                "grid group lowering requires verified cooperative launch "
+                f"capability; observed {launch.cooperative_launch!r} with "
+                f"verified={launch.is_verified('cooperative_launch')!r}",
+            )
     resolved, failure = _resolve_group(call, launch)
     if failure is not None:
         return failure
