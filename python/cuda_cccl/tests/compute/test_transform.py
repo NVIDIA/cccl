@@ -934,3 +934,32 @@ def test_unary_transform_stateful_fortran_state_rejected_after_c_state():
         cuda.compute.unary_transform(
             d_in=d_in, d_out=d_out, op=make_op(f_state), num_items=h_in.size
         )
+
+
+def test_complex_result_rejected_for_a_real_output():
+    """An operator returning a complex value cannot write to a real output.
+
+    Converting it keeps only the real part, so the call is rejected while typing
+    rather than silently writing a different result.
+    """
+    h_in = np.array([1.0, 2.0, 3.0], dtype=np.float64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.float64))
+
+    with pytest.raises(Exception, match="cannot be stored into an output"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=lambda x: x * 1j, num_items=h_in.size
+        )
+
+
+def test_complex_result_accepted_for_a_complex_output():
+    """The same operator is fine when the output can hold a complex value."""
+    h_in = np.array([1.0, 2.0, 3.0], dtype=np.float64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.complex128))
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=lambda x: x * 1j, num_items=h_in.size
+    )
+
+    np.testing.assert_allclose(d_out.copy_to_host(), h_in * 1j)

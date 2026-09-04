@@ -105,6 +105,15 @@ class _ConvertToDeclaredTypeTemplate(_mlir.AbstractTemplate):
         instance_type = getattr(args[1], "instance_type", None)
         if instance_type is None:
             return None
+        # A complex result cannot be stored into a real output: the conversion
+        # keeps only the real part rather than reporting anything.
+        if isinstance(args[0], types.Complex) and not isinstance(
+            instance_type, types.Complex
+        ):
+            raise _mlir.errors.TypingError(
+                f"operator returns {args[0]}, which cannot be stored into an "
+                f"output of type {instance_type}"
+            )
         return _mlir.signature(instance_type, *args)
 
 
