@@ -152,7 +152,7 @@ def check_portable_surface(source: object, destination: object) -> None:
             logical_warp,
             np.float32(4),
             scan_op="multiplies",
-            initial_value=np.float32(1),
+            initial_value=1.0,
         ),
         np.float32,
     )

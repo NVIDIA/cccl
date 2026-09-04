@@ -147,6 +147,7 @@ PortableNumericScalar: TypeAlias = (
     | numpy.float64
     | CompilerScalarLike
 )
+ContextualInitialValue: TypeAlias = ItemT | int | float
 _ReadableItemT = TypeVar("_ReadableItemT", bound=PortableNumericScalar, covariant=True)
 ScalarValue: TypeAlias = (
     bool | int | float | complex | numpy.number | CompilerScalarLike
@@ -201,6 +202,7 @@ class TempStorageLike(Protocol):
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "ContextualInitialValue",
     "ExchangeMode",
     "LoadStoreAlgorithm",
     "PortableShuffleMode",

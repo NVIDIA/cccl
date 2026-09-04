@@ -392,10 +392,10 @@ returns a fresh value with the same scalar or per-thread-array shape and dtype
 as its input; the input remains unchanged.
 
 Block Scan accepts a scalar or fixed-size ``ThreadData`` payload and supports
-``raking``, ``raking_memoize``, and ``warp_scans``. The qualified
-:mod:`cuda.coop.numba_mlir` spelling also accepts fixed local arrays and the
-corresponding ``BlockScanAlgorithm`` enum. Physical and logical Warp Scan
-accept one scalar per lane and have no algorithm or explicit-storage selector.
+the lowercase ``raking``, ``raking_memoize``, and ``warp_scans`` algorithm
+strings. The qualified :mod:`cuda.coop.numba_mlir` spelling also accepts fixed
+local arrays. Physical and logical Warp Scan accept one scalar per lane and
+have no algorithm or explicit-storage selector.
 
 Sum is the default operation. The three general Scan spellings accept the same
 built-in string aliases as Reduce. The qualified spelling also recognizes the

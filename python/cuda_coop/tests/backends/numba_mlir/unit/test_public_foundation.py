@@ -81,6 +81,7 @@ def test_public_exports_are_only_the_supported_group_families():
     }
     assert excluded_exports.isdisjoint(portable_coop.__all__)
     assert excluded_exports.isdisjoint(coop.__all__)
+    assert not hasattr(coop, "BlockScanAlgorithm")
 
     loaded = set(sys.modules)
     assert "cuda.coop.numba_mlir._group_load_store" in loaded

@@ -53,10 +53,10 @@ for unit ``up`` and ``down`` modes, or a scalar for the qualified ``offset`` and
 
 Scan exposes ``scan``, ``exclusive_scan``, ``inclusive_scan``,
 ``exclusive_sum``, and ``inclusive_sum``. Block Scan accepts scalars and fixed
-per-thread arrays and supports RAKING, RAKING_MEMOIZE, and WARP_SCANS. Warp Scan
-accepts one scalar per lane. The qualified API adds stateless operator
-callbacks, a one-item ``aggregate_output``, and Warp-only ``valid_items``.
-Prefix callback state is not exposed.
+per-thread arrays and supports ``raking``, ``raking_memoize``, and
+``warp_scans``. Warp Scan accepts one scalar per lane. The qualified API adds
+stateless operator callbacks, a one-item ``aggregate_output``, and Warp-only
+``valid_items``. Prefix callback state is not exposed.
 
 For Warp Load and Store, each group receives an automatic memory origin of
 ``group_index * (group_size * items_per_thread)`` before the caller's element
