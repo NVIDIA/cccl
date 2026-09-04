@@ -164,12 +164,19 @@ class GroupPlanningContext:
                 "group topology, participation, synchronization, and storage "
                 "contracts"
             )
-        if topology.execution_scope is SynchronizationScope.GROUP:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir provider execution scope 'group' has no "
-                "storage or synchronization emitter"
-            )
         storage_bearing = storage.ownership is not StorageOwnership.NONE
+        if topology.execution_scope is SynchronizationScope.GROUP and (
+            storage_bearing
+            or synchronization.storage_reuse_barrier is not SynchronizationScope.NONE
+            or metadata.storage_abi is not StorageABI.NONE
+            or metadata.execution_scope is not SynchronizationScope.GROUP
+            or metadata.synchronization_scope is not SynchronizationScope.NONE
+        ):
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir provider execution scope 'group' is "
+                "supported only for storage-free providers with no emitted "
+                "synchronization"
+            )
         if storage_bearing:
             if storage.address_space != "shared":
                 raise GroupRewriteError(
