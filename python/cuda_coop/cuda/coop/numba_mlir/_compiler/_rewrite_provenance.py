@@ -8,6 +8,8 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from enum import Enum
+
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
 from ._rewrite_support import (
@@ -362,7 +364,7 @@ class _ProvenanceRewrite:
         is_common_root = self._is_common_root_member(call.func, "ThreadData")
         allowed_keywords = {"items_per_thread", "dtype"}
         if not is_common_root:
-            allowed_keywords.update(("alignas", "alignment"))
+            allowed_keywords.add("alignas")
         unexpected_keywords = sorted(set(kw_map) - allowed_keywords)
         if unexpected_keywords:
             names = ", ".join(unexpected_keywords)
@@ -398,19 +400,15 @@ class _ProvenanceRewrite:
                     "coop.ThreadData received dtype both positionally and by keyword."
                 )
             dtype_ref = kw_map["dtype"]
-        alignment_values = []
-        for alignment_name in ("alignas", "alignment"):
-            alignment_ref = kw_map.get(alignment_name)
-            if alignment_ref is None:
-                continue
+        alignment = None
+        alignment_ref = kw_map.get("alignas")
+        if alignment_ref is not None:
             try:
                 raw_alignment = self._infer_constant(alignment_ref)
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
                     "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
                 ) from exc
-            if alignment_name == "alignment" and raw_alignment is None:
-                continue
             if isinstance(raw_alignment, bool):
                 raise CoopSinglePhaseRewriteError(
                     "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
@@ -421,17 +419,6 @@ class _ProvenanceRewrite:
                 raise CoopSinglePhaseRewriteError(
                     "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
                 ) from exc
-            alignment_values.append((alignment_name, alignment))
-
-        if len(alignment_values) == 2 and (
-            alignment_values[0][1] != alignment_values[1][1]
-        ):
-            raise CoopSinglePhaseRewriteError(
-                "cuda.coop.numba_mlir.ThreadData alignas and alignment must match when both are set"
-            )
-        alignment = None
-        if alignment_values:
-            alignment = alignment_values[-1][1]
             if alignment < 1:
                 raise CoopSinglePhaseRewriteError(
                     "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
@@ -638,7 +625,7 @@ class _ProvenanceRewrite:
         sharing = "shared"
         if sharing_ref is not None:
             sharing = infer_constant(sharing_ref, name="sharing")
-            if not isinstance(sharing, str):
+            if not isinstance(sharing, str) or isinstance(sharing, Enum):
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage sharing must be a string: 'shared' or 'exclusive'."
                 )

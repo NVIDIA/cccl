@@ -21,13 +21,11 @@ def check_numba_surface(source: object, destination: object) -> None:
     block = coop.this_block()
     byte_values = coop.ThreadData(1, np.int8)
     values = coop.ThreadData(2, np.uint16, alignas=16)
-    compatibility_values = coop.ThreadData(1, np.float32, alignment=8)
     storage = coop.TempStorage(alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
     assert_type(byte_values, ThreadDataLike[np.int8])
     assert_type(values, ThreadDataLike[np.uint16])
-    assert_type(compatibility_values, ThreadDataLike[np.float32])
     assert_type(storage, coop.TempStorage)
     assert_type(
         coop.load(

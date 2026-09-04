@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import struct
+from enum import Enum
 
 import pytest
 
@@ -10,6 +11,10 @@ import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _thread_data
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringSharing(str, Enum):
+    SHARED = "shared"
 
 
 class _FakeLocal:
@@ -38,7 +43,7 @@ def test_thread_data_accepts_canonical_extent_forms(fake_runtime):
     result = coop.ThreadData(
         items_per_thread=4,
         dtype="int32",
-        alignment=16,
+        alignas=16,
     )
     compatible = coop.ThreadData(1, "int16", alignas=16)
     inferred = coop.ThreadData(2)
@@ -49,12 +54,10 @@ def test_thread_data_accepts_canonical_extent_forms(fake_runtime):
     assert fake_runtime.local.calls == [result, compatible, inferred]
 
 
-def test_thread_data_rejects_conflicting_alignment_aliases(fake_runtime):
+def test_thread_data_rejects_removed_alignment_alias(fake_runtime):
     del fake_runtime
-    with pytest.raises(ValueError, match="alignas and alignment must match"):
-        coop.ThreadData(1, alignas=16, alignment=32)
-    with pytest.raises(ValueError, match="alignas and alignment must match"):
-        coop.ThreadData(1, alignas=8, alignment=16)
+    with pytest.raises(TypeError, match="unexpected keyword argument 'alignment'"):
+        coop.ThreadData(1, alignment=16)
 
 
 @pytest.mark.parametrize(
@@ -114,7 +117,7 @@ def test_thread_data_validates_alignment(
 ):
     del fake_runtime
     with pytest.raises(error_type, match=message):
-        coop.ThreadData(1, alignment=alignment)
+        coop.ThreadData(1, alignas=alignment)
 
 
 def test_temp_storage_uses_canonical_defaults_and_normalization():
@@ -125,6 +128,11 @@ def test_temp_storage_uses_canonical_defaults_and_normalization():
     assert shared.auto_sync is True
     assert exclusive.sharing == "exclusive"
     assert exclusive.auto_sync is False
+
+
+def test_temp_storage_rejects_string_enum_sharing():
+    with pytest.raises(TypeError, match="sharing must be a string"):
+        coop.TempStorage(sharing=_StringSharing.SHARED)
 
 
 @pytest.mark.parametrize(

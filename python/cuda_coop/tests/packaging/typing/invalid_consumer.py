@@ -12,6 +12,7 @@ import cuda.coop as portable
 import cuda.coop.numba_mlir as coop
 
 values = coop.ThreadData(2, np.int32)
+coop.ThreadData(2, np.int32, alignment=8)  # expected-error: [call-overload]
 portable_values = portable.ThreadData(2, np.int32)
 portable_block = portable.this_block()
 portable_block.rank()  # expected-error: [attr-defined]

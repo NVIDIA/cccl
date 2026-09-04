@@ -48,17 +48,15 @@ def ThreadData(
     dtype: type[_ItemT],
     *,
     alignas: int = 8,
-    alignment: int | None = None,
 ) -> ThreadDataLike[_ItemT]:
     """Construct typed thread-local storage."""
 
 @overload
 def ThreadData(
     items_per_thread: int,
-    dtype: object = None,
+    dtype: object | None = None,
     *,
     alignas: int = 8,
-    alignment: int | None = None,
 ) -> ThreadDataLike[Any]:
     """Construct storage using a compiler dtype token or inferred dtype."""
 

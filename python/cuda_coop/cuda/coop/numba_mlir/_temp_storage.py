@@ -4,6 +4,8 @@
 
 """Describe explicit shared-memory storage for cooperative operations."""
 
+from enum import Enum
+
 
 class TempStorage:
     """Shared-memory requirements for cooperative operations in one kernel."""
@@ -31,7 +33,7 @@ class TempStorage:
             if alignment & (alignment - 1):
                 raise ValueError("TempStorage alignment must be a power of 2.")
 
-        if not isinstance(sharing, str):
+        if not isinstance(sharing, str) or isinstance(sharing, Enum):
             raise TypeError(
                 "TempStorage sharing must be a string: 'shared' or 'exclusive'."
             )
