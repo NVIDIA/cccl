@@ -12,45 +12,33 @@ counts, and aggregate outputs; they do not execute a host-side scan.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Literal, TypeVar
+from typing import Any
 
-import numpy
-
-from ..._typing import (
-    CommonNumericScalar,
-    CommonThreadDataLike,
-    ScanAlgorithm,
-    ScanOperator,
-    TempStorageLike,
-    ThreadDataLike,
-    ValidItems,
-)
 from .._compiler._operations import group_operation
-from .._thread_group import BlockGroup, WarpGroup
+from .._thread_group import ThreadGroup
 from ._marker import group_primitive_marker
-
-_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
-
 
 _FAMILY_MODULE = "cuda.coop.numba_mlir._compiler._group_scan"
 
 
 @group_operation("scan", family_module=_FAMILY_MODULE)
 def scan(
-    group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    group: ThreadGroup,
+    value: Any,
+    prefix_state: Any = None,
     /,
     *,
-    mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
-    initial_value: CommonNumericScalar | None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
-) -> ThreadDataLike[_ItemT] | _ItemT:
-    """Scan with device operators and optional aggregate outputs.
+    mode: str = "exclusive",
+    scan_op: Any = None,
+    initial_value: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
+) -> Any:
+    """Scan values across a block or warp group.
 
     Extends :func:`cuda.coop.scan` with the options below. Group requirements,
     modes, algorithms, and temporary storage follow the common function.
@@ -65,7 +53,8 @@ def scan(
         stateless device function ``op(left, right)``. The operator is fixed
         at compile time and must be associative and return the input dtype.
         ``None`` selects sum. Non-sum exclusive scans require
-        ``initial_value``. Stateful binary operators are unsupported.
+        ``initial_value`` unless ``prefix_op`` supplies the seed. Stateful
+        binary operators are unsupported.
     valid_items : int or integer scalar, optional
         Warp-only count of contributing lanes, from one through the group
         size, uniform within the group. ``None`` includes all lanes. Every
@@ -75,7 +64,15 @@ def scan(
     aggregate_output : ThreadData or local array, optional
         Writable one-item payload with the input dtype. Receives the input
         aggregate on every member, excluding ``initial_value`` and lanes
-        beyond ``valid_items``.
+        beyond ``valid_items``. Requires ``None`` with ``prefix_op``.
+    prefix_state : ThreadData or local array, optional
+        One-item state passed as the third positional argument for a
+        ``StatefulFunction`` prefix callback. Its dtype must match the
+        callback descriptor.
+    prefix_op : device callable or StatefulFunction, optional
+        Block-only callback that receives the tile aggregate and supplies
+        its prefix. A stateful callback also receives ``prefix_state`` first.
+        Requires ``initial_value=None`` and ``aggregate_output=None``.
 
     Returns
     -------
@@ -95,16 +92,6 @@ def scan(
     See :func:`~cuda.coop.numba_mlir.inclusive_scan` for a device operator,
     :func:`~cuda.coop.numba_mlir.exclusive_scan` for a partial warp and
     aggregate output.
-
-    Compare inclusive maximum prefixes with inclusive sums over the same
-    input.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_prefix_examples.py
-        :language: python
-        :start-after: # qualified-prefix-example-begin
-        :end-before: # qualified-prefix-example-end
-        :dedent: 4
     """
 
     return group_primitive_marker(
@@ -118,46 +105,29 @@ def scan(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
 @group_operation("exclusive_scan", family_module=_FAMILY_MODULE)
 def exclusive_scan(
-    group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    group: ThreadGroup,
+    value: Any,
+    prefix_state: Any = None,
     /,
     *,
-    scan_op: ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
-    initial_value: CommonNumericScalar | None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
-) -> ThreadDataLike[_ItemT] | _ItemT:
-    """Return an exclusive prefix using a built-in or device operator.
-
-    Extends :func:`cuda.coop.exclusive_scan` with the parameters and return
-    behavior of :func:`cuda.coop.numba_mlir.scan`, with exclusive mode fixed.
-    Non-sum operators require ``initial_value``.
-
-    See Also
-    --------
-    :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``ExclusiveScan``.
-
-    Examples
-    --------
-    Scan five lanes of each eight-lane logical warp with an initial value.
-    All lanes participate and receive the aggregate; only valid lanes write
-    prefixes.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_scan_examples.py
-        :language: python
-        :start-after: # qualified-exclusive-scan-example-begin
-        :end-before: # qualified-exclusive-scan-example-end
-        :dedent: 4
-    """
+    scan_op: Any = None,
+    initial_value: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
+) -> Any:
+    """Return an exclusive scan across a block or warp group."""
 
     return group_primitive_marker(
         "exclusive_scan",
@@ -169,44 +139,28 @@ def exclusive_scan(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
 @group_operation("inclusive_scan", family_module=_FAMILY_MODULE)
 def inclusive_scan(
-    group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    group: ThreadGroup,
+    value: Any,
+    prefix_state: Any = None,
     /,
     *,
-    scan_op: ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
-) -> ThreadDataLike[_ItemT] | _ItemT:
-    """Return an inclusive prefix using a built-in or device operator.
-
-    Extends :func:`cuda.coop.inclusive_scan` with the parameters and return
-    behavior of :func:`cuda.coop.numba_mlir.scan`, with inclusive mode fixed
-    and no ``initial_value``.
-
-    See Also
-    --------
-    :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``InclusiveScan``.
-
-    Examples
-    --------
-    Supply a device maximum operator and a local array with two items per
-    thread. The built-in ``"max"`` operator gives the same result.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_scan_examples.py
-        :language: python
-        :start-after: # qualified-inclusive-scan-example-begin
-        :end-before: # qualified-inclusive-scan-example-end
-        :dedent: 4
-    """
+    scan_op: Any = None,
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
+) -> Any:
+    """Return an inclusive scan across a block or warp group."""
 
     return group_primitive_marker(
         "inclusive_scan",
@@ -217,34 +171,27 @@ def inclusive_scan(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
 @group_operation("exclusive_sum", family_module=_FAMILY_MODULE)
 def exclusive_sum(
-    group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    group: ThreadGroup,
+    value: Any,
+    prefix_state: Any = None,
     /,
     *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
-) -> ThreadDataLike[_ItemT] | _ItemT:
-    """Return exclusive sums starting from zero.
-
-    Extends :func:`cuda.coop.exclusive_sum` with the parameters and return
-    behavior of :func:`cuda.coop.numba_mlir.scan`, with exclusive mode and sum
-    fixed. Each group starts from zero. Use
-    :func:`cuda.coop.numba_mlir.exclusive_scan` for an explicit
-    ``initial_value`` or a different operator.
-
-    See Also
-    --------
-    :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``ExclusiveSum``.
-
-    """
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
+) -> Any:
+    """Return an exclusive prefix sum across a block or warp group."""
 
     return group_primitive_marker(
         "exclusive_sum",
@@ -254,42 +201,27 @@ def exclusive_sum(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
 @group_operation("inclusive_sum", family_module=_FAMILY_MODULE)
 def inclusive_sum(
-    group: BlockGroup | WarpGroup,
-    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    group: ThreadGroup,
+    value: Any,
+    prefix_state: Any = None,
     /,
     *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: ValidItems | None = None,
-    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
-) -> ThreadDataLike[_ItemT] | _ItemT:
-    """Return inclusive sums, including each current item.
-
-    Extends :func:`cuda.coop.inclusive_sum` with the parameters and return
-    behavior of :func:`cuda.coop.numba_mlir.scan`, with inclusive mode and
-    sum fixed.
-
-    See Also
-    --------
-    :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
-        C++ primitive types providing ``InclusiveSum``.
-
-    Examples
-    --------
-    Compute inclusive sums without changing the loaded input payload.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_prefix_examples.py
-        :language: python
-        :start-after: # qualified-prefix-example-begin
-        :end-before: # qualified-prefix-example-end
-        :dedent: 4
-    """
+    algorithm: Any = None,
+    temp_storage: Any = None,
+    valid_items: Any = None,
+    aggregate_output: Any = None,
+    prefix_op: Any = None,
+    block_prefix_callback_op: Any = None,
+) -> Any:
+    """Return an inclusive prefix sum across a block or warp group."""
 
     return group_primitive_marker(
         "inclusive_sum",
@@ -299,6 +231,9 @@ def inclusive_sum(
         temp_storage=temp_storage,
         valid_items=valid_items,
         aggregate_output=aggregate_output,
+        prefix_state=prefix_state,
+        prefix_op=prefix_op,
+        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
