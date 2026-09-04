@@ -26,41 +26,75 @@
 #  include <cxxabi.h>
 #endif // __GNUC__
 
-namespace detail
+namespace unittest::detail
 {
+template <class T, class = void>
+struct has_value_type : ::cuda::std::false_type
+{};
 template <class T>
-std::vector<T> to_vec(thrust::device_vector<T> const& vec)
+struct has_value_type<T, ::cuda::std::void_t<typename T::value_type>> : ::cuda::std::true_type
+{};
+
+// device_vector: copy to host first
+template <class T, class Alloc>
+std::vector<T> to_vec(thrust::device_vector<T, Alloc> const& vec)
 {
   thrust::host_vector<T> temp = vec;
   return std::vector<T>{temp.begin(), temp.end()};
 }
 
-template <class T>
-std::vector<T> to_vec(thrust::host_vector<T> const& vec)
+// any other host-accessible container (host_vector, universal_vector, std::vector, vector_base, ...)
+template <class C, ::cuda::std::enable_if_t<has_value_type<C>::value, int> = 0>
+std::vector<typename C::value_type> to_vec(C const& c)
 {
-  return std::vector<T>{vec.begin(), vec.end()};
+  return std::vector<typename C::value_type>{c.begin(), c.end()};
 }
 
-template <class T>
-std::vector<T> to_vec(std::vector<T> const& vec)
+// scalar: wrap into a one-element vector
+template <class T, ::cuda::std::enable_if_t<!has_value_type<T>::value, int> = 0>
+std::vector<T> to_vec(T const& x)
 {
-  return vec;
+  return std::vector<T>{x};
 }
-} // namespace detail
 
-#define ASSERT_EQUAL(X, Y)           REQUIRE(X == Y)
+// Catch2's Approx matcher only understands arithmetic element types. For complex numbers we flatten the vector into
+// its interleaved real/imaginary components so the matcher can compare them component-wise.
+template <class T>
+std::vector<T> to_approx(std::vector<T> v)
+{
+  return v;
+}
+
+template <template <class> class Complex, class T>
+std::vector<T> to_approx(std::vector<Complex<T>> const& v)
+{
+  std::vector<T> out;
+  out.reserve(2 * v.size());
+  for (auto const& z : v)
+  {
+    out.push_back(z.real());
+    out.push_back(z.imag());
+  }
+  return out;
+}
+} // namespace unittest::detail
+
+#define ASSERT_EQUAL(X, Y)     REQUIRE((X) == (Y))
+#define ASSERT_NOT_EQUAL(X, Y) REQUIRE((X) != (Y))
+// The QUIET variants wrap the whole comparison in an extra pair of parentheses so that Catch2 does not decompose the
+// expression. This avoids stringifying the operands, which is required for types that are not streamable (e.g. vectors
+// of tuples or other types without an ostream operator<<).
 #define ASSERT_EQUAL_QUIET(X, Y)     REQUIRE((X == Y))
-#define ASSERT_NOT_EQUAL(X, Y)       REQUIRE(X != Y)
 #define ASSERT_NOT_EQUAL_QUIET(X, Y) REQUIRE((X != Y))
-#define ASSERT_LEQUAL(X, Y)          REQUIRE(X <= Y)
-#define ASSERT_GEQUAL(X, Y)          REQUIRE(X >= Y)
-#define ASSERT_LESS(X, Y)            REQUIRE(X < Y)
-#define ASSERT_GREATER(X, Y)         REQUIRE(X > Y)
-#define ASSERT_ALMOST_EQUAL(X, Y)                            \
-  {                                                          \
-    auto vec_ref = detail::to_vec(X);                        \
-    auto vec_out = detail::to_vec(Y);                        \
-    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
+#define ASSERT_LEQUAL(X, Y)          REQUIRE((X) <= (Y))
+#define ASSERT_GEQUAL(X, Y)          REQUIRE((X) >= (Y))
+#define ASSERT_LESS(X, Y)            REQUIRE((X) < (Y))
+#define ASSERT_GREATER(X, Y)         REQUIRE((X) > (Y))
+#define ASSERT_ALMOST_EQUAL(X, Y)                                                \
+  {                                                                              \
+    auto vec_ref = ::unittest::detail::to_approx(::unittest::detail::to_vec(X)); \
+    auto vec_out = ::unittest::detail::to_approx(::unittest::detail::to_vec(Y)); \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out));                     \
   }
 
 #define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) CHECK_THROWS_AS(EXPR, EXCEPTION_TYPE)
