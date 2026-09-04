@@ -11,6 +11,9 @@
 // XFAIL: enable-tile
 // error: dynamic memory allocation is unsupported in tile code
 
+// UNSUPPORTED: !c++17
+// ptxas error: Stack size for entry function '_Z16fake_main_kernelPi' cannot be statically determined
+
 // <memory>
 
 // unique_ptr

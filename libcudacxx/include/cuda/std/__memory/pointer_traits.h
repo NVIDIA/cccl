@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/derived_from.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/conjunction.h>
@@ -29,6 +31,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_function.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
@@ -160,85 +163,40 @@ public:
 };
 
 // to_address
+template <class _Pointer>
+_CCCL_CONCEPT __has_cuda_std_to_address = _CCCL_REQUIRES_EXPR((_Pointer), const _Pointer& __ptr)(
+  typename(typename ::cuda::std::pointer_traits<_Pointer>), (::cuda::std::pointer_traits<_Pointer>::to_address(__ptr)));
 
-template <class _Pointer, class = void>
-struct __to_address_helper;
+template <class _Pointer>
+_CCCL_CONCEPT __has_const_operator_arrow = _CCCL_REQUIRES_EXPR((_Pointer), const _Pointer& __ptr)((__ptr.operator->()));
+
+template <class _Pointer>
+inline constexpr bool __is_fancy_pointer = __has_cuda_std_to_address<_Pointer> || __has_const_operator_arrow<_Pointer>;
 
 template <class _Tp>
-_CCCL_API constexpr _Tp* __to_address(_Tp* __p) noexcept
+[[nodiscard]] _CCCL_API constexpr auto to_address(_Tp* const __ptr) noexcept
 {
   static_assert(!is_function_v<_Tp>, "_Tp is a function type");
-  return __p;
+  return __ptr;
 }
 
-template <class _Pointer, class = void>
-inline constexpr bool __has_toaddress = false;
-
-template <class _Pointer>
-inline constexpr bool
-  __has_toaddress<_Pointer,
-                  decltype((void) pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))> =
-    true;
-
-template <class _Pointer, class = void>
-inline constexpr bool __has_const_operator_arrow = false;
-
-template <class _Pointer>
-inline constexpr bool
-  __has_const_operator_arrow<_Pointer, decltype((void) ::cuda::std::declval<const _Pointer&>().operator->())> = true;
-
-template <class _Pointer>
-inline constexpr bool __is_fancy_pointer = __has_const_operator_arrow<_Pointer> || __has_toaddress<_Pointer>;
-
-// enable_if is needed here to avoid instantiating checks for fancy pointers on raw pointers
-template <class _Pointer, class = enable_if_t<is_class_v<_Pointer>>, class = enable_if_t<__is_fancy_pointer<_Pointer>>>
-_CCCL_API constexpr decay_t<decltype(__to_address_helper<_Pointer>::__call(::cuda::std::declval<const _Pointer&>()))>
-__to_address(const _Pointer& __p) noexcept
+_CCCL_EXEC_CHECK_DISABLE
+template <class _Pointer, enable_if_t<__is_fancy_pointer<_Pointer>, int> = 0>
+[[nodiscard]] _CCCL_API constexpr auto to_address(const _Pointer& __ptr) noexcept
 {
-  return __to_address_helper<_Pointer>::__call(__p);
-}
-
-template <class _Pointer, class>
-struct __to_address_helper
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr static decltype(::cuda::std::__to_address(::cuda::std::declval<const _Pointer&>().operator->()))
-  __call(const _Pointer& __p) noexcept
+  if constexpr (__has_cuda_std_to_address<_Pointer>)
   {
-    return ::cuda::std::__to_address(__p.operator->());
+    return ::cuda::std::pointer_traits<_Pointer>::to_address(__ptr);
   }
-};
-
-template <class _Pointer>
-struct __to_address_helper<_Pointer,
-                           decltype((void) pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))>
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr static decltype(pointer_traits<_Pointer>::to_address(::cuda::std::declval<const _Pointer&>()))
-  __call(const _Pointer& __p) noexcept
+  else
   {
-    return pointer_traits<_Pointer>::to_address(__p);
+    return ::cuda::std::to_address(__ptr.operator->());
   }
-};
-
-template <class _Tp>
-_CCCL_API constexpr auto to_address(_Tp* __p) noexcept
-{
-  return ::cuda::std::__to_address(__p);
 }
 
 template <class _Pointer>
-_CCCL_API constexpr auto to_address(const _Pointer& __p) noexcept -> decltype(::cuda::std::__to_address(__p))
-{
-  return ::cuda::std::__to_address(__p);
-}
-
-template <class _Iter, class = void>
-inline constexpr bool __can_to_address = false;
-
-template <class _Iter>
-inline constexpr bool
-  __can_to_address<_Iter, void_t<decltype(::cuda::std::to_address(::cuda::std::declval<_Iter&>()))>> = true;
+_CCCL_CONCEPT __can_to_address =
+  _CCCL_REQUIRES_EXPR((_Pointer), const _Pointer& __ptr)((::cuda::std::to_address(__ptr)));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
