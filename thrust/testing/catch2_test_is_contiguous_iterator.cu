@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "catch2_test_helper.h"
+#include <unittest/unittest.h>
 
 template <typename Iterator, bool Expected>
 void check_is_contiguous()

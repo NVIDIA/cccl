@@ -2,7 +2,7 @@
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <unittest/unittest.h>
 
 template <typename System, typename SeqSystem>
 void check()

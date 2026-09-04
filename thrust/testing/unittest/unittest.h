@@ -3,8 +3,14 @@
 // Here was Thrust's legacy unit test framework. It's core was replaced by Catch2, but the APIs remain for all tests
 // that have not been migrated yet.
 
+#include <thrust/detail/type_traits.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
+#include <thrust/mr/device_memory_resource.h>
+#include <thrust/mr/host_memory_resource.h>
+#include <thrust/random.h>
+#include <thrust/universal_vector.h>
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -13,18 +19,517 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <iosfwd>
 #include <limits>
 #include <string>
 #include <typeinfo>
 #include <vector>
 
-#include "catch2_test_helper.h"
-#include "detail/random.h"
-#include "detail/special_types.h"
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators_all.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_vector.hpp>
 
 #ifdef __GNUC__
 #  include <cxxabi.h>
 #endif // __GNUC__
+
+// workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
+#if _CCCL_COMPILER(NVHPC)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION _Pragma("diag push")
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION  _Pragma("diag pop")
+#endif
+// workaround for error
+// * MSVC14.39: #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
+// * MSVC14.29: internal error: assertion failed: alloc_copy_of_pending_pragma: copied pragma has source sequence entry
+//              (pragma.c, line 526 in alloc_copy_of_pending_pragma)
+// see also upstream Catch2 issue: https://github.com/catchorg/Catch2/issues/2636
+#if _CCCL_COMPILER(MSVC)
+#  undef CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  undef CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
+#  define CATCH_INTERNAL_START_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION
+#  define CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS
+#endif
+
+// ==== merged from the former unittest/detail/special_types.h ====
+
+template <typename T, unsigned int N>
+struct FixedVector
+{
+  T data[N];
+
+  _CCCL_HOST_DEVICE FixedVector()
+  {
+    for (unsigned int i = 0; i < N; i++)
+    {
+      data[i] = T();
+    }
+  }
+
+  _CCCL_HOST_DEVICE explicit FixedVector(T init)
+  {
+    for (unsigned int i = 0; i < N; i++)
+    {
+      data[i] = init;
+    }
+  }
+
+  _CCCL_HOST_DEVICE
+#if _CCCL_COMPILER(NVHPC)
+  __attribute__((noinline))
+#endif
+  FixedVector operator+(const FixedVector& bs) const
+  {
+    FixedVector output;
+    for (unsigned int i = 0; i < N; i++)
+    {
+      output.data[i] = data[i] + bs.data[i];
+    }
+    return output;
+  }
+
+  _CCCL_HOST_DEVICE bool operator<(const FixedVector& bs) const
+  {
+    for (unsigned int i = 0; i < N; i++)
+    {
+      if (data[i] < bs.data[i])
+      {
+        return true;
+      }
+      if (bs.data[i] < data[i])
+      {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  _CCCL_HOST_DEVICE bool operator==(const FixedVector& bs) const
+  {
+    for (unsigned int i = 0; i < N; i++)
+    {
+      if (!(data[i] == bs.data[i]))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+};
+
+template <typename Key, typename Value>
+struct key_value
+{
+  using key_type   = Key;
+  using value_type = Value;
+
+  _CCCL_HOST_DEVICE key_value()
+      : key()
+      , value()
+  {}
+
+  _CCCL_HOST_DEVICE key_value(key_type k, value_type v)
+      : key(k)
+      , value(v)
+  {}
+
+  _CCCL_HOST_DEVICE bool operator<(const key_value& rhs) const
+  {
+    return key < rhs.key;
+  }
+
+  _CCCL_HOST_DEVICE bool operator>(const key_value& rhs) const
+  {
+    return key > rhs.key;
+  }
+
+  _CCCL_HOST_DEVICE bool operator==(const key_value& rhs) const
+  {
+    return key == rhs.key && value == rhs.value;
+  }
+
+  _CCCL_HOST_DEVICE bool operator!=(const key_value& rhs) const
+  {
+    return !(*this == rhs);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const key_value& kv)
+  {
+    return os << "(" << kv.key << ", " << kv.value << ")";
+  }
+
+  key_type key;
+  value_type value;
+};
+
+struct user_swappable
+{
+  _CCCL_HOST_DEVICE user_swappable(bool swapped = false)
+      : was_swapped(swapped)
+  {}
+
+  bool was_swapped;
+
+  friend _CCCL_HOST_DEVICE bool operator==(const user_swappable& x, const user_swappable& y)
+  {
+    return x.was_swapped == y.was_swapped;
+  }
+
+  friend _CCCL_HOST_DEVICE void swap(user_swappable& x, user_swappable& y) noexcept
+  {
+    x.was_swapped = true;
+    y.was_swapped = false;
+  }
+};
+
+// A type that behaves as if it was a normal numeric type,
+// so it can be used in the same tests as "normal" numeric types.
+// NOTE: This is explicitly NOT proclaimed trivially reloctable.
+class custom_numeric
+{
+public:
+  _CCCL_HOST_DEVICE custom_numeric()
+  {
+    fill(0);
+  }
+
+  // Allow construction from any integral numeric.
+  template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+  _CCCL_HOST_DEVICE custom_numeric(const T& i)
+  {
+    fill(static_cast<int>(i));
+  }
+
+  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other)
+  {
+    fill(other.value[0]);
+  }
+
+  _CCCL_HOST_DEVICE custom_numeric& operator=(int val)
+  {
+    fill(val);
+    return *this;
+  }
+
+  _CCCL_HOST_DEVICE custom_numeric& operator=(const custom_numeric& other)
+  {
+    fill(other.value[0]);
+    return *this;
+  }
+  _CCCL_HOST_DEVICE explicit operator bool() const
+  {
+    return value[0] != 0;
+  }
+
+#define DEFINE_OPERATOR(op)                               \
+  _CCCL_HOST_DEVICE custom_numeric& operator op()         \
+  {                                                       \
+    fill(op value[0]);                                    \
+    return *this;                                         \
+  }                                                       \
+  _CCCL_HOST_DEVICE custom_numeric operator op(int) const \
+  {                                                       \
+    custom_numeric ret(*this);                            \
+    op ret;                                               \
+    return ret;                                           \
+  }
+
+  DEFINE_OPERATOR(++)
+  DEFINE_OPERATOR(--)
+
+#undef DEFINE_OPERATOR
+
+#define DEFINE_OPERATOR(op)                            \
+  _CCCL_HOST_DEVICE custom_numeric operator op() const \
+  {                                                    \
+    return custom_numeric(op value[0]);                \
+  }
+
+  DEFINE_OPERATOR(+)
+  DEFINE_OPERATOR(-)
+  DEFINE_OPERATOR(~)
+
+#undef DEFINE_OPERATOR
+
+#define DEFINE_OPERATOR(op)                                                       \
+  _CCCL_HOST_DEVICE custom_numeric operator op(const custom_numeric& other) const \
+  {                                                                               \
+    return custom_numeric(value[0] op other.value[0]);                            \
+  }
+
+  DEFINE_OPERATOR(+)
+  DEFINE_OPERATOR(-)
+  DEFINE_OPERATOR(*)
+  DEFINE_OPERATOR(/)
+  DEFINE_OPERATOR(%)
+  DEFINE_OPERATOR(<<)
+  DEFINE_OPERATOR(>>)
+  DEFINE_OPERATOR(&)
+  DEFINE_OPERATOR(|)
+  DEFINE_OPERATOR(^)
+
+#undef DEFINE_OPERATOR
+
+#define CONCAT(X, Y) X##Y
+
+#define DEFINE_OPERATOR(op)                                                             \
+  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric& other) \
+  {                                                                                     \
+    fill(value[0] op other.value[0]);                                                   \
+    return *this;                                                                       \
+  }
+
+  DEFINE_OPERATOR(+)
+  DEFINE_OPERATOR(-)
+  DEFINE_OPERATOR(*)
+  DEFINE_OPERATOR(/)
+  DEFINE_OPERATOR(%)
+  DEFINE_OPERATOR(<<)
+  DEFINE_OPERATOR(>>)
+  DEFINE_OPERATOR(&)
+  DEFINE_OPERATOR(|)
+  DEFINE_OPERATOR(^)
+
+#undef DEFINE_OPERATOR
+
+#define DEFINE_OPERATOR(op)                                                                       \
+  _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
+  {                                                                                               \
+    return lhs.value[0] op rhs.value[0];                                                          \
+  }
+
+  DEFINE_OPERATOR(==)
+  DEFINE_OPERATOR(!=)
+  DEFINE_OPERATOR(<)
+  DEFINE_OPERATOR(<=)
+  DEFINE_OPERATOR(>)
+  DEFINE_OPERATOR(>=)
+  DEFINE_OPERATOR(&&)
+  DEFINE_OPERATOR(||)
+
+#undef DEFINE_OPERATOR
+
+  friend std::ostream& operator<<(std::ostream& os, const custom_numeric& val)
+  {
+    return os << "custom_numeric{" << val.value[0] << "}";
+  }
+
+private:
+  int value[5];
+
+  _CCCL_HOST_DEVICE void fill(int val)
+  {
+    for (int i = 0; i < 5; ++i)
+    {
+      value[i] = val;
+    }
+  }
+};
+
+namespace std
+{
+template <>
+struct numeric_limits<custom_numeric> : numeric_limits<int>
+{};
+} // namespace std
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+template <>
+struct numeric_limits<custom_numeric> : numeric_limits<int>
+{};
+_CCCL_END_NAMESPACE_CUDA_STD
+
+// Inheriting from classes in anonymous namespaces is not allowed.
+// The anonymous namespace tests don't use these, so just disable them:
+#ifndef THRUST_USE_ANON_NAMESPACE
+
+struct my_system : THRUST_NS_QUALIFIER::device_execution_policy<my_system>
+{
+  my_system(int) {}
+
+  my_system(const my_system& other)
+      : num_copies(other.num_copies + 1)
+  {}
+
+  void validate_dispatch()
+  {
+    correctly_dispatched = (num_copies == 0);
+  }
+
+  bool is_valid() const
+  {
+    return correctly_dispatched;
+  }
+
+private:
+  bool correctly_dispatched = false;
+
+  // count the number of copies so that we can validate
+  // that dispatch does not introduce any
+  unsigned int num_copies = 0;
+};
+
+struct my_tag : THRUST_NS_QUALIFIER::device_execution_policy<my_tag>
+{};
+
+#endif // THRUST_USE_ANON_NAMESPACE
+
+namespace unittest
+{
+using std::int16_t;
+using std::int32_t;
+using std::int64_t;
+using std::int8_t;
+
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
+using std::uint8_t;
+} // namespace unittest
+
+// ==== merged from the former unittest/detail/random.h ====
+
+namespace unittest
+{
+namespace detail
+{
+inline unsigned int hash(unsigned int a)
+{
+  a = (a + 0x7ed55d16) + (a << 12);
+  a = (a ^ 0xc761c23c) ^ (a >> 19);
+  a = (a + 0x165667b1) + (a << 5);
+  a = (a + 0xd3a2646c) ^ (a << 9);
+  a = (a + 0xfd7046c5) + (a << 3);
+  a = (a ^ 0xb55a4f09) ^ (a >> 16);
+  return a;
+}
+} // namespace detail
+
+template <typename T>
+struct generate_random_integer
+{
+  T operator()(unsigned int i) const
+  {
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
+    if constexpr (::cuda::std::is_same_v<T, bool>)
+    {
+      THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 1);
+      return dist(rng) == 1;
+    }
+    else if constexpr (::cuda::std::is_integral_v<T>)
+    {
+      T const min = ::cuda::std::numeric_limits<T>::min();
+      T const max = ::cuda::std::numeric_limits<T>::max();
+      THRUST_NS_QUALIFIER::uniform_int_distribution<T> dist(min, max);
+      return static_cast<T>(dist(rng));
+    }
+    else if constexpr (::cuda::std::is_floating_point_v<T>)
+    {
+      T const min = ::cuda::std::numeric_limits<T>::lowest();
+      T const max = ::cuda::std::numeric_limits<T>::max();
+      THRUST_NS_QUALIFIER::uniform_real_distribution<T> dist(min, max);
+      return static_cast<T>(dist(rng));
+    }
+    else
+    {
+      return static_cast<T>(rng());
+    }
+  }
+};
+
+template <typename T>
+struct generate_random_sample
+{
+  T operator()(unsigned int i) const
+  {
+    THRUST_NS_QUALIFIER::default_random_engine rng(detail::hash(i));
+    THRUST_NS_QUALIFIER::uniform_int_distribution<unsigned int> dist(0, 20);
+
+    return static_cast<T>(dist(rng));
+  }
+};
+
+template <typename T>
+THRUST_NS_QUALIFIER::host_vector<T> random_integers(const size_t N)
+{
+  THRUST_NS_QUALIFIER::host_vector<T> vec(N);
+  THRUST_NS_QUALIFIER::transform(
+    THRUST_NS_QUALIFIER::counting_iterator{0u},
+    THRUST_NS_QUALIFIER::counting_iterator{static_cast<unsigned int>(N)},
+    vec.begin(),
+    generate_random_integer<T>());
+
+  return vec;
+}
+
+template <typename T>
+T random_integer()
+{
+  return generate_random_integer<T>()(0);
+}
+
+template <typename T>
+THRUST_NS_QUALIFIER::host_vector<T> random_samples(const size_t N)
+{
+  THRUST_NS_QUALIFIER::host_vector<T> vec(N);
+  THRUST_NS_QUALIFIER::transform(
+    THRUST_NS_QUALIFIER::counting_iterator{0u},
+    THRUST_NS_QUALIFIER::counting_iterator{static_cast<unsigned int>(N)},
+    vec.begin(),
+    generate_random_sample<T>());
+
+  return vec;
+}
+}; // end namespace unittest
+
+// ==== shared Catch2 type lists (merged from the former catch2_test_helper.h) ====
+
+// corresponds to DECLARE_VECTOR_UNITTEST
+using vector_list = cuda::std::__type_list<
+  // host
+  thrust::host_vector<signed char>,
+  thrust::host_vector<short>,
+  thrust::host_vector<int>,
+  thrust::host_vector<float>,
+  thrust::host_vector<custom_numeric>,
+  thrust::host_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::host_memory_resource>>,
+  // device
+  thrust::device_vector<signed char>,
+  thrust::device_vector<short>,
+  thrust::device_vector<int>,
+  thrust::device_vector<float>,
+  thrust::device_vector<custom_numeric>,
+  thrust::device_vector<int, thrust::mr::stateless_resource_allocator<int, thrust::device_memory_resource>>,
+  // universal
+  thrust::universal_vector<int>,
+  thrust::universal_host_pinned_vector<int>>;
+
+// corresponds to DECLARE_INTEGRAL_VECTOR_UNITTEST
+using integral_vector_list = cuda::std::__type_list<
+  // host
+  thrust::host_vector<signed char>,
+  thrust::host_vector<short>,
+  thrust::host_vector<int>,
+  // device
+  thrust::device_vector<signed char>,
+  thrust::device_vector<short>,
+  thrust::device_vector<int>,
+  // universal
+  thrust::universal_vector<int>,
+  thrust::universal_host_pinned_vector<int>>;
+
+// corresponds to DECLARE_GENERIC_UNITTEST
+using generic_list =
+  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float>;
+
+// corresponds to DECLARE_VARIABLE_UNITTEST
+using variable_list =
+  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float, double>;
 
 // gcc >= 11 emits bogus -Werror=stringop-overflow diagnostics ("writing N bytes into a region of size 0") for copies
 // of small vectors of narrow types. The culprit optimizations are the tree vectorizer and the loop-distribute-patterns
