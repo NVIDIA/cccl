@@ -28,12 +28,31 @@ class FactoryOperation:
 
 
 @dataclass(frozen=True)
+class GroupResultSource:
+    """Arguments that determine one logical result's dtype and shape."""
+
+    dtype_parameter: str | None
+    array_parameter: str | None
+
+    def __post_init__(self) -> None:
+        for name in ("dtype_parameter", "array_parameter"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value):
+                raise ValueError(f"{name} must be a non-empty string or None")
+
+
+@dataclass(frozen=True)
 class GroupPrimitiveRegistration:
     """Whole-function planning hooks owned by one primitive operation."""
 
     lower: Callable[..., list[Any]]
-    array_result_parameter: str | None = None
+    results: tuple[GroupResultSource, ...] = ()
     validate_common_arguments: Callable[..., None] | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "results", tuple(self.results))
+        if any(not isinstance(result, GroupResultSource) for result in self.results):
+            raise TypeError("results must contain GroupResultSource records")
 
 
 @dataclass(frozen=True)
@@ -112,14 +131,14 @@ def register_group_primitive(
     operation: str,
     *,
     lower: Callable[..., list[Any]],
-    array_result_parameter: str | None = None,
+    results: tuple[GroupResultSource, ...] = (),
     validate_common_arguments: Callable[..., None] | None = None,
 ) -> None:
     """Register the post-inlining planner for one public operation."""
 
     registration = GroupPrimitiveRegistration(
         lower=lower,
-        array_result_parameter=array_result_parameter,
+        results=results,
         validate_common_arguments=validate_common_arguments,
     )
     existing = _GROUP_PRIMITIVES.get(operation)
@@ -185,6 +204,7 @@ def factory_operation(function: Any) -> FactoryOperation | None:
 __all__ = [
     "FactoryOperation",
     "GroupPrimitiveRegistration",
+    "GroupResultSource",
     "RewriteOperationSpec",
     "factory_operation",
     "group_primitive",
