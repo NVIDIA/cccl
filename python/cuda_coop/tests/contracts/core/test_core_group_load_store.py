@@ -13,6 +13,7 @@ import pytest
 from cuda.coop._core import (
     ArgumentBinding,
     ArgumentKind,
+    ArgumentPrecondition,
     GroupLoadStoreAlgorithm,
     GroupLoweringTarget,
     GroupTopologyContract,
@@ -23,6 +24,7 @@ from cuda.coop._core import (
     ResultVisibility,
     StorageOwnership,
     SynchronizationScope,
+    TempStorageContract,
     UnsupportedReasonCode,
     make_group_primitive_call,
     plan_group_primitive,
@@ -576,6 +578,180 @@ def test_algorithm_storage_contract_matches_cub(kind, algorithm):
     assert plan.synchronization.storage_reuse_barrier is (
         SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
     )
+
+
+@pytest.mark.parametrize(
+    ("instances", "instance_index", "message"),
+    [
+        pytest.param(None, "cta", "positive instance count", id="missing-count"),
+        pytest.param(0, "cta", "positive instance count", id="zero-count"),
+        pytest.param(True, "cta", "positive instance count", id="boolean-count"),
+        pytest.param(1, None, "non-empty instance index", id="missing-index"),
+        pytest.param(1, "", "non-empty instance index", id="empty-index"),
+    ],
+)
+def test_storage_bearing_contract_requires_instance_layout(
+    instances,
+    instance_index,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        TempStorageContract(
+            ownership=StorageOwnership.IMPLEMENTATION,
+            address_space="shared",
+            cpp_type="TestStorage",
+            instances=instances,
+            instance_index=instance_index,
+            exact_layout_required=False,
+        )
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    [GroupLoadStoreAlgorithm.DIRECT, GroupLoadStoreAlgorithm.TRANSPOSE],
+    ids=["storage-free", "storage-bearing"],
+)
+@pytest.mark.parametrize(
+    ("contract", "message"),
+    [
+        pytest.param("topology-kind", "resolved group kind", id="topology-kind"),
+        pytest.param(
+            "participation-kind",
+            "resolved group kind",
+            id="participation-kind",
+        ),
+        pytest.param("topology-width", "resolved group size", id="topology-width"),
+        pytest.param(
+            "participation-width",
+            "resolved group size",
+            id="participation-width",
+        ),
+        pytest.param("block-dim", "resolved group", id="block-dim"),
+        pytest.param("scope", "topology must match", id="scope"),
+        pytest.param("instances", "topology must match", id="instances"),
+        pytest.param("instance-index", "topology must match", id="instance-index"),
+        pytest.param("thread-rank", "topology must match", id="thread-rank"),
+        pytest.param("membership", "participation must match", id="membership"),
+        pytest.param("partition", "participation must match", id="partition"),
+        pytest.param("convergence", "must agree on converged entry", id="convergence"),
+        pytest.param(
+            "synchronization-convergence",
+            "must agree on converged entry",
+            id="synchronization-convergence",
+        ),
+    ],
+)
+def test_supported_plan_contracts_must_describe_resolved_group(
+    contract, message, algorithm
+):
+    plan = _plan(this_block(), _load_store(algorithm=algorithm))
+    changes = {
+        "topology-kind": {
+            "topology": replace(plan.topology, group_kind="warp"),
+        },
+        "participation-kind": {
+            "participation": replace(plan.participation, group_kind="warp"),
+        },
+        "topology-width": {
+            "topology": replace(plan.topology, logical_width=32),
+        },
+        "participation-width": {
+            "participation": replace(plan.participation, exact_group_size=32),
+        },
+        "block-dim": {
+            "participation": replace(
+                plan.participation,
+                exact_block_dim=(32, 1, 1),
+            ),
+        },
+        "scope": {
+            "topology": replace(
+                plan.topology, execution_scope=SynchronizationScope.WARP
+            ),
+        },
+        "instances": {"topology": replace(plan.topology, instances=2)},
+        "instance-index": {
+            "topology": replace(plan.topology, instance_index="linear_thread_rank"),
+        },
+        "thread-rank": {"topology": replace(plan.topology, thread_rank="0")},
+        "membership": {
+            "participation": replace(plan.participation, complete_membership=False),
+        },
+        "partition": {
+            "participation": replace(
+                plan.participation, complete_parent_partition=False
+            ),
+        },
+        "convergence": {
+            "participation": replace(plan.participation, converged_entry=False),
+        },
+        "synchronization-convergence": {
+            "synchronization": replace(plan.synchronization, converged_entry=False),
+        },
+    }[contract]
+
+    with pytest.raises(ValueError, match=message):
+        replace(plan, **changes)
+
+
+@pytest.mark.parametrize(
+    "converged_entry",
+    [False, True],
+)
+@pytest.mark.parametrize(
+    ("group", "complete_membership", "complete_parent_partition"),
+    [
+        (this_block(), True, True),
+        (this_thread(), True, True),
+        (this_warp(), True, True),
+        (this_warp().group_by(3, exhaustive=False), False, False),
+    ],
+)
+def test_supported_plan_preserves_resolved_membership_and_family_preconditions(
+    group, complete_membership, complete_parent_partition, converged_entry
+):
+    launch = LaunchFacts(exact_block_dim=96)
+    resolved = resolve_thread_group(group, launch).require_supported()
+    plan = _plan(this_block(), _load_store(), launch=launch)
+    preconditions = (
+        ArgumentPrecondition("valid_items", 0, 96, PreconditionEnforcement.CALLER),
+    )
+    topology, participation, synchronization, storage = _contracts(
+        resolved,
+        launch,
+        result=None,
+        storage_ownership=StorageOwnership.NONE,
+        cpp_type=None,
+        uniform_arguments=("valid_items",),
+        valid_member_selection="prefix",
+        argument_preconditions=preconditions,
+    )
+
+    # Validate the generic records without selecting a primitive provider.
+    result = replace(
+        plan,
+        call=make_group_primitive_call(resolved, plan.call.operation),
+        resolved_group=resolved,
+        topology=topology,
+        participation=replace(
+            participation,
+            contiguous=False,
+            aligned=False,
+            converged_entry=converged_entry,
+        ),
+        synchronization=replace(synchronization, converged_entry=converged_entry),
+        temp_storage=storage,
+    )
+
+    assert result.participation.complete_membership is complete_membership
+    assert result.participation.complete_parent_partition is complete_parent_partition
+    assert result.participation.contiguous is False
+    assert result.participation.aligned is False
+    assert result.participation.converged_entry is converged_entry
+    assert result.synchronization.converged_entry is converged_entry
+    assert result.participation.uniform_arguments == ("valid_items",)
+    assert result.participation.valid_member_selection == "prefix"
+    assert result.participation.argument_preconditions == preconditions
 
 
 @pytest.mark.parametrize(

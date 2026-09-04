@@ -18,7 +18,7 @@ from typing import Any, Protocol
 from .._algorithm import AlgorithmSpec
 from .._symbols import semantic_token
 from .._types import ParameterClassification
-from ..launch import Dim3
+from ..launch import Dim3, LaunchFacts
 from ..thread_group import MAPPED_GROUP_KINDS, ThreadGroup
 
 
@@ -437,7 +437,20 @@ class TempStorageContract:
                 )
             if self.auto_sync:
                 raise ValueError("storage-free contracts cannot request automatic sync")
-        elif self.ownership is StorageOwnership.IMPLEMENTATION:
+        else:
+            if (
+                not isinstance(self.instances, int)
+                or isinstance(self.instances, bool)
+                or self.instances < 1
+            ):
+                raise ValueError(
+                    "storage-bearing contracts require a positive instance count"
+                )
+            if not isinstance(self.instance_index, str) or not self.instance_index:
+                raise ValueError(
+                    "storage-bearing contracts require a non-empty instance index"
+                )
+        if self.ownership is StorageOwnership.IMPLEMENTATION:
             if self.sharing is not None:
                 raise ValueError("implementation-owned storage has no sharing mode")
             if self.requested_size_in_bytes is not None:
@@ -446,7 +459,7 @@ class TempStorageContract:
                 raise ValueError(
                     "implementation-owned storage has no requested alignment"
                 )
-        elif self.sharing is None:
+        elif self.ownership is StorageOwnership.CALLER and self.sharing is None:
             raise ValueError("caller-owned storage requires a sharing mode")
         for name in ("requested_size_in_bytes", "requested_alignment"):
             value = getattr(self, name)
@@ -528,6 +541,65 @@ class GroupLoweringPlan:
             or (result_required and self.result is None)
         ):
             raise ValueError("supported plans require complete lowering contracts")
+        if not is_unsupported:
+            assert self.topology is not None
+            assert self.participation is not None
+            resolved_kind = self.resolved_group.kind
+            if (
+                self.topology.group_kind != resolved_kind
+                or self.participation.group_kind != resolved_kind
+            ):
+                raise ValueError(
+                    "supported plan group contracts must match the resolved group kind"
+                )
+            resolved_size = self.resolved_group.static_size
+            if resolved_size is None or (
+                self.topology.logical_width != resolved_size
+                or self.participation.exact_group_size != resolved_size
+            ):
+                raise ValueError(
+                    "supported plan group widths must match the resolved group size"
+                )
+            resolved_block_dim = self.resolved_group.block_dim
+            if (
+                resolved_block_dim is not None
+                and self.participation.exact_block_dim != resolved_block_dim
+            ):
+                raise ValueError(
+                    "supported plan block dimensions must match the resolved group"
+                )
+            from ._contracts import _group_topology
+
+            expected_topology = _group_topology(
+                self.resolved_group,
+                LaunchFacts(exact_block_dim=self.participation.exact_block_dim),
+            )
+            if self.topology != expected_topology:
+                raise ValueError(
+                    "supported plan topology must match the resolved group"
+                )
+            complete_membership = self.resolved_group.complete_membership is not False
+            complete_parent_partition = (
+                resolved_kind == "warp"
+                or self.resolved_group.complete_membership is True
+            )
+            if (
+                self.participation.complete_membership is not complete_membership
+                or self.participation.complete_parent_partition
+                is not complete_parent_partition
+            ):
+                raise ValueError(
+                    "supported plan participation must match the resolved group"
+                )
+            assert self.synchronization is not None
+            if (
+                self.participation.converged_entry
+                is not self.synchronization.converged_entry
+            ):
+                raise ValueError(
+                    "supported plan participation and synchronization must agree "
+                    "on converged entry"
+                )
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
