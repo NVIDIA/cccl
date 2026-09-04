@@ -97,8 +97,8 @@ def test_qualified_surface_is_common_plus_backend_extensions():
             for name, parameter in inspect.signature(function).parameters.items()
         )
 
-    for operation in ("load", "store"):
-        assert call_shape(getattr(coop, operation)) == call_shape(
+    for operation in ("load", "reduce", "store", "sum"):
+        assert inspect.signature(getattr(coop, operation)) == inspect.signature(
             getattr(common_coop, operation)
         )
 
