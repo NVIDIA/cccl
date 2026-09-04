@@ -43,7 +43,13 @@ BlockLoadStoreAlgorithm: TypeAlias = Literal[
     "warp_transpose",
     "warp_transpose_timesliced",
 ]
-LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm
+WarpLoadStoreAlgorithm: TypeAlias = Literal[
+    "direct",
+    "striped",
+    "vectorize",
+    "transpose",
+]
+LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -127,10 +133,12 @@ class TempStorageLike(Protocol):
     sharing: TempStorageSharing
 
 __all__ = [
+    "BlockLoadStoreAlgorithm",
     "LoadStoreAlgorithm",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
+    "WarpLoadStoreAlgorithm",
 ]
