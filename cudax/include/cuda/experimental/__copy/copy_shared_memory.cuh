@@ -366,7 +366,8 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
     ::cuda::ceil_div(__dst.__extents[__dst_inner_dim], static_cast<_ExtentT>(__tile_sizes[__dst_inner_dim]));
   const auto __dst_to_src_grid_ratio = ::cuda::ceil_div(__dst_inner_grid_size, __src_inner_grid_size);
 
-  if (constexpr auto __max_dst_to_src_grid_ratio = 32; __dst_to_src_grid_ratio <= __max_dst_to_src_grid_ratio)
+  if ([[maybe_unused]] constexpr auto __max_dst_to_src_grid_ratio = 32; // MSVC fix
+      __dst_to_src_grid_ratio <= __max_dst_to_src_grid_ratio)
   {
     for (size_t __i = 1; __i < __rank; ++__i)
     {
