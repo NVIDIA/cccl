@@ -183,6 +183,9 @@ cudax_add_catch2_test(test_target group.implicit_hierarchy
 cudax_add_catch2_test(test_target group.segmented_algorithm
     group/segmented_algorithm.cu
 )
+cudax_add_catch2_test(test_target group.no_cooperative_groups_interop
+    group/no_cooperative_groups_interop.cu
+)
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
 )
