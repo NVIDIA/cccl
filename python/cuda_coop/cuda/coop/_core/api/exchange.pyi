@@ -6,7 +6,12 @@
 
 from typing_extensions import TypeVar
 
-from cuda.coop._typing import ExchangeMode, PortableNumericScalar, ThreadDataLike
+from cuda.coop._typing import (
+    ExchangeMode,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ThreadDataLike,
+)
 
 from .thread_group import MemoryGroup
 
@@ -14,7 +19,7 @@ _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 
 def exchange(
     group: MemoryGroup,
-    value: ThreadDataLike[_ItemT],
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
     mode: ExchangeMode = "striped_to_blocked",

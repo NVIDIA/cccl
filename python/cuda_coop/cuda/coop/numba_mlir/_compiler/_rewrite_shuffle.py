@@ -4,6 +4,7 @@
 
 """Shuffle payload inference and runtime-distance validation."""
 
+from enum import Enum
 from numbers import Integral
 
 from cuda.coop._core import ArgumentBinding, BindingKind
@@ -25,7 +26,7 @@ _I32_MAX = (1 << 31) - 1
 
 
 def _mode_token(value: object) -> str:
-    if isinstance(value, str):
+    if isinstance(value, str) and not isinstance(value, Enum):
         return value.strip().lower().replace("-", "_")
     raise CoopSinglePhaseRewriteError("coop shuffle mode must be a compile-time string")
 
@@ -146,7 +147,7 @@ def validate_shuffle_scalar_runtime_controls(
         )
     if distance.kind is BindingKind.STATIC:
         value = distance.value
-        if isinstance(value, bool) or not isinstance(value, Integral):
+        if isinstance(value, (bool, Enum)) or not isinstance(value, Integral):
             raise CoopSinglePhaseRewriteError(
                 "coop shuffle distance must be an integer, not bool or a "
                 "noninteger scalar"
