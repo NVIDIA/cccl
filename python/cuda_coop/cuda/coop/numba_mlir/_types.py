@@ -1950,6 +1950,172 @@ class Invocable:
         )
 
 
+class RawCAbiInvocable:
+    """One compiler-local callable backed by a raw C-ABI device function."""
+
+    def __init__(
+        self,
+        *,
+        source: str,
+        symbol: str,
+        return_type: types.Type,
+        parameters: Sequence[Parameter | types.Type],
+        abi_transforms: Sequence[str],
+        cc: int,
+        compile_context: nvrtc.CompileContext,
+        storage_abi: StorageABI,
+        execution_scope: SynchronizationScope,
+        synchronization_scope: SynchronizationScope,
+    ) -> None:
+        if not isinstance(source, str) or not source:
+            raise ValueError("raw C-ABI source must be a non-empty string")
+        if (
+            not isinstance(symbol, str)
+            or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", symbol) is None
+        ):
+            raise ValueError("raw C-ABI symbol must be a valid C identifier")
+        if not isinstance(return_type, types.Type):
+            raise TypeError("raw C-ABI return_type must be a Numba type")
+        if isinstance(cc, bool) or not isinstance(cc, int) or cc < 1:
+            raise ValueError("raw C-ABI cc must be a positive integer")
+        if not isinstance(compile_context, nvrtc.CompileContext):
+            raise TypeError("raw C-ABI compile_context must be a CompileContext")
+
+        parameters = tuple(parameters)
+        abi_transforms = tuple(abi_transforms)
+        if len(parameters) != len(abi_transforms):
+            raise ValueError("raw C-ABI parameter metadata has inconsistent arity")
+        for parameter in parameters:
+            if isinstance(parameter, Parameter):
+                if parameter.is_output or not parameter.is_provided_by_user():
+                    raise ValueError(
+                        "raw C-ABI parameters must be runtime input parameters"
+                    )
+            elif not isinstance(parameter, types.Type):
+                raise TypeError(
+                    "raw C-ABI parameters must be backend Parameter objects "
+                    "or exact Numba types"
+                )
+        if any(transform not in {"ptr", "value"} for transform in abi_transforms):
+            raise ValueError("raw C-ABI transforms must be 'ptr' or 'value'")
+
+        storage_abi = StorageABI(storage_abi)
+        execution_scope = SynchronizationScope(execution_scope)
+        synchronization_scope = SynchronizationScope(synchronization_scope)
+        if storage_abi is not StorageABI.NONE:
+            raise ValueError("raw C-ABI invocables must use storage_abi='none'")
+        if synchronization_scope is not SynchronizationScope.NONE:
+            raise ValueError(
+                "raw C-ABI invocables must use synchronization_scope='none'"
+            )
+
+        abi_types = tuple(
+            types.CPointer(types.none)
+            if transform == "ptr"
+            else parameter.dtype()
+            if isinstance(parameter, Parameter)
+            else parameter
+            for parameter, transform in zip(parameters, abi_transforms)
+        )
+        _, lto_ir = nvrtc.compile(
+            cpp=source,
+            cc=cc,
+            rdc=True,
+            code="lto",
+            context=compile_context,
+        )
+
+        from ._compiler._artifacts import make_binary_tempfile
+
+        temp_file = make_binary_tempfile(bytes(lto_ir), ".ltoir")
+        self.source = source
+        self.symbol = symbol
+        self.return_type = return_type
+        self.parameters = parameters
+        self.abi_transforms = abi_transforms
+        self.abi_types = abi_types
+        self.cc = cc
+        self.compile_context = compile_context
+        self.storage_abi = storage_abi
+        self.execution_scope = execution_scope
+        self.synchronization_scope = synchronization_scope
+        self.specialization = None
+        self._temp_file = temp_file
+        self._temp_file_finalizer = weakref.finalize(
+            self, _cleanup_temp_files, (temp_file.name,)
+        )
+        self._numba_type = None
+
+    @property
+    def temp_storage_bytes(self) -> int:
+        return 0
+
+    @property
+    def temp_storage_alignment(self) -> int:
+        return 1
+
+    @property
+    def files(self) -> list[str]:
+        return [self._temp_file.name]
+
+    @property
+    def _numba_type_(self):
+        """Return a compiler-local callable type without global registration."""
+
+        if self._numba_type is None:
+            link_files = self.files
+            extern_fn = ExternFunction(
+                self.symbol,
+                signature(self.return_type, *self.abi_types),
+                link=link_files,
+                abi="c",
+            )
+            parameters = self.parameters
+            transforms = self.abi_transforms
+            returns_value = self.return_type not in {types.none, types.void}
+
+            def invocable_impl(*actual_types):
+                if len(actual_types) != len(parameters):
+                    return None
+                typing_context = mlir_target.typing_context
+                for actual_type, parameter in zip(actual_types, parameters):
+                    accepted = (
+                        parameter.accepts_actual_type(actual_type, typing_context)
+                        if isinstance(parameter, Parameter)
+                        else actual_type == parameter
+                    )
+                    if not accepted:
+                        return None
+                impl = war_introspection_call_with_transforms(
+                    extern_fn,
+                    transforms,
+                    returns_value=returns_value,
+                )
+                setattr(impl, "__numba_cuda_mlir_link__", link_files)
+                return impl
+
+            wrapped_impl = war_introspection(invocable_impl, len(parameters))
+            setattr(wrapped_impl, "__numba_cuda_mlir_link__", link_files)
+            template = make_overload_template(
+                self,
+                wrapped_impl,
+                {"no_cpython_wrapper": True, "nopython": True},
+                strict=True,
+                inline="always",
+                prefer_literal=False,
+                base=_NumbaCudaMlirOverloadFunctionTemplate,
+            )
+            self._numba_type = types.Function((template,))
+        return self._numba_type
+
+    def __call__(self, *args):
+        del args
+        raise RuntimeError(
+            "raw C-ABI provider invocables may only be called inside a "
+            "numba_cuda_mlir.cuda.jit kernel"
+        )
+
+
 def _cleanup_temp_files(paths):
     for path in paths:
         try:
