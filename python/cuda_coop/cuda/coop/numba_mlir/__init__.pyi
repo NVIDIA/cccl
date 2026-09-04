@@ -32,7 +32,6 @@ from ._thread_group import (
 
 __all__ = [
     "Hierarchy",
-    "StatefulFunction",
     "TempStorage",
     "TempStorageLike",
     "ThreadData",
@@ -55,6 +54,7 @@ __all__ = [
     "shuffle",
     "store",
     "sum",
+    "StatefulFunction",
     "local",
     "shared",
 ]
