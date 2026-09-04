@@ -57,6 +57,77 @@ def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
     return left
 
 
+def _prefix_from_int32_aggregate(block_aggregate: np.int32) -> np.int32:
+    return block_aggregate
+
+
+def _prefix_from_uint16_aggregate(block_aggregate: np.uint16) -> np.uint16:
+    return block_aggregate
+
+
+def _carry_int32_prefix(
+    state: coop.ThreadDataLike[np.int32],
+    block_aggregate: np.int32,
+) -> np.int32:
+    previous = state[0]
+    state[0] = block_aggregate
+    return previous
+
+
+def _carry_uint16_prefix(
+    state: coop.ThreadDataLike[np.uint16],
+    block_aggregate: np.uint16,
+) -> np.uint16:
+    previous = state[0]
+    state[0] = block_aggregate
+    return previous
+
+
+def _carry_int64_for_int32(
+    state: coop.ThreadDataLike[np.int64],
+    block_aggregate: np.int32,
+) -> np.int32:
+    previous = np.int32(state[0])
+    state[0] += np.int64(block_aggregate)
+    return previous
+
+
+class _Int32PrefixFunctor:
+    def __call__(self, block_aggregate: np.int32) -> np.int32:
+        return block_aggregate
+
+
+_INT32_RUNNING_PREFIX = coop.StatefulFunction(
+    _carry_int32_prefix,
+    np.int32,
+    name="typing_int32_running_prefix",
+)
+_UINT16_RUNNING_PREFIX = coop.StatefulFunction(
+    _carry_uint16_prefix,
+    np.uint16,
+    name="typing_uint16_running_prefix",
+)
+_INT64_STATE_INT32_PREFIX = coop.StatefulFunction(
+    _carry_int64_for_int32,
+    np.int64,
+)
+_INT32_PREFIX_FUNCTOR: coop.StatefulFunction[np.int64, np.int32] = (
+    coop.StatefulFunction(
+        _Int32PrefixFunctor,
+        np.int64,
+    )
+)
+
+assert_type(
+    _INT32_RUNNING_PREFIX,
+    coop.StatefulFunction[np.int32, np.int32],
+)
+assert_type(
+    _INT64_STATE_INT32_PREFIX,
+    coop.StatefulFunction[np.int64, np.int32],
+)
+
+
 def check_numba_surface(
     source: object,
     destination: object,
@@ -78,6 +149,9 @@ def check_numba_surface(
     read_only_flags = _ReadOnlyThreadData(np.uint8(1))
     int32_aggregate = coop.ThreadData(1, np.int32)
     uint16_aggregate = coop.ThreadData(1, np.uint16)
+    int32_prefix_state = coop.ThreadData(1, np.int32)
+    uint16_prefix_state = coop.ThreadData(1, np.uint16)
+    int64_prefix_state = coop.ThreadData(1, np.int64)
     storage = coop.TempStorage(alignment=16, sharing="shared")
     portable_storage = portable_coop.TempStorage(sharing="shared")
 
@@ -260,6 +334,16 @@ def check_numba_surface(
         np.int32,
     )
     assert_type(
+        coop.inclusive_sum(
+            block,
+            np.int32(4),
+            None,
+            prefix_op=None,
+            block_prefix_callback_op=None,
+        ),
+        np.int32,
+    )
+    assert_type(
         coop.exclusive_scan(
             warp,
             np.int32(4),
@@ -313,6 +397,60 @@ def check_numba_surface(
             aggregate_output=int32_aggregate,
         ),
         np.int32,
+    )
+    assert_type(
+        coop.inclusive_sum(
+            block,
+            np.int32(4),
+            int64_prefix_state,
+            prefix_op=_INT32_PREFIX_FUNCTOR,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            block,
+            np.int32(4),
+            scan_op=_select_left_int32,
+            prefix_op=_prefix_from_int32_aggregate,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.scan(
+            block,
+            values,
+            mode="inclusive",
+            block_prefix_callback_op=_prefix_from_uint16_aggregate,
+        ),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exclusive_sum(
+            block,
+            np.int32(4),
+            int64_prefix_state,
+            prefix_op=_INT64_STATE_INT32_PREFIX,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_sum(
+            block,
+            np.int32(4),
+            int32_prefix_state,
+            prefix_op=_INT32_RUNNING_PREFIX,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.inclusive_sum(
+            block,
+            values,
+            uint16_prefix_state,
+            block_prefix_callback_op=_UINT16_RUNNING_PREFIX,
+        ),
+        coop.ThreadDataLike[np.uint16],
     )
     assert_type(
         coop.reduce(
