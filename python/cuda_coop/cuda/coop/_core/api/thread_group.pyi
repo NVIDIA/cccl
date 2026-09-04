@@ -4,19 +4,12 @@
 
 """Typing contract for portable CUDA thread groups and hierarchy."""
 
-from typing import Any, Generic, Literal, TypeAlias, overload
+from typing import Generic, Literal, TypeAlias, overload
 
 from typing_extensions import Self, TypeVar
 
-from cuda.coop._typing import (
-    IntegerValue,
-    PortableNumericScalar,
-    SynchronizableGroupKind,
-    ThreadGroupKind,
-    ThreadLevel,
-)
+from cuda.coop._typing import ThreadGroupKind
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _GroupKindT_co = TypeVar(
     "_GroupKindT_co",
     bound=ThreadGroupKind,
@@ -73,64 +66,6 @@ class ThreadGroup(Generic[_GroupKindT_co]):
     def is_static(self) -> bool:
         """Return whether dimensions needed by this group are static."""
 
-    def rank(self, level: ThreadLevel = "thread") -> IntegerValue:
-        """Return this group's rank relative to another hierarchy level.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-
-    def count(self, level: ThreadLevel = "thread") -> IntegerValue:
-        """Return this group's count relative to another hierarchy level.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-
-    @overload
-    def rank_as(self, dtype: type[_ItemT], level: ThreadLevel = "thread") -> _ItemT:
-        """Return rank converted to a dtype.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-    @overload
-    def rank_as(
-        self, dtype: object | None = None, level: ThreadLevel = "thread"
-    ) -> Any:
-        """Omit dtype or use an ``Any``-typed external compiler dtype token.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-
-    @overload
-    def count_as(self, dtype: type[_ItemT], level: ThreadLevel = "thread") -> _ItemT:
-        """Return count converted to a dtype.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-    @overload
-    def count_as(
-        self, dtype: object | None = None, level: ThreadLevel = "thread"
-    ) -> Any:
-        """Omit dtype or use an ``Any``-typed external compiler dtype token.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-
-    def sync(self: ThreadGroup[SynchronizableGroupKind]) -> None:
-        """Synchronize the group's members.
-
-        Grid synchronization is unavailable through the portable API.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-
-    def sync_aligned(self: ThreadGroup[SynchronizableGroupKind]) -> None:
-        """Synchronize an aligned group.
-
-        Grid synchronization is unavailable through the portable API.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
-
     @overload
     def group_by(
         self: ThreadGroup[Literal["warp"]],
@@ -147,11 +82,6 @@ class ThreadGroup(Generic[_GroupKindT_co]):
         exhaustive: bool = True,
     ) -> ThreadGroup[Literal["warps_within_block"]]:
         """Partition a block into groups of physical warps."""
-    def is_member(self) -> IntegerValue:
-        """Return whether the current thread belongs to this group.
-
-        Outside compilation, raises ``CoopCompilerContextRequiredError``.
-        """
 
 MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
 ReductionGroup: TypeAlias = ThreadGroup[
