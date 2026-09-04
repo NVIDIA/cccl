@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import operator
 import re
+from enum import Enum
 from typing import Any
 
 import numpy as np
@@ -121,14 +122,32 @@ _CUDAX_INCLUDE_LINES = (
 def normalize_reduce_operation(binary_op: Any) -> str:
     """Return the canonical built-in reduction token."""
 
-    try:
-        return _REDUCE_OPERATOR_ALIASES[binary_op]
-    except (KeyError, TypeError):
-        pass
+    if binary_op is None:
+        return "sum"
+    if isinstance(binary_op, Enum):
+        raise TypeError(
+            "cuda.coop.numba_mlir.reduce binary_op must be a string or "
+            "stateless device callable"
+        )
+    if isinstance(binary_op, str):
+        token = binary_op.strip().lower().replace("-", "_")
+        try:
+            return _REDUCE_OPERATOR_ALIASES[token]
+        except KeyError:
+            choices = ", ".join(sorted(set(_REDUCE_OPERATOR_ALIASES.values())))
+            raise ValueError(
+                "cuda.coop.numba_mlir.reduce binary_op must be one of: "
+                f"{choices}; or a stateless device callback on direct CUB forms"
+            ) from None
     try:
         return _CALLABLE_REDUCE_OPERATOR_ALIASES[binary_op]
     except (KeyError, TypeError):
         pass
+    if not callable(binary_op):
+        raise TypeError(
+            "cuda.coop.numba_mlir.reduce binary_op must be a string or "
+            "stateless device callable"
+        )
     raise NotImplementedError(
         "cuda.coop.numba_mlir.reduce supports sum, multiplies, min, max, "
         "bit_and, bit_or, and bit_xor built-ins, or a stateless device "
