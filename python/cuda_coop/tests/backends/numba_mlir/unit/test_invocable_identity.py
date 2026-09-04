@@ -10,6 +10,10 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
 
 class _FakeInvocable:
+    storage_abi = "leading_pointer"
+    execution_scope = "block"
+    synchronization_scope = "block"
+
     def __init__(self, name):
         self.name = name
         self.files = (f"{name}.ltoir",)
@@ -19,6 +23,11 @@ class _FakeInvocable:
 
 
 def test_invocable_cache_partitions_registered_factory_identities():
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._compiler._operations import (
+        FactoryOperation,
+        StorageABI,
+    )
     from cuda.coop.numba_mlir._compiler._rewrite_invocables import (
         _InvocableRewrite,
     )
@@ -33,20 +42,27 @@ def test_invocable_cache_partitions_registered_factory_identities():
         return _FakeInvocable("second")
 
     common_kwargs = {"threads_per_block": (64, 1, 1), "dtype": "int32"}
+    provider_metadata = FactoryOperation(
+        operation="load",
+        namespace="block",
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.BLOCK,
+    )
     first_key = _InvocableRewrite._invocable_cache_key(
         first_factory,
-        "load",
+        provider_metadata,
         common_kwargs,
     )
     second_key = _InvocableRewrite._invocable_cache_key(
         second_factory,
-        "load",
+        provider_metadata,
         common_kwargs,
     )
     assert first_key != second_key
     assert first_key == _InvocableRewrite._invocable_cache_key(
         first_factory,
-        "load",
+        provider_metadata,
         dict(common_kwargs),
     )
 
@@ -59,6 +75,7 @@ def test_invocable_cache_partitions_registered_factory_identities():
         return _RewriteMatch(
             op_name="load",
             factory=factory,
+            factory_metadata=provider_metadata,
             func_var_name="factory",
             func_var_name_extra=None,
             runtime_args=(),

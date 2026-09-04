@@ -136,9 +136,11 @@ def test_group_markers_use_exact_callable_identity(operation):
 
 @pytest.mark.parametrize("operation", ("load", "store"))
 def test_lowering_factories_use_exact_callable_identity(operation):
+    from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir import _lowering
     from cuda.coop.numba_mlir._compiler._operations import (
         FactoryOperation,
+        StorageABI,
         factory_operation,
     )
 
@@ -146,6 +148,9 @@ def test_lowering_factories_use_exact_callable_identity(operation):
     assert factory_operation(factory) == FactoryOperation(
         operation=operation,
         namespace="block",
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.BLOCK,
     )
 
     def impostor(*args, **kwargs):
