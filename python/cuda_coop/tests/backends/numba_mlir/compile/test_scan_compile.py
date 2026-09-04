@@ -203,6 +203,36 @@ def test_block_scalar_array_algorithms_methods_and_aggregates_compile(
     assert _fixed_compiler_target
 
 
+def test_remaining_supported_numeric_dtypes_compile(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    collected = [
+        _collect(
+            _scan.block_scan_scalar,
+            compile_context,
+            dtype=dtype,
+            threads_per_block=_BLOCK_THREADS,
+            mode="inclusive",
+        )
+        for dtype in (types.int8, types.uint8, types.uint64, types.float64)
+    ]
+
+    for item in collected:
+        source = _source(item)
+        assert ".InclusiveSum(" in source
+        assert "cub::BlockScan<" in source
+
+    bundle = _compile_bundle(
+        collected,
+        name="cuda_coop_numba_mlir_scan_remaining_dtypes",
+    )
+    assert ".version" in _types._ltoir_to_ptx(
+        bundle,
+        name="cuda_coop_numba_mlir_scan_remaining_dtypes",
+        cc=_FIXED_CC,
+    )
+
+
 def test_physical_and_logical_warp_methods_prefixes_and_aggregates_compile(
     compile_context: _nvrtc.CompileContext,
 ) -> None:
