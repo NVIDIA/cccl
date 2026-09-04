@@ -431,7 +431,7 @@ public:
         : is_even                ? even_smem_bytes_per_channel * num_active_channels
                                  : range_smem_bytes_per_channel * num_active_channels;
       const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
-      const int high_bin_blocks_per_sm       = num_active_channels == 1 ? 2 : (is_even ? 1 : 2);
+      const int high_bin_blocks_per_sm       = num_active_channels == 1 ? 2 : 1;
       const auto with_high_bin_threshold     = [=](HistogramPolicy policy) {
         policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
         policy.high_bin_blocks_per_sm       = high_bin_blocks_per_sm;
@@ -528,7 +528,7 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          is_even ? 2048 : 1024,
+          2048,
           4,
           262144,
           4,
