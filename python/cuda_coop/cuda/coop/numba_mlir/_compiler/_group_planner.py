@@ -14,7 +14,6 @@ import cuda.coop._core.api._dispatch as _portable_dispatch
 from .._thread_data import ThreadData
 from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
-    _GROUP_METHODS,
     _NAME_COUNTER,
     _PAYLOAD_DTYPE_LIKE,
     _PORTABLE_GROUP_CONSTRUCTORS,
@@ -984,29 +983,6 @@ class _GroupCallPlanner:
         self.dead_func_names.add(call.func.name)
         self.replacements[inst] = replacement
 
-    def _group_method(self, call: ir.Expr) -> tuple[str, ThreadGroup] | None:
-        definition = self._definition(call.func)
-        if (
-            not isinstance(definition, ir.Expr)
-            or definition.op != "getattr"
-            or definition.attr not in _GROUP_METHODS
-            or (definition.attr == "group_by")
-        ):
-            return None
-        group = self._group(definition.value)
-        if group is None:
-            return None
-        return (definition.attr, group)
-
-    def _lower_group_method(
-        self, inst: ir.Assign, call: ir.Expr, *, method: str, group: ThreadGroup
-    ) -> None:
-        del inst, call, group
-        raise NotImplementedError(
-            f"cuda.coop.numba_mlir ThreadGroup.{method} execution is not part "
-            "of the Block Load/Store capability"
-        )
-
     def _mark_descriptor_calls(self) -> None:
         for block in self.func_ir.blocks.values():
             for inst in block.body:
@@ -1076,7 +1052,7 @@ class _GroupCallPlanner:
                         continue
                 names = ", ".join(sorted(used_names))
                 raise GroupRewriteError(
-                    f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are compile-time descriptors and may only feed this_*(), group_by(), group methods, or group-first primitives; descriptor use involving {names!r} would escape to runtime"
+                    f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are compile-time descriptors and may only feed this_*(), group_by(), or group-first primitives; descriptor use involving {names!r} would escape to runtime"
                 )
 
     def run(self) -> bool:
@@ -1093,12 +1069,6 @@ class _GroupCallPlanner:
                 if operation is not None:
                     self._lower_root_operation(inst, call, function, operation)
                     continue
-                method = self._group_method(call)
-                if method is not None:
-                    method_name, group = method
-                    self._lower_group_method(
-                        inst, call, method=method_name, group=group
-                    )
         self._validate_descriptor_uses()
         if not (self.descriptor_assigns or self.replacements or self.dead_func_names):
             return False
@@ -1146,7 +1116,7 @@ def has_group_markers(func_ir) -> bool:
             if (
                 isinstance(function_definition, ir.Expr)
                 and function_definition.op == "getattr"
-                and (function_definition.attr in _GROUP_METHODS)
+                and (function_definition.attr == "group_by")
                 and (analyzer._group(function_definition.value) is not None)
             ):
                 return True
