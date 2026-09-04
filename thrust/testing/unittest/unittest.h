@@ -26,6 +26,16 @@
 #  include <cxxabi.h>
 #endif // __GNUC__
 
+// gcc >= 11 emits bogus -Werror=stringop-overflow diagnostics ("writing N bytes into a region of size 0") for copies
+// of small vectors of narrow types. The culprit optimizations are the tree vectorizer and the loop-distribute-patterns
+// pass (which rewrites copy loops into memmove). Disabling both on the affected test functions works around it.
+#if _CCCL_COMPILER(GCC, >=, 11)
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER \
+    __attribute__((optimize("no-tree-vectorize", "no-tree-loop-distribute-patterns")))
+#else
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
 namespace unittest::detail
 {
 template <class T, class = void>
