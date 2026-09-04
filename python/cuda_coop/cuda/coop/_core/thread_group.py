@@ -11,16 +11,13 @@ from functools import reduce
 from operator import mul
 from typing import Any, TypeVar
 
-# Hierarchy levels are the coordinate spaces accepted by rank and count queries.
+# Hierarchy levels identify the coordinate spaces used by group descriptors.
 THREAD_LEVELS = frozenset({"thread", "warp", "block", "cluster", "grid"})
 # Physical group kinds identify runtime execution groups rather than mapped groups.
 PHYSICAL_GROUP_KINDS = frozenset({"thread", "warp", "block", "cluster", "grid"})
 MAPPED_GROUP_KINDS = frozenset({"threads_within_warp", "warps_within_block"})
 THREAD_GROUP_KINDS = PHYSICAL_GROUP_KINDS | MAPPED_GROUP_KINDS
 COMPLETE_WARP_GROUP_KINDS = frozenset({"warp"}) | MAPPED_GROUP_KINDS
-THREAD_GROUP_QUERY_DTYPE_NAMES = frozenset(
-    {"uint8", "int32", "uint32", "int64", "uint64", "float32", "float64"}
-)
 _ThreadGroupT = TypeVar("_ThreadGroupT", bound="ThreadGroup")
 _CPP_LEVEL_EXPR = {
     "thread": "::cuda::gpu_thread",
@@ -33,13 +30,6 @@ _CPP_LEVEL_EXPR = {
 
 class CoopCompilerContextRequiredError(RuntimeError):
     """A compiler-facing cooperative value escaped its compiler context."""
-
-
-def _compiler_method_marker(method: str) -> Any:
-    raise CoopCompilerContextRequiredError(
-        f"cuda.coop.ThreadGroup.{method} requires compiler-owned activation "
-        "or a qualified backend import before compilation"
-    )
 
 
 def normalize_thread_dim(
@@ -96,21 +86,6 @@ def normalize_thread_group_kind(kind: str, *, scope: str, feature: str) -> str:
         names = ", ".join(sorted(THREAD_GROUP_KINDS))
         raise ValueError(f"{scope}.{feature} group kind must be one of: {names}")
     return kind
-
-
-def validate_thread_group_query_dtype(dtype: Any, *, scope: str) -> str:
-    """Validate the scalar result domain shared by thread-group backends."""
-
-    token = getattr(dtype, "name", None)
-    if token is None:
-        token = getattr(dtype, "__name__", None)
-    if token is None:
-        token = str(dtype)
-    token = str(token).lower()
-    if token not in THREAD_GROUP_QUERY_DTYPE_NAMES:
-        names = ", ".join(sorted(THREAD_GROUP_QUERY_DTYPE_NAMES))
-        raise TypeError(f"{scope}.ThreadGroup query dtype must be one of: {names}")
-    return token
 
 
 def _thread_count(block_dim: tuple[int, int, int] | None) -> int | None:
@@ -599,45 +574,6 @@ class ThreadGroup:
             source="group_by",
         )
 
-    def rank(self, level: str = "thread") -> Any:
-        """Return this group's rank relative to another hierarchy level."""
-
-        del level
-        return _compiler_method_marker("rank")
-
-    def count(self, level: str = "thread") -> Any:
-        """Return this group's count relative to another hierarchy level."""
-
-        del level
-        return _compiler_method_marker("count")
-
-    def rank_as(self, dtype: Any = None, level: str = "thread") -> Any:
-        """Return the group rank converted to a compiler-supported dtype."""
-
-        del dtype, level
-        return _compiler_method_marker("rank_as")
-
-    def count_as(self, dtype: Any = None, level: str = "thread") -> Any:
-        """Return the group count converted to a compiler-supported dtype."""
-
-        del dtype, level
-        return _compiler_method_marker("count_as")
-
-    def sync(self) -> None:
-        """Synchronize the participating members of this group."""
-
-        _compiler_method_marker("sync")
-
-    def sync_aligned(self) -> None:
-        """Synchronize an aligned group in converged control flow."""
-
-        _compiler_method_marker("sync_aligned")
-
-    def is_member(self) -> Any:
-        """Return whether the current thread belongs to this group."""
-
-        return _compiler_method_marker("is_member")
-
 
 def make_thread_group(
     kind: str,
@@ -821,7 +757,6 @@ __all__ = [
     "PHYSICAL_GROUP_KINDS",
     "THREAD_LEVELS",
     "THREAD_GROUP_KINDS",
-    "THREAD_GROUP_QUERY_DTYPE_NAMES",
     "GroupByMapping",
     "Hierarchy",
     "ThreadGroup",
@@ -839,5 +774,4 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
-    "validate_thread_group_query_dtype",
 ]
