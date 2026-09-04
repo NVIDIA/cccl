@@ -508,6 +508,27 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             return _pack_fields(
                 builder, _mlir.llvm.StructType(field_mlir_ty), sub_values
             )
+        source_field_spec = getattr(source_type, "_field_spec", None)
+        nested_field_spec = getattr(field_numba_type, "_field_spec", None)
+        if source_field_spec is not None and nested_field_spec is not None:
+            # A struct field supplied as another struct.  Rebuild it field by
+            # field, the way the struct-to-struct cast does: the two layouts
+            # need not be identical (a narrower field converts to a wider one),
+            # and converting the aggregate as a whole has no lowering.
+            source_field_types = list(source_field_spec.values())
+            nested_field_types = list(nested_field_spec.values())
+            sub_values = [
+                _coerce_to_field(
+                    builder,
+                    _load_field(builder, value, i, source_field_types[i]),
+                    source_field_types[i],
+                    nested_field_types[i],
+                )
+                for i in range(len(nested_field_types))
+            ]
+            return _pack_fields(
+                builder, _mlir.llvm.StructType(field_mlir_ty), sub_values
+            )
         return _convert_field(value, source_type, field_numba_type, field_mlir_ty)
 
     # Constructor lowering: coerce each argument to its field type and pack into
