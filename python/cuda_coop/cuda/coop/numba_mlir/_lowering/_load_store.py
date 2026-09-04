@@ -212,7 +212,7 @@ def _load(
     core_spec = spec_factory(
         dtype=adapter.core_dtype(dtype),
         items_per_thread=items_per_thread,
-        algorithm=str(algorithm),
+        algorithm=algorithm,
         valid_items=valid_items_binding,
         oob_default=oob_default_binding,
         include_full_tile=(
@@ -406,7 +406,7 @@ def _store(
     core_spec = spec_factory(
         dtype=adapter.core_dtype(dtype),
         items_per_thread=items_per_thread,
-        algorithm=str(algorithm),
+        algorithm=algorithm,
         valid_items=valid_items_binding,
         include_full_tile=(
             not isinstance(num_valid_items, ArgumentBinding)
