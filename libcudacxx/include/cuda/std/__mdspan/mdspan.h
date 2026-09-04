@@ -29,7 +29,9 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__mdspan/empty_base.h>
@@ -439,6 +441,56 @@ public:
     _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
                  "mdspan: operator() out of bounds access");
     return accessor().access(data_handle(), mapping()(__indices...));
+  }
+
+  _CCCL_TEMPLATE(class... _OtherIndexTypes)
+  _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) == extents_type::rank())
+                   _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>)
+  [[nodiscard]] _CCCL_API constexpr reference at(_OtherIndexTypes... __indices) const
+  {
+    if (!__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...))
+    {
+      _CCCL_THROW(::std::out_of_range, "__indices are not a multidimensional index in extents()");
+    }
+    return accessor().access(data_handle(), mapping()(static_cast<index_type>(::cuda::std::move(__indices))...));
+  }
+
+  template <class _OtherIndexType, size_t... _Idxs>
+  [[nodiscard]] _CCCL_API constexpr decltype(auto)
+  __at_helper(const array<_OtherIndexType, _Extents::rank()>& __indices, index_sequence<_Idxs...>) const
+  {
+    if (!__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...))
+    {
+      _CCCL_THROW(::std::out_of_range, "__indices are not a multidimensional index in extents()");
+    }
+    return mapping()(static_cast<index_type>(__indices[_Idxs])...);
+  }
+
+  template <class _OtherIndexType, size_t... _Idxs>
+  [[nodiscard]] _CCCL_API constexpr decltype(auto)
+  __at_helper(span<_OtherIndexType, _Extents::rank()> __indices, index_sequence<_Idxs...>) const
+  {
+    if (!__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...))
+    {
+      _CCCL_THROW(::std::out_of_range, "__indices are not a multidimensional index in extents()");
+    }
+    return mapping()(static_cast<index_type>(__indices[_Idxs])...);
+  }
+
+  _CCCL_TEMPLATE(class _OtherIndexType)
+  _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
+                   is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
+  [[nodiscard]] _CCCL_API constexpr reference at(const array<_OtherIndexType, extents_type::rank()>& __indices) const
+  {
+    return accessor().access(data_handle(), __at_helper(__indices, make_index_sequence<rank()>()));
+  }
+
+  _CCCL_TEMPLATE(class _OtherIndexType)
+  _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
+                   is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
+  [[nodiscard]] _CCCL_API constexpr reference at(span<_OtherIndexType, extents_type::rank()> __indices) const
+  {
+    return accessor().access(data_handle(), __at_helper(__indices, make_index_sequence<rank()>()));
   }
 
   template <size_t... _Idxs>
