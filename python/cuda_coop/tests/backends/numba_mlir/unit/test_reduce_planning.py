@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import operator
+from enum import Enum
 from inspect import signature
 from types import SimpleNamespace
 
@@ -10,6 +11,11 @@ import numpy as np
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringSelector(str, Enum):
+    RAKING = "raking"
+    MAXIMUM = "maximum"
 
 
 def _plan(function, *, arg_types=(), block=(64, 1, 1), grid=(1, 1, 1), cluster=None):
@@ -220,6 +226,127 @@ def test_public_reduce_markers_have_group_first_signatures():
     assert tuple(signature(portable.sum).parameters) == expected_sum
 
 
+@pytest.mark.parametrize("qualified", [False, True], ids=["portable", "qualified"])
+def test_public_reduce_selectors_are_normalized_before_provider(
+    qualified,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop as portable
+    from cuda.coop._core import BlockReduceAlgorithm
+    from cuda.coop.numba_mlir._lowering import _reduce
+
+    coop = numba_coop if qualified else portable
+
+    def algorithm_kernel(value):
+        return coop.sum(
+            coop.this_block(),
+            value,
+            broadcast=False,
+            algorithm=" RAKING-COMMUTATIVE-ONLY ",
+        )
+
+    func_ir, planner = _plan(algorithm_kernel, arg_types=(types.int32,))
+    assert planner.run()
+    call = _provider_call(func_ir, _reduce.sum)
+    assert (
+        _kwarg_value(func_ir, call, "algorithm")
+        is BlockReduceAlgorithm.RAKING_COMMUTATIVE_ONLY
+    )
+
+    def operator_kernel(value):
+        return coop.reduce(
+            coop.this_block(),
+            value,
+            binary_op=" MAXIMUM ",
+        )
+
+    func_ir, planner = _plan(operator_kernel, arg_types=(types.int32,))
+    assert planner.run()
+    call = _provider_call(func_ir, _reduce.group_reduce_block)
+    assert _kwarg_value(func_ir, call, "binary_op") == "max"
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["portable", "qualified"])
+@pytest.mark.parametrize(
+    ("parameter", "selector"),
+    [
+        pytest.param("algorithm", 0, id="integer-algorithm"),
+        pytest.param("algorithm", _StringSelector.RAKING, id="enum-algorithm"),
+        pytest.param("binary_op", 0, id="integer-operator"),
+        pytest.param("binary_op", _StringSelector.MAXIMUM, id="enum-operator"),
+    ],
+)
+def test_public_reduce_rejects_non_string_selectors_before_provider(
+    qualified,
+    parameter,
+    selector,
+    monkeypatch,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop as portable
+    from cuda.coop.numba_mlir._compiler import _group_reduce
+
+    coop = numba_coop if qualified else portable
+    if parameter == "algorithm":
+
+        def kernel(value):
+            return coop.sum(
+                coop.this_block(),
+                value,
+                broadcast=False,
+                algorithm=selector,
+            )
+
+    else:
+
+        def kernel(value):
+            return coop.reduce(
+                coop.this_block(),
+                value,
+                binary_op=selector,
+            )
+
+    monkeypatch.setattr(
+        _group_reduce._ReducePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid selector reached provider selection"
+        ),
+    )
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(TypeError, match=rf"{parameter} must be a string"):
+        planner.run()
+
+
+def test_portable_reduce_rejects_qualified_callable_extension(monkeypatch):
+    from numba_cuda_mlir import types
+
+    from cuda import coop
+    from cuda.coop.numba_mlir._compiler import _group_reduce
+
+    def kernel(value):
+        return coop.reduce(
+            coop.this_block(),
+            value,
+            binary_op=operator.add,
+        )
+
+    monkeypatch.setattr(
+        _group_reduce._ReducePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "portable callable reached provider selection"
+        ),
+    )
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(TypeError, match="binary_op must be a string"):
+        planner.run()
+
+
 @pytest.mark.parametrize(
     ("group", "provider_name", "launch"),
     [
@@ -302,6 +429,43 @@ def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
     call = _provider_call(func_ir, _reduce.group_reduce_block)
     expected = None if canonical == "sum" else canonical
     assert _kwarg_value(func_ir, call, "binary_op") == expected
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+def test_reduce_infers_untyped_thread_data_symmetrically(monkeypatch, qualified):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+    from cuda.coop.numba_mlir._compiler import _group_reduce
+
+    module = qualified_coop if qualified else root_coop
+    plans = []
+    plan_group_primitive = _group_reduce.plan_group_primitive
+
+    def capture_plan(call, launch):
+        plan = plan_group_primitive(call, launch)
+        plans.append(plan)
+        return plan
+
+    monkeypatch.setattr(_group_reduce, "plan_group_primitive", capture_plan)
+
+    def kernel(value):
+        items = module.ThreadData(2)
+        items[0] = value
+        items[1] = value
+        return module.sum(
+            module.this_block(),
+            items,
+            broadcast=False,
+            algorithm="raking",
+        )
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    assert planner.run()
+    assert len(plans) == 1
+    assert plans[0].call.operation.dtype == types.int32
+    assert plans[0].call.operation.items_per_thread == 2
 
 
 def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(

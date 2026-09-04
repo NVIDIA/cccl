@@ -99,7 +99,7 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
             for name, parameter in inspect.signature(function).parameters.items()
         )
 
-    for operation in ("load", "shuffle", "store"):
+    for operation in ("load", "reduce", "shuffle", "store", "sum"):
         assert inspect.signature(getattr(coop, operation)) == inspect.signature(
             getattr(portable_coop, operation)
         )
