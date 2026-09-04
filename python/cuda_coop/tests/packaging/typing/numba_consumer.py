@@ -120,8 +120,8 @@ def check_numba_surface(
     assert_type(byte_values, coop.ThreadDataLike[np.int8])
     assert_type(values, coop.ThreadDataLike[np.uint16])
     assert_type(storage, coop.TempStorage)
-    common_storage: coop.TempStorageLike = storage
-    assert_type(common_storage, coop.TempStorageLike)
+    qualified_storage: coop.TempStorageLike = storage
+    assert_type(qualified_storage, coop.TempStorageLike)
     assert_type(
         coop.load(
             block,
