@@ -390,8 +390,8 @@ def _logical_tile_index(algorithm: str, lane: int, item: int, width: int) -> int
 @lru_cache(maxsize=None)
 def _logical_load_store_kernel(algorithm: str, qualified: bool):
     if qualified:
-        load_algorithm = qualified_coop.WarpLoadAlgorithm[algorithm.upper()]
-        store_algorithm = qualified_coop.WarpStoreAlgorithm[algorithm.upper()]
+        load_algorithm = algorithm
+        store_algorithm = algorithm
 
         @cuda.jit
         def kernel(
@@ -544,7 +544,7 @@ def _logical_partial_transpose_load_kernel(qualified: bool):
                 qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
                 payload,
-                algorithm=qualified_coop.WarpLoadAlgorithm.TRANSPOSE,
+                algorithm="transpose",
                 valid_items=valid_by_group[group_index],
             )
             for item in range(_ITEMS_PER_THREAD):
@@ -625,7 +625,7 @@ def _logical_width_direct_kernel(width: int, qualified: bool):
                 qualified_coop.this_warp().group_by(width),
                 source,
                 payload,
-                algorithm=qualified_coop.WarpLoadAlgorithm.DIRECT,
+                algorithm="direct",
             )
             for item in range(_ITEMS_PER_THREAD):
                 observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
@@ -683,7 +683,7 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
                     _ITEMS_PER_THREAD,
                     dtype=numba_dtype,
                 ),
-                algorithm=qualified_coop.WarpLoadAlgorithm.DIRECT,
+                algorithm="direct",
             )
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
@@ -697,7 +697,7 @@ def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
                 group,
                 destination,
                 payload,
-                algorithm=qualified_coop.WarpStoreAlgorithm.DIRECT,
+                algorithm="direct",
             )
 
     else:
@@ -985,7 +985,7 @@ def _logical_multidimensional_load_kernel(qualified: bool):
                 qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
                 source,
                 payload,
-                algorithm=qualified_coop.WarpLoadAlgorithm.DIRECT,
+                algorithm="direct",
             )
             for item in range(_ITEMS_PER_THREAD):
                 observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
@@ -1284,7 +1284,7 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
                 group,
                 source,
                 payload,
-                algorithm=qualified_coop.WarpLoadAlgorithm.TRANSPOSE,
+                algorithm="transpose",
                 valid_items=valid_items,
                 offset=block_offset,
             )
@@ -1292,7 +1292,7 @@ def _logical_grid_stride_transpose_kernel(qualified: bool):
                 group,
                 destination,
                 loaded,
-                algorithm=qualified_coop.WarpStoreAlgorithm.TRANSPOSE,
+                algorithm="transpose",
                 valid_items=valid_items,
                 offset=block_offset,
             )
@@ -1428,7 +1428,7 @@ def _run_divergent_logical_warp_probe(
         thread_data = "qualified_coop.ThreadData"
         group = "qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)"
         load = "qualified_coop.load"
-        algorithm = "qualified_coop.WarpLoadAlgorithm.TRANSPOSE"
+        algorithm = repr("transpose")
     else:
         thread_data = "root_coop.ThreadData"
         group = "root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)"
