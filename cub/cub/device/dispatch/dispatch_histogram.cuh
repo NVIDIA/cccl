@@ -403,21 +403,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
-  // A privatized high-bin block owns a full histogram slab. Preserve the ordinary
-  // sweep's useful-work grid limit so small inputs do not allocate, initialize, and
-  // gather more slabs than the corresponding sweep would launch. The cooperative
-  // kernel still launches with its independently tuned block size.
-  const bool use_privatized_work_limit =
-    use_cooperative && active_policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized;
-  const int selected_pixels_per_thread =
-    use_privatized_work_limit
-      ? pixels_per_thread
-      : (use_cooperative ? active_policy.high_bin_pixels_per_thread : pixels_per_thread);
-  const int selected_threads_per_block =
-    use_privatized_work_limit ? threads_per_block : (use_cooperative ? high_bin_threads_per_block : threads_per_block);
-  const int pixels_per_tile = selected_threads_per_block * selected_pixels_per_thread;
-  int tiles_per_row         = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
-  int blocks_per_row        = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
+  // A privatized high-bin block owns a full histogram slab. Its policy therefore
+  // carries a separate useful-work tile size so small inputs do not initialize and
+  // gather more full slabs than needed. This is independent of the kernel's four-item
+  // processing unroll and its launch block size.
+  const int pixels_per_tile =
+    use_cooperative ? active_policy.high_bin_grid_pixels() : threads_per_block * pixels_per_thread;
+  int tiles_per_row  = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
+  int blocks_per_row = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
   int blocks_per_col =
     (blocks_per_row > 0)
       ? int(::cuda::std::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
