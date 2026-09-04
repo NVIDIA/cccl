@@ -197,7 +197,7 @@ class _LoadStorePlanning:
         items_per_thread = self._planning_items_per_thread(operation, payload)
         payload_dtype = self._context.dtype(payload)
         if operation == "store" and payload_dtype is None:
-            payload_dtype = self._context.store_write_dtype(payload)
+            payload_dtype = self._context.payload_write_dtype(payload)
         memory_dtype = self._context.dtype(bound.arguments[memory_name])
         dtype = memory_dtype if memory_dtype is not None else payload_dtype
         if dtype is None:
@@ -374,6 +374,7 @@ class _LoadStorePlanning:
             return_alias = None
         return self._context.rewrite_call(
             inst,
+            lowering_plan=plan,
             factory=factory,
             args=runtime_args,
             kwargs=factory_kwargs,
