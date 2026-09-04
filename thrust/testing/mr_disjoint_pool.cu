@@ -335,7 +335,7 @@ void TestDisjointPoolSqueeze()
   // Test that OOM throws bad_alloc
   {
     upstream.free_bytes = not_enough_bytes;
-    ASSERT_THROWS([[maybe_unused]] auto _ = pool->do_allocate(small_block), thrust::system::detail::bad_alloc);
+    ASSERT_THROWS(pool->do_allocate(small_block), thrust::system::detail::bad_alloc);
     ASSERT_EQUAL(upstream.free_bytes, not_enough_bytes);
     upstream.assert_empty_and_reset();
   }
@@ -360,8 +360,8 @@ void TestDisjointPoolSqueeze()
     // Simulate OOM, ensure that the allocations are still in place:
     std::size_t old_free_bytes = upstream.free_bytes;
     upstream.free_bytes        = not_enough_bytes;
-    ASSERT_THROWS([[maybe_unused]] auto _ = pool->do_allocate(medium_block), thrust::system::detail::bad_alloc);
-    ASSERT_THROWS([[maybe_unused]] auto _ = pool->do_allocate(oversized_block), thrust::system::detail::bad_alloc);
+    ASSERT_THROWS(pool->do_allocate(medium_block), thrust::system::detail::bad_alloc);
+    ASSERT_THROWS(pool->do_allocate(oversized_block), thrust::system::detail::bad_alloc);
     ASSERT_EQUAL(upstream.free_bytes, not_enough_bytes);
     ASSERT_EQUAL(upstream.allocation_ids.size(), 3u);
     ASSERT_EQUAL(upstream.allocation_ids[0], 1u);
