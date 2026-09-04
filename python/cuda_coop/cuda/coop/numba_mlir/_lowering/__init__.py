@@ -2,14 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Hold the private Load/Store factories and the Numba core adapter.
+"""Hold private Load/Store, Exchange, and Shuffle lowering factories.
 
-Group planning selects a factory in ``_load_store`` after validating a
-public call. The package re-exports the storage-free block ``load`` and
-``store``. Calling a factory specializes device code; it does not move data.
+Group planning chooses these factories after validating a public call. The
+compiler registers exact factory identities, not names. Calling a factory
+specializes device code; it does not execute the operation.
 """
 
+from ._exchange import exchange as exchange
+from ._exchange import exchange_flagged as exchange_flagged
+from ._exchange import exchange_ranked as exchange_ranked
+from ._exchange import warp_exchange as warp_exchange
+from ._exchange import warp_exchange_ranked as warp_exchange_ranked
 from ._load_store import load as load
 from ._load_store import store as store
+from ._shuffle import shuffle_array as shuffle_array
+from ._shuffle import shuffle_scalar as shuffle_scalar
 
 __all__: tuple[str, ...] = ()
