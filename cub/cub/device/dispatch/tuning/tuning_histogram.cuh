@@ -133,6 +133,8 @@ struct HistogramPolicy
   int high_bin_min_histogram_bytes                   = 0;
   //! Target resident cooperative blocks per SM. Zero keeps the occupancy-derived grid and a one-block launch bound.
   int high_bin_blocks_per_sm = 0;
+  //! Input pixels represented by one block when limiting the cooperative grid. Zero uses the kernel tile size.
+  int high_bin_grid_pixels_per_block = 0;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_threads() const noexcept
   {
@@ -142,6 +144,13 @@ struct HistogramPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_min_blocks() const noexcept
   {
     return high_bin_blocks_per_sm != 0 ? high_bin_blocks_per_sm : 1;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_grid_pixels() const noexcept
+  {
+    return high_bin_grid_pixels_per_block != 0
+           ? high_bin_grid_pixels_per_block
+           : high_bin_threads() * high_bin_pixels_per_thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -161,7 +170,8 @@ struct HistogramPolicy
         && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
         && lhs.high_bin_interpolation_min_bins == rhs.high_bin_interpolation_min_bins
         && lhs.high_bin_min_histogram_bytes == rhs.high_bin_min_histogram_bytes
-        && lhs.high_bin_blocks_per_sm == rhs.high_bin_blocks_per_sm;
+        && lhs.high_bin_blocks_per_sm == rhs.high_bin_blocks_per_sm
+        && lhs.high_bin_grid_pixels_per_block == rhs.high_bin_grid_pixels_per_block;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -187,7 +197,8 @@ struct HistogramPolicy
         << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread << ", .high_bin_threads_per_block = "
         << p.high_bin_threads_per_block << ", .high_bin_interpolation_min_bins = " << p.high_bin_interpolation_min_bins
         << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
-        << ", .high_bin_blocks_per_sm = " << p.high_bin_blocks_per_sm << " }";
+        << ", .high_bin_blocks_per_sm = " << p.high_bin_blocks_per_sm
+        << ", .high_bin_grid_pixels_per_block = " << p.high_bin_grid_pixels_per_block << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -435,6 +446,10 @@ public:
       const auto with_high_bin_threshold     = [=](HistogramPolicy policy) {
         policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
         policy.high_bin_blocks_per_sm       = high_bin_blocks_per_sm;
+        policy.high_bin_grid_pixels_per_block =
+          num_active_channels == 1
+            ? (sample_size == 1 ? policy.threads_per_block * policy.pixels_per_thread : 768 * t_scale(12))
+            : 1024 * (is_even ? t_scale(8) : t_scale(16));
         return policy;
       };
 
