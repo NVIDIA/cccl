@@ -128,6 +128,12 @@ def test_direct_load_store_compile_to_one_lto_bundle_with_storage_metadata(
     sources = [_source(algorithm) for algorithm in algorithms]
     clone_sources = [_source(algorithm) for algorithm in clones]
     assert sources == clone_sources
+    for source in sources:
+        assert "::cuda::std::int64_t num_valid_items" in source
+        assert "if (num_valid_items < 0 || num_valid_items > 64)" in source
+        assert 'asm volatile("trap;" : : :);' in source
+        assert "static_cast<::cuda::std::int32_t>(num_valid_items)" in source
+        assert "checked_num_valid_items);" in source
 
     symbol_sets = []
     for algorithm, source in zip(algorithms, sources):
