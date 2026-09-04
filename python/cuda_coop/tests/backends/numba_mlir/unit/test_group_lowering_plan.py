@@ -221,7 +221,7 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
         capture_plan,
     )
 
-    def memory(source):
+    def memory_with_storage(source):
         storage = coop.TempStorage(
             256,
             alignment=16,
@@ -237,12 +237,28 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
             temp_storage=storage,
         )
 
+    def memory_without_storage(source):
+        output = coop.ThreadData(2, dtype=types.int32)
+        return coop.load(
+            coop.this_block(),
+            source,
+            output,
+            valid_items=31,
+            oob_default=-1,
+        )
+
     array_type = types.Array(types.int32, 1, "C")
-    planner = _planner(memory, arg_types=(array_type,))
-    assert planner.run()
-    assert len(plans) == 1
+    for memory in (memory_with_storage, memory_without_storage):
+        planner = _planner(memory, arg_types=(array_type,))
+        assert planner.run()
+    assert len(plans) == 2
 
     plan = plans[0]
+    implicit_plan = plans[1]
+    assert plan == implicit_plan
+    assert plan.call.operation == implicit_plan.call.operation
+    assert plan.semantic_key == implicit_plan.semantic_key
+    assert plan.artifact_key == implicit_plan.artifact_key
     assert plan.target is GroupLoweringTarget.CUB_BLOCK
     assert plan.unsupported is None
     assert plan.artifact_key is not None
@@ -260,10 +276,15 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
     assert plan.synchronization is not None
     assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
     assert plan.temp_storage is not None
-    assert plan.temp_storage.ownership is StorageOwnership.CALLER
-    assert plan.temp_storage.sharing == "exclusive"
-    assert plan.temp_storage.requested_size_in_bytes == 256
-    assert plan.temp_storage.requested_alignment == 16
+    assert plan.temp_storage.ownership is StorageOwnership.NONE
+    assert plan.temp_storage.address_space is None
+    assert plan.temp_storage.cpp_type is None
+    assert plan.temp_storage.instances is None
+    assert plan.temp_storage.instance_index is None
+    assert not plan.temp_storage.exact_layout_required
+    assert plan.temp_storage.sharing is None
+    assert plan.temp_storage.requested_size_in_bytes is None
+    assert plan.temp_storage.requested_alignment is None
     assert not plan.temp_storage.auto_sync
     assert plan.provenance is not None
     assert plan.provenance.semantic_key == (
