@@ -131,7 +131,8 @@ struct HistogramPolicy
   int high_bin_threads_per_block                     = 0; //!< High-bin block size; 0 inherits threads_per_block
   int high_bin_interpolation_min_bins                = 512;
   int high_bin_min_histogram_bytes                   = 0;
-  int high_bin_max_blocks_per_sm                     = 0; //!< Zero uses the occupancy-derived capacity
+  //! Target resident cooperative blocks per SM. Zero keeps the occupancy-derived grid and a one-block launch bound.
+  int high_bin_blocks_per_sm = 0;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_threads() const noexcept
   {
@@ -140,7 +141,7 @@ struct HistogramPolicy
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_min_blocks() const noexcept
   {
-    return high_bin_max_blocks_per_sm != 0 ? high_bin_max_blocks_per_sm : 1;
+    return high_bin_blocks_per_sm != 0 ? high_bin_blocks_per_sm : 1;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -160,7 +161,7 @@ struct HistogramPolicy
         && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
         && lhs.high_bin_interpolation_min_bins == rhs.high_bin_interpolation_min_bins
         && lhs.high_bin_min_histogram_bytes == rhs.high_bin_min_histogram_bytes
-        && lhs.high_bin_max_blocks_per_sm == rhs.high_bin_max_blocks_per_sm;
+        && lhs.high_bin_blocks_per_sm == rhs.high_bin_blocks_per_sm;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -186,7 +187,7 @@ struct HistogramPolicy
         << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread << ", .high_bin_threads_per_block = "
         << p.high_bin_threads_per_block << ", .high_bin_interpolation_min_bins = " << p.high_bin_interpolation_min_bins
         << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
-        << ", .high_bin_max_blocks_per_sm = " << p.high_bin_max_blocks_per_sm << " }";
+        << ", .high_bin_blocks_per_sm = " << p.high_bin_blocks_per_sm << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -430,10 +431,10 @@ public:
         : is_even                ? even_smem_bytes_per_channel * num_active_channels
                                  : range_smem_bytes_per_channel * num_active_channels;
       const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
-      const int high_bin_max_blocks_per_sm   = num_active_channels == 1 ? 2 : (is_even ? 1 : 2);
+      const int high_bin_blocks_per_sm       = num_active_channels == 1 ? 2 : (is_even ? 1 : 2);
       const auto with_high_bin_threshold     = [=](HistogramPolicy policy) {
         policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
-        policy.high_bin_max_blocks_per_sm   = high_bin_max_blocks_per_sm;
+        policy.high_bin_blocks_per_sm       = high_bin_blocks_per_sm;
         return policy;
       };
 
