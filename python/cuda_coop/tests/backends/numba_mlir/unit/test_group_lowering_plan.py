@@ -543,7 +543,7 @@ def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
         GroupPlanningContext._validate_provider_contract(plan, object())
 
 
-def test_nonblock_plan_is_typed_before_provider_selection(monkeypatch):
+def test_logical_warp_plan_is_typed_before_provider_selection(monkeypatch):
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -566,7 +566,7 @@ def test_nonblock_plan_is_typed_before_provider_selection(monkeypatch):
 
     def memory(source):
         output = coop.ThreadData(2, dtype=types.int32)
-        return coop.load(coop.this_warp(), source, output)
+        return coop.load(coop.this_warp().group_by(8), source, output)
 
     array_type = types.Array(types.int32, 1, "C")
     planner = _planner(memory, arg_types=(array_type,))
@@ -577,7 +577,7 @@ def test_nonblock_plan_is_typed_before_provider_selection(monkeypatch):
             "unsupported plan reached provider selection"
         ),
     )
-    with pytest.raises(NotImplementedError, match="this_block"):
+    with pytest.raises(NotImplementedError, match="complete physical this_warp"):
         planner.run()
 
     assert len(plans) == 1

@@ -18,10 +18,12 @@ def check_portable_surface(source: object, destination: object) -> None:
     """Exercise public declarations without importing package internals."""
 
     block = coop.this_block()
+    warp = coop.this_warp()
     values = coop.ThreadData(2, np.int16)
     storage = coop.TempStorage(sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
+    assert_type(warp, coop.ThreadGroup[Literal["warp"]])
     assert_type(values, coop.ThreadDataLike[np.int16])
     assert_type(storage, coop.TempStorageLike)
     assert_type(
@@ -51,5 +53,13 @@ def check_portable_surface(source: object, destination: object) -> None:
             offset=1,
             temp_storage=storage,
         ),
+        None,
+    )
+    assert_type(
+        coop.load(warp, source, values, algorithm="transpose"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.store(warp, destination, values, algorithm="vectorize"),
         None,
     )

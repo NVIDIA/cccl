@@ -19,11 +19,13 @@ def check_numba_surface(source: object, destination: object) -> None:
     """Exercise Numba declarations through their public package."""
 
     block = coop.this_block()
+    warp = coop.this_warp()
     byte_values = coop.ThreadData(1, np.int8)
     values = coop.ThreadData(2, np.uint16, alignas=16)
     storage = coop.TempStorage(alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
+    assert_type(warp, coop.ThreadGroup[Literal["warp"]])
     assert_type(byte_values, ThreadDataLike[np.int8])
     assert_type(values, ThreadDataLike[np.uint16])
     assert_type(storage, coop.TempStorage)
@@ -75,3 +77,21 @@ def check_numba_surface(source: object, destination: object) -> None:
         None,
     )
     assert_type(coop.store(block, destination, byte_values), None)
+    assert_type(
+        coop.load(
+            warp,
+            source,
+            values,
+            algorithm="transpose",
+        ),
+        ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.store(
+            warp,
+            destination,
+            values,
+            algorithm="striped",
+        ),
+        None,
+    )

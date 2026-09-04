@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load/store semantics and block lowering.
+"""Load/store semantics and block or physical-warp lowering.
 
 This module owns portable load/store algorithm normalization and selects the
 corresponding CUB specialization after group resolution. It does not own
@@ -31,6 +31,11 @@ from ..block.load_store import (
 )
 from ..launch import LaunchFacts
 from ..thread_group import ThreadGroup
+from ..warp.load_store import (
+    WarpLoadStoreAlgorithm,
+    make_warp_load_spec,
+    make_warp_store_spec,
+)
 from ._contracts import _contracts, _unsupported
 from ._dispatch import _register_group_operation_family
 from ._model import (
@@ -286,12 +291,13 @@ def _plan_load_store(
     launch: LaunchFacts,
     operation: GroupLoadStoreSemantics,
 ) -> GroupLoweringPlan:
-    if resolved.kind != "block":
+    if resolved.kind not in {"block", "warp"}:
         return _unsupported(
             call,
             resolved,
             UnsupportedReasonCode.GROUP_KIND,
-            "cuda.coop Block Load/Store currently supports only this_block()",
+            "cuda.coop Load/Store currently supports only this_block() and "
+            "complete physical this_warp() groups",
         )
     group_size = resolved.static_size
     assert group_size is not None
@@ -307,43 +313,90 @@ def _plan_load_store(
                 f"size ({tile_items})"
             )
     assert launch.exact_block_dim is not None
-    algorithm = BlockLoadStoreAlgorithm(operation.algorithm.value)
     block_threads = launch.exact_block_threads
     assert block_threads is not None
-    if (
-        algorithm
-        in {
-            BlockLoadStoreAlgorithm.WARP_TRANSPOSE,
-            BlockLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
-        }
-        and block_threads % 32 != 0
-    ):
-        return _unsupported(
-            call,
-            resolved,
-            UnsupportedReasonCode.OPERATION_VARIANT,
-            f"cub::Block{operation.kind.value.title()} algorithm "
-            f"{operation.algorithm.value!r} requires a block size that is "
-            "a multiple of 32",
+    maximum_user_offset = (1 << 63) - 1
+    if resolved.kind == "block":
+        algorithm = BlockLoadStoreAlgorithm(operation.algorithm.value)
+        if (
+            algorithm
+            in {
+                BlockLoadStoreAlgorithm.WARP_TRANSPOSE,
+                BlockLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+            }
+            and block_threads % 32 != 0
+        ):
+            return _unsupported(
+                call,
+                resolved,
+                UnsupportedReasonCode.OPERATION_VARIANT,
+                f"cub::Block{operation.kind.value.title()} algorithm "
+                f"{operation.algorithm.value!r} requires a block size that is "
+                "a multiple of 32",
+            )
+        make_spec = (
+            make_block_load_spec
+            if operation.kind is GroupLoadStoreKind.LOAD
+            else make_block_store_spec
         )
-    make_spec = (
-        make_block_load_spec
-        if operation.kind is GroupLoadStoreKind.LOAD
-        else make_block_store_spec
-    )
-    spec = make_spec(
-        dtype=operation.dtype,
-        block_dim=launch.exact_block_dim,
-        items_per_thread=operation.items_per_thread,
-        algorithm=algorithm,
-        valid_items=operation.valid_items,
-        oob_default=operation.oob_default,
-        include_full_tile=False,
-        include_pointer_offset=operation.offset,
-    ).specialization
-    target = GroupLoweringTarget.CUB_BLOCK
+        spec = make_spec(
+            dtype=operation.dtype,
+            block_dim=launch.exact_block_dim,
+            items_per_thread=operation.items_per_thread,
+            algorithm=algorithm,
+            valid_items=operation.valid_items,
+            oob_default=operation.oob_default,
+            include_full_tile=False,
+            include_pointer_offset=operation.offset,
+        ).specialization
+        target = GroupLoweringTarget.CUB_BLOCK
+        header = f"cub/block/block_{operation.kind.value}.cuh"
+    else:
+        try:
+            algorithm = WarpLoadStoreAlgorithm(operation.algorithm.value)
+        except ValueError:
+            return _unsupported(
+                call,
+                resolved,
+                UnsupportedReasonCode.OPERATION_VARIANT,
+                f"cub::Warp{operation.kind.value.title()} does not support "
+                f"algorithm {operation.algorithm.value!r}",
+            )
+        make_spec = (
+            make_warp_load_spec
+            if operation.kind is GroupLoadStoreKind.LOAD
+            else make_warp_store_spec
+        )
+        spec = make_spec(
+            dtype=operation.dtype,
+            items_per_thread=operation.items_per_thread,
+            algorithm=algorithm,
+            threads_in_warp=32,
+            valid_items=operation.valid_items,
+            oob_default=operation.oob_default,
+            include_full_tile=False,
+            # Every physical warp receives a distinct consecutive tile. The
+            # backend combines this runtime ABI argument with the preserved
+            # user offset recorded on ``operation``.
+            include_pointer_offset=ArgumentBinding.runtime(),
+        ).specialization
+        target = GroupLoweringTarget.CUB_WARP
+        header = f"cub/warp/warp_{operation.kind.value}.cuh"
+        warp_instances = block_threads // 32
+        maximum_tile_origin = (warp_instances - 1) * tile_items
+        if maximum_tile_origin > maximum_user_offset:
+            raise ValueError(
+                "physical-warp tile origin must fit a signed 64-bit offset"
+            )
+        maximum_user_offset -= maximum_tile_origin
+    if operation.offset.kind is BindingKind.STATIC and (
+        int(operation.offset.value) > maximum_user_offset
+    ):
+        raise ValueError(
+            "static offset plus the physical-warp tile origin must fit a "
+            "signed 64-bit integer"
+        )
     cpp_class = f"cub::{spec.struct_name}"
-    header = f"cub/block/block_{operation.kind.value}.cuh"
     result = None
     if operation.kind is GroupLoadStoreKind.LOAD:
         result = ResultContract(
@@ -403,7 +456,7 @@ def _plan_load_store(
                     ArgumentPrecondition(
                         name="offset",
                         minimum=0,
-                        maximum=(1 << 63) - 1,
+                        maximum=maximum_user_offset,
                         enforcement=(
                             PreconditionEnforcement.PLANNER_VALIDATED
                             if operation.offset.kind is BindingKind.STATIC
@@ -439,9 +492,10 @@ _register_group_operation_family(
     GroupLoadStoreSemantics,
     classifications=_call_classifications,
     planner=_plan_load_store,
-    group_kinds=frozenset({"block"}),
+    group_kinds=frozenset({"block", "warp"}),
     unsupported_group_message=(
-        "cuda.coop Block Load/Store currently supports only this_block()"
+        "cuda.coop Load/Store currently supports only this_block() and "
+        "complete physical this_warp() groups"
     ),
 )
 
