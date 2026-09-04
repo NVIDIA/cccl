@@ -26,6 +26,7 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         """
         import importlib.metadata
         import importlib.util
+        import inspect
         import os
         from pathlib import Path
 
@@ -79,6 +80,43 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "scan",
         }
         assert {"reduce", "sum", *scan_names} <= set(coop.__all__)
+        assert "StatefulFunction" not in coop.__all__
+        assert not hasattr(coop, "StatefulFunction")
+
+        portable_scan_parameters = {
+            "scan": (
+                "group",
+                "value",
+                "mode",
+                "scan_op",
+                "initial_value",
+                "algorithm",
+                "temp_storage",
+            ),
+            "exclusive_scan": (
+                "group",
+                "value",
+                "scan_op",
+                "initial_value",
+                "algorithm",
+                "temp_storage",
+            ),
+            "inclusive_scan": (
+                "group",
+                "value",
+                "scan_op",
+                "algorithm",
+                "temp_storage",
+            ),
+            "exclusive_sum": ("group", "value", "algorithm", "temp_storage"),
+            "inclusive_sum": ("group", "value", "algorithm", "temp_storage"),
+        }
+        for name, portable_parameters in portable_scan_parameters.items():
+            assert (
+                tuple(inspect.signature(getattr(coop, name)).parameters)
+                == portable_parameters
+            )
+
         paths = resolve_include_paths(
             start=Path.cwd(),
             required_headers=(
