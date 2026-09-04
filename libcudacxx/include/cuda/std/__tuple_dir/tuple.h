@@ -248,7 +248,7 @@ public:
     && !is_same_v<_Tuple, const tuple&>
     && !is_same_v<_Tuple, tuple&&> //
     // [tuple#cnstr]-21.1: sizeof...(Types) equals sizeof...(UTypes), and
-    // [tuple#cnstr]-25.1: sizeof...(Types) is 2,
+    // [tuple#cnstr]-25.1: sizeof...(Types) is 2, (pair constructor)
     // [tuple#cnstr]-29.3: sizeof...(Types) equals sizeof...(UTypes), and
     && __tuple_like_with_size<_Tuple, sizeof...(_Tp)>>;
 
@@ -444,8 +444,8 @@ public:
 
   // [tuple.assign]-15
   template <class... _UTypes,
-            bool _Constraints = __tuple_constraints<_Tp...>::template //
-            __select_converting_assignable</*__is_const=*/false, const _UTypes&...>(),
+            bool _Constraints = __tuple_constraints<
+              _Tp...>::template __select_converting_assignable</*__is_const=*/false, const _UTypes&...>(),
             enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr tuple&
   operator=(const tuple<_UTypes...>& __t) noexcept((is_nothrow_assignable_v<_Tp&, const _UTypes&> && ...))
@@ -456,8 +456,8 @@ public:
 
   // [tuple.assign]-18
   template <class... _UTypes,
-            bool _Constraints = __tuple_constraints<_Tp...>::template //
-            __select_converting_assignable</*__is_const=*/true, const _UTypes&...>(),
+            bool _Constraints = __tuple_constraints<
+              _Tp...>::template __select_converting_assignable</*__is_const=*/true, const _UTypes&...>(),
             enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr const tuple& operator=(const tuple<_UTypes...>& __t) const
     noexcept((is_nothrow_assignable_v<const _Tp&, const _UTypes&> && ...))
@@ -468,8 +468,8 @@ public:
 
   // [tuple.assign]-21
   template <class... _UTypes,
-            bool _Constraints = __tuple_constraints<_Tp...>::template //
-            __select_converting_assignable</*__is_const=*/false, _UTypes...>(),
+            bool _Constraints =
+              __tuple_constraints<_Tp...>::template __select_converting_assignable</*__is_const=*/false, _UTypes...>(),
             enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr tuple& operator=(tuple<_UTypes...>&& __t) noexcept((is_nothrow_assignable_v<_Tp&, _UTypes> && ...))
   {
@@ -480,8 +480,8 @@ public:
 
   // [tuple.assign]-24
   template <class... _UTypes,
-            bool _Constraints = __tuple_constraints<_Tp...>::template //
-            __select_converting_assignable</*__is_const=*/true, _UTypes...>(),
+            bool _Constraints =
+              __tuple_constraints<_Tp...>::template __select_converting_assignable</*__is_const=*/true, _UTypes...>(),
             enable_if_t<_Constraints, int> = 0>
   _CCCL_API constexpr const tuple& operator=(tuple<_UTypes...>&& __t) const
     noexcept((is_nothrow_assignable_v<const _Tp&, _UTypes> && ...))
