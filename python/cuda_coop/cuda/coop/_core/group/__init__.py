@@ -31,6 +31,7 @@ from ._model import (
     UnsupportedReasonCode,
 )
 from ._resolution import resolve_thread_group
+from .exchange import GroupExchangeMode, GroupExchangeSemantics
 from .load_store import (
     GroupLoadStoreAlgorithm,
     GroupLoadStoreKind,
@@ -45,10 +46,13 @@ from .radix_sort import (
 )
 from .reduce import GroupReduceSemantics
 from .scan import GroupScanMode, GroupScanSemantics
+from .shuffle import GroupShuffleSemantics
 from .topk import GroupTopKSemantics
 
 __all__ = [
     "ArgumentPrecondition",
+    "GroupExchangeMode",
+    "GroupExchangeSemantics",
     "GroupExecutionRequirements",
     "GroupLoadStoreAlgorithm",
     "GroupLoadStoreKind",
@@ -64,6 +68,7 @@ __all__ = [
     "GroupReduceSemantics",
     "GroupScanMode",
     "GroupScanSemantics",
+    "GroupShuffleSemantics",
     "GroupTopKSemantics",
     "GroupTopologyRequirements",
     "ImplementationProvenance",

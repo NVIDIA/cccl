@@ -8,6 +8,7 @@ The root package exports these names. Compiler adapters use their identities
 to recognize cooperative operations without changing the public call syntax.
 """
 
+from .exchange import exchange
 from .load_store import load, store
 from .merge_sort import merge_sort_keys as merge_sort_keys
 from .merge_sort import merge_sort_pairs as merge_sort_pairs
@@ -20,6 +21,7 @@ from .scan import (
     inclusive_sum,
     scan,
 )
+from .shuffle import shuffle
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -62,6 +64,7 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
@@ -74,6 +77,7 @@ __all__ = [
     "radix_sort_pairs",
     "reduce",
     "scan",
+    "shuffle",
     "store",
     "sum",
     "this_block",
