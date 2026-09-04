@@ -250,11 +250,13 @@ public:
     }
   }
 
-  [[maybe_unused]] __host__ __device__ custom_accumulator_t operator+(const custom_input_t& in) const
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+  __host__ __device__ custom_accumulator_t operator+(const custom_input_t& in) const
   {
     const int multiplier = this->is_valid();
     return {(m_val + in.get()) * multiplier};
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 
   __host__ __device__ custom_accumulator_t operator+(const custom_accumulator_t& in) const
   {

@@ -155,11 +155,13 @@ struct unrelated_policy
 
 struct unrelated_tuning
 {
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   // should never be called
-  [[maybe_unused]] auto operator()(cuda::compute_capability) const -> unrelated_policy
+  auto operator()(cuda::compute_capability) const -> unrelated_policy
   {
     throw 1337;
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 };
 } // namespace
 
