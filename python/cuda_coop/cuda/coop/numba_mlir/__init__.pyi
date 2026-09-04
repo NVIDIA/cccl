@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from .._core.api import TempStorageLike, ThreadDataLike
+from ._group._exchange import exchange
 from ._group._load_store import load, store
 from ._group._merge_sort import merge_sort_keys as merge_sort_keys
 from ._group._merge_sort import merge_sort_pairs as merge_sort_pairs
@@ -17,6 +18,7 @@ from ._group._scan import (
     inclusive_sum,
     scan,
 )
+from ._group._shuffle import shuffle
 from ._group._topk import (
     topk_max_keys,
     topk_max_pairs,
@@ -44,6 +46,7 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
@@ -58,6 +61,7 @@ __all__ = [
     "reduce",
     "scan",
     "shared",
+    "shuffle",
     "store",
     "sum",
     "this_block",
