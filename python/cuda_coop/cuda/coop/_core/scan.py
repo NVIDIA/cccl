@@ -11,7 +11,14 @@ from enum import Enum
 from typing import Any
 
 from ._symbols import semantic_token
-from ._types import CxxFunction, CxxOperator, Dependency, PythonOperator, Reference
+from ._types import (
+    CxxFunction,
+    CxxOperator,
+    Dependency,
+    PythonOperator,
+    Reference,
+    StatefulOperator,
+)
 
 
 class ScanMode(str, Enum):
@@ -61,6 +68,9 @@ def normalize_scan_operator_alias(value: object) -> str | None:
     return _SCAN_OPERATOR_ALIASES.get(token)
 
 
+_PREFIX_CALLBACKS = (PythonOperator, StatefulOperator)
+
+
 def _initial_dtype_matches(dtype: Any, initial_value: CxxFunction | Reference) -> bool:
     initial_dtype = initial_value.dtype
     if isinstance(initial_dtype, Dependency):
@@ -79,6 +89,7 @@ class ScanSemantics:
     scan_operator: CxxOperator | PythonOperator | None = None
     initial_value: CxxFunction | Reference | None = None
     aggregate: bool = False
+    prefix_callback: PythonOperator | StatefulOperator | None = None
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
@@ -91,6 +102,7 @@ class ScanSemantics:
             semantic_token(self.scan_operator),
             semantic_token(self.initial_value),
             self.aggregate,
+            semantic_token(self.prefix_callback),
         )
 
     def __eq__(self, other: object) -> bool:
@@ -111,6 +123,7 @@ def make_scan_semantics(
     scan_operator: CxxOperator | PythonOperator | None = None,
     initial_value: CxxFunction | Reference | None = None,
     aggregate: bool = False,
+    prefix_callback: PythonOperator | StatefulOperator | None = None,
 ) -> ScanSemantics:
     """Build a scope-independent scan operation record."""
 
@@ -139,6 +152,16 @@ def make_scan_semantics(
             raise ValueError("inclusive scans do not accept an initial value")
     if not isinstance(aggregate, bool):
         raise TypeError("aggregate must be a bool")
+    if prefix_callback is not None and not isinstance(
+        prefix_callback, _PREFIX_CALLBACKS
+    ):
+        raise TypeError(f"unsupported scan prefix callback {prefix_callback!r}")
+    if initial_value is not None and prefix_callback is not None:
+        raise ValueError(
+            "scan initial value and prefix callback are mutually exclusive"
+        )
+    if aggregate and prefix_callback is not None:
+        raise ValueError("scan aggregate and prefix callback are mutually exclusive")
 
     return ScanSemantics(
         dtype=dtype,
@@ -148,6 +171,7 @@ def make_scan_semantics(
         scan_operator=scan_operator,
         initial_value=initial_value,
         aggregate=aggregate,
+        prefix_callback=prefix_callback,
     )
 
 
