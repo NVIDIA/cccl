@@ -99,7 +99,7 @@ struct stream_ref : ::cuda::stream_ref
     // lower to CUDART for this instead
     __ensure_current_device __setter(__stream_ctx);
     int __id;
-    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
+    _CCCL_TRY_RUNTIME_API(cudaGetDevice, "Could not get device from a stream", &__id);
     return __logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
   }
 

@@ -35,7 +35,7 @@ static_assert(!cuda::std::is_empty<cuda::device_memory_pool_ref>::value);
 static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
   size_t release_threshold = expected_threshold + 1337; // use something different than the expected threshold
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemPoolGetAttribute,
     "Failed to call cudaMemPoolGetAttribute",
     pool,
@@ -47,7 +47,7 @@ static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected
 static bool ensure_disable_reuse(::cudaMemPool_t pool, const int driver_version)
 {
   int disable_reuse = 0;
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemPoolGetAttribute,
     "Failed to call cudaMemPoolGetAttribute",
     pool,
@@ -73,7 +73,7 @@ template <typename T>
 [[nodiscard]] static T get_raw_attribute(const ::cudaMemPool_t pool, const ::cudaMemPoolAttr attr)
 {
   T value{};
-  _CCCL_TRY_CUDA_API(::cudaMemPoolGetAttribute, "Failed to call cudaMemPoolGetAttribute", pool, attr, &value);
+  _CCCL_TRY_RUNTIME_API(::cudaMemPoolGetAttribute, "Failed to call cudaMemPoolGetAttribute", pool, attr, &value);
   return value;
 }
 
@@ -115,15 +115,16 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 
   int driver_version = 0;
   {
-    _CCCL_TRY_CUDA_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
+    _CCCL_TRY_RUNTIME_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
   }
 
   ::cudaMemPool_t current_default_pool{};
   {
-    _CCCL_TRY_CUDA_API(::cudaDeviceGetDefaultMemPool,
-                       "Failed to call cudaDeviceGetDefaultMemPool",
-                       &current_default_pool,
-                       current_device);
+    _CCCL_TRY_RUNTIME_API(
+      ::cudaDeviceGetDefaultMemPool,
+      "Failed to call cudaDeviceGetDefaultMemPool",
+      &current_default_pool,
+      current_device);
   }
 
   using test_resource = cuda::device_memory_pool_ref;
@@ -137,7 +138,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 
     // Ensure that the pool was not destroyed by allocating something
     void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaMallocAsync,
       "Failed to allocate with pool passed to cuda::device_memory_pool_ref",
       &ptr,
@@ -146,7 +147,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
       ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_RUNTIME_API(
       ::cudaFreeAsync,
       "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
       ptr,
@@ -169,7 +170,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
     pool_properties.location.type = ::cudaMemLocationTypeDevice;
     pool_properties.location.id   = current_device;
     cudaMemPool_t cuda_pool_handle{};
-    _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &cuda_pool_handle, &pool_properties);
+    _CCCL_TRY_RUNTIME_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &cuda_pool_handle, &pool_properties);
 
     {
       test_resource from_cudaMemPool{cuda_pool_handle};
@@ -179,7 +180,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 
     // Ensure that the pool was not destroyed by allocating something
     void* ptr{nullptr};
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaMallocAsync,
       "Failed to allocate with pool passed to cuda::device_memory_pool_ref",
       &ptr,
@@ -188,7 +189,7 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
       ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_RUNTIME_API(
       ::cudaFreeAsync,
       "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
       ptr,
@@ -424,7 +425,8 @@ C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
       pool_properties.handleTypes   = ::cudaMemAllocationHandleType(0);
       pool_properties.location.type = ::cudaMemLocationTypeDevice;
       pool_properties.location.id   = current_device;
-      _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &cuda_pool_handle, &pool_properties);
+      _CCCL_TRY_RUNTIME_API(
+        ::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &cuda_pool_handle, &pool_properties);
     }
     cuda::device_memory_pool_ref second{cuda_pool_handle};
     CHECK((first != second));

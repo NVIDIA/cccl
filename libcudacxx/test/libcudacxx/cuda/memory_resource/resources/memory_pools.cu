@@ -93,7 +93,7 @@ PoolType construct_pool(cuda::memory_pool_properties props = {})
 static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
   size_t release_threshold = expected_threshold + 1337; // use something different than the expected threshold
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemPoolGetAttribute,
     "Failed to call cudaMemPoolGetAttribute",
     pool,
@@ -105,7 +105,7 @@ static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected
 static bool ensure_disable_reuse(::cudaMemPool_t pool)
 {
   int disable_reuse = 0;
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemPoolGetAttribute,
     "Failed to call cudaMemPoolGetAttribute",
     pool,
@@ -202,20 +202,21 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
 
   int current_device{};
   {
-    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
+    _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
   }
 
   int driver_version = 0;
   {
-    _CCCL_TRY_CUDA_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
+    _CCCL_TRY_RUNTIME_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
   }
 
   ::cudaMemPool_t current_default_pool{};
   {
-    _CCCL_TRY_CUDA_API(::cudaDeviceGetDefaultMemPool,
-                       "Failed to call cudaDeviceGetDefaultMemPool",
-                       &current_default_pool,
-                       current_device);
+    _CCCL_TRY_RUNTIME_API(
+      ::cudaDeviceGetDefaultMemPool,
+      "Failed to call cudaDeviceGetDefaultMemPool",
+      &current_default_pool,
+      current_device);
   }
 
   SECTION("Construct from device id")
@@ -315,7 +316,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
       REQUIRE(false);
     }
     ::cudaMemPool_t new_pool{};
-    _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &new_pool, &pool_properties);
+    _CCCL_TRY_RUNTIME_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &new_pool, &pool_properties);
 
     memory_pool from_handle = memory_pool::from_native_handle(new_pool);
     CHECK(from_handle.get() == new_pool);
@@ -332,15 +333,16 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
 
   int driver_version = 0;
   {
-    _CCCL_TRY_CUDA_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
+    _CCCL_TRY_RUNTIME_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
   }
 
   ::cudaMemPool_t current_default_pool{};
   {
-    _CCCL_TRY_CUDA_API(::cudaDeviceGetDefaultMemPool,
-                       "Failed to call cudaDeviceGetDefaultMemPool",
-                       &current_default_pool,
-                       current_device);
+    _CCCL_TRY_RUNTIME_API(
+      ::cudaDeviceGetDefaultMemPool,
+      "Failed to call cudaDeviceGetDefaultMemPool",
+      &current_default_pool,
+      current_device);
   }
 
   SECTION("Construct with max pool size")
@@ -379,7 +381,7 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
 
       ::cudaStream_t stream{nullptr};
       // make an allocation smaller than the max pool size
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMallocAsync,
         "Failed to allocate with pool passed to cuda::device_memory_pool_ref",
         &ptr,
@@ -388,7 +390,7 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
         stream);
       CHECK(ptr != nullptr);
 
-      _CCCL_ASSERT_CUDA_API(
+      _CCCL_ASSERT_RUNTIME_API(
         ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, stream);
       // make an allocation larger than the max pool size
       // NOTE: currently cuda driver rounds up max size to 32MB. So we need to allocate 32MB + 1 byte.
@@ -419,20 +421,21 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool comparison", "[memory_resource]", TEST_
 
   int current_device{};
   {
-    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
+    _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
   }
 
   int driver_version = 0;
   {
-    _CCCL_TRY_CUDA_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
+    _CCCL_TRY_RUNTIME_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
   }
 
   ::cudaMemPool_t current_default_pool{};
   {
-    _CCCL_TRY_CUDA_API(::cudaDeviceGetDefaultMemPool,
-                       "Failed to call cudaDeviceGetDefaultMemPool",
-                       &current_default_pool,
-                       current_device);
+    _CCCL_TRY_RUNTIME_API(
+      ::cudaDeviceGetDefaultMemPool,
+      "Failed to call cudaDeviceGetDefaultMemPool",
+      &current_default_pool,
+      current_device);
   }
 
   memory_pool first = construct_pool<memory_pool>();
@@ -447,12 +450,12 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 {
   int current_device{};
   {
-    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
+    _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
   }
 
   int driver_version = 0;
   {
-    _CCCL_TRY_CUDA_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
+    _CCCL_TRY_RUNTIME_API(::cudaDriverGetVersion, "Failed to call cudaDriverGetVersion", &driver_version);
   }
 
   using memory_pool     = TestType;
@@ -740,7 +743,7 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
 
   ::cudaMemPool_t current_default_pool{};
   {
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaDeviceGetDefaultMemPool, "Failed to call cudaDeviceGetDefaultMemPool", &current_default_pool, 0);
   }
 
