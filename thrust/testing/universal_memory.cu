@@ -6,6 +6,7 @@
 #include <numeric>
 #include <vector>
 
+#include <catch2/matchers/catch_matchers_range_equals.hpp>
 #include <unittest/unittest.h>
 
 namespace
@@ -170,6 +171,7 @@ void TestUniversalStdVector(std::size_t const n)
 
   ASSERT_EQUAL(host.size(), n);
   ASSERT_EQUAL(universal.size(), n);
-  ASSERT_EQUAL(host, universal);
+  // host and universal have different allocator types, so std::vector::operator== does not apply
+  REQUIRE_THAT(universal, Catch::Matchers::RangeEquals(host));
 }
 DECLARE_VARIABLE_UNITTEST(TestUniversalStdVector);
