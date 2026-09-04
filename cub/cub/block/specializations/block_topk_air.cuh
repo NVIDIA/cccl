@@ -235,7 +235,7 @@ private:
   // same phase), fused scan+choose, and the pass-state update. Returns true when all remaining
   // candidates are amongst the top-k (early exit).
   template <detail::topk::select SelectDirection, bool IsFullTile, typename DecomposerT>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool run_radix_pass(
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool run_radix_pass(
     const bit_ordered_type (&unsigned_keys)[items_per_thread],
     int valid_items,
     int& k,
@@ -531,7 +531,12 @@ private:
     // Ensure all threads have finished writing to shared memory
     __syncthreads();
 
-    // Gather selected items into thread registers for return.
+    // Gather selected items into thread registers for return. Slots beyond k are left as they
+    // are: with MemoizeKeys they still hold bit-twiddled keys, without it the in-place untwiddled
+    // ones. Both are unspecified per the contract above, and not restoring them keeps the
+    // memoized copy from having to live across the exchange.
+    // TODO (elstehle): Revisit whether the slots beyond k should be left untouched (i.e., holding
+    // the original keys) rather than unspecified, once this becomes part of a public interface.
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
@@ -539,11 +544,6 @@ private:
       if (buffer_idx < k)
       {
         keys[i] = storage.stage.exchange.u.keys[buffer_idx];
-      }
-      else if constexpr (MemoizeKeys)
-      {
-        // The register keys are still bit-twiddled. Restore them from the original copy
-        keys[i] = original_keys[i];
       }
     }
 
