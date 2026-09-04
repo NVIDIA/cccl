@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from numbers import Integral
 from typing import Any
 
@@ -16,7 +17,11 @@ from ._dispatch import (
     _portable_group_operation,
     _portable_selector,
 )
-from ._payload import ThreadDataLike, _validate_common_numeric_value
+from ._payload import (
+    ThreadDataLike,
+    _ReadableThreadDataLike,
+    _validate_common_numeric_value,
+)
 
 _PORTABLE_SHUFFLE_MODES = frozenset({"down", "up"})
 
@@ -27,7 +32,7 @@ _PORTABLE_SHUFFLE_MODES = frozenset({"down", "up"})
 )
 def shuffle(
     group: ThreadGroup,
-    value: ThreadDataLike[Any],
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
     mode: Any = "down",
@@ -46,13 +51,13 @@ def shuffle(
             "shuffle",
             "value",
             value,
+            allow_readonly_thread_data=True,
             require_thread_data=True,
         )
-        normalized_distance = getattr(distance, "value", distance)
         if (
-            isinstance(normalized_distance, bool)
-            or not isinstance(normalized_distance, Integral)
-            or int(normalized_distance) != 1
+            isinstance(distance, (bool, Enum))
+            or not isinstance(distance, Integral)
+            or int(distance) != 1
         ):
             raise ValueError(
                 "cuda.coop.shuffle distance must be exactly 1 in the portable "
