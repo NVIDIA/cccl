@@ -257,8 +257,6 @@ void gen_power_law_segment_offsets_host(seed_t seed, cuda::std::span<T> segment_
 template <typename T>
 void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segment_offsets, std::size_t elements);
 
-namespace
-{
 struct generator_base_t
 {
   seed_t m_seed{};
@@ -440,7 +438,6 @@ struct gen_t
   gen_uniform_t uniform{};
   gen_power_law_t power_law{};
 };
-} // namespace
 } // namespace detail
 
 inline detail::gen_t generate;
@@ -547,8 +544,6 @@ struct proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
 {};
 _CCCL_END_NAMESPACE_CUDA
 
-namespace
-{
 struct caching_allocator_t
 {
   using value_type = char;
@@ -731,33 +726,33 @@ private:
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-auto policy(caching_allocator_t& alloc)
+inline auto policy(caching_allocator_t& alloc)
 {
   return thrust::cuda::par(alloc);
 }
-auto cuda_policy(caching_allocator_t& alloc)
+inline auto cuda_policy(caching_allocator_t& alloc)
 {
   return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc);
 }
 #else
-auto policy(caching_allocator_t&)
+inline auto policy(caching_allocator_t&)
 {
   return thrust::device;
 }
 #endif
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
+inline auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
   return thrust::cuda::par(alloc).on(launch.get_stream());
 }
-auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
+inline auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
   return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc)
     .with(cuda::get_stream, launch.get_stream().get_stream());
 }
 #else
-auto policy(caching_allocator_t&, nvbench::launch&)
+inline auto policy(caching_allocator_t&, nvbench::launch&)
 {
   return thrust::device;
 }
@@ -774,4 +769,3 @@ auto cub_bench_env(caching_allocator_t& alloc, nvbench::launch& launch, MoreEnvs
     envs...};
 }
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-} // namespace

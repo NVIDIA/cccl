@@ -18,8 +18,6 @@
 
 namespace ex = cuda::experimental::execution;
 
-namespace
-{
 namespace _dummy
 {
 template <class Domain>
@@ -104,4 +102,3 @@ _CCCL_HOST_DEVICE constexpr auto _attrs_t<Domain>::query(ex::get_completion_sche
   return dummy_scheduler<Domain>{};
 }
 } // namespace _dummy
-} // namespace
