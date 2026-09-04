@@ -218,7 +218,7 @@ public:
       : super_t(x)
       , StrideHolder(stride)
   {
-    // a zero stride is rejected; use cuda::constant_iterator for a fixed value.
+    // a zero stride is rejected; use thrust::constant_iterator for a fixed value.
     // a compile-time holder asserts statically: a runtime assert on a constant
     // condition trips MSVC C4127 under /WX
     if constexpr (StrideHolder::__is_compile_time)
