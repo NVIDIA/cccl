@@ -66,6 +66,29 @@ def test_warp_load_full_tile_semantics_are_physical_warp_scoped():
     )
 
 
+@pytest.mark.parametrize("threads_in_warp", [1, 2, 4, 8, 16, 32])
+@pytest.mark.parametrize("make_spec", [make_warp_load_spec, make_warp_store_spec])
+def test_warp_load_store_supports_cub_logical_warp_widths(
+    make_spec,
+    threads_in_warp,
+):
+    spec = make_spec(
+        dtype="i32",
+        items_per_thread=2,
+        threads_in_warp=threads_in_warp,
+        algorithm="direct",
+    )
+
+    assert spec.threads_in_warp == threads_in_warp
+    assert (
+        spec.specialization.template_arguments["LOGICAL_WARP_THREADS"]
+        == threads_in_warp
+    )
+    assert spec.specialization.metadata["effective_offset_stride"] == (
+        2 * threads_in_warp
+    )
+
+
 def test_warp_store_partial_runtime_effective_offset_abi():
     spec = make_warp_store_spec(
         dtype="i64",
@@ -104,6 +127,7 @@ def test_partial_transpose_load_preserves_invalid_payload_items():
         dtype="i32",
         items_per_thread=2,
         algorithm="transpose",
+        threads_in_warp=8,
         valid_items=True,
     )
     defaulting = make_warp_load_spec(
@@ -128,7 +152,10 @@ def test_partial_transpose_load_preserves_invalid_payload_items():
     wrapper = preserving.specialization.type_definitions[0].code
     assert "original[item] = items[item]" in wrapper
     assert "::cuda::ptx::get_sreg_laneid()" in wrapper
+    assert "get_sreg_laneid()) %" in wrapper
+    assert "LogicalWarpThreads;" in wrapper
     assert "lane * ItemsPerThread + item >= valid_items" in wrapper
+    assert "(LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0" in wrapper
     assert defaulting.specialization.struct_name == "WarpLoad"
     assert not defaulting.specialization.metadata["preserves_invalid_items"]
     assert defaulting.specialization.type_definitions == ()
@@ -148,15 +175,34 @@ def test_warp_load_store_support_exactly_four_algorithms():
             dtype="i32",
             items_per_thread=2,
             algorithm=algorithm,
+            threads_in_warp=8,
         )
         for algorithm in WarpLoadStoreAlgorithm
     ]
     assert len({spec.semantic_key for spec in specs}) == 4
 
 
-@pytest.mark.parametrize("threads_in_warp", [1, 8, 16, 64, True])
-def test_warp_load_store_rejects_nonphysical_widths(threads_in_warp):
-    with pytest.raises(ValueError, match="threads_in_warp=32"):
+def test_warp_load_store_width_is_part_of_specialization_identity():
+    specs = [
+        make_warp_load_spec(
+            dtype="i32",
+            items_per_thread=2,
+            algorithm="direct",
+            threads_in_warp=threads_in_warp,
+        )
+        for threads_in_warp in (8, 16, 32)
+    ]
+
+    assert len({spec.call.semantic_key for spec in specs}) == len(specs)
+    assert len({spec.semantic_key for spec in specs}) == len(specs)
+
+
+@pytest.mark.parametrize(
+    "threads_in_warp",
+    [True, 0, -1, 3, 6, 12, 24, 31, 33, 64, 8.0],
+)
+def test_warp_load_store_rejects_unsupported_widths(threads_in_warp):
+    with pytest.raises(ValueError, match="threads_in_warp in"):
         make_warp_load_spec(
             dtype="i32",
             items_per_thread=2,
@@ -166,7 +212,7 @@ def test_warp_load_store_rejects_nonphysical_widths(threads_in_warp):
 
 
 @pytest.mark.parametrize("make_spec", [make_warp_load_spec, make_warp_store_spec])
-@pytest.mark.parametrize("valid_items", [-1, 65])
+@pytest.mark.parametrize("valid_items", [-1, 17])
 def test_warp_load_store_rejects_static_valid_items_outside_tile(
     make_spec,
     valid_items,
@@ -175,6 +221,7 @@ def test_warp_load_store_rejects_static_valid_items_outside_tile(
         make_spec(
             dtype="i32",
             items_per_thread=2,
+            threads_in_warp=8,
             algorithm="direct",
             valid_items=ArgumentBinding.static(valid_items),
         )
