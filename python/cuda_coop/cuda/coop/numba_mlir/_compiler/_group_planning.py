@@ -22,7 +22,12 @@ from ._group_planner_support import (
     _cuda_module,
     _typed_group_payload_like,
 )
-from ._parameters import normalize_dtype_param
+from ._parameters import (
+    _python_scalar_dtype,
+    _scalar_cast_dtype,
+    _scalar_operator_result_dtype,
+    normalize_dtype_param,
+)
 
 
 class GroupPlanningContext:
@@ -49,6 +54,9 @@ class GroupPlanningContext:
 
     def try_constant(self, value: Any) -> tuple[bool, Any]:
         return self._planner._try_constant(value)
+
+    def try_static_scalar(self, value: Any) -> tuple[bool, Any]:
+        return self._planner._try_static_scalar(value)
 
     def bind(self, function: Any, call: ir.Expr) -> Any:
         return self._planner._bind(function, call)
@@ -122,7 +130,7 @@ class GroupPlanningContext:
         return self._planner._result_value(*args, **kwargs)
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
-        resolved, constant = self.try_constant(value)
+        resolved, constant = self.try_static_scalar(value)
         if not resolved:
             return ArgumentBinding.runtime()
         if constant is None:
@@ -142,6 +150,18 @@ class GroupPlanningContext:
         if len(candidates) > 1:
             raise GroupRewriteError(message)
         return next(iter(candidates), None)
+
+    @classmethod
+    def _complete_dtype(
+        cls,
+        candidates: Any,
+        *,
+        message: str,
+    ) -> Any | None:
+        resolved = list(candidates)
+        if not resolved or any(dtype is None for dtype in resolved):
+            return None
+        return cls._one_dtype(set(resolved), message=message)
 
     def _result_dtype(
         self,
@@ -171,20 +191,15 @@ class GroupPlanningContext:
         if seen_key in seen:
             return None
         seen.add(seen_key)
-        candidates = {
-            dtype
-            for definition in self._all_definitions(value)
-            if (
-                dtype := self._tuple_dtype_definition(
+        return self._complete_dtype(
+            (
+                self._tuple_dtype_definition(
                     definition,
                     index,
                     seen=set(seen),
                 )
-            )
-            is not None
-        }
-        return self._one_dtype(
-            candidates,
+                for definition in self._all_definitions(value)
+            ),
             message=("cuda.coop.numba_mlir tuple projections have inconsistent dtypes"),
         )
 
@@ -202,14 +217,11 @@ class GroupPlanningContext:
         if definition.op in {"cast", "exhaust_iter"}:
             return self._tuple_dtype(definition.value, index, seen=seen)
         if definition.op == "phi":
-            candidates = {
-                dtype
-                for incoming in getattr(definition, "incoming_values", ())
-                if (dtype := self._tuple_dtype(incoming, index, seen=set(seen)))
-                is not None
-            }
-            return self._one_dtype(
-                candidates,
+            return self._complete_dtype(
+                (
+                    self._tuple_dtype(incoming, index, seen=set(seen))
+                    for incoming in getattr(definition, "incoming_values", ())
+                ),
                 message=(
                     "cuda.coop.numba_mlir loop-carried tuple payloads have "
                     "inconsistent dtypes"
@@ -233,18 +245,18 @@ class GroupPlanningContext:
             return self._dtype_from_numba_type(
                 self._planner.state.args[definition.index]
             )
+        if isinstance(definition, (ir.Global, ir.FreeVar, ir.Const)):
+            return _python_scalar_dtype(definition.value)
         if not isinstance(definition, ir.Expr):
             return None
         if definition.op in {"cast", "exhaust_iter"}:
             return self.dtype(definition.value, seen=seen)
         if definition.op == "phi":
-            candidates = {
-                dtype
-                for incoming in getattr(definition, "incoming_values", ())
-                if (dtype := self.dtype(incoming, seen=set(seen))) is not None
-            }
-            return self._one_dtype(
-                candidates,
+            return self._complete_dtype(
+                (
+                    self.dtype(incoming, seen=set(seen))
+                    for incoming in getattr(definition, "incoming_values", ())
+                ),
                 message=(
                     "cuda.coop.numba_mlir payload aliases have inconsistent dtypes"
                 ),
@@ -264,6 +276,28 @@ class GroupPlanningContext:
                 if tuple_dtype is not None:
                     return tuple_dtype
             return self.dtype(definition.value, seen=seen)
+        if definition.op in {"binop", "inplace_binop"}:
+            return _scalar_operator_result_dtype(
+                getattr(definition, "fn", None),
+                self.dtype(getattr(definition, "lhs", None), seen=set(seen)),
+                self.dtype(getattr(definition, "rhs", None), seen=set(seen)),
+            )
+        if definition.op == "unary":
+            return _scalar_operator_result_dtype(
+                getattr(definition, "fn", None),
+                self.dtype(getattr(definition, "value", None), seen=set(seen)),
+            )
+        if definition.op == "getattr":
+            chain = self._attribute_chain(definition.value)
+            if chain is not None:
+                root, attributes = chain
+                if root is _cuda_module and (*attributes, definition.attr) in {
+                    (index, component)
+                    for index in ("blockDim", "blockIdx", "gridDim", "threadIdx")
+                    for component in ("x", "y", "z")
+                }:
+                    return types.int32
+            return None
         if definition.op != "call":
             return None
         function = self._callable(definition.func)
@@ -286,7 +320,31 @@ class GroupPlanningContext:
             return None
         if function is _typed_group_payload_like and definition.args:
             return self.dtype(definition.args[0], seen=seen)
-        return self._result_dtype(definition, index=None, seen=seen)
+        result_dtype = self._result_dtype(definition, index=None, seen=seen)
+        if result_dtype is not None:
+            return result_dtype
+        cast_dtype = _scalar_cast_dtype(function)
+        if cast_dtype is None:
+            return None
+        if len(definition.args) == 1:
+            inferred = _scalar_operator_result_dtype(
+                function,
+                self.dtype(definition.args[0], seen=set(seen)),
+            )
+            if inferred is not None:
+                return inferred
+        return cast_dtype
+
+    def _attribute_chain(self, value: Any) -> tuple[Any, tuple[str, ...]] | None:
+        attributes: list[str] = []
+        current = self._definition(value)
+        while isinstance(current, ir.Expr) and current.op == "getattr":
+            attributes.append(current.attr)
+            current = self._definition(current.value)
+        if not isinstance(current, (ir.Global, ir.FreeVar, ir.Const)):
+            return None
+        attributes.reverse()
+        return current.value, tuple(attributes)
 
     def dtype(self, value: Any, *, seen: set[str] | None = None) -> Any | None:
         if not isinstance(value, ir.Var):
@@ -296,19 +354,14 @@ class GroupPlanningContext:
         if value.name in seen:
             return None
         seen.add(value.name)
-        candidates = {
-            dtype
-            for definition in self._all_definitions(value)
-            if (
-                dtype := self._dtype_definition(
+        return self._complete_dtype(
+            (
+                self._dtype_definition(
                     definition,
                     seen=set(seen),
                 )
-            )
-            is not None
-        }
-        return self._one_dtype(
-            candidates,
+                for definition in self._all_definitions(value)
+            ),
             message="cuda.coop.numba_mlir payload aliases have inconsistent dtypes",
         )
 

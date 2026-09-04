@@ -53,7 +53,13 @@ def _planned_factory_calls(func_ir, ir):
     ]
 
 
-def _run_single_phase_to_provider_boundary(function, *, arg_types, monkeypatch):
+def _run_single_phase_to_provider_boundary(
+    function,
+    *,
+    arg_types,
+    monkeypatch,
+    allow_provider_bundling=False,
+):
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     func_ir, planner = _plan(function, arg_types=arg_types, block=(32, 1, 1))
@@ -72,11 +78,21 @@ def _run_single_phase_to_provider_boundary(function, *, arg_types, monkeypatch):
         metadata={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
+    if allow_provider_bundling:
+        monkeypatch.setattr(
+            rewrite,
+            "_compute_func_temp_storage_requirements",
+            lambda _func_ir: None,
+        )
     monkeypatch.setattr(
         rewrite,
         "_prepare_ltoir_bundle_for_matches",
-        lambda _matches: pytest.fail(
-            "invalid movement arguments reached provider bundling"
+        (
+            (lambda _matches: None)
+            if allow_provider_bundling
+            else lambda _matches: pytest.fail(
+                "invalid movement arguments reached provider bundling"
+            )
         ),
     )
     monkeypatch.setattr(
@@ -340,13 +356,19 @@ def test_block_load_store_adapters_preserve_offset_overloads():
     )
     assert _parameter_names(load) == [
         ["Pointer", "Pointer", "Array"],
-        ["Pointer", "Pointer", "Array", "Value", "Value"],
         [
             "Pointer",
             "Pointer",
             "Array",
-            "Value",
-            "Value",
+            "CheckedValidItems",
+            "ExactValue",
+        ],
+        [
+            "Pointer",
+            "Pointer",
+            "Array",
+            "CheckedValidItems",
+            "ExactValue",
             "PointerOffset",
         ],
         ["Pointer", "Pointer", "Array", "PointerOffset"],
@@ -441,6 +463,183 @@ def test_static_movement_controls_are_absent_from_numba_runtime_abi():
     runtime_source = runtime._source_code()[0]
     assert "::cuda::std::int64_t param_2" in runtime_source
     assert ".Store((param_0 + param_2)," in runtime_source
+
+
+def test_runtime_valid_items_is_checked_before_cub_integer_narrowing():
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core import ArgumentBinding
+    from cuda.coop._core.block import make_block_load_spec
+    from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+    from cuda.coop.numba_mlir._types import CheckedValidItems, algo_coalesce_key
+
+    adapter = NumbaMlirCoreAdapter()
+    load = adapter.materialize(
+        make_block_load_spec(
+            dtype=types.int32,
+            block_dim=(16, 2, 1),
+            items_per_thread=3,
+            algorithm="direct",
+            valid_items=ArgumentBinding.runtime(),
+        ).specialization,
+        **_block_provider_metadata(),
+    )
+    valid_items = load.parameters[0][-1]
+    assert isinstance(valid_items, CheckedValidItems)
+    assert valid_items.dtype() == types.int64
+    assert valid_items.tile_items == 96
+    assert all(
+        valid_items.accepts_actual_type(dtype, None)
+        for dtype in (
+            types.int8,
+            types.int16,
+            types.int32,
+            types.int64,
+            types.uint8,
+            types.uint16,
+            types.uint32,
+        )
+    )
+    assert all(
+        not valid_items.accepts_actual_type(dtype, None)
+        for dtype in (types.boolean, types.uint64, types.float32, types.float64)
+    )
+
+    source = load._source_code()[0]
+    declaration = "::cuda::std::int64_t param_2"
+    guard = "if (param_2 < 0 || param_2 > 96)"
+    trap = 'asm volatile("trap;" : : :);'
+    narrowing = (
+        "::cuda::std::int32_t checked_param_2 = "
+        "static_cast<::cuda::std::int32_t>(param_2);"
+    )
+    invocation = ".Load(param_0, *reinterpret_cast<"
+    assert source.index(declaration) < source.index(guard)
+    assert source.index(guard) < source.index(trap) < source.index(narrowing)
+    assert source.index(narrowing) < source.index(invocation)
+    assert "checked_param_2);" in source
+
+    narrower_tile = adapter.materialize(
+        make_block_load_spec(
+            dtype=types.int32,
+            block_dim=(16, 1, 1),
+            items_per_thread=3,
+            algorithm="direct",
+            valid_items=ArgumentBinding.runtime(),
+        ).specialization,
+        **_block_provider_metadata(),
+    )
+    assert algo_coalesce_key(load) != algo_coalesce_key(narrower_tile)
+
+
+def test_runtime_offsets_reject_bool_float_and_uint64_types():
+    from numba_cuda_mlir import types
+
+    from cuda.coop.numba_mlir._types import PointerOffset
+
+    offset = PointerOffset(types.int64)
+    assert all(
+        offset.accepts_actual_type(dtype, None)
+        for dtype in (
+            types.int8,
+            types.int16,
+            types.int32,
+            types.int64,
+            types.uint8,
+            types.uint16,
+            types.uint32,
+        )
+    )
+    assert all(
+        not offset.accepts_actual_type(dtype, None)
+        for dtype in (types.boolean, types.uint64, types.float32, types.float64)
+    )
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize("parameter", ["valid_items", "offset"])
+@pytest.mark.parametrize(
+    "dtype_name",
+    ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32"],
+)
+def test_runtime_control_integer_domain_is_accepted_before_materialization(
+    monkeypatch,
+    qualified,
+    parameter,
+    dtype_name,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+
+    if parameter == "valid_items":
+
+        def memory(source, control):
+            output = module.ThreadData(2, dtype=types.int32)
+            return module.load(module.this_block(), source, output, valid_items=control)
+
+    else:
+
+        def memory(source, control):
+            output = module.ThreadData(2, dtype=types.int32)
+            return module.load(module.this_block(), source, output, offset=control)
+
+    array_type = types.Array(types.int32, 1, "C")
+    _run_single_phase_to_provider_boundary(
+        memory,
+        arg_types=(array_type, getattr(types, dtype_name)),
+        monkeypatch=monkeypatch,
+        allow_provider_bundling=True,
+    )
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize("parameter", ["valid_items", "offset"])
+@pytest.mark.parametrize(
+    "dtype_name",
+    ["boolean", "uint64", "float32", "float64"],
+)
+def test_runtime_control_invalid_types_fail_before_materialization(
+    monkeypatch,
+    qualified,
+    parameter,
+    dtype_name,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+    from cuda.coop.numba_mlir._compiler._rewrite import (
+        CoopSinglePhaseRewriteError,
+    )
+
+    module = qualified_coop if qualified else root_coop
+
+    if parameter == "valid_items":
+
+        def memory(source, control):
+            output = module.ThreadData(2, dtype=types.int32)
+            return module.load(module.this_block(), source, output, valid_items=control)
+
+    else:
+
+        def memory(source, control):
+            output = module.ThreadData(2, dtype=types.int32)
+            return module.load(module.this_block(), source, output, offset=control)
+
+    array_type = types.Array(types.int32, 1, "C")
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match=r"must be (?:an integer|a signed integer)",
+    ):
+        _run_single_phase_to_provider_boundary(
+            memory,
+            arg_types=(array_type, getattr(types, dtype_name)),
+            monkeypatch=monkeypatch,
+        )
 
 
 def test_single_phase_rewrite_preserves_static_block_movement_bindings():

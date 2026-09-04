@@ -23,6 +23,116 @@ def _planner(function, *, arg_types, block=(64, 1, 1)):
     )
 
 
+def _assigned_var(func_ir, name):
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    return next(
+        statement.target
+        for block in func_ir.blocks.values()
+        for statement in block.body
+        if isinstance(statement, ir.Assign) and statement.target.name == name
+    )
+
+
+def test_group_planner_tracks_runtime_scalar_expression_provenance():
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    from cuda.coop._core import BindingKind
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+
+    def provenance(source, scalar):
+        alias = scalar
+        index = cuda.threadIdx.x
+        element = source[index]
+        binary = alias + index
+        unary = -alias
+        cast = np.int32(binary)
+        if index:
+            merged = cast
+        else:
+            merged = element
+        return merged, unary
+
+    array_type = types.Array(types.int32, 1, "C")
+    func_ir = run_frontend(provenance)
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=(array_type, types.int32)),
+        {"block": (32, 1, 1), "grid": (1, 1, 1), "cluster": None},
+    )
+    expected = {
+        "scalar": types.int32,
+        "alias": types.int32,
+        "index": types.int32,
+        "element": types.int32,
+        "binary": types.int64,
+        "unary": types.int64,
+        "cast": types.int32,
+        "merged": types.int32,
+    }
+    for name, dtype in expected.items():
+        value = _assigned_var(func_ir, name)
+        assert planner.context.dtype(value) == dtype
+        assert planner.context.planning_binding(value).kind is BindingKind.RUNTIME
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(qualified):
+    from numba_cuda_mlir import cuda, types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+    from cuda.coop._core import BindingKind
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(source, control):
+        index = cuda.threadIdx.x
+        valid = control + index
+        default = source[index]
+        offset = np.int64(control)
+        output = module.ThreadData(2, dtype=types.int32)
+        return module.load(
+            module.this_block(),
+            source,
+            output,
+            valid_items=valid,
+            oob_default=default,
+            offset=offset,
+        )
+
+    array_type = types.Array(types.int32, 1, "C")
+    arg_types = (array_type, types.int32)
+    planner = _planner(memory, arg_types=arg_types, block=(32, 1, 1))
+    assert planner.run()
+
+    state = SimpleNamespace(
+        func_ir=planner.func_ir,
+        args=arg_types,
+        typingctx=SimpleNamespace(refresh=lambda: None),
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    for label in sorted(planner.func_ir.blocks):
+        rewrite.match(
+            planner.func_ir,
+            planner.func_ir.blocks[label],
+            state.typemap,
+            state.calltypes,
+        )
+    assert len(rewrite._matches) == 1
+    match = next(iter(rewrite._matches.values()))
+    assert len(match.runtime_args) == 5
+    for name in ("num_valid_items", "oob_default"):
+        assert match.factory_kwargs[name].kind is BindingKind.RUNTIME
+    assert rewrite._resolve_var_dtype(match.runtime_args[2]) == types.int64
+    assert rewrite._resolve_var_dtype(match.runtime_args[3]) == types.int32
+    assert rewrite._resolve_var_dtype(match.runtime_args[4]) == types.int64
+
+
 def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
     from numba_cuda_mlir import types
 

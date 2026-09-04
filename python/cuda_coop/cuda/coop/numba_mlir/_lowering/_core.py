@@ -211,8 +211,25 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                 raise TypeError(
                     "Numba-CUDA-MLIR does not support dependent scalar values"
                 )
+            normalized_dtype = self.normalize_dtype(dtype)
+            primitive = specialization.metadata.get("primitive")
+            if (
+                primitive in {"load", "store"}
+                and parameter.name == "num_valid_items"
+                and normalized_dtype == types.int32
+            ):
+                arguments = specialization.template_arguments
+                tile_items = (
+                    arguments["BLOCK_DIM_X"]
+                    * arguments["BLOCK_DIM_Y"]
+                    * arguments["BLOCK_DIM_Z"]
+                    * arguments["ITEMS_PER_THREAD"]
+                )
+                return backend.CheckedValidItems(tile_items)
+            if primitive == "load" and parameter.name == "oob_default":
+                return backend.ExactValue(normalized_dtype)
             return backend.Value(
-                self.normalize_dtype(dtype),
+                normalized_dtype,
                 is_output=self._is_backend_output(parameter),
             )
         if isinstance(parameter, CxxFunction):
