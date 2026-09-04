@@ -219,6 +219,29 @@ def test_group_load_and_store_select_complete_block_contracts():
     assert load.topology.execution_scope is SynchronizationScope.BLOCK
 
 
+def test_partial_transpose_load_records_preserving_wrapper_provenance():
+    plan = _plan(
+        this_block(),
+        _load_store(
+            "load",
+            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+            valid_items=ArgumentBinding.runtime(),
+        ),
+    )
+
+    assert plan.provenance.cpp_class == ("cub::CudaCoopBlockLoadPreservingInvalid")
+
+
+def test_every_block_algorithm_has_distinct_plan_and_artifact_identity():
+    plans = [
+        _plan(this_block(), _load_store("load", algorithm=algorithm))
+        for algorithm in GroupLoadStoreAlgorithm
+    ]
+
+    assert len({plan.semantic_key for plan in plans}) == len(plans)
+    assert len({plan.artifact_key for plan in plans}) == len(plans)
+
+
 @pytest.mark.parametrize(
     ("group", "logical_width", "instances", "index", "rank", "scope"),
     [
@@ -446,10 +469,19 @@ def test_group_load_models_tile_controls_without_storage():
 
 
 @pytest.mark.parametrize("kind", ("load", "store"))
-def test_direct_storage_descriptor_is_not_part_of_plan_identity(kind):
-    implicit = _load_store(kind)
+@pytest.mark.parametrize(
+    "algorithm",
+    (
+        GroupLoadStoreAlgorithm.DIRECT,
+        GroupLoadStoreAlgorithm.STRIPED,
+        GroupLoadStoreAlgorithm.VECTORIZE,
+    ),
+)
+def test_storage_free_descriptor_is_not_part_of_plan_identity(kind, algorithm):
+    implicit = _load_store(kind, algorithm=algorithm)
     explicit = _load_store(
         kind,
+        algorithm=algorithm,
         storage_ownership=StorageOwnership.CALLER,
         storage_sharing="shared",
         storage_size_in_bytes=256,
@@ -520,15 +552,41 @@ def test_direct_semantics_can_be_replaced_with_a_storage_bearing_algorithm(
     assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
 
 
-def test_storage_bearing_contract_is_part_of_plan_identity():
+@pytest.mark.parametrize("kind", ("load", "store"))
+@pytest.mark.parametrize("algorithm", tuple(GroupLoadStoreAlgorithm))
+def test_algorithm_storage_contract_matches_cub(kind, algorithm):
+    plan = _plan(this_block(), _load_store(kind, algorithm=algorithm))
+
+    storage_free = algorithm in {
+        GroupLoadStoreAlgorithm.DIRECT,
+        GroupLoadStoreAlgorithm.STRIPED,
+        GroupLoadStoreAlgorithm.VECTORIZE,
+    }
+    assert plan.temp_storage.ownership is (
+        StorageOwnership.NONE if storage_free else StorageOwnership.IMPLEMENTATION
+    )
+    assert plan.synchronization.storage_reuse_barrier is (
+        SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
+    )
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    (
+        GroupLoadStoreAlgorithm.TRANSPOSE,
+        GroupLoadStoreAlgorithm.WARP_TRANSPOSE,
+        GroupLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+    ),
+)
+def test_storage_bearing_contract_is_part_of_plan_identity(algorithm):
     shared = _load_store(
-        algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+        algorithm=algorithm,
         storage_ownership=StorageOwnership.CALLER,
         storage_sharing="shared",
         storage_auto_sync=True,
     )
     exclusive = _load_store(
-        algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+        algorithm=algorithm,
         storage_ownership=StorageOwnership.CALLER,
         storage_sharing="exclusive",
         storage_auto_sync=False,
