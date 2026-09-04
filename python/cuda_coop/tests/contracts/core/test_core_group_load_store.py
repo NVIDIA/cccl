@@ -14,18 +14,23 @@ from cuda.coop._core import (
     ArgumentKind,
     GroupLoadStoreAlgorithm,
     GroupLoweringTarget,
+    LaunchFactOrigin,
     LaunchFacts,
     ParameterRole,
     PreconditionEnforcement,
+    ResultVisibility,
     StorageOwnership,
     SynchronizationScope,
     UnsupportedReasonCode,
     make_group_primitive_call,
     plan_group_primitive,
+    resolve_thread_group,
     this_block,
+    this_grid,
     this_thread,
     this_warp,
 )
+from cuda.coop._core.group._contracts import _cub_warp_width, _group_topology
 from tests.support.group_planning import _load_store, _plan
 
 
@@ -191,6 +196,124 @@ def test_group_load_and_store_select_complete_block_contracts():
     assert store.result is None
     assert load.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
     assert load.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    assert load.topology.group_kind == "block"
+    assert load.topology.logical_width == 32
+    assert load.topology.instances == 1
+    assert load.topology.instance_index == "cta"
+    assert load.topology.execution_scope is SynchronizationScope.BLOCK
+
+
+@pytest.mark.parametrize(
+    ("group", "logical_width", "instances", "index", "scope"),
+    [
+        (this_thread(), 1, 64, "linear_thread_rank", SynchronizationScope.NONE),
+        (this_warp(), 32, 2, "linear_thread_rank / 32", SynchronizationScope.WARP),
+        (
+            this_warp().group_by(8),
+            8,
+            8,
+            "linear_thread_rank / 8",
+            SynchronizationScope.WARP,
+        ),
+        (
+            this_block().group_by(1),
+            32,
+            2,
+            "linear_thread_rank / 32",
+            SynchronizationScope.WARP,
+        ),
+        (
+            this_block().group_by(2),
+            64,
+            1,
+            "linear_thread_rank / 64",
+            SynchronizationScope.GROUP,
+        ),
+        (this_block(), 64, 1, "cta", SynchronizationScope.BLOCK),
+    ],
+)
+def test_group_topology_is_family_independent(
+    group,
+    logical_width,
+    instances,
+    index,
+    scope,
+):
+    launch = LaunchFacts(exact_block_dim=64)
+    resolved = resolve_thread_group(group, launch).require_supported()
+
+    topology = _group_topology(resolved, launch)
+
+    assert topology.group_kind == resolved.kind
+    assert topology.logical_width == logical_width
+    assert topology.instances == instances
+    assert topology.instance_index == index
+    assert topology.execution_scope is scope
+
+
+def test_shared_cub_warp_width_rules():
+    assert _cub_warp_width(this_warp()) == 32
+    assert _cub_warp_width(this_warp().group_by(8)) == 8
+    with pytest.raises(ValueError, match="power-of-two"):
+        _cub_warp_width(this_warp().group_by(3, exhaustive=False))
+    with pytest.raises(ValueError, match="warp-based"):
+        _cub_warp_width(this_block())
+
+
+def test_grid_family_requires_verified_cooperative_launch():
+    from dataclasses import dataclass
+
+    from cuda.coop._core.group._dispatch import _register_group_operation_family
+
+    @dataclass(frozen=True)
+    class _GridOperation:
+        result_visibility = ResultVisibility.ALL_MEMBERS
+        returns_value = False
+
+        @property
+        def semantic_key(self):
+            return ("test-grid-operation",)
+
+    marker = object()
+    _register_group_operation_family(
+        _GridOperation,
+        classifications=lambda _operation: (),
+        planner=lambda *_args: marker,
+        group_kinds=frozenset({"grid"}),
+        unsupported_group_message="test operation requires a grid",
+    )
+    call = make_group_primitive_call(this_grid(), _GridOperation())
+    asserted = LaunchFacts(
+        exact_block_dim=64,
+        exact_grid_dim=2,
+        exact_cluster_dim=1,
+        cluster_launch=False,
+        cooperative_launch=True,
+        provenance=LaunchFactOrigin(
+            "cluster_launch",
+            "test",
+            verified=True,
+        ),
+    )
+
+    unsupported = plan_group_primitive(call, asserted)
+
+    assert unsupported.target is GroupLoweringTarget.UNSUPPORTED
+    assert unsupported.unsupported.code is UnsupportedReasonCode.LAUNCH_CAPABILITY
+    assert "verified cooperative launch" in unsupported.unsupported.message
+
+    verified = LaunchFacts(
+        exact_block_dim=64,
+        exact_grid_dim=2,
+        exact_cluster_dim=1,
+        cluster_launch=False,
+        cooperative_launch=True,
+        provenance=(
+            LaunchFactOrigin("cluster_launch", "test", verified=True),
+            LaunchFactOrigin("cooperative_launch", "test", verified=True),
+        ),
+    )
+    assert plan_group_primitive(call, verified) is marker
 
 
 def test_group_load_models_tile_controls_and_caller_storage():
