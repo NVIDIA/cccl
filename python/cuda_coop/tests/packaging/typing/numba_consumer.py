@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Generic, Literal, TypeVar
+from typing import Generic, Literal, Protocol, TypeVar
 
 import numpy as np
 from typing_extensions import assert_type
@@ -37,6 +37,15 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
         return self._value
 
 
+class _ReadonlyUInt16Payload(Protocol):
+    items_per_thread: int
+    dtype: object | None
+
+    def __len__(self) -> int: ...
+
+    def __getitem__(self, index: int, /) -> np.uint16: ...
+
+
 def _select_left_int32(left: np.int32, right: np.int32) -> np.int32:
     del right
     return left
@@ -47,7 +56,11 @@ def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
     return left
 
 
-def check_numba_surface(source: object, destination: object) -> None:
+def check_numba_surface(
+    source: object,
+    destination: object,
+    readonly_values: _ReadonlyUInt16Payload,
+) -> None:
     """Exercise Numba declarations through their public package."""
 
     block = coop.this_block()
@@ -211,6 +224,11 @@ def check_numba_surface(source: object, destination: object) -> None:
     )
     assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
     assert_type(coop.reduce(cluster, values, binary_op="min"), np.uint16)
+    assert_type(
+        coop.reduce(cluster, readonly_values, binary_op="min"),
+        np.uint16,
+    )
+    assert_type(coop.sum(cluster, readonly_values), np.uint16)
     assert_type(coop.reduce(cluster, values, binary_op=np.maximum), np.uint16)
     assert_type(
         coop.reduce(mapped_warps, np.int32(4), binary_op=operator.add),
@@ -255,6 +273,10 @@ def check_numba_surface(source: object, destination: object) -> None:
         np.uint16,
     )
     assert_type(
+        coop.sum(block, readonly_values, broadcast=False, algorithm="raking"),
+        np.uint16,
+    )
+    assert_type(
         coop.reduce(
             warp,
             np.int32(4),
@@ -267,6 +289,16 @@ def check_numba_surface(source: object, destination: object) -> None:
         coop.reduce(
             block,
             values,
+            binary_op=_select_left_uint16,
+            broadcast=False,
+            algorithm="warp_reductions",
+        ),
+        np.uint16,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            readonly_values,
             binary_op=_select_left_uint16,
             broadcast=False,
             algorithm="warp_reductions",

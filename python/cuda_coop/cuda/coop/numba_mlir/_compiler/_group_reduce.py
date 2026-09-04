@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from enum import Enum
+
 from numba_cuda_mlir import types
 
 from cuda.coop._core import (
@@ -61,6 +63,24 @@ _BUILTIN_OPERATOR_CPP = {
 }
 
 
+def _normalize_public_algorithm(
+    value: Any,
+    *,
+    operation: str,
+    is_common_root: bool,
+) -> str | None:
+    namespace = "cuda.coop" if is_common_root else "cuda.coop.numba_mlir"
+    if value is None:
+        return None
+    if not isinstance(value, str) or isinstance(value, Enum):
+        raise TypeError(f"{namespace}.{operation} algorithm must be a string")
+    token = value.strip().lower().replace("-", "_")
+    if token not in _PORTABLE_ALGORITHMS:
+        choices = ", ".join(sorted(_PORTABLE_ALGORITHMS))
+        raise ValueError(f"{namespace}.{operation} algorithm must be one of: {choices}")
+    return token
+
+
 class _ReducePlanning:
     """Family-local Reduce semantics over the declared planning context."""
 
@@ -72,12 +92,10 @@ class _ReducePlanning:
         operation: str,
         bound: inspect.BoundArguments,
     ) -> None:
-        bound.arguments["algorithm"] = self._context.validate_common_selector(
-            operation,
-            "algorithm",
-            bound.arguments["algorithm"],
-            _PORTABLE_ALGORITHMS,
-            allow_none=True,
+        bound.arguments["algorithm"] = _normalize_public_algorithm(
+            self._context.constant(bound.arguments["algorithm"]),
+            operation=operation,
+            is_common_root=True,
         )
 
     @staticmethod
@@ -96,6 +114,12 @@ class _ReducePlanning:
         if operation == "sum":
             validate_reduce_operator_dtype("sum", dtype)
             return "sum", "sum", None
+        if (
+            is_common_root
+            and binary_op is not None
+            and (not isinstance(binary_op, str) or isinstance(binary_op, Enum))
+        ):
+            raise TypeError("cuda.coop.reduce binary_op must be a string")
         try:
             canonical = normalize_reduce_operation(binary_op)
         except NotImplementedError:
@@ -254,10 +278,10 @@ class _ReducePlanning:
                 operation=operation,
                 parameter="valid_items",
             )
-        algorithm = (
-            None
-            if self._context.is_none(bound.arguments["algorithm"])
-            else self._context.constant(bound.arguments["algorithm"])
+        algorithm = _normalize_public_algorithm(
+            self._context.constant(bound.arguments["algorithm"]),
+            operation=operation,
+            is_common_root=is_common_root,
         )
         semantics = GroupReduceSemantics(
             make_reduce_semantics(
