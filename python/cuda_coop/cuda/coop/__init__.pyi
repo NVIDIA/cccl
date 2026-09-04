@@ -6,6 +6,7 @@
 
 from ._core.api.exchange import exchange
 from ._core.api.load_store import load, store
+from ._core.api.reduce import reduce, sum
 from ._core.api.shuffle import shuffle
 from ._core.api.temp_storage import TempStorage, TempStorageLike
 from ._core.api.thread_data import ThreadData, ThreadDataLike
@@ -33,8 +34,10 @@ __all__ = [
     "__version__",
     "exchange",
     "load",
+    "reduce",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
