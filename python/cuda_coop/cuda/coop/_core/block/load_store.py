@@ -32,7 +32,7 @@ from .._types import (
     TempStorageParameter,
     Value,
 )
-from ._common import normalize_block_dim
+from ._common import normalize_block_dim, normalize_positive_int
 
 
 class BlockLoadStoreKind(str, Enum):
@@ -275,12 +275,7 @@ def make_block_load_store_semantics(
 
     pointer_offset_overload_cohort = isinstance(include_pointer_offset, bool)
     kind = BlockLoadStoreKind(kind)
-    if (
-        not isinstance(items_per_thread, int)
-        or isinstance(items_per_thread, bool)
-        or items_per_thread < 1
-    ):
-        raise ValueError("items_per_thread must be a positive integer")
+    items_per_thread = normalize_positive_int("items_per_thread", items_per_thread)
     algorithm = _normalize_algorithm(kind, algorithm)
     valid_items = _normalize_optional_binding(valid_items, name="valid_items")
     valid_items = _normalize_i32_binding(valid_items, name="valid_items")
@@ -404,7 +399,7 @@ def make_block_load_store_spec(
         {
             "T": dtype,
             "BLOCK_DIM_X": block_dim[0],
-            "ITEMS_PER_THREAD": items_per_thread,
+            "ITEMS_PER_THREAD": call.items_per_thread,
             "ALGORITHM": call.algorithm_cpp,
             "BLOCK_DIM_Y": block_dim[1],
             "BLOCK_DIM_Z": block_dim[2],

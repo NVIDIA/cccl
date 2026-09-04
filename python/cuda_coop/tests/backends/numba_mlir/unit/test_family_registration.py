@@ -309,9 +309,14 @@ def test_generated_synchronization_uses_metadata_not_struct_names(
     source = algorithm._source_code(
         compile_identity=(90, True, "lto", (), "test-toolchain")
     )[0]
+    mangled_name = algorithm.mangled_name(algorithm.parameters[0])
+    alloc_body = source.split(f"void {mangled_name}_alloc(", 1)[1].split("\n}\n", 1)[0]
+    pointer_body = source.split(f"void {mangled_name}(", 1)[1].split("\n}\n", 1)[0]
 
     for token in ("__syncthreads();", "__syncwarp();"):
         assert (token in source) is (token == sync_token)
+        assert (token in alloc_body) is (token == sync_token)
+        assert token not in pointer_body
     if scope is SynchronizationScope.WARP:
         assert "temp_storages[2]" in source
         assert "[__coop_thread_rank / 32]" in source
