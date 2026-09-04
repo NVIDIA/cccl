@@ -963,3 +963,22 @@ def test_complex_result_accepted_for_a_complex_output():
     )
 
     np.testing.assert_allclose(d_out.copy_to_host(), h_in * 1j)
+
+
+BOOL_INPUT = np.array([0.5, 2.5, 0.0, -1.0], dtype=np.float64)
+
+
+def test_float_result_into_a_bool_output_asks_whether_it_is_nonzero():
+    """A float result stored into a bool output converts as ``x != 0``.
+
+    Truncating the value to an integer instead reports 0.0 as true and 2.0 as
+    false.
+    """
+    d_in = DeviceArray.from_numpy(BOOL_INPUT)
+    d_out = DeviceArray.empty(BOOL_INPUT.shape, np.dtype(np.bool_))
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=lambda x: x * 0.5, num_items=BOOL_INPUT.size
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), (BOOL_INPUT * 0.5) != 0)

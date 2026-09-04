@@ -167,7 +167,10 @@ def _result_store_body(loads: str, return_type):
         fields = ", ".join(f"_r[{i}]" for i in range(num_fields))
         stmts = [f"_r = _op({loads})", f"result[0] = _ResultStruct({fields})"]
         return stmts, {"_ResultStruct": return_type.python_type}
-    if isinstance(return_type, types.Number):
+    # Boolean is deliberately included: it is not a types.Number, and storing a
+    # float result straight into a bool output truncates instead of asking
+    # whether the value is non-zero.
+    if isinstance(return_type, (types.Number, types.Boolean)):
         return [f"result[0] = _convert(_op({loads}), _result_dtype)"], {
             "_convert": _convert_to_declared_type,
             "_result_dtype": as_numpy_dtype(return_type).type,

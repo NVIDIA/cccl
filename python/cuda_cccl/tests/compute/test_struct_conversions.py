@@ -360,3 +360,25 @@ def test_struct_of_different_layout_rejected_for_a_struct_field():
         cuda.compute.unary_transform(
             d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size
         )
+
+
+def test_float_into_a_bool_field_asks_whether_it_is_nonzero():
+    """A float packed into a bool field converts as ``x != 0``.
+
+    Truncating the converted integer instead reports 0.0 as true and 2.0 as
+    false.
+    """
+    Flag = gpu_struct({"a": np.bool_})
+
+    def pack(x):
+        return Flag(x * 0.5)
+
+    h_in = np.array([0.5, 2.5, 0.0, -1.0], dtype=np.float64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Flag.dtype)
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host()["a"], (h_in * 0.5) != 0)

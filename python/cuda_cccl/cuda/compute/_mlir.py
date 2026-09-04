@@ -153,6 +153,14 @@ def convert_number(value, target_type, *, from_signed, to_signed):
         elif isinstance(value_type, mlir_ir.FloatType) and isinstance(
             target_type, mlir_ir.IntegerType
         ):
+            if target_type.width == 1:
+                # Converting a float to a bool asks whether it is non-zero, not
+                # for the low bit of the value truncated to an integer, which is
+                # what an fptoui to i1 gives.  Unordered so a NaN is true, as it
+                # is in Python.  (The backend's integer-to-bool conversion
+                # already compares against zero; its float one does not.)
+                zero = arith.constant(value_type, 0.0)
+                return arith.cmpf(arith.CmpFPredicate.UNE, value, zero)
             if not to_signed:
                 return arith.fptoui(out=target_type, in_=value)
     return convert(value, target_type, signed=from_signed)
