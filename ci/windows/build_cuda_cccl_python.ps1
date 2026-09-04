@@ -28,10 +28,9 @@
     When set, only that version is built and the *merge* step is skipped.
 
 .PARAMETER Cuda13Image
-    Optional. The Docker image name used for a nested build of the CUDA 13
-    wheel when the outer container defaults to CUDA 12.9.  The default value
-    matches the RAPIDS dev-container image that contains the required
-    toolchain: `rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022`.
+    Optional. The pre-pulled GHCR image used for a nested build of the CUDA 13
+    wheel when the outer container defaults to CUDA 12.9. In CI, this defaults
+    to the image injected through `CCCL_CUDA13_IMAGE`.
 
 .PARAMETER SkipUpload
     When set, prevents the final wheel(s) from being uploaded as a GitHub
@@ -57,7 +56,7 @@ Param(
     [string]$OnlyCudaMajor,
 
     [Parameter(Mandatory = $false)]
-    [string]$Cuda13Image = "rapidsai/devcontainers:26.06-cuda13.0-cl14.44-windows2022",
+    [string]$Cuda13Image = $env:CCCL_CUDA13_IMAGE,
 
     [Parameter(Mandatory = $false)]
     [switch]$SkipUpload
@@ -205,8 +204,9 @@ function Invoke-Cuda13NestedBuild {
 
     Write-Host "Launching nested Docker for CUDA 13 build using image: $Cuda13Image"
     $targetFile = Join-Path $ContainerWorkspace 'ci\windows\build_cuda_cccl_python.ps1'
+    # The nested container uses the pre-pulled host cache without registry credentials.
     $dockerArgs = @(
-        'run', '--rm', '-i',
+        'run', '--rm', '-i', '--pull', 'never',
         '--cpu-count', "$cpuCount",
         '--memory', "${memLimitGB}g",
         '--workdir', $ContainerWorkspace,
@@ -317,7 +317,10 @@ try {
 
         # Nested Docker build for CUDA 13 for when we are currently inside a
         # CUDA 12 image.
-        if (-not $OnlyCudaMajor -and $major -eq '13' -and $Cuda13Image) {
+        if (-not $OnlyCudaMajor -and $major -eq '13') {
+            if (-not $Cuda13Image) {
+                throw 'Cuda13Image is required for the nested CUDA 13 build.'
+            }
             Invoke-Cuda13NestedBuild `
                 -Cuda13Image $Cuda13Image `
                 -PyVersion $PyVersion

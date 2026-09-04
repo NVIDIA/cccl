@@ -32,6 +32,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
     runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'windows-latest' }}
     steps:
       - name: Checkout repo
@@ -47,6 +48,7 @@ jobs:
           environment: ${{ matrix.environment }}
           command:     ${{ matrix.command }}
           image:       ${{ matrix.image }}
+          image_dependencies: ${{ matrix.image_dependencies || '{}' }}
           runner:      ${{ matrix.runner }}
           cuda:        ${{ matrix.cuda }}
           host:        ${{ matrix.host }}
