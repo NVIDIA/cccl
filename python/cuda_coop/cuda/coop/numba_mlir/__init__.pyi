@@ -16,6 +16,7 @@ from ._group_scan import (
     scan,
 )
 from ._group_shuffle import shuffle
+from ._stateful_function import StatefulFunction
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData, local, shared
 from ._thread_group import (
@@ -31,6 +32,7 @@ from ._thread_group import (
 
 __all__ = [
     "Hierarchy",
+    "StatefulFunction",
     "TempStorage",
     "TempStorageLike",
     "ThreadData",
