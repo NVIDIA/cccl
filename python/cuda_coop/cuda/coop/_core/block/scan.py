@@ -27,7 +27,7 @@ from ._common import normalize_block_dim
 
 
 class BlockScanAlgorithm(str, Enum):
-    """Public CUB ``BlockScanAlgorithm`` enumerators."""
+    """Normalized CUB ``BlockScanAlgorithm`` values used by core plans."""
 
     RAKING = "::cub::BLOCK_SCAN_RAKING"
     RAKING_MEMOIZE = "::cub::BLOCK_SCAN_RAKING_MEMOIZE"
@@ -37,7 +37,7 @@ class BlockScanAlgorithm(str, Enum):
 def normalize_block_scan_algorithm(
     algorithm: str | BlockScanAlgorithm,
 ) -> BlockScanAlgorithm:
-    """Normalize a public or fully scoped CUB algorithm spelling."""
+    """Normalize an internal or fully scoped CUB algorithm spelling."""
 
     if isinstance(algorithm, BlockScanAlgorithm):
         return algorithm
