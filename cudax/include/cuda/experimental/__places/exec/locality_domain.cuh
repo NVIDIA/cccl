@@ -594,19 +594,15 @@ public:
 
 #if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
   /**
-   * @brief Create physical memory localized to this domain (VMM API).
-   *
-   * Uses `CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN` so the backing store is
-   * placed in the requested domain. When `CUDASTF_DISABLE_LOCALIZED_MEMORY` is
-   * set, falls back to plain device memory.
-   */
-  /**
    * @brief This domain's memory location: the locality domain itself, or
    * plain device memory when localization is disabled or the driver cannot
    * answer the locality-domain query (whole-device degrade — the localized
    * location type would be rejected).
+   *
+   * Shared by the VMM and stream-ordered allocation paths, so both agree on
+   * which memory this place refers to.
    */
-  CUmemLocation __pool_location() const
+  [[nodiscard]] _CCCL_HOST_API CUmemLocation __pool_location() const noexcept
   {
     CUmemLocation location = {};
     if (locality_domain_memory_disabled() || locality_domain_native_raw_count(view_.devid) <= 0)
@@ -623,6 +619,13 @@ public:
     return location;
   }
 
+  /**
+   * @brief Create physical memory localized to this domain (VMM API).
+   *
+   * Uses `CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN` so the backing store is
+   * placed in the requested domain. When `CUDASTF_DISABLE_LOCALIZED_MEMORY` is
+   * set, falls back to plain device memory.
+   */
   CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
   {
     CUmemAllocationProp prop = {};
