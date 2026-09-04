@@ -442,8 +442,9 @@ public:
         : is_even                ? even_smem_bytes_per_channel * num_active_channels
                                  : range_smem_bytes_per_channel * num_active_channels;
       const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
-      const int high_bin_blocks_per_sm       = num_active_channels == 1 ? 2 : 1;
-      const bool use_ordinary_grid_tile      = num_active_channels == 1 && sample_size == 1;
+      // The raw occupancy-sized cache resolves to two resident blocks for four-byte multi-channel RANGE samples.
+      const int high_bin_blocks_per_sm  = num_active_channels == 1 || (!is_even && sample_size == 4) ? 2 : 1;
+      const bool use_ordinary_grid_tile = num_active_channels == 1 && sample_size == 1;
       const int high_bin_grid_pixels_per_block =
         num_active_channels == 1 ? 768 * t_scale(12) : 1024 * (is_even ? t_scale(8) : t_scale(16));
       const auto with_high_bin_threshold = [=](HistogramPolicy policy) {
@@ -544,7 +545,7 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          2048,
+          is_even || sample_size == 8 ? 2048 : 1024,
           4,
           262144,
           4,
