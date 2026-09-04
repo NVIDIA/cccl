@@ -93,7 +93,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def scan(
@@ -110,7 +109,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def scan(
@@ -127,7 +125,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def scan(
@@ -144,7 +141,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -161,7 +157,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -178,7 +173,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -195,7 +189,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ItemPrefixCallable[_ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def scan(
@@ -212,41 +205,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ScalarPrefixCallable[_ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def scan(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: None = None,
-    /,
-    *,
-    mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: _KnownItemScanOperator[_ItemT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ItemPrefixCallable[_ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def scan(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: None = None,
-    /,
-    *,
-    mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: _KnownScalarScanOperator[_ScalarT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ScalarPrefixCallable[_ScalarT],
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -263,7 +221,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def scan(
@@ -280,41 +237,6 @@ def scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def scan(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: _KnownItemScanOperator[_ItemT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def scan(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: _KnownScalarScanOperator[_ScalarT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ScalarT],
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -331,7 +253,6 @@ def scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -348,7 +269,6 @@ def scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def scan(
@@ -365,7 +285,6 @@ def scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -381,7 +300,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exclusive_scan(
@@ -397,7 +315,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exclusive_scan(
@@ -413,7 +330,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -429,7 +345,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -445,7 +360,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ItemPrefixCallable[_ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exclusive_scan(
@@ -461,39 +375,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ScalarPrefixCallable[_ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def exclusive_scan(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: None = None,
-    /,
-    *,
-    scan_op: _KnownItemScanOperator[_ItemT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ItemPrefixCallable[_ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def exclusive_scan(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: None = None,
-    /,
-    *,
-    scan_op: _KnownScalarScanOperator[_ScalarT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ScalarPrefixCallable[_ScalarT],
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -509,7 +390,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exclusive_scan(
@@ -525,39 +405,6 @@ def exclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def exclusive_scan(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    scan_op: _KnownItemScanOperator[_ItemT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def exclusive_scan(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    scan_op: _KnownScalarScanOperator[_ScalarT] | None = None,
-    initial_value: None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ScalarT],
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -573,7 +420,6 @@ def exclusive_scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_scan(
@@ -589,7 +435,6 @@ def exclusive_scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_scan(
@@ -604,7 +449,6 @@ def inclusive_scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def inclusive_scan(
@@ -619,7 +463,6 @@ def inclusive_scan(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_scan(
@@ -634,7 +477,6 @@ def inclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ItemPrefixCallable[_ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def inclusive_scan(
@@ -649,37 +491,6 @@ def inclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ScalarPrefixCallable[_ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def inclusive_scan(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: None = None,
-    /,
-    *,
-    scan_op: _KnownItemScanOperator[_ItemT] | None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ItemPrefixCallable[_ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def inclusive_scan(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: None = None,
-    /,
-    *,
-    scan_op: _KnownScalarScanOperator[_ScalarT] | None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ScalarPrefixCallable[_ScalarT],
 ) -> _ScalarT: ...
 @overload
 def inclusive_scan(
@@ -694,7 +505,6 @@ def inclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def inclusive_scan(
@@ -709,37 +519,6 @@ def inclusive_scan(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def inclusive_scan(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    scan_op: _KnownItemScanOperator[_ItemT] | None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def inclusive_scan(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    scan_op: _KnownScalarScanOperator[_ScalarT] | None = None,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ScalarT],
 ) -> _ScalarT: ...
 @overload
 def inclusive_scan(
@@ -754,7 +533,6 @@ def inclusive_scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_sum(
@@ -768,7 +546,6 @@ def exclusive_sum(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exclusive_sum(
@@ -782,7 +559,6 @@ def exclusive_sum(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def exclusive_sum(
@@ -796,7 +572,6 @@ def exclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ItemPrefixCallable[_ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exclusive_sum(
@@ -810,35 +585,6 @@ def exclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ScalarPrefixCallable[_ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def exclusive_sum(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: None = None,
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ItemPrefixCallable[_ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def exclusive_sum(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: None = None,
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ScalarPrefixCallable[_ScalarT],
 ) -> _ScalarT: ...
 @overload
 def exclusive_sum(
@@ -852,7 +598,6 @@ def exclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def exclusive_sum(
@@ -866,35 +611,6 @@ def exclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def exclusive_sum(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def exclusive_sum(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ScalarT],
 ) -> _ScalarT: ...
 @overload
 def exclusive_sum(
@@ -908,7 +624,6 @@ def exclusive_sum(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_sum(
@@ -922,7 +637,6 @@ def inclusive_sum(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ItemT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def inclusive_sum(
@@ -936,7 +650,6 @@ def inclusive_sum(
     valid_items: None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
 @overload
 def inclusive_sum(
@@ -950,7 +663,6 @@ def inclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ItemPrefixCallable[_ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def inclusive_sum(
@@ -964,35 +676,6 @@ def inclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: _ScalarPrefixCallable[_ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def inclusive_sum(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: None = None,
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ItemPrefixCallable[_ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def inclusive_sum(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: None = None,
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: _ScalarPrefixCallable[_ScalarT],
 ) -> _ScalarT: ...
 @overload
 def inclusive_sum(
@@ -1006,7 +689,6 @@ def inclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ItemT],
-    block_prefix_callback_op: None = None,
 ) -> ThreadDataLike[_ItemT]: ...
 @overload
 def inclusive_sum(
@@ -1020,35 +702,6 @@ def inclusive_sum(
     valid_items: None = None,
     aggregate_output: None = None,
     prefix_op: StatefulFunction[_PrefixStateT, _ScalarT],
-    block_prefix_callback_op: None = None,
-) -> _ScalarT: ...
-@overload
-def inclusive_sum(
-    group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT],
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ItemT],
-) -> ThreadDataLike[_ItemT]: ...
-@overload
-def inclusive_sum(
-    group: BlockGroup,
-    value: _ScalarT,
-    prefix_state: ThreadDataLike[_PrefixStateT],
-    /,
-    *,
-    algorithm: ScanAlgorithm | None = None,
-    temp_storage: TempStorageLike | None = None,
-    valid_items: None = None,
-    aggregate_output: None = None,
-    prefix_op: None = None,
-    block_prefix_callback_op: StatefulFunction[_PrefixStateT, _ScalarT],
 ) -> _ScalarT: ...
 @overload
 def inclusive_sum(
@@ -1062,5 +715,4 @@ def inclusive_sum(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ScalarT] | None = None,
     prefix_op: None = None,
-    block_prefix_callback_op: None = None,
 ) -> _ScalarT: ...
