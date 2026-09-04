@@ -71,6 +71,7 @@ class GroupTopologyContract:
     logical_width: int
     instances: int
     instance_index: str
+    thread_rank: str
     execution_scope: SynchronizationScope
 
     def __post_init__(self) -> None:
@@ -80,8 +81,11 @@ class GroupTopologyContract:
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value < 1:
                 raise ValueError(f"group topology {name} must be a positive integer")
-        if not self.instance_index:
-            raise ValueError("group topology instance index must not be empty")
+        for name in ("instance_index", "thread_rank"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value:
+                label = name.replace("_", " ")
+                raise ValueError(f"group topology {label} must be a non-empty string")
         object.__setattr__(
             self,
             "execution_scope",

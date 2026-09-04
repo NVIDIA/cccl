@@ -13,7 +13,12 @@ from numba_cuda_mlir import types
 from numba_cuda_mlir.numbair_transforms import ir
 
 import cuda.coop._core.api as _portable_api
-from cuda.coop._core import ArgumentBinding
+from cuda.coop._core import (
+    ArgumentBinding,
+    GroupLoweringPlan,
+    StorageOwnership,
+    SynchronizationScope,
+)
 
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
@@ -22,6 +27,7 @@ from ._group_planner_support import (
     _cuda_module,
     _typed_group_payload_like,
 )
+from ._operations import StorageABI, factory_operation
 from ._parameters import (
     _python_scalar_dtype,
     _scalar_cast_dtype,
@@ -33,36 +39,38 @@ from ._parameters import (
 class GroupPlanningContext:
     """Stable cross-family view of one whole-function planner."""
 
+    __slots__ = ("__planner",)
+
     def __init__(self, planner: Any) -> None:
-        self._planner = planner
+        self.__planner = planner
 
     @property
     def launch(self) -> Any:
-        return self._planner.launch
+        return self.__planner.launch
 
     def _definition(self, value: Any) -> Any:
-        return self._planner._definition(value)
+        return self.__planner._definition(value)
 
     def _all_definitions(self, value: ir.Var) -> tuple[Any, ...]:
-        return self._planner._all_definitions(value)
+        return self.__planner._all_definitions(value)
 
     def _callable(self, value: Any) -> Any:
-        return self._planner._callable(value)
+        return self.__planner._callable(value)
 
     def constant(self, value: Any) -> Any:
-        return self._planner._constant(value)
+        return self.__planner._constant(value)
 
     def try_constant(self, value: Any) -> tuple[bool, Any]:
-        return self._planner._try_constant(value)
+        return self.__planner._try_constant(value)
 
     def try_static_scalar(self, value: Any) -> tuple[bool, Any]:
-        return self._planner._try_static_scalar(value)
+        return self.__planner._try_static_scalar(value)
 
     def try_static_scalar_provenance(self, value: Any) -> tuple[bool, Any]:
-        return self._planner._try_static_scalar_provenance(value)
+        return self.__planner._try_static_scalar_provenance(value)
 
     def bind(self, function: Any, call: ir.Expr) -> Any:
-        return self._planner._bind(function, call)
+        return self.__planner._bind(function, call)
 
     def validate_common_selector(
         self,
@@ -73,7 +81,7 @@ class GroupPlanningContext:
         *,
         allow_none: bool = False,
     ) -> Any:
-        return self._planner._validate_common_selector(
+        return self.__planner._validate_common_selector(
             operation,
             parameter,
             value,
@@ -82,23 +90,23 @@ class GroupPlanningContext:
         )
 
     def is_none(self, value: Any) -> bool:
-        return self._planner._is_none(value)
+        return self.__planner._is_none(value)
 
     def is_array(self, operation: str, value: Any) -> bool:
-        return self._planner._array_operand_state(operation, value)
+        return self.__planner._array_operand_state(operation, value)
 
     def is_thread_data(self, operation: str, parameter: str, value: Any) -> bool:
-        return self._planner._thread_data_operand_state(
+        return self.__planner._thread_data_operand_state(
             operation,
             parameter,
             value,
         )
 
     def array_extent(self, value: Any) -> int | None:
-        return self._planner._array_extent(value)
+        return self.__planner._array_extent(value)
 
     def new_var(self, scope: Any, loc: ir.Loc, stem: str) -> ir.Var:
-        return self._planner._new_var(scope, loc, stem)
+        return self.__planner._new_var(scope, loc, stem)
 
     def value_var(
         self,
@@ -109,7 +117,7 @@ class GroupPlanningContext:
         stem: str,
         value: Any,
     ) -> ir.Var:
-        return self._planner._value_var(
+        return self.__planner._value_var(
             statements,
             scope=scope,
             loc=loc,
@@ -117,20 +125,97 @@ class GroupPlanningContext:
             value=value,
         )
 
-    def rewrite_call(self, *args: Any, **kwargs: Any) -> list[Any]:
-        return self._planner._rewritten_call(*args, **kwargs)
+    @staticmethod
+    def _validate_provider_contract(
+        lowering_plan: GroupLoweringPlan,
+        factory: Any,
+    ) -> None:
+        if not isinstance(lowering_plan, GroupLoweringPlan):
+            raise TypeError("lowering_plan must be a GroupLoweringPlan")
+        if lowering_plan.unsupported is not None:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir cannot select a provider for an "
+                "unsupported lowering plan"
+            )
+        metadata = factory_operation(factory)
+        if metadata is None:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir lowering plan selected an unregistered "
+                "provider factory"
+            )
+        assert lowering_plan.topology is not None
+        assert lowering_plan.synchronization is not None
+        assert lowering_plan.temp_storage is not None
+        expected = {
+            "storage_abi": (
+                StorageABI.NONE
+                if lowering_plan.temp_storage.ownership is StorageOwnership.NONE
+                else StorageABI.LEADING_POINTER
+            ),
+            "execution_scope": lowering_plan.topology.execution_scope,
+            "synchronization_scope": (
+                lowering_plan.synchronization.storage_reuse_barrier
+            ),
+        }
+        mismatches = [
+            f"{name}={getattr(metadata, name).value!r} (plan {planned.value!r})"
+            for name, planned in expected.items()
+            if name != "synchronization_scope"
+            if getattr(metadata, name) is not planned
+        ]
+        planned_synchronization = expected["synchronization_scope"]
+        allowed_synchronization = {planned_synchronization}
+        if (
+            planned_synchronization is SynchronizationScope.NONE
+            and lowering_plan.temp_storage.ownership is StorageOwnership.CALLER
+            and not lowering_plan.temp_storage.auto_sync
+        ):
+            allowed_synchronization.add(expected["execution_scope"])
+        if metadata.synchronization_scope not in allowed_synchronization:
+            mismatches.append(
+                "synchronization_scope="
+                f"{metadata.synchronization_scope.value!r} "
+                f"(plan {planned_synchronization.value!r})"
+            )
+        if mismatches:
+            details = ", ".join(mismatches)
+            raise GroupRewriteError(
+                f"cuda.coop.numba_mlir provider {metadata.operation!r} "
+                f"metadata disagrees with its lowering plan: {details}"
+            )
+
+    def rewrite_call(
+        self,
+        inst: ir.Assign,
+        *,
+        lowering_plan: GroupLoweringPlan,
+        factory: Any,
+        args: list[Any],
+        kwargs: dict[str, Any],
+        return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
+        common_root_operation: str | None = None,
+    ) -> list[Any]:
+        self._validate_provider_contract(lowering_plan, factory)
+        return self.__planner._rewritten_call(
+            inst,
+            factory=factory,
+            args=args,
+            kwargs=kwargs,
+            return_alias=return_alias,
+            common_root_operation=common_root_operation,
+        )
 
     def copy_array_payload(self, *args: Any, **kwargs: Any) -> None:
-        self._planner._copy_array_payload(*args, **kwargs)
+        self.__planner._copy_array_payload(*args, **kwargs)
 
     def typed_payload_like(self, *args: Any, **kwargs: Any) -> ir.Var:
-        return self._planner._typed_payload_like(*args, **kwargs)
+        return self.__planner._typed_payload_like(*args, **kwargs)
 
     def box_group_operand(self, *args: Any, **kwargs: Any) -> tuple[ir.Var, bool]:
-        return self._planner._boxed_group_operand(*args, **kwargs)
+        return self.__planner._boxed_group_operand(*args, **kwargs)
 
     def result_value(self, *args: Any, **kwargs: Any) -> ir.Var:
-        return self._planner._result_value(*args, **kwargs)
+        return self.__planner._result_value(*args, **kwargs)
 
     def planning_binding(self, value: Any) -> ArgumentBinding:
         resolved, constant = self.try_static_scalar(value)
@@ -173,7 +258,7 @@ class GroupPlanningContext:
         index: int | None,
         seen: set[str],
     ) -> Any | None:
-        resolved = self._planner._result_source(definition, index)
+        resolved = self.__planner._result_source(definition, index)
         if resolved is None:
             return None
         result, bound = resolved
@@ -243,10 +328,10 @@ class GroupPlanningContext:
         if isinstance(definition, ir.Var):
             return self.dtype(definition, seen=seen)
         if isinstance(definition, ir.Arg):
-            if not 0 <= definition.index < len(self._planner.state.args):
+            if not 0 <= definition.index < len(self.__planner.state.args):
                 return None
             return self._dtype_from_numba_type(
-                self._planner.state.args[definition.index]
+                self.__planner.state.args[definition.index]
             )
         if isinstance(definition, (ir.Global, ir.FreeVar, ir.Const)):
             return _python_scalar_dtype(definition.value)
@@ -368,7 +453,7 @@ class GroupPlanningContext:
             message="cuda.coop.numba_mlir payload aliases have inconsistent dtypes",
         )
 
-    def store_write_dtype(self, payload: Any) -> Any | None:
+    def payload_write_dtype(self, payload: Any) -> Any | None:
         """Infer an untyped payload from values written through its aliases."""
 
         if not isinstance(payload, ir.Var):
@@ -377,7 +462,7 @@ class GroupPlanningContext:
         changed = True
         while changed:
             changed = False
-            for block in self._planner.func_ir.blocks.values():
+            for block in self.__planner.func_ir.blocks.values():
                 for statement in block.body:
                     if not isinstance(statement, ir.Assign):
                         continue
@@ -409,7 +494,7 @@ class GroupPlanningContext:
 
         inferred = None
         static_setitem_cls = getattr(ir, "StaticSetItem", None)
-        for block in self._planner.func_ir.blocks.values():
+        for block in self.__planner.func_ir.blocks.values():
             for statement in block.body:
                 if isinstance(statement, ir.SetItem) or (
                     static_setitem_cls is not None
@@ -430,8 +515,8 @@ class GroupPlanningContext:
                     inferred = value_dtype
                 elif inferred != value_dtype:
                     raise TypeError(
-                        "cuda.coop.numba_mlir.store could not infer one "
-                        "consistent dtype from ThreadData writes"
+                        "cuda.coop.numba_mlir could not infer one consistent "
+                        "dtype from payload writes"
                     )
         return inferred
 

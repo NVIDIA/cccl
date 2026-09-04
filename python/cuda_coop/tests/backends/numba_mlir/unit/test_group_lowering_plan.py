@@ -36,6 +36,28 @@ def _assigned_var(func_ir, name):
     )
 
 
+def test_group_planning_context_exposes_only_declared_operations():
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
+
+    launch = object()
+    planner = SimpleNamespace(
+        launch=launch,
+        _constant=lambda value: ("constant", value),
+    )
+    context = GroupPlanningContext(planner)
+
+    assert context.launch is launch
+    assert context.constant("value") == ("constant", "value")
+    assert not hasattr(context, "_planner")
+    assert not hasattr(context, "__dict__")
+    with pytest.raises(AttributeError):
+        context._planner = planner
+    with pytest.raises(AttributeError):
+        _ = context.state
+
+
 def test_group_planner_tracks_runtime_scalar_expression_provenance():
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
@@ -269,6 +291,8 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
         "valid_items",
         "oob_default",
     )
+    assert plan.topology is not None
+    assert plan.topology.thread_rank == "linear_thread_rank"
     assert plan.result is not None
     assert plan.result.visibility is ResultVisibility.PER_MEMBER
     assert plan.result.operand_kind is GroupOperandKind.ARRAY
@@ -300,6 +324,168 @@ def test_direct_load_provider_is_selected_from_complete_core_plan(monkeypatch):
     assert semantics.valid_items.value == 31
     assert semantics.oob_default.kind is BindingKind.STATIC
     assert semantics.oob_default.value == -1
+
+
+@pytest.mark.parametrize(
+    ("metadata_overrides", "diagnostic"),
+    [
+        ({"storage_abi": "leading_pointer"}, "storage_abi"),
+        ({"execution_scope": "warp"}, "execution_scope"),
+        ({"synchronization_scope": "block"}, "synchronization_scope"),
+        (
+            {"execution_scope": "warp", "synchronization_scope": "warp"},
+            "synchronization_scope",
+        ),
+    ],
+)
+def test_group_plan_rejects_incompatible_provider_metadata(
+    monkeypatch,
+    metadata_overrides,
+    diagnostic,
+):
+    from dataclasses import replace
+
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir import _lowering
+    from cuda.coop.numba_mlir._compiler import _group_planning
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
+    from cuda.coop.numba_mlir._compiler._operations import factory_operation
+
+    metadata = factory_operation(_lowering.load)
+    assert metadata is not None
+    metadata = replace(metadata, **metadata_overrides)
+    monkeypatch.setattr(
+        _group_planning,
+        "factory_operation",
+        lambda _factory: metadata,
+    )
+
+    def memory(source):
+        output = coop.ThreadData(2, dtype=types.int32)
+        return coop.load(coop.this_block(), source, output)
+
+    array_type = types.Array(types.int32, 1, "C")
+    with pytest.raises(GroupRewriteError, match=diagnostic):
+        _planner(memory, arg_types=(array_type,)).run()
+
+
+def test_group_plan_allows_declared_sync_scope_when_auto_sync_is_disabled(
+    monkeypatch,
+):
+    from dataclasses import replace
+
+    from cuda.coop._core import (
+        StorageOwnership,
+        SynchronizationContract,
+        SynchronizationScope,
+        TempStorageContract,
+        this_block,
+    )
+    from cuda.coop.numba_mlir._compiler import _group_planning
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
+    from cuda.coop.numba_mlir._compiler._operations import (
+        FactoryOperation,
+        StorageABI,
+    )
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(this_block(), _load_store("load"))
+    plan = replace(
+        plan,
+        synchronization=SynchronizationContract(
+            converged_entry=True,
+            storage_reuse_barrier=SynchronizationScope.NONE,
+        ),
+        temp_storage=TempStorageContract(
+            ownership=StorageOwnership.CALLER,
+            address_space="shared",
+            cpp_type="TestStorage",
+            instances=1,
+            instance_index="cta",
+            exact_layout_required=True,
+            sharing="exclusive",
+            auto_sync=False,
+        ),
+    )
+    metadata = FactoryOperation(
+        operation="test",
+        namespace="test",
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.BLOCK,
+    )
+    monkeypatch.setattr(
+        _group_planning,
+        "factory_operation",
+        lambda _factory: metadata,
+    )
+
+    GroupPlanningContext._validate_provider_contract(plan, object())
+
+
+def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
+    monkeypatch,
+):
+    from dataclasses import replace
+
+    from cuda.coop._core import (
+        StorageOwnership,
+        SynchronizationContract,
+        SynchronizationScope,
+        TempStorageContract,
+        this_block,
+    )
+    from cuda.coop.numba_mlir._compiler import _group_planning
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
+    from cuda.coop.numba_mlir._compiler._operations import (
+        FactoryOperation,
+        StorageABI,
+    )
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(this_block(), _load_store("load"))
+    plan = replace(
+        plan,
+        synchronization=SynchronizationContract(
+            converged_entry=True,
+            storage_reuse_barrier=SynchronizationScope.NONE,
+        ),
+        temp_storage=TempStorageContract(
+            ownership=StorageOwnership.IMPLEMENTATION,
+            address_space="shared",
+            cpp_type="TestStorage",
+            instances=None,
+            instance_index=None,
+            exact_layout_required=False,
+            auto_sync=False,
+        ),
+    )
+    metadata = FactoryOperation(
+        operation="test",
+        namespace="test",
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.BLOCK,
+    )
+    monkeypatch.setattr(
+        _group_planning,
+        "factory_operation",
+        lambda _factory: metadata,
+    )
+
+    with pytest.raises(GroupRewriteError, match="synchronization_scope"):
+        GroupPlanningContext._validate_provider_contract(plan, object())
 
 
 def test_nonblock_plan_is_typed_before_provider_selection(monkeypatch):

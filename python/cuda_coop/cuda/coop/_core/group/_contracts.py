@@ -68,6 +68,7 @@ def _group_topology(
             raise ValueError("thread contracts require exact block dimensions")
         instances = block_threads
         index = "linear_thread_rank"
+        thread_rank = "0"
         execution_scope = SynchronizationScope.NONE
     elif kind in {"warp", "threads_within_warp"}:
         if block_threads is None:
@@ -76,6 +77,7 @@ def _group_topology(
             raise ValueError("group width must divide the enclosing block size")
         instances = block_threads // group_size
         index = f"linear_thread_rank / {group_size}"
+        thread_rank = f"linear_thread_rank % {group_size}"
         execution_scope = SynchronizationScope.WARP
     elif kind == "warps_within_block":
         if block_threads is None:
@@ -84,6 +86,7 @@ def _group_topology(
             raise ValueError("group width must divide the enclosing block size")
         instances = block_threads // group_size
         index = f"linear_thread_rank / {group_size}"
+        thread_rank = f"linear_thread_rank % {group_size}"
         execution_scope = (
             SynchronizationScope.WARP
             if group_size == 32
@@ -92,18 +95,22 @@ def _group_topology(
     elif kind == "block":
         instances = 1
         index = "cta"
+        thread_rank = "linear_thread_rank"
         execution_scope = SynchronizationScope.BLOCK
     elif kind == "cluster":
         instances = 1
         index = "cluster"
+        thread_rank = "group.thread_rank()"
         execution_scope = SynchronizationScope.GROUP
     elif kind == "grid":
         instances = 1
         index = "grid"
+        thread_rank = "group.thread_rank()"
         execution_scope = SynchronizationScope.GROUP
     else:
         instances = resolved_group.groups_per_parent or 1
         index = "group.rank(parent)"
+        thread_rank = "group.thread_rank()"
         execution_scope = SynchronizationScope.GROUP
 
     return GroupTopologyContract(
@@ -111,6 +118,7 @@ def _group_topology(
         logical_width=group_size,
         instances=instances,
         instance_index=index,
+        thread_rank=thread_rank,
         execution_scope=execution_scope,
     )
 
