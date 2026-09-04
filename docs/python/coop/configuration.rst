@@ -10,17 +10,11 @@ Configuration
 Installation
 ------------
 
-Install ``cuda-coop`` without adding Python package dependencies:
+The base install has no Python package dependencies:
 
 .. code-block:: console
 
    python -m pip install cuda-coop
-
-The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
-Thrust, and libcu++ headers. The base install declares no Python
-package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
-using an integration requires its backend dependencies to be installed.
 
 For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 
@@ -29,17 +23,19 @@ For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
    python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
    # Use numba-cuda-mlir-cu12 with CUDA 12.
 
-Both commands install the same ``cuda-coop`` wheel with the same DSL
-integrations. The extra only adds the dependency requirements declared in
-``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
-the selected CUDA major version. The current integration requires
-``numba-cuda-mlir>=0.5.0,<0.6``.
-Installing an extra does not register a backend in a running Python process;
-see :ref:`installation versus registration <coop-faq-installed-extra>`.
+The base ``cuda-coop`` distribution contains the portable API, type
+declarations, and a coherent bundle of CUB, Thrust, and libcu++ headers.
+Installed-wheel compilation uses that bundle by default. Development from a
+CCCL source checkout uses the matching checkout headers, and
+``CUDA_COOP_CCCL_ROOT`` can select another source checkout or ``cuda-coop``
+header bundle. Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or
+an accessible GPU.
 
-Installed-wheel compilation uses the bundled CCCL headers. Development from a
-CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
-select another source checkout or ``cuda-coop`` header bundle.
+The Numba backend is intentionally limited to
+``numba-cuda-mlir>=0.5.0,<0.6``. Its private compiler API module
+provides access to overload templates, IR, datamodels, and the registries
+needed to roll back a failed activation. It does not adapt between runtime
+versions. Other runtime series are rejected before compiler registries change.
 
 
 With Numba-CUDA-MLIR 0.5.x, activating the ``cuda.coop`` backend disables
@@ -50,15 +46,9 @@ by ``CUDA_COOP_ENABLE_CACHE`` below is separate.
 Runtime environment variables
 -----------------------------
 
-For the Boolean switches below, *truthy* means any value other than the
-empty string, ``0``, ``false``, ``no``, or ``off``. For example, ``1``,
-``true``, ``yes``, and ``on`` are all truthy. Values are case-insensitive,
-and leading and trailing whitespace is ignored. An unset variable is false.
-
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
-   :mod:`cuda.coop` import. Explicit ``coop.register(...)`` and
-   backend imports still work.
+   :mod:`cuda.coop` import. Explicit registration and qualified-backend import still work.
 
 ``CUDA_COOP_CCCL_ROOT``
    Selects a CCCL source checkout or a ``cuda-coop`` header bundle. An invalid
@@ -98,10 +88,11 @@ and leading and trailing whitespace is ignored. An unset variable is false.
    Supplies ``<value>/include`` after ``CUDA_HOME`` under the same fallback
    rule.
 
-On Linux and other POSIX systems, ``/usr/local/cuda/include`` is tried last.
-Windows uses ``cuda-pathfinder`` or the configured toolkit roots above; it
-does not try the Unix fallback. If no valid CUDA include directory is found,
-compilation reports a header-resolution error.
+If those mechanisms do not resolve CUDA headers,
+``/usr/local/cuda/include`` is tried last.
+
+For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
+``no``, ``off``, and the empty string are false.
 
 Build-time CMake variables
 --------------------------
