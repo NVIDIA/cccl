@@ -2,12 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
 
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+_LAZY_FAKE_FAMILY_MODULE = f"{__package__}._lazy_fake_family"
 
 
 @pytest.fixture(autouse=True)
@@ -27,12 +30,18 @@ def _restore_private_registries():
         _operations._REWRITE_OPERATIONS,
     )
     snapshots = tuple(dict(registry) for registry in registries)
+    missing = object()
+    family_module = sys.modules.get(_LAZY_FAKE_FAMILY_MODULE, missing)
     try:
         yield
     finally:
         for registry, snapshot in zip(registries, snapshots):
             registry.clear()
             registry.update(snapshot)
+        if family_module is missing:
+            sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+        else:
+            sys.modules[_LAZY_FAKE_FAMILY_MODULE] = family_module
 
 
 @dataclass(frozen=True)
@@ -54,250 +63,203 @@ class _FakeSemantics:
         return True
 
 
-def test_core_family_registration_dispatches_classification_and_planning():
-    from cuda.coop._core import (
-        ArgumentKind,
-        LaunchFacts,
-        ParameterClassification,
-        ParameterRole,
-        make_group_primitive_call,
-        plan_group_primitive,
-        this_block,
-    )
+@pytest.mark.parametrize(
+    ("override", "error", "message"),
+    [
+        ({"classifications": None}, TypeError, "classifications must be callable"),
+        ({"planner": None}, TypeError, "planner must be callable"),
+        ({"group_kinds": frozenset()}, ValueError, "group_kinds must not be empty"),
+        (
+            {"group_kinds": frozenset({"not_a_group"})},
+            ValueError,
+            "group_kinds contains unsupported values",
+        ),
+        (
+            {"unsupported_group_message": " "},
+            ValueError,
+            "unsupported_group_message must be a non-empty string",
+        ),
+    ],
+)
+def test_core_family_registration_rejects_invalid_contracts(
+    override,
+    error,
+    message,
+):
     from cuda.coop._core.group import _dispatch
 
-    classification = ParameterClassification(
-        "value",
-        ArgumentKind.RUNTIME,
-        ParameterRole.INPUT,
-    )
-    semantics = _FakeSemantics("registered")
-    planned = object()
-    events = []
+    arguments = {
+        "classifications": lambda operation: (),
+        "planner": lambda call, group, launch, operation: object(),
+        "group_kinds": frozenset({"block"}),
+        "unsupported_group_message": "test family requires a block",
+    }
+    arguments.update(override)
 
-    def classify(operation):
-        events.append(("classify", operation))
-        return (classification,)
+    with pytest.raises(error, match=message):
+        _dispatch._register_group_operation_family(_FakeSemantics, **arguments)
 
-    def plan(call, resolved_group, launch, operation):
-        events.append(("plan", call, resolved_group, launch, operation))
-        return planned
 
-    _dispatch._register_group_operation_family(
-        _FakeSemantics,
-        classifications=classify,
-        planner=plan,
-        group_kinds=frozenset({"block"}),
-        unsupported_group_message="fake family requires a block",
+def test_group_primitive_registration_rejects_noncallable_hooks():
+    from cuda.coop.numba_mlir._compiler._operations import (
+        GroupPrimitiveRegistration,
     )
 
-    call = make_group_primitive_call(this_block(), semantics)
-    launch = LaunchFacts(exact_block_dim=(32, 1, 1))
-
-    assert call.argument_classifications == (classification,)
-    assert plan_group_primitive(call, launch) is planned
-    assert events[0] == ("classify", semantics)
-    _, planned_call, resolved_group, planned_launch, planned_operation = events[1]
-    assert planned_call is call
-    assert resolved_group.kind == "block"
-    assert resolved_group.static_size == 32
-    assert resolved_group.hierarchy.block_dim == (32, 1, 1)
-    assert planned_launch is launch
-    assert planned_operation is semantics
-
-
-def _register_fake_group_frontends(operation):
-    from cuda.coop._core.api import _dispatch as portable_dispatch
-    from cuda.coop.numba_mlir._compiler import _operations
-
-    @portable_dispatch._portable_group_operation(
-        operation,
-        group_kinds=("block",),
-    )
-    def portable_marker(group, value):
-        del group, value
-
-    @_operations.group_operation(operation, family_module=__name__)
-    def qualified_marker(group, value):
-        del group, value
-
-    return portable_marker, qualified_marker
-
-
-def test_group_frontend_registries_require_exact_callable_identity():
-    from cuda.coop._core.api import _dispatch as portable_dispatch
-    from cuda.coop.numba_mlir._compiler import _operations
-    from cuda.coop.numba_mlir._compiler._group_planner_support import (
-        _group_operation_name,
-    )
-
-    operation = "_test_exact_family"
-    portable_marker, qualified_marker = _register_fake_group_frontends(operation)
-
-    assert (
-        portable_dispatch._portable_group_operation_name(portable_marker) == operation
-    )
-    assert _operations.group_operation_name(qualified_marker) == operation
-    assert _group_operation_name(portable_marker) == operation
-    assert _group_operation_name(qualified_marker) == operation
-
-    for marker in (portable_marker, qualified_marker):
-
-        def impostor(group, value):
-            del group, value
-
-        impostor.__module__ = marker.__module__
-        impostor.__name__ = marker.__name__
-        impostor.__cuda_coop_backend_member__ = operation
-        assert portable_dispatch._portable_group_operation_name(impostor) is None
-        assert _operations.group_operation_name(impostor) is None
-        assert _group_operation_name(impostor) is None
-
-
-@pytest.mark.parametrize("portable", [True, False], ids=["portable", "qualified"])
-def test_group_call_planner_selects_registered_family_lowerer(portable):
-    from numba_cuda_mlir import types
-    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
-    from numba_cuda_mlir.numbair_transforms import ir
-
-    import cuda.coop as portable_coop
-    import cuda.coop.numba_mlir as qualified_coop
-    from cuda.coop.numba_mlir._compiler import _operations
-    from cuda.coop.numba_mlir._compiler._group_planner import (
-        _GroupCallPlanner,
-        has_group_markers,
-    )
-    from cuda.coop.numba_mlir._compiler._group_planning import (
-        GroupPlanningContext,
-    )
-
-    operation = "_test_planned_family"
-    portable_marker, qualified_marker = _register_fake_group_frontends(operation)
-    marker = portable_marker if portable else qualified_marker
-    group_factory = portable_coop.this_block if portable else qualified_coop.this_block
-    lowered = []
-
-    def lower(
-        context,
-        inst,
-        *,
-        operation,
-        group,
-        bound,
-        is_common_root,
+    with pytest.raises(TypeError, match="lower must be callable"):
+        GroupPrimitiveRegistration(lower=None)
+    with pytest.raises(
+        TypeError,
+        match="validate_common_arguments must be callable or None",
     ):
-        lowered.append(
-            {
-                "context": context,
-                "operation": operation,
-                "group": group,
-                "bound": bound,
-                "is_common_root": is_common_root,
-            }
+        GroupPrimitiveRegistration(
+            lower=lambda: None,
+            validate_common_arguments=object(),
         )
-        return [ir.Assign(ir.Const(17, inst.loc), inst.target, inst.loc)]
 
-    _operations.register_group_primitive(operation, lower=lower)
 
-    def kernel(value):
-        return marker(group_factory(), value)
-
-    func_ir = run_frontend(kernel)
-    state = SimpleNamespace(func_ir=func_ir, args=(types.int32,))
-    planner = _GroupCallPlanner(
-        state,
-        {"block": (32, 1, 1), "grid": (1, 1, 1), "cluster": None},
+def test_factory_registration_rejects_noncallable_provider():
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._compiler._operations import (
+        StorageABI,
+        register_factory,
     )
 
-    assert has_group_markers(func_ir)
-    assert planner.run()
-    assert not has_group_markers(func_ir)
-    assert len(lowered) == 1
-    invocation = lowered[0]
-    assert isinstance(invocation["context"], GroupPlanningContext)
-    assert invocation["context"] is planner.context
-    assert invocation["context"].launch.exact_block_dim == (32, 1, 1)
-    assert not hasattr(invocation["context"], "_group_cache")
-    assert invocation["operation"] == operation
-    assert invocation["group"].kind == "block"
-    assert invocation["group"].static_size == 32
-    assert invocation["bound"].arguments["group"].name
-    assert invocation["bound"].arguments["value"].name == "value"
-    assert invocation["is_common_root"] is portable
+    with pytest.raises(TypeError, match="lowering factory must be callable"):
+        register_factory(
+            object(),
+            operation="_test_invalid_factory",
+            namespace="test",
+            storage_abi=StorageABI.NONE,
+            execution_scope=SynchronizationScope.NONE,
+            synchronization_scope=SynchronizationScope.NONE,
+        )
 
 
-@pytest.mark.parametrize("portable", [True, False], ids=["portable", "qualified"])
+def _rewrite_spec(**overrides):
+    from cuda.coop.numba_mlir._compiler._operations import RewriteOperationSpec
+
+    arguments = {
+        "factory_namespaces": frozenset({"test_namespace"}),
+        "dtype_factory_kwargs": frozenset({"value_type"}),
+        "runtime_arg_counts": frozenset({1, 2}),
+        "runtime_factory_kwargs": ("tail",),
+        "runtime_factory_kw_prerequisites": (),
+        "allowed_factory_kwargs": frozenset({"guard", "offset", "tail", "value_type"}),
+        "required_factory_kwargs": frozenset({"value_type"}),
+        "accepts_temp_storage": False,
+        "scalar_binding_kwargs": frozenset({"tail"}),
+        "runtime_offset_kwarg": "offset",
+        "infer_payload": lambda context, inference: None,
+    }
+    arguments.update(overrides)
+    return RewriteOperationSpec(**arguments)
+
+
 @pytest.mark.parametrize(
-    ("result_index", "expected_dtype", "expected_array", "expected_extent"),
+    ("override", "error", "message"),
     [
-        (0, "int32", False, 1),
-        (1, "float32", True, 3),
-    ],
-    ids=["scalar", "array"],
-)
-def test_registered_result_sources_drive_tuple_provenance(
-    portable,
-    result_index,
-    expected_dtype,
-    expected_array,
-    expected_extent,
-):
-    from numba_cuda_mlir import types
-    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
-    from numba_cuda_mlir.numbair_transforms import ir
-
-    import cuda.coop as portable_coop
-    import cuda.coop.numba_mlir as qualified_coop
-    from cuda.coop._core.api import _dispatch as portable_dispatch
-    from cuda.coop.numba_mlir._compiler import _operations
-    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
-
-    operation = "_test_result_family"
-
-    @portable_dispatch._portable_group_operation(
-        operation,
-        group_kinds=("block",),
-    )
-    def portable_marker(group, keys, values):
-        del group, keys, values
-
-    @_operations.group_operation(operation, family_module=__name__)
-    def qualified_marker(group, keys, values):
-        del group, keys, values
-
-    _operations.register_group_primitive(
-        operation,
-        lower=lambda *args, **kwargs: [],
-        results=(
-            _operations.GroupResultSource("keys", None),
-            _operations.GroupResultSource("values", "values"),
+        (
+            {"runtime_arg_counts": frozenset()},
+            ValueError,
+            "runtime_arg_counts must not be empty",
         ),
-    )
-
-    marker = portable_marker if portable else qualified_marker
-    module = portable_coop if portable else qualified_coop
-
-    def kernel():
-        keys = module.ThreadData(2, dtype=types.int32)
-        values = module.ThreadData(3, dtype=types.float32)
-        pair = marker(module.this_block(), keys, values)
-        return pair[result_index]
-
-    func_ir = run_frontend(kernel)
-    planner = _GroupCallPlanner(
-        SimpleNamespace(func_ir=func_ir, args=()),
-        {"block": (32, 1, 1), "grid": (1, 1, 1), "cluster": None},
-    )
-    return_value = next(
-        statement.value
-        for block in func_ir.blocks.values()
-        for statement in block.body
-        if isinstance(statement, ir.Return)
-    )
-
-    assert str(planner.context.dtype(return_value)) == expected_dtype
-    assert planner.context.is_array(operation, return_value) is expected_array
-    assert planner.context.array_extent(return_value) == expected_extent
+        (
+            {"runtime_arg_counts": frozenset({-1})},
+            ValueError,
+            "runtime_arg_counts must contain non-negative integers",
+        ),
+        (
+            {"runtime_arg_counts": frozenset({True})},
+            ValueError,
+            "runtime_arg_counts must contain non-negative integers",
+        ),
+        (
+            {"runtime_arg_counts": frozenset({1, 3})},
+            ValueError,
+            "require more trailing runtime arguments",
+        ),
+        (
+            {"runtime_factory_kwargs": ("tail", "tail")},
+            ValueError,
+            "runtime_factory_kwargs must be unique",
+        ),
+        (
+            {"runtime_factory_kwargs": ("unknown",)},
+            ValueError,
+            "runtime_factory_kwargs must be allowed factory kwargs",
+        ),
+        (
+            {"runtime_factory_kw_prerequisites": (("tail",),)},
+            TypeError,
+            "must contain name pairs",
+        ),
+        (
+            {
+                "runtime_factory_kw_prerequisites": (
+                    ("tail", "guard"),
+                    ("tail", "value_type"),
+                )
+            },
+            ValueError,
+            "prerequisite names must be unique",
+        ),
+        (
+            {"runtime_factory_kw_prerequisites": (("guard", "tail"),)},
+            ValueError,
+            "targets must be runtime factory kwargs",
+        ),
+        (
+            {"runtime_factory_kw_prerequisites": (("tail", "unknown"),)},
+            ValueError,
+            "requirements must be known factory kwargs",
+        ),
+        (
+            {"runtime_factory_kw_prerequisites": (("tail", "tail"),)},
+            ValueError,
+            "cannot require themselves",
+        ),
+        (
+            {"scalar_binding_kwargs": frozenset({"guard"})},
+            ValueError,
+            "scalar_binding_kwargs must be runtime factory kwargs",
+        ),
+        (
+            {"runtime_offset_kwarg": ""},
+            ValueError,
+            "runtime_offset_kwarg must be a non-empty string or None",
+        ),
+        (
+            {"runtime_offset_kwarg": "unknown"},
+            ValueError,
+            "runtime_offset_kwarg must be an allowed factory kwarg",
+        ),
+        (
+            {
+                "runtime_arg_counts": frozenset({1, 2, 3}),
+                "runtime_factory_kwargs": ("tail", "offset"),
+            },
+            ValueError,
+            "must not also be a runtime factory kwarg",
+        ),
+        (
+            {"infer_payload": None},
+            TypeError,
+            "infer_payload must be callable",
+        ),
+        (
+            {"analyze_match": object()},
+            TypeError,
+            "analyze_match must be callable or None",
+        ),
+    ],
+)
+def test_rewrite_operation_spec_rejects_inconsistent_contracts(
+    override,
+    error,
+    message,
+):
+    with pytest.raises(error, match=message):
+        _rewrite_spec(**override)
 
 
 def test_group_result_source_rejects_invalid_parameter_names():
@@ -470,6 +432,434 @@ def _resolved_calls(func_ir):
             if isinstance(value, ir.Expr) and value.op == "call":
                 calls.append((resolver._resolve_python_value(value.func), value))
     return calls
+
+
+def _register_lazy_fake_frontends():
+    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop.numba_mlir._compiler import _operations
+
+    operations = {
+        "scalar": "_test_lazy_family_scalar",
+        "array": "_test_lazy_family_array",
+        "pair": "_test_lazy_family_pair",
+    }
+
+    @portable_dispatch._portable_group_operation(
+        operations["scalar"],
+        group_kinds=("thread",),
+    )
+    def portable_scalar(group, value):
+        del group, value
+
+    @_operations.group_operation(
+        operations["scalar"],
+        family_module=_LAZY_FAKE_FAMILY_MODULE,
+    )
+    def qualified_scalar(group, value):
+        del group, value
+
+    @portable_dispatch._portable_group_operation(
+        operations["array"],
+        group_kinds=("block",),
+    )
+    def portable_array(group, values):
+        del group, values
+
+    @_operations.group_operation(
+        operations["array"],
+        family_module=_LAZY_FAKE_FAMILY_MODULE,
+    )
+    def qualified_array(group, values):
+        del group, values
+
+    @portable_dispatch._portable_group_operation(
+        operations["pair"],
+        group_kinds=("warp",),
+    )
+    def portable_pair(group, key, values):
+        del group, key, values
+
+    @_operations.group_operation(
+        operations["pair"],
+        family_module=_LAZY_FAKE_FAMILY_MODULE,
+    )
+    def qualified_pair(group, key, values):
+        del group, key, values
+
+    return operations, {
+        "portable": {
+            "scalar": portable_scalar,
+            "array": portable_array,
+            "pair": portable_pair,
+        },
+        "qualified": {
+            "scalar": qualified_scalar,
+            "array": qualified_array,
+            "pair": qualified_pair,
+        },
+    }
+
+
+def _lazy_fake_family_frontend(module, marker, shape, *, result_index=None):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    if shape == "scalar":
+
+        def kernel(value):
+            return marker(module.this_thread(), value)
+
+        args = (types.int32,)
+    elif shape == "array":
+
+        def kernel():
+            values = module.ThreadData(3, dtype=types.float32)
+            return marker(module.this_block(), values)
+
+        args = ()
+    elif result_index is None:
+
+        def kernel(key):
+            values = module.ThreadData(3, dtype=types.float32)
+            return marker(module.this_warp(), key, values)
+
+        args = (types.int32,)
+    else:
+
+        def kernel(key):
+            values = module.ThreadData(3, dtype=types.float32)
+            return marker(module.this_warp(), key, values)[result_index]
+
+        args = (types.int32,)
+    return run_frontend(kernel), args
+
+
+def _return_value(func_ir):
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    return next(
+        statement.value
+        for block in func_ir.blocks.values()
+        for statement in block.body
+        if isinstance(statement, ir.Return)
+    )
+
+
+def _run_lazy_fake_family_pipeline(func_ir, args):
+    from cuda.coop.numba_mlir._compiler._group_planner import (
+        _GroupCallPlanner,
+        has_group_markers,
+    )
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=args,
+        typingctx=_TypingContext(),
+        typemap={},
+        calltypes={},
+        metadata={"targetoptions": {}},
+    )
+    planner = _GroupCallPlanner(
+        state,
+        {"block": (64, 1, 1), "grid": (1, 1, 1), "cluster": None},
+    )
+    assert has_group_markers(func_ir)
+    assert planner.run()
+    assert not has_group_markers(func_ir)
+
+    rewrite = CoopSinglePhaseRewrite(state)
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        while rewrite.match(func_ir, block, state.typemap, state.calltypes):
+            block = rewrite.apply()
+            func_ir.blocks[label] = block
+    return planner, rewrite, state
+
+
+def test_lazy_fake_family_proves_additive_registration_end_to_end():
+    from numba_cuda_mlir import cuda, types
+
+    import cuda.coop as portable_coop
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda.coop._core import (
+        LaunchFacts,
+        StorageOwnership,
+        SynchronizationScope,
+        make_group_primitive_call,
+        plan_group_primitive,
+        this_block,
+        this_thread,
+        this_warp,
+    )
+    from cuda.coop._core.api import _dispatch as portable_dispatch
+    from cuda.coop._core.group import _dispatch as core_dispatch
+    from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        _group_operation_name,
+    )
+    from cuda.coop.numba_mlir._compiler._group_planning import GroupPlanningContext
+
+    registries = (
+        core_dispatch._GROUP_OPERATION_FAMILIES,
+        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_NAME,
+        portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_FUNCTION,
+        _operations._GROUP_OPERATIONS,
+        _operations._GROUP_FAMILY_MODULES,
+        _operations._FACTORY_OPERATIONS,
+        _operations._GROUP_PRIMITIVES,
+        _operations._REWRITE_OPERATIONS,
+    )
+    snapshots = tuple(dict(registry) for registry in registries)
+    missing = object()
+    module_snapshot = sys.modules.get(_LAZY_FAKE_FAMILY_MODULE, missing)
+    family = None
+    operations = {
+        "scalar": "_test_lazy_family_scalar",
+        "array": "_test_lazy_family_array",
+        "pair": "_test_lazy_family_pair",
+    }
+    markers = None
+    try:
+        assert module_snapshot is missing
+        sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+        operations, markers = _register_lazy_fake_frontends()
+        assert _LAZY_FAKE_FAMILY_MODULE not in sys.modules
+        assert all(
+            operation not in _operations._GROUP_PRIMITIVES
+            for operation in operations.values()
+        )
+
+        for shape, operation in operations.items():
+            portable_marker = markers["portable"][shape]
+            qualified_marker = markers["qualified"][shape]
+            assert portable_marker is not qualified_marker
+            assert (
+                portable_dispatch._portable_group_operation_name(portable_marker)
+                == operation
+            )
+            assert _operations.group_operation_name(qualified_marker) == operation
+            assert _group_operation_name(portable_marker) == operation
+            assert _group_operation_name(qualified_marker) == operation
+
+            def impostor(group, value):
+                del group, value
+
+            impostor.__module__ = qualified_marker.__module__
+            impostor.__name__ = qualified_marker.__name__
+            impostor.__cuda_coop_backend_member__ = operation
+            assert _group_operation_name(impostor) is None
+            assert _LAZY_FAKE_FAMILY_MODULE not in sys.modules
+
+        first_ir, first_args = _lazy_fake_family_frontend(
+            portable_coop,
+            markers["portable"]["scalar"],
+            "scalar",
+        )
+        first_planner, first_rewrite, _ = _run_lazy_fake_family_pipeline(
+            first_ir, first_args
+        )
+        assert isinstance(first_planner.context, GroupPlanningContext)
+        assert first_planner.context.launch.exact_block_dim == (64, 1, 1)
+        assert not hasattr(first_planner.context, "_group_cache")
+        assert not hasattr(first_planner.context, "_planner")
+        assert _LAZY_FAKE_FAMILY_MODULE in sys.modules
+        family = sys.modules[_LAZY_FAKE_FAMILY_MODULE]
+        assert tuple(family.OPERATIONS) == tuple(operations.values())
+        assert all(
+            _operations.group_primitive(operation) is not None
+            and _operations.rewrite_operation(operation) is not None
+            for operation in operations.values()
+        )
+
+        launch = LaunchFacts(
+            exact_block_dim=(64, 1, 1),
+            exact_grid_dim=(1, 1, 1),
+        )
+        core_cases = {
+            "scalar": (
+                this_thread,
+                (types.int32,),
+                SynchronizationScope.NONE,
+                StorageOwnership.NONE,
+                1,
+            ),
+            "array": (
+                this_block,
+                (types.float32,),
+                SynchronizationScope.BLOCK,
+                StorageOwnership.IMPLEMENTATION,
+                1,
+            ),
+            "pair": (
+                this_warp,
+                (types.int32, types.float32),
+                SynchronizationScope.WARP,
+                StorageOwnership.IMPLEMENTATION,
+                2,
+            ),
+        }
+        for shape, (
+            group_factory,
+            result_dtypes,
+            expected_scope,
+            expected_ownership,
+            result_count,
+        ) in core_cases.items():
+            semantics = family.LazyFamilySemantics(
+                operation=operations[shape],
+                result_dtypes=result_dtypes,
+                array_extent=3,
+            )
+            call = make_group_primitive_call(group_factory(), semantics)
+            plan = plan_group_primitive(call, launch).require_supported()
+            assert plan.topology.execution_scope is expected_scope
+            assert plan.synchronization.storage_reuse_barrier is expected_scope
+            assert plan.temp_storage.ownership is expected_ownership
+            assert len(plan.result.values) == result_count
+            assert tuple(
+                classification.name for classification in call.argument_classifications
+            ) == (
+                ("key", "values")
+                if shape == "pair"
+                else (("values",) if shape == "array" else ("value",))
+            )
+
+        provenance_cases = (
+            ("scalar", None, types.int32, False, 1),
+            ("array", None, types.float32, True, 3),
+            ("pair", 0, types.int32, False, 1),
+            ("pair", 1, types.float32, True, 3),
+        )
+        for frontend_name, module in (
+            ("portable", portable_coop),
+            ("qualified", qualified_coop),
+        ):
+            for (
+                shape,
+                result_index,
+                expected_dtype,
+                is_array,
+                extent,
+            ) in provenance_cases:
+                func_ir, args = _lazy_fake_family_frontend(
+                    module,
+                    markers[frontend_name][shape],
+                    shape,
+                    result_index=result_index,
+                )
+                planner = _GroupCallPlanner(
+                    SimpleNamespace(func_ir=func_ir, args=args),
+                    {
+                        "block": (64, 1, 1),
+                        "grid": (1, 1, 1),
+                        "cluster": None,
+                    },
+                )
+                result = _return_value(func_ir)
+                assert planner.context.dtype(result) == expected_dtype
+                assert planner.context.is_array(operations[shape], result) is is_array
+                assert planner.context.array_extent(result) == extent
+
+        pipeline_cases = [
+            (frontend_name, shape)
+            for frontend_name in ("portable", "qualified")
+            for shape in ("scalar", "array", "pair")
+        ]
+        pipeline_results = {("portable", "scalar"): (first_ir, first_rewrite)}
+        for frontend_name, shape in pipeline_cases[1:]:
+            module = portable_coop if frontend_name == "portable" else qualified_coop
+            func_ir, args = _lazy_fake_family_frontend(
+                module,
+                markers[frontend_name][shape],
+                shape,
+            )
+            _, rewrite, _ = _run_lazy_fake_family_pipeline(func_ir, args)
+            pipeline_results[(frontend_name, shape)] = (func_ir, rewrite)
+
+        expected_rewrite = {
+            "scalar": (family.INVOCABLES[operations["scalar"]], 1, None),
+            "array": (
+                family.INVOCABLES[operations["array"]],
+                2,
+                cuda.syncthreads,
+            ),
+            "pair": (
+                family.INVOCABLES[operations["pair"]],
+                3,
+                cuda.syncwarp,
+            ),
+        }
+        for (_, shape), (func_ir, rewrite) in pipeline_results.items():
+            invocable, arg_count, sync = expected_rewrite[shape]
+            calls = _resolved_calls(func_ir)
+            invocable_calls = [call for target, call in calls if target is invocable]
+            assert len(invocable_calls) == 1
+            assert len(invocable_calls[0].args) == arg_count
+            sync_calls = [
+                target
+                for target, _ in calls
+                if target in {cuda.syncthreads, cuda.syncwarp}
+            ]
+            assert sync_calls == ([] if sync is None else [sync])
+            shared_allocations = sum(target is cuda.shared.array for target, _ in calls)
+            assert shared_allocations == (0 if shape == "scalar" else 1)
+            assert (rewrite._temp_storage_global_plan is None) is (shape == "scalar")
+
+        assert {(operation, dtype) for operation, dtype in family.FACTORY_CALLS} == {
+            (operations["scalar"], types.int32),
+            (operations["array"], types.float32),
+            (operations["pair"], types.float32),
+        }
+        assert {
+            (operation, group_kind, is_common_root)
+            for operation, group_kind, is_common_root, _ in family.PLANNING_EVENTS
+        } == {
+            (operations["scalar"], "thread", True),
+            (operations["array"], "block", True),
+            (operations["pair"], "warp", True),
+            (operations["scalar"], "thread", False),
+            (operations["array"], "block", False),
+            (operations["pair"], "warp", False),
+        }
+        for operation, provider in family.PROVIDERS.items():
+            metadata = _operations.factory_operation(provider)
+            assert metadata.operation == operation
+            assert metadata.namespace == "lazy_test_namespace"
+            assert _operations.rewrite_operation(
+                operation
+            ).dtype_factory_kwargs == frozenset({"value_type"})
+    finally:
+        for registry, snapshot in zip(registries, snapshots):
+            registry.clear()
+            registry.update(snapshot)
+        if module_snapshot is missing:
+            sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+        else:
+            sys.modules[_LAZY_FAKE_FAMILY_MODULE] = module_snapshot
+
+    assert _LAZY_FAKE_FAMILY_MODULE not in sys.modules
+    assert markers is not None
+    assert all(
+        operation not in _operations._GROUP_PRIMITIVES
+        and operation not in _operations._REWRITE_OPERATIONS
+        and operation not in _operations._GROUP_FAMILY_MODULES
+        and operation not in portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_NAME
+        for operation in operations.values()
+    )
+    assert all(
+        marker not in _operations._GROUP_OPERATIONS
+        and marker not in portable_dispatch._PORTABLE_GROUP_OPERATIONS_BY_FUNCTION
+        for frontend_markers in markers.values()
+        for marker in frontend_markers.values()
+    )
+    assert family is not None
+    assert family.LazyFamilySemantics not in core_dispatch._GROUP_OPERATION_FAMILIES
+    assert all(
+        provider not in _operations._FACTORY_OPERATIONS
+        for provider in family.PROVIDERS.values()
+    )
 
 
 @pytest.mark.parametrize(
