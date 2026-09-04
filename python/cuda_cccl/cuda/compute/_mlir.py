@@ -24,11 +24,14 @@ from __future__ import annotations
 import contextlib
 
 # --- Compilation + type system -------------------------------------------------
-from numba_cuda_mlir import cuda, types
+from numba_cuda_mlir import compiler as _compiler
+from numba_cuda_mlir import cuda, tools, types
 
-# --- Low-level lowering: MLIR builder + dialects --------------------------------
+# --- Low-level lowering: MLIR builder, dialects, pass manager -------------------
 from numba_cuda_mlir._mlir import ir as mlir_ir
 from numba_cuda_mlir._mlir.dialects import arith, llvm
+from numba_cuda_mlir._mlir.dialects import gpu as _gpu
+from numba_cuda_mlir._mlir.passmanager import PassManager
 
 # --- High-level extension API (typing) -----------------------------------------
 from numba_cuda_mlir.extending import (
@@ -46,6 +49,15 @@ from numba_cuda_mlir.lowering_utilities import (
     llvm_struct_to_complex,
 )
 
+# --- LLVM IR extraction: optimization pipeline + MLIR-to-LLVM translation -------
+from numba_cuda_mlir.lowering_utilities import context as _ctx
+from numba_cuda_mlir.lowering_utilities.llvm_utils import (
+    NVPTX64_DATALAYOUT,
+    NVPTX64_TRIPLE,
+    translate_to_llvmir_text,
+)
+from numba_cuda_mlir.mlir_optimization import get_base_pipeline
+
 # --- Data models ----------------------------------------------------------------
 from numba_cuda_mlir.models import PrimitiveModel, register_model
 from numba_cuda_mlir.numba_cuda.core import errors
@@ -57,6 +69,8 @@ from numba_cuda_mlir.numba_cuda.typing.templates import (
     AbstractTemplate,
     AttributeTemplate,
 )
+from numba_cuda_mlir.optimization import run_pre_codegen_patterns
+from numba_cuda_mlir.tools import format_arch
 from numba_cuda_mlir.typing import signature
 
 __all__ = [
@@ -108,8 +122,6 @@ def _target_without_a_device(cc):
 
     Answer that query with the named target while there is no device to ask.
     """
-    from numba_cuda_mlir import tools
-
     if cc is None:
         yield
         return
@@ -208,8 +220,6 @@ def infer_return_type(pyfunc, arg_types):
     MLIR.  Asking ``cuda.compile`` for an output format instead would run a full
     code generation whose result is discarded.
     """
-    from numba_cuda_mlir import compiler as _compiler
-
     # Compiling through a dispatcher builds numba-cuda-mlir's typing and target
     # contexts on first use.  This entry point drives the compiler directly and
     # so has to build them itself; without that, inference cannot resolve even
@@ -242,19 +252,6 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     codegen whose result is then discarded, and the optimized MLIR this needs is
     the same either way.
     """
-    from numba_cuda_mlir import compiler as _compiler
-    from numba_cuda_mlir._mlir.dialects import gpu as _gpu
-    from numba_cuda_mlir._mlir.passmanager import PassManager
-    from numba_cuda_mlir.lowering_utilities import context as _ctx
-    from numba_cuda_mlir.lowering_utilities.llvm_utils import (
-        NVPTX64_DATALAYOUT,
-        NVPTX64_TRIPLE,
-        translate_to_llvmir_text,
-    )
-    from numba_cuda_mlir.mlir_optimization import get_base_pipeline
-    from numba_cuda_mlir.optimization import run_pre_codegen_patterns
-    from numba_cuda_mlir.tools import format_arch
-
     target_options = {}
     if cc is not None:
         target_options["chip"] = format_arch(tuple(cc))
