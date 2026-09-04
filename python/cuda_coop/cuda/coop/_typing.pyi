@@ -50,6 +50,31 @@ WarpLoadStoreAlgorithm: TypeAlias = Literal[
     "transpose",
 ]
 LoadStoreAlgorithm: TypeAlias = BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm
+ReduceAlgorithm: TypeAlias = Literal[
+    "raking_commutative_only",
+    "raking",
+    "warp_reductions",
+]
+ReduceOperator: TypeAlias = Literal[
+    "+",
+    "sum",
+    "add",
+    "plus",
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
 ExchangeMode: TypeAlias = Literal[
     "striped_to_blocked",
     "blocked_to_striped",
@@ -159,6 +184,8 @@ __all__ = [
     "ExchangeMode",
     "LoadStoreAlgorithm",
     "PortableShuffleMode",
+    "ReduceAlgorithm",
+    "ReduceOperator",
     "ScalarShuffleMode",
     "ShuffleMode",
     "TempStorageLike",
