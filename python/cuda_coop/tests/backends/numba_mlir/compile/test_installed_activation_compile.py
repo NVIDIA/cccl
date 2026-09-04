@@ -78,9 +78,24 @@ _COMPILE_PROBE = textwrap.dedent(
         raise AssertionError(f"unexpected import order: {import_order!r}")
 
     qualified_coop = sys.modules["cuda.coop.numba_mlir"]
-    assert {"exchange", "shuffle"} <= set(qualified_coop.__all__)
+    public_reduce_module = "cuda.coop.numba_mlir._group_reduce"
+    compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
+    assert public_reduce_module not in sys.modules
+    assert compiler_reduce_module not in sys.modules
+
+    assert {"exchange", "reduce", "shuffle", "sum"} <= set(qualified_coop.__all__)
     assert callable(qualified_coop.exchange)
     assert callable(qualified_coop.shuffle)
+    assert callable(qualified_coop.reduce)
+    assert callable(qualified_coop.sum)
+    assert public_reduce_module in sys.modules
+    assert compiler_reduce_module not in sys.modules
+
+    from cuda.coop.numba_mlir._compiler._operations import group_primitive
+
+    assert group_primitive("reduce") is not None
+    assert group_primitive("sum") is not None
+    assert compiler_reduce_module in sys.modules
 
     distribution = importlib.metadata.distribution("cuda-coop")
     distribution_root = Path(distribution.locate_file("")).resolve()

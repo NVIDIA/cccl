@@ -55,8 +55,10 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "ThreadHierarchy",
             "exchange",
             "load",
+            "reduce",
             "shuffle",
             "store",
+            "sum",
             "this_block",
             "this_cluster",
             "this_grid",
@@ -64,16 +66,20 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "this_warp",
         }
         assert required <= set(coop.__all__)
-        assert {"reduce", "scan", "sum"}.isdisjoint(coop.__all__)
+        assert {"reduce", "sum"} <= set(coop.__all__)
+        assert {"scan"}.isdisjoint(coop.__all__)
+
 
         paths = resolve_include_paths(
             start=Path.cwd(),
             required_headers=(
                 "cub/block/block_exchange.cuh",
                 "cub/block/block_load.cuh",
+                "cub/block/block_reduce.cuh",
                 "cub/block/block_shuffle.cuh",
                 "cub/block/block_store.cuh",
                 "cub/warp/warp_exchange.cuh",
+                "cub/warp/warp_reduce.cuh",
                 "cuda/experimental/coop.cuh",
                 "thrust/detail/raw_pointer_cast.h",
                 "cuda/std/cstdint",
