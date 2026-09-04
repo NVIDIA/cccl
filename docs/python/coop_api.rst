@@ -26,15 +26,16 @@ Numba-CUDA-MLIR-qualified API
 
 The qualified module provides matching Block, physical-Warp, and logical-Warp
 Load, Store, Exchange, and Scan entry points; block Shuffle; hierarchy-aware
-Reduce; group descriptors; ``ThreadData``; and ``TempStorage``. It additionally
-exposes backend memory namespaces and payload-alignment controls. Portable and
-qualified calls use the same lowercase string selectors. Block Load and Store
-support ``direct``, ``striped``, ``vectorize``, ``transpose``,
-``warp_transpose``, and ``warp_transpose_timesliced``. Physical and logical
-Warp calls support ``direct``, ``striped``, ``vectorize``, and ``transpose``.
-Use ``this_warp()`` for the physical width of 32 or
-``this_warp().group_by(width)`` for a logical width of 1, 2, 4, 8, 16, or 32.
-The enclosing block must contain a multiple of 32 threads.
+Reduce; group descriptors; ``ThreadData``; ``TempStorage``; and
+``StatefulFunction``. It additionally exposes backend memory namespaces and
+payload-alignment controls. Portable and qualified calls use the same lowercase
+string selectors. Block Load and Store support ``direct``, ``striped``,
+``vectorize``, ``transpose``, ``warp_transpose``, and
+``warp_transpose_timesliced``. Physical and logical Warp calls support
+``direct``, ``striped``, ``vectorize``, and ``transpose``. Use ``this_warp()``
+for the physical width of 32 or ``this_warp().group_by(width)`` for a logical
+width of 1, 2, 4, 8, 16, or 32. The enclosing block must contain a multiple of
+32 threads.
 
 ``direct``, ``striped``, and ``vectorize`` are storage-free at both scopes.
 Warp ``transpose`` uses compiler-owned storage with one disjoint slice per
@@ -55,8 +56,29 @@ Scan exposes ``scan``, ``exclusive_scan``, ``inclusive_scan``,
 ``exclusive_sum``, and ``inclusive_sum``. Block Scan accepts scalars and fixed
 per-thread arrays and supports ``raking``, ``raking_memoize``, and
 ``warp_scans``. Warp Scan accepts one scalar per lane. The qualified API adds
-stateless operator callbacks, a one-item ``aggregate_output``, and Warp-only
-``valid_items``. Prefix callback state is not exposed.
+stateless operator callbacks, a one-item ``aggregate_output``, Warp-only
+``valid_items``, and Block-only prefix callbacks.
+
+Every qualified Block Scan spelling also accepts a block-prefix callback with
+the canonical ``prefix_op`` keyword. ``block_prefix_callback_op`` is a
+compatibility alias and cannot be supplied together with ``prefix_op``. A
+stateless callback receives the block aggregate and returns the prefix. A
+stateful callback is wrapped in ``StatefulFunction`` and receives a one-item
+state payload followed by the block aggregate; that state is passed as the
+third positional argument. It must be a numeric one-item ``ThreadData`` or
+local array whose dtype exactly matches the descriptor dtype, although that
+dtype may differ from the scanned value dtype.
+
+Prefix callbacks are qualified-only and Block-only. They cannot be combined
+with ``initial_value`` or ``aggregate_output``. They are not stateful binary
+scan operators, do not add Warp or ``valid_items`` support, and do not accept
+structured state. CUB may invoke the callback in every lane of the block's
+first warp, but only lane 0's returned prefix is applied. Initialize every
+thread's state cell identically before the first collective and treat thread
+0's state as authoritative after repeated calls. Prefix callbacks retain the
+normal Block Scan ``TempStorage`` contract. Repeated calls that reuse storage
+must retain the automatic block barrier or execute ``syncthreads`` after each
+call when a caller-owned descriptor sets ``auto_sync=False``.
 
 For Warp Load and Store, each group receives an automatic memory origin of
 ``group_index * (group_size * items_per_thread)`` before the caller's element
