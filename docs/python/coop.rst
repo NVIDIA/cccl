@@ -402,8 +402,8 @@ built-in string aliases as Reduce. The qualified spelling also recognizes the
 corresponding Python ``operator`` functions and NumPy ufuncs, and accepts a
 stateless device callback. Non-sum exclusive Scan requires an
 ``initial_value`` matching the payload dtype; ordinary Python literals are
-checked and converted in that context. Inclusive Scan rejects an initial
-value.
+checked and converted in that context. A block-prefix callback can supply that
+prefix instead. Inclusive Scan rejects an initial value.
 
 The qualified spelling adds ``aggregate_output``, an exact-dtype one-item
 ``ThreadData`` or local array populated with the group aggregate. That
@@ -416,12 +416,79 @@ formed and invalidate the current CUDA context. Block Scan rejects
 ``valid_items``. These two controls are intentionally absent from the portable
 root API.
 
+Block prefix callbacks
+^^^^^^^^^^^^^^^^^^^^^^
+
+All five qualified Block Scan spellings accept a stateless or stateful prefix
+callback through the ``prefix_op`` keyword. A stateless callback receives the
+block aggregate and returns the prefix that precedes the current tile:
+
+.. code-block:: python
+
+   from numba_cuda_mlir import cuda, types
+
+   import cuda.coop.numba_mlir as coop
+
+
+   @cuda.jit(device=True)
+   def prefix_after_aggregate(block_aggregate):
+       return block_aggregate + 7
+
+
+   # Inside a kernel:
+   result = coop.exclusive_sum(
+       coop.this_block(),
+       value,
+       prefix_op=prefix_after_aggregate,
+   )
+
+A stateful callback receives its state payload first and the block aggregate
+second. Wrap it in ``StatefulFunction`` and pass the state as the third
+positional argument:
+
+.. code-block:: python
+
+   @cuda.jit(device=True)
+   def carry_prefix(state, block_aggregate):
+       previous = state[0]
+       state[0] = previous + block_aggregate
+       return previous
+
+
+   running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
+
+   # Inside a kernel, before a loop over tiles:
+   state = coop.ThreadData(1, dtype=types.int64)
+   state[0] = types.int64(0)
+   result = coop.exclusive_sum(
+       coop.this_block(),
+       value,
+       state,
+       prefix_op=running_prefix,
+   )
+
+The state must be a numeric one-item ``ThreadData`` or local array. Its dtype
+must exactly match ``StatefulFunction.dtype``, but may differ from the scanned
+payload dtype. Keep the same state payload alive across repeated scans to
+carry the prefix between tiles. Every participating thread must initialize
+its state cell to the same contents before the first collective.
+
+CUB may invoke the prefix callback in every lane of the block's first warp,
+but only lane 0's returned prefix is applied to the scan. Other per-thread
+state copies are not authoritative; after one or more calls, consume the final
+state only from thread 0. The callback is mutually exclusive with
+``initial_value`` and ``aggregate_output``. It is not available for physical
+or logical Warp Scan, through the portable :mod:`cuda.coop` API, as a stateful
+binary ``scan_op``, or with structured state.
+
 All Scan forms use CUB temporary storage. Block calls may use compiler-owned,
 caller-owned, or dynamic shared storage and append ``syncthreads`` unless a
 caller-owned descriptor explicitly sets ``auto_sync=False``. Physical and
 logical Warp calls use one compiler-owned slice per Warp and append
-``syncwarp`` with the participating mask. Prefix callbacks and running-prefix
-state are deferred.
+``syncwarp`` with the participating mask. Prefix callbacks do not change these
+rules: when repeated calls reuse Block Scan storage, retain the automatic
+barrier or issue ``syncthreads`` after each call when ``auto_sync=False``. The
+prefix state is persistent per-thread data, not CUB temporary storage.
 
 .. literalinclude:: ../../python/cuda_coop/examples/numba_mlir/block_scan.py
    :language: python

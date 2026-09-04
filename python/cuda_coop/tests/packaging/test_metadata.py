@@ -71,17 +71,22 @@ def test_all_bundled_header_licenses_are_declared() -> None:
     }
 
 
-def test_excluded_python_implementations_are_absent() -> None:
+def test_python_implementation_boundaries() -> None:
     package = _PACKAGE_ROOT / "cuda" / "coop"
+    required = (
+        "numba_mlir/_stateful_function.py",
+        "numba_mlir/_stateful_function.pyi",
+    )
     forbidden = (
         "_aot_cli.py",
         "cutlass",
         "numba_mlir/_dataclass.py",
         "numba_mlir/_scan_op.py",
-        "numba_mlir/_stateful_function.py",
         "numba_mlir/_lowering/_thread_group.py",
     )
 
+    missing = [relative for relative in required if not (package / relative).is_file()]
+    assert not missing
     assert not [relative for relative in forbidden if (package / relative).exists()]
 
     warp_files = {
