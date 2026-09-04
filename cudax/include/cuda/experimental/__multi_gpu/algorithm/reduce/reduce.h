@@ -239,6 +239,31 @@ _CCCL_HOST_API void reduce(
   static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, typename __properties::__env_type>,
                 "Environment must contain a stream");
 
+  // TODO(jfaibussowit):
+  //
+  // Determinism is a tricky problem. In addition to CUB it also depends on the communicator so
+  // we need some way of asking the communicator whether they can satisfy it. But should it
+  // expose a query() member? A default_properties? And what should the default be, to assume
+  // it can only handle not_guaranteed? Also, it's relatively obvious that you can ask the
+  // question about reductions, but should you be able to ask it about other methods like
+  // gather/allgather?
+  //
+  // There is an additional wrinkle that determinism for comms is usually tied to the
+  // topology as well. If you run the same program but with different number of ranks, you
+  // probably get different results. We can't ensure this at compile time.
+  //
+  // So all this is to say, I will punt this until a user has a need for it, which may help us
+  // decide these things.
+  {
+    using __determinism _CCCL_NODEBUG =
+      ::cuda::experimental::__detail::__determinism_of_t<typename __properties::__env_type>;
+
+    static_assert(::cuda::std::same_as<__determinism, ::cuda::execution::determinism::run_to_run_t>
+                    || ::cuda::std::same_as<__determinism, ::cuda::execution::determinism::not_guaranteed_t>,
+                  "Only run_to_run and not_guaranteed reductions are currently supported. Please open an issue at "
+                  "github.com/NVIDIA/cccl/issue requesting support for stronger determinism");
+  }
+
   const auto __num_local = ::cuda::std::ranges::size(__comms);
 
   if (!__num_local)
