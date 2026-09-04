@@ -194,8 +194,17 @@ def test_group_load_and_store_select_complete_block_contracts():
     assert store.target is GroupLoweringTarget.CUB_BLOCK
     assert store.provenance.cpp_class == "cub::BlockStore"
     assert store.result is None
-    assert load.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
-    assert load.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    assert load.temp_storage.ownership is StorageOwnership.NONE
+    assert load.temp_storage.address_space is None
+    assert load.temp_storage.cpp_type is None
+    assert load.temp_storage.instances is None
+    assert load.temp_storage.instance_index is None
+    assert not load.temp_storage.exact_layout_required
+    assert load.temp_storage.sharing is None
+    assert load.temp_storage.requested_size_in_bytes is None
+    assert load.temp_storage.requested_alignment is None
+    assert not load.temp_storage.auto_sync
+    assert load.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
     assert load.topology.group_kind == "block"
     assert load.topology.logical_width == 32
     assert load.topology.instances == 1
@@ -316,16 +325,11 @@ def test_grid_family_requires_verified_cooperative_launch():
     assert plan_group_primitive(call, verified) is marker
 
 
-def test_group_load_models_tile_controls_and_caller_storage():
+def test_group_load_models_tile_controls_without_storage():
     operation = _load_store(
         valid_items=ArgumentBinding.runtime(),
         oob_default=ArgumentBinding.static(0),
         offset=ArgumentBinding.static(4),
-        storage_ownership=StorageOwnership.CALLER,
-        storage_sharing="shared",
-        storage_size_in_bytes=256,
-        storage_alignment=16,
-        storage_auto_sync=True,
     )
     call = make_group_primitive_call(this_block(), operation)
     plan = plan_group_primitive(call, LaunchFacts(exact_block_dim=64))
@@ -361,20 +365,64 @@ def test_group_load_models_tile_controls_and_caller_storage():
         (1 << 63) - 1,
     )
     assert offset_precondition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
-    assert plan.temp_storage.ownership is StorageOwnership.CALLER
-    assert plan.temp_storage.sharing == "shared"
-    assert plan.temp_storage.requested_size_in_bytes == 256
-    assert plan.temp_storage.requested_alignment == 16
-    assert plan.temp_storage.auto_sync
+    assert plan.temp_storage.ownership is StorageOwnership.NONE
+    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
 
 
-def test_storage_contract_is_part_of_semantic_and_artifact_identity():
+@pytest.mark.parametrize("kind", ("load", "store"))
+def test_direct_storage_descriptor_is_not_part_of_plan_identity(kind):
+    implicit = _load_store(kind)
+    explicit = _load_store(
+        kind,
+        storage_ownership=StorageOwnership.CALLER,
+        storage_sharing="shared",
+        storage_size_in_bytes=256,
+        storage_alignment=16,
+        storage_auto_sync=True,
+    )
+
+    implicit_plan = _plan(this_block(), implicit)
+    explicit_plan = _plan(this_block(), explicit)
+
+    assert explicit.storage_ownership is StorageOwnership.NONE
+    assert explicit.storage_sharing is None
+    assert explicit.storage_size_in_bytes is None
+    assert explicit.storage_alignment is None
+    assert not explicit.storage_auto_sync
+    assert implicit == explicit
+    assert implicit.semantic_key == explicit.semantic_key
+    assert implicit_plan == explicit_plan
+    assert implicit_plan.semantic_key == explicit_plan.semantic_key
+    assert implicit_plan.artifact_key == explicit_plan.artifact_key
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "exception", "message"),
+    [
+        ({"storage_sharing": "invalid"}, ValueError, "shared or exclusive"),
+        ({"storage_size_in_bytes": 0}, ValueError, "positive integer"),
+        ({"storage_alignment": True}, ValueError, "positive integer"),
+        ({"storage_auto_sync": 1}, TypeError, "must be a bool"),
+    ],
+)
+def test_direct_storage_metadata_is_validated_before_being_ignored(
+    kwargs,
+    exception,
+    message,
+):
+    with pytest.raises(exception, match=message):
+        _load_store(**kwargs)
+
+
+def test_storage_bearing_contract_is_part_of_plan_identity():
     shared = _load_store(
+        algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
         storage_ownership=StorageOwnership.CALLER,
         storage_sharing="shared",
         storage_auto_sync=True,
     )
     exclusive = _load_store(
+        algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
         storage_ownership=StorageOwnership.CALLER,
         storage_sharing="exclusive",
         storage_auto_sync=False,
@@ -386,6 +434,10 @@ def test_storage_contract_is_part_of_semantic_and_artifact_identity():
     assert shared.semantic_key != exclusive.semantic_key
     assert shared_plan.semantic_key != exclusive_plan.semantic_key
     assert shared_plan.artifact_key != exclusive_plan.artifact_key
+    assert shared_plan.temp_storage.exact_layout_required
+    assert (
+        shared_plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
+    )
     assert (
         exclusive_plan.synchronization.storage_reuse_barrier
         is SynchronizationScope.NONE

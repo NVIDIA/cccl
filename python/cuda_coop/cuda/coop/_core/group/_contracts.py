@@ -138,7 +138,13 @@ def _contracts(
     group_size = resolved_group.static_size
     assert group_size is not None
     topology = _group_topology(resolved_group, launch)
-    barrier = topology.execution_scope if auto_sync else SynchronizationScope.NONE
+    storage_ownership = StorageOwnership(storage_ownership)
+    storage_free = storage_ownership is StorageOwnership.NONE
+    barrier = (
+        SynchronizationScope.NONE
+        if storage_free or not auto_sync
+        else topology.execution_scope
+    )
     return (
         topology,
         ParticipationContract(
@@ -163,16 +169,18 @@ def _contracts(
         ),
         TempStorageContract(
             ownership=storage_ownership,
-            address_space="shared",
+            address_space=None if storage_free else "shared",
             cpp_type=cpp_type,
             instances=(
                 None
-                if storage_ownership is StorageOwnership.IMPLEMENTATION
+                if storage_ownership
+                in {StorageOwnership.NONE, StorageOwnership.IMPLEMENTATION}
                 else topology.instances
             ),
             instance_index=(
                 None
-                if storage_ownership is StorageOwnership.IMPLEMENTATION
+                if storage_ownership
+                in {StorageOwnership.NONE, StorageOwnership.IMPLEMENTATION}
                 else topology.instance_index
             ),
             exact_layout_required=storage_ownership is StorageOwnership.CALLER,
