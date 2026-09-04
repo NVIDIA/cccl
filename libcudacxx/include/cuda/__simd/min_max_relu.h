@@ -39,7 +39,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 // Depending on the compiler and the gpu architecture, the plain C++ code (without intrinsics) can generate or not the
-// expected SASS instructions. The instrinsic paths are preferred to always generate the optimal code.
+// expected SASS instructions. The intrinsic paths are preferred to always generate the optimal code.
 
 #if _CCCL_HAS_SIMD_MIN_MAX_RELU()
 

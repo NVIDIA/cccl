@@ -52,7 +52,7 @@ The three-input overloads are equivalent to:
    max_relu(a, b, c)[i] == cuda::std::max(cuda::std::max(cuda::std::max(a[i], b[i]), c[i]), T{0})
    min_relu(a, b, c)[i] == cuda::std::max(cuda::std::min(cuda::std::min(a[i], b[i]), c[i]), T{0})
 
-The functionalities map to [Dynamic Programming eXtension (DPX)](https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#dynamic-programming-extension-dpx-instructions) instructions.
+On supported GPU architectures, the optimized device paths map to `Dynamic Programming eXtension (DPX) <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#dynamic-programming-extension-dpx-instructions>`__ instructions.
 
 **Parameters**
 
