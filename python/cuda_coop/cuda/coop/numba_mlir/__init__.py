@@ -36,8 +36,13 @@ __all__ = [
     "this_thread",
     "this_warp",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
+    "scan",
     "shuffle",
     "store",
     "sum",
@@ -47,10 +52,25 @@ __all__ = [
 
 
 def __getattr__(name):
-    if name in {"exchange", "reduce", "shuffle", "sum"}:
+    if name in {
+        "exchange",
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "reduce",
+        "scan",
+        "shuffle",
+        "sum",
+    }:
         module_name = {
             "exchange": "_group_exchange",
+            "exclusive_scan": "_group_scan",
+            "exclusive_sum": "_group_scan",
+            "inclusive_scan": "_group_scan",
+            "inclusive_sum": "_group_scan",
             "reduce": "_group_reduce",
+            "scan": "_group_scan",
             "shuffle": "_group_shuffle",
             "sum": "_group_reduce",
         }[name]
