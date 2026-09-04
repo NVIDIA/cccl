@@ -11,7 +11,7 @@ from typing import Callable
 
 from .._types import ParameterClassification
 from ..launch import LaunchFacts
-from ..thread_group import ThreadGroup
+from ..thread_group import THREAD_GROUP_KINDS, ThreadGroup
 from ._contracts import _unsupported
 from ._model import (
     GroupLoweringPlan,
@@ -33,6 +33,28 @@ class _GroupOperationFamily:
     ]
     group_kinds: frozenset[str]
     unsupported_group_message: str
+
+    def __post_init__(self) -> None:
+        if not callable(self.classifications):
+            raise TypeError("classifications must be callable")
+        if not callable(self.planner):
+            raise TypeError("planner must be callable")
+        object.__setattr__(self, "group_kinds", frozenset(self.group_kinds))
+        if not self.group_kinds:
+            raise ValueError("group_kinds must not be empty")
+        invalid_group_kinds = {
+            kind
+            for kind in self.group_kinds
+            if not isinstance(kind, str) or kind not in THREAD_GROUP_KINDS
+        }
+        if invalid_group_kinds:
+            names = ", ".join(sorted((repr(kind) for kind in invalid_group_kinds)))
+            raise ValueError(f"group_kinds contains unsupported values: {names}")
+        if (
+            not isinstance(self.unsupported_group_message, str)
+            or not self.unsupported_group_message.strip()
+        ):
+            raise ValueError("unsupported_group_message must be a non-empty string")
 
 
 _GROUP_OPERATION_FAMILIES: dict[type, _GroupOperationFamily] = {}
@@ -56,10 +78,10 @@ def _register_group_operation_family(
     if not isinstance(semantics_type, type):
         raise TypeError("semantics_type must be a type")
     registration = _GroupOperationFamily(
-        classifications,
-        planner,
-        frozenset(group_kinds),
-        unsupported_group_message,
+        classifications=classifications,
+        planner=planner,
+        group_kinds=frozenset(group_kinds),
+        unsupported_group_message=unsupported_group_message,
     )
     existing = _GROUP_OPERATION_FAMILIES.get(semantics_type)
     if existing is not None and existing != registration:
