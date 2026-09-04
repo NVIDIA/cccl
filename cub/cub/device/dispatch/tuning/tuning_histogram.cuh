@@ -138,6 +138,11 @@ struct HistogramPolicy
     return high_bin_threads_per_block != 0 ? high_bin_threads_per_block : threads_per_block;
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int high_bin_min_blocks() const noexcept
+  {
+    return high_bin_max_blocks_per_sm != 0 ? high_bin_max_blocks_per_sm : 1;
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
@@ -425,7 +430,7 @@ public:
         : is_even                ? even_smem_bytes_per_channel * num_active_channels
                                  : range_smem_bytes_per_channel * num_active_channels;
       const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
-      const int high_bin_max_blocks_per_sm   = num_active_channels == 1 ? 2 : 0;
+      const int high_bin_max_blocks_per_sm   = num_active_channels == 1 ? 2 : (is_even ? 1 : 2);
       const auto with_high_bin_threshold     = [=](HistogramPolicy policy) {
         policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
         policy.high_bin_max_blocks_per_sm   = high_bin_max_blocks_per_sm;
@@ -451,7 +456,7 @@ public:
             HistogramCacheAlgorithm::single_probe,
             HistogramSpillAlgorithm::global_memory_privatized,
             HistogramAggregationAlgorithm::rle,
-            4096,
+            8192,
             1,
             262144,
             4,
@@ -499,7 +504,7 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          4096,
+          is_even ? 8192 : 4096,
           1,
           262144,
           4,
@@ -522,7 +527,7 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          1024,
+          is_even ? 2048 : 1024,
           4,
           262144,
           4,
