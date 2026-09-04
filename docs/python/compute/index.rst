@@ -152,7 +152,16 @@ restrictions as Numba CUDA functions:
   ``value[i]`` would not be known while compiling. Access the fields by name, or
   index them individually.
 * A multi-dimensional device array captured as operator state must be
-  C-contiguous.
+  C-contiguous; a Fortran-ordered one is rejected with an error.
+* Storing a value into a captured array, or into a ``cuda.local.array``, of a
+  different numeric type is currently unsafe: the conversion ignores whether the
+  value is signed, so a negative value widened into a larger integer type
+  becomes a large positive one, and an unsigned value converted to a float
+  becomes negative. Convert explicitly to the destination's type first, or keep
+  the types the same. This is a limitation of the JIT backend
+  (`numba-cuda-mlir#303 <https://github.com/NVIDIA/numba-cuda-mlir/issues/303>`_
+  and `#290 <https://github.com/NVIDIA/numba-cuda-mlir/issues/290>`_); a value
+  *returned* from an operator is converted correctly.
 
 
 .. _cuda.compute.iterators:

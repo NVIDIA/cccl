@@ -982,3 +982,58 @@ def test_float_result_into_a_bool_output_asks_whether_it_is_nonzero():
     )
 
     np.testing.assert_array_equal(d_out.copy_to_host(), (BOOL_INPUT * 0.5) != 0)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="numba-cuda-mlir NVIDIA/numba-cuda-mlir#303: a store widens without "
+    "the source's signedness, so -1 arrives as 4294967295",
+)
+def test_store_into_captured_state_of_a_wider_dtype_keeps_the_sign():
+    """Storing a narrower signed value into wider captured state keeps its sign.
+
+    The store happens inside the operator body, which the JIT backend lowers, so
+    the conversion the wrapper applies to an operator's result does not reach it.
+    """
+    state = DeviceArray.from_numpy(np.zeros(1, dtype=np.int64))
+
+    def stash(x):
+        state[0] = x
+        return x
+
+    h_in = np.array([-1], dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=stash, num_items=h_in.size)
+
+    np.testing.assert_array_equal(state.copy_to_host(), np.array([-1], np.int64))
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="numba-cuda-mlir NVIDIA/numba-cuda-mlir#290: an unsigned value "
+    "converts to a float as if signed, so 3e9 arrives as -1.29e9",
+)
+def test_store_into_a_local_array_of_a_wider_dtype_keeps_unsigned_values():
+    """An unsigned value stored into a float local array keeps its value.
+
+    As above, the store is inside the operator body rather than at the wrapper
+    boundary.
+    """
+    from numba_cuda_mlir import cuda as backend_cuda
+
+    def via_local(x):
+        register = backend_cuda.local.array(1, np.float32)
+        register[0] = x
+        return register[0]
+
+    h_in = np.array([3000000000, 7], dtype=np.uint32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.float32))
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=via_local, num_items=h_in.size
+    )
+
+    np.testing.assert_allclose(d_out.copy_to_host(), h_in.astype(np.float32))
