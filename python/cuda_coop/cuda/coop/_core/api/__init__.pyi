@@ -5,6 +5,7 @@
 from .exchange import exchange
 from .load_store import load, store
 from .reduce import reduce, sum
+from .scan import exclusive_scan, exclusive_sum, inclusive_scan, inclusive_sum, scan
 from .shuffle import shuffle
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
@@ -28,8 +29,13 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
+    "scan",
     "shuffle",
     "store",
     "sum",
