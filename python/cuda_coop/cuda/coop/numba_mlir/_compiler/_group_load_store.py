@@ -18,11 +18,13 @@ from cuda.coop._core import (
     GroupLoadStoreSemantics,
     GroupLoweringPlan,
     GroupLoweringTarget,
+    StorageOwnership,
     make_group_primitive_call,
     plan_group_primitive,
 )
 
 from ._group_planner_support import (
+    _PAYLOAD_DTYPE_LIKE,
     Any,
     GroupRewriteError,
     ThreadGroup,
@@ -54,19 +56,21 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
         "warp_transpose_timesliced",
     }
 )
+_MUTATING_STORE_ALGORITHMS = frozenset(
+    {
+        "transpose",
+        "warp_transpose",
+        "warp_transpose_timesliced",
+    }
+)
 
 
-def _direct_algorithm(value: object, *, operation: str) -> str:
+def _load_store_algorithm(value: object, *, operation: str) -> str:
     if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"cuda.coop.numba_mlir.{operation} algorithm must be a string")
     token = value.strip().lower().replace("-", "_")
-    if token == "direct":
-        return token
     if token in _BLOCK_LOAD_STORE_ALGORITHMS:
-        raise NotImplementedError(
-            f"cuda.coop.numba_mlir.{operation} algorithm {token!r} is not "
-            "executable; only 'direct' is currently supported"
-        )
+        return token
     choices = ", ".join(sorted(_BLOCK_LOAD_STORE_ALGORITHMS))
     raise ValueError(
         f"cuda.coop.numba_mlir.{operation} algorithm must be one of: {choices}"
@@ -78,6 +82,12 @@ _CUB_PLAN_ROUTES = {
         "CUB",
         "cub/block/block_load.cuh",
         "cub::BlockLoad",
+        "Load",
+    ): "load",
+    (
+        "CUB",
+        "cub/block/block_load.cuh",
+        "cub::CudaCoopBlockLoadPreservingInvalid",
         "Load",
     ): "load",
     (
@@ -106,8 +116,11 @@ class _LoadStorePlanning:
         )
 
     def _scope_factory(
-        self, group: ThreadGroup, operation: str
+        self,
+        plan: GroupLoweringPlan,
+        operation: str,
     ) -> tuple[Any, dict[str, Any]]:
+        group = plan.resolved_group
         assert group.hierarchy is not None
         if group.kind != "block":
             raise NotImplementedError(
@@ -123,7 +136,16 @@ class _LoadStorePlanning:
 
         from .._lowering import _load_store
 
-        return (getattr(_load_store, operation), {"threads_per_block": block_dim})
+        assert plan.temp_storage is not None
+        factory_name = (
+            operation
+            if plan.temp_storage.ownership is StorageOwnership.NONE
+            else f"_{operation}_with_storage"
+        )
+        return (
+            getattr(_load_store, factory_name),
+            {"threads_per_block": block_dim},
+        )
 
     def _planning_oob_default(
         self,
@@ -234,19 +256,27 @@ class _LoadStorePlanning:
             else ArgumentBinding.omitted()
         )
 
-        algorithm = _direct_algorithm(
+        algorithm = _load_store_algorithm(
             self._context.constant(bound.arguments["algorithm"]),
             operation=operation,
         )
         temp_storage_value = bound.arguments["temp_storage"]
-        if (
-            not self._context.is_none(temp_storage_value)
-            and self._context.temp_storage(temp_storage_value) is None
-        ):
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} temp_storage must "
-                "resolve to a compile-time TempStorage descriptor"
-            )
+        storage_options: dict[str, Any] = {}
+        if not self._context.is_none(temp_storage_value):
+            descriptor = self._context.temp_storage(temp_storage_value)
+            if descriptor is None:
+                raise GroupRewriteError(
+                    f"cuda.coop.numba_mlir.{operation} temp_storage must "
+                    "resolve to a compile-time TempStorage descriptor"
+                )
+            size_in_bytes, alignment, auto_sync, sharing = descriptor
+            storage_options = {
+                "storage_ownership": StorageOwnership.CALLER,
+                "storage_sharing": sharing,
+                "storage_size_in_bytes": size_in_bytes,
+                "storage_alignment": alignment,
+                "storage_auto_sync": auto_sync,
+            }
 
         semantics = GroupLoadStoreSemantics(
             kind=GroupLoadStoreKind(operation),
@@ -256,6 +286,7 @@ class _LoadStorePlanning:
             valid_items=self._context.planning_binding(bound.arguments["valid_items"]),
             oob_default=oob_default,
             offset=self._context.planning_binding(bound.arguments["offset"]),
+            **storage_options,
         )
         plan = plan_group_primitive(
             make_group_primitive_call(group, semantics),
@@ -328,10 +359,7 @@ class _LoadStorePlanning:
                 f"cuda.coop.numba_mlir.{operation} selected the "
                 f"{planned_operation!r} provider"
             )
-        factory, factory_kwargs = self._scope_factory(
-            plan.resolved_group,
-            planned_operation,
-        )
+        factory, factory_kwargs = self._scope_factory(plan, planned_operation)
         assert plan.implementation is not None
         factory_kwargs.update(
             {
@@ -361,20 +389,51 @@ class _LoadStorePlanning:
             factory_kwargs["_group_root_store"] = True
         if not self._context.is_none(bound.arguments["temp_storage"]):
             factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
+        statements: list[Any] = []
         if operation == "load":
             runtime_args = [bound.arguments["source"], bound.arguments["output"]]
             return_alias = bound.arguments["output"]
         else:
-            runtime_args = [bound.arguments["destination"], bound.arguments["value"]]
+            value = bound.arguments["value"]
+            if (
+                semantics.algorithm.value in _MUTATING_STORE_ALGORITHMS
+                and self._context.is_array(operation, value)
+            ):
+                scope = inst.target.scope
+                loc = inst.loc
+                preserved_value = self._context.typed_payload_like(
+                    statements,
+                    scope=scope,
+                    loc=loc,
+                    stem="store_preserved_value",
+                    prototype=value,
+                    is_array=True,
+                    dtype_policy=_PAYLOAD_DTYPE_LIKE,
+                    items_per_thread=semantics.items_per_thread,
+                )
+                self._context.copy_array_payload(
+                    statements,
+                    operation=operation,
+                    source=value,
+                    destination=preserved_value,
+                    scope=scope,
+                    loc=loc,
+                    known_items_per_thread=semantics.items_per_thread,
+                )
+                value = preserved_value
+            runtime_args = [bound.arguments["destination"], value]
             return_alias = None
-        return self._context.rewrite_call(
-            inst,
-            lowering_plan=plan,
-            factory=factory,
-            args=runtime_args,
-            kwargs=factory_kwargs,
-            return_alias=return_alias,
+        statements.extend(
+            self._context.rewrite_call(
+                inst,
+                lowering_plan=plan,
+                factory=factory,
+                args=runtime_args,
+                kwargs=factory_kwargs,
+                return_alias=return_alias,
+            )
         )
+        return statements
 
 
 def _lower_registered_load_store(

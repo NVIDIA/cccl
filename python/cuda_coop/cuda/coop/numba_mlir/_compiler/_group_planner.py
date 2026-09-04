@@ -792,10 +792,15 @@ class _GroupCallPlanner:
                 return int(extent)
             return None
         if function is _cuda_module.local.array:
-            if not definition.args:
+            shape_ref = (
+                definition.args[0]
+                if definition.args
+                else dict(definition.kws).get("shape")
+            )
+            if shape_ref is None:
                 return None
             try:
-                extent = self._constant(definition.args[0])
+                extent = self._constant(shape_ref)
             except GroupRewriteError:
                 return None
             if isinstance(extent, Integral) and (not isinstance(extent, bool)):

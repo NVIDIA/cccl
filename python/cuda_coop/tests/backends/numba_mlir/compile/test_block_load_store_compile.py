@@ -59,6 +59,7 @@ def _algorithm(
     context: _nvrtc.CompileContext,
     *,
     operation: str = "load",
+    algorithm: str = "direct",
     block_dim: tuple[int, int, int] = (32, 1, 1),
     dtype=types.int32,
     items_per_thread: int = 2,
@@ -79,14 +80,17 @@ def _algorithm(
         dtype=adapter.core_dtype(dtype),
         block_dim=block_dim,
         items_per_thread=items_per_thread,
-        algorithm="direct",
+        algorithm=algorithm,
         valid_items=valid_items,
     )
+    storage_free = algorithm in {"direct", "striped", "vectorize"}
     algorithm = adapter.materialize(
         spec.specialization,
-        storage_abi=StorageABI.NONE,
+        storage_abi=(StorageABI.NONE if storage_free else StorageABI.LEADING_POINTER),
         execution_scope=SynchronizationScope.BLOCK,
-        synchronization_scope=SynchronizationScope.NONE,
+        synchronization_scope=(
+            SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
+        ),
         extra_type_definitions=(_types.numba_type_to_wrapper(dtype),),
     )
     algorithm._compile_context = context
@@ -206,6 +210,240 @@ def test_direct_load_store_compile_without_temp_storage_or_barriers(
     assert all(invocable.files == [str(artifact_path)] for invocable in invocables)
 
 
+def test_all_block_load_store_algorithms_compile_with_declared_storage(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    storage_free_algorithms = {"direct", "striped", "vectorize"}
+    algorithm_names = (
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+        "warp_transpose",
+        "warp_transpose_timesliced",
+    )
+    algorithms = {
+        (operation, name): _algorithm(
+            compile_context,
+            operation=operation,
+            algorithm=name,
+        )
+        for operation in ("load", "store")
+        for name in algorithm_names
+    }
+
+    for (operation, name), specialization in algorithms.items():
+        source = _source(specialization)
+        cub_token = f"::cub::BLOCK_{operation.upper()}_{name.upper()}"
+        assert cub_token in source
+        if name in storage_free_algorithms:
+            assert specialization.storage_abi is StorageABI.NONE
+            assert "TempStorage" not in source
+            assert "temp_storage" not in source
+            assert "__syncthreads" not in source
+            assert f"().{operation.title()}(" in source
+        else:
+            assert specialization.storage_abi is StorageABI.LEADING_POINTER
+            assert "::TempStorage" in source
+            assert "temp_storage" in source
+            assert "__syncthreads" in source
+            assert f"(*temp_storage).{operation.title()}(" in source
+
+    for operation in ("load", "store"):
+        providers = [algorithms[(operation, name)] for name in algorithm_names]
+        assert len({provider.c_name for provider in providers}) == len(providers)
+        assert len({provider._private_symbol_key for provider in providers}) == len(
+            providers
+        )
+        assert len({_source(provider) for provider in providers}) == len(providers)
+
+    bundle = _types.prepare_ltoir_bundle(
+        list(algorithms.values()),
+        bundle_name="cuda_coop_numba_mlir_all_block_load_store_algorithms",
+    )
+    assert isinstance(bundle, bytes)
+    assert bundle
+    for (_operation, name), specialization in algorithms.items():
+        if name in storage_free_algorithms:
+            assert specialization.temp_storage_bytes == 0
+            assert specialization.temp_storage_alignment == 1
+        else:
+            assert specialization.temp_storage_bytes > 0
+            assert specialization.temp_storage_alignment > 0
+
+
+def test_unguarded_vectorize_compiles_the_full_tile_overload(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    algorithms = [
+        _algorithm(
+            compile_context,
+            operation=operation,
+            algorithm="vectorize",
+            block_dim=(64, 1, 1),
+            items_per_thread=4,
+            valid_items=ArgumentBinding.omitted(),
+        )
+        for operation in ("load", "store")
+    ]
+
+    for operation, specialization in zip(("load", "store"), algorithms):
+        source = _source(specialization)
+        assert f"::cub::BLOCK_{operation.upper()}_VECTORIZE" in source
+        assert f"().{operation.title()}(" in source
+        assert "checked_param" not in source
+        assert 'asm volatile("trap;" : : :);' not in source
+        assert specialization.storage_abi is StorageABI.NONE
+
+    bundle = _types.prepare_ltoir_bundle(
+        algorithms,
+        bundle_name="cuda_coop_numba_mlir_unguarded_vectorize",
+    )
+    assert isinstance(bundle, bytes)
+    assert bundle
+    assert all(specialization.temp_storage_bytes == 0 for specialization in algorithms)
+
+
+def test_timesliced_transpose_uses_less_storage_for_multiple_warps(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    algorithms = {
+        (operation, algorithm): _algorithm(
+            compile_context,
+            operation=operation,
+            algorithm=algorithm,
+            block_dim=(64, 1, 1),
+            valid_items=ArgumentBinding.omitted(),
+        )
+        for operation in ("load", "store")
+        for algorithm in ("warp_transpose", "warp_transpose_timesliced")
+    }
+
+    bundle = _types.prepare_ltoir_bundle(
+        list(algorithms.values()),
+        bundle_name="cuda_coop_numba_mlir_timesliced_storage",
+    )
+    assert isinstance(bundle, bytes)
+    assert bundle
+    for operation in ("load", "store"):
+        regular = algorithms[(operation, "warp_transpose")]
+        timesliced = algorithms[(operation, "warp_transpose_timesliced")]
+        assert 0 < timesliced.temp_storage_bytes < regular.temp_storage_bytes
+        assert timesliced.temp_storage_alignment == regular.temp_storage_alignment
+
+
+def test_representative_dtypes_compile_for_each_additional_algorithm(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    cases = (
+        ("striped", types.int8),
+        ("vectorize", types.uint64),
+        ("transpose", types.float64),
+        ("warp_transpose", types.int32),
+        ("warp_transpose_timesliced", types.uint16),
+    )
+    algorithms = [
+        _algorithm(
+            compile_context,
+            operation=operation,
+            algorithm=algorithm,
+            block_dim=(64, 1, 1),
+            dtype=dtype,
+        )
+        for operation in ("load", "store")
+        for algorithm, dtype in cases
+    ]
+
+    bundle = _types.prepare_ltoir_bundle(
+        algorithms,
+        bundle_name="cuda_coop_numba_mlir_representative_algorithm_dtypes",
+    )
+    assert isinstance(bundle, bytes)
+    assert bundle
+
+
+def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import numba_cuda_mlir.tools as numba_mlir_tools
+    from numba_cuda_mlir import cuda as compiler_cuda
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop
+
+    fixed_device = SimpleNamespace(compute_capability=_FIXED_COMPUTE_CAPABILITY)
+
+    def fixed_compute_capability(as_type=str):
+        assert as_type in (str, tuple)
+        return _FIXED_COMPUTE_CAPABILITY if as_type is tuple else "sm_90"
+
+    monkeypatch.setattr(
+        numba_mlir_tools,
+        "get_gpu_compute_capability",
+        fixed_compute_capability,
+    )
+    monkeypatch.setattr(compiler_cuda, "get_current_device", lambda: fixed_device)
+
+    @compiler_cuda.jit(chip="sm_90")
+    def storage_free(source, destination):
+        thread = compiler_cuda.threadIdx.x
+        payload = coop.ThreadData(4, dtype=types.int32)
+        loaded = coop.load(
+            coop.this_block(),
+            source,
+            payload,
+            algorithm="vectorize",
+        )
+        for item in range(4):
+            destination[thread * 4 + item] = loaded[item]
+
+    @compiler_cuda.jit(chip="sm_90")
+    def storage_bearing(source, destination):
+        thread = compiler_cuda.threadIdx.x
+        payload = qualified_coop.ThreadData(2, dtype=types.int32)
+        loaded = qualified_coop.load(
+            qualified_coop.this_block(),
+            source,
+            payload,
+            algorithm="warp_transpose_timesliced",
+        )
+        qualified_coop.store(
+            qualified_coop.this_block(),
+            destination,
+            loaded,
+            algorithm="warp_transpose_timesliced",
+        )
+        for item in range(2):
+            destination[thread * 2 + item] = loaded[item]
+
+    signature = types.void(types.int32[::1], types.int32[::1])
+    launch_config_key = (
+        ("grid", (1, 1, 1)),
+        ("block", (64, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    results = [
+        dispatcher._compile_launch_config_signature(signature, launch_config_key)
+        for dispatcher in (storage_free, storage_bearing)
+    ]
+    for result in results:
+        assert isinstance(result.metadata["ltoir"], bytes)
+        assert result.metadata["ltoir"]
+        assert isinstance(result.metadata["cubin"], bytes)
+        assert result.metadata["cubin"]
+        assert result.metadata["linked_external_link_items"]
+
+    storage_free_ptx = next(iter(storage_free.inspect_lto_ptx().values()))
+    storage_bearing_ptx = next(iter(storage_bearing.inspect_lto_ptx().values()))
+    assert ".visible .entry" in storage_free_ptx
+    assert ".shared" not in storage_free_ptx
+    assert "bar.sync" not in storage_free_ptx
+    assert ".visible .entry" in storage_bearing_ptx
+    assert ".shared" in storage_bearing_ptx
+    assert "bar.sync" in storage_bearing_ptx
+
+
 def test_real_nvrtc_cache_hits_and_invalidates_every_compile_axis(
     compile_context: _nvrtc.CompileContext,
     _fixed_current_device: list[tuple[int, int]],
@@ -263,6 +501,7 @@ def test_real_nvrtc_cache_hits_and_invalidates_every_compile_axis(
                 valid_items=ArgumentBinding.static(17),
             )
         )
+        algorithm_source = _source(_algorithm(compile_context, algorithm="striped"))
         storage_abi_source = _storage_abi_variant(base_source, base_algorithm)
         changed_context = replace(
             compile_context,
@@ -273,6 +512,7 @@ def test_real_nvrtc_cache_hits_and_invalidates_every_compile_axis(
             "block-dimension": {**base_kwargs, "cpp": dimension_source},
             "dtype": {**base_kwargs, "cpp": dtype_source},
             "items-per-thread": {**base_kwargs, "cpp": items_source},
+            "algorithm": {**base_kwargs, "cpp": algorithm_source},
             "static-runtime-binding": {
                 **base_kwargs,
                 "cpp": static_binding_source,
