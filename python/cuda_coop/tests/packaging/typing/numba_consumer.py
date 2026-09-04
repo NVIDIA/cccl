@@ -11,6 +11,7 @@ import numpy as np
 from typing_extensions import assert_type
 
 import cuda.coop.numba_mlir as coop
+from cuda import coop as common_coop
 
 _ItemT = TypeVar("_ItemT")
 
@@ -84,6 +85,7 @@ def check_numba_surface(
     int32_aggregate = coop.ThreadData(1, np.int32)
     uint16_aggregate = coop.ThreadData(1, np.uint16)
     storage = coop.TempStorage(alignment=16, sharing="shared")
+    common_storage = common_coop.TempStorage(sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
     assert_type(warp, coop.ThreadGroup[Literal["warp"]])
@@ -249,7 +251,7 @@ def check_numba_surface(
             np.int32(4),
             mode="inclusive",
             scan_op=np.maximum,
-            algorithm=coop.BlockScanAlgorithm.RAKING_MEMOIZE,
+            algorithm="raking_memoize",
             aggregate_output=int32_aggregate,
         ),
         np.int32,
@@ -289,7 +291,16 @@ def check_numba_surface(
             algorithm="warp_scans",
             aggregate_output=uint16_aggregate,
         ),
-        ThreadDataLike[np.uint16],
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.inclusive_sum(
+            block,
+            readonly_values,
+            algorithm="raking",
+            temp_storage=common_storage,
+        ),
+        coop.ThreadDataLike[np.uint16],
     )
     assert_type(
         coop.inclusive_sum(
