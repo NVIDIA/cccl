@@ -58,6 +58,9 @@ class _ArgumentRewrite:
         runtime_factory_kw_prerequisites = dict(spec.runtime_factory_kw_prerequisites)
         scalar_binding_kwargs = spec.scalar_binding_kwargs
         extra_runtime_arg_count = runtime_arg_count - base_runtime_arg_count
+        positional_runtime_factory_kwargs = set(
+            runtime_factory_kwargs[:extra_runtime_arg_count]
+        )
         seen_runtime_factory_kwargs: set[str] = set()
         runtime_factory_kw_vars: dict[str, ir.Var] = {}
         runtime_offset_var = None
@@ -131,6 +134,8 @@ class _ArgumentRewrite:
                 if (
                     name in seen_runtime_factory_kwargs
                     or name in runtime_factory_kw_vars
+                    or name in seen_factory_kwargs
+                    or name in positional_runtime_factory_kwargs
                 ):
                     raise CoopSinglePhaseRewriteError(
                         f"cooperative group operation {op_name!r} received a "
