@@ -121,7 +121,7 @@ def load(
     oob_default=None,
     offset=None,
 ):
-    """Build the block-load invocable selected by movement planning."""
+    """Build the block-load invocable selected by group planning."""
 
     valid_items_binding = _optional_binding(num_valid_items)
     oob_default_binding = _optional_binding(oob_default)
@@ -182,7 +182,7 @@ def store(
     oob_default=None,
     offset=None,
 ):
-    """Build the block-store invocable selected by movement planning."""
+    """Build the block-store invocable selected by group planning."""
 
     if oob_default is not None:
         raise ValueError("oob_default is only valid for BlockLoad")
