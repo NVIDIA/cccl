@@ -21,8 +21,11 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode_env);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_runs_env);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -30,6 +33,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, non_trivial_r
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct rle_encode_tuning
 {
@@ -53,6 +58,7 @@ struct rle_non_trivial_runs_tuning
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+} // namespace
 
 #if TEST_LAUNCH == 0
 

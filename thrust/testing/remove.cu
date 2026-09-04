@@ -9,6 +9,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct is_even
 {
@@ -586,3 +588,4 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
   ASSERT_EQUAL_QUIET(reference, d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfStencilToDiscardIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -2,6 +2,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestPoolOptionsBasicValidity()
 {
   thrust::mr::pool_options options = thrust::mr::pool_options();
@@ -62,3 +64,4 @@ void TestPoolOptionsComplexValidity()
   ASSERT_EQUAL(options.validate(), true);
 }
 DECLARE_UNITTEST(TestPoolOptionsComplexValidity);
+} // namespace

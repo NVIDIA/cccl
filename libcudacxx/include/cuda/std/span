@@ -64,6 +64,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// NOLINTBEGIN(misc-use-internal-linkage)
+
 template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = is_convertible_v<_From (*)[], _To (*)[]>;
 
@@ -637,6 +639,8 @@ _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES span(_Range&&)
   -> span<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>>>;
+
+// NOLINTEND(misc-use-internal-linkage)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

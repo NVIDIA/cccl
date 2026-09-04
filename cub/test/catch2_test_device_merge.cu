@@ -19,6 +19,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+// cannot put those in an anon namespace, or nvcc complains that the kernels have internal linkage
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
 
@@ -60,6 +62,7 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
   c2h::host_vector<Key> result_h(result_d); // perform copy outside CHECK() to propagate a potential bad_alloc
   CHECK(reference_h == result_h);
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DeviceMerge::MergeKeys key types", "[merge][device]", CUB_SMALL, types)
 {
@@ -121,6 +124,7 @@ CUB_TEST("DeviceMerge::MergeKeys almost tile-sized input sizes", "[merge][device
 }
 
 // cannot put those in an anon namespace, or nvcc complains that the kernels have internal linkage
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 using unordered_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 struct order
 {
@@ -129,6 +133,7 @@ struct order
     return a.key < b.key;
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DeviceMerge::MergeKeys no operator<", "[merge][device]", CUB_SMALL)
 {
@@ -137,8 +142,7 @@ CUB_TEST("DeviceMerge::MergeKeys no operator<", "[merge][device]", CUB_SMALL)
   test_keys<key_t, offset_t, order>();
 }
 
-namespace
-{
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // must use thrust::make_zip_iterator for now
 // see https://github.com/NVIDIA/cccl/issues/6400
 template <typename... Its>
@@ -177,7 +181,6 @@ struct key_to_value
     v.val = static_cast<decltype(v.val)>(k);
   }
 };
-} // namespace
 
 template <typename Key,
           typename Value,
@@ -241,6 +244,7 @@ void test_pairs(
   CHECK((detail::to_vec(reference_keys_h) == detail::to_vec(c2h::host_vector<Key>(result_keys_d))));
   CHECK((detail::to_vec(reference_values_h) == detail::to_vec(c2h::host_vector<Value>(result_values_d))));
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DeviceMerge::MergePairs key types", "[merge][device]", CUB_SMALL, types)
 {

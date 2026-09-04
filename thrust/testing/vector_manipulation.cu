@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <class Vector>
 void TestVectorManipulation(size_t n)
 {
@@ -99,3 +101,4 @@ void TestVectorManipulationDevice(size_t n)
   TestVectorManipulation<thrust::device_vector<T>>(n);
 }
 DECLARE_VARIABLE_UNITTEST(TestVectorManipulationDevice);
+} // namespace

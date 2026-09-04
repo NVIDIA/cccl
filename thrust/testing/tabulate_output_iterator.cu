@@ -16,6 +16,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename OutItT>
 struct host_write_op
 {
@@ -176,3 +178,4 @@ void TestTabulateOutputIterator()
 }
 
 DECLARE_UNITTEST(TestTabulateOutputIterator);
+} // namespace

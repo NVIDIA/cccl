@@ -13,6 +13,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -27,6 +29,7 @@ struct square_t
     return x * x;
   }
 };
+} // namespace
 
 CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", CUB_SMALL, types)
 {
@@ -101,6 +104,8 @@ CUB_TEST("Device transform reduce works with iterators", "[reduce][device]", CUB
   REQUIRE(expected == actual);
 }
 
+namespace
+{
 struct input_t
 {
   std::uint32_t a;
@@ -186,6 +191,7 @@ struct reduction_op_t
     return result;
   }
 };
+} // namespace
 
 CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[reduce][device]", CUB_SMALL)
 {

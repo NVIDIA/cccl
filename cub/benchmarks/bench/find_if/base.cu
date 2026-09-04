@@ -33,6 +33,8 @@ struct bench_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename T, typename OffsetT>
 void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -74,3 +76,4 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 NVBENCH_BENCH_TYPES(find_if, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.0});
+} // namespace

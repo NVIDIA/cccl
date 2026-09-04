@@ -22,6 +22,9 @@
 
 #include "../../test/test_util.h"
 
+// The members below are reached through the memory_resource concept machinery, never by a
+// direct call, so internal linkage makes nvcc report them as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // example-begin env-mr-fallback-definition
 // A synchronous memory resource on top of cudaMalloc/cudaFree. Allocations block the
 // calling thread; deallocations additionally synchronize the device. Passing it
@@ -81,8 +84,12 @@ cuda::mr::any_resource<cuda::mr::device_accessible> make_device_resource(cuda::d
                                      cuda::mr::device_accessible>(synchronous_memory_resource{});
 }
 // example-end env-mr-fallback-definition
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
+namespace
+{
 bool g_verbose = false; // Whether to display input/output to console
+} // namespace
 
 int main(int argc, char** argv)
 {

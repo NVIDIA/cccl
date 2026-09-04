@@ -32,6 +32,8 @@
 //     through to the output in a algorithm-specific manner.  Refer
 //     to the full documentation for precise semantics.
 
+namespace
+{
 // helper routine
 template <typename String, typename Vector>
 void print(const String& s, const Vector& v)
@@ -133,6 +135,7 @@ void SetIntersectionSize(const Vector& A, const Vector& B)
 
   std::cout << "SetIntersectionSize(A,B) " << (C_end - C_begin) << '\n';
 }
+} // namespace
 
 int main()
 {

@@ -25,6 +25,8 @@
 
 #include "common.h"
 
+namespace
+{
 template <typename T>
 struct return_constant
 {
@@ -37,7 +39,7 @@ struct return_constant
 };
 
 template <typename T>
-static void fill(nvbench::state& state, nvbench::type_list<T>)
+void fill(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   // A 32-bit offset type or the value 0 or 0xFF... have <1% performance impact
@@ -62,3 +64,4 @@ NVBENCH_BENCH_TYPES(fill, NVBENCH_TYPE_AXES(integral_types))
   .set_type_axes_names({"T{ct}"})
   .add_string_axis("Aligned", {"yes", "no"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+} // namespace

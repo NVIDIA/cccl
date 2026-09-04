@@ -11,6 +11,8 @@
 
 #include "find_bound_common.cuh"
 
+namespace
+{
 template <typename T>
 void basic(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -41,3 +43,4 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(integral_types))
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_axis("NeedlesRatio", {1, 25, 50});
+} // namespace

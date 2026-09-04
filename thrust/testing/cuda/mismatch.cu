@@ -69,6 +69,8 @@ void TestMismatchDeviceDevice()
 DECLARE_UNITTEST(TestMismatchDeviceDevice);
 #endif
 
+namespace
+{
 void TestMismatchCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -97,6 +99,10 @@ void TestMismatchCudaStreams()
 DECLARE_UNITTEST(TestMismatchCudaStreams);
 
 // see https://github.com/NVIDIA/cccl/issues/3591
+// my_count is intentionally declared but never defined: the ctor/dtor that use it are
+// never instantiated. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 template <typename T>
 class Wrapper
 {
@@ -121,6 +127,8 @@ private:
   T dummy;
 };
 
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 void TestMismatchBug3591()
 {
   using T = Wrapper<int32_t>;
@@ -128,3 +136,4 @@ void TestMismatchBug3591()
   thrust::mismatch(thrust::device, p, p, p, cuda::std::equal_to<T>());
 }
 DECLARE_UNITTEST(TestMismatchBug3591);
+} // namespace

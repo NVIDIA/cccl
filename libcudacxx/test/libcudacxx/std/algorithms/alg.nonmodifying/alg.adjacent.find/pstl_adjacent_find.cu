@@ -31,6 +31,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_adjacent_find(const Policy& policy, const thrust::device_vector<int>& input)
 {
@@ -50,6 +52,7 @@ void test_adjacent_find(const Policy& policy, const thrust::device_vector<int>& 
     CHECK(res == random_access_iterator{inptr + 41});
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::adjacent_find(Iter, Iter)", "[parallel algorithm]")
 {

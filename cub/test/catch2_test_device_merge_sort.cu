@@ -25,6 +25,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairsCopy, sort_pairs_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortPairs, stable_sort_pairs);
@@ -193,6 +195,7 @@ c2h::device_vector<OffsetT> make_shuffled_key_ranks_vector(OffsetT num_items, c2
                   thrust::default_random_engine{static_cast<unsigned int>(seed.get())});
   return key_ranks;
 }
+} // namespace
 
 CUB_TEST("DeviceMergeSort::SortKeysCopy works",
          "[merge][sort][device][skip-cs-racecheck][skip-cs-memcheck]",

@@ -19,6 +19,8 @@
 
 #include "../../test/test_util.h"
 
+namespace
+{
 bool g_verbose = false; // Whether to display input/output to console
 
 void Initialize(int* h_in, int num_items)
@@ -50,6 +52,7 @@ void Solve(int* h_in, int& h_reference, int num_items)
     }
   }
 }
+} // namespace
 
 int main(int argc, char** argv)
 {

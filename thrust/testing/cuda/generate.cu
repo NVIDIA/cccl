@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct return_value
 {
@@ -150,3 +152,4 @@ void TestGenerateNCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestGenerateNCudaStreams);
+} // namespace

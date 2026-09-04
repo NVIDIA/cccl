@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+// cannot put this in an anon namespace, or nvcc complains that the kernels have internal linkage
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename KeyT, typename OffsetT>
 struct my_policy_hub
 {
@@ -97,6 +99,7 @@ struct my_policy_hub
       SEGMENTED_RADIX_BITS - 1>;
   };
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segmented][radix][sort][device]", CUB_SMALL)
 {

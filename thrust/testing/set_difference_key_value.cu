@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename U>
 void TestSetDifferenceKeyValue(size_t n)
 {
@@ -44,3 +46,4 @@ void TestSetDifferenceKeyValue(size_t n)
   ASSERT_EQUAL_QUIET(h_result, d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifferenceKeyValue);
+} // namespace

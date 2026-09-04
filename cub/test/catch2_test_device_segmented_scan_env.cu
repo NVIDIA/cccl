@@ -16,11 +16,14 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_segmented_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedScan, device_segmented_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedSum, device_segmented_inclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScan, device_segmented_inclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, device_segmented_inclusive_scan_init);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -558,6 +561,8 @@ CUB_TEST("Device segmented inclusive scan init with separate offsets uses enviro
 
 // A policy selector that forces a specific block size. We deliberately use direct block load/store so that the chosen
 // block size is valid for any of the values exercised below.
+namespace
+{
 template <unsigned int BlockThreads>
 struct segmented_scan_tuning
 {
@@ -573,6 +578,7 @@ struct segmented_scan_tuning
       512}};
   }
 };
+} // namespace
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

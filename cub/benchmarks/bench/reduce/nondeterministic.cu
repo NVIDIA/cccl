@@ -34,6 +34,8 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename T, typename OffsetT>
 void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -87,3 +89,4 @@ NVBENCH_BENCH_TYPES(nondeterministic_sum, NVBENCH_TYPE_AXES(value_types, offset_
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

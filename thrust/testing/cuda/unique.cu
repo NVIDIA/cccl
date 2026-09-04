@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct div_n_equality_op
 {
@@ -452,6 +454,10 @@ void TestUniqueWithCustomEqualityOp()
 
 DECLARE_UNITTEST(TestUniqueWithCustomEqualityOp);
 
+// operator() is called only from thrust::unique's __device__ code, so the host pass
+// sees it as unreferenced. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 template <typename F>
 struct NonConstAdapter
 {
@@ -467,6 +473,8 @@ struct NonConstAdapter
   }
 };
 
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 void TestUniqueWithCustomEqualityOpMutable()
 {
   using Vector = thrust::device_vector<int>;
@@ -476,3 +484,4 @@ void TestUniqueWithCustomEqualityOpMutable()
 }
 
 DECLARE_UNITTEST(TestUniqueWithCustomEqualityOpMutable);
+} // namespace

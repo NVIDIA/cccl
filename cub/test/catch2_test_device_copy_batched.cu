@@ -23,6 +23,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, copy_batched);
 
 /**
@@ -81,11 +83,14 @@ struct object_with_non_trivial_ctor
     return *this;
   }
 
+  // Only runs when Catch2 reports a failure. nvcc ignores [[maybe_unused]] entirely.
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   friend std::ostream& operator<<(std::ostream& os, const object_with_non_trivial_ctor& val)
   {
     os << '(' << val.field << ',' << val.magic << ')';
     return os;
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 
   __host__ __device__ __forceinline__ friend bool
   operator==(const object_with_non_trivial_ctor& lhs, const object_with_non_trivial_ctor& rhs)
@@ -93,6 +98,7 @@ struct object_with_non_trivial_ctor
     return lhs.field == rhs.field && lhs.magic == rhs.magic;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceCopy::Batched works", "[copy]", CUB_SMALL)
 try

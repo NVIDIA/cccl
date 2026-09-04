@@ -32,6 +32,8 @@
 
 namespace cudax = cuda::experimental;
 
+namespace
+{
 template <typename Ref, typename InputIt, typename OutputIt>
 __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, InputIt in, size_t n, OutputIt out)
 {
@@ -80,6 +82,7 @@ struct scaled_index
     return static_cast<int>(i / repeats);
   }
 };
+} // namespace
 
 C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 {

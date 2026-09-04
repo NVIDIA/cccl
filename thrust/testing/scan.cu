@@ -16,6 +16,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestScanSimple()
 {
@@ -577,6 +579,7 @@ struct only_set_when_expected_it
     }
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 namespace std
 {
@@ -600,6 +603,8 @@ struct iterator_traits<only_set_when_expected_it>
 };
 _CCCL_END_NAMESPACE_CUDA_STD
 
+namespace
+{
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
   cuda::constant_iterator<long long> begin(1);
@@ -977,3 +982,4 @@ void TestScanEdgeCases()
   }
 }
 DECLARE_UNITTEST(TestScanEdgeCases);
+} // namespace

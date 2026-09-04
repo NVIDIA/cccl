@@ -16,6 +16,8 @@
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
@@ -64,6 +66,7 @@ type_quad<custom_t, custom_t, custom_t>
 >;
 // clang-format on
 #endif
+} // namespace
 
 CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]", CUB_SMALL, full_type_list)
 {
@@ -248,6 +251,8 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
   }
 }
 
+namespace
+{
 #if TEST_TYPES == 0
 using key_alias_type_list = c2h::type_list<std::uint8_t>;
 #elif TEST_TYPES == 1
@@ -257,6 +262,7 @@ using key_alias_type_list = c2h::type_list<float>;
 #elif TEST_TYPES == 3
 using key_alias_type_list = c2h::type_list<custom_t>;
 #endif
+} // namespace
 
 CUB_TEST("Device scan works when memory for keys and results alias one another",
          "[by_key][scan][device]",

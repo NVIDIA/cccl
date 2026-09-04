@@ -15,8 +15,14 @@
 
 namespace ex = ::cuda::experimental::execution;
 
+namespace
+{
 struct not_a_receiver
 {};
+
+// These satisfy the receiver concepts asserted below, which never emit calls.
+// nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 
 struct a_receiver
 {
@@ -26,6 +32,9 @@ struct a_receiver
   void set_value(int) && noexcept {}
   void set_stopped() && noexcept {}
 };
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+} // namespace
 
 C2H_TEST("tests for the receiver concepts", "[concepts]")
 {

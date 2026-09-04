@@ -20,6 +20,8 @@
 #include "test_util.h"
 #include <cccl/c/unique_by_key.h>
 
+namespace
+{
 using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
 using item_t    = int32_t;
 
@@ -113,6 +115,8 @@ void unique_by_key(
 // =============
 
 struct UniqueByKey_AllPointerInputs_Fixture_Tag;
+} // namespace
+
 C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[unique_by_key]", key_types)
 {
   using key_t = c2h::get<0, TestType>;

@@ -16,6 +16,8 @@
 #  define WAR_BUG_1731
 #endif
 
+namespace
+{
 // The needs_copy_construct_via_allocator trait depends on has_member_function:
 #ifndef WAR_BUG_1731
 
@@ -223,3 +225,4 @@ void TestAllocatorTraitsRebindCpp11()
     true);
 }
 DECLARE_UNITTEST(TestAllocatorTraitsRebindCpp11);
+} // namespace

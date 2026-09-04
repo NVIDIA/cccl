@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct saxpy_reference
 {
@@ -120,3 +122,4 @@ void TestFunctionalPlaceholdersSemiRegular()
   static_assert(::cuda::std::semiregular<Expr>);
 }
 DECLARE_UNITTEST(TestFunctionalPlaceholdersSemiRegular);
+} // namespace

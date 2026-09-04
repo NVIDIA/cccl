@@ -20,6 +20,8 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+// cannot put those in an anon namespace, or nvcc complains that the kernels have internal linkage
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairs, device_merge_sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortKeys, device_merge_sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortPairs, device_merge_stable_sort_pairs);
@@ -27,6 +29,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeys, device_merge_stable
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairsCopy, device_merge_sort_pairs_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortKeysCopy, device_merge_sort_keys_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_stable_sort_keys_copy);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -34,6 +37,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_st
 
 namespace stdexec = cuda::std::execution;
 
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <int ThreadsPerBlock>
 struct merge_sort_tuning
 {
@@ -42,6 +46,7 @@ struct merge_sort_tuning
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 #if TEST_LAUNCH == 0
 
@@ -448,10 +453,12 @@ CUB_TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_
   REQUIRE(d_keys_out == expected_keys);
 }
 
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 using block_size_compare_t = block_size_extracting_op<cuda::std::less<>>;
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DeviceMergeSort::SortPairs can be tuned", "[merge_sort][device]", CUB_SMALL, block_sizes)
 {
@@ -558,6 +565,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct no_unroll_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::MergeSortPolicy
@@ -565,6 +573,7 @@ struct no_unroll_tuning
     return {256, 7, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT, false};
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST_CASE("DeviceMergeSort::SortKeys works with unroll disabled", "[merge_sort][device]", CUB_SMALL)
 {

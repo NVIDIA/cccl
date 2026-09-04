@@ -43,6 +43,8 @@ using cg_sizes      = c2h::type_list<_int_c<1>, _int_c<2>>;
 using bucket_sizes  = c2h::type_list<_int_c<1>, _int_c<2>>;
 using probing_kinds = c2h::type_list<_int_c<0>, _int_c<1>>; // 0 = linear probing, 1 = double hashing
 
+namespace
+{
 template <class _Pair>
 struct iota_pair
 {
@@ -71,6 +73,7 @@ struct is_nonzero
     return v != 0;
   }
 };
+} // namespace
 
 C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_sizes, bucket_sizes, probing_kinds)
 {

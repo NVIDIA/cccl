@@ -30,6 +30,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_is_heap(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -72,6 +74,7 @@ void test_is_heap(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(!res);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::is_heap(iter, iter, comp)", "[parallel algorithm]", all_types)
 {

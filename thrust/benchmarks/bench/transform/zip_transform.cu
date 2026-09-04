@@ -18,10 +18,12 @@ constexpr auto startB      = 2; // BabelStream: 0.2
 constexpr auto startC      = 3; // BabelStream: 0.1
 constexpr auto startScalar = 4; // BabelStream: 0.4
 using element_types        = nvbench::type_list<std::int8_t, std::int16_t, float, double, __int128>;
-auto array_size_powers     = std::vector<std::int64_t>{25, 31};
+namespace
+{
+auto array_size_powers = std::vector<std::int64_t>{25, 31};
 
 template <typename T>
-static void nstream_zip_transform(nvbench::state& state, nvbench::type_list<T>)
+void nstream_zip_transform(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
   thrust::device_vector<T> a(n, startA);
@@ -53,3 +55,4 @@ NVBENCH_BENCH_TYPES(nstream_zip_transform, NVBENCH_TYPE_AXES(element_types))
   .set_name("nstream")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", array_size_powers);
+} // namespace

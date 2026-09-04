@@ -12,6 +12,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1
 // %PARAM% TEST_TYPES types 0:1
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 
 #if TEST_TYPES == 0
@@ -30,6 +32,7 @@ using pair_types =
 #  endif // TEST_BF_T()
                  >;
 #endif // TEST_TYPES
+} // namespace
 
 #if TEST_TYPES == 0
 

@@ -26,6 +26,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 // A device sink that is written but never read. Publishing the busy-loop
 // result here gives the loop an observable side effect, so the compiler
 // cannot optimize it away, without perturbing the result buffer.
@@ -55,8 +57,6 @@ __global__ void slow_set_kernel(int* arr, int n, int value, int iters)
   arr[tid] = value;
 }
 
-namespace
-{
 // Submit one slow_set kernel into `ctx`, writing `value` everywhere in
 // `d_arr`. Use stf_cuda_kernel_* instead of the generic task stream API so
 // this helper is valid for both stream and graph backends.

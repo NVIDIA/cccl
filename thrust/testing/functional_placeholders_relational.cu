@@ -49,9 +49,12 @@ struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
   }                                                                                                   \
   DECLARE_VECTOR_UNITTEST(TestFunctionalPlaceholdersBinary##name);
 
+namespace
+{
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(EqualTo, ==, ::cuda::std::equal_to);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(NotEqualTo, !=, ::cuda::std::not_equal_to);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Greater, >, ::cuda::std::greater);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Less, <, ::cuda::std::less);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(GreaterEqual, >=, ::cuda::std::greater_equal);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(LessEqual, <=, ::cuda::std::less_equal);
+} // namespace

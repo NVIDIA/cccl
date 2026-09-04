@@ -15,6 +15,8 @@
 
 using namespace thrust::placeholders;
 
+namespace
+{
 struct stream_convertible
 {
   cudaStream_t stream;
@@ -130,6 +132,7 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
   // tear down
   REQUIRE(cudaGraphDestroy(graph) == cudaSuccess);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform custom stream", "[device][transform]", CUB_SMALL)
 {
@@ -190,6 +193,8 @@ CUB_TEST("DeviceTransform::Fill custom stream", "[device][transform]", CUB_SMALL
   CHECK(thrust::equal(result.begin(), result.end(), cuda::constant_iterator<type>{0xBAD}));
 }
 
+namespace
+{
 struct reference_func
 {
   _CCCL_HOST_DEVICE int operator()(int i) const
@@ -198,6 +203,7 @@ struct reference_func
     return sum > 1000 ? sum : 1337;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]", CUB_SMALL)
 {
@@ -247,6 +253,8 @@ CUB_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
   CHECK(thrust::equal(result.begin(), result.end(), cuda::counting_iterator<type>{42 + 13}));
 }
 
+namespace
+{
 // use a policy selector that prescribes to run with exactly 8 threads per block and 3 items per thread
 struct my_policy_selector
 {
@@ -266,6 +274,7 @@ struct get_thread_id
     return threadIdx.x;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]", CUB_SMALL)
 {

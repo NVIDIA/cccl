@@ -33,6 +33,8 @@ constexpr int block_size   = 128;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -151,6 +153,7 @@ constexpr int num_seeds = 10;
  **********************************************************************************************************************/
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '_Tp', possible loss of data
+} // namespace
 
 C2H_TEST("reduce/this_grid Integral Type Tests",
          "[reduce][this_grid]",

@@ -18,6 +18,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 template <class Group>
 __device__ void test_group(const Group& group)
 {
@@ -132,7 +134,11 @@ __device__ void test_group(const Group& group)
     }
   }
 }
+} // namespace
 
+// nvcc names TestKernel in the generated cudafe1.stub.c, which cannot refer to an anonymous
+// namespace. So this kernel argument type needs external linkage.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct TestKernel
 {
   template <class Config>

@@ -30,6 +30,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -111,6 +113,7 @@ void test_shift_right(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(res == random_access_iterator{raw_pointer + num_shifted});
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::shift_right", "[parallel algorithm]", all_types)
 {

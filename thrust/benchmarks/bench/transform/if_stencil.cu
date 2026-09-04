@@ -7,8 +7,10 @@
 
 #include <nvbench_helper.cuh>
 
+namespace
+{
 template <typename T>
-static void negate_if_stencil(nvbench::state& state, nvbench::type_list<T>)
+void negate_if_stencil(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto n       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto entropy = str_to_entropy(state.get_string("Entropy"));
@@ -37,3 +39,4 @@ NVBENCH_BENCH_TYPES(negate_if_stencil, NVBENCH_TYPE_AXES(integral_types))
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
+} // namespace

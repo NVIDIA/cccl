@@ -14,8 +14,10 @@
 // %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
 
+namespace
+{
 template <typename SampleT, typename CounterT, typename OffsetT>
-static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
+void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
 {
   constexpr int num_channels        = 4;
   constexpr int num_active_channels = 3;
@@ -96,3 +98,4 @@ NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_of
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_axis("Bins", {32, 128, 2048, 2097152})
   .add_string_axis("Entropy", {"0.201", "1.000"});
+} // namespace

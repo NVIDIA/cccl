@@ -32,6 +32,8 @@ constexpr bool same_properties =
   && passed_property<Resource, extra_property> && passed_property<Resource, get_data>
   && passed_property<Resource, cuda::mr::dynamic_accessibility_property>;
 
+// Not in an anonymous namespace: nvcc reports the hidden-friend get_property overloads as
+// unreferenced (#177-D) there, and -Xcudafe=--promote_warnings makes that an error.
 struct explicit_dynamic_resource
 {
   void* allocate_sync(size_t, size_t)

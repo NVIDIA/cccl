@@ -15,6 +15,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void fill_kernel(int cnt, double* data, double value)
 {
   int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -32,7 +34,7 @@ struct verify_args
   bool* passed;
 };
 
-static void verify_callback(stf_host_launch_deps_handle deps)
+void verify_callback(stf_host_launch_deps_handle deps)
 {
   auto* v = static_cast<verify_args*>(stf_host_launch_deps_get_user_data(deps));
 
@@ -59,6 +61,7 @@ static void verify_callback(stf_host_launch_deps_handle deps)
   }
   *v->passed = true;
 }
+} // namespace
 
 C2H_TEST("host_launch with stream context", "[host_launch]")
 {

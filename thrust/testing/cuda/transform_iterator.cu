@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // see also: https://github.com/NVIDIA/cccl/issues/3541
 void TestTransformWithLambda()
 {
@@ -19,3 +21,4 @@ void TestTransformWithLambda()
 }
 
 DECLARE_UNITTEST(TestTransformWithLambda);
+} // namespace

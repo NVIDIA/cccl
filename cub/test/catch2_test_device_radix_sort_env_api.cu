@@ -17,6 +17,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin radix-sort-keys-custom-decomposer
 struct custom_key_t
 {
@@ -31,6 +33,10 @@ struct keys_decomposer_t
   }
 };
 // example-end radix-sort-keys-custom-decomposer
+
+// operator!= completes the comparison interface but is not exercised, and operator<<
+// only runs when Catch2 reports a failure. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 
 __host__ __device__ bool operator==(const custom_key_t& a, const custom_key_t& b)
 {
@@ -77,6 +83,9 @@ struct pairs_decomposer_t
   }
 };
 // example-end radix-sort-pairs-custom-decomposer
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+} // namespace
 
 CUB_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]", CUB_SMALL)
 {
@@ -664,6 +673,8 @@ CUB_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer+bits env-based
 
 #if _CCCL_STD_VER >= 2020
 
+namespace
+{
 // example-begin radix-sort-keys-policy-selector
 struct RadixSortKeysPolicySelector
 {
@@ -718,6 +729,7 @@ struct RadixSortKeysPolicySelector
   }
 };
 // example-end radix-sort-keys-policy-selector
+} // namespace
 
 CUB_TEST("cub::DeviceRadixSort::SortKeys accepts a custom policy selector", "[radix_sort][env]", CUB_SMALL)
 {

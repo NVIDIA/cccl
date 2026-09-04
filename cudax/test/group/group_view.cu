@@ -20,6 +20,8 @@
 
 #include "group_testing.cuh"
 
+namespace
+{
 template <class Config, class Level>
 __device__ void test_group_view(Config config, Level level)
 {
@@ -199,7 +201,11 @@ __device__ void test_group_view(Config config, Level level)
     g2_view_threads.sync();
   }
 }
+} // namespace
 
+// nvcc names TestKernel in the generated cudafe1.stub.c, which cannot refer to an anonymous
+// namespace. So this kernel argument type needs external linkage.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct TestKernel
 {
   template <class Config>

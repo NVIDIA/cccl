@@ -18,7 +18,10 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, device_copy_batched);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -28,6 +31,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, device_copy_batched);
 
 namespace stdexec = cuda::std::execution;
 
+namespace
+{
 template <typename T>
 struct index_to_ptr
 {
@@ -47,6 +52,7 @@ struct get_size
     return offsets[index + 1] - offsets[index];
   }
 };
+} // namespace
 
 #if TEST_LAUNCH == 0
 
@@ -133,6 +139,8 @@ CUB_TEST_CASE("DeviceCopy::Batched uses custom stream", "[copy][device]", CUB_SM
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
+namespace
+{
 template <int BlockThreads>
 struct batch_copy_tuning
 {
@@ -150,6 +158,7 @@ struct batch_copy_tuning
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+} // namespace
 
 #if TEST_LAUNCH != 1
 

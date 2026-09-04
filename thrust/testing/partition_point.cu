@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct is_even
 {
@@ -115,3 +117,4 @@ void TestPartitionPointWithBigIndexes()
 }
 DECLARE_UNITTEST(TestPartitionPointWithBigIndexes);
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -16,6 +16,8 @@ using invalid_types        = c2h::type_list<segment>;
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 2>;
 using modes                = c2h::enum_type_list<scan_mode, scan_mode::exclusive, scan_mode::inclusive>;
 
+namespace
+{
 template <scan_mode Mode>
 struct merge_op_t
 {
@@ -148,6 +150,7 @@ struct merge_init_value_scan_op_t
       thread_data, inclusive_output, exclusive_output, initial_value, merge_segments_op{error_flag_ptr}, valid_items);
   }
 };
+} // namespace
 
 CUB_TEST("Partial warp scan does not apply op to invalid elements",
          "[scan][warp]",

@@ -82,6 +82,8 @@ void TestSetIntersectionByKeyDeviceNoSync()
 DECLARE_UNITTEST(TestSetIntersectionByKeyDeviceNoSync);
 #endif
 
+namespace
+{
 template <typename ExecutionPolicy>
 void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
 {
@@ -124,3 +126,4 @@ void TestSetIntersectionByKeyCudaStreamsNoSync()
   TestSetIntersectionByKeyCudaStreams(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestSetIntersectionByKeyCudaStreamsNoSync);
+} // namespace

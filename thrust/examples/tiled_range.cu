@@ -15,6 +15,8 @@
 //   tiled_range([0, 1, 2, 3], 3) -> [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
 //   ...
 
+namespace
+{
 template <typename Iterator>
 class tiled_range
 {
@@ -64,6 +66,7 @@ protected:
   Iterator last;
   difference_type tiles;
 };
+} // namespace
 
 int main()
 {

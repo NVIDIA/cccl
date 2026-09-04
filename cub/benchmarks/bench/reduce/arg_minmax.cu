@@ -26,6 +26,8 @@ struct tuned_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename T>
 void arg_minmax(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -72,3 +74,4 @@ NVBENCH_BENCH_TYPES(arg_minmax, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

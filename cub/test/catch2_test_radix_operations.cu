@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <typename KeyT>
 struct fundamental_extractor_t
 {
@@ -71,6 +73,8 @@ using a_few_fundamental_types = c2h::type_list<std::uint8_t, std::uint64_t>;
  *    dst: 0 0 0 0 0 0 1 0 0 1
  *
  */
+} // namespace
+
 CUB_TEST("Radix operations extract digits from fundamental types", "[radix][operations]", CUB_SMALL, fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
@@ -109,6 +113,8 @@ CUB_TEST("Radix operations extract digits from fundamental types", "[radix][oper
   }
 }
 
+namespace
+{
 template <class T>
 struct tuple_decomposer_t;
 
@@ -283,6 +289,7 @@ void test_tuple()
     }
   }
 }
+} // namespace
 
 CUB_TEST(
   "Radix operations extract digits from pairs", "[radix][operations]", CUB_SMALL, fundamental_types, fundamental_types)
@@ -554,6 +561,8 @@ CUB_TEST("Radix operations reorder values for pair types",
   }
 }
 
+namespace
+{
 struct fp_aggregate_t
 {
   double fp64;
@@ -575,6 +584,7 @@ struct flipped_fp_aggregate_decomposer_t
     return {val.fp32, val.fp64};
   }
 };
+} // namespace
 
 /**
  * This tests checks radix sort guarantees to treat +0/-0 as the same value.

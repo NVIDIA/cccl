@@ -16,6 +16,8 @@
 //
 // Thanks to Joseph Rhoads for contributing this example
 
+namespace
+{
 // structure used to accumulate the moments and other
 // statistical properties encountered so far.
 template <typename T>
@@ -129,6 +131,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
   std::cout << "\n";
 }
+} // namespace
 
 int main()
 {

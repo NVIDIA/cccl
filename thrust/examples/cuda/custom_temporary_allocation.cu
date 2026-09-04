@@ -27,6 +27,8 @@
 // (host) threads use the same cached_allocator then they should gain exclusive
 // access to the allocator before accessing its methods.
 
+namespace
+{
 struct not_my_pointer_exception : std::exception
 {
   explicit not_my_pointer_exception(void* p)
@@ -122,6 +124,7 @@ private:
     }
   }
 };
+} // namespace
 
 int main()
 {

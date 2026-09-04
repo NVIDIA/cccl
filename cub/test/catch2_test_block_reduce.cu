@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <cub::BlockReduceAlgorithm Algorithm,
           int ItemsPerThread,
           int BlockDimX,
@@ -135,6 +137,7 @@ struct params_t
 
   static constexpr cub::BlockReduceAlgorithm algorithm = c2h::get<4, TestType>::value;
 };
+} // namespace
 
 CUB_TEST("Block reduce works with sum",
          "[reduce][block]",

@@ -15,6 +15,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct my_less
 {
@@ -331,3 +333,4 @@ using test_types_ascending_key =
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
                    >;
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestSortAscendingKey, test_types_ascending_key);
+} // namespace

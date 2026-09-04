@@ -15,6 +15,8 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
+namespace
+{
 // ensure that we properly support thrust::transform_input_output_iterator from cuda::std
 void TestTransformInputOutputIteratorTraits()
 {
@@ -142,3 +144,4 @@ struct TestTransformInputOutputIteratorScan
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformInputOutputIteratorScan, IntegralTypes);
+} // namespace

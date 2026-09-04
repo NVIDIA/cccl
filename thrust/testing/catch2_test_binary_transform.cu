@@ -19,6 +19,8 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_binary_simple()
 {
@@ -413,3 +415,4 @@ TEST_CASE("Base", "[transform_n]")
     CHECK(result == (thrust::device_vector{1, 0, 9}));
   }
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

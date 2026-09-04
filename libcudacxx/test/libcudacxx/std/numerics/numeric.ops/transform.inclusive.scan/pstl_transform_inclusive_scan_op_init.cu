@@ -32,6 +32,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct plus_two
 {
@@ -194,6 +196,7 @@ void test_inclusive_scan(
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::transform_inclusive_scan(Iter1, Iter1, Iter2, Op, Init)", "[parallel algorithm]")
 {

@@ -31,6 +31,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 // Whether to display input/output to console
 bool g_verbose = false;
 
@@ -73,6 +75,7 @@ sort_unordered_results(thrust::host_vector<float> h_res_keys, thrust::host_vecto
   thrust::sort(h_pairs, h_pairs + static_cast<std::ptrdiff_t>(h_res_keys.size()));
   return ::cuda::std::make_tuple(h_res_keys, h_res_values);
 }
+} // namespace
 
 //---------------------------------------------------------------------
 // Main

@@ -15,6 +15,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename KeyT, typename OffsetT>
 struct my_policy_hub
 {
@@ -97,6 +99,7 @@ struct my_policy_hub
       SEGMENTED_RADIX_BITS - 1>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchRadixSort::Dispatch: custom policy hub", "[keys][radix][sort][device]", CUB_SMALL)
 {

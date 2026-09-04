@@ -15,6 +15,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::Bulk, device_bulk);
 
 using offset_type = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t, std::int64_t>;
@@ -31,6 +33,7 @@ struct incrementer_t
     atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
   }
 };
+} // namespace
 
 CUB_TEST("Device bulk works", "[bulk][device]", CUB_SMALL, offset_type)
 {

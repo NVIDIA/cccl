@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename MemoryResource>
 void TestAlignment(MemoryResource memres, std::size_t size, std::size_t alignment)
 {
@@ -35,3 +37,4 @@ void TestNewDeleteResourceAlignedAllocation()
   }
 }
 DECLARE_UNITTEST(TestNewDeleteResourceAlignedAllocation);
+} // namespace

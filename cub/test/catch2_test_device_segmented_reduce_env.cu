@@ -16,12 +16,15 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_reduce_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_reduce_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Max, device_segmented_reduce_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMin, device_segmented_reduce_argmin);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_reduce_argmax);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -370,6 +373,8 @@ CUB_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]
   REQUIRE(d_out == expected);
 }
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct segmented_reduce_tuning
 {
@@ -385,6 +390,7 @@ struct segmented_reduce_tuning
 };
 
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 64>, cuda::std::integral_constant<int, 128>>;
+} // namespace
 
 #if TEST_LAUNCH != 1
 

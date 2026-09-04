@@ -12,6 +12,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 
 // Generic counts, deliberately including non-multiples of the 16-byte vectorized store width, to exercise the scalar
@@ -27,6 +29,7 @@ struct cast_to
     return static_cast<Out>(v);
   }
 };
+} // namespace
 
 // Narrowing widths (e.g. uint32 -> uint8) drive the multi-int4-load gather; widening (uint8 -> uint32) drives the
 // sub-16-byte load. Same-width is already covered by catch2_test_device_transform.cu's BabelStream add.
@@ -77,6 +80,8 @@ CUB_TEST("DeviceTransform::Transform vectorized store widening from uint8",
 }
 
 #if TEST_LAUNCH == 0
+namespace
+{
 struct ublkcp_store_vec_size_2_selector
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::TransformPolicy
@@ -89,6 +94,7 @@ struct ublkcp_store_vec_size_2_selector
     return {64 * 1024, algorithm, cub::TransformPrefetchPolicy{256}, {}, async};
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform tunable narrower store_vec_size", "[device][transform]", CUB_SMALL)
 {

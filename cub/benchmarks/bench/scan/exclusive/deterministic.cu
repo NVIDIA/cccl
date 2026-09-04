@@ -9,8 +9,10 @@
 
 #include <nvbench_helper.cuh>
 
+namespace
+{
 template <typename T, typename OffsetT>
-static void exclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+void exclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
   using init_value_t = T;
@@ -55,3 +57,4 @@ NVBENCH_BENCH_TYPES(exclusive_scan, NVBENCH_TYPE_AXES(types, offsets))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

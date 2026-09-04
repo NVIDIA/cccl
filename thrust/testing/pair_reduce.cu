@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct make_pair_functor
 {
   template <typename T1, typename T2>
@@ -56,3 +58,4 @@ struct TestPairReduce
   }
 }; // end TestPairReduce
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairReduce, SignedIntegralTypes);
+} // namespace

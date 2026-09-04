@@ -20,6 +20,8 @@
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
 
+namespace
+{
 using key_types =
   c2h::type_list<uint8_t,
                  int16_t,
@@ -101,6 +103,8 @@ void merge_sort(
 // ================
 
 struct DeviceMergeSort_SortKeys_Fixture_Tag;
+} // namespace
+
 C2H_TEST("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
 {
   using key_t = c2h::get<0, TestType>;

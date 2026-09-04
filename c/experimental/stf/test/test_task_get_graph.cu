@@ -16,6 +16,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void scale_kernel(int cnt, double* data, double factor)
 {
   const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -31,6 +33,8 @@ __global__ void scale_kernel(int cnt, double* data, double factor)
 // the task's child cudaGraph_t with stf_task_get_graph() and adds nodes into it
 // directly (here a single kernel node). STF wires the task's dependencies around
 // the child graph.
+} // namespace
+
 C2H_TEST("task_get_graph: explicit kernel node in a stackable graph scope", "[stackable][task_get_graph]")
 {
   const size_t N = 256;

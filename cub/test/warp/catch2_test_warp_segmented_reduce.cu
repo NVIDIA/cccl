@@ -11,6 +11,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
 {
@@ -259,6 +261,7 @@ struct params_t
   static constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
   static constexpr int tile_size            = total_warps * logical_warp_threads;
 };
+} // namespace
 
 CUB_TEST("Warp segmented sum works", "[reduce][warp]", CUB_SMALL, full_type_list, logical_warp_threads, segmented_modes)
 {

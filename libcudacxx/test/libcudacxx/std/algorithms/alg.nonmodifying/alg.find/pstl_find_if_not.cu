@@ -25,6 +25,8 @@
 
 inline constexpr size_t size = 1000;
 
+namespace
+{
 template <class T = int>
 struct not_equal_to_val
 {
@@ -67,6 +69,7 @@ void test_find_if_not(const Policy& policy)
     CHECK(res == cuda::counting_iterator{expected});
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::find_if_not", "[parallel algorithm]")
 {

@@ -11,6 +11,8 @@
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #endif
 
+namespace
+{
 template <typename T>
 struct test_allocator_t
 {};
@@ -116,3 +118,4 @@ using test_types =
                       omp_par_info,
                       tbb_par_info>;
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestAllocatorAttachment, test_types);
+} // namespace

@@ -29,6 +29,8 @@ using float_type_list =
 #endif
                  >;
 
+namespace
+{
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
@@ -43,6 +45,7 @@ struct custom_policy_selector
     return {rp, rp};
   }
 };
+} // namespace
 
 CUB_TEST("Nondeterministic Device reduce works with float and double on gpu",
          "[reduce][nondeterministic]",
@@ -195,6 +198,8 @@ CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with
   }
 }
 
+namespace
+{
 // Transform that composes casting with thrust::square
 template <class T>
 struct square_t
@@ -204,6 +209,7 @@ struct square_t
     return thrust::square<T>{}(static_cast<T>(x));
   }
 };
+} // namespace
 
 CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with different transform operators",
          "[reduce][nondeterministic]",
@@ -291,6 +297,8 @@ CUB_TEST("Nondeterministic Device reduce works with float and double on gpu with
   REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
 }
 
+namespace
+{
 using test_types =
   c2h::type_list<int32_t,
                  unsigned int,
@@ -300,6 +308,7 @@ using test_types =
                  double
 #endif
                  >;
+} // namespace
 
 CUB_TEST("Nondeterministic Device reduce works with various types on gpu with different input types",
          "[reduce][nondeterministic]",

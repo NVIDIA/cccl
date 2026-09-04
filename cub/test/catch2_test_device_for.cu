@@ -17,6 +17,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEach, device_for_each);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachN, device_for_each_n);
 
@@ -62,6 +64,7 @@ struct referencing_operator_t
     }
   }
 };
+} // namespace
 
 CUB_TEST("Device for each works", "[for][device]", CUB_SMALL)
 {
@@ -140,7 +143,10 @@ CUB_TEST("Device for each works with unaligned vectors", "[for][device]", CUB_SM
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
+namespace
+{
 using offset_type = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t, std::int64_t>;
+} // namespace
 
 CUB_TEST("Device for each n works", "[for][device]", CUB_SMALL, offset_type)
 {

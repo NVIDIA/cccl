@@ -21,6 +21,8 @@
 #include "cub/util_type.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -77,6 +79,7 @@ struct multiply_and_add
     return x * mul + add;
   }
 };
+} // namespace
 
 CUB_TEST("Device three-way partition can handle empty problems", "[partition][device]", CUB_SMALL, types)
 {
@@ -99,6 +102,8 @@ CUB_TEST("Device three-way partition can handle empty problems", "[partition][de
   REQUIRE(num_selected_out[1] == 0);
 }
 
+namespace
+{
 template <typename T>
 struct three_way_partition_result_t
 {
@@ -200,6 +205,7 @@ thrust_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp seco
 
   return result;
 }
+} // namespace
 
 CUB_TEST("Device three-way partition is stable", "[partition][device]", CUB_SMALL, types)
 {

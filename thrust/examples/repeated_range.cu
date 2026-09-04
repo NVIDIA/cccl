@@ -15,6 +15,8 @@
 //   repeated_range([0, 1, 2, 3], 3) -> [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3]
 //   ...
 
+namespace
+{
 template <typename Iterator>
 class repeated_range
 {
@@ -64,6 +66,7 @@ protected:
   Iterator last;
   difference_type repeats;
 };
+} // namespace
 
 int main()
 {

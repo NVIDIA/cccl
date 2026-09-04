@@ -21,6 +21,8 @@ using cub::detail::warp_threads;
 // Every launch uses two architectural warps, independently of the logical warp size.
 inline constexpr int block_threads = 2 * warp_threads;
 
+namespace
+{
 // Number of logical warps taking part in the sort. When the logical warp is smaller than the
 // architectural warp, this deliberately leaves the last architectural warp partially occupied, so
 // that the collective has to restrict itself to the lanes of its own logical warp.
@@ -379,6 +381,7 @@ struct params_t
   static constexpr int total_warps          = num_logical_warps<logical_warp_threads>();
   static constexpr int max_valid_items      = items_per_thread * logical_warp_threads;
 };
+} // namespace
 
 CUB_TEST("Warp sort on keys-only works",
          "[sort][warp]",
@@ -536,11 +539,14 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   REQUIRE(h_values_in_out == h_values_out);
 }
 
+namespace
+{
 // Keep custom_t coverage narrow because it is expensive to instantiate.
 using custom_t           = c2h::custom_type_t<c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 using custom_key_types   = c2h::type_list<custom_t>;
 using custom_value_types = c2h::type_list<custom_t>;
 using custom_items_per_thread_list = c2h::enum_type_list<int, 3>;
+} // namespace
 
 CUB_TEST("Warp sort on custom key-value pairs works",
          "[sort][warp]",

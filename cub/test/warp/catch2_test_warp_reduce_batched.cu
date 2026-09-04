@@ -33,6 +33,8 @@ inline constexpr int block_size = 2 * warp_size;
 template <typename T>
 using input_2d_mdspan_t = cuda::std::mdspan<T, cuda::std::dextents<int, 2>>;
 
+namespace
+{
 enum class WarpReduceBatchedMode
 {
   SingleOut,
@@ -362,6 +364,7 @@ using sub_warp_equal_configs = c2h::type_list<int_pair<2, 2>, int_pair<4, 4>, in
 using sub_warp_unequal_configs = c2h::type_list<int_pair<3, 16>, int_pair<4, 8>, int_pair<6, 4>, int_pair<1, 2>>;
 
 using unequal_nm_single_out_configs = c2h::type_list<int_pair<1, 32>, int_pair<3, 16>, int_pair<4, 8>, int_pair<1, 2>>;
+} // namespace
 
 CUB_TEST("WarpReduceBatched::Reduce N=M sum", "[warp][reduce][batched]", CUB_SMALL, full_type_list, equal_nm_configs)
 {

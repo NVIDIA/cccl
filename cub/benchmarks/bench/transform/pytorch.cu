@@ -37,8 +37,10 @@ using element_types = nvbench::type_list<
   float>;
 #endif
 
+namespace
+{
 template <typename Op, typename T>
-static void unary(nvbench::state& state, nvbench::type_list<T>)
+void unary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -139,7 +141,7 @@ struct exp_op
 BENCHMARK_UNARY(exp);
 
 template <typename Op, typename T>
-static void binary(nvbench::state& state, nvbench::type_list<T>)
+void binary(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -207,3 +209,4 @@ struct fmax_op
   }
 };
 BENCHMARK_BINARY(fmax);
+} // namespace

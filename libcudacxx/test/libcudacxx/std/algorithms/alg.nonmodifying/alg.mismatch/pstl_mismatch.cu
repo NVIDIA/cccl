@@ -33,6 +33,8 @@
 
 inline constexpr short size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_mismatch(const Policy& policy)
 {
@@ -54,6 +56,7 @@ void test_mismatch(const Policy& policy)
     CHECK(res == cuda::std::pair{cuda::counting_iterator<short>{size}, cuda::counting_iterator<short>{size}});
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::mismatch(first1, last1, first2)", "[parallel algorithm]")
 {

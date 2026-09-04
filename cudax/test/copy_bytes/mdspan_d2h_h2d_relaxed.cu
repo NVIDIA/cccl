@@ -20,6 +20,8 @@
 
 static const cuda::stream stream{cuda::device_ref{0}};
 
+namespace
+{
 // Source uses layout_stride_relaxed, destination uses layout_right with the same extents.
 template <typename T, typename SrcMapping>
 void test_impl_relaxed(
@@ -55,6 +57,7 @@ void test_impl_relaxed(
 /***********************************************************************************************************************
  * layout_stride_relaxed Tests
  **********************************************************************************************************************/
+} // namespace
 
 TEST_CASE("copy_bytes layout_stride_relaxed, sliding window", "[copy_bytes][relaxed][window]")
 {

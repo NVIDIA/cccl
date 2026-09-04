@@ -7,6 +7,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,
           int BlockDimX,
@@ -393,6 +395,7 @@ struct params_t
   static constexpr cub::BlockScanAlgorithm algorithm = c2h::get<4, TestType>::value;
   static constexpr scan_mode mode                    = c2h::get<5, TestType>::value;
 };
+} // namespace
 
 CUB_TEST("Block scan works with sum",
          "[scan][block]",

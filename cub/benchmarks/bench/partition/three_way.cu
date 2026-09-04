@@ -31,6 +31,8 @@ struct policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename T, typename OffsetT>
 void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -97,3 +99,4 @@ NVBENCH_BENCH_TYPES(partition, NVBENCH_TYPE_AXES(fundamental_types, offset_types
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
+} // namespace

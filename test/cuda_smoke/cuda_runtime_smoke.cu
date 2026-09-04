@@ -13,6 +13,8 @@
 
 #define CUDART_REQUIRE(call) REQUIRE((call) == cudaSuccess)
 
+namespace
+{
 __global__ void increment_kernel(int* p, int n)
 {
   int idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -21,6 +23,7 @@ __global__ void increment_kernel(int* p, int n)
     p[idx] += 1;
   }
 }
+} // namespace
 
 TEST_CASE("CUDA device is available", "[cuda_smoke]")
 {

@@ -22,6 +22,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 enum class MyCoopAlgScratch
 {
   none,
@@ -262,6 +264,7 @@ struct TestKernel
     }
   }
 };
+} // namespace
 
 C2H_TEST("scratch", "[scratch]")
 {

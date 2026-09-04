@@ -16,8 +16,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T>
-static void range_iter_op(nvbench::state& state, nvbench::type_list<T>)
+void range_iter_op(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -43,7 +45,7 @@ NVBENCH_BENCH_TYPES(range_iter_op, NVBENCH_TYPE_AXES(fundamental_types))
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
 
 template <typename T>
-static void range_iter_op_init(nvbench::state& state, nvbench::type_list<T>)
+void range_iter_op_init(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -67,3 +69,4 @@ NVBENCH_BENCH_TYPES(range_iter_op_init, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("range_iter_op_init")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+} // namespace

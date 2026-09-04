@@ -2,6 +2,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct TestMin
 {
@@ -67,3 +69,4 @@ struct TestMax
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestMax, NumericTypes);
+} // namespace

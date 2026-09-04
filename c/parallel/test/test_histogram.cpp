@@ -32,6 +32,8 @@ using sample_types =
 constexpr int num_channels        = 1;
 constexpr int num_active_channels = 1;
 
+namespace
+{
 void build_histogram(
   cccl_device_histogram_build_result_t* build,
   cccl_iterator_t d_samples,
@@ -202,6 +204,7 @@ auto compute_reference_result(
   }
   return h_histogram;
 }
+} // namespace
 
 C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
 {

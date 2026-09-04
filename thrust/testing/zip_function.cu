@@ -13,6 +13,8 @@
 
 using namespace unittest;
 
+namespace
+{
 struct SumThree
 {
   template <typename T1, typename T2, typename T3>
@@ -174,3 +176,4 @@ struct TestNestedZipFunction2
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction2, type_list<int, float>);
+} // namespace

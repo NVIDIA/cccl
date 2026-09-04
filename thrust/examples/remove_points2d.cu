@@ -11,6 +11,8 @@
 // The x and y coordinates are stored in separate arrays
 // and a zip_iterator is used to combine them together
 
+namespace
+{
 template <typename T>
 struct is_outside_circle
 {
@@ -31,6 +33,7 @@ struct is_outside_circle
     }
   }
 };
+} // namespace
 
 int main()
 {

@@ -16,6 +16,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachCopy, device_for_each_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachCopyN, device_for_each_copy_n);
 
@@ -47,6 +49,7 @@ public:
     return m_offset;
   }
 };
+} // namespace
 
 CUB_TEST("Device for each works", "[for_copy][device]", CUB_SMALL)
 {

@@ -22,9 +22,15 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
 
 #include <host_device.cuh>
 
-static CUlaunchConfig expectedConfig;
-static bool replacementCalled = false;
+namespace
+{
+CUlaunchConfig expectedConfig;
+bool replacementCalled = false;
+} // namespace
 
+// Must keep external linkage: <cuda/launch> calls this through the declaration above
+// when _CCCLRT_LAUNCH_CONFIG_TEST is defined.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, void* args[])
 {
   replacementCalled = true;
@@ -80,6 +86,8 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
   }
 }
 
+namespace
+{
 __global__ void empty_kernel(int i) {}
 
 template <bool HasCluster>
@@ -180,6 +188,7 @@ auto configuration_test(
   }
   stream.sync();
 }
+} // namespace
 
 C2H_TEST("Launch configuration", "[launch]")
 {
@@ -255,6 +264,8 @@ C2H_TEST("Configuration combine", "[launch]")
 }
 
 #if !_CCCL_CUDA_COMPILER(CLANG)
+namespace
+{
 template <typename Config>
 TEST_FUNC void test_queries_on_config(const Config& config)
 {
@@ -289,6 +300,7 @@ __global__ void test_kernel(Config config)
 {
   test_queries_on_config(config);
 }
+} // namespace
 
 C2H_TEST("Queries on config", "[launch]")
 {

@@ -7,6 +7,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestFindSimple()
 {
@@ -266,8 +268,6 @@ void TestFindWithBigIndexes()
 DECLARE_UNITTEST(TestFindWithBigIndexes);
 #endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
-namespace
-{
 class Weird
 {
   int value;
@@ -282,7 +282,6 @@ public:
     return x == y.value;
   }
 };
-} // namespace
 
 void TestFindAsymmetricEquality()
 { // Regression test for NVIDIA/thrust#1229
@@ -294,3 +293,4 @@ void TestFindAsymmetricEquality()
   ASSERT_EQUAL(result - dv.begin(), 333);
 }
 DECLARE_UNITTEST(TestFindAsymmetricEquality);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

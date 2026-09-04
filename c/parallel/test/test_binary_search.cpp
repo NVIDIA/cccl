@@ -17,6 +17,8 @@
 #include "test_util.h"
 #include <cccl/c/binary_search.h>
 
+namespace
+{
 using BuildResultT = cccl_device_binary_search_build_result_t;
 
 struct binary_search_cleanup
@@ -27,7 +29,7 @@ struct binary_search_cleanup
   }
 };
 
-static std::string mode_as_key(cccl_binary_search_mode_t mode)
+std::string mode_as_key(cccl_binary_search_mode_t mode)
 {
   switch (mode)
   {
@@ -179,6 +181,8 @@ void test_vectorized(Variant variant, HostVariant host_variant)
 }
 
 struct BinarySearch_IntegralTypes_LowerBound_Fixture_Tag;
+} // namespace
+
 C2H_TEST("DeviceFind::LowerBound works", "[find][device][binary-search]", integral_types)
 {
   using value_type = c2h::get<0, TestType>;

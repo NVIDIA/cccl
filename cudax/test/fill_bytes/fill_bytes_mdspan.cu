@@ -30,6 +30,8 @@ static const cuda::stream stream{cuda::device_ref{0}};
 using host_vector_bytes_t = thrust::host_vector<cuda::std::byte>;
 using span_bytes_t        = cuda::std::span<const cuda::std::byte>;
 
+namespace
+{
 template <typename Value>
 void fill_expected_bytes(host_vector_bytes_t& expected, size_t byte_offset, size_t num_bytes, const Value& value)
 {
@@ -181,6 +183,7 @@ enum class pattern32 : uint32_t
 {
   value = 0xff00ff00u,
 };
+} // namespace
 
 TEST_CASE("fill_bytes device mdspan accepts generic fill values", "[fill_bytes][device]")
 {

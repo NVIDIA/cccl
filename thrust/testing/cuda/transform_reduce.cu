@@ -43,6 +43,8 @@ void TestTransformReduceDeviceDevice()
 DECLARE_UNITTEST(TestTransformReduceDeviceDevice);
 #endif
 
+namespace
+{
 void TestTransformReduceCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -63,3 +65,4 @@ void TestTransformReduceCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestTransformReduceCudaStreams);
+} // namespace

@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int BINS,
           int BLOCK_THREADS,
           int ITEMS_PER_THREAD,
@@ -66,6 +68,7 @@ struct params_t
   static constexpr int num_samples                        = threads_in_block * items_per_thread;
   static constexpr cub::BlockHistogramAlgorithm algorithm = c2h::get<4, TestType>::value;
 };
+} // namespace
 
 CUB_TEST("Block histogram can be computed with uniform input",
          "[histogram][block]",
@@ -96,6 +99,8 @@ CUB_TEST("Block histogram can be computed with uniform input",
   REQUIRE(h_reference == d_histogram);
 }
 
+namespace
+{
 template <typename SampleT>
 c2h::host_vector<int> compute_host_reference(int bins, const c2h::host_vector<SampleT>& h_samples)
 {
@@ -107,6 +112,7 @@ c2h::host_vector<int> compute_host_reference(int bins, const c2h::host_vector<Sa
 
   return h_reference;
 }
+} // namespace
 
 CUB_TEST("Block histogram can be computed with modulo input",
          "[histogram][block]",

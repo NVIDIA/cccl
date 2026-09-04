@@ -14,6 +14,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void TestDeviceBufferShuffleCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
@@ -45,3 +47,4 @@ void TestDeviceBufferSortCudaStreams()
   test_runtime::assert_equal(stream, buffer, {0, 1, 2, 3, 4});
 }
 DECLARE_UNITTEST(TestDeviceBufferSortCudaStreams);
+} // namespace

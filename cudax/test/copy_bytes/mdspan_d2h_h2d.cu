@@ -20,6 +20,8 @@
 
 static const cuda::stream stream{cuda::device_ref{0}};
 
+namespace
+{
 template <typename SrcLayout = cuda::std::layout_right,
           typename DstLayout = cuda::std::layout_right,
           typename T,
@@ -150,6 +152,8 @@ void test_impl_stride_offset(
 // stride order: true
 // tile size:    16
 // num tiles:    1
+} // namespace
+
 TEST_CASE("copy_bytes 1D", "[copy_bytes][1d]")
 {
   constexpr int N = 16;

@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 struct make_pair_functor
 {
   template <typename T1, typename T2>
@@ -48,3 +50,4 @@ struct TestPairStableSortByKey
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairStableSortByKey,
                                           unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
+} // namespace

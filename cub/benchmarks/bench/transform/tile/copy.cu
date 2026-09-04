@@ -13,6 +13,8 @@
 #  include <cuda_tile.h>
 #endif
 
+namespace
+{
 struct identity
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -22,6 +24,7 @@ struct identity
     return v;
   }
 };
+} // namespace
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 CUB_NAMESPACE_BEGIN
@@ -44,8 +47,10 @@ using element_types = nvbench::type_list<TUNE_T>;
 using element_types = nvbench::type_list<nvbench::int8_t, nvbench::int16_t, nvbench::int32_t, nvbench::float64_t>;
 #endif
 
+namespace
+{
 template <typename T>
-static void copy(nvbench::state& state, nvbench::type_list<T>)
+void copy(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -67,3 +72,4 @@ NVBENCH_BENCH_TYPES(copy, NVBENCH_TYPE_AXES(element_types))
   .set_name("tile_copy")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+} // namespace

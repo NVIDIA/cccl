@@ -17,6 +17,8 @@
 #  define THRUST_GCC13_TBB_MISCOMPILE
 #endif
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestReplaceSimple()
 {
@@ -506,3 +508,4 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilToDiscardItera
   ASSERT_EQUAL_QUIET(reference, d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestReplaceCopyIfStencilToDiscardIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

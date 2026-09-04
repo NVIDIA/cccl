@@ -24,6 +24,8 @@
 
 using BuildResultT = cccl_device_three_way_partition_build_result_t;
 
+namespace
+{
 struct three_way_partition_cleanup
 {
   CUresult operator()(BuildResultT* build_data) const noexcept
@@ -304,6 +306,8 @@ using test_params_tuple =
                  TestParameters<c2h::get<5, key_types>, c2h::get<1, num_selected_types>>>;
 
 struct ThreeWayPartition_PrimitiveTypes_Fixture_Tag;
+} // namespace
+
 C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]", test_params_tuple)
 {
   using T              = c2h::get<0, TestType>;

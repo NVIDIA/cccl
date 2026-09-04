@@ -34,6 +34,8 @@
  * \tparam BLOCK_DIM_Y The thread block length in threads along the Y dimension
  * \tparam BLOCK_DIM_Z The thread block length in threads along the Z dimension
  */
+namespace
+{
 template <typename ItemItT,
           typename RunLengthsItT,
           int RUNS_PER_THREAD,
@@ -469,6 +471,7 @@ struct params_t
   static constexpr int block_dim_y              = BlockDimY;
   static constexpr int block_dim_z              = BlockDimZ;
 };
+} // namespace
 
 CUB_TEST_LIST(
   "Block Run Length Decode works with run lengths and offsets relative to each run",

@@ -33,6 +33,8 @@ TEMPLATE_LIST_TEST_CASE("ScalarLowerBoundSimple", "[binary_search]", vector_list
   CHECK(thrust::lower_bound(vec.begin(), vec.end(), 9) - vec.begin() == 5);
 }
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator, typename LessThanComparable>
 ForwardIterator
 lower_bound(my_system& system, ForwardIterator first, ForwardIterator /*last*/, const LessThanComparable& /*value*/)
@@ -291,3 +293,4 @@ TEST_CASE("BoundsWithBigIndexes", "[binary_search]")
     TestBoundsWithBigIndexesHelper(magnitude);
   }
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

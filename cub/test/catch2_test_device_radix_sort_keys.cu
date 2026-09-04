@@ -27,6 +27,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeysDescending, sort_keys_descending);
 
@@ -71,6 +73,7 @@ using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 
 // Index types used for NumItemsT testing. cub::detail::ChooseOffsetT only selects 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
+} // namespace
 
 CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", CUB_SMALL, key_types)
 {
@@ -446,6 +449,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
   REQUIRE(ref_keys == keys);
 }
 
+namespace
+{
 template <typename key_t, typename num_items_t>
 void do_large_offset_test(std::size_t num_items)
 {
@@ -484,6 +489,7 @@ void do_large_offset_test(std::size_t num_items)
     SUCCEED("allocation failure is not a test failure");
   }
 }
+} // namespace
 
 CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
          "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",

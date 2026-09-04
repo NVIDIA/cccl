@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T1, typename T2>
 bool are_same_type(const T1&, const T2&)
 {
@@ -128,3 +130,4 @@ void TestMallocDeviceSeq()
 }
 DECLARE_UNITTEST(TestMallocDeviceSeq);
 #endif
+} // namespace

@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class Vector>
 void TestMinElementSimple()
 {
@@ -118,3 +120,4 @@ void TestMinElementCudaIterator()
   ASSERT_EQUAL(*pos, 0);
 }
 DECLARE_UNITTEST(TestMinElementCudaIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

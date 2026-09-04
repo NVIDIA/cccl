@@ -67,6 +67,8 @@ void TestIsPartitionedDeviceDevice()
 DECLARE_UNITTEST(TestIsPartitionedDeviceDevice);
 #endif
 
+namespace
+{
 void TestIsPartitionedCudaStreams()
 {
   thrust::device_vector<int> v(4);
@@ -133,3 +135,4 @@ void TestIsPartitionedWithNonConstPredicate()
     thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), is_even_non_const<int>{}));
 }
 DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);
+} // namespace

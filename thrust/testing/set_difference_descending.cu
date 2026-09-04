@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Vector>
 void TestSetDifferenceDescendingSimple()
 {
@@ -54,3 +56,4 @@ void TestSetDifferenceDescending(const size_t n)
   ASSERT_EQUAL(h_result, d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetDifferenceDescending);
+} // namespace

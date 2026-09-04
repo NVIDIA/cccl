@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Iterator>
 void test(Iterator first, Iterator last)
 {
@@ -45,3 +47,4 @@ void TestTrivialSequence()
   ASSERT_EQUAL(B, refB);
 }
 DECLARE_VECTOR_UNITTEST(TestTrivialSequence);
+} // namespace
