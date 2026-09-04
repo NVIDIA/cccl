@@ -10,14 +10,6 @@
 #include "catch2_test_helper.h"
 #include "unittest/unittest.h"
 
-// There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 11)
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_unary_simple()
 {
