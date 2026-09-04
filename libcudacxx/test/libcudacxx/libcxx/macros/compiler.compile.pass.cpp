@@ -32,12 +32,12 @@
 #  error "CCCL_HOST_COMPILER(GCC) does not match _CCCL_COMPILER(GCC)"
 #endif
 
-#if CCCL_HOST_COMPILER(GCC, >=, 0) != _CCCL_COMPILER(GCC, >=, 0)
-#  error "CCCL_HOST_COMPILER(GCC, >=, 0) does not match _CCCL_COMPILER(GCC, >=, 0)"
+#if CCCL_HOST_COMPILER(GCC, >=, 11) != _CCCL_COMPILER(GCC, >=, 11)
+#  error "CCCL_HOST_COMPILER(GCC, >=, 11) does not match _CCCL_COMPILER(GCC, >=, 11)"
 #endif
 
-#if CCCL_HOST_COMPILER(CLANG, >=, 0, 0) != _CCCL_COMPILER(CLANG, >=, 0, 0)
-#  error "CCCL_HOST_COMPILER(CLANG, >=, 0, 0) does not match _CCCL_COMPILER(CLANG, >=, 0, 0)"
+#if CCCL_HOST_COMPILER(CLANG, >=, 19, 0) != _CCCL_COMPILER(CLANG, >=, 19, 0)
+#  error "CCCL_HOST_COMPILER(CLANG, >=, 19, 0) does not match _CCCL_COMPILER(CLANG, >=, 19, 0)"
 #endif
 
 #if CCCL_HOST_COMPILER(MSVC) != _CCCL_COMPILER(MSVC)
@@ -78,20 +78,14 @@ int main(int, char**)
   static_assert(CCCL_HOST_COMPILER(MSVC2022) == _CCCL_COMPILER(MSVC2022));
   static_assert(CCCL_HOST_COMPILER(MSVC2026) == _CCCL_COMPILER(MSVC2026));
 
-  static_assert(CCCL_HOST_COMPILER(NVHPC, >=, 0) == _CCCL_COMPILER(NVHPC, >=, 0));
-  static_assert(CCCL_HOST_COMPILER(CLANG, >=, 0) == _CCCL_COMPILER(CLANG, >=, 0));
-  static_assert(CCCL_HOST_COMPILER(GCC, >=, 0) == _CCCL_COMPILER(GCC, >=, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC, >=, 0) == _CCCL_COMPILER(MSVC, >=, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC2019, >=, 0) == _CCCL_COMPILER(MSVC2019, >=, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC2022, >=, 0) == _CCCL_COMPILER(MSVC2022, >=, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC2026, >=, 0) == _CCCL_COMPILER(MSVC2026, >=, 0));
+  static_assert(CCCL_HOST_COMPILER(NVHPC, >=, 20) == _CCCL_COMPILER(NVHPC, >=, 20));
+  static_assert(CCCL_HOST_COMPILER(CLANG, >=, 19) == _CCCL_COMPILER(CLANG, >=, 19));
+  static_assert(CCCL_HOST_COMPILER(GCC, >=, 11) == _CCCL_COMPILER(GCC, >=, 11));
+  static_assert(CCCL_HOST_COMPILER(MSVC, >=, 19) == _CCCL_COMPILER(MSVC, >=, 19));
 
-  static_assert(CCCL_HOST_COMPILER(NVHPC, >=, 0, 0) == _CCCL_COMPILER(NVHPC, >=, 0, 0));
-  static_assert(CCCL_HOST_COMPILER(CLANG, >=, 0, 0) == _CCCL_COMPILER(CLANG, >=, 0, 0));
-  static_assert(CCCL_HOST_COMPILER(GCC, >=, 0, 0) == _CCCL_COMPILER(GCC, >=, 0, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC, >=, 0, 0) == _CCCL_COMPILER(MSVC, >=, 0, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC2019, >=, 0, 0) == _CCCL_COMPILER(MSVC2019, >=, 0, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC2022, >=, 0, 0) == _CCCL_COMPILER(MSVC2022, >=, 0, 0));
-  static_assert(CCCL_HOST_COMPILER(MSVC2026, >=, 0, 0) == _CCCL_COMPILER(MSVC2026, >=, 0, 0));
+  static_assert(CCCL_HOST_COMPILER(NVHPC, >=, 20, 7) == _CCCL_COMPILER(NVHPC, >=, 20, 7));
+  static_assert(CCCL_HOST_COMPILER(CLANG, >=, 19, 1) == _CCCL_COMPILER(CLANG, >=, 19, 1));
+  static_assert(CCCL_HOST_COMPILER(GCC, >=, 11, 1) == _CCCL_COMPILER(GCC, >=, 11, 1));
+  static_assert(CCCL_HOST_COMPILER(MSVC, >=, 19, 20) == _CCCL_COMPILER(MSVC, >=, 19, 20));
   return 0;
 }
