@@ -11,6 +11,7 @@ from typing_extensions import TypeVar
 from cuda.coop._typing import (
     CommonNumericScalar,
     CommonShuffleMode,
+    CommonThreadDataLike,
     ThreadDataLike,
 )
 
@@ -20,7 +21,7 @@ _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 def shuffle(
     group: BlockGroup,
-    value: ThreadDataLike[_ItemT],
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
     mode: CommonShuffleMode = "down",

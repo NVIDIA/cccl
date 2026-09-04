@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import operator
+from enum import Enum
 from typing import Any
 
 from numba_cuda_mlir import types
@@ -50,7 +51,7 @@ def _positive_int(value: Any, *, name: str) -> int:
 
 
 def _mode(value: Any, enum_type: type, *, operation: str):
-    if not isinstance(value, str):
+    if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"{operation} mode must be a string")
     token = value.strip().lower().replace("-", "_")
     try:

@@ -12,6 +12,7 @@ from .._typing import (
     IntegerValue,
     PortableNumericScalar,
     PortableShuffleMode,
+    PortableThreadDataLike,
     ScalarShuffleMode,
     ThreadDataLike,
 )
@@ -22,7 +23,7 @@ _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 @overload
 def shuffle(
     group: BlockGroup,
-    value: ThreadDataLike[_ItemT],
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
     mode: PortableShuffleMode = "down",
