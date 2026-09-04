@@ -15,11 +15,58 @@ from dataclasses import dataclass
 from enum import Enum
 from importlib import import_module
 from threading import RLock
-from typing import Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from ._group_rewriting import GroupRewriteContext
+    from ._rewrite_payload import PayloadInference
 
 from cuda.coop._core import SynchronizationScope
 
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
+
+
+class _InferPayloadHook(Protocol):
+    def __call__(
+        self,
+        context: GroupRewriteContext,
+        inference: PayloadInference,
+    ) -> None: ...
+
+
+class _AnalyzeMatchHook(Protocol):
+    def __call__(
+        self,
+        context: GroupRewriteContext,
+        *,
+        op_name: str,
+        runtime_args: tuple[Any, ...],
+        factory_kwargs: dict[str, object],
+    ) -> Any: ...
+
+
+class _PrepareRuntimeArgsHook(Protocol):
+    def __call__(
+        self,
+        context: GroupRewriteContext,
+        block: Any,
+        *,
+        match: Any,
+        runtime_args: list[Any],
+        scope: Any,
+        loc: Any,
+    ) -> list[Any]: ...
+
+
+class _ValidateRuntimeControlsHook(Protocol):
+    def __call__(
+        self,
+        context: GroupRewriteContext,
+        *,
+        op_name: str,
+        runtime_args: list[Any],
+        factory_kwargs: dict[str, object],
+    ) -> None: ...
 
 
 class StorageABI(str, Enum):
@@ -106,10 +153,10 @@ class RewriteOperationSpec:
     accepts_temp_storage: bool
     scalar_binding_kwargs: frozenset[str]
     runtime_offset_kwarg: str | None
-    infer_payload: Callable[[Any, Any], None]
-    analyze_match: Callable[..., Any] | None = None
-    prepare_runtime_args: Callable[..., list[Any]] | None = None
-    validate_runtime_controls: Callable[..., None] | None = None
+    infer_payload: _InferPayloadHook
+    analyze_match: _AnalyzeMatchHook | None = None
+    prepare_runtime_args: _PrepareRuntimeArgsHook | None = None
+    validate_runtime_controls: _ValidateRuntimeControlsHook | None = None
 
     def __post_init__(self) -> None:
         for name in (

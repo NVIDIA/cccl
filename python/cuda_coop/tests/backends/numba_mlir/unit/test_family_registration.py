@@ -491,11 +491,15 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
 
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._group_rewriting import (
+        GroupRewriteContext,
+    )
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     operation = "_test_rewrite_family"
     synchronization_scope = SynchronizationScope(scope_name)
     events = []
+    contexts = []
     family_metadata = object()
     invocable = _FakeInvocable(synchronization_scope)
 
@@ -504,18 +508,26 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
         events.append(("factory", dict(factory_kwargs)))
         return invocable
 
-    def infer_payload(_rewrite, inference):
+    def record_context(context):
+        assert isinstance(context, GroupRewriteContext)
+        assert not hasattr(context, "_matches")
+        assert not hasattr(context, "_temp_storage_global_plan")
+        contexts.append(context)
+
+    def infer_payload(context, inference):
+        record_context(context)
         events.append(("infer", tuple(inference.runtime_args)))
         inference.infer_kwarg("inferred", "from-callback")
         inference.infer_kwarg("element_type", np.dtype("int32"))
 
     def analyze_match(
-        _rewrite,
+        context,
         *,
         op_name,
         runtime_args,
         factory_kwargs,
     ):
+        record_context(context)
         events.append(
             (
                 "analyze",
@@ -527,7 +539,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
         return family_metadata
 
     def prepare_runtime_args(
-        _rewrite,
+        context,
         block,
         *,
         match,
@@ -535,6 +547,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
         scope,
         loc,
     ):
+        record_context(context)
         assert match.family_metadata is family_metadata
         events.append(("prepare", tuple(runtime_args)))
         prepared = ir.Var(scope, "__family_prepared_value", loc)
@@ -631,6 +644,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
         for event in analyze_events
     )
     assert len(prepare_events) == 1
+    assert len(contexts) == 5
 
     resolver = object.__new__(CoopSinglePhaseRewrite)
     resolver._func_ir = func_ir
