@@ -190,70 +190,6 @@ inline bool locality_domain_memory_disabled()
 }
 
 /**
- * @brief Cache of per-(device, domain) localized memory pools.
- *
- * Localized stream-ordered allocation goes through memory pools
- * (`cuMemPoolCreate` + `cuMemAllocFromPoolAsync`). Pools are created lazily
- * and reused for the lifetime of the process. Thread-safe.
- */
-class locality_domain_mem_pool_cache
-{
-public:
-  static locality_domain_mem_pool_cache& instance()
-  {
-    static locality_domain_mem_pool_cache inst;
-    return inst;
-  }
-
-  CUmemoryPool get(int dev_id, int domain_id)
-  {
-    ::std::lock_guard<::std::mutex> lock(mtx_);
-    auto key = ::std::make_pair(dev_id, domain_id);
-    auto it  = pools_.find(key);
-    if (it != pools_.end())
-    {
-      return it->second;
-    }
-
-    // Use the driver's DEFAULT pool for the location instead of creating a
-    // private one: `cuda::__get_default_memory_pool` is the library-wide
-    // owner of default-pool policy (it repairs a zero release threshold to
-    // unbounded, so freed memory is retained instead of being returned to
-    // the OS at every synchronization — re-backing algorithm-scale scratch
-    // costs milliseconds per call). One pool per location shared with every
-    // other consumer of that location in the process, one policy site.
-    ::CUmemLocation location = {};
-    // Plain device memory when localization is disabled, or when the driver
-    // cannot answer the locality-domain query (whole-device degrade: the
-    // localized location type would be rejected).
-    if (locality_domain_memory_disabled() || locality_domain_native_raw_count(dev_id) <= 0)
-    {
-      location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-      location.id   = dev_id;
-    }
-    else
-    {
-      location.type                       = CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
-      location.localized.deviceId         = static_cast<unsigned char>(dev_id);
-      location.localized.localityDomainId = static_cast<unsigned char>(domain_id);
-    }
-
-    CUmemoryPool pool = ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-
-    pools_[key] = pool;
-    return pool;
-  }
-
-private:
-  locality_domain_mem_pool_cache()                                                 = default;
-  locality_domain_mem_pool_cache(const locality_domain_mem_pool_cache&)            = delete;
-  locality_domain_mem_pool_cache& operator=(const locality_domain_mem_pool_cache&) = delete;
-
-  ::std::map<::std::pair<int, int>, CUmemoryPool> pools_;
-  ::std::mutex mtx_;
-};
-
-/**
  * @brief Cache of per-domain green contexts and stream pools.
  *
  * For each device, splits the SM resource by locality domain via
@@ -604,9 +540,12 @@ inline unsigned int locality_domain_count(int dev_id)
  *
  * With the native backend, `mem_create` produces a VMM physical handle whose
  * backing store lives in the requested domain, and `allocate` hands out
- * stream-ordered memory from a per-domain localized memory pool. With the
- * fallback backend, both delegate to the plain device data place. Identity
- * (device ordinal, domain ordinal) is preserved by both backends.
+ * stream-ordered memory from the driver's default memory pool for that
+ * domain's location (obtained through `cuda::__get_default_memory_pool`,
+ * which also owns that pool's release-threshold policy — this layer creates
+ * and owns no pool of its own). With the fallback backend, both delegate to
+ * the plain device data place. Identity (device ordinal, domain ordinal) is
+ * preserved by both backends.
  */
 class locality_domain_data_place_impl : public data_place_interface
 {
@@ -660,25 +599,34 @@ public:
    * placed in the requested domain. When `CUDASTF_DISABLE_LOCALIZED_MEMORY` is
    * set, falls back to plain device memory.
    */
+  /**
+   * @brief This domain's memory location: the locality domain itself, or
+   * plain device memory when localization is disabled or the driver cannot
+   * answer the locality-domain query (whole-device degrade — the localized
+   * location type would be rejected).
+   */
+  CUmemLocation __pool_location() const
+  {
+    CUmemLocation location = {};
+    if (locality_domain_memory_disabled() || locality_domain_native_raw_count(view_.devid) <= 0)
+    {
+      location.type = CU_MEM_LOCATION_TYPE_DEVICE;
+      location.id   = view_.devid;
+    }
+    else
+    {
+      location.type                       = CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
+      location.localized.deviceId         = static_cast<unsigned char>(view_.devid);
+      location.localized.localityDomainId = static_cast<unsigned char>(view_.domain_id);
+    }
+    return location;
+  }
+
   CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
   {
     CUmemAllocationProp prop = {};
     prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
-
-    // Plain device memory when localization is disabled, or when the driver
-    // cannot answer the locality-domain query (whole-device degrade).
-    if (locality_domain_memory_disabled() || locality_domain_native_raw_count(view_.devid) <= 0)
-    {
-      prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-      prop.location.id   = view_.devid;
-    }
-    else
-    {
-      prop.location.type                       = CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN;
-      prop.location.localized.deviceId         = static_cast<unsigned char>(view_.devid);
-      prop.location.localized.localityDomainId = static_cast<unsigned char>(view_.domain_id);
-    }
-
+    prop.location            = __pool_location();
     return cuMemCreate(handle, size, &prop, 0);
   }
 
@@ -687,12 +635,18 @@ public:
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
-    // No cudaSetDevice here: unlike the cudaMallocAsync-based places (device,
+    // The driver keeps one default pool per (location, allocation type) and
+    // `cuda::__get_default_memory_pool` is the library-wide site that hands it
+    // out (and that settles its release-threshold policy), so there is nothing
+    // to create, own or cache here: the same handle comes back on every call,
+    // shared with every other consumer of this location in the process.
+    //
+    // No cudaSetDevice either: unlike the cudaMallocAsync-based places (device,
     // green_ctx), which draw from the *current* device's default pool, the pool
-    // is passed explicitly and was created with props.location.id == devid, so
-    // placement does not depend on the current device. This also keeps
-    // allocate() symmetric with deallocate(), which never switched.
-    CUmemoryPool pool = locality_domain_mem_pool_cache::instance().get(view_.devid, view_.domain_id);
+    // is passed explicitly and belongs to this domain's location, so placement
+    // does not depend on the current device. This also keeps allocate()
+    // symmetric with deallocate(), which never switched.
+    CUmemoryPool pool = ::cuda::__get_default_memory_pool(__pool_location(), ::CU_MEM_ALLOCATION_TYPE_PINNED);
 
     CUdeviceptr ptr = 0;
     cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));
