@@ -10,6 +10,7 @@ ordering remain in the rewrite orchestrator.
 
 from cuda.coop._core import ArgumentBinding
 
+from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._rewrite_support import (
     _UNRESOLVED,
@@ -197,7 +198,7 @@ class _ArgumentRewrite:
         )
         if spec.validate_runtime_controls is not None:
             spec.validate_runtime_controls(
-                self,
+                GroupRewriteContext(self),
                 op_name=op_name,
                 runtime_args=runtime_args,
                 factory_kwargs=factory_kwargs,
