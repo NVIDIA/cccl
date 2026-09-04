@@ -30,6 +30,7 @@
 #include <cuda/std/functional>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
@@ -163,13 +164,7 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
     cuda_safe_call(cudaMemcpyAsync(
       &h_last[g], s.data + s.size - 1, sizeof(elem_t), cudaMemcpyDeviceToHost, ::cuda::get_stream(envs[g]).get()));
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (in.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   // Predecessor per shard: the last element of the previous NON-EMPTY shard.
   ::std::vector<const elem_t*> prev(num_shards, nullptr);

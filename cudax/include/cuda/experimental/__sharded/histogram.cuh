@@ -35,6 +35,7 @@
 #include <cub/device/device_histogram.cuh>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
@@ -138,13 +139,7 @@ _CCCL_REQUIRES(
     mr.deallocate(shard_stream, d_hist, bins * sizeof(counter_type), alignof(counter_type)); // after the copy
   }
 
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (data.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   for (::std::size_t g = 0; g < num_shards; g++)
   {

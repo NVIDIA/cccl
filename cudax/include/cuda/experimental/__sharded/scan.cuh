@@ -39,6 +39,7 @@
 #include <cuda/std/type_traits>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
@@ -144,13 +145,7 @@ _CCCL_HOST_API void __scan_generic(
     cuda_safe_call(cudaMemcpyAsync(&h_totals[g], d_total, sizeof(_Tp), cudaMemcpyDeviceToHost, shard_stream.get()));
     mr.deallocate(shard_stream, d_total, sizeof(_Tp), alignof(_Tp)); // stream-ordered, after the copy
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (data.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   // Phase 2: host prefix — the seed of shard g is the fold of everything
   // before it (plus init, exactly once, for the exclusive form).

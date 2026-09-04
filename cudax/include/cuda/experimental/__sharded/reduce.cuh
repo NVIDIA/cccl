@@ -39,6 +39,7 @@
 #include <cuda/std/limits>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/pinned_staging.cuh>
@@ -147,13 +148,7 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   }
 
   // Phase 2: synchronize and combine in shard order (deterministic)
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (data.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
   _Tp result = init_value;
   for (::std::size_t g = 0; g < num_shards; g++)
   {

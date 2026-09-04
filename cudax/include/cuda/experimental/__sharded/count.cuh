@@ -35,6 +35,7 @@
 #include <cuda/std/functional>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
@@ -152,13 +153,7 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
     mr.deallocate(shard_stream, d_out, sizeof(size_t), alignof(size_t)); // stream-ordered, after the copy
   }
 
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (data.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   size_t total = 0;
   for (::std::size_t g = 0; g < num_shards; g++)

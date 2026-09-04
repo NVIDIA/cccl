@@ -41,6 +41,7 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
@@ -189,13 +190,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
     cuda_safe_call(
       cudaMemcpyAsync(&h_new_sizes[g], d_num, sizeof(count_type), cudaMemcpyDeviceToHost, shard_stream.get()));
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (data.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   size_t total = 0;
   for (::std::size_t g = 0; g < num_shards; g++)
@@ -336,13 +331,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
     cuda_safe_call(
       cudaMemcpyAsync(&h_new_sizes[g], d_num, sizeof(count_type), cudaMemcpyDeviceToHost, shard_stream.get()));
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (src.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   size_t total = 0;
   for (::std::size_t g = 0; g < num_shards; g++)

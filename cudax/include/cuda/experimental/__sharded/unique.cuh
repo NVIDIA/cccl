@@ -39,6 +39,7 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/default_envs.cuh>
@@ -180,13 +181,7 @@ _CCCL_REQUIRES(
     cuda_safe_call(
       cudaMemcpyAsync(&h_new_sizes[g], d_num, sizeof(count_type), cudaMemcpyDeviceToHost, shard_stream.get()));
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (data.shard(g).size != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   // Phase 2: fetch each locally deduplicated shard's boundary elements.
   for (::std::size_t g = 0; g < num_shards; g++)
@@ -202,13 +197,7 @@ _CCCL_REQUIRES(
     cuda_safe_call(
       cudaMemcpyAsync(&h_last[g], s.data + n - 1, sizeof(elem_t), cudaMemcpyDeviceToHost, shard_stream.get()));
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
-  {
-    if (h_new_sizes[g] != 0)
-    {
-      cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-    }
-  }
+  barrier(envs);
 
   // Phase 3: trim duplicates straddling shard boundaries (a shard drops its
   // last element when it equals the FIRST element of the next non-empty

@@ -33,6 +33,7 @@
 #include <thrust/transform.h>
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/composition.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
@@ -190,13 +191,7 @@ _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const 
 
   if constexpr (!__is_async)
   {
-    for (::std::size_t g = 0; g < num_shards; g++)
-    {
-      if (out.shard(g).size != 0)
-      {
-        cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[g]).get()));
-      }
-    }
+    barrier(envs);
   }
 }
 
