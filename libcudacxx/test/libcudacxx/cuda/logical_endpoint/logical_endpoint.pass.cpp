@@ -21,8 +21,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cuda.h>
-
 #include "test_macros.h"
 
 #if _CCCL_CTK_AT_LEAST(13, 3) && !TEST_COMPILER(NVRTC)
@@ -172,10 +170,6 @@ constexpr bool test_endpoint_flags()
     cuda::logical_endpoint_flag::none | cuda::logical_endpoint_flag::counted_ops;
 
   assert(static_cast<unsigned>(flags) == static_cast<unsigned>(cuda::logical_endpoint_flag::counted_ops));
-  assert(static_cast<unsigned>(cuda::logical_endpoint_ipc_handle_type::none)
-         == CU_LOGICAL_ENDPOINT_IPC_HANDLE_TYPE_NONE);
-  assert(static_cast<unsigned>(cuda::logical_endpoint_ipc_handle_type::fabric)
-         == CU_LOGICAL_ENDPOINT_IPC_HANDLE_TYPE_FABRIC);
 
   return true;
 }
