@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and physical-Warp Load/Store IR planning.
+"""Block and physical or logical Warp Load/Store IR planning.
 
 This mixin owns only its primitive-family IR rewrite. Shared provenance,
 launch facts, caches, and final orchestration remain in the group planner.
@@ -59,6 +59,7 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
     }
 )
 _WARP_LOAD_STORE_ALGORITHMS = frozenset({"direct", "striped", "vectorize", "transpose"})
+_SUPPORTED_WARP_WIDTHS = frozenset({1, 2, 4, 8, 16, 32})
 _MUTATING_STORE_ALGORITHMS = frozenset(
     {
         "transpose",
@@ -77,9 +78,12 @@ def _load_store_algorithm(
     if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"cuda.coop.numba_mlir.{operation} algorithm must be a string")
     token = value.strip().lower().replace("-", "_")
+    algorithm_scope = (
+        "warp" if group_kind in {"warp", "threads_within_warp"} else group_kind
+    )
     allowed = (
         _WARP_LOAD_STORE_ALGORITHMS
-        if group_kind == "warp"
+        if algorithm_scope == "warp"
         else _BLOCK_LOAD_STORE_ALGORITHMS
     )
     if token in allowed:
@@ -169,10 +173,14 @@ class _LoadStorePlanning:
             factory_name = operation if storage_free else f"_{operation}_with_storage"
             factory_kwargs = {"threads_per_block": block_dim}
         elif plan.target is GroupLoweringTarget.CUB_WARP:
-            if plan.topology is None or plan.topology.logical_width != 32:
+            if (
+                plan.topology is None
+                or plan.topology.group_kind not in {"warp", "threads_within_warp"}
+                or plan.topology.logical_width not in _SUPPORTED_WARP_WIDTHS
+            ):
                 raise GroupRewriteError(
-                    "cuda.coop.numba_mlir physical Warp Load/Store requires "
-                    "a 32-thread lowering topology"
+                    "cuda.coop.numba_mlir Warp Load/Store requires a "
+                    "power-of-two lowering width in [1, 32]"
                 )
             factory_name = (
                 f"warp_{operation}"
@@ -308,11 +316,13 @@ class _LoadStorePlanning:
             group_kind=group.kind,
         )
         temp_storage_value = bound.arguments["temp_storage"]
-        if group.kind == "warp" and not self._context.is_none(temp_storage_value):
+        if group.kind in {"warp", "threads_within_warp"} and not (
+            self._context.is_none(temp_storage_value)
+        ):
             raise ValueError(
                 f"cuda.coop.numba_mlir.{operation} temp_storage is not "
-                "supported for physical Warp groups; omit it so the "
-                "implementation can provide per-Warp storage"
+                "supported for Warp groups; omit it so the implementation "
+                "can provide per-group storage"
             )
         storage_options: dict[str, Any] = {}
         if not self._context.is_none(temp_storage_value):
@@ -373,7 +383,7 @@ class _LoadStorePlanning:
     ) -> Any:
         return runtime_value if binding.kind is BindingKind.RUNTIME else binding
 
-    def _physical_warp_effective_offset(
+    def _warp_group_effective_offset(
         self,
         statements: list[Any],
         *,
@@ -383,19 +393,19 @@ class _LoadStorePlanning:
         runtime_value: Any,
         items_per_thread: int,
     ) -> ir.Var:
-        """Add this physical Warp's tile origin to the user base offset."""
+        """Add this physical or logical Warp group's tile origin."""
 
         topology = plan.topology
         participation = plan.participation
         if (
             topology is None
-            or topology.group_kind != "warp"
-            or topology.logical_width != 32
+            or topology.group_kind not in {"warp", "threads_within_warp"}
+            or topology.logical_width not in _SUPPORTED_WARP_WIDTHS
             or participation is None
             or participation.exact_block_dim is None
         ):
             raise GroupRewriteError(
-                "physical Warp Load/Store requires exact 32-thread topology"
+                "Warp Load/Store requires exact power-of-two topology"
             )
         scope = inst.target.scope
         loc = inst.loc
@@ -548,7 +558,7 @@ class _LoadStorePlanning:
                 bound.arguments[public_name],
             )
         if requires_runtime_effective_offset:
-            factory_kwargs["offset"] = self._physical_warp_effective_offset(
+            factory_kwargs["offset"] = self._warp_group_effective_offset(
                 statements,
                 inst=inst,
                 plan=plan,

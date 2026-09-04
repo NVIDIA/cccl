@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Backend-neutral CUB physical WarpLoad and WarpStore semantics."""
+"""Backend-neutral CUB physical and logical WarpLoad/Store semantics."""
 
 from __future__ import annotations
 
@@ -32,7 +32,8 @@ from .._types import (
     Value,
 )
 
-_PHYSICAL_WARP_THREADS = 32
+_MAX_WARP_THREADS = 32
+_SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
 
 
 class WarpLoadStoreKind(str, Enum):
@@ -73,8 +74,9 @@ template <typename T,
           int LogicalWarpThreads>
 class CudaCoopWarpLoadPreservingInvalid
 {
-  static_assert(LogicalWarpThreads == 32,
-                "cuda.coop physical WarpLoad requires 32 threads");
+  static_assert(LogicalWarpThreads > 0 && LogicalWarpThreads <= 32 &&
+                  (LogicalWarpThreads & (LogicalWarpThreads - 1)) == 0,
+                "cuda.coop WarpLoad requires a power-of-two width in [1, 32]");
 
   using primitive_type =
     WarpLoad<T, ItemsPerThread, Algorithm, LogicalWarpThreads>;
@@ -116,7 +118,8 @@ public:
 
     primitive.Load(warp_iterator, items, valid_items);
 
-    const int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+    const int lane = static_cast<int>(::cuda::ptx::get_sreg_laneid()) %
+                     LogicalWarpThreads;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ItemsPerThread; ++item)
     {
@@ -172,14 +175,20 @@ def _normalize_items_per_thread(items_per_thread: Any) -> int:
     return int(items_per_thread)
 
 
-def _normalize_physical_warp_threads(threads_in_warp: Any) -> int:
+def _normalize_logical_warp_threads(threads_in_warp: Any) -> int:
     if (
         not isinstance(threads_in_warp, int)
         or isinstance(threads_in_warp, bool)
-        or threads_in_warp != _PHYSICAL_WARP_THREADS
+        or threads_in_warp not in _SUPPORTED_LOGICAL_WARP_THREADS
     ):
-        raise ValueError("physical Warp Load/Store requires threads_in_warp=32")
-    return _PHYSICAL_WARP_THREADS
+        supported = ", ".join(
+            str(value) for value in sorted(_SUPPORTED_LOGICAL_WARP_THREADS)
+        )
+        raise ValueError(
+            "Warp Load/Store requires threads_in_warp in "
+            f"{{{supported}}}; got {threads_in_warp!r}"
+        )
+    return threads_in_warp
 
 
 def _base_parameters(kind: WarpLoadStoreKind) -> list[Any]:
@@ -239,7 +248,7 @@ def _with_pointer_offset(
 
 @dataclass(frozen=True)
 class WarpLoadStoreSemantics:
-    """Provider-facing physical WarpLoad or WarpStore call contract."""
+    """Provider-facing physical or logical Warp Load/Store contract."""
 
     kind: WarpLoadStoreKind
     dtype: Any
@@ -294,7 +303,7 @@ class WarpLoadStoreSemantics:
 
 @dataclass(frozen=True)
 class WarpLoadStoreSpec:
-    """Fully specialized CUB physical WarpLoad or WarpStore semantics."""
+    """Fully specialized CUB physical or logical Warp Load/Store semantics."""
 
     specialization: AlgorithmSpec
     call: WarpLoadStoreSemantics
@@ -354,18 +363,18 @@ def make_warp_load_store_semantics(
     dtype: Any,
     items_per_thread: int,
     algorithm: str | WarpLoadStoreAlgorithm,
-    threads_in_warp: int = _PHYSICAL_WARP_THREADS,
+    threads_in_warp: int = _MAX_WARP_THREADS,
     valid_items: bool | ArgumentBinding = False,
     oob_default: bool | ArgumentBinding = False,
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
 ) -> WarpLoadStoreSemantics:
-    """Build canonical provider-facing physical Warp Load/Store semantics."""
+    """Build canonical provider-facing Warp Load/Store semantics."""
 
     pointer_offset_overload_cohort = isinstance(include_pointer_offset, bool)
     kind = WarpLoadStoreKind(kind)
     items_per_thread = _normalize_items_per_thread(items_per_thread)
-    threads_in_warp = _normalize_physical_warp_threads(threads_in_warp)
+    threads_in_warp = _normalize_logical_warp_threads(threads_in_warp)
     algorithm = _normalize_algorithm(kind, algorithm)
     valid_items = _normalize_optional_binding(valid_items, name="valid_items")
     valid_items = _normalize_i32_binding(valid_items, name="valid_items")
@@ -444,13 +453,13 @@ def make_warp_load_store_spec(
     dtype: Any,
     items_per_thread: int,
     algorithm: str | WarpLoadStoreAlgorithm,
-    threads_in_warp: int = _PHYSICAL_WARP_THREADS,
+    threads_in_warp: int = _MAX_WARP_THREADS,
     valid_items: bool | ArgumentBinding = False,
     oob_default: bool | ArgumentBinding = False,
     include_full_tile: bool = False,
     include_pointer_offset: bool | ArgumentBinding = False,
 ) -> WarpLoadStoreSpec:
-    """Build a fully specialized CUB physical Warp Load/Store description."""
+    """Build a fully specialized CUB Warp Load/Store description."""
 
     call = make_warp_load_store_semantics(
         kind=kind,
