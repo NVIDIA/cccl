@@ -71,8 +71,8 @@ class GroupTopologyContract:
     logical_width: int
     instances: int
     instance_index: str
-    thread_rank: str
     execution_scope: SynchronizationScope
+    thread_rank: str = field(default="linear_thread_rank", kw_only=True)
 
     def __post_init__(self) -> None:
         if not self.group_kind:

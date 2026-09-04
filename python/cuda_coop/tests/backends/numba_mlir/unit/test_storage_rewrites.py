@@ -27,6 +27,8 @@ from cuda.coop.numba_mlir._compiler._rewrite_support import (
     _TempStorageUseRequirement,
 )
 
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
 
 class _TypingContext:
     def __init__(self):
@@ -380,6 +382,26 @@ def test_temp_storage_phi_canonicalizes_equivalent_constructor_contracts():
     assert sum(target is invocable for _, _, target in calls) == 1
     assert rewrite._temp_storage_global_plan.total_size == 64
     assert len(set(rewrite._temp_storage_ctor_roots.values())) == 1
+
+
+def test_leading_pointer_storage_can_disable_external_reuse_sync():
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = coop.TempStorage(auto_sync=False)
+        return provider(value, temp_storage=storage)
+
+    func_ir, _, _ = _rewrite_registered_provider(kernel)
+    calls = _resolved_calls(func_ir)
+    targets = [target for _, _, target in calls]
+    invocable_calls = [inst.value for _, inst, target in calls if target is invocable]
+
+    assert targets.count(cuda.shared.array) == 1
+    assert len(invocable_calls) == 1
+    assert len(invocable_calls[0].args) == 2
+    assert cuda.syncthreads not in targets
+    assert cuda.syncwarp not in targets
 
 
 @pytest.mark.parametrize(

@@ -15,6 +15,7 @@ from cuda.coop._core import (
     ArgumentKind,
     GroupLoadStoreAlgorithm,
     GroupLoweringTarget,
+    GroupTopologyContract,
     LaunchFactOrigin,
     LaunchFacts,
     ParameterRole,
@@ -31,7 +32,11 @@ from cuda.coop._core import (
     this_thread,
     this_warp,
 )
-from cuda.coop._core.group._contracts import _cub_warp_width, _group_topology
+from cuda.coop._core.group._contracts import (
+    _contracts,
+    _cub_warp_width,
+    _group_topology,
+)
 from tests.support.group_planning import _load_store, _plan
 
 
@@ -288,6 +293,49 @@ def test_group_topology_is_family_independent(
     assert topology.execution_scope is scope
 
 
+def test_group_topology_preserves_the_original_positional_contract():
+    topology = GroupTopologyContract(
+        "block",
+        64,
+        1,
+        "cta",
+        SynchronizationScope.BLOCK,
+    )
+
+    assert topology.thread_rank == "linear_thread_rank"
+    assert topology.execution_scope is SynchronizationScope.BLOCK
+
+
+@pytest.mark.parametrize(
+    ("ownership", "auto_sync", "expected_auto_sync", "expected_barrier"),
+    [
+        (StorageOwnership.NONE, None, False, SynchronizationScope.NONE),
+        (StorageOwnership.IMPLEMENTATION, None, True, SynchronizationScope.BLOCK),
+        (StorageOwnership.IMPLEMENTATION, False, False, SynchronizationScope.NONE),
+    ],
+)
+def test_group_contracts_derive_auto_sync_from_storage_ownership(
+    ownership,
+    auto_sync,
+    expected_auto_sync,
+    expected_barrier,
+):
+    launch = LaunchFacts(exact_block_dim=64)
+    resolved = resolve_thread_group(this_block(), launch).require_supported()
+
+    _, _, synchronization, storage = _contracts(
+        resolved,
+        launch,
+        result=None,
+        storage_ownership=ownership,
+        cpp_type=None,
+        auto_sync=auto_sync,
+    )
+
+    assert storage.auto_sync is expected_auto_sync
+    assert synchronization.storage_reuse_barrier is expected_barrier
+
+
 def test_shared_cub_warp_width_rules():
     assert _cub_warp_width(this_warp()) == 32
     assert _cub_warp_width(this_warp().group_by(8)) == 8
@@ -412,11 +460,11 @@ def test_direct_storage_descriptor_is_not_part_of_plan_identity(kind):
     implicit_plan = _plan(this_block(), implicit)
     explicit_plan = _plan(this_block(), explicit)
 
-    assert explicit.storage_ownership is StorageOwnership.NONE
-    assert explicit.storage_sharing is None
-    assert explicit.storage_size_in_bytes is None
-    assert explicit.storage_alignment is None
-    assert not explicit.storage_auto_sync
+    assert explicit.storage_ownership is StorageOwnership.CALLER
+    assert explicit.storage_sharing == "shared"
+    assert explicit.storage_size_in_bytes == 256
+    assert explicit.storage_alignment == 16
+    assert explicit.storage_auto_sync
     assert implicit == explicit
     assert implicit.semantic_key == explicit.semantic_key
     assert implicit_plan == explicit_plan
@@ -442,11 +490,34 @@ def test_direct_storage_metadata_is_validated_before_being_ignored(
         _load_store(**kwargs)
 
 
-def test_non_direct_algorithms_cannot_inherit_storage_free_semantics():
-    direct = _load_store()
+@pytest.mark.parametrize(
+    ("storage_kwargs", "expected_ownership"),
+    [
+        ({}, StorageOwnership.IMPLEMENTATION),
+        (
+            {
+                "storage_ownership": StorageOwnership.CALLER,
+                "storage_sharing": "shared",
+                "storage_size_in_bytes": 256,
+                "storage_alignment": 16,
+                "storage_auto_sync": True,
+            },
+            StorageOwnership.CALLER,
+        ),
+    ],
+)
+def test_direct_semantics_can_be_replaced_with_a_storage_bearing_algorithm(
+    storage_kwargs,
+    expected_ownership,
+):
+    direct = _load_store(**storage_kwargs)
 
-    with pytest.raises(ValueError, match="storage-free.*only for DIRECT"):
-        replace(direct, algorithm=GroupLoadStoreAlgorithm.TRANSPOSE)
+    transpose = replace(direct, algorithm=GroupLoadStoreAlgorithm.TRANSPOSE)
+    plan = _plan(this_block(), transpose)
+
+    assert transpose.storage_ownership is expected_ownership
+    assert plan.temp_storage.ownership is expected_ownership
+    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK
 
 
 def test_storage_bearing_contract_is_part_of_plan_identity():
