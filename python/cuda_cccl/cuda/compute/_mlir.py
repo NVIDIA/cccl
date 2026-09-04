@@ -269,9 +269,9 @@ def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:
     # Compile to MLIR and run the optimization pipeline over it directly.
     # Asking numba-cuda-mlir for optimized MLIR instead runs its whole
     # optimization step, which ends in a device code generation and link whose
-    # result is discarded here -- wasted work, and it makes the extraction fail
-    # for a target arch the installed libnvvm predates even though translating
-    # the gpu.module never needs one.
+    # result is discarded here. This is wasted work, and it makes the extraction fail
+    # for a target arch the installed libnvvm predates.
+    #
     # Driving the compiler directly skips the context initialization a
     # dispatcher performs on first use; see infer_return_type.
     refresh_contexts()
