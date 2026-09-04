@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from enum import Enum
 from types import SimpleNamespace
 
 import numpy as np
@@ -28,6 +29,10 @@ from cuda.coop.numba_mlir._compiler._rewrite_support import (
 )
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringSharing(str, Enum):
+    SHARED = "shared"
 
 
 class _TypingContext:
@@ -89,7 +94,7 @@ def _call_targets(func_ir):
 
 def test_qualified_thread_data_lowers_to_a_compiler_array():
     def kernel():
-        data = coop.ThreadData(2, types.int32, alignas=16)
+        data = coop.ThreadData(2, types.int32, alignment=16)
         return data[0]
 
     func_ir, typingctx = _rewrite(kernel)
@@ -101,15 +106,14 @@ def test_qualified_thread_data_lowers_to_a_compiler_array():
 
 @pytest.mark.parametrize(
     "alignment",
-    [16, np.int64(16)],
-    ids=["builtin-int", "index-integer"],
+    [None, 1, 2, 4, 8, 16, np.int64(32)],
 )
-def test_thread_data_rewrite_matches_runtime_alignment_aliases(alignment):
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_rewrite_uses_alignment(alignment, module):
     def kernel():
-        data = coop.ThreadData(
+        data = module.ThreadData(
             2,
             types.int32,
-            alignas=alignment,
             alignment=alignment,
         )
         return data[0]
@@ -117,46 +121,52 @@ def test_thread_data_rewrite_matches_runtime_alignment_aliases(alignment):
     func_ir, _ = _rewrite(kernel)
 
     assert cuda.local.array in _call_targets(func_ir)
+    definitions = {
+        stmt.target.name: stmt.value
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    }
+    calls = [
+        value
+        for value in definitions.values()
+        if isinstance(value, ir.Expr) and value.op == "call"
+    ]
+    assert len(calls) == 1
+    alignment_refs = [value for name, value in calls[0].kws if name == "alignment"]
+    if alignment is None:
+        assert alignment_refs == []
+    else:
+        assert len(alignment_refs) == 1
+        assert definitions[alignment_refs[0].name].value == max(8, alignment)
 
 
-def test_thread_data_rewrite_rejects_conflicting_alignment_aliases():
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+@pytest.mark.parametrize(
+    ("alignment", "message"),
+    [
+        (True, "alignment must be an integer or None"),
+        (1.5, "alignment must be an integer or None"),
+        (0, "alignment must be a positive integer"),
+        (-1, "alignment must be a positive integer"),
+        (3, "alignment must be a power of 2"),
+    ],
+)
+def test_thread_data_rewrite_rejects_invalid_alignment(module, alignment, message):
     def kernel():
-        return coop.ThreadData(2, types.int32, alignas=16, alignment=32)
+        return module.ThreadData(2, types.int32, alignment=alignment)
 
-    with pytest.raises(
-        CoopSinglePhaseRewriteError,
-        match="alignas and alignment must match when both are set",
-    ):
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
         _rewrite(kernel)
 
 
-def test_thread_data_rewrite_accepts_explicit_default_alignment():
-    def kernel():
-        data = coop.ThreadData(2, types.int32, alignment=None)
-        return data[0]
-
-    func_ir, _ = _rewrite(kernel)
-
-    assert cuda.local.array in _call_targets(func_ir)
-
-
-def test_common_thread_data_uses_only_the_portable_signature():
-    def kernel():
-        data = common_coop.ThreadData(2, types.int32)
-        return data[0]
-
-    func_ir, _ = _rewrite(kernel)
-
-    assert cuda.local.array in _call_targets(func_ir)
-
-
-def test_common_thread_data_rejects_qualified_alignment_control():
-    def kernel():
-        return common_coop.ThreadData(2, types.int32, alignment=16)
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_rewrite_rejects_dynamic_alignment(module):
+    def kernel(alignment):
+        return module.ThreadData(2, types.int32, alignment=alignment)
 
     with pytest.raises(
-        CoopSinglePhaseRewriteError,
-        match=r"cuda\.coop\.ThreadData got unexpected keyword.*alignment",
+        CoopSinglePhaseRewriteError, match="alignment must be a compile-time"
     ):
         _rewrite(kernel)
 
@@ -198,6 +208,17 @@ def test_temp_storage_is_an_opaque_primitive_descriptor(kernel):
     with pytest.raises(
         CoopSinglePhaseRewriteError,
         match="opaque compile-time descriptors",
+    ):
+        _rewrite(kernel)
+
+
+def test_temp_storage_rewrite_rejects_string_enum_sharing():
+    def kernel():
+        return coop.TempStorage(sharing=_StringSharing.SHARED)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="TempStorage sharing must be a string",
     ):
         _rewrite(kernel)
 
@@ -424,16 +445,16 @@ def test_temp_storage_phi_rejects_incompatible_contracts_before_compile(left, ri
         if choose_first:
             selected = coop.TempStorage(
                 left_size,
-                left_alignment,
-                left_auto_sync,
-                left_sharing,
+                alignment=left_alignment,
+                auto_sync=left_auto_sync,
+                sharing=left_sharing,
             )
         else:
             selected = coop.TempStorage(
                 right_size,
-                right_alignment,
-                right_auto_sync,
-                right_sharing,
+                alignment=right_alignment,
+                auto_sync=right_auto_sync,
+                sharing=right_sharing,
             )
         return provider(value, temp_storage=selected)
 
@@ -848,20 +869,78 @@ def test_exclusive_storage_rejects_automatic_synchronization():
         rewrite._finalize_temp_storage_plan_for_var("storage")
 
 
-def test_storage_capacity_and_alignment_are_validated_before_codegen():
+def test_storage_capacity_is_validated_before_codegen():
     undersized, _ = _planner_for_storage_policy(
-        _TempStorageCtorSpec(15, 16, None, "shared"),
-        [(16, 16)],
-    )
-    underaligned, _ = _planner_for_storage_policy(
-        _TempStorageCtorSpec(16, 8, None, "shared"),
+        _TempStorageCtorSpec(15, 8, None, "shared"),
         [(16, 16)],
     )
 
     with pytest.raises(CoopSinglePhaseRewriteError, match="smaller than required"):
         undersized._finalize_temp_storage_plan_for_var("storage")
-    with pytest.raises(CoopSinglePhaseRewriteError, match="alignment is smaller"):
-        underaligned._finalize_temp_storage_plan_for_var("storage")
+
+
+@pytest.mark.parametrize("alignment", [None, 1, 8, 16, 32])
+@pytest.mark.parametrize("sharing", ["shared", "exclusive"])
+def test_storage_alignment_satisfies_all_uses(alignment, sharing):
+    rewrite, calls = _planner_for_storage_policy(
+        _TempStorageCtorSpec(None, alignment, None, sharing),
+        [(24, 8), (16, 16)],
+    )
+
+    plan = rewrite._finalize_temp_storage_plan_for_var("storage")
+
+    assert plan.alignment == max(16, alignment or 1)
+    assert plan.size_in_bytes == (24 if sharing == "shared" else 48)
+    assert [plan.slices_by_call_id[id(call)].offset for call in calls] == (
+        [0, 0] if sharing == "shared" else [0, 32]
+    )
+
+
+@pytest.mark.parametrize("module", [common_coop, coop], ids=["root", "qualified"])
+@pytest.mark.parametrize("alignment", [None, 1, 2, 4, 8, 16, np.int64(32)])
+def test_temp_storage_rewrite_normalizes_minimum_alignment(module, alignment):
+    invocable = _FakeInvocable(alignment=16)
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = module.TempStorage(alignment=alignment)
+        return provider(value, temp_storage=storage)
+
+    func_ir, rewrite, _ = _rewrite_registered_provider(kernel)
+
+    assert cuda.shared.array in _call_targets(func_ir)
+    assert rewrite._temp_storage_global_plan.max_alignment == max(16, alignment or 1)
+
+
+@pytest.mark.parametrize("module", [common_coop, coop], ids=["root", "qualified"])
+@pytest.mark.parametrize(
+    ("alignment", "message"),
+    [
+        (True, "alignment must be an integer or None"),
+        (1.5, "alignment must be an integer or None"),
+        (0, "alignment must be a positive integer"),
+        (-1, "alignment must be a positive integer"),
+        (3, "alignment must be a power of 2"),
+    ],
+)
+def test_temp_storage_rewrite_rejects_invalid_alignment(module, alignment, message):
+    def kernel():
+        return module.TempStorage(alignment=alignment)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match=message):
+        _rewrite(kernel)
+
+
+@pytest.mark.parametrize("module", [common_coop, coop], ids=["root", "qualified"])
+def test_temp_storage_rewrite_requires_keyword_options(module):
+    def kernel():
+        storage = module.TempStorage(64, 16)
+        return storage
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="only size_in_bytes positionally"
+    ):
+        _rewrite(kernel)
 
 
 def test_small_static_storage_does_not_require_a_device_query(monkeypatch):

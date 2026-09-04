@@ -17,6 +17,7 @@ class TempStorage:
     def __init__(
         self,
         size_in_bytes: int | None = None,
+        *,
         alignment: int | None = None,
         auto_sync: bool | None = None,
         sharing: TempStorageSharing = "shared",

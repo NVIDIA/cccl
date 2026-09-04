@@ -14,16 +14,24 @@ from __future__ import annotations
 from typing import Any
 
 from ._dispatch import _backend_member
-from ._payload import TempStorageLike
+from ._payload import TempStorageLike, _normalize_alignment
 
 
 def TempStorage(
     size_in_bytes: Any = None,
-    alignment: Any = None,
+    *,
+    alignment: int | None = None,
     auto_sync: Any = None,
     sharing: str = "shared",
 ) -> TempStorageLike:
-    """Construct the selected backend's explicit scratch override."""
+    """Construct scratch storage with optional minimum alignment in bytes.
+
+    ``alignment`` is a compile-time positive power of two, or ``None`` to let
+    the compiler choose. Storage satisfies both this minimum and the alignment
+    required by every primitive using it.
+    """
+
+    alignment = _normalize_alignment(alignment)
 
     return _backend_member("TempStorage")(
         size_in_bytes=size_in_bytes,

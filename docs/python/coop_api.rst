@@ -26,7 +26,8 @@ Numba-CUDA-MLIR-qualified API
 
 The qualified module provides the matching Block Load and Store entry points,
 group descriptors, ``ThreadData``, and ``TempStorage``. It additionally exposes
-backend memory namespaces and payload-alignment controls. Shared selectors use
+backend memory namespaces. Both constructors accept the portable ``alignment``
+keyword for minimum payload storage alignment. Shared selectors use
 the same lowercase strings as the portable API; only ``direct`` is executable
 in this release. ``ThreadGroup`` values are descriptor-only. ``group_by``
 constructs a static partition descriptor; runtime query, membership, and
