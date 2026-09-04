@@ -327,5 +327,7 @@ def test_public_runtime_helpers_have_semantic_module_owners():
     assert coop.shared is importlib.import_module("numba_cuda_mlir.cuda").shared
     assert coop.ThreadData is _thread_data.ThreadData
     assert coop.TempStorage is _temp_storage.TempStorage
+    assert coop.ThreadDataLike is portable_coop.ThreadDataLike
+    assert coop.TempStorageLike is portable_coop.TempStorageLike
     assert coop.ThreadData.__module__ == "cuda.coop.numba_mlir._thread_data"
     assert coop.TempStorage.__module__ == "cuda.coop.numba_mlir._temp_storage"

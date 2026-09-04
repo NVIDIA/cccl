@@ -35,10 +35,9 @@ width of 32 threads; the enclosing block must contain a multiple of 32 threads.
 
 ``direct``, ``striped``, and ``vectorize`` are storage-free at both scopes.
 Physical Warp ``transpose`` uses compiler-owned storage with one disjoint
-slice per warp and a ``syncwarp`` reuse barrier. Explicit ``TempStorage`` is
-rejected for every
-physical Warp algorithm. Transpose Store operations preserve their caller-owned
-input payload while CUB performs its internal reordering.
+per warp and a ``syncwarp`` reuse barrier. Explicit ``TempStorage`` is rejected
+for every physical Warp algorithm. Transpose Store operations preserve their
+caller-owned input payload while CUB performs its internal reordering.
 
 Each physical warp receives an automatic memory origin of
 ``physical_warp_index * (32 * items_per_thread)`` before the caller's element
