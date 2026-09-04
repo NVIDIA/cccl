@@ -279,6 +279,9 @@ present blocked ``ThreadData`` to the caller. The two warp-transpose variants
 perform that reordering within each warp and require a block size divisible by
 32.
 
+Algorithm selectors are normalized to lowercase underscore-delimited strings.
+Enum and integer selectors, including ``0``, are rejected.
+
 Store consumes the arrangement associated with its selected algorithm. The
 transpose Store implementations copy the payload before calling CUB, so Store
 never modifies the caller's scalar or ``ThreadData`` value while CUB performs

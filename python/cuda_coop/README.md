@@ -171,6 +171,10 @@ blocked payloads. Store consumes the matching arrangement. The transpose Store
 implementations copy their payload before calling CUB, so the caller's
 `ThreadData` remains unchanged. The two warp-transpose modes require a block
 size divisible by 32.
+
+Algorithm selectors are normalized to lowercase underscore-delimited strings.
+Enum and integer selectors, including `0`, are rejected.
+
 Load and Store currently support only `this_block()` even though the portable
 API exposes the broader thread-group descriptor vocabulary. `ThreadGroup`
 objects are descriptor-only in this release. `group_by` remains compile-time

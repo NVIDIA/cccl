@@ -32,7 +32,8 @@ executable: ``direct``, ``striped``, ``vectorize``, ``transpose``,
 ``warp_transpose``, and ``warp_transpose_timesliced``. The first three are
 storage-free; the transpose algorithms use CUB temporary storage. Transpose
 Store operations preserve their caller-owned input payload while CUB performs
-its internal reordering. ``ThreadGroup`` values are descriptor-only.
+its internal reordering. Enum and integer algorithm selectors are rejected.
+``ThreadGroup`` values are descriptor-only.
 ``group_by`` constructs a static partition descriptor; runtime query,
 membership, and synchronization methods are not part of this release.
 
