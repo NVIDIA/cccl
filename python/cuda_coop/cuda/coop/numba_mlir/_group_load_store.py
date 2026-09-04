@@ -34,7 +34,7 @@ def load(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Populate ``output`` in place through a block group; return ``None``."""
+    """Load a per-thread tile through a block or physical warp group."""
 
     group_primitive_marker(
         "load",
@@ -64,7 +64,7 @@ def store(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Store a per-thread tile through a block group."""
+    """Store a per-thread tile through a block or physical warp group."""
 
     group_primitive_marker(
         "store",
