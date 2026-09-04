@@ -5,6 +5,8 @@ libcudacxx_add_pretty_printer_test(
     # gersemi: off
     --case inspect_std_default complex.std.default value
     --case inspect_std_double complex.std.double value
+    --case inspect_std_half complex.std.half value
+    --case inspect_std_bfloat16 complex.std.bfloat16 value
     --case inspect_cuda_float complex.cuda.float value
     --case inspect_alias complex.alias value
     --case inspect_nested complex.nested values
