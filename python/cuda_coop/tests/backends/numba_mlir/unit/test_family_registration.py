@@ -554,6 +554,23 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
         block.append(ir.Assign(ir.Const(29, loc), prepared, loc))
         return [*runtime_args, prepared]
 
+    def validate_runtime_controls(
+        context,
+        *,
+        op_name,
+        runtime_args,
+        factory_kwargs,
+    ):
+        record_context(context)
+        events.append(
+            (
+                "validate",
+                op_name,
+                tuple(runtime_args),
+                dict(factory_kwargs),
+            )
+        )
+
     _operations.register_factory(
         provider,
         operation=operation,
@@ -578,6 +595,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
             infer_payload=infer_payload,
             analyze_match=analyze_match,
             prepare_runtime_args=prepare_runtime_args,
+            validate_runtime_controls=validate_runtime_controls,
         ),
     )
 
@@ -620,6 +638,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
     infer_events = [event for event in events if event[0] == "infer"]
     analyze_events = [event for event in events if event[0] == "analyze"]
     prepare_events = [event for event in events if event[0] == "prepare"]
+    validate_events = [event for event in events if event[0] == "validate"]
     assert factory_events == [
         (
             "factory",
@@ -644,7 +663,9 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
         for event in analyze_events
     )
     assert len(prepare_events) == 1
-    assert len(contexts) == 5
+    assert len(validate_events) == 2
+    assert all(event[1] == operation for event in validate_events)
+    assert len(contexts) == 7
 
     resolver = object.__new__(CoopSinglePhaseRewrite)
     resolver._func_ir = func_ir
