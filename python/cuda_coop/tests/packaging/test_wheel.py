@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -17,6 +18,14 @@ import pytest
 _REPO_ROOT = Path(__file__).parents[4]
 _WHEEL_ENVIRONMENT_VARIABLE = "CUDA_COOP_TEST_WHEEL"
 
+_VALIDATOR_SPEC = importlib.util.spec_from_file_location(
+    "_cuda_coop_wheel_validator",
+    _REPO_ROOT / "ci" / "validate_cuda_coop_wheel.py",
+)
+assert _VALIDATOR_SPEC is not None and _VALIDATOR_SPEC.loader is not None
+_WHEEL_VALIDATOR = importlib.util.module_from_spec(_VALIDATOR_SPEC)
+_VALIDATOR_SPEC.loader.exec_module(_WHEEL_VALIDATOR)
+
 _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/__init__.py",
     "cuda/coop/__init__.pyi",
@@ -29,8 +38,6 @@ _REQUIRED_PACKAGE_MEMBERS = {
     "cuda/coop/_core/api/thread_group.pyi",
     "cuda/coop/numba_mlir/__init__.py",
     "cuda/coop/numba_mlir/__init__.pyi",
-    "cuda/coop/numba_mlir/_enums.py",
-    "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/numba_mlir/_group_load_store.py",
     "cuda/coop/numba_mlir/_group_load_store.pyi",
     "cuda/coop/numba_mlir/_temp_storage.py",
@@ -55,6 +62,8 @@ _REQUIRED_HEADER_MEMBERS = {
 
 _FORBIDDEN_PACKAGE_MEMBERS = {
     "cuda/coop/_aot_cli.py",
+    "cuda/coop/numba_mlir/_enums.py",
+    "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/_core/api/reduce.py",
     "cuda/coop/_core/api/reduce.pyi",
     "cuda/coop/_core/api/scan.py",
@@ -95,6 +104,39 @@ def _single_member(names: set[str], suffix: str) -> str:
     matches = sorted(name for name in names if name.endswith(suffix))
     assert len(matches) == 1, f"expected one {suffix!r} member, found {matches}"
     return matches[0]
+
+
+@pytest.mark.parametrize("revision", ("unknown", "v1.2.3", "release_12+local"))
+def test_wheel_validator_accepts_cmake_source_revision_tokens(
+    tmp_path,
+    revision,
+):
+    wheel = tmp_path / "provenance.zip"
+    with zipfile.ZipFile(wheel, "w") as archive:
+        archive.writestr(
+            "cuda/coop/_headers/cccl-bundle-provenance.json",
+            json.dumps({"cccl_source_commit": revision}),
+        )
+
+    with zipfile.ZipFile(wheel) as archive:
+        _WHEEL_VALIDATOR._validate_provenance(archive)
+
+
+@pytest.mark.parametrize("revision", ("contains space", "path/name", 'bad"quote'))
+def test_wheel_validator_rejects_invalid_source_revision_tokens(
+    tmp_path,
+    revision,
+):
+    wheel = tmp_path / "provenance.zip"
+    with zipfile.ZipFile(wheel, "w") as archive:
+        archive.writestr(
+            "cuda/coop/_headers/cccl-bundle-provenance.json",
+            json.dumps({"cccl_source_commit": revision}),
+        )
+
+    with zipfile.ZipFile(wheel) as archive:
+        with pytest.raises(SystemExit, match="invalid source revision"):
+            _WHEEL_VALIDATOR._validate_provenance(archive)
 
 
 def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
@@ -153,9 +195,7 @@ def test_wheel_is_universal_and_contains_the_complete_payload() -> None:
             )
         )
         assert set(provenance) == {"cccl_source_commit"}
-        assert provenance["cccl_source_commit"] == "unknown" or re.fullmatch(
-            r"[0-9a-f]{40}", provenance["cccl_source_commit"]
-        )
+        assert re.fullmatch(r"[0-9A-Za-z._+-]+", provenance["cccl_source_commit"])
 
         license_members = {
             name.split(".dist-info/licenses/", 1)[1]

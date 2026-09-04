@@ -34,7 +34,7 @@ def check_numba_surface(source: object, destination: object) -> None:
             block,
             source,
             values,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm="direct",
             temp_storage=storage,
         ),
         ThreadDataLike[np.uint16],
@@ -62,7 +62,7 @@ def check_numba_surface(source: object, destination: object) -> None:
             block,
             source,
             values,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+            algorithm="warp_transpose_timesliced",
         ),
         ThreadDataLike[np.uint16],
     )
@@ -71,28 +71,9 @@ def check_numba_surface(source: object, destination: object) -> None:
             block,
             destination,
             values,
-            algorithm=coop.BlockStoreAlgorithm.DIRECT,
+            algorithm="direct",
             temp_storage=storage,
         ),
         None,
     )
     assert_type(coop.store(block, destination, byte_values), None)
-
-    block_load_algorithms: tuple[coop.BlockLoadAlgorithm, ...] = (
-        coop.BlockLoadAlgorithm.DIRECT,
-        coop.BlockLoadAlgorithm.STRIPED,
-        coop.BlockLoadAlgorithm.VECTORIZE,
-        coop.BlockLoadAlgorithm.TRANSPOSE,
-        coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
-        coop.BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
-    )
-    block_store_algorithms: tuple[coop.BlockStoreAlgorithm, ...] = (
-        coop.BlockStoreAlgorithm.DIRECT,
-        coop.BlockStoreAlgorithm.STRIPED,
-        coop.BlockStoreAlgorithm.VECTORIZE,
-        coop.BlockStoreAlgorithm.TRANSPOSE,
-        coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
-        coop.BlockStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
-    )
-    assert_type(block_load_algorithms, tuple[coop.BlockLoadAlgorithm, ...])
-    assert_type(block_store_algorithms, tuple[coop.BlockStoreAlgorithm, ...])

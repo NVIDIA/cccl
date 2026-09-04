@@ -110,7 +110,7 @@ def _full_store_kernel(numba_dtype):
             qualified_coop.this_block(),
             destination,
             payload,
-            algorithm=qualified_coop.BlockStoreAlgorithm.DIRECT,
+            algorithm="direct",
         )
 
     return kernel
@@ -224,7 +224,7 @@ def _load_defaulting_invalid(
         qualified_coop.this_block(),
         source,
         payload,
-        algorithm=qualified_coop.BlockLoadAlgorithm.DIRECT,
+        algorithm="direct",
         valid_items=valid_items,
         oob_default=oob_default,
         offset=source_offset,
@@ -510,7 +510,7 @@ def _qualified_untyped_load(source, observed):
         qualified_coop.this_block(),
         source,
         payload,
-        algorithm=qualified_coop.BlockLoadAlgorithm.DIRECT,
+        algorithm="direct",
     )
     for item in range(_ITEMS_PER_THREAD):
         observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
@@ -523,6 +523,29 @@ def test_qualified_load_infers_an_untyped_payload():
     _qualified_untyped_load[1, _THREADS](source, observed)
 
     np.testing.assert_array_equal(observed, source)
+
+
+@cuda.jit
+def _qualified_untyped_store(source, destination):
+    thread = cuda.threadIdx.x
+    payload = qualified_coop.ThreadData(_ITEMS_PER_THREAD)
+    for item in range(_ITEMS_PER_THREAD):
+        payload[item] = source[thread * _ITEMS_PER_THREAD + item]
+    qualified_coop.store(
+        qualified_coop.this_block(),
+        destination,
+        payload,
+        algorithm="direct",
+    )
+
+
+def test_qualified_store_infers_an_untyped_payload():
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=31)
+    destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
+
+    _qualified_untyped_store[1, _THREADS](source, destination)
+
+    np.testing.assert_array_equal(destination, source)
 
 
 @lru_cache(maxsize=None)

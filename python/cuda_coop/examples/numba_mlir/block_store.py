@@ -5,7 +5,7 @@
 """Store a partial block tile with the qualified Numba-CUDA-MLIR API."""
 
 import numpy as np
-from numba_cuda_mlir import cuda, types
+from numba_cuda_mlir import cuda
 
 import cuda.coop.numba_mlir as coop
 
@@ -20,14 +20,14 @@ def block_store(source, destination, valid_items):
     """Store the valid tile prefix while retaining the destination suffix."""
 
     thread = cuda.threadIdx.x
-    payload = coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
+    payload = coop.ThreadData(_ITEMS_PER_THREAD)
     for item in range(_ITEMS_PER_THREAD):
         payload[item] = source[thread * _ITEMS_PER_THREAD + item]
     coop.store(
         coop.this_block(),
         destination,
         payload,
-        algorithm=coop.BlockStoreAlgorithm.DIRECT,
+        algorithm="direct",
         valid_items=valid_items,
         offset=_DESTINATION_OFFSET,
     )
