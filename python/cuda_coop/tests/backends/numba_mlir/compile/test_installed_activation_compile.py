@@ -21,6 +21,10 @@ _PACKAGE_ROOT = Path(__file__).parents[4].resolve()
 _IMPORT_ORDERS = (
     pytest.param("numba-first-portable", id="numba-first-portable"),
     pytest.param(
+        "numba-first-explicit-qualified-alias",
+        id="numba-first-explicit-qualified-alias",
+    ),
+    pytest.param(
         "root-first-explicit-qualified",
         id="root-first-explicit-qualified",
     ),
@@ -43,6 +47,16 @@ _COMPILE_PROBE = textwrap.dedent(
         from cuda import coop
 
         assert "cuda.coop.numba_mlir" in sys.modules
+    elif import_order == "numba-first-explicit-qualified-alias":
+        import numba_cuda_mlir
+        from numba_cuda_mlir import cuda, types
+
+        compiler_cuda = cuda
+        import cuda.coop as coop
+        import cuda.coop.numba_mlir as _coop_numba_mlir
+
+        assert cuda is compiler_cuda
+        assert _coop_numba_mlir is sys.modules["cuda.coop.numba_mlir"]
     elif import_order == "root-first-explicit-qualified":
         from cuda import coop
 
