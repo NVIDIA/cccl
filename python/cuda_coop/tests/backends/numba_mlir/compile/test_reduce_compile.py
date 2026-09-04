@@ -485,53 +485,82 @@ def _link_ltoir_files(paths: list[str], *, name: str) -> str:
     return linked.code.decode("utf-8")
 
 
-def test_stateless_cub_callback_compiles_and_links_both_lto_inputs(
+def test_stateless_cub_callbacks_compile_for_block_arrays_and_warp_prefixes(
     compile_context: _nvrtc.CompileContext,
 ) -> None:
     def maximum(lhs, rhs):
         return lhs if lhs > rhs else rhs
 
     device_maximum = cuda.jit(device=True)(maximum)
-    collected = _collect_cub(
-        _reduce.reduce,
-        compile_context,
-        dtype=types.int32,
-        threads_per_block=_BLOCK_THREADS,
-        binary_op=device_maximum,
-        algorithm="warp_reductions",
-    )
-    algorithm = collected[0]
-    source, support_ltoirs, _, declarations = algorithm._source_code(
-        threads=collected[1],
-        block_threads=collected[2],
-    )
-
-    assert len(support_ltoirs) == 1
-    assert len(declarations) == 1
-    callback_name = next(iter(declarations))
-    assert declarations[callback_name] in source
-    assert "auto param_1 = []" in source
-    assert f"return {callback_name}(wp_0, wp_1);" in source
-    assert ".Reduce(param_0, param_1);" in source
-
-    bundle = _compile_cub_bundle(
-        [collected],
-        name="cuda_coop_numba_mlir_stateless_reduce_callback",
-    )
-    invocable = _types.make_invocable_from_specialization(
-        algorithm,
-        threads=collected[1],
-        block_threads=collected[2],
+    cases = (
+        (
+            "block-array",
+            _collect_cub(
+                _reduce.reduce,
+                compile_context,
+                dtype=types.int32,
+                threads_per_block=_BLOCK_THREADS,
+                binary_op=device_maximum,
+                items_per_thread=2,
+                value_kind="array",
+                algorithm="warp_reductions",
+            ),
+        ),
+        (
+            "logical-warp-prefix",
+            _collect_cub(
+                _reduce.warp_reduce,
+                compile_context,
+                dtype=types.int32,
+                binary_op=device_maximum,
+                threads_in_warp=8,
+                valid_items=ArgumentBinding.static(5),
+                threads_per_block=_BLOCK_THREADS,
+            ),
+        ),
     )
 
-    assert len(invocable.files) == 2
-    assert all(Path(path).suffix == ".ltoir" for path in invocable.files)
-    assert Path(invocable.files[0]).read_bytes() == bundle
-    assert Path(invocable.files[1]).read_bytes() == support_ltoirs[0]
-    linked_ptx = _link_ltoir_files(
-        invocable.files,
-        name="cuda_coop_numba_mlir_stateless_reduce_callback",
-    )
-    assert ".version" in linked_ptx
-    assert invocable.temp_storage_bytes > 0
-    assert invocable.temp_storage_alignment > 0
+    for name, collected in cases:
+        algorithm = collected[0]
+        source, support_ltoirs, _, declarations = algorithm._source_code(
+            threads=collected[1],
+            block_threads=collected[2],
+        )
+
+        assert len(support_ltoirs) == 1
+        assert len(declarations) == 1
+        callback_name = next(iter(declarations))
+        assert declarations[callback_name] in source
+        assert "auto param_1 = []" in source
+        assert f"return {callback_name}(wp_0, wp_1);" in source
+        if name == "block-array":
+            assert "cub::BlockReduce<" in source
+            assert "(*)[2]>(param_0), param_1);" in source
+            assert "__syncthreads();" in source
+            assert "__syncwarp" not in source
+        else:
+            assert "cub::WarpReduce<::cuda::std::int32_t, 8>" in source
+            assert ".Reduce(param_0, param_1, 5);" in source
+            assert f"temp_storages[{_BLOCK_THREADS // 8}]" in source
+            assert "__syncthreads" not in source
+            assert (
+                "__syncwarp((((1u << 8) - 1u) << "
+                "(((__coop_thread_rank & 31) / 8) * 8)));"
+            ) in source
+
+        bundle_name = f"cuda_coop_numba_mlir_stateless_reduce_callback_{name}"
+        bundle = _compile_cub_bundle([collected], name=bundle_name)
+        invocable = _types.make_invocable_from_specialization(
+            algorithm,
+            threads=collected[1],
+            block_threads=collected[2],
+        )
+
+        assert len(invocable.files) == 2
+        assert all(Path(path).suffix == ".ltoir" for path in invocable.files)
+        assert Path(invocable.files[0]).read_bytes() == bundle
+        assert Path(invocable.files[1]).read_bytes() == support_ltoirs[0]
+        linked_ptx = _link_ltoir_files(invocable.files, name=bundle_name)
+        assert ".version" in linked_ptx
+        assert invocable.temp_storage_bytes > 0
+        assert invocable.temp_storage_alignment > 0
