@@ -228,8 +228,11 @@ def test_cuda_headers_are_required_only_when_compiling() -> None:
         cuda=(),
         origin="test",
     )
-    with pytest.raises(HeaderResolutionError, match="cuda_runtime.h"):
+    with pytest.raises(HeaderResolutionError, match="cuda_runtime.h") as exc_info:
         paths.as_tuple()
+
+    diagnostic = str(exc_info.value)
+    assert all(name in diagnostic for name in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT"))
 
 
 def test_package_metadata_includes_cudax_header_bundle() -> None:
