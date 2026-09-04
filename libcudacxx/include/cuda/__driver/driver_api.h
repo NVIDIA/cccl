@@ -249,7 +249,9 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 
 // Device management
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __deviceGetNoThrow(::CUdevice* __device, int __ordinal) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __deviceGetNoThrow( // NOLINT(bugprone-exception-escape)
+  ::CUdevice* __device,
+  int __ordinal) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGet);
   return static_cast<::cudaError_t>(__driver_fn(__device, __ordinal));
@@ -263,8 +265,10 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
-__deviceGetAttributeNoThrow(int* __value, ::CUdevice_attribute __attr, ::CUdevice __device) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __deviceGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
+  int* __value,
+  ::CUdevice_attribute __attr,
+  ::CUdevice __device) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetAttribute);
   return static_cast<::cudaError_t>(__driver_fn(__value, __attr, __device));
