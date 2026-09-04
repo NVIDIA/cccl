@@ -28,10 +28,14 @@ The qualified module provides the matching Block Load and Store entry points,
 group descriptors, ``ThreadData``, and ``TempStorage``. It additionally exposes
 backend memory namespaces. Both constructors accept the portable ``alignment``
 keyword for minimum payload storage alignment. Shared selectors use
-the same lowercase strings as the portable API; only ``direct`` is executable
-in this release. ``ThreadGroup`` values are descriptor-only. ``group_by``
-constructs a static partition descriptor; runtime query, membership, and
-synchronization methods are not part of this release.
+the same lowercase strings as the portable API. All six selectors are
+executable: ``direct``, ``striped``, ``vectorize``, ``transpose``,
+``warp_transpose``, and ``warp_transpose_timesliced``. The first three are
+storage-free; the transpose algorithms use CUB temporary storage. Transpose
+Store operations preserve their caller-owned input payload while CUB performs
+its internal reordering. ``ThreadGroup`` values are descriptor-only.
+``group_by`` constructs a static partition descriptor; runtime query,
+membership, and synchronization methods are not part of this release.
 
 See the :github:`Numba-CUDA-MLIR type declarations
 <python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi>` for the complete overload
