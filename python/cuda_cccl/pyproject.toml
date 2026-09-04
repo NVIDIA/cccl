@@ -66,10 +66,6 @@ minimal-sysctk13 = [
 ]
 cu12 = [
   "cuda-cccl[minimal-cu12]",
-  # numba / numba-cuda: used by cuda.coop (Numba-CUDA cooperative primitives).
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
-  "numba-cuda[cu12]>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
   # numba-cuda-mlir: backend that JIT-compiles cuda.compute user operators and
   # gpu_struct types (the MLIR-based successor to numba-cuda).  The upper bound
   # is deliberate: reaching the LLVM bitcode the v2 backend needs uses
@@ -79,10 +75,6 @@ cu12 = [
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
-  # numba / numba-cuda: used by cuda.coop (Numba-CUDA cooperative primitives).
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
-  "numba-cuda[cu13]>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
   # numba-cuda-mlir: backend that JIT-compiles cuda.compute user operators and
   # gpu_struct types (the MLIR-based successor to numba-cuda).  The upper bound
   # is deliberate: reaching the LLVM bitcode the v2 backend needs uses
@@ -92,12 +84,9 @@ cu13 = [
 ]
 sysctk12 = [
   "cuda-cccl[minimal-sysctk12]",
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
-  # plain numba-cuda / numba-cuda-mlir (no [cu12]) so they rely on the
-  # system-provided CUDA toolkit instead of pulling the toolkit from pip --
-  # the whole point of the sysctk extra.
-  "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  # plain numba-cuda-mlir (no [cu12]) so it relies on the system-provided CUDA
+  # toolkit instead of pulling the toolkit from pip -- the whole point of the
+  # sysctk extra.
   "numba-cuda-mlir>=0.5.1,<0.6",
   # nvjitlink is the one exception to "use the system toolkit": numba-cuda-mlir
   # calls nvJitLinkVersion, which only exists from CUDA 12.3, so a system CTK
@@ -109,12 +98,9 @@ sysctk12 = [
 ]
 sysctk13 = [
   "cuda-cccl[minimal-sysctk13]",
-  # numba-cuda currently expects numba.cuda.types.NPDatetime, removed in numba 0.66.
-  "numba>=0.60.0,<0.66",
-  # plain numba-cuda / numba-cuda-mlir (no [cu13]) so they rely on the
-  # system-provided CUDA toolkit instead of pulling the toolkit from pip --
-  # the whole point of the sysctk extra.
-  "numba-cuda>=0.26.0,!=0.27.*,!=0.28.*,!=0.29.*,!=0.30.0",
+  # plain numba-cuda-mlir (no [cu13]) so it relies on the system-provided CUDA
+  # toolkit instead of pulling the toolkit from pip -- the whole point of the
+  # sysctk extra.
   "numba-cuda-mlir>=0.5.1,<0.6",
 ]
 # The test extras do not include CuPy. The cuda.compute examples (run via
@@ -206,7 +192,6 @@ module = [
   # python_version=3.10; skip following its imports to keep the 3.10 target.
   "numpy",
   "numpy.*",
-  "numba.*",
   "numba_cuda_mlir.*",
   "ml_dtypes",
   "cuda.cccl.*",
@@ -271,7 +256,7 @@ pythonpath = ["tests"]
 markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
-  "no_numba: tests that should not import numba or numba.cuda",
+  "no_numba: tests that should not import the JIT backend",
   "free_threading: tests requiring free-threaded CPython with the GIL disabled",
   "serialization: serialize/deserialize tests (skipped on the v2 HostJIT backend)",
 ]

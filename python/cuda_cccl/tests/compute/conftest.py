@@ -111,9 +111,9 @@ def verify_sass(request):
     )
 
 
-# Import roots that pull in a JIT backend; a test marked no_numba must not
-# reach any of them.
-_JIT_BACKEND_MODULES = ("numba", "numba_cuda_mlir")
+# Import root that pulls in the JIT backend; a test marked no_numba must not
+# reach it.
+_JIT_BACKEND_MODULES = ("numba_cuda_mlir",)
 
 
 @pytest.fixture
