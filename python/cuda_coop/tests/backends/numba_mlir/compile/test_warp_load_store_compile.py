@@ -425,9 +425,6 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
     compiler_cuda = _production_compile_environment(monkeypatch)
 
     def qualified_kernel(algorithm: str):
-        load_algorithm = qualified_coop.WarpLoadAlgorithm[algorithm.upper()]
-        store_algorithm = qualified_coop.WarpStoreAlgorithm[algorithm.upper()]
-
         @compiler_cuda.jit(chip="sm_90")
         def kernel(source, destination, valid_items, offset):
             group = qualified_coop.this_warp().group_by(8)
@@ -439,7 +436,7 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
                 group,
                 source,
                 payload,
-                algorithm=load_algorithm,
+                algorithm=algorithm,
                 valid_items=valid_items,
                 oob_default=types.int32(-17),
                 offset=offset,
@@ -448,7 +445,7 @@ def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
                 group,
                 destination,
                 payload,
-                algorithm=store_algorithm,
+                algorithm=algorithm,
                 valid_items=valid_items,
                 offset=offset,
             )
