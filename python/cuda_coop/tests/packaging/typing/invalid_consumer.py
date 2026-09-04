@@ -232,3 +232,10 @@ coop.reduce(
     binary_op=select_left,  # expected-error: [arg-type]
     broadcast=True,
 )
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=False,
+    algorithm="raking_commutative_only",
+)
