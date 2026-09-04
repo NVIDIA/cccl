@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/functional>
 #include <cuda/std/algorithm.partition.h>
 #include <cuda/std/cassert>
 
