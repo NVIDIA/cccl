@@ -117,7 +117,6 @@ foreach (thrust_target IN LISTS THRUST_TARGETS)
 
   foreach (test_src IN LISTS test_srcs)
     get_filename_component(test_name "${test_src}" NAME_WLE)
-    string(REGEX REPLACE "^catch2_test_" "" test_name "${test_name}")
 
     # Is this test restricted to only certain host/device combinations?
     if (${test_name} IN_LIST restricted_tests)
