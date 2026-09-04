@@ -30,20 +30,17 @@ from ._group_planner_support import (
     Any,
     GroupRewriteError,
     ThreadGroup,
-    _cuda_module,
-    _group_operation_name,
-    _portable_api,
-    _typed_group_payload_like,
     inspect,
     ir,
-    types,
 )
+from ._group_planning import GroupPlanningContext
 from ._operations import (
+    GroupResultSource,
     RewriteOperationSpec,
     register_group_primitive,
     register_rewrite_operation,
 )
-from ._parameters import _validate_common_numeric_dtype, normalize_dtype_param
+from ._parameters import _validate_common_numeric_dtype
 from ._rewrite_load_store import (
     analyze_load_store_match,
     infer_load_store_payload,
@@ -104,18 +101,15 @@ _CUB_PLAN_ROUTES = {
 
 
 class _LoadStorePlanning:
-    """Family-local planner facade over the shared IR analysis context."""
+    """Family-local semantics over the declared shared planning context."""
 
-    def __init__(self, planner: Any) -> None:
-        self._planner = planner
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._planner, name)
+    def __init__(self, context: GroupPlanningContext) -> None:
+        self._context = context
 
     def _validate_common_arguments(
         self, operation: str, bound: inspect.BoundArguments
     ) -> None:
-        bound.arguments["algorithm"] = self._validate_common_selector(
+        bound.arguments["algorithm"] = self._context.validate_common_selector(
             operation,
             "algorithm",
             bound.arguments["algorithm"],
@@ -142,25 +136,17 @@ class _LoadStorePlanning:
 
         return (getattr(_load_store, operation), {"threads_per_block": block_dim})
 
-    def _planning_binding(self, value: Any) -> ArgumentBinding:
-        resolved, constant = self._try_constant(value)
-        if not resolved:
-            return ArgumentBinding.runtime()
-        if constant is None:
-            return ArgumentBinding.omitted()
-        return ArgumentBinding.static(constant)
-
     def _planning_oob_default(
         self,
         value: Any,
         *,
         payload_dtype: Any,
     ) -> ArgumentBinding:
-        binding = self._planning_binding(value)
+        binding = self._context.planning_binding(value)
         if binding.kind is BindingKind.OMITTED:
             return binding
         if binding.kind is BindingKind.RUNTIME:
-            value_dtype = self._planning_dtype(value)
+            value_dtype = self._context.dtype(value)
             if value_dtype is None:
                 raise GroupRewriteError(
                     "cuda.coop.numba_mlir.load could not infer the runtime "
@@ -206,263 +192,21 @@ class _LoadStorePlanning:
             )
         return binding
 
-    @staticmethod
-    def _dtype_from_numba_type(value: Any) -> Any | None:
-        if isinstance(value, types.Array):
-            value = value.dtype
-        elif not isinstance(value, types.Type):
-            return None
-        return normalize_dtype_param(value)
-
-    def _planning_dtype_definition(
-        self,
-        definition: Any,
-        *,
-        seen: set[str],
-    ) -> Any | None:
-        if isinstance(definition, ir.Var):
-            return self._planning_dtype(definition, seen=seen)
-        if isinstance(definition, ir.Arg):
-            if not 0 <= definition.index < len(self.state.args):
-                return None
-            return self._dtype_from_numba_type(self.state.args[definition.index])
-        if not isinstance(definition, ir.Expr):
-            return None
-        if definition.op in {"cast", "exhaust_iter"}:
-            return self._planning_dtype(definition.value, seen=seen)
-        if definition.op == "phi":
-            candidates = {
-                dtype
-                for incoming in getattr(definition, "incoming_values", ())
-                if (dtype := self._planning_dtype(incoming, seen=set(seen))) is not None
-            }
-            if len(candidates) > 1:
-                raise GroupRewriteError(
-                    "cuda.coop.numba_mlir Load/Store payload aliases have "
-                    "inconsistent dtypes"
-                )
-            return next(iter(candidates), None)
-        if definition.op in {"getitem", "static_getitem"}:
-            return self._planning_dtype(definition.value, seen=seen)
-        if definition.op != "call":
-            return None
-        function = self._callable(definition.func)
-        from .._thread_data import ThreadData
-
-        if function in {ThreadData, _portable_api.ThreadData}:
-            bound = self._bind(function, definition)
-            resolved, dtype = self._try_constant(bound.arguments["dtype"])
-            if resolved and dtype is not None:
-                return normalize_dtype_param(dtype)
-            return None
-        if function is _cuda_module.local.array:
-            if len(definition.args) >= 2:
-                resolved, dtype = self._try_constant(definition.args[1])
-                if resolved:
-                    return normalize_dtype_param(dtype)
-            dtype_ref = dict(definition.kws).get("dtype")
-            if dtype_ref is not None:
-                resolved, dtype = self._try_constant(dtype_ref)
-                if resolved:
-                    return normalize_dtype_param(dtype)
-            return None
-        if function is _typed_group_payload_like and definition.args:
-            return self._planning_dtype(definition.args[0], seen=seen)
-        operation = _group_operation_name(function)
-        if operation == "load":
-            bound = self._bind(function, definition)
-            return self._planning_dtype(bound.arguments["output"], seen=seen)
-        return None
-
-    def _planning_dtype(
-        self,
-        value: Any,
-        *,
-        seen: set[str] | None = None,
-    ) -> Any | None:
-        if not isinstance(value, ir.Var):
-            return self._dtype_from_numba_type(value)
-        if seen is None:
-            seen = set()
-        if value.name in seen:
-            return None
-        seen.add(value.name)
-        candidates = {
-            dtype
-            for definition in self._all_definitions(value)
-            if (
-                dtype := self._planning_dtype_definition(
-                    definition,
-                    seen=set(seen),
-                )
-            )
-            is not None
-        }
-        if len(candidates) > 1:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir Load/Store payload aliases have "
-                "inconsistent dtypes"
-            )
-        return next(iter(candidates), None)
-
-    def _planning_store_write_dtype(self, payload: Any) -> Any | None:
-        """Infer an untyped Store payload from values written through its aliases."""
-
-        if not isinstance(payload, ir.Var):
-            return None
-        alias_names = {payload.name}
-        changed = True
-        while changed:
-            changed = False
-            for block in self.func_ir.blocks.values():
-                for stmt in block.body:
-                    if not isinstance(stmt, ir.Assign):
-                        continue
-                    definition = stmt.value
-                    sources: tuple[ir.Var, ...] = ()
-                    if isinstance(definition, ir.Var):
-                        sources = (definition,)
-                    elif isinstance(definition, ir.Expr) and definition.op in {
-                        "cast",
-                        "exhaust_iter",
-                    }:
-                        if isinstance(definition.value, ir.Var):
-                            sources = (definition.value,)
-                    elif isinstance(definition, ir.Expr) and definition.op == "phi":
-                        sources = tuple(
-                            incoming
-                            for incoming in getattr(definition, "incoming_values", ())
-                            if isinstance(incoming, ir.Var)
-                        )
-                    source_names = {source.name for source in sources}
-                    if stmt.target.name in alias_names or source_names & alias_names:
-                        additions = {stmt.target.name, *source_names} - alias_names
-                        if additions:
-                            alias_names.update(additions)
-                            changed = True
-
-        inferred = None
-        static_setitem_cls = getattr(ir, "StaticSetItem", None)
-        for block in self.func_ir.blocks.values():
-            for stmt in block.body:
-                if isinstance(stmt, ir.SetItem) or (
-                    static_setitem_cls is not None
-                    and isinstance(stmt, static_setitem_cls)
-                ):
-                    target = getattr(stmt, "target", None)
-                    value = getattr(stmt, "value", None)
-                else:
-                    continue
-                if not isinstance(target, ir.Var) or target.name not in alias_names:
-                    continue
-                if not isinstance(value, ir.Var):
-                    continue
-                value_dtype = self._planning_dtype(value)
-                if value_dtype is None:
-                    continue
-                if inferred is None:
-                    inferred = value_dtype
-                elif inferred != value_dtype:
-                    raise TypeError(
-                        "cuda.coop.numba_mlir.store could not infer one "
-                        "consistent dtype from ThreadData writes"
-                    )
-        return inferred
-
     def _planning_items_per_thread(self, operation: str, payload: Any) -> int:
-        is_array = self._array_operand_state(operation, payload)
+        is_array = self._context.is_array(operation, payload)
         if not is_array:
             if operation == "load":
                 raise TypeError(
                     "cuda.coop.numba_mlir.load output must be a fixed-size local array"
                 )
             return 1
-        extent = self._array_extent(payload)
+        extent = self._context.array_extent(payload)
         if extent is None:
             raise GroupRewriteError(
                 f"cuda.coop.numba_mlir.{operation} requires a static "
                 "items_per_thread extent before provider selection"
             )
         return extent
-
-    def _planning_temp_storage_definition(
-        self,
-        definition: Any,
-        *,
-        seen: set[str],
-    ) -> tuple[int | None, int | None, bool, str] | None:
-        if isinstance(definition, ir.Var):
-            return self._planning_temp_storage(definition, seen=seen)
-        if not isinstance(definition, ir.Expr):
-            return None
-        if definition.op in {"cast", "exhaust_iter"}:
-            return self._planning_temp_storage(definition.value, seen=seen)
-        if definition.op == "phi":
-            candidates = {
-                descriptor
-                for incoming in getattr(definition, "incoming_values", ())
-                if (
-                    descriptor := self._planning_temp_storage(
-                        incoming,
-                        seen=set(seen),
-                    )
-                )
-                is not None
-            }
-            if len(candidates) > 1:
-                raise GroupRewriteError(
-                    "cuda.coop.numba_mlir TempStorage aliases have "
-                    "inconsistent contracts"
-                )
-            return next(iter(candidates), None)
-        if definition.op != "call":
-            return None
-        function = self._callable(definition.func)
-        from .._temp_storage import TempStorage
-
-        if function not in {TempStorage, _portable_api.TempStorage}:
-            return None
-        bound = self._bind(function, definition)
-        values = {
-            name: self._constant(value) for name, value in bound.arguments.items()
-        }
-        descriptor = TempStorage(**values)
-        return (
-            descriptor.size_in_bytes,
-            descriptor.alignment,
-            descriptor.auto_sync,
-            descriptor.sharing,
-        )
-
-    def _planning_temp_storage(
-        self,
-        value: Any,
-        *,
-        seen: set[str] | None = None,
-    ) -> tuple[int | None, int | None, bool, str] | None:
-        if not isinstance(value, ir.Var):
-            return None
-        if seen is None:
-            seen = set()
-        if value.name in seen:
-            return None
-        seen.add(value.name)
-        candidates = {
-            descriptor
-            for definition in self._all_definitions(value)
-            if (
-                descriptor := self._planning_temp_storage_definition(
-                    definition,
-                    seen=set(seen),
-                )
-            )
-            is not None
-        }
-        if len(candidates) > 1:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir TempStorage aliases have inconsistent contracts"
-            )
-        return next(iter(candidates), None)
 
     def _plan_load_store(
         self,
@@ -475,10 +219,10 @@ class _LoadStorePlanning:
         memory_name = "source" if operation == "load" else "destination"
         payload = bound.arguments[payload_name]
         items_per_thread = self._planning_items_per_thread(operation, payload)
-        payload_dtype = self._planning_dtype(payload)
+        payload_dtype = self._context.dtype(payload)
         if operation == "store" and payload_dtype is None:
-            payload_dtype = self._planning_store_write_dtype(payload)
-        memory_dtype = self._planning_dtype(bound.arguments[memory_name])
+            payload_dtype = self._context.store_write_dtype(payload)
+        memory_dtype = self._context.dtype(bound.arguments[memory_name])
         dtype = payload_dtype if payload_dtype is not None else memory_dtype
         if dtype is None:
             raise GroupRewriteError(
@@ -506,16 +250,16 @@ class _LoadStorePlanning:
         )
 
         algorithm = _direct_algorithm(
-            self._constant(bound.arguments["algorithm"]),
+            self._context.constant(bound.arguments["algorithm"]),
             operation=operation,
         )
         temp_storage_value = bound.arguments["temp_storage"]
-        if self._is_none(temp_storage_value):
+        if self._context.is_none(temp_storage_value):
             storage_kwargs: dict[str, Any] = {
                 "storage_ownership": StorageOwnership.IMPLEMENTATION,
             }
         else:
-            storage = self._planning_temp_storage(temp_storage_value)
+            storage = self._context.temp_storage(temp_storage_value)
             if storage is None:
                 raise GroupRewriteError(
                     f"cuda.coop.numba_mlir.{operation} temp_storage must "
@@ -535,14 +279,14 @@ class _LoadStorePlanning:
             dtype=dtype,
             items_per_thread=items_per_thread,
             algorithm=GroupLoadStoreAlgorithm(algorithm),
-            valid_items=self._planning_binding(bound.arguments["valid_items"]),
+            valid_items=self._context.planning_binding(bound.arguments["valid_items"]),
             oob_default=oob_default,
-            offset=self._planning_binding(bound.arguments["offset"]),
+            offset=self._context.planning_binding(bound.arguments["offset"]),
             **storage_kwargs,
         )
         plan = plan_group_primitive(
             make_group_primitive_call(group, semantics),
-            self.launch,
+            self._context.launch,
         )
         try:
             return plan.require_supported()
@@ -586,7 +330,7 @@ class _LoadStorePlanning:
     ) -> list[Any]:
         if is_common_root:
             if operation == "load":
-                if not self._thread_data_operand_state(
+                if not self._context.is_thread_data(
                     operation, "output", bound.arguments["output"]
                 ):
                     raise TypeError(
@@ -594,8 +338,8 @@ class _LoadStorePlanning:
                     )
             else:
                 value = bound.arguments["value"]
-                if self._array_operand_state(operation, value) and (
-                    not self._thread_data_operand_state(operation, "value", value)
+                if self._context.is_array(operation, value) and (
+                    not self._context.is_thread_data(operation, "value", value)
                 ):
                     raise TypeError(
                         "cuda.coop.store accepts only a scalar or fixed-size ThreadData value payload in the portable API; use cuda.coop.numba_mlir for backend-qualified local-array payload support"
@@ -642,7 +386,7 @@ class _LoadStorePlanning:
             )
         if operation == "store":
             factory_kwargs["_group_root_store"] = True
-        if not self._is_none(bound.arguments["temp_storage"]):
+        if not self._context.is_none(bound.arguments["temp_storage"]):
             factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
         if operation == "load":
             runtime_args = [bound.arguments["source"], bound.arguments["output"]]
@@ -650,7 +394,7 @@ class _LoadStorePlanning:
         else:
             runtime_args = [bound.arguments["destination"], bound.arguments["value"]]
             return_alias = None
-        return self._rewritten_call(
+        return self._context.rewrite_call(
             inst,
             factory=factory,
             args=runtime_args,
@@ -659,23 +403,27 @@ class _LoadStorePlanning:
         )
 
 
-def _lower_registered_load_store(planner: Any, *args: Any, **kwargs: Any) -> list[Any]:
-    return _LoadStorePlanning(planner)._lower_load_store(*args, **kwargs)
+def _lower_registered_load_store(
+    context: GroupPlanningContext, *args: Any, **kwargs: Any
+) -> list[Any]:
+    return _LoadStorePlanning(context)._lower_load_store(*args, **kwargs)
 
 
 def _validate_registered_common_arguments(
-    planner: Any,
+    context: GroupPlanningContext,
     operation: str,
     bound: inspect.BoundArguments,
 ) -> None:
-    _LoadStorePlanning(planner)._validate_common_arguments(operation, bound)
+    _LoadStorePlanning(context)._validate_common_arguments(operation, bound)
 
 
 for _operation in ("load", "store"):
     register_group_primitive(
         _operation,
         lower=_lower_registered_load_store,
-        array_result_parameter="output" if _operation == "load" else None,
+        results=(
+            (GroupResultSource("output", "output"),) if _operation == "load" else ()
+        ),
         validate_common_arguments=_validate_registered_common_arguments,
     )
 del _operation

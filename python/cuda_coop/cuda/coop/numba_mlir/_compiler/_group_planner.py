@@ -39,6 +39,7 @@ from ._group_planner_support import (
     resolve_thread_group,
     types,
 )
+from ._group_planning import GroupPlanningContext
 from ._operations import group_primitive
 
 
@@ -55,6 +56,7 @@ class _GroupCallPlanner:
         self.replacements: dict[ir.Assign, list[Any]] = {}
         self._group_cache: dict[str, ThreadGroup] = {}
         self._hierarchy_cache: dict[str, ThreadHierarchy] = {}
+        self.context = GroupPlanningContext(self)
 
     @staticmethod
     def _make_launch_facts(config: dict[str, Any]) -> LaunchFacts:
@@ -341,6 +343,24 @@ class _GroupCallPlanner:
             return True
         return None
 
+    def _result_source(self, definition: Any, index: int | None = None):
+        if not isinstance(definition, ir.Expr) or definition.op != "call":
+            return None
+        operation = _group_operation_name(self._callable(definition.func))
+        registration = None if operation is None else group_primitive(operation)
+        if registration is None:
+            return None
+        results = registration.results
+        if index is None:
+            if len(results) != 1:
+                return None
+            result = results[0]
+        else:
+            if not -len(results) <= index < len(results):
+                return None
+            result = results[index]
+        return result, self._bind(self._callable(definition.func), definition)
+
     def _is_array_tuple_item(
         self, value: Any, index: int, *, seen: set[str], thread_data_only: bool = False
     ) -> bool | None:
@@ -401,7 +421,17 @@ class _GroupCallPlanner:
             )
         if definition.op != "call":
             return False
-        return False
+        resolved = self._result_source(definition, index)
+        if resolved is None:
+            return False
+        result, bound = resolved
+        if result.array_parameter is None:
+            return False
+        return self._is_array_value(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     def _is_array_value(
         self,
@@ -471,7 +501,6 @@ class _GroupCallPlanner:
         if definition.op != "call":
             return False
         function = self._callable(definition.func)
-        operation = _group_operation_name(function)
         if function in {ThreadData, _portable_api.ThreadData}:
             return True
         if function is _typed_group_payload_like:
@@ -480,15 +509,14 @@ class _GroupCallPlanner:
             )
         if function is _cuda_module.local.array:
             return not thread_data_only
-        registration = None if operation is None else group_primitive(operation)
-        array_result_argument = (
-            None if registration is None else registration.array_result_parameter
-        )
-        if array_result_argument is None:
+        resolved = self._result_source(definition)
+        if resolved is None:
             return False
-        bound = self._bind(function, definition)
+        result, bound = resolved
+        if result.array_parameter is None:
+            return False
         return self._is_array_value(
-            bound.arguments[array_result_argument],
+            bound.arguments[result.array_parameter],
             seen=seen,
             thread_data_only=thread_data_only,
         )
@@ -663,7 +691,16 @@ class _GroupCallPlanner:
             return self._array_extent(items[index], seen=set(seen))
         if definition.op != "call":
             return None
-        return None
+        resolved = self._result_source(definition, index)
+        if resolved is None:
+            return None
+        result, bound = resolved
+        if result.array_parameter is None:
+            return 1
+        return self._array_extent(
+            bound.arguments[result.array_parameter],
+            seen=seen,
+        )
 
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
@@ -736,15 +773,13 @@ class _GroupCallPlanner:
             if isinstance(extent, Integral) and (not isinstance(extent, bool)):
                 return int(extent)
             return None
-        operation = _group_operation_name(function)
-        registration = None if operation is None else group_primitive(operation)
-        shape_argument = (
-            None if registration is None else registration.array_result_parameter
-        )
-        if shape_argument is None:
+        resolved = self._result_source(definition)
+        if resolved is None:
             return None
-        bound = self._bind(function, definition)
-        return self._array_extent(bound.arguments[shape_argument], seen=seen)
+        result, bound = resolved
+        if result.array_parameter is None:
+            return 1
+        return self._array_extent(bound.arguments[result.array_parameter], seen=seen)
 
     def _copy_array_payload(
         self,
@@ -910,9 +945,9 @@ class _GroupCallPlanner:
                 f"cuda.coop.numba_mlir operation {operation!r} has no planner"
             )
         if is_common_root and registration.validate_common_arguments is not None:
-            registration.validate_common_arguments(self, operation, bound)
+            registration.validate_common_arguments(self.context, operation, bound)
         replacement = registration.lower(
-            self,
+            self.context,
             inst,
             operation=operation,
             group=group,
