@@ -370,6 +370,56 @@ def test_compat_accepts_public_0_5_capabilities_without_refresh(monkeypatch):
     assert snapshot.rewrites["before-inference"] == ()
 
 
+@pytest.mark.parametrize(
+    ("version", "supported"),
+    [
+        (None, False),
+        ("", False),
+        ("0.4.99", False),
+        ("0.5", True),
+        ("0.5.0", True),
+        ("0.5.99", True),
+        ("0.6", False),
+        ("1.0.0", False),
+    ],
+)
+def test_compat_owns_runtime_version_predicate(version, supported):
+    assert _numba_mlir_compat._is_supported_runtime_version(version) is supported
+
+
+def test_compat_runtime_requirement_uses_detected_version():
+    requirement = _numba_mlir_compat._runtime_requirement(
+        SimpleNamespace(__version__="0.5.7")
+    )
+
+    assert "detected numba-cuda-mlir==0.5.7" in requirement
+    assert "numba-cuda-mlir>=0.5.0,<0.6" in requirement
+    assert "cuda-coop[numba-cuda-mlir-cu12]" in requirement
+    assert "cuda-coop[numba-cuda-mlir-cu13]" in requirement
+
+
+def test_activation_consumes_compat_runtime_requirement(monkeypatch):
+    diagnostic = "compat-owned runtime diagnostic"
+
+    def missing_runtime(name):
+        assert name == "numba_cuda_mlir"
+        raise ImportError("missing runtime", name=name)
+
+    monkeypatch.setattr(_activation.importlib, "import_module", missing_runtime)
+    monkeypatch.setattr(
+        _activation,
+        "_runtime_requirement",
+        lambda runtime=None: diagnostic,
+    )
+
+    runtime, error = _activation._load_runtime()
+
+    assert runtime is None
+    assert error is not None
+    assert error.reason_code == "backend-runtime-missing"
+    assert diagnostic in str(error)
+
+
 def test_compat_wraps_required_module_import_failures(monkeypatch):
     modules = _fake_compat_modules()
 
