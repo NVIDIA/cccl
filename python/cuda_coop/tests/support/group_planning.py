@@ -17,21 +17,30 @@ from cuda.coop._core import (
 
 
 def _load_store(kind="load", **overrides):
+    algorithm = GroupLoadStoreAlgorithm(
+        overrides.pop("algorithm", GroupLoadStoreAlgorithm.DIRECT)
+    )
+    default_storage_ownership = (
+        StorageOwnership.NONE
+        if algorithm is GroupLoadStoreAlgorithm.DIRECT
+        else StorageOwnership.IMPLEMENTATION
+    )
     operation = GroupLoadStoreSemantics(
         kind=GroupLoadStoreKind(kind),
         dtype=overrides.pop("dtype", "int"),
         items_per_thread=overrides.pop("items_per_thread", 2),
-        algorithm=overrides.pop("algorithm", GroupLoadStoreAlgorithm.DIRECT),
+        algorithm=algorithm,
         valid_items=overrides.pop("valid_items", ArgumentBinding.omitted()),
         oob_default=overrides.pop("oob_default", ArgumentBinding.omitted()),
         offset=overrides.pop("offset", ArgumentBinding.omitted()),
-        storage_ownership=overrides.pop(
-            "storage_ownership", StorageOwnership.IMPLEMENTATION
-        ),
+        storage_ownership=overrides.pop("storage_ownership", default_storage_ownership),
         storage_sharing=overrides.pop("storage_sharing", None),
         storage_size_in_bytes=overrides.pop("storage_size_in_bytes", None),
         storage_alignment=overrides.pop("storage_alignment", None),
-        storage_auto_sync=overrides.pop("storage_auto_sync", True),
+        storage_auto_sync=overrides.pop(
+            "storage_auto_sync",
+            default_storage_ownership is not StorageOwnership.NONE,
+        ),
     )
     assert not overrides
     return operation
