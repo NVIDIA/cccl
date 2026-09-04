@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from ..dtype_policy import validate_portable_integer_value_dtype_name
@@ -14,7 +15,6 @@ from ._dispatch import (
     _backend_module_name,
     _group_primitive_marker,
     _portable_group_operation,
-    _portable_selector,
     _validate_portable_operation_group,
 )
 from ._payload import (
@@ -58,15 +58,34 @@ _PORTABLE_OPERATOR_ALIASES = {
 _BITWISE_OPERATORS = frozenset({"bit_and", "bit_or", "bit_xor"})
 
 
+def _is_plain_string(value: Any) -> bool:
+    return isinstance(value, str) and not isinstance(value, Enum)
+
+
+def _portable_reduce_algorithm(operation: str, value: Any) -> Any:
+    if _backend_module_name() is None or value is None:
+        return value
+    if not _is_plain_string(value):
+        raise TypeError(f"cuda.coop.{operation} algorithm must be a string")
+    token = value.strip().lower().replace("-", "_")
+    if token not in _PORTABLE_REDUCE_ALGORITHMS:
+        choices = ", ".join(sorted(_PORTABLE_REDUCE_ALGORITHMS))
+        raise ValueError(
+            f"cuda.coop.{operation} algorithm must be one of: {choices}; "
+            "use a backend-qualified import for backend-only controls"
+        )
+    return token
+
+
 def _portable_reduce_operator(value: Any) -> Any:
     if _backend_module_name() is None or value is None:
         return value
-    token = getattr(value, "value", value)
-    if isinstance(token, str):
-        token = token.strip().lower().replace("-", "_")
+    if not _is_plain_string(value):
+        raise TypeError("cuda.coop.reduce binary_op must be a string")
+    token = value.strip().lower().replace("-", "_")
     try:
         return _PORTABLE_OPERATOR_ALIASES[token]
-    except (KeyError, TypeError):
+    except KeyError:
         choices = ", ".join(sorted(set(_PORTABLE_OPERATOR_ALIASES.values())))
         raise ValueError(
             "cuda.coop.reduce binary_op must be one of: "
@@ -172,13 +191,7 @@ def reduce(
     member must still participate in the collective.
     """
 
-    algorithm = _portable_selector(
-        "reduce",
-        "algorithm",
-        algorithm,
-        _PORTABLE_REDUCE_ALGORITHMS,
-        allow_none=True,
-    )
+    algorithm = _portable_reduce_algorithm("reduce", algorithm)
     binary_op = _portable_reduce_operator(binary_op)
     if _backend_module_name() is not None:
         _validate_portable_reduce_value("reduce", value, binary_op)
@@ -220,13 +233,7 @@ def sum(
     member must still participate in the collective.
     """
 
-    algorithm = _portable_selector(
-        "sum",
-        "algorithm",
-        algorithm,
-        _PORTABLE_REDUCE_ALGORITHMS,
-        allow_none=True,
-    )
+    algorithm = _portable_reduce_algorithm("sum", algorithm)
     if _backend_module_name() is not None:
         _validate_portable_reduce_value("sum", value, None)
     _validate_portable_reduce_options(

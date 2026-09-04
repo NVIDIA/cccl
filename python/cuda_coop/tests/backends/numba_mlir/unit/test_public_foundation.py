@@ -99,17 +99,15 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
             for name, parameter in inspect.signature(function).parameters.items()
         )
 
-    for operation in ("load", "shuffle", "store"):
-        assert call_shape(getattr(coop, operation)) == call_shape(
+    for operation in ("load", "reduce", "shuffle", "store", "sum"):
+        assert inspect.signature(getattr(coop, operation)) == inspect.signature(
             getattr(portable_coop, operation)
         )
 
     portable_exchange = inspect.signature(portable_coop.exchange)
     qualified_exchange = inspect.signature(coop.exchange)
     for name, parameter in portable_exchange.parameters.items():
-        qualified_parameter = qualified_exchange.parameters[name]
-        assert qualified_parameter.kind == parameter.kind
-        assert qualified_parameter.default == parameter.default
+        assert qualified_exchange.parameters[name] == parameter
     assert qualified_exchange.return_annotation == portable_exchange.return_annotation
     assert tuple(qualified_exchange.parameters)[
         len(portable_exchange.parameters) :
