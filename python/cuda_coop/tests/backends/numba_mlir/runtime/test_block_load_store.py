@@ -702,7 +702,7 @@ def _storage_store_kernel(storage_mode: str):
 @pytest.mark.parametrize(
     "storage_mode", ("implicit", "shared", "exclusive", "oversized")
 )
-def test_load_storage_modes_match_an_independent_oracle(storage_mode):
+def test_direct_load_accepts_each_temp_storage_descriptor_mode(storage_mode):
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=31)
     observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
@@ -714,7 +714,7 @@ def test_load_storage_modes_match_an_independent_oracle(storage_mode):
 @pytest.mark.parametrize(
     "storage_mode", ("implicit", "shared", "exclusive", "oversized")
 )
-def test_store_storage_modes_match_an_independent_oracle(storage_mode):
+def test_direct_store_accepts_each_temp_storage_descriptor_mode(storage_mode):
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=37)
     destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
 
@@ -778,7 +778,7 @@ def _repeated_shared_load(source_a, source_b, observed_a, observed_b):
         observed_b[thread * _ITEMS_PER_THREAD + item] = loaded_b[item]
 
 
-def test_shared_storage_supports_repeated_load_reuse():
+def test_direct_load_accepts_one_shared_descriptor_for_repeated_calls():
     source_a = _values(np.dtype(np.int32), _TILE_ITEMS, shift=41)
     source_b = _values(np.dtype(np.int32), _TILE_ITEMS, shift=53)
     observed_a = np.full(_TILE_ITEMS, -1, dtype=np.int32)
@@ -831,7 +831,7 @@ def _manual_sync_shared_load(source_a, source_b, observed_a, observed_b):
         observed_b[thread * _ITEMS_PER_THREAD + item] = loaded_b[item]
 
 
-def test_shared_storage_supports_manual_synchronization():
+def test_direct_load_allows_manual_sync_with_an_unused_shared_descriptor():
     source_a = _values(np.dtype(np.int32), _TILE_ITEMS, shift=71)
     source_b = _values(np.dtype(np.int32), _TILE_ITEMS, shift=73)
     observed_a = np.full(_TILE_ITEMS, -1, dtype=np.int32)
@@ -880,7 +880,7 @@ def _repeated_exclusive_load(source_a, source_b, observed_a, observed_b):
         observed_b[index] = loaded_b[item]
 
 
-def test_exclusive_storage_assigns_repeated_calls_distinct_slices():
+def test_direct_load_accepts_one_exclusive_descriptor_for_repeated_calls():
     source_a = _values(np.dtype(np.int32), _TILE_ITEMS, shift=79)
     source_b = _values(np.dtype(np.int32), _TILE_ITEMS, shift=83)
     observed_a = np.full(_TILE_ITEMS, -1, dtype=np.int32)
@@ -921,7 +921,7 @@ def _looped_shared_store(source, destination, observed):
             observed[tile_offset + index] = destination[index]
 
 
-def test_shared_storage_supports_looped_store_reuse():
+def test_direct_store_accepts_one_shared_descriptor_in_a_loop():
     source = _values(np.dtype(np.int32), 2 * _TILE_ITEMS, shift=59)
     destination = np.full(_TILE_ITEMS, -1, dtype=np.int32)
     observed = np.full(2 * _TILE_ITEMS, -1, dtype=np.int32)

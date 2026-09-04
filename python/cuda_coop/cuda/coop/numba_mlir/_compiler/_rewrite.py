@@ -265,7 +265,8 @@ class CoopSinglePhaseRewrite(
                         else "coop.ThreadData(...)"
                     )
                     raise CoopSinglePhaseRewriteError(
-                        f"Failed to infer dtype for {subject}. Use it with a movement operation that provides dtype context."
+                        f"Failed to infer dtype for {subject}. Use it with a "
+                        "cooperative group operation that provides dtype context."
                     )
                 if thread_data_spec.common_root:
                     from ._parameters import _validate_common_numeric_dtype

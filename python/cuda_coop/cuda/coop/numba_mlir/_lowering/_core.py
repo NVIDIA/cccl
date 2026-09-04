@@ -266,8 +266,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
     ) -> Any:
         del operator, specialization
         raise NotImplementedError(
-            "Python operator compilation is not part of the Block Load/Store "
-            "Numba-CUDA-MLIR capability"
+            "Python operator compilation is not supported by the "
+            "cuda.coop Numba-CUDA-MLIR backend"
         )
 
     def lower_stateful_operator(
@@ -278,8 +278,8 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
     ) -> Any:
         del operator, specialization
         raise NotImplementedError(
-            "stateful callbacks are not part of the Block Load/Store "
-            "Numba-CUDA-MLIR capability"
+            "stateful callbacks are not supported by the cuda.coop "
+            "Numba-CUDA-MLIR backend"
         )
 
     def lower_temp_storage(
@@ -421,11 +421,11 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
                 f"parameters: {names}"
             )
 
-        # Pointer-offset overloads deliberately accept an integer in the same
-        # position where partial-tile overloads accept an exact int32 count.
-        # Numba-CUDA-MLIR selects the first convertible overload, so keep the
-        # more specific partial-tile forms ahead of pointer-offset forms.  The
-        # stable sort otherwise preserves the canonical core ordering.
+        # Pointer-offset overloads deliberately accept a broadly convertible
+        # integer in the same position where ABI-checked scalar overloads
+        # require an exact dtype. Numba-CUDA-MLIR selects the first convertible
+        # overload, so keep the checked forms ahead of pointer-offset forms.
+        # The stable sort otherwise preserves the canonical core ordering.
         ordered_parameters = sorted(
             specialization.parameters,
             key=lambda method: any(
