@@ -4,9 +4,21 @@
 
 import pytest
 
+import cuda.coop as portable_coop
 import cuda.coop.numba_mlir as coop
-import cuda.coop.numba_mlir._thread_group as numba_mlir_groups
 from cuda.coop._core import ThreadHierarchy as CoreThreadHierarchy
+
+_UNSUPPORTED_THREAD_GROUP_METHODS = frozenset(
+    {
+        "count",
+        "count_as",
+        "is_member",
+        "rank",
+        "rank_as",
+        "sync",
+        "sync_aligned",
+    }
+)
 
 
 def test_group_exports_use_the_shared_hierarchy_contract():
@@ -68,42 +80,12 @@ def test_group_constructors_preserve_shared_validation():
         coop.this_warp().group_by(8).group_by(2)
 
 
-def test_group_methods_use_one_compile_time_marker(monkeypatch):
-    calls = []
-    marker_result = object()
+@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
+def test_thread_group_runtime_surface_is_descriptor_only(api):
+    group = api.this_block()
 
-    def marker(group, operation, *args):
-        calls.append((group, operation, args))
-        return marker_result
-
-    monkeypatch.setattr(
-        numba_mlir_groups,
-        "_thread_group_method_marker",
-        marker,
+    assert callable(group.group_by)
+    assert _UNSUPPORTED_THREAD_GROUP_METHODS.isdisjoint(dir(group))
+    assert all(
+        not hasattr(group, method) for method in _UNSUPPORTED_THREAD_GROUP_METHODS
     )
-    group = coop.this_block()
-
-    assert group.rank("block") is marker_result
-    assert group.count("grid") is marker_result
-    assert group.rank_as("uint32", "warp") is marker_result
-    assert group.count_as("uint64", "thread") is marker_result
-    assert group.sync() is None
-    assert group.sync_aligned() is None
-    assert group.is_member() is marker_result
-    assert calls == [
-        (group, "rank", (None, "block")),
-        (group, "count", (None, "grid")),
-        (group, "rank", ("uint32", "warp")),
-        (group, "count", ("uint64", "thread")),
-        (group, "sync", ()),
-        (group, "sync_aligned", ()),
-        (group, "is_member", ()),
-    ]
-
-
-def test_group_method_marker_fails_clearly_outside_compilation():
-    with pytest.raises(RuntimeError, match="whole-function planner"):
-        coop.this_block().rank()
-
-    with pytest.raises(ValueError, match="level must be one of"):
-        coop.this_block().count("tile")

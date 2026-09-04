@@ -13,6 +13,22 @@ import cuda.coop.numba_mlir as coop
 
 values = coop.ThreadData(2, np.int32)
 portable_values = portable.ThreadData(2, np.int32)
+portable_block = portable.this_block()
+portable_block.rank()  # expected-error: [attr-defined]
+portable_block.count()  # expected-error: [attr-defined]
+portable_block.rank_as(np.uint32)  # expected-error: [attr-defined]
+portable_block.count_as(np.uint32)  # expected-error: [attr-defined]
+portable_block.sync()  # expected-error: [attr-defined]
+portable_block.sync_aligned()  # expected-error: [attr-defined]
+portable_block.is_member()  # expected-error: [attr-defined]
+qualified_block = coop.this_block()
+qualified_block.rank()  # expected-error: [attr-defined]
+qualified_block.count()  # expected-error: [attr-defined]
+qualified_block.rank_as(np.uint32)  # expected-error: [attr-defined]
+qualified_block.count_as(np.uint32)  # expected-error: [attr-defined]
+qualified_block.sync()  # expected-error: [attr-defined]
+qualified_block.sync_aligned()  # expected-error: [attr-defined]
+qualified_block.is_member()  # expected-error: [attr-defined]
 portable.load(  # expected-error: [call-overload]
     portable.this_block(),
     object(),
