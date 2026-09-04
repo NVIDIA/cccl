@@ -9,6 +9,13 @@ from typing import Literal
 from ._core.api.exchange import exchange
 from ._core.api.load_store import load, store
 from ._core.api.reduce import reduce, sum
+from ._core.api.scan import (
+    exclusive_scan,
+    exclusive_sum,
+    inclusive_scan,
+    inclusive_sum,
+    scan,
+)
 from ._core.api.shuffle import shuffle
 from ._core.api.temp_storage import TempStorage, TempStorageLike
 from ._core.api.thread_data import ThreadData, ThreadDataLike
@@ -37,9 +44,14 @@ __all__ = [
     "ThreadHierarchy",
     "__version__",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
     "register",
+    "scan",
     "shuffle",
     "store",
     "sum",
