@@ -6,10 +6,10 @@
 
 from dataclasses import dataclass
 from numbers import Integral
-from typing import Any
 
 from cuda.coop._core import ArgumentBinding, BindingKind
 
+from ._group_rewriting import GroupRewriteContext
 from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     _GLOBAL_NAME_COUNTER,
@@ -29,8 +29,9 @@ class _LoadStoreMatchMetadata:
 
 
 class _LoadStoreRewrite:
+    @staticmethod
     def _validate_oob_default(
-        self,
+        context: GroupRewriteContext,
         *,
         runtime_args: list[ir.Var],
         factory_kwargs: dict[str, object],
@@ -49,7 +50,7 @@ class _LoadStoreRewrite:
                     "cuda.coop.numba_mlir.load requires an inferred dtype "
                     "before validating oob_default"
                 )
-            provenance = self._resolve_static_scalar_provenance(binding.value)
+            provenance = context.static_scalar_provenance(binding.value)
             source_dtype = (
                 None
                 if provenance is _UNRESOLVED or provenance is None
@@ -84,9 +85,9 @@ class _LoadStoreRewrite:
             )
 
         value_var = runtime_args[runtime_index]
-        value_dtype = self._resolve_var_numba_type(value_var)
+        value_dtype = context.numba_type(value_var)
         if value_dtype is None:
-            value_dtype = self._resolve_var_dtype(value_var)
+            value_dtype = context.dtype(value_var)
         if value_dtype is None:
             return
 
@@ -110,8 +111,9 @@ class _LoadStoreRewrite:
                 f"{value_dtype} does not match payload dtype {payload_dtype}"
             )
 
+    @staticmethod
     def _validate_load_store_runtime_controls(
-        self,
+        context: GroupRewriteContext,
         *,
         op_name: str,
         runtime_args: list[ir.Var],
@@ -177,9 +179,9 @@ class _LoadStoreRewrite:
                 raise CoopSinglePhaseRewriteError(
                     f"coop {op_name} {parameter} must be an integer"
                 )
-            value_type = self._resolve_var_numba_type(runtime_args[index])
+            value_type = context.numba_type(runtime_args[index])
             if value_type is None:
-                value_type = self._resolve_var_dtype(runtime_args[index])
+                value_type = context.dtype(runtime_args[index])
             if value_type is None:
                 continue
             try:
@@ -193,26 +195,26 @@ class _LoadStoreRewrite:
 
         if op_name == "load":
             _LoadStoreRewrite._validate_oob_default(
-                self,
+                context,
                 runtime_args=runtime_args,
                 factory_kwargs=factory_kwargs,
             )
 
-    def _infer_load_store_payload(self, inference: PayloadInference) -> None:
+    @staticmethod
+    def _infer_load_store_payload(
+        context: GroupRewriteContext,
+        inference: PayloadInference,
+    ) -> None:
         payload_var, payload_spec = inference.candidate(1)
         memory_var = inference.runtime_args[0] if inference.runtime_args else None
         memory_dtype = (
-            self._resolve_var_dtype(memory_var)
-            if isinstance(memory_var, ir.Var)
-            else None
+            context.dtype(memory_var) if isinstance(memory_var, ir.Var) else None
         )
 
         payload_is_array = payload_spec is not None
         if payload_spec is None:
             payload_dtype = (
-                self._resolve_var_dtype(payload_var)
-                if isinstance(payload_var, ir.Var)
-                else None
+                context.dtype(payload_var) if isinstance(payload_var, ir.Var) else None
             )
             inference.infer_kwarg("items_per_thread", 1)
             inference.infer_kwarg(
@@ -223,24 +225,24 @@ class _LoadStoreRewrite:
             inference.infer_kwarg("items_per_thread", payload_spec.items_per_thread)
             payload_dtype = payload_spec.dtype
             if payload_dtype is None and payload_var is not None:
-                payload_dtype = self._resolve_var_dtype(payload_var)
+                payload_dtype = context.dtype(payload_var)
             if (
                 inference.op_name == "store"
                 and payload_dtype is None
                 and payload_var is not None
             ):
-                payload_dtype = self._infer_thread_data_dtype_from_writes(payload_var)
+                payload_dtype = context.infer_thread_data_write_dtype(payload_var)
             inferred_dtype = memory_dtype if memory_dtype is not None else payload_dtype
             if inferred_dtype is None:
                 inferred_dtype = inference.factory_value("dtype")
             inference.infer_kwarg("dtype", inferred_dtype)
             if inferred_dtype is not None and payload_var is not None:
-                self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
+                context.record_thread_data_dtype(payload_var, inferred_dtype)
 
         from ._parameters import _validate_common_numeric_dtype
 
         if inference.op_name == "store" and not payload_is_array:
-            provenance = self._resolve_static_scalar_provenance(payload_var)
+            provenance = context.static_scalar_provenance(payload_var)
             if provenance is not _UNRESOLVED and memory_dtype is not None:
                 from ._parameters import coerce_static_scalar
 
@@ -289,19 +291,22 @@ class _LoadStoreRewrite:
             )
 
 
-def infer_load_store_payload(rewrite: Any, inference: PayloadInference) -> None:
-    _LoadStoreRewrite._infer_load_store_payload(rewrite, inference)
+def infer_load_store_payload(
+    context: GroupRewriteContext,
+    inference: PayloadInference,
+) -> None:
+    _LoadStoreRewrite._infer_load_store_payload(context, inference)
 
 
 def validate_load_store_runtime_controls(
-    rewrite: Any,
+    context: GroupRewriteContext,
     *,
     op_name: str,
     runtime_args: list[ir.Var],
     factory_kwargs: dict[str, object],
 ) -> None:
     _LoadStoreRewrite._validate_load_store_runtime_controls(
-        rewrite,
+        context,
         op_name=op_name,
         runtime_args=runtime_args,
         factory_kwargs=factory_kwargs,
@@ -309,7 +314,7 @@ def validate_load_store_runtime_controls(
 
 
 def analyze_load_store_match(
-    rewrite: Any,
+    context: GroupRewriteContext,
     *,
     op_name: str,
     runtime_args: tuple[ir.Var, ...],
@@ -333,11 +338,11 @@ def analyze_load_store_match(
         )
         operands = list(zip(operand_names, runtime_args))
         if op_name == "store" and len(runtime_args) >= 2:
-            value_is_array = rewrite._resolve_thread_data_spec(runtime_args[1])
+            value_is_array = context.thread_data(runtime_args[1])
             if value_is_array is None:
                 operands = operands[:1]
         for operand_name, operand in operands:
-            operand_dtype = rewrite._resolve_var_dtype(operand)
+            operand_dtype = context.dtype(operand)
             if operand_dtype is None:
                 raise CoopSinglePhaseRewriteError(
                     f"Failed to infer cuda.coop.{common_root_operation} "
@@ -356,14 +361,13 @@ def analyze_load_store_match(
         )
     return _LoadStoreMatchMetadata(
         box_root_store_scalar=(
-            group_root_store
-            and rewrite._resolve_thread_data_spec(runtime_args[1]) is None
+            group_root_store and context.thread_data(runtime_args[1]) is None
         )
     )
 
 
 def prepare_load_store_runtime_args(
-    rewrite: Any,
+    context: GroupRewriteContext,
     block: ir.Block,
     *,
     match: _RewriteMatch,
@@ -371,7 +375,7 @@ def prepare_load_store_runtime_args(
     scope: ir.Scope,
     loc: ir.Loc,
 ) -> list[ir.Var]:
-    del rewrite
+    del context
     metadata = match.family_metadata
     if not isinstance(metadata, _LoadStoreMatchMetadata):
         raise CoopSinglePhaseRewriteError("missing Load/Store family metadata")
