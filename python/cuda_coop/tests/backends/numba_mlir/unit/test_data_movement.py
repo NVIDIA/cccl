@@ -581,6 +581,9 @@ def test_arbitrary_primitive_declares_bounded_and_exact_value_abis():
         ExactValue,
         algo_coalesce_key,
     )
+    from cuda.coop.numba_mlir._types import (
+        Value as BackendValue,
+    )
 
     specialization = Algorithm(
         struct_name="FuturePrimitive",
@@ -638,6 +641,30 @@ def test_arbitrary_primitive_declares_bounded_and_exact_value_abis():
     assert algo_coalesce_key(algorithm) != algo_coalesce_key(wider)
     assert algorithm.mangled_name(algorithm.parameters[0]) != wider.mangled_name(
         wider.parameters[0]
+    )
+
+    load_like = Algorithm(
+        struct_name="LegacyLikePrimitive",
+        method_name="Run",
+        c_name="test_load_like_primitive",
+        includes=(),
+        template_parameters=(),
+        parameters=(
+            (
+                Value(INT32, name="num_valid_items"),
+                Value(FLOAT32, name="oob_default"),
+            ),
+        ),
+    ).specialize({}, metadata={"primitive": "load"})
+    without_declarations = NumbaMlirCoreAdapter().materialize(
+        load_like,
+        storage_abi=StorageABI.NONE,
+        execution_scope=SynchronizationScope.NONE,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+    assert all(
+        type(parameter) is BackendValue
+        for parameter in without_declarations.parameters[0]
     )
 
 
