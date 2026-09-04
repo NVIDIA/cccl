@@ -20,14 +20,6 @@ Example flow:
     User provides: def add(x: int32, y: int32) -> int32
     Wrapper signature: void(void*, void*, void*)  # x_ptr, y_ptr, result_ptr
     C++ sees: extern "C" void wrapped_add(void*, void*, void*);
-
-Unlike the previous numba-cuda implementation, the wrappers here are *ordinary
-Python device functions* compiled with ``abi="c"`` rather than hand-written
-LLVM-IR codegen (``@intrinsic``).  A ``void*`` argument is expressed as a typed
-``CPointer`` parameter (ABI-identical to ``void*``); loads/stores become
-``ptr[0]`` indexing.  numba-cuda-mlir inlines the user operator into the
-wrapper, so the generated code is equivalent to the old codegen without any
-low-level builder work.
 """
 
 from __future__ import annotations
