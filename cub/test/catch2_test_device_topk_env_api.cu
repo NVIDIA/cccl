@@ -45,12 +45,12 @@ struct topk_custom_decomposer_t
 CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-keys-env
-  auto d_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
-  auto d_out = thrust::device_vector<int>(3);
-  int k      = 3;
+  auto d_in   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
+  auto d_out  = thrust::device_vector<int>(3);
+  const int k = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -61,7 +61,7 @@ CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]",
   {
     std::cerr << "cub::DeviceTopK::MaxKeys failed with status: " << error << '\n';
   }
-  thrust::device_vector<int> expected{9, 8, 7}; // possibly in different order
+  const thrust::device_vector<int> expected{9, 8, 7}; // possibly in different order
   // example-end topk-max-keys-env
 
   stream.sync();
@@ -75,12 +75,12 @@ CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]",
 CUB_TEST("cub::DeviceTopK::MinKeys env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-min-keys-env
-  auto d_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
-  auto d_out = thrust::device_vector<int>(3);
-  int k      = 3;
+  auto d_in   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
+  auto d_out  = thrust::device_vector<int>(3);
+  const int k = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -91,7 +91,7 @@ CUB_TEST("cub::DeviceTopK::MinKeys env-alloc accepts stream_ref", "[topk][env]",
   {
     std::cerr << "cub::DeviceTopK::MinKeys failed with status: " << error << '\n';
   }
-  thrust::device_vector<int> expected{0, 1, 2}; // possibly in different order
+  const thrust::device_vector<int> expected{0, 1, 2}; // possibly in different order
   // example-end topk-min-keys-env
 
   stream.sync();
@@ -108,10 +108,10 @@ CUB_TEST("cub::DeviceTopK::MaxPairs env-alloc accepts stream_ref", "[topk][env]"
   auto d_values_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto d_keys_out   = thrust::device_vector<int>(3);
   auto d_values_out = thrust::device_vector<int>(3);
-  int k             = 3;
+  const int k       = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -129,7 +129,7 @@ CUB_TEST("cub::DeviceTopK::MaxPairs env-alloc accepts stream_ref", "[topk][env]"
   {
     std::cerr << "cub::DeviceTopK::MaxPairs failed with status: " << error << '\n';
   }
-  thrust::device_vector<int> expected_keys{9, 8, 7}; // possibly in different order
+  const thrust::device_vector<int> expected_keys{9, 8, 7}; // possibly in different order
   // example-end topk-max-pairs-env
 
   stream.sync();
@@ -146,10 +146,10 @@ CUB_TEST("cub::DeviceTopK::MinPairs env-alloc accepts stream_ref", "[topk][env]"
   auto d_values_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   auto d_keys_out   = thrust::device_vector<int>(3);
   auto d_values_out = thrust::device_vector<int>(3);
-  int k             = 3;
+  const int k       = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -167,7 +167,7 @@ CUB_TEST("cub::DeviceTopK::MinPairs env-alloc accepts stream_ref", "[topk][env]"
   {
     std::cerr << "cub::DeviceTopK::MinPairs failed with status: " << error << '\n';
   }
-  thrust::device_vector<int> expected_keys{0, 1, 2}; // possibly in different order
+  const thrust::device_vector<int> expected_keys{0, 1, 2}; // possibly in different order
   // example-end topk-min-pairs-env
 
   stream.sync();
@@ -180,14 +180,14 @@ CUB_TEST("cub::DeviceTopK::MinPairs env-alloc accepts stream_ref", "[topk][env]"
 CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-keys-decomposer-env
-  thrust::host_vector<topk_custom_t> h_in{
+  const thrust::host_vector<topk_custom_t> h_in{
     {8, 0}, {6, 1}, {7, 2}, {5, 3}, {3, 4}, {0, 5}, {9, 6}, {1, 7}, {4, 8}, {2, 9}};
   thrust::device_vector<topk_custom_t> d_in = h_in;
   thrust::device_vector<topk_custom_t> d_out(3);
-  int k = 3;
+  const int k = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -199,7 +199,7 @@ CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc with decomposer accepts stream_ref"
   {
     std::cerr << "cub::DeviceTopK::MaxKeys failed with status: " << error << '\n';
   }
-  thrust::host_vector<int> expected_ranks{9, 8, 7}; // possibly in different order
+  const thrust::host_vector<int> expected_ranks{9, 8, 7}; // possibly in different order
   // example-end topk-max-keys-decomposer-env
 
   stream.sync();
@@ -209,21 +209,21 @@ CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc with decomposer accepts stream_ref"
   std::sort(h_out.begin(), h_out.end(), [](const topk_custom_t& a, const topk_custom_t& b) {
     return a.rank > b.rank;
   });
-  thrust::host_vector<int> actual_ranks{h_out[0].rank, h_out[1].rank, h_out[2].rank};
+  const thrust::host_vector<int> actual_ranks{h_out[0].rank, h_out[1].rank, h_out[2].rank};
   REQUIRE(actual_ranks == expected_ranks);
 }
 
 CUB_TEST("cub::DeviceTopK::MinKeys env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-min-keys-decomposer-env
-  thrust::host_vector<topk_custom_t> h_in{
+  const thrust::host_vector<topk_custom_t> h_in{
     {8, 0}, {6, 1}, {7, 2}, {5, 3}, {3, 4}, {0, 5}, {9, 6}, {1, 7}, {4, 8}, {2, 9}};
   thrust::device_vector<topk_custom_t> d_in = h_in;
   thrust::device_vector<topk_custom_t> d_out(3);
-  int k = 3;
+  const int k = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -235,7 +235,7 @@ CUB_TEST("cub::DeviceTopK::MinKeys env-alloc with decomposer accepts stream_ref"
   {
     std::cerr << "cub::DeviceTopK::MinKeys failed with status: " << error << '\n';
   }
-  thrust::host_vector<int> expected_ranks{0, 1, 2}; // possibly in different order
+  const thrust::host_vector<int> expected_ranks{0, 1, 2}; // possibly in different order
   // example-end topk-min-keys-decomposer-env
 
   stream.sync();
@@ -245,23 +245,23 @@ CUB_TEST("cub::DeviceTopK::MinKeys env-alloc with decomposer accepts stream_ref"
   std::sort(h_out.begin(), h_out.end(), [](const topk_custom_t& a, const topk_custom_t& b) {
     return a.rank < b.rank;
   });
-  thrust::host_vector<int> actual_ranks{h_out[0].rank, h_out[1].rank, h_out[2].rank};
+  const thrust::host_vector<int> actual_ranks{h_out[0].rank, h_out[1].rank, h_out[2].rank};
   REQUIRE(actual_ranks == expected_ranks);
 }
 
 CUB_TEST("cub::DeviceTopK::MaxPairs env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-pairs-decomposer-env
-  thrust::host_vector<topk_custom_t> h_keys_in{
+  const thrust::host_vector<topk_custom_t> h_keys_in{
     {8, 0}, {6, 1}, {7, 2}, {5, 3}, {3, 4}, {0, 5}, {9, 6}, {1, 7}, {4, 8}, {2, 9}};
   thrust::device_vector<topk_custom_t> d_keys_in = h_keys_in;
   thrust::device_vector<int> d_values_in{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   thrust::device_vector<topk_custom_t> d_keys_out(3);
   thrust::device_vector<int> d_values_out(3);
-  int k = 3;
+  const int k = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -280,7 +280,7 @@ CUB_TEST("cub::DeviceTopK::MaxPairs env-alloc with decomposer accepts stream_ref
   {
     std::cerr << "cub::DeviceTopK::MaxPairs failed with status: " << error << '\n';
   }
-  thrust::host_vector<int> expected_ranks{9, 8, 7}; // possibly in different order
+  const thrust::host_vector<int> expected_ranks{9, 8, 7}; // possibly in different order
   // example-end topk-max-pairs-decomposer-env
 
   stream.sync();
@@ -290,23 +290,23 @@ CUB_TEST("cub::DeviceTopK::MaxPairs env-alloc with decomposer accepts stream_ref
   std::sort(h_keys_out.begin(), h_keys_out.end(), [](const topk_custom_t& a, const topk_custom_t& b) {
     return a.rank > b.rank;
   });
-  thrust::host_vector<int> actual_ranks{h_keys_out[0].rank, h_keys_out[1].rank, h_keys_out[2].rank};
+  const thrust::host_vector<int> actual_ranks{h_keys_out[0].rank, h_keys_out[1].rank, h_keys_out[2].rank};
   REQUIRE(actual_ranks == expected_ranks);
 }
 
 CUB_TEST("cub::DeviceTopK::MinPairs env-alloc with decomposer accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-min-pairs-decomposer-env
-  thrust::host_vector<topk_custom_t> h_keys_in{
+  const thrust::host_vector<topk_custom_t> h_keys_in{
     {8, 0}, {6, 1}, {7, 2}, {5, 3}, {3, 4}, {0, 5}, {9, 6}, {1, 7}, {4, 8}, {2, 9}};
   thrust::device_vector<topk_custom_t> d_keys_in = h_keys_in;
   thrust::device_vector<int> d_values_in{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   thrust::device_vector<topk_custom_t> d_keys_out(3);
   thrust::device_vector<int> d_values_out(3);
-  int k = 3;
+  const int k = 3;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, //
                              cuda::execution::output_ordering::unsorted),
@@ -325,7 +325,7 @@ CUB_TEST("cub::DeviceTopK::MinPairs env-alloc with decomposer accepts stream_ref
   {
     std::cerr << "cub::DeviceTopK::MinPairs failed with status: " << error << '\n';
   }
-  thrust::host_vector<int> expected_ranks{0, 1, 2}; // possibly in different order
+  const thrust::host_vector<int> expected_ranks{0, 1, 2}; // possibly in different order
   // example-end topk-min-pairs-decomposer-env
 
   stream.sync();
@@ -335,6 +335,6 @@ CUB_TEST("cub::DeviceTopK::MinPairs env-alloc with decomposer accepts stream_ref
   std::sort(h_keys_out.begin(), h_keys_out.end(), [](const topk_custom_t& a, const topk_custom_t& b) {
     return a.rank < b.rank;
   });
-  thrust::host_vector<int> actual_ranks{h_keys_out[0].rank, h_keys_out[1].rank, h_keys_out[2].rank};
+  const thrust::host_vector<int> actual_ranks{h_keys_out[0].rank, h_keys_out[1].rank, h_keys_out[2].rank};
   REQUIRE(actual_ranks == expected_ranks);
 }

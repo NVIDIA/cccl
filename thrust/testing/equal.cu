@@ -77,7 +77,7 @@ void TestEqualDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::equal(sys, vec.begin(), vec.end(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -120,18 +120,18 @@ struct only_set_when_both_expected
 
 void TestEqualWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> begin(1);
+  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
-  *has_executed                         = false;
+  const thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
+  *has_executed                               = false;
 
-  only_set_when_both_expected fn = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
+  const only_set_when_both_expected fn = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
 
   ASSERT_EQUAL(thrust::equal(thrust::device, begin, end, begin, fn), true);
 
-  bool has_executed_h = *has_executed;
+  const bool has_executed_h = *has_executed;
   thrust::device_free(has_executed);
 
   ASSERT_EQUAL(has_executed_h, true);

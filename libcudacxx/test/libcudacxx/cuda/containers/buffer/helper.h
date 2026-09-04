@@ -70,7 +70,7 @@ bool equal_range(const Buffer& buf)
     {
       return false;
     }
-    cuda::__ensure_current_context guard{buf.stream()};
+    const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
     CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();
@@ -87,7 +87,7 @@ bool compare_value(const T& value, const T& expected)
   }
   else
   {
-    cuda::__ensure_current_context guard{cuda::device_ref{0}};
+    const cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the value to host
     T host_value;
     _CCCL_TRY_RUNTIME_API(
@@ -110,7 +110,7 @@ void assign_value(T& value, const T& input)
   }
   else
   {
-    cuda::__ensure_current_context guard{cuda::device_ref{0}};
+    const cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the input to device
     _CCCL_TRY_RUNTIME_API(
       ::cudaMemcpy,
@@ -156,7 +156,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffe
     {
       return false;
     }
-    cuda::__ensure_current_context guard{buf.stream()};
+    const cuda::__ensure_current_context guard{buf.stream()};
     check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
     CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
     buf.stream().sync();

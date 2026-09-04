@@ -61,7 +61,7 @@ CUB_TEST_CASE("Device FindIf works with default environment", "[find][device]", 
   constexpr int num_items = 8;
   auto d_in               = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};
   auto d_out              = c2h::device_vector<int>(1);
-  is_greater_than_t predicate{4};
+  const is_greater_than_t predicate{4};
 
   SECTION("Without provided memory")
   {
@@ -97,7 +97,7 @@ CUB_TEST_CASE("Device FindIf no match returns num_items with default environment
   constexpr int num_items = 5;
   auto d_in               = c2h::device_vector<int>{0, 1, 2, 3, 4};
   auto d_out              = c2h::device_vector<int>(1);
-  is_greater_than_t predicate{100};
+  const is_greater_than_t predicate{100};
 
   SECTION("Without provided memory")
   {
@@ -143,7 +143,7 @@ CUB_TEST_CASE("Device LowerBound works with default environment", "[find][device
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 
@@ -162,7 +162,7 @@ CUB_TEST_CASE("Device UpperBound works with default environment", "[find][device
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 
@@ -173,7 +173,7 @@ CUB_TEST("Device FindIf uses environment", "[find][device]", CUB_SMALL)
   constexpr int num_items = 8;
   auto d_in               = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6, 7};
   auto d_out              = c2h::device_vector<int>(1);
-  is_greater_than_t predicate{4};
+  const is_greater_than_t predicate{4};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -220,26 +220,26 @@ CUB_TEST("Device FindIf works with user provided memory and environment", "[find
 
   SECTION("find_if works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_find_if(stream.get());
   }
 
   SECTION("find_if works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_find_if(stream);
   }
 
   SECTION("find_if works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_find_if(stream_ref);
   }
 
   SECTION("find_if works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_find_if(env);
   }
 
@@ -251,7 +251,7 @@ CUB_TEST("Device FindIf works with user provided memory and environment", "[find
 
   SECTION("find_if works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_find_if(policy);
   }
@@ -287,16 +287,16 @@ CUB_TEST("Device LowerBound uses environment", "[find][device]", CUB_SMALL)
     cuda::std::less{},
     env);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 
 CUB_TEST("Device LowerBound works with user provided memory and environment", "[find][device]", CUB_SMALL)
 {
-  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                    = c2h::device_vector<int>{1, 3, 5, 7};
-  auto d_output                    = c2h::device_vector<int>(4);
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  auto d_range                           = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                          = c2h::device_vector<int>{1, 3, 5, 7};
+  auto d_output                          = c2h::device_vector<int>(4);
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
 
   size_t expected_bytes_allocated{};
   auto error = cub::DeviceFind::LowerBound(
@@ -351,26 +351,26 @@ CUB_TEST("Device LowerBound works with user provided memory and environment", "[
 
   SECTION("lower_bound works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_lower_bound(stream.get());
   }
 
   SECTION("lower_bound works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_lower_bound(stream);
   }
 
   SECTION("lower_bound works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_lower_bound(stream_ref);
   }
 
   SECTION("lower_bound works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_lower_bound(env);
   }
 
@@ -382,7 +382,7 @@ CUB_TEST("Device LowerBound works with user provided memory and environment", "[
 
   SECTION("lower_bound works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_lower_bound(policy);
   }
@@ -418,16 +418,16 @@ CUB_TEST("Device UpperBound uses environment", "[find][device]", CUB_SMALL)
     cuda::std::less{},
     env);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 
 CUB_TEST("Device UpperBound works with user provided memory and environment", "[find][device]", CUB_SMALL)
 {
-  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                    = c2h::device_vector<int>{1, 3, 5, 7};
-  auto d_output                    = c2h::device_vector<int>(4);
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  auto d_range                           = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                          = c2h::device_vector<int>{1, 3, 5, 7};
+  auto d_output                          = c2h::device_vector<int>(4);
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
 
   size_t expected_bytes_allocated{};
   auto error = cub::DeviceFind::UpperBound(
@@ -482,26 +482,26 @@ CUB_TEST("Device UpperBound works with user provided memory and environment", "[
 
   SECTION("upper_bound works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_upper_bound(stream.get());
   }
 
   SECTION("upper_bound works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_upper_bound(stream);
   }
 
   SECTION("upper_bound works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_upper_bound(stream_ref);
   }
 
   SECTION("upper_bound works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_upper_bound(env);
   }
 
@@ -513,7 +513,7 @@ CUB_TEST("Device UpperBound works with user provided memory and environment", "[
 
   SECTION("upper_bound works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_upper_bound(policy);
   }
@@ -529,7 +529,7 @@ CUB_TEST("Device FindIf can be tuned", "[find][device]", CUB_SMALL, block_sizes)
   auto d_out              = c2h::device_vector<int>(1, thrust::no_init);
   auto d_block_size       = c2h::device_vector<unsigned int>(1, 0);
 
-  block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto env = cuda::execution::tune(find_tuning<static_cast<int>(target_block_size)>{});
 

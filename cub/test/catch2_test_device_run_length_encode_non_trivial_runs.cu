@@ -315,7 +315,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
 
   int expected_non_trivial_runs = 0;
   int value                     = tile_size;
-  int large_group_size          = 3;
+  const int large_group_size    = 3;
   for (int i = 0; i < tile_size; i++)
   {
     int j = 0;
@@ -447,8 +447,8 @@ try
     static_cast<offset_type>(num_items));
 
   // Expected results
-  c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};
-  c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
+  const c2h::device_vector<offset_type> expected_uniques{offset_type{0}, first_run_size};
+  const c2h::device_vector<run_length_type> expected_run_lengths{first_run_size, second_run_size};
 
   // Verify result
   CHECK(out_num_runs[0] == num_uniques);

@@ -34,7 +34,8 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     auto& barriers = get_barriers<nbarriers, 0>(level);
     using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
 
-    cuda::std::span<Barrier, nbarriers> barriers_span{barriers, nbarriers};
+    const cuda::std::span<Barrier, nbarriers> barriers_span{barriers, nbarriers};
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::barrier_synchronizer synchronizer{barriers_span};
 
     static_assert(cuda::std::is_same_v<cudax::barrier_synchronizer<Barrier, nbarriers>, decltype(synchronizer)>);
@@ -49,7 +50,8 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     auto& barriers = get_barriers<nbarriers, 1>(level);
     using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
 
-    cuda::std::span<Barrier> barriers_span{barriers, nbarriers};
+    const cuda::std::span<Barrier> barriers_span{barriers, nbarriers};
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::barrier_synchronizer synchronizer{barriers_span};
 
     static_assert(
@@ -65,6 +67,7 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
     auto& barriers = get_barriers<nbarriers, 2>(level);
     using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
 
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::barrier_synchronizer synchronizer{barriers};
 
     static_assert(cuda::std::is_same_v<cudax::barrier_synchronizer<Barrier, nbarriers>, decltype(synchronizer)>);

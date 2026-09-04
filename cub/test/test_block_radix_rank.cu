@@ -62,7 +62,7 @@ __launch_bounds__(ThreadsPerBlock, 1) __global__ void kernel(Key* d_keys, int* d
     cub::LoadDirectBlocked(threadIdx.x, d_keys, keys);
   }
 
-  cub::BFEDigitExtractor<Key> extractor(0, RadixBits);
+  cub::BFEDigitExtractor<Key> extractor(0, RadixBits); // NOLINT(misc-const-correctness)
   block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
 
   if (uses_warp_striped_arrangement)
@@ -97,7 +97,7 @@ struct pair_t
 template <bool DESCENDING, typename Key>
 void Initialize(GenMode gen_mode, Key* h_keys, int* h_reference_ranks, int num_items, int num_bits)
 {
-  std::unique_ptr<pair_t<Key>[]> h_pairs_storage(new pair_t<Key>[num_items]);
+  const std::unique_ptr<pair_t<Key>[]> h_pairs_storage(new pair_t<Key>[num_items]);
   pair_t<Key>* h_pairs = h_pairs_storage.get();
 
   for (int i = 0; i < num_items; ++i)
@@ -144,8 +144,8 @@ void TestDriver(GenMode gen_mode)
   constexpr int tile_size = ThreadsPerBlock * ItemsPerThread;
 
   // Allocate host arrays
-  std::unique_ptr<Key[]> h_keys(new Key[tile_size]);
-  std::unique_ptr<int[]> h_reference_ranks(new int[tile_size]);
+  const std::unique_ptr<Key[]> h_keys(new Key[tile_size]);
+  const std::unique_ptr<int[]> h_reference_ranks(new int[tile_size]);
 
   // Initialize problem and solution on host
   Initialize<Descending>(gen_mode, h_keys.get(), h_reference_ranks.get(), tile_size, RadixBits);
@@ -207,7 +207,7 @@ void Test()
     cub::detail::block_radix_rank_t<RankAlgorithm, ThreadsPerBlock, RadixBits, Descending, ScanAlgorithm>;
   using storage_t = typename block_radix_rank::TempStorage;
 
-  cuda::std::bool_constant<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
+  const cuda::std::bool_constant<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
 
   TestValid<RankAlgorithm, ThreadsPerBlock, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
     fits_smem_capacity);

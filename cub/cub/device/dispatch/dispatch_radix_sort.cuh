@@ -347,7 +347,7 @@ public:
     int& current_bit,
     PassConfigT& pass_config)
   {
-    int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
+    const int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -374,7 +374,7 @@ public:
 #endif // CUB_DEBUG_LOG
 
     // Spine length written by the upsweep kernel in the current pass.
-    int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
+    const int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
     launcher_factory(pass_config.even_share.grid_size, pass_config.upsweep_config.threads_per_block, 0, stream)
@@ -972,12 +972,13 @@ private:
     }
 
     // Get maximum spine length
-    int max_grid_size = ::cuda::std::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
-    int spine_length  = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
+    const int max_grid_size =
+      ::cuda::std::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
+    const int spine_length = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
 
     // Temporary storage allocation requirements
-    void* allocations[3]       = {};
-    size_t allocation_sizes[3] = {
+    void* allocations[3]             = {};
+    const size_t allocation_sizes[3] = {
       // bytes needed for privatized block digit histograms
       spine_length * sizeof(OffsetT),
 
@@ -1003,11 +1004,11 @@ private:
 
     // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
     // preferred digit size
-    int num_bits           = end_bit - begin_bit;
-    int num_passes         = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
-    bool is_num_passes_odd = num_passes & 1;
-    int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
-    int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
+    const int num_bits           = end_bit - begin_bit;
+    int num_passes               = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
+    const bool is_num_passes_odd = num_passes & 1;
+    const int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
+    const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
 
     // Alias the temporary storage allocations
     OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
@@ -1508,7 +1509,7 @@ struct dispatch_impl
     int& current_bit,
     PassConfigT& pass_config)
   {
-    int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
+    const int pass_bits = ::cuda::std::min(pass_config.radix_bits, end_bit - current_bit);
 
     // Log upsweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -1535,7 +1536,7 @@ struct dispatch_impl
 #endif // CUB_DEBUG_LOG
 
     // Spine length written by the upsweep kernel in the current pass.
-    int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
+    const int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
     // Invoke upsweep_kernel with same grid size as downsweep_kernel
     if (const auto error = CubDebug(
@@ -1707,12 +1708,12 @@ struct dispatch_impl
     }
 
     // Get maximum spine length
-    int max_grid_size = ::cuda::std::max(pc.max_downsweep_grid_size, alt_pc.max_downsweep_grid_size);
-    int spine_length  = (max_grid_size * pc.radix_digits) + pc.scan_config.tile_size;
+    const int max_grid_size = ::cuda::std::max(pc.max_downsweep_grid_size, alt_pc.max_downsweep_grid_size);
+    const int spine_length  = (max_grid_size * pc.radix_digits) + pc.scan_config.tile_size;
 
     // Temporary storage allocation requirements
-    void* allocations[3]       = {};
-    size_t allocation_sizes[3] = {
+    void* allocations[3]             = {};
+    const size_t allocation_sizes[3] = {
       // bytes needed for privatized block digit histograms
       spine_length * sizeof(OffsetT),
 
@@ -1738,11 +1739,11 @@ struct dispatch_impl
 
     // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
     // preferred digit size
-    int num_bits           = end_bit - begin_bit;
-    int num_passes         = ::cuda::ceil_div(num_bits, pc.radix_bits);
-    bool is_num_passes_odd = num_passes & 1;
-    int max_alt_passes     = (num_passes * pc.radix_bits) - num_bits;
-    int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pc.radix_bits));
+    const int num_bits           = end_bit - begin_bit;
+    int num_passes               = ::cuda::ceil_div(num_bits, pc.radix_bits);
+    const bool is_num_passes_odd = num_passes & 1;
+    const int max_alt_passes     = (num_passes * pc.radix_bits) - num_bits;
+    const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pc.radix_bits));
 
     // Alias the temporary storage allocations
     OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
@@ -1821,14 +1822,14 @@ struct dispatch_impl
     const int onesweep_tile_items       = onesweep_items_per_thread * onesweep_block_threads;
     // portions handle inputs with >=2**30 elements, due to the way lookback works
     // for testing purposes, one portion is <= 2**28 elements
-    const PortionOffsetT portion_size = ((1 << 28) - 1) / onesweep_tile_items * onesweep_tile_items;
-    int num_passes                    = ::cuda::ceil_div(end_bit - begin_bit, radix_bits);
-    OffsetT num_portions              = static_cast<OffsetT>(::cuda::ceil_div(num_items, portion_size));
-    PortionOffsetT max_num_blocks     = ::cuda::ceil_div(
+    const PortionOffsetT portion_size   = ((1 << 28) - 1) / onesweep_tile_items * onesweep_tile_items;
+    const int num_passes                = ::cuda::ceil_div(end_bit - begin_bit, radix_bits);
+    OffsetT num_portions                = static_cast<OffsetT>(::cuda::ceil_div(num_items, portion_size));
+    const PortionOffsetT max_num_blocks = ::cuda::ceil_div(
       static_cast<int>(::cuda::std::min(num_items, static_cast<OffsetT>(portion_size))), onesweep_tile_items);
 
-    size_t value_size         = keys_only ? 0 : kernel_source.ValueSize();
-    size_t allocation_sizes[] = {
+    const size_t value_size         = keys_only ? 0 : kernel_source.ValueSize();
+    const size_t allocation_sizes[] = {
       // bins
       num_portions * num_passes * radix_digits * sizeof(OffsetT),
       // lookback
@@ -1854,11 +1855,11 @@ struct dispatch_impl
       return cudaSuccess;
     }
 
-    OffsetT* d_bins           = (OffsetT*) allocations[0];
+    OffsetT* d_bins           = (OffsetT*) allocations[0]; // NOLINT(misc-const-correctness)
     AtomicOffsetT* d_lookback = (AtomicOffsetT*) allocations[1];
     KeyT* d_keys_tmp2         = (KeyT*) allocations[2];
     ValueT* d_values_tmp2     = (ValueT*) allocations[3];
-    AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
+    AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4]; // NOLINT(misc-const-correctness)
 
     ::cuda::compute_capability cc{};
     if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
@@ -1991,13 +1992,13 @@ struct dispatch_impl
 
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += radix_bits, ++pass)
     {
-      int num_bits = ::cuda::std::min(end_bit - current_bit, radix_bits);
+      const int num_bits = ::cuda::std::min(end_bit - current_bit, radix_bits);
       for (OffsetT portion = 0; portion < num_portions; ++portion)
       {
-        PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
+        const PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
           ::cuda::std::min(num_items - portion * portion_size, static_cast<OffsetT>(portion_size)));
 
-        PortionOffsetT num_blocks       = ::cuda::ceil_div(portion_num_items, onesweep_tile_items);
+        const PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, onesweep_tile_items);
         const size_t num_lookback_items = static_cast<size_t>(num_blocks) * radix_digits;
 
         if (use_pdl)

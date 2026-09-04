@@ -51,8 +51,8 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   using IteratorTuple = ::cuda::std::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator begin = thrust::make_zip_iterator(first, result);
-  ZipIterator end   = begin;
+  const ZipIterator begin = thrust::make_zip_iterator(first, result);
+  ZipIterator end         = begin;
 
   // get a zip_iterator pointing to the end
   const thrust::detail::it_difference_t<InputIterator> n = ::cuda::std::distance(first, last);
@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   using InputType  = thrust::detail::it_value_t<InputIterator>;
   using OutputType = thrust::detail::it_value_t<ForwardIterator>;
 
-  detail::uninitialized_copy_functor<InputType, OutputType> f;
+  const detail::uninitialized_copy_functor<InputType, OutputType> f;
 
   // do the for_each
   thrust::for_each(exec, begin, end, f);
@@ -96,16 +96,16 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   using IteratorTuple = ::cuda::std::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-  ZipIterator zipped_first = thrust::make_zip_iterator(first, result);
+  const ZipIterator zipped_first = thrust::make_zip_iterator(first, result);
 
   // create a functor
   using InputType  = thrust::detail::it_value_t<InputIterator>;
   using OutputType = thrust::detail::it_value_t<ForwardIterator>;
 
-  detail::uninitialized_copy_functor<InputType, OutputType> f;
+  const detail::uninitialized_copy_functor<InputType, OutputType> f;
 
   // do the for_each_n
-  ZipIterator zipped_last = thrust::for_each_n(exec, zipped_first, n, f);
+  const ZipIterator zipped_last = thrust::for_each_n(exec, zipped_first, n, f);
 
   // return the end of the output range
   return ::cuda::std::get<1>(zipped_last.get_iterator_tuple());

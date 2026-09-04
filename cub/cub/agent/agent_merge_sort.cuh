@@ -511,7 +511,7 @@ struct AgentMerge
 
     // preload items into registers already
     //
-    [[maybe_unused]] ValueT items_local[ITEMS_PER_THREAD];
+    [[maybe_unused]] ValueT items_local[ITEMS_PER_THREAD]; // NOLINT(misc-const-correctness)
     if constexpr (!KEYS_ONLY)
     {
       if (ping)

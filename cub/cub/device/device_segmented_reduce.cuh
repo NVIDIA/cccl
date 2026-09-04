@@ -143,7 +143,7 @@ private:
     constexpr bool is_min = ::cuda::std::is_same_v<ReductionOpT, cub::detail::arg_min>;
     auto sentinel =
       is_min ? ::cuda::std::numeric_limits<input_value_t>::max() : ::cuda::std::numeric_limits<input_value_t>::lowest();
-    init_value_t initial_value{accum_t(1, sentinel)};
+    const init_value_t initial_value{accum_t(1, sentinel)};
 
     using default_policy_selector_t =
       detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
@@ -1650,9 +1650,9 @@ public:
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    const ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
@@ -1788,9 +1788,9 @@ public:
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    const ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     return variable_size_env_impl<OverrideAccumT, OverrideOffsetT>(
       d_indexed_in, d_out, num_segments, d_begin_offsets, d_end_offsets, cub::ArgMin{}, initial_value, env);
@@ -2448,9 +2448,9 @@ public:
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    const ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
@@ -2586,9 +2586,9 @@ public:
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    const ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    const init_value_t initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     return variable_size_env_impl<OverrideAccumT, OverrideOffsetT>(
       d_indexed_in, d_out, num_segments, d_begin_offsets, d_end_offsets, cub::ArgMax{}, initial_value, env);

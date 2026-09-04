@@ -80,7 +80,7 @@ thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, Inp
 
   using System = typename thrust::iterator_system<InputIterator>::type;
 
-  System system;
+  System system; // NOLINT(misc-const-correctness): select_system requires a mutable lvalue
 
   return thrust::count_if(select_system(system), first, last, pred);
 } // end count_if()

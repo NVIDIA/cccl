@@ -37,7 +37,7 @@ inline __host__ __device__ uint16_t round_to_nearest_even(float src)
   {
     uint32_t U32;
     std::memcpy(&U32, &src, sizeof(U32));
-    uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
+    const uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
     return static_cast<uint16_t>((U32 + rounding_bias) >> 16);
   }
 }

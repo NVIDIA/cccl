@@ -59,7 +59,7 @@ uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng
 
   // add one to the right end of the interval because it is half-open
   // XXX adding 1.0 to a potentially large floating point number seems like a bad idea
-  uniform_real_distribution<float_type> real_dist(real_min, real_max + float_type(1));
+  uniform_real_distribution<float_type> real_dist(real_min, real_max + float_type(1)); // NOLINT(misc-const-correctness)
 
   return static_cast<result_type>(real_dist(urng));
 } // end uniform_int_distribution::operator()()

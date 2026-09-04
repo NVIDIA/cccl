@@ -21,7 +21,7 @@ namespace
 template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 [[maybe_unused]] auto test_device_attribute()
 {
-  cuda::device_ref dev0(0);
+  const cuda::device_ref dev0(0);
   STATIC_REQUIRE(Attr == ExpectedAttr);
   STATIC_REQUIRE(::cuda::std::is_same_v<cuda::device_attribute_result_t<Attr>, ExpectedResult>);
 
@@ -35,7 +35,7 @@ template <const auto& Attr, ::cudaDeviceAttr ExpectedAttr, class ExpectedResult>
 
 C2H_CCCLRT_TEST("init", "[device]")
 {
-  cuda::device_ref dev{0};
+  const cuda::device_ref dev{0};
   dev.init();
   CCCLRT_REQUIRE(cuda::__driver::__isPrimaryCtxActive(cuda::__driver::__deviceGet(0)));
 }
@@ -287,9 +287,9 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
 
     SECTION("Compute capability")
     {
-      cuda::compute_capability compute_cap = device_ref(0).attribute(attributes::compute_capability);
-      int compute_cap_major                = device_ref(0).attribute(attributes::compute_capability_major);
-      int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
+      const cuda::compute_capability compute_cap = device_ref(0).attribute(attributes::compute_capability);
+      const int compute_cap_major                = device_ref(0).attribute(attributes::compute_capability_major);
+      const int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
       CCCLRT_REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
     }
 
@@ -366,8 +366,8 @@ C2H_CCCLRT_TEST("Device attributes use the explicit device when current device d
     return;
   }
 
-  cuda::device_ref current_device{0};
-  cuda::device_ref explicit_device{1};
+  const cuda::device_ref current_device{0};
+  const cuda::device_ref explicit_device{1};
 
   const auto expected_bus_id = cuda::__driver::__deviceGetAttribute(
     static_cast<::CUdevice_attribute>(cudaDevAttrPciBusId), cuda::__driver::__deviceGet(explicit_device.get()));
@@ -375,7 +375,7 @@ C2H_CCCLRT_TEST("Device attributes use the explicit device when current device d
     static_cast<::CUdevice_attribute>(cudaDevAttrPciDeviceId), cuda::__driver::__deviceGet(explicit_device.get()));
 
   {
-    cuda::__ensure_current_context guard(current_device);
+    const cuda::__ensure_current_context guard(current_device);
     CCCLRT_REQUIRE(explicit_device.attribute(cuda::device_attributes::pci_bus_id) == expected_bus_id);
     CCCLRT_REQUIRE(explicit_device.attribute(cuda::device_attributes::pci_device_id) == expected_device_id);
   }

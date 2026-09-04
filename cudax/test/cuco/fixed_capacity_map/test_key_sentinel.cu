@@ -63,7 +63,7 @@ C2H_TEST("fixed_capacity_map — empty and erased key sentinels", "[sentinel]")
     cudax::cuco::make_valid_capacity<probing, bucket>(::cuda::std::size_t{num_keys} * 2);
   using map_type = cudax::cuco::fixed_capacity_map<int, int, capacity>;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,

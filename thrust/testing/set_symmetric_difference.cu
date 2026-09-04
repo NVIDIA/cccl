@@ -18,7 +18,7 @@ void TestSetSymmetricDifferenceDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_symmetric_difference(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -58,7 +58,7 @@ void TestSetSymmetricDifferenceSimple()
   Vector ref{2, 3, 3, 6, 7};
   Vector result(5);
 
-  Iterator end = thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
+  const Iterator end = thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
   ASSERT_EQUAL(ref, result);
@@ -68,8 +68,8 @@ DECLARE_VECTOR_UNITTEST(TestSetSymmetricDifferenceSimple);
 template <typename T>
 void TestSetSymmetricDifference(const size_t n)
 {
-  size_t sizes[]   = {0, 1, n / 2, n, n + 1, 2 * n};
-  size_t num_sizes = sizeof(sizes) / sizeof(size_t);
+  size_t sizes[]         = {0, 1, n / 2, n, n + 1, 2 * n};
+  const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
 
   thrust::host_vector<T> random =
     unittest::random_integers<unittest::int8_t>(n + *thrust::max_element(sizes, sizes + num_sizes));
@@ -105,8 +105,8 @@ DECLARE_VARIABLE_UNITTEST(TestSetSymmetricDifference);
 template <typename T>
 void TestSetSymmetricDifferenceEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
-  thrust::host_vector<T> h_a  = temp;
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_a        = temp;
   thrust::sort(h_a.begin(), h_a.end());
   thrust::host_vector<T> h_b = h_a;
 

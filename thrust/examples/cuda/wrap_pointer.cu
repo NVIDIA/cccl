@@ -5,14 +5,14 @@
 
 int main()
 {
-  size_t N = 10;
+  const size_t N = 10;
 
   // obtain raw pointer to device memory
   int* raw_ptr;
   cudaMalloc((void**) &raw_ptr, N * sizeof(int));
 
   // wrap raw pointer with a device_ptr
-  thrust::device_ptr<int> dev_ptr = thrust::device_pointer_cast(raw_ptr);
+  const thrust::device_ptr<int> dev_ptr = thrust::device_pointer_cast(raw_ptr);
 
   // use device_ptr in Thrust algorithms
   thrust::fill(dev_ptr, dev_ptr + static_cast<std::ptrdiff_t>(N), (int) 0);

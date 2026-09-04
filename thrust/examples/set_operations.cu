@@ -127,7 +127,7 @@ template <typename Vector>
 void SetIntersectionSize(const Vector& A, const Vector& B)
 {
   // computes the exact size of the intersection without allocating output
-  thrust::discard_iterator<> C_begin, C_end;
+  thrust::discard_iterator<> C_begin, C_end; // NOLINT(misc-const-correctness)
 
   C_end = thrust::set_intersection(A.begin(), A.end(), B.begin(), B.end(), C_begin);
 
@@ -139,8 +139,8 @@ int main()
   int a[] = {0, 2, 4, 5, 6, 8, 9};
   int b[] = {0, 1, 2, 3, 5, 7, 8};
 
-  thrust::device_vector<int> A(a, a + sizeof(a) / sizeof(int));
-  thrust::device_vector<int> B(b, b + sizeof(b) / sizeof(int));
+  const thrust::device_vector<int> A(a, a + sizeof(a) / sizeof(int));
+  const thrust::device_vector<int> B(b, b + sizeof(b) / sizeof(int));
 
   print("Set A", A);
   print("Set B", B);
