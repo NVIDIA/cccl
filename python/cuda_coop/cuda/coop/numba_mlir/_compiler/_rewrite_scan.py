@@ -9,8 +9,6 @@ from __future__ import annotations
 from numbers import Integral
 from typing import Any
 
-from numba_cuda_mlir.numbair_transforms import ir
-
 from cuda.coop._core import ArgumentBinding, BindingKind
 
 from ._group_rewriting import GroupRewriteContext
@@ -24,6 +22,7 @@ from ._rewrite_support import (
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
     _dtype_values_match,
+    ir,
 )
 
 
