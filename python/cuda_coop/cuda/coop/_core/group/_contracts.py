@@ -87,7 +87,7 @@ def _group_topology(
         groups_per_warp = resolved_group.groups_per_parent
         assert groups_per_warp is not None
         instances = (block_threads // 32) * groups_per_warp
-        if mapping.exhaustive:
+        if resolved_group.complete_membership is True:
             index = f"linear_thread_rank / {group_size}"
             thread_rank = f"linear_thread_rank % {group_size}"
         else:
@@ -105,7 +105,7 @@ def _group_topology(
         groups_per_block = resolved_group.groups_per_parent
         assert groups_per_block is not None
         instances = groups_per_block
-        if mapping.exhaustive:
+        if resolved_group.complete_membership is True:
             index = f"linear_thread_rank / {group_size}"
             thread_rank = f"linear_thread_rank % {group_size}"
         else:
