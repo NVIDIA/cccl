@@ -804,12 +804,13 @@ jobs:
       - bench-results
     permissions:
       actions: read
+      checks: read
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     outputs:
-      github_report: ${{ steps.failure-analysis.outputs.github_report }}
+      github_comment: ${{ steps.render-github-comment.outputs.content }}
       pr_number: ${{ steps.pull-request.outputs.pr_number }}
     steps:
       - name: Check out CCCL
@@ -828,17 +829,46 @@ jobs:
           fi
 
       - name: Analyze failures
-        id: failure-analysis
+        id: analyze
         uses: ./.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
-          output_dir: ${{ runner.temp }}/ci-failure-analysis
           pr_number: ${{ steps.pull-request.outputs.pr_number }}
+
+      - name: Render GitHub failure analysis comment
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-comment
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-comment
+
+      - name: Render GitHub verbose failure analysis summary
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-verbose-summary
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-verbose-summary
+
+      - name: Add failure analysis to workflow summary
+        if: ${{ !cancelled() && steps.render-github-verbose-summary.outcome == 'success' }}
+        env:
+          SUMMARY_FILE: ${{ steps.render-github-verbose-summary.outputs.rendered_file }}
+        run: |
+          test -s "${SUMMARY_FILE}"
+          cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
 
   publish-failure-analysis:
     name: Add failure analysis to CI results
-    if: ${{ always() && needs.analyze-failures.result == 'success' }}
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        needs.analyze-failures.outputs.github_comment != '' &&
+        needs.analyze-failures.outputs.pr_number != ''
+      }}
     needs: analyze-failures
     permissions:
       pull-requests: write
@@ -850,5 +880,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           header: ci-results
           number: ${{ needs.analyze-failures.outputs.pr_number }}
-          message: ${{ needs.analyze-failures.outputs.github_report }}
+          message: ${{ needs.analyze-failures.outputs.github_comment }}
           append: true

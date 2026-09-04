@@ -48,3 +48,10 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
 fi
 python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large and not free_threading"
 python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large and not free_threading"
+
+# The bfloat16 tests require ml_dtypes (the NumPy bfloat16 extension dtype),
+# which is deliberately not part of the test extras so that the sweeps above
+# run in an environment matching a user's default install (where the bfloat16
+# tests skip themselves). Install it last and run those tests explicitly.
+python -m pip install ml_dtypes
+python -m pytest "${pytest_extra[@]}" -n 6 -v compute/test_bfloat16.py

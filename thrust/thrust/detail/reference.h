@@ -121,6 +121,11 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
+  // A reference refers to an object elsewhere, so assigning through a const reference
+  // writes the referent and not the proxy. This mirrors std::vector<bool>::reference and is
+  // what `*it = x` needs for output iterators. derived_type& is the CRTP derived type, so
+  // returning reference& instead would slice.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_HOST_DEVICE const derived_type& operator=(reference const& other) const
   {
     assign_from(&other);
@@ -138,6 +143,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
+  // NOLINTBEGIN(misc-unconventional-assign-operator): proxy reference, see above
   template <
     typename OtherElement,
     typename OtherPointer,
@@ -150,6 +156,7 @@ public:
     assign_from(&other);
     return derived();
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Assign \p rhs to the object referred to by this \p tagged_reference.
    *
@@ -157,6 +164,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator): proxy reference, see above
   _CCCL_HOST_DEVICE const derived_type& operator=(value_type const& rhs) const
   {
     assign_from(&rhs);
@@ -547,6 +555,10 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
+  // A tagged_reference refers to an object elsewhere, so assigning through a const
+  // reference writes the referent and not the proxy. This mirrors
+  // std::vector<bool>::reference and is what `*it = x` needs for output iterators.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_HOST_DEVICE const tagged_reference& operator=(tagged_reference const& other) const
   {
     return base_type::operator=(other);
@@ -562,11 +574,13 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
+  // NOLINTBEGIN(misc-unconventional-assign-operator): proxy reference, see above
   template <typename OtherElement, typename OtherTag>
   _CCCL_HOST_DEVICE const tagged_reference& operator=(tagged_reference<OtherElement, OtherTag> const& other) const
   {
     return base_type::operator=(other);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Assign \p rhs to the object referred to by this \p tagged_reference.
    *
@@ -574,6 +588,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator): proxy reference, see above
   _CCCL_HOST_DEVICE const tagged_reference& operator=(value_type const& rhs) const
   {
     return base_type::operator=(rhs);

@@ -8,8 +8,12 @@
 ##
 ##===----------------------------------------------------------------------===##
 
-add_custom_target(libcudacxx.test.simd.ptx)
-add_custom_target(libcudacxx.test.simd.sass)
+if (libcudacxx_codegen_filecheck_simd_ptx)
+  add_custom_target(libcudacxx.test.simd.ptx)
+endif()
+if (libcudacxx_codegen_filecheck_simd_sass)
+  add_custom_target(libcudacxx.test.simd.sass)
+endif()
 
 #-----------------------------------------------------------------------------------------------------------------------
 # SETUP: skip unsupported compilers, find tools, set up CUDA architectures
@@ -61,43 +65,57 @@ if (NOT simd_codegen_ptx_cuda_archs AND NOT simd_codegen_sass_cuda_archs)
   return()
 endif()
 
-if (simd_codegen_ptx_cuda_archs)
-  add_subdirectory(load_store)
-else()
-  message(
-    STATUS
-    "No compatible CUDA architectures requested; skipping simd PTX codegen tests"
-  )
-endif()
-
-if (simd_codegen_sass_cuda_archs)
-  set(simd_codegen_sass_tests)
-  file(
-    GLOB simd_codegen_sass_tests
-    "floating_point/*.cu"
-    "integer/*.cu"
-    "min_max/*.cu"
-  )
-
-  # The 8-bit arithmetic and min/max tests require the PTX ISA 9.2 8-bit SIMD
-  # path available with CUDA 13.2 and newer.
-  if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13.2)
-    list(
-      REMOVE_ITEM simd_codegen_sass_tests
-      "${CMAKE_CURRENT_SOURCE_DIR}/integer/arithmetic_u8x4.cu"
-      "${CMAKE_CURRENT_SOURCE_DIR}/min_max/min_max_i8x4.cu"
+if (libcudacxx_codegen_filecheck_simd_ptx)
+  if (simd_codegen_ptx_cuda_archs)
+    add_subdirectory(load_store)
+  else()
+    message(
+      STATUS
+      "No compatible CUDA architectures requested; skipping simd PTX codegen tests"
     )
   endif()
+endif()
 
-  libcudacxx_codegen_add_sass_tests(
-    AGGREGATE_TARGET libcudacxx.test.simd.sass
-    TARGET_PREFIX simd_codegen
-    ARCHITECTURES ${simd_codegen_sass_cuda_archs}
-    TESTS ${simd_codegen_sass_tests}
-  )
-else()
-  message(
-    STATUS
-    "No compatible CUDA architectures requested; skipping simd SASS codegen tests"
-  )
+if (libcudacxx_codegen_filecheck_simd_sass)
+  if (simd_codegen_sass_cuda_archs)
+    set(simd_codegen_sass_tests)
+    file(
+      GLOB simd_codegen_sass_tests
+      CONFIGURE_DEPENDS
+      "abs_diff/*.cu"
+      "dot/*.cu"
+      "floating_point/*.cu"
+      "integer/*.cu"
+      "min_max/*.cu"
+    )
+
+    # The 8-bit arithmetic and min/max tests, and the saturating-add tests, require
+    # PTX ISA 9.2 paths available with CUDA 13.2 and newer.
+    if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13.2)
+      list(
+        REMOVE_ITEM simd_codegen_sass_tests
+        "${CMAKE_CURRENT_SOURCE_DIR}/integer/arithmetic_u8x4.cu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/min_max/min_max_i8x4.cu"
+      )
+    else()
+      file(
+        GLOB simd_codegen_saturating_add_tests
+        CONFIGURE_DEPENDS
+        "saturating_add/*.cu"
+      )
+      list(APPEND simd_codegen_sass_tests ${simd_codegen_saturating_add_tests})
+    endif()
+
+    libcudacxx_codegen_add_sass_tests(
+      AGGREGATE_TARGET libcudacxx.test.simd.sass
+      TARGET_PREFIX simd_codegen
+      ARCHITECTURES ${simd_codegen_sass_cuda_archs}
+      TESTS ${simd_codegen_sass_tests}
+    )
+  else()
+    message(
+      STATUS
+      "No compatible CUDA architectures requested; skipping simd SASS codegen tests"
+    )
+  endif()
 endif()

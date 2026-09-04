@@ -62,8 +62,9 @@ enum class gen_data_t : int
 
 struct abs_less_t
 {
+  // __noinline__ works around a ptxas miscompilation, see also: https://github.com/NVIDIA/cccl/issues/10958.
   template <typename T>
-  _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
+  __noinline__ _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
   {
     return cuda::uabs(a) < cuda::uabs(b);
   }

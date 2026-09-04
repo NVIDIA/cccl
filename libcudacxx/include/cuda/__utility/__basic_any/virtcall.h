@@ -82,7 +82,7 @@ struct __virtuals_map<__overrides_list<_Interface, _Mbrs...>, __overrides_for<_B
 };
 
 template <class _Interface, class _Super>
-using __virtuals_map_for _CCCL_NODEBUG_ALIAS =
+using __virtuals_map_for _CCCL_NODEBUG =
   __virtuals_map<__overrides_for_t<_Interface>, __overrides_for_t<__rebind_interface<_Interface, _Super>>>;
 
 template <auto _Mbr, class _Interface, class _Super>
@@ -91,7 +91,7 @@ extern ::cuda::std::__call_result_t<__virtuals_map_for<_Interface, _Super>, __ct
 // This alias indirects through the above variable template to cache the result
 // of the virtuals map lookup.
 template <auto _Mbr, class _Interface, class _Super>
-using __virtual_fn_for _CCCL_NODEBUG_ALIAS = decltype(__virtual_fn_for_v<_Mbr, _Interface, _Super>);
+using __virtual_fn_for _CCCL_NODEBUG = decltype(__virtual_fn_for_v<_Mbr, _Interface, _Super>);
 
 //!
 //! __virtcall

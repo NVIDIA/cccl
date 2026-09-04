@@ -71,7 +71,7 @@ template <template <class...> class, class = __extends<>, size_t = 0, size_t = 0
 struct __basic_interface;
 
 template <class _Interface, class... _Super>
-using __rebind_interface _CCCL_NODEBUG_ALIAS = typename _Interface::template __rebind<_Super...>;
+using __rebind_interface _CCCL_NODEBUG = typename _Interface::template __rebind<_Super...>;
 
 struct __iunknown;
 
@@ -91,19 +91,19 @@ template <class...>
 struct __iequality_comparable;
 
 template <class... _Tp>
-using __tag _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_list_ptr<_Tp...>;
+using __tag _CCCL_NODEBUG = ::cuda::std::__type_list_ptr<_Tp...>;
 
 template <auto...>
 struct __ctag_;
 
 template <auto... _Is>
-using __ctag _CCCL_NODEBUG_ALIAS = __ctag_<_Is...>*;
+using __ctag _CCCL_NODEBUG = __ctag_<_Is...>*;
 
 constexpr size_t __word                       = sizeof(void*);
 constexpr size_t __default_small_object_size  = 3 * __word;
 constexpr size_t __default_small_object_align = alignof(::cuda::std::max_align_t);
 
-using __make_type_list _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_quote<::cuda::std::__type_list>;
+using __make_type_list _CCCL_NODEBUG = ::cuda::std::__type_quote<::cuda::std::__type_list>;
 
 [[noreturn]] _CCCL_HOST_DEVICE_API void __throw_bad_any_cast();
 
@@ -119,7 +119,7 @@ template <class _Interface>
 extern _Interface __remove_ireference_v; // specialized in interfaces.cuh
 
 template <class _Interface>
-using __remove_ireference_t _CCCL_NODEBUG_ALIAS = decltype(__remove_ireference_v<_Interface>);
+using __remove_ireference_t _CCCL_NODEBUG = decltype(__remove_ireference_v<_Interface>);
 
 _CCCL_END_NAMESPACE_CUDA
 

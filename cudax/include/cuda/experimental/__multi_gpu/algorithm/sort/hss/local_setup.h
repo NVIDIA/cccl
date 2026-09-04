@@ -61,16 +61,17 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
   __all_local_sizes.reserve(__num_local_inputs);
 
   {
-    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
     auto __env_it       = ::cuda::std::ranges::begin(__envs);
     auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__num_items_it)
+         (void) ++__idx, (void) ++__env_it, (void) ++__num_items_it)
     {
+      const ::cuda::stream_ref __stream = ::cuda::get_stream(*__env_it);
+
       __all_local_sizes.emplace_back(::cuda::make_buffer<::cuda::std::uint64_t>(
-        ::cuda::get_stream(*__env_it),
-        ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device().underlying_device()),
+        __stream,
+        ::cuda::experimental::__detail::__resource_from_env(*__env_it, __stream.__logical_device()),
         __comm_size,
         // Technically, we only need to write this value at entry rank(), but that would
         // require a whole separate memcpy call which honestly does not seem worth it.
@@ -96,7 +97,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 
   __all_local_offsets.reserve(__num_local_inputs);
 
-  ::std::vector<::cuda::std::uint64_t> __h_sizes(__comm_size);
+  ::std::vector<::cuda::std::uint64_t> __h_sizes(static_cast<::cuda::std::size_t>(__comm_size));
 
   {
     auto __comm_it = ::cuda::std::ranges::begin(__comms);
@@ -113,7 +114,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
         ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm_it->logical_device(),
+        __offsets.stream(),
         CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
         __all_local_sizes[__idx].begin(),
         __offsets.begin(),
@@ -126,7 +127,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
           __all_local_sizes[__idx].stream(),
           __all_local_sizes[__idx],
           __h_sizes,
-          ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
+          ::cuda::copy_configuration{__all_local_sizes[__idx].stream().device(),
                                      ::cuda::host_memory_location,
                                      ::cuda::source_access_order::stream});
       }

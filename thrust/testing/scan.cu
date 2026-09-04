@@ -293,7 +293,7 @@ struct TestScanWithOperator
     ASSERT_EQUAL(d_output, h_output);
   }
 };
-VariableUnitTest<TestScanWithOperator, SignedIntegralTypes> TestScanWithOperatorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanWithOperator, SignedIntegralTypes);
 
 template <typename T>
 struct TestScanWithOperatorToDiscardIterator
@@ -324,9 +324,8 @@ struct TestScanWithOperatorToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestScanWithOperatorToDiscardIterator,
-                 unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestScanWithOperatorToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanWithOperatorToDiscardIterator,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
 
 template <typename T>
 struct TestScan
@@ -365,7 +364,7 @@ struct TestScan
     ASSERT_EQUAL(d_output, h_output);
   }
 };
-VariableUnitTest<TestScan, IntegralTypes> TestScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScan, IntegralTypes);
 
 template <typename T>
 struct TestScanToDiscardIterator
@@ -394,8 +393,8 @@ struct TestScanToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestScanToDiscardIterator, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestScanToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanToDiscardIterator,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
 
 void TestScanMixedTypes()
 {
@@ -567,6 +566,9 @@ struct only_set_when_expected_it
     return *this;
   }
 
+  // Write-only test proxy: assignment records that the expected value was written.
+  // There is no meaningful object to return.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_DEVICE void operator=(long long value) const
   {
     if (value == expected)

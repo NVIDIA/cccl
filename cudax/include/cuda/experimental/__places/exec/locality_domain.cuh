@@ -98,8 +98,8 @@
 #include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <algorithm>
 #include <cstdio>

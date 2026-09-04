@@ -85,6 +85,18 @@ inline future_val_t future_val(cccl_type_info t)
   return {t};
 }
 
+// no_init_t: reduce without an initial value.  Generates the stateless
+// cub::detail::reduce::no_init tag in the CUB call with no wrapper parameter.
+// Carries type info so find_accum_type can resolve accum_t correctly.
+struct no_init_t
+{
+  cccl_type_info type;
+};
+inline no_init_t no_init(cccl_type_info t)
+{
+  return {t};
+}
+
 // unary_op_t: wraps a cccl_op_t used as a unary transform operator (T -> U).
 // Carries the input/output type info so the functor can be typed correctly.
 struct unary_op_t
@@ -199,6 +211,7 @@ using Arg = std::variant<
   double_buffer_t,
   selector_out_t,
   future_val_t,
+  no_init_t,
   cccl_value_t,
   force_accum_type_t,
   typed_scalar_t>;
@@ -272,6 +285,17 @@ public:
     const char* ctk_path          = nullptr,
     const char* cccl_include_path = nullptr);
 
+  // Builds a hostjit::CompilerConfig from the standard cc + paths +
+  // build_config inputs every compile entry point takes, so flag/path handling
+  // lives in one place. Shared by the single-fn and multi-fn compile overloads.
+  static hostjit::CompilerConfig make_jit_config(
+    int cc_major,
+    int cc_minor,
+    cccl_build_config* config,
+    const char* ctk_path,
+    const char* cccl_include_path,
+    const std::string& entry_point_name);
+
 private:
   std::string include_;
   std::string cub_function_;
@@ -288,17 +312,5 @@ private:
   // the given collector. Factored out so the multi-compile path can share
   // one collector across several CubCalls.
   void collect_bitcode(class BitcodeCollector& bitcode, int& op_idx, int& in_idx, int& out_idx) const;
-
-  // Internal: builds a hostjit::CompilerConfig from the standard cc + paths +
-  // build_config inputs every compile entry point takes. Shared between the
-  // single-fn and multi-fn compile overloads so flag/path handling lives in
-  // one place.
-  static hostjit::CompilerConfig make_jit_config(
-    int cc_major,
-    int cc_minor,
-    cccl_build_config* config,
-    const char* ctk_path,
-    const char* cccl_include_path,
-    const std::string& entry_point_name);
 };
 } // namespace hostjit::codegen

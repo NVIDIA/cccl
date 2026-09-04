@@ -46,4 +46,4 @@ struct TestZipIteratorReduce
     ASSERT_EQUAL(cuda::std::get<1>(h_result), cuda::std::get<1>(d_result));
   }
 };
-VariableUnitTest<TestZipIteratorReduce, IntegralTypes> TestZipIteratorReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorReduce, IntegralTypes);

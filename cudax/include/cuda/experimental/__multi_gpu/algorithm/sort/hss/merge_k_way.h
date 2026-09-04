@@ -44,9 +44,7 @@ namespace cuda::experimental::__detail::__hss_sort
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _Comm>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
-  const _Comm& __comm,
   const _Env& __env,
   const __resizable_buffer_type<_Tp>& __data,
   ::cuda::std::span<const ::cuda::std::size_t> __counts,
@@ -96,7 +94,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
       const auto __right_node = __cur_level[__i + 1];
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __next_level_buffer->stream(),
         CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
         __left_node.data(),
         __left_node.size(),
@@ -122,10 +120,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
       // the next level
       const auto __next_level_node = __next_level_buffer->subspan(__next_off, __left_node.size());
 
-      const auto __input  = ::cuda::std::mdspan{__left_node.data(), __left_node.size()};
-      const auto __output = ::cuda::std::mdspan{__next_level_node.data(), __next_level_node.size()};
+      const auto __src = ::cuda::std::mdspan{__left_node.data(), __left_node.size()};
+      const auto __dst = ::cuda::std::mdspan{__next_level_node.data(), __next_level_node.size()};
 
-      __CUDAX_MULTI_GPU_DISPATCH(__comm.logical_device(), CUB_NS_QUALIFIER::DeviceCopy::Copy, __input, __output, __env);
+      __CUDAX_MULTI_GPU_DISPATCH(__next_level_buffer->stream(), CUB_NS_QUALIFIER::DeviceCopy::Copy, __src, __dst, __env);
 
       __next_level.push_back(__next_level_node);
     }
@@ -144,9 +142,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
 // __data holds a series of sorted sequences. The offsets of the beginning of each such
 // sequence is in __displs, while the count is in __counts.
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _Comm>
 _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
-  const _Comm& __comm,
   const _Env& __env,
   const __resizable_buffer_type<_Tp>& __data,
   ::cuda::std::span<const ::cuda::std::size_t> __counts,
@@ -168,7 +164,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
   if (__counts.size() == 2)
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __ret->stream(),
       CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
       __data.data() + __displs[0],
       __counts[0],
@@ -180,7 +176,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
   }
   else
   {
-    __merge_k_way_tree(__comm, __env, __data, __counts, __displs, __cmp, __ret);
+    __merge_k_way_tree(__env, __data, __counts, __displs, __cmp, __ret);
   }
 }
 

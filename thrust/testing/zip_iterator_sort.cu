@@ -26,5 +26,5 @@ struct TestZipIteratorStableSort
     ASSERT_EQUAL_QUIET(h2, d2);
   }
 };
-VariableUnitTest<TestZipIteratorStableSort, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestZipIteratorStableSortInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorStableSort,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
