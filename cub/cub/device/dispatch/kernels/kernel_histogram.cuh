@@ -459,8 +459,72 @@ struct Transforms
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
     _CCCL_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
     {
-      BracketCacheT bracket{};
-      BinSelect<LOAD_MODIFIER>(sample, bin, valid, bracket);
+      if (!valid)
+      {
+        return;
+      }
+
+      using WrappedLevelIteratorT =
+        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
+                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         LevelIteratorT>;
+      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const int num_bins = num_output_levels - 1;
+      const LevelT value = static_cast<LevelT>(sample);
+
+      if (!has_precompute)
+      {
+        bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+        if (bin >= num_bins)
+        {
+          bin = -1;
+        }
+        return;
+      }
+      if (value < first || !(value < last))
+      {
+        bin = -1;
+        return;
+      }
+
+      int guess =
+        value < middle || middle_bin == 0
+          ? static_cast<int>(static_cast<float>(interpolation_difference(value, first)) * inverse_scale_low)
+          : middle_bin
+              + static_cast<int>(static_cast<float>(interpolation_difference(value, middle)) * inverse_scale_high);
+      guess           = guess < 0 ? 0 : (guess < num_bins ? guess : num_bins - 1);
+      const LevelT lo = wrapped_levels[guess];
+      const LevelT hi = wrapped_levels[guess + 1];
+
+      if (!(value < lo) && value < hi)
+      {
+        bin = guess;
+        return;
+      }
+      if (value < lo && guess > 0)
+      {
+        const LevelT adjacent_lo = wrapped_levels[guess - 1];
+        if (!(value < adjacent_lo))
+        {
+          bin = guess - 1;
+          return;
+        }
+      }
+      else if (!(value < hi) && guess + 1 < num_bins)
+      {
+        const LevelT adjacent_hi = wrapped_levels[guess + 2];
+        if (value < adjacent_hi)
+        {
+          bin = guess + 1;
+          return;
+        }
+      }
+
+      bin = UpperBound(wrapped_levels, num_output_levels, value) - 1;
+      if (bin >= num_bins)
+      {
+        bin = -1;
+      }
     }
   };
 
@@ -1165,14 +1229,19 @@ _CCCL_DEVICE _CCCL_FORCEINLINE bool histogram_cache_probe(
   const auto bin_key                        = static_cast<::cuda::std::uint32_t>(bin);
   const auto try_slot                       = [&](int slot) {
     ::cuda::std::uint32_t key = keys[slot];
-    if (key == empty_key)
-    {
-      key = atomicCAS_block(&keys[slot], empty_key, bin_key);
-    }
-    if (key == empty_key || key == bin_key)
+    if (key == bin_key)
     {
       atomicAdd_block(&counts[slot], contribution);
       return true;
+    }
+    if (key == empty_key)
+    {
+      key = atomicCAS_block(&keys[slot], empty_key, bin_key);
+      if (key == empty_key || key == bin_key)
+      {
+        atomicAdd_block(&counts[slot], contribution);
+        return true;
+      }
     }
     return false;
   };
@@ -1399,60 +1468,81 @@ struct AgentHistogramCooperative
     using SampleValueT = it_value_t<SampleIteratorT>;
     if constexpr (NumActiveChannels == 1)
     {
-      for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+      if (contiguous_input)
       {
-        const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
-        SampleValueT staged_samples[unroll];
-        bool valid_samples[unroll];
-        int bins[unroll];
-
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < unroll; ++item)
+        for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
         {
-          const OffsetT pixel = first_pixel + static_cast<OffsetT>(item) * step;
-          valid_samples[item] = pixel < total_pixels;
-          OffsetT pixel_offset{};
-          if (valid_samples[item])
+          const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+          SampleValueT staged_samples[unroll];
+          bool valid_samples[unroll];
+          int bins[unroll];
+
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int item = 0; item < unroll; ++item)
           {
-            if (contiguous_input)
+            const OffsetT pixel      = first_pixel + static_cast<OffsetT>(item) * step;
+            valid_samples[item]      = pixel < total_pixels;
+            const OffsetT safe_pixel = valid_samples[item] ? pixel : OffsetT{0};
+            staged_samples[item]     = d_samples[safe_pixel * NumChannels];
+          }
+
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int item = 0; item < unroll; ++item)
+          {
+            int bin = -1;
+            if (valid_samples[item])
             {
-              pixel_offset = pixel * NumChannels;
+              if constexpr (use_mru_cache)
+              {
+                decode_op[0].template BinSelect<LOAD_DEFAULT>(staged_samples[item], bin, true, bracket_cache[0]);
+              }
+              else
+              {
+                decode_op[0].template BinSelect<LOAD_DEFAULT>(staged_samples[item], bin, true);
+              }
+              if (bin >= num_output_bins_wrapper[0])
+              {
+                bin = -1;
+              }
             }
-            else
-            {
-              const OffsetT row = pixel / num_row_pixels;
-              pixel_offset      = row * row_stride_samples + (pixel - row * num_row_pixels) * NumChannels;
-            }
-            staged_samples[item] = d_samples[pixel_offset];
+            bins[item] = bin;
+          }
+
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int item = 0; item < unroll; ++item)
+          {
+            consume_bin(0, bins[item]);
           }
         }
-
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < unroll; ++item)
+      }
+      else
+      {
+        for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
         {
-          int bin = -1;
-          if (valid_samples[item])
+          const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+          _CCCL_PRAGMA_UNROLL_FULL()
+          for (int item = 0; item < unroll; ++item)
           {
-            if constexpr (use_mru_cache)
+            const OffsetT pixel = first_pixel + static_cast<OffsetT>(item) * step;
+            if (pixel < total_pixels)
             {
-              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged_samples[item], bin, true, bracket_cache[0]);
-            }
-            else
-            {
-              decode_op[0].template BinSelect<LOAD_DEFAULT>(staged_samples[item], bin, true);
-            }
-            if (bin >= num_output_bins_wrapper[0])
-            {
-              bin = -1;
+              const OffsetT row          = pixel / num_row_pixels;
+              const OffsetT pixel_offset = row * row_stride_samples + (pixel - row * num_row_pixels) * NumChannels;
+              int bin                    = -1;
+              if constexpr (use_mru_cache)
+              {
+                decode_op[0].template BinSelect<LOAD_DEFAULT>(d_samples[pixel_offset], bin, true, bracket_cache[0]);
+              }
+              else
+              {
+                decode_op[0].template BinSelect<LOAD_DEFAULT>(d_samples[pixel_offset], bin, true);
+              }
+              if (bin < num_output_bins_wrapper[0])
+              {
+                consume_bin(0, bin);
+              }
             }
           }
-          bins[item] = bin;
-        }
-
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < unroll; ++item)
-        {
-          consume_bin(0, bins[item]);
         }
       }
     }
@@ -1503,19 +1593,40 @@ struct AgentHistogramCooperative
                                && (reinterpret_cast<size_t>(native_base) & (alignof(PixelT) - 1)) == 0;
         if (vectorizable)
         {
-          const PixelT* pixels = reinterpret_cast<const PixelT*>(native_base);
-          consume_pixels([&](OffsetT pixel, bool valid, SampleValueT(&samples)[NumActiveChannels]) {
-            if (valid)
+          const PixelT* const pixels = reinterpret_cast<const PixelT*>(native_base);
+          for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+          {
+            const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+            _CCCL_PRAGMA_UNROLL_FULL()
+            for (int item = 0; item < unroll; ++item)
             {
-              const PixelT packed_pixel       = pixels[pixel];
-              const SampleValueT* pixel_lanes = reinterpret_cast<const SampleValueT*>(&packed_pixel);
+              const OffsetT pixel       = first_pixel + static_cast<OffsetT>(item) * step;
+              const bool valid          = pixel < total_pixels;
+              const PixelT packed       = pixels[valid ? pixel : OffsetT{0}];
+              const SampleValueT* lanes = reinterpret_cast<const SampleValueT*>(&packed);
+              int bins[NumActiveChannels];
+
               _CCCL_PRAGMA_UNROLL_FULL()
               for (int ch = 0; ch < NumActiveChannels; ++ch)
               {
-                samples[ch] = pixel_lanes[ch];
+                int bin = -1;
+                if (valid)
+                {
+                  decode_op[ch].template BinSelect<LOAD_DEFAULT>(lanes[ch], bin, true);
+                  if (bin >= num_output_bins_wrapper[ch])
+                  {
+                    bin = -1;
+                  }
+                }
+                bins[ch] = bin;
+              }
+              _CCCL_PRAGMA_UNROLL_FULL()
+              for (int ch = 0; ch < NumActiveChannels; ++ch)
+              {
+                consume_bin(ch, bins[ch]);
               }
             }
-          });
+          }
         }
         else
         {
@@ -1646,7 +1757,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().high_bin_threads()))
+__launch_bounds__(int(current_policy<PolicySelector>().high_bin_threads()),
+                  int(current_policy<PolicySelector>().high_bin_min_blocks()))
   _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramCooperativeKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
