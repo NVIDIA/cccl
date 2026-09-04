@@ -8,9 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from numba_cuda_mlir.numbair_transforms import ir
-
-from ._rewrite_support import _ThreadDataSpec
+from ._rewrite_support import _ThreadDataSpec, ir
 
 
 class GroupRewriteContext:

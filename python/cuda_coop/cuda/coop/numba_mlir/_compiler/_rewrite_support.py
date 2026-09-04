@@ -28,7 +28,6 @@ from numba_cuda_mlir.extending import (
     require_launch_config,
     set_required_dynamic_shared_memory,
 )
-from numba_cuda_mlir.numbair_transforms import ir
 
 from cuda.coop._core import api as _portable_api
 
@@ -50,6 +49,7 @@ from ._parameters import normalize_dim_param, normalize_dtype_param
 _numba_mlir_compat = _get_numba_mlir_compat()
 _numba_errors = _numba_mlir_compat.numba_errors
 _numba_typeof = _numba_mlir_compat.numba_typeof
+ir = _numba_mlir_compat.numba_ir
 Rewrite = _numba_mlir_compat.rewrite_type
 register_rewrite = _numba_mlir_compat.register_rewrite
 

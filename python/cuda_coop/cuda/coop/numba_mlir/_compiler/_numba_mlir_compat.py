@@ -64,6 +64,7 @@ class _NumbaMlirCompilerCompat:
     make_overload_template: Any
     numba_errors: Any
     numba_typeof: Any
+    numba_ir: Any
     rewrite_type: type
     register_rewrite: Any
 
@@ -211,6 +212,7 @@ def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
     errors = _import_compat_module("numba_cuda_mlir.numba_cuda.core.errors")
     typeof_module = _import_compat_module("numba_cuda_mlir.numba_cuda.typing.typeof")
     templates = _import_compat_module("numba_cuda_mlir.numba_cuda.typing.templates")
+    transforms = _import_compat_module("numba_cuda_mlir.numbair_transforms")
 
     callable_requirements = {
         "numba_cuda_mlir.extending": (
@@ -304,6 +306,9 @@ def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
         constant_inference_error, Exception
     ):
         missing.append("numba_cuda_mlir.numba_cuda.core.errors.ConstantInferenceError")
+    numba_ir = getattr(transforms, "ir", None)
+    if numba_ir is None:
+        missing.append("numba_cuda_mlir.numbair_transforms.ir")
     if missing:
         missing_capabilities = tuple(missing)
         raise _NumbaMlirBackendImportError(
@@ -343,6 +348,7 @@ def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
         make_overload_template=make_overload_template,
         numba_errors=errors,
         numba_typeof=typeof_module.typeof,
+        numba_ir=numba_ir,
         rewrite_type=rewrites.Rewrite,
         register_rewrite=rewrites.register_rewrite,
     )
