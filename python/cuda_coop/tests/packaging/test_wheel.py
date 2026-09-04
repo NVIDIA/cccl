@@ -77,6 +77,8 @@ _FORBIDDEN_PACKAGE_MEMBERS = {
     "cuda/coop/_core/group/reduce.py",
     "cuda/coop/_core/group/scan.py",
     "cuda/coop/numba_mlir/_dataclass.py",
+    "cuda/coop/numba_mlir/_enums.py",
+    "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/numba_mlir/_stateful_function.py",
     "cuda/coop/numba_mlir/_group_reduce.py",
     "cuda/coop/numba_mlir/_group_scan.py",

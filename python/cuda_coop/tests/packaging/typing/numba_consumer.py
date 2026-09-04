@@ -12,7 +12,6 @@ import numpy as np
 from typing_extensions import assert_type
 
 import cuda.coop.numba_mlir as coop
-from cuda.coop import ThreadDataLike
 
 
 def check_numba_surface(source: object, destination: object) -> None:
@@ -26,9 +25,11 @@ def check_numba_surface(source: object, destination: object) -> None:
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
     assert_type(warp, coop.ThreadGroup[Literal["warp"]])
-    assert_type(byte_values, ThreadDataLike[np.int8])
-    assert_type(values, ThreadDataLike[np.uint16])
+    assert_type(byte_values, coop.ThreadDataLike[np.int8])
+    assert_type(values, coop.ThreadDataLike[np.uint16])
     assert_type(storage, coop.TempStorage)
+    portable_storage: coop.TempStorageLike = storage
+    assert_type(portable_storage, coop.TempStorageLike)
     assert_type(
         coop.load(
             block,
@@ -37,11 +38,11 @@ def check_numba_surface(source: object, destination: object) -> None:
             algorithm="direct",
             temp_storage=storage,
         ),
-        ThreadDataLike[np.uint16],
+        coop.ThreadDataLike[np.uint16],
     )
     assert_type(
         coop.load(block, source, byte_values),
-        ThreadDataLike[np.int8],
+        coop.ThreadDataLike[np.int8],
     )
     assert_type(
         coop.load(
@@ -51,11 +52,11 @@ def check_numba_surface(source: object, destination: object) -> None:
             valid_items=1,
             oob_default=0,
         ),
-        ThreadDataLike[np.int8],
+        coop.ThreadDataLike[np.int8],
     )
     assert_type(
         coop.load(block, source, values, algorithm="vectorize"),
-        ThreadDataLike[np.uint16],
+        coop.ThreadDataLike[np.uint16],
     )
     assert_type(
         coop.load(
@@ -64,7 +65,7 @@ def check_numba_surface(source: object, destination: object) -> None:
             values,
             algorithm="warp_transpose_timesliced",
         ),
-        ThreadDataLike[np.uint16],
+        coop.ThreadDataLike[np.uint16],
     )
     assert_type(
         coop.store(
@@ -84,7 +85,7 @@ def check_numba_surface(source: object, destination: object) -> None:
             values,
             algorithm="transpose",
         ),
-        ThreadDataLike[np.uint16],
+        coop.ThreadDataLike[np.uint16],
     )
     assert_type(
         coop.store(
