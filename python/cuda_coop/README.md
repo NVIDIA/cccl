@@ -354,9 +354,8 @@ runtime values execute a deterministic device trap before CUB's 32-bit
 parameter is formed, invalidating the current CUDA context.
 
 All five qualified Block Scan spellings accept a block-prefix callback through
-the canonical `prefix_op` keyword. `block_prefix_callback_op` is a
-compatibility alias and cannot be combined with `prefix_op`. A stateless
-callback receives the block aggregate and returns the prefix:
+the `prefix_op` keyword. A stateless callback receives the block aggregate and
+returns the prefix:
 
 ```python
 from numba_cuda_mlir import cuda, types

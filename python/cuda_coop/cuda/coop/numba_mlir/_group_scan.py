@@ -30,7 +30,6 @@ def scan(
     valid_items: Any = None,
     aggregate_output: Any = None,
     prefix_op: Any = None,
-    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Scan values across a block or warp group.
 
@@ -51,7 +50,6 @@ def scan(
         aggregate_output=aggregate_output,
         prefix_state=prefix_state,
         prefix_op=prefix_op,
-        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -69,7 +67,6 @@ def exclusive_scan(
     valid_items: Any = None,
     aggregate_output: Any = None,
     prefix_op: Any = None,
-    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an exclusive scan across a block or warp group."""
 
@@ -85,7 +82,6 @@ def exclusive_scan(
         aggregate_output=aggregate_output,
         prefix_state=prefix_state,
         prefix_op=prefix_op,
-        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -102,7 +98,6 @@ def inclusive_scan(
     valid_items: Any = None,
     aggregate_output: Any = None,
     prefix_op: Any = None,
-    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an inclusive scan across a block or warp group."""
 
@@ -117,7 +112,6 @@ def inclusive_scan(
         aggregate_output=aggregate_output,
         prefix_state=prefix_state,
         prefix_op=prefix_op,
-        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -133,7 +127,6 @@ def exclusive_sum(
     valid_items: Any = None,
     aggregate_output: Any = None,
     prefix_op: Any = None,
-    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an exclusive prefix sum across a block or warp group."""
 
@@ -147,7 +140,6 @@ def exclusive_sum(
         aggregate_output=aggregate_output,
         prefix_state=prefix_state,
         prefix_op=prefix_op,
-        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 
@@ -163,7 +155,6 @@ def inclusive_sum(
     valid_items: Any = None,
     aggregate_output: Any = None,
     prefix_op: Any = None,
-    block_prefix_callback_op: Any = None,
 ) -> Any:
     """Return an inclusive prefix sum across a block or warp group."""
 
@@ -177,7 +168,6 @@ def inclusive_sum(
         aggregate_output=aggregate_output,
         prefix_state=prefix_state,
         prefix_op=prefix_op,
-        block_prefix_callback_op=block_prefix_callback_op,
     )
 
 

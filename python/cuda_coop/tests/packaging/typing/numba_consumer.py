@@ -339,7 +339,6 @@ def check_numba_surface(
             np.int32(4),
             None,
             prefix_op=None,
-            block_prefix_callback_op=None,
         ),
         np.int32,
     )
@@ -421,7 +420,7 @@ def check_numba_surface(
             block,
             values,
             mode="inclusive",
-            block_prefix_callback_op=_prefix_from_uint16_aggregate,
+            prefix_op=_prefix_from_uint16_aggregate,
         ),
         coop.ThreadDataLike[np.uint16],
     )
@@ -448,7 +447,7 @@ def check_numba_surface(
             block,
             values,
             uint16_prefix_state,
-            block_prefix_callback_op=_UINT16_RUNNING_PREFIX,
+            prefix_op=_UINT16_RUNNING_PREFIX,
         ),
         coop.ThreadDataLike[np.uint16],
     )

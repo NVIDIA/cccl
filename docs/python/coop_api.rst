@@ -60,14 +60,12 @@ stateless operator callbacks, a one-item ``aggregate_output``, Warp-only
 ``valid_items``, and Block-only prefix callbacks.
 
 Every qualified Block Scan spelling also accepts a block-prefix callback with
-the canonical ``prefix_op`` keyword. ``block_prefix_callback_op`` is a
-compatibility alias and cannot be supplied together with ``prefix_op``. A
-stateless callback receives the block aggregate and returns the prefix. A
-stateful callback is wrapped in ``StatefulFunction`` and receives a one-item
-state payload followed by the block aggregate; that state is passed as the
-third positional argument. It must be a numeric one-item ``ThreadData`` or
-local array whose dtype exactly matches the descriptor dtype, although that
-dtype may differ from the scanned value dtype.
+the ``prefix_op`` keyword. A stateless callback receives the block aggregate
+and returns the prefix. A stateful callback is wrapped in ``StatefulFunction``
+and receives a one-item state payload followed by the block aggregate; that
+state is passed as the third positional argument. It must be a numeric
+one-item ``ThreadData`` or local array whose dtype exactly matches the
+descriptor dtype, although that dtype may differ from the scanned value dtype.
 
 Prefix callbacks are qualified-only and Block-only. They cannot be combined
 with ``initial_value`` or ``aggregate_output``. They are not stateful binary

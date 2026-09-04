@@ -420,9 +420,7 @@ Block prefix callbacks
 ^^^^^^^^^^^^^^^^^^^^^^
 
 All five qualified Block Scan spellings accept a stateless or stateful prefix
-callback. Use the canonical ``prefix_op`` keyword. The
-``block_prefix_callback_op`` keyword is a compatibility alias for existing
-code; supplying both names is an error. A stateless callback receives the
+callback through the ``prefix_op`` keyword. A stateless callback receives the
 block aggregate and returns the prefix that precedes the current tile:
 
 .. code-block:: python
