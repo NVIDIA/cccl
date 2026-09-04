@@ -130,3 +130,48 @@ coop.BlockLoadAlgorithm  # expected-error: [attr-defined]
 coop.BlockStoreAlgorithm  # expected-error: [attr-defined]
 coop.WarpLoadAlgorithm  # expected-error: [attr-defined]
 coop.WarpStoreAlgorithm  # expected-error: [attr-defined]
+portable.exchange(
+    portable.this_block(),
+    portable_values,
+    mode="scatter_to_striped",  # expected-error: [arg-type]
+)
+portable.shuffle(
+    portable.this_block(),
+    portable_values,
+    distance=2,  # expected-error: [arg-type]
+)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="scatter_to_blocked",
+)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_warp(),
+    values,
+    mode="warp_striped_to_blocked",
+)
+coop.shuffle(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="offset",
+)
+coop.shuffle(  # expected-error: [call-overload]
+    coop.this_block(),
+    np.int32(1),
+    mode="up",
+)
+floating_ranks = coop.ThreadData(2, np.float32)
+floating_flags = coop.ThreadData(2, np.float32)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="scatter_to_blocked",
+    ranks=floating_ranks,
+)
+coop.exchange(  # expected-error: [call-overload]
+    coop.this_block(),
+    values,
+    mode="scatter_to_striped_flagged",
+    ranks=np.int32(0),
+    valid_flags=floating_flags,
+)

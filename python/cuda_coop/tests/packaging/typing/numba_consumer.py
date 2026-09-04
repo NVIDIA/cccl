@@ -22,6 +22,8 @@ def check_numba_surface(source: object, destination: object) -> None:
     logical_warp = warp.group_by(8)
     byte_values = coop.ThreadData(1, np.int8)
     values = coop.ThreadData(2, np.uint16, alignas=16)
+    ranks = coop.ThreadData(2, np.int32)
+    flags = coop.ThreadData(2, np.uint8)
     storage = coop.TempStorage(alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
@@ -82,6 +84,34 @@ def check_numba_surface(source: object, destination: object) -> None:
         ),
         None,
     )
+    assert_type(
+        coop.exchange(block, values, mode="blocked_to_warp_striped"),
+        ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            block,
+            values,
+            mode="scatter_to_striped_flagged",
+            ranks=ranks,
+            valid_flags=flags,
+        ),
+        ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exchange(
+            logical_warp,
+            values,
+            mode="scatter_to_striped",
+            ranks=ranks,
+        ),
+        ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.shuffle(block, values, mode="down"),
+        ThreadDataLike[np.uint16],
+    )
+    assert_type(coop.shuffle(block, np.int32(4), mode="rotate"), np.int32)
     assert_type(coop.store(block, destination, byte_values), None)
     assert_type(
         coop.load(
