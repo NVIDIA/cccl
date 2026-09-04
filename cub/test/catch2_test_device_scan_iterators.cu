@@ -250,7 +250,7 @@ public:
     }
   }
 
-  __host__ __device__ custom_accumulator_t operator+(const custom_input_t& in) const
+  [[maybe_unused]] __host__ __device__ custom_accumulator_t operator+(const custom_input_t& in) const
   {
     const int multiplier = this->is_valid();
     return {(m_val + in.get()) * multiplier};

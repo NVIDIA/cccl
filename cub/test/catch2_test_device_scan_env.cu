@@ -156,7 +156,7 @@ struct unrelated_policy
 struct unrelated_tuning
 {
   // should never be called
-  auto operator()(cuda::compute_capability) const -> unrelated_policy
+  [[maybe_unused]] auto operator()(cuda::compute_capability) const -> unrelated_policy
   {
     throw 1337;
   }
