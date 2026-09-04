@@ -8,8 +8,8 @@ This mixin owns only its primitive-family IR rewrite. Shared provenance,
 launch facts, caches, and final orchestration remain in the group planner.
 """
 
-from enum import Enum
 import operator
+from enum import Enum
 
 from cuda.coop._core import (
     ArgumentBinding,
@@ -58,9 +58,7 @@ _BLOCK_LOAD_STORE_ALGORITHMS = frozenset(
         "warp_transpose_timesliced",
     }
 )
-_WARP_LOAD_STORE_ALGORITHMS = frozenset(
-    {"direct", "striped", "vectorize", "transpose"}
-)
+_WARP_LOAD_STORE_ALGORITHMS = frozenset({"direct", "striped", "vectorize", "transpose"})
 _MUTATING_STORE_ALGORITHMS = frozenset(
     {
         "transpose",
@@ -77,9 +75,7 @@ def _load_store_algorithm(
     group_kind: str,
 ) -> str:
     if not isinstance(value, str) or isinstance(value, Enum):
-        raise TypeError(
-            f"cuda.coop.numba_mlir.{operation} algorithm must be a string"
-        )
+        raise TypeError(f"cuda.coop.numba_mlir.{operation} algorithm must be a string")
     token = value.strip().lower().replace("-", "_")
     allowed = (
         _WARP_LOAD_STORE_ALGORITHMS

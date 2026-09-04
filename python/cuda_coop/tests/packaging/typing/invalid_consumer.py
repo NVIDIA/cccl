@@ -124,9 +124,7 @@ coop.store(  # expected-error: [call-overload]
     values,
     offset="1",
 )
-coop.load(  # expected-error: [call-overload]
-    coop.this_block(),
-    object(),
-    values,
-    algorithm=0,
-)
+coop.BlockLoadAlgorithm  # expected-error: [attr-defined]
+coop.BlockStoreAlgorithm  # expected-error: [attr-defined]
+coop.WarpLoadAlgorithm  # expected-error: [attr-defined]
+coop.WarpStoreAlgorithm  # expected-error: [attr-defined]
