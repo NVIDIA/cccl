@@ -2,12 +2,35 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from enum import Enum, IntEnum
 from inspect import signature
 from types import SimpleNamespace
 
 import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+class _StringMode(str, Enum):
+    BLOCKED_TO_STRIPED = "blocked_to_striped"
+    DOWN = "down"
+
+
+class _UnitDistance(IntEnum):
+    ONE = 1
+
+
+class _ReadOnlyPayload:
+    items_per_thread = 1
+    dtype = int
+
+    def __len__(self):
+        return self.items_per_thread
+
+    def __getitem__(self, index):
+        if index != 0:
+            raise IndexError(index)
+        return 0
 
 
 def _plan(function, *, arg_types=(), block=(64, 1, 1)):
@@ -122,17 +145,22 @@ def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
     )
 
 
-@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
-def test_portable_python_entry_points_require_string_modes(operation):
+@pytest.mark.parametrize(
+    ("operation", "mode"),
+    (
+        ("exchange", SimpleNamespace(value="blocked_to_striped")),
+        ("exchange", _StringMode.BLOCKED_TO_STRIPED),
+        ("shuffle", SimpleNamespace(value="down")),
+        ("shuffle", _StringMode.DOWN),
+    ),
+)
+def test_portable_python_entry_points_require_plain_string_modes(operation, mode):
     import importlib
 
     from cuda.coop._core.api import _dispatch
     from cuda.coop._core.api.thread_group import this_block
 
     api = importlib.import_module(f"cuda.coop._core.api.{operation}")
-    mode = SimpleNamespace(
-        value="blocked_to_striped" if operation == "exchange" else "down"
-    )
     group = this_block()
 
     with _dispatch._compiler_scope("test.backend"):
@@ -141,15 +169,17 @@ def test_portable_python_entry_points_require_string_modes(operation):
 
 
 @pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize("mode_kind", ("value_object", "string_enum"))
 @pytest.mark.parametrize(
     ("operation", "valid_mode"),
     (("exchange", "blocked_to_striped"), ("shuffle", "down")),
 )
-def test_public_modes_reject_non_string_value_objects_before_provider(
+def test_public_modes_reject_non_plain_strings_before_provider(
     monkeypatch,
     api,
     operation,
     valid_mode,
+    mode_kind,
 ):
     from numba_cuda_mlir import types
 
@@ -158,7 +188,11 @@ def test_public_modes_reject_non_string_value_objects_before_provider(
     from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
 
     coop = portable if api == "portable" else qualified
-    mode = SimpleNamespace(value=valid_mode)
+    mode = (
+        SimpleNamespace(value=valid_mode)
+        if mode_kind == "value_object"
+        else _StringMode(valid_mode)
+    )
     planning = (
         _group_exchange._ExchangePlanning
         if operation == "exchange"
@@ -194,13 +228,18 @@ def test_public_modes_reject_non_string_value_objects_before_provider(
 
 
 @pytest.mark.parametrize("operation", ("exchange", "shuffle"))
-def test_private_lowering_mode_validation_does_not_unwrap_value_objects(operation):
+@pytest.mark.parametrize("mode_kind", ("value_object", "string_enum"))
+def test_private_lowering_mode_validation_requires_plain_strings(operation, mode_kind):
     from cuda.coop._core.block.exchange import BlockExchangeMode
     from cuda.coop._core.block.shuffle import BlockShuffleMode
     from cuda.coop.numba_mlir._lowering import _exchange, _shuffle
 
     if operation == "exchange":
-        mode = SimpleNamespace(value="blocked_to_striped")
+        mode = (
+            SimpleNamespace(value="blocked_to_striped")
+            if mode_kind == "value_object"
+            else _StringMode.BLOCKED_TO_STRIPED
+        )
         with pytest.raises(TypeError, match="mode must be a string"):
             _exchange._mode(
                 mode,
@@ -208,7 +247,11 @@ def test_private_lowering_mode_validation_does_not_unwrap_value_objects(operatio
                 operation="block exchange",
             )
     else:
-        mode = SimpleNamespace(value="down")
+        mode = (
+            SimpleNamespace(value="down")
+            if mode_kind == "value_object"
+            else _StringMode.DOWN
+        )
         with pytest.raises(TypeError, match="mode must be a string"):
             _shuffle._mode(
                 mode,
@@ -217,7 +260,7 @@ def test_private_lowering_mode_validation_does_not_unwrap_value_objects(operatio
 
 
 @pytest.mark.parametrize("operation", ("exchange", "shuffle"))
-def test_rewrite_mode_validation_does_not_unwrap_value_objects(operation):
+def test_rewrite_mode_validation_requires_plain_strings(operation):
     from cuda.coop.numba_mlir._compiler import _rewrite_exchange, _rewrite_shuffle
     from cuda.coop.numba_mlir._compiler._rewrite_support import (
         CoopSinglePhaseRewriteError,
@@ -225,9 +268,85 @@ def test_rewrite_mode_validation_does_not_unwrap_value_objects(operation):
 
     rewrite = _rewrite_exchange if operation == "exchange" else _rewrite_shuffle
     token = "blocked_to_striped" if operation == "exchange" else "down"
-    for mode in (SimpleNamespace(value=token), 0):
+    string_enum = _StringMode(token)
+    for mode in (SimpleNamespace(value=token), string_enum, 0):
         with pytest.raises(CoopSinglePhaseRewriteError, match="compile-time string"):
             rewrite._mode_token(mode)
+
+
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+def test_portable_frontends_accept_read_only_thread_data(monkeypatch, operation):
+    import importlib
+
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.thread_group import this_block
+
+    api = importlib.import_module(f"cuda.coop._core.api.{operation}")
+    monkeypatch.setattr(
+        api,
+        "_group_primitive_marker",
+        lambda *_args, **_kwargs: "validated",
+    )
+
+    kwargs = {"mode": "blocked_to_striped" if operation == "exchange" else "down"}
+    group = this_block()
+    with _dispatch._compiler_scope("test.backend"):
+        assert (
+            getattr(api, operation)(
+                group,
+                _ReadOnlyPayload(),
+                **kwargs,
+            )
+            == "validated"
+        )
+
+
+@pytest.mark.parametrize(
+    "distance",
+    (SimpleNamespace(value=1), _UnitDistance.ONE),
+    ids=("value-impostor", "integer-enum"),
+)
+def test_portable_shuffle_validates_the_actual_distance(distance):
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.shuffle import shuffle
+    from cuda.coop._core.api.thread_group import this_block
+
+    group = this_block()
+    with _dispatch._compiler_scope("test.backend"):
+        with pytest.raises(ValueError, match="distance must be exactly 1"):
+            shuffle(group, _ReadOnlyPayload(), distance=distance)
+
+
+@pytest.mark.parametrize(
+    "distance",
+    (SimpleNamespace(value=1), _UnitDistance.ONE),
+    ids=("value-impostor", "integer-enum"),
+)
+def test_qualified_array_shuffle_rejects_enum_and_impostor_distance(
+    monkeypatch,
+    distance,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler import _group_shuffle
+
+    def shuffle(value):
+        items = coop.ThreadData(2, dtype=types.int32)
+        items[0] = value
+        items[1] = value
+        return coop.shuffle(coop.this_block(), items, distance=distance)
+
+    monkeypatch.setattr(
+        _group_shuffle._ShufflePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid array distance reached provider selection"
+        ),
+    )
+    _, planner = _plan(shuffle, arg_types=(types.int32,))
+    with pytest.raises(ValueError, match="compile-time unit distance"):
+        planner.run()
 
 
 @pytest.mark.parametrize(

@@ -15,7 +15,11 @@ from ._dispatch import (
     _portable_group_operation,
     _portable_selector,
 )
-from ._payload import ThreadDataLike, _validate_common_numeric_value
+from ._payload import (
+    ThreadDataLike,
+    _ReadableThreadDataLike,
+    _validate_common_numeric_value,
+)
 
 _PORTABLE_EXCHANGE_MODES = frozenset(
     {
@@ -31,7 +35,7 @@ _PORTABLE_EXCHANGE_MODES = frozenset(
 )
 def exchange(
     group: ThreadGroup,
-    value: ThreadDataLike[Any],
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
     mode: Any = "striped_to_blocked",
@@ -49,6 +53,7 @@ def exchange(
             "exchange",
             "value",
             value,
+            allow_readonly_thread_data=True,
             require_thread_data=True,
         )
     return _group_primitive_marker(
