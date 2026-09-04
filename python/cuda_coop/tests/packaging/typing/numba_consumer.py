@@ -36,12 +36,24 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
         return self._value
 
 
+def _select_left_int32(left: np.int32, right: np.int32) -> np.int32:
+    del right
+    return left
+
+
+def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
+    del right
+    return left
+
+
 def check_numba_surface(source: object, destination: object) -> None:
     """Exercise Numba declarations through their public package."""
 
     block = coop.this_block()
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
+    mapped_warps = block.group_by(2)
+    cluster = coop.this_cluster()
     byte_values = coop.ThreadData(1, np.int8)
     values = coop.ThreadData(2, np.uint16, alignas=16)
     ranks = coop.ThreadData(2, np.int32)
@@ -190,4 +202,37 @@ def check_numba_surface(source: object, destination: object) -> None:
             algorithm="striped",
         ),
         None,
+    )
+    assert_type(coop.sum(block, np.int32(4)), np.int32)
+    assert_type(
+        coop.reduce(logical_warp, np.float32(4), binary_op="max"),
+        np.float32,
+    )
+    assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
+    assert_type(coop.reduce(cluster, values, binary_op="min"), np.uint16)
+    assert_type(
+        coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
+        np.int32,
+    )
+    assert_type(
+        coop.sum(block, values, broadcast=False, algorithm="raking"),
+        np.uint16,
+    )
+    assert_type(
+        coop.reduce(
+            warp,
+            np.int32(4),
+            binary_op=_select_left_int32,
+            broadcast=False,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            values,
+            binary_op=_select_left_uint16,
+            broadcast=False,
+        ),
+        np.uint16,
     )
