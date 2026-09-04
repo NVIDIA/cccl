@@ -400,10 +400,11 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
             observed,
             destination,
             valid_by_group,
-            offset,
+            offset_by_group,
         ):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
+            offset = offset_by_group[group_index]
             group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = qualified_coop.ThreadData(
                 _ITEMS_PER_THREAD,
@@ -440,10 +441,11 @@ def _logical_load_store_kernel(algorithm: str, qualified: bool):
             observed,
             destination,
             valid_by_group,
-            offset,
+            offset_by_group,
         ):
             thread = cuda.threadIdx.x
             group_index = thread // _LOGICAL_WARP_THREADS
+            offset = offset_by_group[group_index]
             group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
             payload = root_coop.ThreadData(
                 _ITEMS_PER_THREAD,
@@ -480,11 +482,12 @@ def test_logical_warp_algorithms_use_independent_group_tiles(
     qualified: bool,
     algorithm: str,
 ) -> None:
-    offset = 3
-    load_source = _values(offset + _BLOCK_ITEMS + 3, shift=47)
+    offsets_by_group = np.array([0, 1, 3, 4, 6, 7, 9, 10], dtype=np.int64)
+    allocation_items = int(offsets_by_group.max()) + _BLOCK_ITEMS + 3
+    load_source = _values(allocation_items, shift=47)
     store_source = _values(_BLOCK_ITEMS, shift=53)
     observed = np.full(_BLOCK_ITEMS, 19, dtype=np.int32)
-    destination = np.full(offset + _BLOCK_ITEMS + 3, -31, dtype=np.int32)
+    destination = np.full(allocation_items, -31, dtype=np.int32)
     valid_by_group = np.array(
         [0, 1, 5, _LOGICAL_TILE_ITEMS, 3, 11, 7, 15],
         dtype=np.int32,
@@ -495,6 +498,7 @@ def test_logical_warp_algorithms_use_independent_group_tiles(
         group_index = thread // _LOGICAL_WARP_THREADS
         lane = thread % _LOGICAL_WARP_THREADS
         valid_items = valid_by_group[group_index]
+        offset = offsets_by_group[group_index]
         for item in range(_ITEMS_PER_THREAD):
             payload_index = thread * _ITEMS_PER_THREAD + item
             tile_index = _logical_tile_index(
@@ -514,7 +518,7 @@ def test_logical_warp_algorithms_use_independent_group_tiles(
         observed,
         destination,
         valid_by_group,
-        np.int64(offset),
+        offsets_by_group,
     )
 
     np.testing.assert_array_equal(observed, expected_observed)
