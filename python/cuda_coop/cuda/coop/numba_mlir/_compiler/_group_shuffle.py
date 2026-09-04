@@ -56,7 +56,6 @@ _ALL_MODES = _ARRAY_MODES | _SCALAR_MODES
 
 
 def _mode_token(value: object) -> str:
-    value = getattr(value, "value", value)
     if not isinstance(value, str):
         raise TypeError(
             "cuda.coop.numba_mlir.shuffle mode must be a compile-time string"
