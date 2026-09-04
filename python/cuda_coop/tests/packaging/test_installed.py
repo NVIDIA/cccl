@@ -27,11 +27,17 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         import importlib.metadata
         import importlib.util
         import os
+        import sys
         from pathlib import Path
 
         from cuda import coop
         import cuda.coop.numba_mlir as qualified_coop
         from cuda.coop._headers import resolve_include_paths
+
+        public_reduce_module = "cuda.coop.numba_mlir._group_reduce"
+        compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
+        assert public_reduce_module not in sys.modules
+        assert compiler_reduce_module not in sys.modules
 
         distribution_root = Path(
             importlib.metadata.distribution("cuda-coop").locate_file("")
@@ -56,8 +62,10 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "ThreadHierarchy",
             "exchange",
             "load",
+            "reduce",
             "shuffle",
             "store",
+            "sum",
             "this_block",
             "this_cluster",
             "this_grid",
@@ -65,19 +73,34 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "this_warp",
         }
         assert required <= set(coop.__all__)
-        assert {"reduce", "scan", "sum"}.isdisjoint(coop.__all__)
-        assert {"exchange", "shuffle"} <= set(qualified_coop.__all__)
+        assert {"reduce", "sum"} <= set(coop.__all__)
+        assert {"scan"}.isdisjoint(coop.__all__)
+        assert {"exchange", "reduce", "shuffle", "sum"} <= set(
+            qualified_coop.__all__
+        )
         assert callable(qualified_coop.exchange)
         assert callable(qualified_coop.shuffle)
+        assert callable(qualified_coop.reduce)
+        assert callable(qualified_coop.sum)
+        assert public_reduce_module in sys.modules
+        assert compiler_reduce_module not in sys.modules
+
+        from cuda.coop.numba_mlir._compiler._operations import group_primitive
+
+        assert group_primitive("reduce") is not None
+        assert group_primitive("sum") is not None
+        assert compiler_reduce_module in sys.modules
 
         paths = resolve_include_paths(
             start=Path.cwd(),
             required_headers=(
                 "cub/block/block_exchange.cuh",
                 "cub/block/block_load.cuh",
+                "cub/block/block_reduce.cuh",
                 "cub/block/block_shuffle.cuh",
                 "cub/block/block_store.cuh",
                 "cub/warp/warp_exchange.cuh",
+                "cub/warp/warp_reduce.cuh",
                 "cuda/experimental/coop.cuh",
                 "thrust/detail/raw_pointer_cast.h",
                 "cuda/std/cstdint",
