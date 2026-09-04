@@ -156,6 +156,9 @@ cudax_add_catch2_test(test_target group.mapping.take
 cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
     group/synchronizer/barrier_synchronizer.cu
 )
+cudax_add_catch2_test(test_target group.synchronizer.interwarp_synchronizer
+    group/synchronizer/interwarp_synchronizer.cu
+)
 cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
 )
