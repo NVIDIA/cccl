@@ -377,10 +377,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
               if (cooperative_sm_occupancy > 0)
               {
                 cooperative_cache_slots_per_channel = cache_slots_floor;
-                const int target_occupancy =
-                  active_policy.high_bin_max_blocks_per_sm > 0
-                    ? ::cuda::std::min(cooperative_sm_occupancy, active_policy.high_bin_max_blocks_per_sm)
-                    : cooperative_sm_occupancy;
+                const int floor_occupancy           = cooperative_sm_occupancy;
                 for (int candidate = cache_slots_floor == 0 ? 0 : cache_slots_floor << 1;
                      candidate > 0 && candidate <= max_slots_by_smem;
                      candidate <<= 1)
@@ -390,7 +387,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                   {
                     return error;
                   }
-                  if (candidate_occupancy < target_occupancy)
+                  if (candidate_occupancy < floor_occupancy)
                   {
                     break;
                   }
@@ -404,15 +401,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                   return error;
                 }
                 const int cooperative_grid_capacity = cooperative_sm_occupancy * sm_count;
-                const int tuned_grid_capacity =
-                  active_policy.high_bin_max_blocks_per_sm > 0
-                    ? active_policy.high_bin_max_blocks_per_sm * sm_count
-                    : cooperative_grid_capacity;
                 histogram_sweep_occupancy =
                   active_policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized
-                    ? ::cuda::std::min(privatized_storage_grid_limit,
-                                       ::cuda::std::min(cooperative_grid_capacity, tuned_grid_capacity))
-                    : ::cuda::std::min(cooperative_grid_capacity, tuned_grid_capacity);
+                    ? ::cuda::std::min(privatized_storage_grid_limit, cooperative_grid_capacity)
+                    : cooperative_grid_capacity;
               }
               else
               {
