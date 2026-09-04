@@ -448,12 +448,19 @@ class GroupPlanningContext:
         if definition.op in {"cast", "exhaust_iter"}:
             return self.temp_storage(definition.value, seen=seen)
         if definition.op == "phi":
+            incoming_values = tuple(getattr(definition, "incoming_values", ()))
+            resolved = tuple(
+                self.temp_storage(incoming, seen=set(seen))
+                for incoming in incoming_values
+            )
             candidates = {
-                descriptor
-                for incoming in getattr(definition, "incoming_values", ())
-                if (descriptor := self.temp_storage(incoming, seen=set(seen)))
-                is not None
+                descriptor for descriptor in resolved if descriptor is not None
             }
+            if candidates and any(descriptor is None for descriptor in resolved):
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir TempStorage aliases have "
+                    "inconsistent contracts"
+                )
             if len(candidates) > 1:
                 raise GroupRewriteError(
                     "cuda.coop.numba_mlir TempStorage aliases have "
