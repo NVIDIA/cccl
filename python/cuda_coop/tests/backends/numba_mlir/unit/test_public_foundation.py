@@ -137,9 +137,15 @@ def test_qualified_surface_is_common_plus_backend_extensions():
             assert qualified_parameter.kind == parameter.kind
             assert qualified_parameter.default == parameter.default
         assert qualified_scan.return_annotation == common_scan.return_annotation
-        assert tuple(qualified_scan.parameters)[len(common_scan.parameters) :] == (
+        common_names = tuple(common_scan.parameters)
+        assert tuple(qualified_scan.parameters) == (
+            "group",
+            "value",
+            "prefix_state",
+            *common_names[2:],
             "valid_items",
             "aggregate_output",
+            "prefix_op",
         )
 
     assert call_shape(coop.TempStorage) == call_shape(common_coop.TempStorage)
