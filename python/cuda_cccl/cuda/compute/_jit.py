@@ -1015,6 +1015,11 @@ class _StatefulOp(OpAdapter):
     def get_state(self):
         return self._state.to_bytes()
 
+    @property
+    def state_alignment(self) -> int:
+        # State is packed device-array pointers; see _compile_stateful_op.
+        return np.dtype(np.intp).alignment
+
     def compile(self, input_types, output_type=None) -> Op:
         transformed_func = _transform_function_ast(self._func, self._state.names)
         return _compile_stateful_op(
