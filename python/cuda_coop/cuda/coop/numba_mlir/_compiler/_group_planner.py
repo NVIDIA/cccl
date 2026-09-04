@@ -1125,7 +1125,7 @@ def has_group_markers(func_ir) -> bool:
 
 @register_planner
 class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
-    """Resolve movement groups against one exact configured launch."""
+    """Resolve cooperative group calls against one exact configured launch."""
 
     def run(self) -> bool:
         if not has_group_markers(self.state.func_ir):

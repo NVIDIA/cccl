@@ -442,7 +442,7 @@ class _StorageRewrite:
             for match in matches.values():
                 if match.runtime_temp_storage_var is not None:
                     raise CoopSinglePhaseRewriteError(
-                        "coop movement temp_storage= must originate from a "
+                        "cooperative group temp_storage= must originate from a "
                         "TempStorage constructor in the compiled function."
                     )
             return
@@ -470,7 +470,7 @@ class _StorageRewrite:
                     match = matches.get(inst)
                     if match is not None and match.runtime_temp_storage_var is not None:
                         raise CoopSinglePhaseRewriteError(
-                            "coop movement temp_storage= must originate from a "
+                            "cooperative group temp_storage= must originate from a "
                             "TempStorage constructor in the compiled function."
                         )
                     continue
