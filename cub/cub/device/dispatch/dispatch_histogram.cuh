@@ -220,6 +220,7 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename FirstLevelArrayT,
           typename SecondLevelArrayT,
+          typename CooperativeSecondLevelArrayT,
           typename OffsetT,
           typename PolicySelector,
           typename KernelSource,
@@ -236,6 +237,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
   FirstLevelArrayT first_level_array,
   SecondLevelArrayT second_level_array,
+  CooperativeSecondLevelArrayT cooperative_second_level_array,
   int max_num_output_bins,
   OffsetT num_row_pixels,
   OffsetT num_rows,
@@ -331,7 +333,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           }
           if (use_cooperative)
           {
-            using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+            using privatized_decode_op_t = typename CooperativeSecondLevelArrayT::value_type;
             const auto cooperative_kernel =
               kernel_source.template HistogramCooperativeKernel<PolicySelector, privatized_decode_op_t>();
             const int cache_slots_floor =
@@ -375,7 +377,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
               if (cooperative_sm_occupancy > 0)
               {
                 cooperative_cache_slots_per_channel = cache_slots_floor;
-                const int floor_occupancy           = cooperative_sm_occupancy;
+                const int target_occupancy =
+                  active_policy.high_bin_max_blocks_per_sm > 0
+                    ? ::cuda::std::min(cooperative_sm_occupancy, active_policy.high_bin_max_blocks_per_sm)
+                    : cooperative_sm_occupancy;
                 for (int candidate = cache_slots_floor == 0 ? 0 : cache_slots_floor << 1;
                      candidate > 0 && candidate <= max_slots_by_smem;
                      candidate <<= 1)
@@ -385,7 +390,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                   {
                     return error;
                   }
-                  if (candidate_occupancy < floor_occupancy)
+                  if (candidate_occupancy < target_occupancy)
                   {
                     break;
                   }
@@ -509,7 +514,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   {
     if (use_cooperative && blocks_per_row > 0 && blocks_per_col > 0)
     {
-      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+      using privatized_decode_op_t = typename CooperativeSecondLevelArrayT::value_type;
 
       const dim3 cooperative_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
       const auto cooperative_kernel =
@@ -524,7 +529,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             num_output_bins_wrapper,
             d_output_histograms,
             d_cooperative_privatized_histograms_wrapper,
-            second_level_array,
+            cooperative_second_level_array,
             num_row_pixels,
             num_rows,
             row_stride_samples,
@@ -769,6 +774,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
             num_output_levels,
             upper_level,
             lower_level,
+            lower_level,
             max_num_output_bins,
             num_row_pixels,
             num_rows,
@@ -800,6 +806,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
             num_output_levels,
             num_output_levels,
             upper_level,
+            lower_level,
             lower_level,
             max_num_output_bins,
             num_row_pixels,
@@ -940,6 +947,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
           num_privatized_levels,
           num_output_levels,
           upper_level,
+          lower_level,
           lower_level,
           max_num_output_bins,
           num_row_pixels,
@@ -1092,6 +1100,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
             num_output_levels,
             output_decode_op,
             privatized_decode_op,
+            privatized_decode_op,
             max_num_output_bins,
             num_row_pixels,
             num_rows,
@@ -1127,12 +1136,15 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     if (max_num_output_bins > max_privatized_smem_bins)
     {
       // Too many bins to keep in shared memory.
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-      using PrivatizedDecodeOpT          = typename TransformsT::template CachedSearchTransform<const LevelT*>;
+      constexpr int PRIVATIZED_SMEM_BINS   = 0;
+      using PrivatizedDecodeOpT            = typename TransformsT::template SearchTransform<const LevelT*>;
+      using CooperativePrivatizedDecodeOpT = typename TransformsT::template CachedSearchTransform<const LevelT*>;
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      ::cuda::std::array<CooperativePrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> cooperative_privatized_decode_op{};
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
       {
         privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+        cooperative_privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
       }
 
       if (const auto error = CubDebug(
@@ -1150,6 +1162,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
               num_output_levels,
               output_decode_op,
               privatized_decode_op,
+              cooperative_privatized_decode_op,
               max_num_output_bins,
               num_row_pixels,
               num_rows,
@@ -1187,6 +1200,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
               num_output_levels,
               num_output_levels,
               output_decode_op,
+              privatized_decode_op,
               privatized_decode_op,
               max_num_output_bins,
               num_row_pixels,
@@ -1292,6 +1306,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
             num_output_levels,
             output_decode_op,
             privatized_decode_op,
+            privatized_decode_op,
             max_num_output_bins,
             num_row_pixels,
             num_rows,
@@ -1337,12 +1352,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
     if (max_num_output_bins > max_privatized_smem_bins)
     {
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-      using PrivatizedDecodeOpT          = typename TransformsT::FastScaleTransform;
+      constexpr int PRIVATIZED_SMEM_BINS   = 0;
+      using PrivatizedDecodeOpT            = typename TransformsT::ScaleTransform;
+      using CooperativePrivatizedDecodeOpT = typename TransformsT::FastScaleTransform;
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+      ::cuda::std::array<CooperativePrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> cooperative_privatized_decode_op{};
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
       {
         privatized_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]);
+        cooperative_privatized_decode_op[channel].Init(
+          num_output_levels[channel], upper_level[channel], lower_level[channel]);
       }
 
       if (const auto error = CubDebug(
@@ -1360,6 +1379,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
               num_output_levels,
               output_decode_op,
               privatized_decode_op,
+              cooperative_privatized_decode_op,
               max_num_output_bins,
               num_row_pixels,
               num_rows,
@@ -1396,6 +1416,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
               num_output_levels,
               num_output_levels,
               output_decode_op,
+              privatized_decode_op,
               privatized_decode_op,
               max_num_output_bins,
               num_row_pixels,

@@ -1972,7 +1972,7 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
        ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
-       ", .high_bin_algorithm = HistogramHighBinAlgorithm::cooperative"
+       ", .high_bin_algorithm = HistogramHighBinAlgorithm::global_memory_privatized"
        ", .high_bin_cache = HistogramCacheAlgorithm::single_probe"
        ", .high_bin_spill = HistogramSpillAlgorithm::global_memory_privatized"
        ", .high_bin_aggregation = HistogramAggregationAlgorithm::rle"
