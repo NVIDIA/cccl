@@ -292,9 +292,19 @@ value explicitly before storing it:
 Both portable and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
-``warp_transpose_timesliced``. The Numba-CUDA-MLIR capability layer currently
-executes only ``direct``; selecting another algorithm returns a stable
-unsupported plan before provider compilation.
+``warp_transpose_timesliced``. All six algorithms are executable with the
+Numba-CUDA-MLIR backend. ``direct`` and ``vectorize`` use blocked ordering, so
+each thread owns a contiguous segment of the tile. ``striped`` exposes striped
+ordering, where item ``i`` for a thread is separated from its next item by the
+block size. The three transpose algorithms use striped memory transactions but
+present blocked ``ThreadData`` to the caller. The two warp-transpose variants
+perform that reordering within each warp and require a block size divisible by
+32.
+
+Store consumes the arrangement associated with its selected algorithm. The
+transpose Store implementations copy the payload before calling CUB, so Store
+never modifies the caller's scalar or ``ThreadData`` value while CUB performs
+its in-place reordering.
 
 Temporary storage
 -----------------
@@ -317,21 +327,26 @@ in bytes. The planner may strengthen it to satisfy every primitive using the
 storage. Integer-like values implementing ``__index__`` are accepted. An
 explicit ``size_in_bytes`` must still be large enough for the planned storage.
 
-The current DIRECT Block Load and Store providers are storage-free. They
+``direct``, ``striped``, and ``vectorize`` are storage-free. They
 default-construct the CUB primitive, report zero temporary bytes, and emit no
 shared-memory allocation, storage pointer, or synchronization barrier. An
 explicit descriptor, including an unsized descriptor, is validated as
-compile-time vocabulary but does not change DIRECT code generation.
+compile-time vocabulary but does not change code generation for those
+algorithms.
 Construct ``TempStorage`` inside the kernel; the current Numba-CUDA-MLIR
 frontend does not resolve module-global storage descriptors. A descriptor may
 be passed to a device function that Numba-CUDA-MLIR inlines into the kernel,
 which is the default, but it cannot cross into a separately compiled device
 function.
 
-The backend retains generic planning for future registered providers that do
-declare a leading storage-pointer ABI. For those providers, capacity,
-alignment, shared or exclusive ownership, reuse synchronization, and static or
-dynamic shared-memory limits are validated from the concrete lowering plan.
+``transpose``, ``warp_transpose``, and ``warp_transpose_timesliced`` use CUB
+temporary storage. Without a descriptor, the compiler allocates the
+specialization's exact storage and inserts a block reuse barrier. An explicit
+descriptor selects shared or exclusive ownership, requests capacity and
+alignment, or opts into dynamic shared memory. The provider remains
+authoritative for the required byte count and alignment, and the backend
+validates the descriptor against the concrete lowering plan.
+
 Sharing selects only the slice layout: ``sharing="shared"`` overlaps every call
 that passes the same descriptor on one region, while ``sharing="exclusive"``
 gives each call site its own slice. A call site inside a loop reuses its slice
