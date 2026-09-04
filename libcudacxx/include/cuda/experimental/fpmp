@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_FPMP_MATH
-#define _CUDA_FPMP_MATH
+#ifndef _CUDA_FPMP
+#define _CUDA_FPMP
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-// Transcendental and elementary math functions for fpmp2 types
-// (exp, log, pow, sin, cos, tan, fabs, floor, min, max, isnan, ...).
+// Core multi-precision types and operations (constructors, conversions,
+// arithmetic and comparison operators, sqrt, rsqrt, fma).
 //
-// This pulls in the core <cuda/fpmp> umbrella as well, so including
-// <cuda/fpmp_math> alone is sufficient to get the full fpmp API. Translation
-// units that do not need math functions should include <cuda/fpmp> instead to
-// avoid the additional compile-time cost of the math header.
+// The large set of transcendental math functions (exp, log, trig, pow, ...)
+// lives in a separate umbrella header, <cuda/experimental/fpmp_math>, so translation units
+// that only need the core type do not pay its compile-time cost.
 #include <cuda/__fp/fpmp.h>
-#include <cuda/__fp/fpmp_math.h>
+// cuda::std::numeric_limits<> specialization for the fpmp2 types.
+#include <cuda/__fp/fpmp_limits.h>
 
-#endif // _CUDA_FPMP_MATH
+#endif // _CUDA_FPMP

@@ -509,7 +509,7 @@ inline constexpr bool __fpmp2_is_lossless_int_v =
 // the fallback is the appropriate arithmetic operation
 //
 // The CUDA intrinsics are called as ::__dadd_rn etc. because these wrappers live in
-// cuda::experimental, where <cuda/fpemu> declares same-named overloads for its own
+// cuda::experimental, where <cuda/experimental/fpemu> declares same-named overloads for its own
 // types: unqualified lookup would stop there and never reach the global scope.
 */
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_internal_fabs(float __x) noexcept

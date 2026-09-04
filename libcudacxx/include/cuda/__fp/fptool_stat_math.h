@@ -24,7 +24,7 @@
 //! @file fptool_stat_math.h
 //! @brief Math API for `fpmp2_stat`
 //!
-//! Mirrors the free functions of `<cuda/fpmp_math>` for the statistics-collecting
+//! Mirrors the free functions of `<cuda/experimental/fpmp_math>` for the statistics-collecting
 //! wrapper: each one unwraps its arguments, calls the `fpmp2` implementation and wraps
 //! the result again, so results are bit-identical to the plain type. Including this
 //! header lets unqualified calls such as `exp(x)` or `hypot(x, y)` resolve for a `_stat`

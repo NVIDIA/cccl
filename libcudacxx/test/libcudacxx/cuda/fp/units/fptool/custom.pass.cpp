@@ -23,7 +23,6 @@
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 
-#include <cuda/fptool>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
@@ -31,6 +30,8 @@
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/fptool>
 
 // <cuda/stream> is only usable where the CUDA runtime is: under NVRTC cuda::stream_ref is left
 // undefined while get_stream.h still returns it by value. The stream-based runtime-size tests

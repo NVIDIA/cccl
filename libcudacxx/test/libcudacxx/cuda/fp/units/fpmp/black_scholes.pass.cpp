@@ -38,11 +38,12 @@
 // UNSUPPORTED: force-tile
 // error: calling a __host__ __device__ function in tile is not allowed
 
-#include <cuda/fpmp>
-#include <cuda/fpmp_math>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
+
+#include <cuda/experimental/fpmp>
+#include <cuda/experimental/fpmp_math>
 
 #include "test_macros.h"
 

@@ -161,7 +161,7 @@
     Warp Shuffle (CUDA-only, modern __shfl_sync family): the fpmp2 overloads
     of __shfl_sync / __shfl_xor_sync / __shfl_down_sync / __shfl_up_sync are
     thread-cooperation primitives, not math, so they live in the core header
-    <cuda/__fp/fpmp.h> (available via <cuda/fpmp>), not here.
+    <cuda/__fp/fpmp.h> (available via <cuda/experimental/fpmp>), not here.
 
     Dedicated Implementation Details:
     -------------------------------------------------------------------------
@@ -1177,7 +1177,7 @@ _CCCL_HOST_DEVICE_API inline int signbit(const fpmp2<_FpType, _TypeAcc>& __x) no
  * Note: the fpmp2 warp-shuffle overloads (__shfl_sync, __shfl_xor_sync,
  * __shfl_down_sync, __shfl_up_sync) are thread-cooperation primitives, not math
  * functions, so they live in the core header <cuda/__fp/fpmp.h> (available via
- * <cuda/fpmp>) rather than here.
+ * <cuda/experimental/fpmp>) rather than here.
  */
 } // namespace cuda::experimental
 

@@ -30,9 +30,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/fpmp_math>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+
+#include <cuda/experimental/fpmp_math>
 
 #include "test_macros.h"
 
