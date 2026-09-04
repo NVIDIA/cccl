@@ -309,11 +309,135 @@ def test_group_result_source_rejects_invalid_parameter_names():
         GroupResultSource(None, 7)
 
 
+@pytest.mark.parametrize(
+    ("struct_name", "scope_name", "sync_token"),
+    [
+        ("WarpNamedButBlockScoped", "block", "__syncthreads();"),
+        ("BlockNamedButWarpScoped", "warp", "__syncwarp();"),
+        ("NeutralProvider", "none", None),
+    ],
+)
+def test_generated_synchronization_uses_metadata_not_struct_names(
+    struct_name,
+    scope_name,
+    sync_token,
+):
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir import _types
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
+
+    scope = SynchronizationScope(scope_name)
+    algorithm = _types.Algorithm(
+        struct_name=struct_name,
+        method_name="Run",
+        c_name="test_declarative_provider_metadata",
+        includes=(),
+        template_parameters=(),
+        parameters=((_types.Pointer(types.uint8), _types.Value(types.int32)),),
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=scope,
+        synchronization_scope=scope,
+    )
+    if scope is SynchronizationScope.WARP:
+        algorithm.threads = 32
+        algorithm.block_threads = 64
+
+    source = algorithm._source_code(
+        compile_identity=(90, True, "lto", (), "test-toolchain")
+    )[0]
+
+    for token in ("__syncthreads();", "__syncwarp();"):
+        assert (token in source) is (token == sync_token)
+    if scope is SynchronizationScope.WARP:
+        assert "temp_storages[2]" in source
+        assert "[__coop_thread_rank / 32]" in source
+    assert scope.value in repr(
+        algorithm._make_lto_ir_cache_key(
+            compile_identity=(90, True, "lto", (), "test-toolchain")
+        )
+    )
+
+
+def test_group_synchronization_scope_fails_with_stable_diagnostic():
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir import _types
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
+
+    algorithm = _types.Algorithm(
+        struct_name="Provider",
+        method_name="Run",
+        c_name="test_unsupported_group_synchronization",
+        includes=(),
+        template_parameters=(),
+        parameters=((_types.Pointer(types.uint8), _types.Value(types.int32)),),
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.GROUP,
+        synchronization_scope=SynchronizationScope.GROUP,
+    )
+
+    with pytest.raises(NotImplementedError, match="scope 'group' has no emitter"):
+        algorithm._source_code(compile_identity=(90, True, "lto", (), "test-toolchain"))
+
+
+def test_storage_free_provider_uses_default_constructor_and_zero_storage():
+    from numba_cuda_mlir import types
+
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir import _types
+    from cuda.coop.numba_mlir._compiler._operations import StorageABI
+
+    algorithm = _types.Algorithm(
+        struct_name="StorageFreeProvider",
+        method_name="Run",
+        c_name="test_storage_free_provider",
+        includes=(),
+        template_parameters=(),
+        parameters=((_types.Value(types.int32),),),
+        storage_abi=StorageABI.NONE,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+    source, _, storage_symbols, _ = algorithm._source_code(
+        compile_identity=(90, True, "lto", (), "test-toolchain")
+    )
+
+    assert "StorageFreeProvider().Run" not in source
+    assert "algorithm_t_" in source
+    assert "().Run(param_0);" in source
+    assert "TempStorage" not in source
+    assert "temp_storage" not in source
+    assert storage_symbols == ()
+
+
 class _FakeInvocable:
     files = ("family-registration-test.ltoir",)
     specialization = None
     temp_storage_bytes = 24
     temp_storage_alignment = 8
+
+    def __init__(self, scope):
+        from cuda.coop.numba_mlir._compiler._operations import StorageABI
+
+        self.storage_abi = StorageABI.LEADING_POINTER
+        self.execution_scope = scope
+        self.synchronization_scope = scope
+
+    def __call__(self, *args):
+        del args
+
+
+class _StorageFreeInvocable:
+    files = ("storage-free-family-registration-test.ltoir",)
+    specialization = None
+    temp_storage_bytes = 0
+    temp_storage_alignment = 1
+    storage_abi = "none"
+    execution_scope = "none"
+    synchronization_scope = "none"
 
     def __call__(self, *args):
         del args
@@ -348,18 +472,32 @@ def _resolved_calls(func_ir):
     return calls
 
 
-def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
+@pytest.mark.parametrize(
+    ("scope_name", "sync_name"),
+    [
+        ("block", "syncthreads"),
+        ("warp", "syncwarp"),
+        ("none", None),
+    ],
+)
+def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
+    scope_name,
+    sync_name,
+):
+    import numpy as np
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
     from numba_cuda_mlir.numbair_transforms import ir
 
+    from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir._compiler import _operations
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     operation = "_test_rewrite_family"
+    synchronization_scope = SynchronizationScope(scope_name)
     events = []
     family_metadata = object()
-    invocable = _FakeInvocable()
+    invocable = _FakeInvocable(synchronization_scope)
 
     def provider(*runtime_args, **factory_kwargs):
         assert not runtime_args
@@ -369,6 +507,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
     def infer_payload(_rewrite, inference):
         events.append(("infer", tuple(inference.runtime_args)))
         inference.infer_kwarg("inferred", "from-callback")
+        inference.infer_kwarg("element_type", np.dtype("int32"))
 
     def analyze_match(
         _rewrite,
@@ -405,18 +544,22 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
     _operations.register_factory(
         provider,
         operation=operation,
-        namespace="block",
+        namespace="alternate",
+        storage_abi=_operations.StorageABI.LEADING_POINTER,
+        execution_scope=synchronization_scope,
+        synchronization_scope=synchronization_scope,
     )
     _operations.register_rewrite_operation(
         operation,
         _operations.RewriteOperationSpec(
-            namespace="block",
+            factory_namespaces=frozenset({"block", "alternate"}),
+            dtype_factory_kwargs=frozenset({"element_type"}),
             runtime_arg_counts=frozenset({1}),
             runtime_factory_kwargs=(),
             runtime_factory_kw_prerequisites=(),
-            allowed_factory_kwargs=frozenset({"inferred", "token"}),
-            required_factory_kwargs=frozenset({"inferred", "token"}),
-            runtime_temp_storage=False,
+            allowed_factory_kwargs=frozenset({"element_type", "inferred", "token"}),
+            required_factory_kwargs=frozenset({"element_type", "inferred", "token"}),
+            accepts_temp_storage=False,
             scalar_binding_kwargs=frozenset(),
             runtime_offset_kwarg=None,
             infer_payload=infer_payload,
@@ -426,7 +569,125 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
     )
 
     def kernel(value):
-        return provider(value, token=7)
+        return provider(value, token=7, element_type=value.dtype)
+
+    func_ir = run_frontend(kernel)
+    typingctx = _TypingContext()
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(types.Array(types.int32, 1, "C"),),
+        typingctx=typingctx,
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+    for label in sorted(func_ir.blocks):
+        block = func_ir.blocks[label]
+        while rewrite.match(func_ir, block, state.typemap, state.calltypes):
+            block = rewrite.apply()
+            func_ir.blocks[label] = block
+
+    calls = _resolved_calls(func_ir)
+    invocable_calls = [call for target, call in calls if target is invocable]
+    assert len(invocable_calls) == 1
+    assert len(invocable_calls[0].args) == 3
+    assert sum(target is cuda.shared.array for target, _ in calls) == 1
+    sync_targets = {
+        target for target, _ in calls if target in {cuda.syncthreads, cuda.syncwarp}
+    }
+    assert sync_targets == (set() if sync_name is None else {getattr(cuda, sync_name)})
+    assert rewrite._temp_storage_global_plan.total_size == 24
+    assert rewrite._temp_storage_global_plan.max_alignment == 8
+    assert rewrite._implicit_temp_storage_plan.size_in_bytes == 24
+    assert rewrite._implicit_temp_storage_plan.alignment == 8
+    assert typingctx.refresh_count == 1
+
+    factory_events = [event for event in events if event[0] == "factory"]
+    infer_events = [event for event in events if event[0] == "infer"]
+    analyze_events = [event for event in events if event[0] == "analyze"]
+    prepare_events = [event for event in events if event[0] == "prepare"]
+    assert factory_events == [
+        (
+            "factory",
+            {
+                "token": 7,
+                "inferred": "from-callback",
+                "element_type": types.int32,
+            },
+        )
+    ]
+    assert len(infer_events) == 2
+    assert all(len(event[1]) == 1 for event in infer_events)
+    assert len(analyze_events) == 2
+    assert all(event[1] == operation for event in analyze_events)
+    assert all(
+        event[3]
+        == {
+            "token": 7,
+            "inferred": "from-callback",
+            "element_type": types.int32,
+        }
+        for event in analyze_events
+    )
+    assert len(prepare_events) == 1
+
+    resolver = object.__new__(CoopSinglePhaseRewrite)
+    resolver._func_ir = func_ir
+    resolver._block_defs = {
+        inst.target.name: inst.value
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+    }
+    assert resolver._infer_constant(invocable_calls[0].args[-1]) == 29
+
+
+def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    operation = "_test_storage_free_family"
+    invocable = _StorageFreeInvocable()
+
+    def provider(*runtime_args, **factory_kwargs):
+        assert not runtime_args
+        assert not factory_kwargs
+        return invocable
+
+    _operations.register_factory(
+        provider,
+        operation=operation,
+        namespace="alternate",
+        storage_abi=_operations.StorageABI.NONE,
+        execution_scope=SynchronizationScope.NONE,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+    _operations.register_rewrite_operation(
+        operation,
+        _operations.RewriteOperationSpec(
+            factory_namespaces=frozenset({"alternate"}),
+            dtype_factory_kwargs=frozenset(),
+            runtime_arg_counts=frozenset({1}),
+            runtime_factory_kwargs=(),
+            runtime_factory_kw_prerequisites=(),
+            allowed_factory_kwargs=frozenset(),
+            required_factory_kwargs=frozenset(),
+            accepts_temp_storage=True,
+            scalar_binding_kwargs=frozenset(),
+            runtime_offset_kwarg=None,
+            infer_payload=lambda *_args: None,
+        ),
+    )
+
+    def kernel(value):
+        storage = coop.TempStorage()
+        return provider(value, temp_storage=storage)
 
     func_ir = run_frontend(kernel)
     typingctx = _TypingContext()
@@ -448,36 +709,41 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
     calls = _resolved_calls(func_ir)
     invocable_calls = [call for target, call in calls if target is invocable]
     assert len(invocable_calls) == 1
-    assert len(invocable_calls[0].args) == 3
-    assert sum(target is cuda.shared.array for target, _ in calls) == 1
-    assert sum(target is cuda.syncthreads for target, _ in calls) == 1
-    assert rewrite._temp_storage_global_plan.total_size == 24
-    assert rewrite._temp_storage_global_plan.max_alignment == 8
-    assert rewrite._implicit_temp_storage_plan.size_in_bytes == 24
-    assert rewrite._implicit_temp_storage_plan.alignment == 8
-    assert typingctx.refresh_count == 1
+    assert len(invocable_calls[0].args) == 1
+    assert all(target is not cuda.shared.array for target, _ in calls)
+    assert all(target not in {cuda.syncthreads, cuda.syncwarp} for target, _ in calls)
+    assert rewrite._temp_storage_global_plan is None
+    assert rewrite._temp_storage_backing_var is None
 
-    factory_events = [event for event in events if event[0] == "factory"]
-    infer_events = [event for event in events if event[0] == "infer"]
-    analyze_events = [event for event in events if event[0] == "analyze"]
-    prepare_events = [event for event in events if event[0] == "prepare"]
-    assert factory_events == [("factory", {"token": 7, "inferred": "from-callback"})]
-    assert len(infer_events) == 2
-    assert all(len(event[1]) == 1 for event in infer_events)
-    assert len(analyze_events) == 2
-    assert all(event[1] == operation for event in analyze_events)
-    assert all(
-        event[3] == {"token": 7, "inferred": "from-callback"}
-        for event in analyze_events
+
+@pytest.mark.parametrize(
+    ("attribute", "value"),
+    [
+        ("storage_abi", "leading_pointer"),
+        ("execution_scope", "block"),
+        ("synchronization_scope", "block"),
+    ],
+)
+def test_provider_metadata_must_match_registered_rewrite_contract(
+    attribute,
+    value,
+):
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._compiler import _operations
+    from cuda.coop.numba_mlir._compiler._rewrite_invocables import _InvocableRewrite
+    from cuda.coop.numba_mlir._compiler._rewrite_support import (
+        CoopSinglePhaseRewriteError,
     )
-    assert len(prepare_events) == 1
 
-    resolver = object.__new__(CoopSinglePhaseRewrite)
-    resolver._func_ir = func_ir
-    resolver._block_defs = {
-        inst.target.name: inst.value
-        for block in func_ir.blocks.values()
-        for inst in block.body
-        if isinstance(inst, ir.Assign)
-    }
-    assert resolver._infer_constant(invocable_calls[0].args[-1]) == 29
+    provider_metadata = _operations.FactoryOperation(
+        operation="_test_provider_contract_mismatch",
+        namespace="alternate",
+        storage_abi=_operations.StorageABI.NONE,
+        execution_scope=SynchronizationScope.NONE,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+    invocable = _StorageFreeInvocable()
+    setattr(invocable, attribute, value)
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match=attribute):
+        _InvocableRewrite._validate_invocable(invocable, provider_metadata)

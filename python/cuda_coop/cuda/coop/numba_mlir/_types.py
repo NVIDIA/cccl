@@ -28,7 +28,10 @@ from numba_cuda_mlir.extending import _NumbaCudaMlirOverloadFunctionTemplate
 from numba_cuda_mlir.numba_cuda.typing.templates import make_overload_template
 from numba_cuda_mlir.types import signature
 
+from cuda.coop._core import SynchronizationScope
+
 from ._compiler import _nvrtc as nvrtc
+from ._compiler._operations import StorageABI
 from ._semantic import _numba_semantic_token
 
 NUMBA_TYPES_TO_CPP = {
@@ -45,6 +48,8 @@ NUMBA_TYPES_TO_CPP = {
     types.float32: "float",
     types.float64: "double",
 }
+
+_SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
 
 
 _COOP_SPECIALIZATION_COLLECTOR: ContextVar[
@@ -67,6 +72,61 @@ def numba_type_to_cpp(numba_type):
     if cpp_type is not None:
         return cpp_type
     return "storage_t"
+
+
+def _validate_logical_warp_threads(threads):
+    if (
+        isinstance(threads, bool)
+        or not isinstance(threads, int)
+        or threads not in _SUPPORTED_LOGICAL_WARP_THREADS
+    ):
+        supported = ", ".join(
+            str(value) for value in sorted(_SUPPORTED_LOGICAL_WARP_THREADS)
+        )
+        raise ValueError(
+            "warp-scoped providers require a logical width in "
+            f"{{{supported}}}; got {threads!r}"
+        )
+    return threads
+
+
+def _normalize_block_threads(threads_per_block):
+    if isinstance(threads_per_block, bool):
+        raise ValueError(
+            "block_threads must be a positive integer or dimension tuple; "
+            f"got {threads_per_block!r}"
+        )
+    if isinstance(threads_per_block, int):
+        block_threads = threads_per_block
+    elif isinstance(threads_per_block, (tuple, list)):
+        if not 1 <= len(threads_per_block) <= 3:
+            raise ValueError(
+                "block_threads dimension tuples require one to three entries; "
+                f"got {threads_per_block!r}"
+            )
+        block_threads = 1
+        for dimension in threads_per_block:
+            if (
+                isinstance(dimension, bool)
+                or not isinstance(dimension, int)
+                or dimension <= 0
+            ):
+                raise ValueError(
+                    "block_threads dimension tuple entries must be positive "
+                    f"integers; got {threads_per_block!r}"
+                )
+            block_threads *= dimension
+    else:
+        raise ValueError(
+            "block_threads must be a positive integer or dimension tuple; "
+            f"got {threads_per_block!r}"
+        )
+    if not 1 <= block_threads <= 1024:
+        raise ValueError(
+            "block_threads must describe between 1 and 1024 threads; "
+            f"got {threads_per_block!r}"
+        )
+    return block_threads
 
 
 def _symbol_component(value):
@@ -640,6 +700,10 @@ class Algorithm:
         includes,
         template_parameters,
         parameters,
+        *,
+        storage_abi,
+        execution_scope,
+        synchronization_scope,
         type_definitions=None,
         fake_return=False,
         output_by_reference=False,
@@ -655,6 +719,16 @@ class Algorithm:
         self.includes = includes
         self.template_parameters = template_parameters
         self.parameters = parameters
+        self.storage_abi = StorageABI(storage_abi)
+        self.execution_scope = SynchronizationScope(execution_scope)
+        self.synchronization_scope = SynchronizationScope(synchronization_scope)
+        if self.synchronization_scope not in {
+            SynchronizationScope.NONE,
+            self.execution_scope,
+        }:
+            raise ValueError(
+                "synchronization_scope must be NONE or match execution_scope"
+            )
         self.type_definitions = type_definitions
         self.fake_return = fake_return
         self.output_by_reference = output_by_reference
@@ -777,6 +851,9 @@ class Algorithm:
             self.includes,
             [],
             specialized_parameters,
+            storage_abi=self.storage_abi,
+            execution_scope=self.execution_scope,
+            synchronization_scope=self.synchronization_scope,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
             output_by_reference=self.output_by_reference,
@@ -934,10 +1011,11 @@ class Algorithm:
 
         alias_suffix = internal_mangle_cpp(self._symbol_base_name())
         algorithm_type_name = f"algorithm_t_{alias_suffix}"
-        temp_storage_type_name = f"temp_storage_t_{alias_suffix}"
-        temp_storage_bytes_symbol, temp_storage_alignment_symbol = (
-            self._temp_storage_symbol_names()
-        )
+        temp_storage_type_name = None
+        temp_storage_symbols = ()
+        if self.storage_abi is StorageABI.LEADING_POINTER:
+            temp_storage_type_name = f"temp_storage_t_{alias_suffix}"
+            temp_storage_symbols = self._temp_storage_symbol_names()
 
         buf = StringIO()
         w = buf.write
@@ -953,17 +1031,23 @@ class Algorithm:
         w("\n")
 
         w(f"using {algorithm_type_name} = cub::{algorithm_name};\n")
-        w(
-            f"using {temp_storage_type_name} = typename {algorithm_type_name}::TempStorage;\n"
-        )
-        w(
-            "__device__ constexpr unsigned "
-            f"{temp_storage_bytes_symbol} = sizeof({temp_storage_type_name});\n"
-        )
-        w(
-            "__device__ constexpr unsigned "
-            f"{temp_storage_alignment_symbol} = alignof({temp_storage_type_name});\n"
-        )
+        if temp_storage_type_name is not None:
+            temp_storage_bytes_symbol, temp_storage_alignment_symbol = (
+                temp_storage_symbols
+            )
+            w(
+                f"using {temp_storage_type_name} = typename "
+                f"{algorithm_type_name}::TempStorage;\n"
+            )
+            w(
+                "__device__ constexpr unsigned "
+                f"{temp_storage_bytes_symbol} = sizeof({temp_storage_type_name});\n"
+            )
+            w(
+                "__device__ constexpr unsigned "
+                f"{temp_storage_alignment_symbol} = "
+                f"alignof({temp_storage_type_name});\n"
+            )
 
         src = buf.getvalue()
 
@@ -974,7 +1058,10 @@ class Algorithm:
             out_param = None
 
             param_arg_positions_by_pid = {}
-            for pid, param in enumerate(method[1:]):
+            provider_parameters = (
+                method[1:] if self.storage_abi is StorageABI.LEADING_POINTER else method
+            )
+            for pid, param in enumerate(provider_parameters):
                 if isinstance(param, CxxFunction):
                     param_args.append(param.cpp)
                 else:
@@ -1036,17 +1123,68 @@ class Algorithm:
                         param_arg_positions_by_pid[pid] = len(param_args)
                         param_args.append(param_arg)
 
-            if self.struct_name.startswith("Warp"):
-                raise NotImplementedError(
-                    "Warp provider lowering is not part of the Block Load/Store "
-                    "Numba-CUDA-MLIR capability"
-                )
-            elif self.struct_name.startswith("Block"):
-                provide_alloc_version = True
-                storage = f"__shared__ {temp_storage_type_name} temp_storage;"
-                sync = "__syncthreads();"
+            provide_alloc_version = self.storage_abi is StorageABI.LEADING_POINTER
+            if provide_alloc_version:
+                assert temp_storage_type_name is not None
+                logical_width = None
+                if self.execution_scope is SynchronizationScope.BLOCK:
+                    storage = f"__shared__ {temp_storage_type_name} temp_storage;"
+                elif self.execution_scope is SynchronizationScope.WARP:
+                    logical_width = _validate_logical_warp_threads(
+                        threads if threads is not None else self.threads
+                    )
+                    resolved_block_threads = _normalize_block_threads(
+                        block_threads
+                        if block_threads is not None
+                        else self.block_threads
+                    )
+                    if resolved_block_threads % logical_width != 0:
+                        raise ValueError(
+                            "warp-scoped provider width must divide the exact "
+                            f"block size; got width={logical_width} and "
+                            f"block_threads={resolved_block_threads}"
+                        )
+                    instances = resolved_block_threads // logical_width
+                    storage = (
+                        "unsigned __coop_thread_rank = threadIdx.x + blockDim.x * "
+                        "(threadIdx.y + blockDim.y * threadIdx.z);\n"
+                        "    "
+                        f"__shared__ {temp_storage_type_name} temp_storages"
+                        f"[{instances}];\n"
+                        f"    {temp_storage_type_name} &temp_storage = temp_storages"
+                        f"[__coop_thread_rank / {logical_width}];"
+                    )
+                elif self.execution_scope is SynchronizationScope.NONE:
+                    storage = f"{temp_storage_type_name} temp_storage;"
+                else:
+                    raise NotImplementedError(
+                        "cuda.coop.numba_mlir provider execution scope "
+                        f"{self.execution_scope.value!r} has no emitter"
+                    )
+                if self.synchronization_scope is SynchronizationScope.WARP:
+                    assert logical_width is not None
+                    sync = (
+                        "__syncwarp();"
+                        if logical_width == 32
+                        else (
+                            "__syncwarp((((1u << "
+                            f"{logical_width}"
+                            ") - 1u) << (((__coop_thread_rank & 31) / "
+                            f"{logical_width}"
+                            f") * {logical_width})));"
+                        )
+                    )
+                else:
+                    sync = {
+                        SynchronizationScope.NONE: "",
+                        SynchronizationScope.BLOCK: "__syncthreads();",
+                    }.get(self.synchronization_scope)
+                if sync is None:
+                    raise NotImplementedError(
+                        "cuda.coop.numba_mlir provider synchronization scope "
+                        f"{self.synchronization_scope.value!r} has no emitter"
+                    )
             else:
-                provide_alloc_version = False
                 storage = ""
                 sync = ""
 
@@ -1081,7 +1219,11 @@ class Algorithm:
                 )
 
             w(f'extern "C" __device__ void {mangled_name}(')
-            w(f"{temp_storage_type_name} *temp_storage, ")
+            if self.storage_abi is StorageABI.LEADING_POINTER:
+                assert temp_storage_type_name is not None
+                w(f"{temp_storage_type_name} *temp_storage")
+                if param_decls_csv:
+                    w(", ")
             w(f"{param_decls_csv}) {{\n")
             for decl in func_decls:
                 w(f"    {decl}\n")
@@ -1089,7 +1231,10 @@ class Algorithm:
                 w(f"    {out_param} = ")
             else:
                 w("    ")
-            w(f"{algorithm_type_name}(*temp_storage).")
+            if self.storage_abi is StorageABI.LEADING_POINTER:
+                w(f"{algorithm_type_name}(*temp_storage).")
+            else:
+                w(f"{algorithm_type_name}().")
             w(f"{method_name}({param_args_csv});\n")
             w("}\n\n")
             self._emit_abi_wrapper(
@@ -1097,7 +1242,14 @@ class Algorithm:
                 method,
                 exported_name=mangled_name,
                 internal_name=mangled_name,
-                temp_storage_type_name=temp_storage_type_name,
+                temp_storage_type_name=(
+                    "temp_storage_t"
+                    if temp_storage_type_name is None
+                    else temp_storage_type_name
+                ),
+                temp_storage_param_pid=(
+                    0 if self.storage_abi is StorageABI.LEADING_POINTER else None
+                ),
             )
 
             src += buf.getvalue()
@@ -1105,7 +1257,7 @@ class Algorithm:
         return (
             src,
             support_lto_irs,
-            (temp_storage_bytes_symbol, temp_storage_alignment_symbol),
+            temp_storage_symbols,
             udf_declarations,
         )
 
@@ -1116,13 +1268,24 @@ class Algorithm:
         resolved_block_threads = (
             block_threads if block_threads is not None else self.block_threads
         )
-        if self.struct_name.startswith("Warp"):
-            raise NotImplementedError(
-                "Warp provider lowering is not part of the Block Load/Store "
-                "Numba-CUDA-MLIR capability"
-            )
+        if self.execution_scope is SynchronizationScope.WARP:
+            resolved_threads = _validate_logical_warp_threads(resolved_threads)
+            resolved_block_threads = _normalize_block_threads(resolved_block_threads)
+            if resolved_block_threads % resolved_threads != 0:
+                raise ValueError(
+                    "warp-scoped provider width must divide the exact block "
+                    f"size; got width={resolved_threads} and "
+                    f"block_threads={resolved_block_threads}"
+                )
         compile_identity = self._bind_provider_compile_identity(compile_identity)
-        return resolved_threads, resolved_block_threads, compile_identity
+        return (
+            self.storage_abi.value,
+            self.execution_scope.value,
+            self.synchronization_scope.value,
+            resolved_threads,
+            resolved_block_threads,
+            compile_identity,
+        )
 
     def get_lto_ir(self, threads=None, block_threads=None, *, compile_identity=None):
         # With no explicit identity, re-query the current device even when an
@@ -1166,11 +1329,15 @@ class Algorithm:
 
         from ._compiler._artifacts import find_unsigned
 
-        abi_globals = {
-            symbol: find_unsigned(symbol, ptx) for symbol in temp_storage_symbols
-        }
-        self._temp_storage_bytes = abi_globals[temp_storage_symbols[0]]
-        self._temp_storage_alignment = abi_globals[temp_storage_symbols[1]]
+        if temp_storage_symbols:
+            abi_globals = {
+                symbol: find_unsigned(symbol, ptx) for symbol in temp_storage_symbols
+            }
+            self._temp_storage_bytes = abi_globals[temp_storage_symbols[0]]
+            self._temp_storage_alignment = abi_globals[temp_storage_symbols[1]]
+        else:
+            self._temp_storage_bytes = 0
+            self._temp_storage_alignment = 1
         self.__dict__["_lto_ir_cache_key"] = cache_key
         self.__dict__["_link_input_suffixes"] = [".ltoir"] * len(lto_irs)
         self.__dict__["lto_irs"] = lto_irs
@@ -1189,13 +1356,14 @@ class Algorithm:
                     self.mangled_name(method),
                 )
             )
-            overloads.append(
-                self.codegen_method(
-                    func_to_overload,
-                    method[1:],
-                    self.mangled_name(method) + "_alloc",
+            if self.storage_abi is StorageABI.LEADING_POINTER:
+                overloads.append(
+                    self.codegen_method(
+                        func_to_overload,
+                        method[1:],
+                        self.mangled_name(method) + "_alloc",
+                    )
                 )
-            )
         return tuple(overloads)
 
     def codegen_method(self, func_to_overload, method, mangled_name):
@@ -1380,6 +1548,9 @@ def algo_coalesce_key(algo, *, threads=None, block_threads=None):
         resolved_block_threads,
         getattr(algo, "fake_return", None),
         getattr(algo, "output_by_reference", None),
+        getattr(algo, "storage_abi", None),
+        getattr(algo, "execution_scope", None),
+        getattr(algo, "synchronization_scope", None),
         getattr(algo, "_compile_context", None),
         getattr(algo, "_provider_compile_identity", None),
     )
@@ -1521,9 +1692,7 @@ def prepare_ltoir_bundle(
 
     symbols = []
     for rep in reps:
-        bytes_symbol, alignment_symbol = rep_symbols[id(rep)]
-        symbols.append(bytes_symbol)
-        symbols.append(alignment_symbol)
+        symbols.extend(rep_symbols[id(rep)])
 
     from ._compiler._artifacts import find_unsigned, make_binary_tempfile
 
@@ -1533,10 +1702,15 @@ def prepare_ltoir_bundle(
 
     for algo in all_algos:
         rep = rep_for_algo_id[id(algo)]
-        bytes_symbol, alignment_symbol = rep_symbols[id(rep)]
+        storage_symbols = rep_symbols[id(rep)]
         extras = _collect_extra_ltoirs(algo)
-        algo._temp_storage_bytes = abi_globals[bytes_symbol]
-        algo._temp_storage_alignment = abi_globals[alignment_symbol]
+        if storage_symbols:
+            bytes_symbol, alignment_symbol = storage_symbols
+            algo._temp_storage_bytes = abi_globals[bytes_symbol]
+            algo._temp_storage_alignment = abi_globals[alignment_symbol]
+        else:
+            algo._temp_storage_bytes = 0
+            algo._temp_storage_alignment = 1
         algo._lto_irs = extras
         algo._precompiled_ltoir_files = (bundle_temp_file,)
         algo.__dict__["_lto_ir_cache_key"] = algo._make_lto_ir_cache_key(
@@ -1555,11 +1729,6 @@ def prepare_ltoir_bundle(
 def make_invocable_from_specialization(
     specialization: Algorithm, *, threads=None, block_threads=None
 ):
-    if specialization.struct_name.startswith("Warp"):
-        raise NotImplementedError(
-            "Warp provider lowering is not part of the Block Load/Store "
-            "Numba-CUDA-MLIR capability"
-        )
     if threads is not None:
         specialization.threads = threads
     if block_threads is not None:
@@ -1629,6 +1798,18 @@ class Invocable:
     @property
     def temp_storage_alignment(self):
         return self._temp_storage_alignment
+
+    @property
+    def storage_abi(self):
+        return self.specialization.storage_abi
+
+    @property
+    def execution_scope(self):
+        return self.specialization.execution_scope
+
+    @property
+    def synchronization_scope(self):
+        return self.specialization.synchronization_scope
 
     @property
     def files(self):

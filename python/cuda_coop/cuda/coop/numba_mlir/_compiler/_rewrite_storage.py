@@ -8,6 +8,9 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from cuda.coop._core import SynchronizationScope
+
+from ._operations import StorageABI
 from ._rewrite_support import (
     _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
     _GLOBAL_NAME_COUNTER,
@@ -33,7 +36,7 @@ from ._rewrite_support import (
 class _StorageRewrite:
     def _has_temp_storage_requirements(self) -> bool:
         implicit = getattr(self, "_implicit_temp_storage_requirements", None)
-        return bool(self._temp_storage_ctor_specs) or bool(
+        return bool(self._func_temp_storage_requirements) or bool(
             implicit is not None and implicit.uses
         )
 
@@ -338,8 +341,27 @@ class _StorageRewrite:
         return (sliced_var, plan)
 
     def _emit_temp_storage_auto_sync(
-        self, block: ir.Block, *, scope: ir.Scope, loc: ir.Loc, sync_attr: str
+        self,
+        block: ir.Block,
+        *,
+        scope: ir.Scope,
+        loc: ir.Loc,
+        synchronization_scope: SynchronizationScope,
     ) -> None:
+        synchronization_scope = SynchronizationScope(synchronization_scope)
+        sync_attr = {
+            SynchronizationScope.NONE: None,
+            SynchronizationScope.WARP: "syncwarp",
+            SynchronizationScope.BLOCK: "syncthreads",
+        }.get(synchronization_scope)
+        if sync_attr is None:
+            if synchronization_scope is SynchronizationScope.NONE:
+                return
+            raise CoopSinglePhaseRewriteError(
+                "cuda.coop.numba_mlir provider synchronization scope "
+                f"{SynchronizationScope(synchronization_scope).value!r} "
+                "has no emitter"
+            )
         sync_module_global_name = _next_global_name("temp_storage_sync_mod")
         sync_module_var = ir.Var(
             scope, f"__coop_sync_mod_var_{next(_GLOBAL_NAME_COUNTER)}__", loc
@@ -561,6 +583,7 @@ class _StorageRewrite:
                     match = _RewriteMatch(
                         op_name=op_name,
                         factory=target.factory,
+                        factory_metadata=target.factory_metadata,
                         func_var_name=target.func_var_name,
                         func_var_name_extra=target.func_var_name_extra,
                         runtime_args=runtime_args,
@@ -579,7 +602,8 @@ class _StorageRewrite:
                             runtime_temp_storage_var
                         )
                     )
-                    storage_uses.append((current_order, inst, match, ctor_key))
+                    if match.factory_metadata.storage_abi is StorageABI.LEADING_POINTER:
+                        storage_uses.append((current_order, inst, match, ctor_key))
             self._validate_temp_storage_uses(func_ir, matches_by_assign)
             self._prepare_ltoir_bundle_for_matches(all_matches)
             for source_order, inst, match, ctor_key in storage_uses:

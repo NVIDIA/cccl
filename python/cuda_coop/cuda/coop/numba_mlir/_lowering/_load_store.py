@@ -10,10 +10,14 @@ and launch facts.
 
 import operator
 
-from cuda.coop._core import ArgumentBinding, BindingKind
+from cuda.coop._core import ArgumentBinding, BindingKind, SynchronizationScope
 from cuda.coop._core.block import make_block_load_spec, make_block_store_spec
 
-from .._compiler._operations import register_factory
+from .._compiler._operations import (
+    StorageABI,
+    factory_operation,
+    register_factory,
+)
 from .._compiler._parameters import (
     _validate_common_numeric_dtype,
     _validate_static_oob_default,
@@ -65,6 +69,17 @@ def _resolve_algorithm(algorithm, enum_type, primitive_name: str) -> str:
     )
 
 
+def _registered_provider_metadata(factory):
+    registered = factory_operation(factory)
+    if registered is None:
+        raise RuntimeError(f"unregistered cuda.coop provider {factory!r}")
+    return {
+        "storage_abi": registered.storage_abi,
+        "execution_scope": registered.execution_scope,
+        "synchronization_scope": registered.synchronization_scope,
+    }
+
+
 def load(
     dtype,
     threads_per_block=None,
@@ -110,6 +125,7 @@ def load(
     )
     specialization = adapter.materialize(
         core_spec.specialization,
+        **_registered_provider_metadata(load),
         extra_type_definitions=(numba_type_to_wrapper(dtype),),
     )
     return make_invocable_from_specialization(specialization)
@@ -153,11 +169,19 @@ def store(
     )
     specialization = adapter.materialize(
         core_spec.specialization,
+        **_registered_provider_metadata(store),
         extra_type_definitions=(numba_type_to_wrapper(dtype),),
     )
     return make_invocable_from_specialization(specialization)
 
 
 for _factory in (load, store):
-    register_factory(_factory, operation=_factory.__name__, namespace="block")
+    register_factory(
+        _factory,
+        operation=_factory.__name__,
+        namespace="block",
+        storage_abi=StorageABI.LEADING_POINTER,
+        execution_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.BLOCK,
+    )
 del _factory

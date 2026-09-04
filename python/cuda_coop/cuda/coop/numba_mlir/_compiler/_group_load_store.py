@@ -443,13 +443,14 @@ _COMMON_REWRITE_KWARGS = frozenset(
 register_rewrite_operation(
     "load",
     RewriteOperationSpec(
-        namespace="block",
+        factory_namespaces=frozenset({"block"}),
+        dtype_factory_kwargs=frozenset({"dtype"}),
         runtime_arg_counts=frozenset({2, 3, 4}),
         runtime_factory_kwargs=("num_valid_items", "oob_default"),
         runtime_factory_kw_prerequisites=(("oob_default", "num_valid_items"),),
         allowed_factory_kwargs=_COMMON_REWRITE_KWARGS | {"oob_default"},
         required_factory_kwargs=frozenset({"threads_per_block", "dtype"}),
-        runtime_temp_storage=True,
+        accepts_temp_storage=True,
         scalar_binding_kwargs=frozenset({"num_valid_items", "oob_default"}),
         runtime_offset_kwarg="offset",
         infer_payload=infer_load_store_payload,
@@ -461,13 +462,14 @@ register_rewrite_operation(
 register_rewrite_operation(
     "store",
     RewriteOperationSpec(
-        namespace="block",
+        factory_namespaces=frozenset({"block"}),
+        dtype_factory_kwargs=frozenset({"dtype"}),
         runtime_arg_counts=frozenset({2, 3}),
         runtime_factory_kwargs=("num_valid_items",),
         runtime_factory_kw_prerequisites=(),
         allowed_factory_kwargs=_COMMON_REWRITE_KWARGS | {"_group_root_store"},
         required_factory_kwargs=frozenset({"threads_per_block", "dtype"}),
-        runtime_temp_storage=True,
+        accepts_temp_storage=True,
         scalar_binding_kwargs=frozenset({"num_valid_items"}),
         runtime_offset_kwarg="offset",
         infer_payload=infer_load_store_payload,

@@ -202,8 +202,7 @@ class _ProvenanceRewrite:
         spec = rewrite_operation(metadata.operation)
         if spec is None:
             return False
-        expected_ns = spec.namespace
-        return metadata.namespace == expected_ns
+        return metadata.namespace in spec.factory_namespaces
 
     def _resolve_factory_from_var(self, func_var):
         direct = None
@@ -1232,7 +1231,14 @@ class _ProvenanceRewrite:
             return self._resolve_var_dtype(value_ref)
         return None
 
-    def _resolve_factory_kwarg_value(self, name: str, value_ref):
+    def _resolve_factory_kwarg_value(self, op_name: str, name: str, value_ref):
+        from ._operations import rewrite_operation
+
+        spec = rewrite_operation(op_name)
+        if spec is not None and name in spec.dtype_factory_kwargs:
+            dtype = self._resolve_dtype_ref(value_ref)
+            if dtype is not None:
+                return dtype
         try:
             return self._infer_constant(value_ref)
         except _INFERENCE_EXCEPTIONS:
@@ -1249,12 +1255,6 @@ class _ProvenanceRewrite:
                 and value_type.value is None
             ):
                 return None
-        if name in {
-            "dtype",
-        }:
-            dtype = self._resolve_dtype_ref(value_ref)
-            if dtype is not None:
-                return dtype
         return _UNRESOLVED
 
     def _resolve_call_target(self, call: ir.Expr):
@@ -1264,7 +1264,7 @@ class _ProvenanceRewrite:
             assert metadata is not None
             return _ResolvedCallTarget(
                 factory=factory,
-                operation=metadata.operation,
+                factory_metadata=metadata,
                 func_var_name=call.func.name,
                 func_var_name_extra=None,
                 getitem_temp_storage=None,
@@ -1289,7 +1289,7 @@ class _ProvenanceRewrite:
             )
         return _ResolvedCallTarget(
             factory=factory,
-            operation=metadata.operation,
+            factory_metadata=metadata,
             func_var_name=call.func.name,
             func_var_name_extra=func_def.value.name,
             getitem_temp_storage=getitem_temp_storage,
