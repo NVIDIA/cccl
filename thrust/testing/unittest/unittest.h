@@ -17,6 +17,8 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
@@ -316,6 +318,28 @@ public:
 
 #undef DEFINE_OPERATOR
 
+  // Mixed comparisons against int. Because custom_numeric is implicitly convertible to bool, the built-in integer
+  // comparison operators would otherwise compete with the homogeneous ones above and make comparisons against integer
+  // literals (e.g. ASSERT_EQUAL(0, some_custom_numeric)) ambiguous. Providing exact int overloads resolves this.
+#define DEFINE_OPERATOR(op)                                                     \
+  _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, int rhs) \
+  {                                                                             \
+    return lhs.value[0] op rhs;                                                 \
+  }                                                                             \
+  _CCCL_HOST_DEVICE friend bool operator op(int lhs, const custom_numeric& rhs) \
+  {                                                                             \
+    return lhs op rhs.value[0];                                                 \
+  }
+
+  DEFINE_OPERATOR(==)
+  DEFINE_OPERATOR(!=)
+  DEFINE_OPERATOR(<)
+  DEFINE_OPERATOR(<=)
+  DEFINE_OPERATOR(>)
+  DEFINE_OPERATOR(>=)
+
+#undef DEFINE_OPERATOR
+
   friend std::ostream& operator<<(std::ostream& os, const custom_numeric& val)
   {
     return os << "custom_numeric{" << val.value[0] << "}";
@@ -607,11 +631,21 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
 #define ASSERT_GEQUAL(X, Y)          REQUIRE((X) >= (Y))
 #define ASSERT_LESS(X, Y)            REQUIRE((X) < (Y))
 #define ASSERT_GREATER(X, Y)         REQUIRE((X) > (Y))
-#define ASSERT_ALMOST_EQUAL(X, Y)                                                \
-  {                                                                              \
-    auto vec_ref = ::unittest::detail::to_approx(::unittest::detail::to_vec(X)); \
-    auto vec_out = ::unittest::detail::to_approx(::unittest::detail::to_vec(Y)); \
-    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out));                     \
+#define ASSERT_ALMOST_EQUAL(X, Y)                                                                                     \
+  {                                                                                                                   \
+    const auto vec_ref = ::unittest::detail::to_approx(::unittest::detail::to_vec(X));                                \
+    const auto vec_out = ::unittest::detail::to_approx(::unittest::detail::to_vec(Y));                                \
+    REQUIRE(vec_ref.size() == vec_out.size());                                                                        \
+    for (std::size_t i = 0; i < vec_ref.size(); ++i)                                                                  \
+    {                                                                                                                 \
+      const double a_ = static_cast<double>(vec_ref[i]);                                                              \
+      const double b_ = static_cast<double>(vec_out[i]);                                                              \
+      INFO("element " << i << ": " << a_ << " vs " << b_);                                                            \
+      /* Legacy tolerance test: not-equal only if the difference exceeds absolute + relative tolerance. Written as */ \
+      /* !(diff > tol) rather than (diff <= tol) so that NaN compares equal to NaN, matching the old framework and */ \
+      /* letting degenerate complex results (e.g. complex_plane(0) == NaN) pass. */                                   \
+      REQUIRE_FALSE(std::abs(a_ - b_) > 1e-4 * (std::abs(a_) + std::abs(b_)) + 1e-4);                                 \
+    }                                                                                                                 \
   }
 
 #define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) REQUIRE_THROWS_AS(EXPR, EXCEPTION_TYPE)
