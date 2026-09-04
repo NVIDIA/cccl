@@ -4,22 +4,35 @@
 
 """Stateful device-callable descriptor for qualified cooperative Scan."""
 
-from typing import Generic
+from collections.abc import Callable
+from typing import Generic, Protocol
 
 from typing_extensions import TypeVar
 
-_OpT = TypeVar("_OpT")
+from .._typing import PortableNumericScalar, ThreadDataLike
 
-class StatefulFunction(Generic[_OpT]):
+_StateT = TypeVar("_StateT", bound=PortableNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+
+class _StatefulFunctor(Protocol[_ValueT]):
+    def __call__(self, block_aggregate: _ValueT, /) -> _ValueT: ...
+
+class StatefulFunction(Generic[_StateT, _ValueT]):
     """Pair a device callable with its one-item state dtype."""
 
-    op: _OpT
+    op: (
+        Callable[[ThreadDataLike[_StateT], _ValueT], _ValueT]
+        | type[_StatefulFunctor[_ValueT]]
+    )
     dtype: object
     name: str | None
 
     def __init__(
         self,
-        op: _OpT,
+        op: (
+            Callable[[ThreadDataLike[_StateT], _ValueT], _ValueT]
+            | type[_StatefulFunctor[_ValueT]]
+        ),
         dtype: object,
         name: str | None = None,
     ) -> None: ...
