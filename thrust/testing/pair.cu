@@ -84,141 +84,141 @@ struct TestPairComparison
 
     // test operator ==
     x.first = x.second = y.first = y.second = T(0);
-    REQUIRE(x == y);
-    REQUIRE(y == x);
+    ASSERT_EQUAL(true, x == y);
+    ASSERT_EQUAL(true, y == x);
 
     x.first = y.first = y.second = T(0);
     x.second                     = T(1);
-    REQUIRE_FALSE(x == y);
-    REQUIRE_FALSE(y == x);
+    ASSERT_EQUAL(false, x == y);
+    ASSERT_EQUAL(false, y == x);
 
     // test operator<
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(0);
-    REQUIRE_FALSE(x < y);
-    REQUIRE_FALSE(y < x);
+    ASSERT_EQUAL(false, x < y);
+    ASSERT_EQUAL(false, y < x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(2);
     y.second = T(3);
-    REQUIRE(x < y);
-    REQUIRE_FALSE(y < x);
+    ASSERT_EQUAL(true, x < y);
+    ASSERT_EQUAL(false, y < x);
 
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(1);
-    REQUIRE(x < y);
-    REQUIRE_FALSE(y < x);
+    ASSERT_EQUAL(true, x < y);
+    ASSERT_EQUAL(false, y < x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(2);
-    REQUIRE(x < y);
-    REQUIRE_FALSE(y < x);
+    ASSERT_EQUAL(true, x < y);
+    ASSERT_EQUAL(false, y < x);
 
     // test operator!=
     x.first = y.first = y.second = T(0);
     x.second                     = T(1);
-    REQUIRE(x != y);
-    REQUIRE(y != x);
+    ASSERT_EQUAL(true, x != y);
+    ASSERT_EQUAL(true, y != x);
 
     x.first = x.second = y.first = y.second = T(0);
-    REQUIRE_FALSE(x != y);
-    REQUIRE_FALSE(y != x);
+    ASSERT_EQUAL(false, x != y);
+    ASSERT_EQUAL(false, y != x);
 
     // test operator>
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(0);
-    REQUIRE_FALSE(x > y);
-    REQUIRE_FALSE(y > x);
+    ASSERT_EQUAL(false, x > y);
+    ASSERT_EQUAL(false, y > x);
 
     x.first  = T(2);
     x.second = T(3);
     y.first  = T(0);
     y.second = T(1);
-    REQUIRE(x > y);
-    REQUIRE_FALSE(y > x);
+    ASSERT_EQUAL(true, x > y);
+    ASSERT_EQUAL(false, y > x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(0);
-    REQUIRE(x > y);
-    REQUIRE_FALSE(y > x);
+    ASSERT_EQUAL(true, x > y);
+    ASSERT_EQUAL(false, y > x);
 
     x.first  = T(0);
     x.second = T(2);
     y.first  = T(0);
     y.second = T(1);
-    REQUIRE(x > y);
-    REQUIRE_FALSE(y > x);
+    ASSERT_EQUAL(true, x > y);
+    ASSERT_EQUAL(false, y > x);
 
     // test operator <=
     x.first = x.second = y.first = y.second = T(0);
-    REQUIRE(x <= y);
-    REQUIRE(y <= x);
+    ASSERT_EQUAL(true, x <= y);
+    ASSERT_EQUAL(true, y <= x);
 
     x.first = y.first = y.second = T(0);
     x.second                     = T(1);
-    REQUIRE_FALSE(x <= y);
+    ASSERT_EQUAL(false, x <= y);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(2);
     y.second = T(3);
-    REQUIRE(x <= y);
-    REQUIRE_FALSE(y <= x);
+    ASSERT_EQUAL(true, x <= y);
+    ASSERT_EQUAL(false, y <= x);
 
     x.first  = T(0);
     x.second = T(0);
     y.first  = T(0);
     y.second = T(1);
-    REQUIRE(x <= y);
-    REQUIRE_FALSE(y <= x);
+    ASSERT_EQUAL(true, x <= y);
+    ASSERT_EQUAL(false, y <= x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(2);
-    REQUIRE(x <= y);
-    REQUIRE_FALSE(y <= x);
+    ASSERT_EQUAL(true, x <= y);
+    ASSERT_EQUAL(false, y <= x);
 
     // test operator >=
     x.first = x.second = y.first = y.second = T(0);
-    REQUIRE(x >= y);
-    REQUIRE(y >= x);
+    ASSERT_EQUAL(true, x >= y);
+    ASSERT_EQUAL(true, y >= x);
 
     x.first = x.second = y.first = T(0);
     y.second                     = T(1);
-    REQUIRE_FALSE(x >= y);
+    ASSERT_EQUAL(false, x >= y);
 
     x.first  = T(2);
     x.second = T(3);
     y.first  = T(0);
     y.second = T(1);
-    REQUIRE(x >= y);
-    REQUIRE_FALSE(y >= x);
+    ASSERT_EQUAL(true, x >= y);
+    ASSERT_EQUAL(false, y >= x);
 
     x.first  = T(0);
     x.second = T(1);
     y.first  = T(0);
     y.second = T(0);
-    REQUIRE(x >= y);
-    REQUIRE_FALSE(y >= x);
+    ASSERT_EQUAL(true, x >= y);
+    ASSERT_EQUAL(false, y >= x);
 
     x.first  = T(0);
     x.second = T(2);
     y.first  = T(0);
     y.second = T(1);
-    REQUIRE(x >= y);
-    REQUIRE_FALSE(y >= x);
+    ASSERT_EQUAL(true, x >= y);
+    ASSERT_EQUAL(false, y >= x);
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairComparison, NumericTypes);
