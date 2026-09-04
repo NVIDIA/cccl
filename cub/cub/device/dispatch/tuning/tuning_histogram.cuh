@@ -505,7 +505,7 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          is_even ? 8192 : 4096,
+          8192,
           1,
           262144,
           4,
