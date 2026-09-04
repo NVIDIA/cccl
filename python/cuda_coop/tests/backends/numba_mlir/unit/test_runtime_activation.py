@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import ast
 import os
 import subprocess
 import sys
@@ -100,6 +101,7 @@ def _fake_compat_modules():
             _OverloadFunctionTemplate=overload_base,
             make_overload_template=make_overload_template,
         ),
+        "numba_cuda_mlir.numbair_transforms": SimpleNamespace(ir=object()),
     }
 
 
@@ -367,6 +369,7 @@ def test_compat_accepts_public_0_5_capabilities_without_refresh(monkeypatch):
     )
 
     assert compat.version == "0.5.99"
+    assert compat.numba_ir is modules["numba_cuda_mlir.numbair_transforms"].ir
     snapshot = compat.snapshot_registrations()
     assert snapshot.planners == ()
     assert snapshot.rewrites["before-inference"] == ()
@@ -484,6 +487,12 @@ def test_compat_rejects_unsupported_runtime_series(version):
             "incomplete-runtime-hook-api",
         ),
         (
+            "numba_cuda_mlir.numbair_transforms",
+            "ir",
+            None,
+            "incomplete-runtime-hook-api",
+        ),
+        (
             "numba_cuda_mlir._whole_function_planners",
             "_planner_registry",
             SimpleNamespace(_lock=RLock(), _planners=()),
@@ -510,6 +519,36 @@ def test_compat_rejects_malformed_private_0_5_shapes(
         _numba_mlir_compat._load_numba_mlir_compat(SimpleNamespace(__version__="0.5.1"))
 
     assert exc_info.value.reason_code == reason_code
+
+
+def test_private_compiler_imports_are_confined_to_compatibility_shim():
+    backend_root = PACKAGE_ROOT / "cuda" / "coop" / "numba_mlir"
+    compat_path = backend_root / "_compiler" / "_numba_mlir_compat.py"
+    private_prefixes = (
+        "numba_cuda_mlir._mlir",
+        "numba_cuda_mlir._whole_function_planners",
+        "numba_cuda_mlir.numba_cuda",
+        "numba_cuda_mlir.numbair_transforms",
+    )
+    violations = []
+
+    for source in backend_root.rglob("*.py"):
+        if source == compat_path:
+            continue
+        module = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+        for node in ast.walk(module):
+            imported = []
+            if isinstance(node, ast.Import):
+                imported = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module is not None:
+                imported = [node.module]
+            for name in imported:
+                if name.startswith(private_prefixes):
+                    violations.append(
+                        f"{source.relative_to(PACKAGE_ROOT)}:{node.lineno}:{name}"
+                    )
+
+    assert violations == []
 
 
 def test_qualified_import_rejects_unsupported_runtime_series():
