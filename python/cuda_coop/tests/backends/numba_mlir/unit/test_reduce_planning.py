@@ -105,6 +105,7 @@ def _match_before_inference(func_ir, *, arg_types):
             state.calltypes,
         )
     assert matched
+    return rewrite
 
 
 def test_reduce_registers_scalar_result_and_all_provider_abis():
@@ -365,6 +366,68 @@ def test_direct_cub_reduce_selects_operation_and_scope(
         assert "value_kind" not in dict(call.kws)
     valid_name = "num_valid" if kind == "block" else "valid_items"
     assert _kwarg_value(func_ir, call, valid_name).value == 7
+
+
+@pytest.mark.parametrize("fallback", ("valid-prefix", "custom-operator"))
+def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._lowering import _reduce
+
+    descriptor = coop.this_warp().group_by(8, exhaustive=False)
+
+    def callback(lhs, rhs):
+        return lhs + rhs
+
+    if fallback == "valid-prefix":
+
+        def kernel(value):
+            return coop.sum(
+                descriptor,
+                value,
+                broadcast=False,
+                valid_items=5,
+            )
+
+    else:
+
+        def kernel(value):
+            return coop.reduce(
+                descriptor,
+                value,
+                binary_op=callback,
+                broadcast=False,
+            )
+
+    func_ir, planner = _plan(kernel, arg_types=(types.int32,))
+    assert planner.run()
+    provider = _reduce.warp_sum if fallback == "valid-prefix" else _reduce.warp_reduce
+    assert len(_provider_call(func_ir, provider).args) == 1
+    rewrite = _match_before_inference(func_ir, arg_types=(types.int32,))
+
+    requirements = rewrite._implicit_temp_storage_requirements
+    assert len(requirements.uses) == 1
+    lowering_plan = requirements.uses[0].lowering_plan
+    assert lowering_plan.resolved_group.complete_membership is True
+    assert lowering_plan.topology.instance_index == "linear_thread_rank / 8"
+    assert lowering_plan.topology.thread_rank == "linear_thread_rank % 8"
+    assert lowering_plan.temp_storage.instances == 8
+    assert lowering_plan.temp_storage.instance_index == "linear_thread_rank / 8"
+    assert (
+        requirements.uses[0].lowering_plan.synchronization.storage_reuse_barrier
+        is SynchronizationScope.WARP
+    )
+
+    storage_plan = rewrite._ensure_temp_storage_global_plan()
+    implicit_plan = rewrite._implicit_temp_storage_plan
+    assert storage_plan.total_size == 8 * 64
+    assert implicit_plan.size_in_bytes == 8 * 64
+    assert implicit_plan.alignment == 16
+    storage_slice = next(iter(implicit_plan.slices_by_call_id.values()))
+    assert storage_slice.instances == 8
+    assert storage_slice.stride == 64
 
 
 def test_runtime_valid_items_is_checked_before_an_int64_provider_cast():
