@@ -314,8 +314,7 @@ def _plan_load_store(
     contracts = _contracts(
         resolved,
         launch,
-        operation,
-        visibility=ResultVisibility.PER_MEMBER,
+        result=None,
         storage_ownership=operation.storage_ownership,
         cpp_type=None,
         storage_sharing=operation.storage_sharing,
@@ -364,15 +363,15 @@ def _plan_load_store(
                 else ()
             ),
         ),
-        returns_value=False,
     )
     return GroupLoweringPlan(
         target=target,
         call=call,
         resolved_group=resolved,
         implementation=spec,
-        participation=contracts[0],
-        result=contracts[1],
+        topology=contracts[0],
+        participation=contracts[1],
+        result=None,
         synchronization=contracts[2],
         temp_storage=contracts[3],
         provenance=ImplementationProvenance(
