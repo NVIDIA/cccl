@@ -10,6 +10,8 @@ ordering remain in the rewrite orchestrator.
 
 from enum import Enum
 
+from cuda.coop._core import StorageOwnership, SynchronizationScope
+
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
 from ._rewrite_support import (
@@ -757,6 +759,108 @@ class _ProvenanceRewrite:
             self._ensure_temp_storage_global_plan()
         return self._finalize_temp_storage_plan_for_var(key)
 
+    @staticmethod
+    def _temp_storage_domain_key(
+        entry,
+    ) -> tuple[object, ...]:
+        lowering_plan = entry.lowering_plan
+        if lowering_plan is None:
+            return ("legacy-provider",)
+        if lowering_plan.unsupported is not None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage received an unsupported "
+                "group lowering plan."
+            )
+        topology = lowering_plan.topology
+        synchronization = lowering_plan.synchronization
+        storage = lowering_plan.temp_storage
+        if topology is None or synchronization is None or storage is None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage requires complete group "
+                "topology, synchronization, and storage contracts."
+            )
+        if storage.ownership is StorageOwnership.NONE:
+            raise CoopSinglePhaseRewriteError(
+                "a storage-bearing cooperative provider received a "
+                "storage-free lowering plan."
+            )
+        if storage.instances != topology.instances or (
+            storage.instance_index != topology.instance_index
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage layout disagrees with its group topology."
+            )
+        if storage.ownership is StorageOwnership.CALLER:
+            # Explicit single-block storage keeps the established caller-owned
+            # reuse layout. Topology domains apply only to implementation-owned
+            # storage, where the backend controls every slice.
+            return ("caller-storage",)
+        domain = (
+            topology.group_kind,
+            topology.execution_scope.value,
+            topology.logical_width,
+            topology.instances,
+            topology.instance_index,
+            topology.thread_rank,
+            synchronization.storage_reuse_barrier.value,
+        )
+        if (
+            synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+            and topology.execution_scope is not SynchronizationScope.NONE
+        ):
+            return (*domain, "non-reusable", entry.order)
+        return domain
+
+    def _layout_temp_storage_uses(
+        self,
+        uses,
+        *,
+        sharing: str,
+    ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
+        ordered_uses = sorted(uses, key=lambda entry: entry.order)
+        required_alignment = max(
+            _MIN_TEMP_STORAGE_ALIGNMENT,
+            *(max(1, int(entry.alignment)) for entry in ordered_uses),
+        )
+        domains: dict[tuple[object, ...], list[object]] = {}
+        for entry in ordered_uses:
+            domain_key = (
+                ("exclusive", entry.order)
+                if sharing == "exclusive"
+                else self._temp_storage_domain_key(entry)
+            )
+            domains.setdefault(domain_key, []).append(entry)
+
+        required_size = 0
+        slices_by_call_id: dict[int, _TempStorageSlice] = {}
+        for domain_uses in domains.values():
+            domain_alignment = max(
+                _MIN_TEMP_STORAGE_ALIGNMENT,
+                *(max(1, int(entry.alignment)) for entry in domain_uses),
+            )
+            per_instance_size = max(int(entry.size_in_bytes) for entry in domain_uses)
+            instance_stride = _align_up(per_instance_size, domain_alignment)
+            first_plan = domain_uses[0].lowering_plan
+            instances = (
+                1
+                if first_plan is None or first_plan.topology is None
+                else first_plan.topology.instances
+            )
+            required_size = _align_up(required_size, domain_alignment)
+            domain_offset = required_size
+            for entry in domain_uses:
+                slices_by_call_id[id(entry.call_assign)] = _TempStorageSlice(
+                    offset=domain_offset,
+                    size_in_bytes=int(entry.size_in_bytes),
+                    stride=instance_stride,
+                    instances=instances,
+                    lowering_plan=entry.lowering_plan,
+                )
+            required_size += (
+                per_instance_size if instances == 1 else instance_stride * instances
+            )
+        return required_size, required_alignment, slices_by_call_id
+
     def _finalize_temp_storage_plan_for_var(self, var_name: str) -> _TempStoragePlan:
         var_name = self._canonical_temp_storage_ctor_key(var_name)
         cached = self._temp_storage_plans.get(var_name)
@@ -770,26 +874,21 @@ class _ProvenanceRewrite:
         requirements = self._func_temp_storage_requirements.get(var_name)
         uses = list(requirements.uses) if requirements is not None else []
         uses.sort(key=lambda entry: entry.order)
-        required_alignment = (
-            max(_MIN_TEMP_STORAGE_ALIGNMENT, *(entry.alignment for entry in uses))
-            if uses
-            else max(_MIN_TEMP_STORAGE_ALIGNMENT, int(ctor_spec.alignment or 1))
-        )
-        slices_by_call_id: dict[int, _TempStorageSlice] = {}
-        if ctor_spec.sharing == "shared":
-            required_size = max((entry.size_in_bytes for entry in uses), default=0)
-            for entry in uses:
-                slices_by_call_id[id(entry.call_assign)] = _TempStorageSlice(
-                    offset=0, size_in_bytes=entry.size_in_bytes
-                )
+        if uses:
+            (
+                required_size,
+                required_alignment,
+                slices_by_call_id,
+            ) = self._layout_temp_storage_uses(
+                uses,
+                sharing=ctor_spec.sharing,
+            )
         else:
             required_size = 0
-            for entry in uses:
-                required_size = _align_up(required_size, max(1, int(entry.alignment)))
-                slices_by_call_id[id(entry.call_assign)] = _TempStorageSlice(
-                    offset=required_size, size_in_bytes=entry.size_in_bytes
-                )
-                required_size += entry.size_in_bytes
+            required_alignment = max(
+                _MIN_TEMP_STORAGE_ALIGNMENT, int(ctor_spec.alignment or 1)
+            )
+            slices_by_call_id = {}
         if ctor_spec.size_in_bytes is None:
             if required_size <= 0:
                 raise CoopSinglePhaseRewriteError(

@@ -183,14 +183,12 @@ def _contracts(
             cpp_type=cpp_type,
             instances=(
                 None
-                if storage_ownership
-                in {StorageOwnership.NONE, StorageOwnership.IMPLEMENTATION}
+                if storage_ownership is StorageOwnership.NONE
                 else topology.instances
             ),
             instance_index=(
                 None
-                if storage_ownership
-                in {StorageOwnership.NONE, StorageOwnership.IMPLEMENTATION}
+                if storage_ownership is StorageOwnership.NONE
                 else topology.instance_index
             ),
             exact_layout_required=storage_ownership is StorageOwnership.CALLER,
