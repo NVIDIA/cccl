@@ -32,6 +32,7 @@ from .._compiler._operations import (
 )
 from .._compiler._parameters import (
     _validate_common_numeric_dtype,
+    coerce_static_scalar,
     make_typed_cpp_literal,
     normalize_dim_param,
     normalize_dtype_param,
@@ -185,8 +186,14 @@ def _initial_value(binding: Any, dtype: Any) -> Any:
         return None
     if binding.kind is BindingKind.RUNTIME:
         return Reference(Dependency("T"), name="initial_value")
+    value = coerce_static_scalar(
+        binding.value,
+        dtype,
+        operation="scan",
+        parameter="initial_value",
+    )
     return CxxFunction(
-        make_typed_cpp_literal(binding.value, dtype),
+        make_typed_cpp_literal(value, dtype),
         Dependency("T"),
         name="initial_value",
     )
