@@ -17,7 +17,6 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <cstdio>
 #include <cstdlib>
 #include <iosfwd>
 #include <limits>
@@ -296,6 +295,7 @@ public:
   DEFINE_OPERATOR(^)
 
 #undef DEFINE_OPERATOR
+#undef CONCAT
 
 #define DEFINE_OPERATOR(op)                                                                       \
   _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
@@ -624,8 +624,6 @@ using type_list = ::cuda::std::__type_list<Ts...>;
 // define some common lists of types
 using ThirtyTwoBitTypes = unittest::type_list<int, unsigned int, float>;
 
-using SixtyFourBitTypes = unittest::type_list<long long, unsigned long long, double>;
-
 using IntegralTypes = unittest::type_list<
   char,
   signed char,
@@ -644,11 +642,7 @@ using SignedIntegralTypes = unittest::type_list<signed char, short, int, long, l
 using UnsignedIntegralTypes =
   unittest::type_list<unsigned char, unsigned short, unsigned int, unsigned long, unsigned long long>;
 
-using ByteTypes = unittest::type_list<char, signed char, unsigned char>;
-
 using SmallIntegralTypes = unittest::type_list<char, signed char, unsigned char, short, unsigned short>;
-
-using LargeIntegralTypes = unittest::type_list<long long, unsigned long long>;
 
 using FloatingPointTypes = unittest::type_list<float, double>;
 
@@ -790,16 +784,6 @@ inline const std::vector<size_t>& get_test_sizes()
     TEST<float>();                                \
   }
 
-// Macro to create instances of a test for several array sizes.
-#define DECLARE_SIZED_UNITTEST(TEST)              \
-  TEST_CASE(#TEST, THRUST_PP_STRINGIZE(__FILE__)) \
-  {                                               \
-    for (size_t s : get_test_sizes())             \
-    {                                             \
-      TEST(s);                                    \
-    }                                             \
-  }
-
 namespace unittest::detail
 {
 template <template <typename> typename TestFunc, template <typename...> typename L, typename... Ts, typename... Args>
@@ -873,9 +857,6 @@ void invoke_vector_unittest(L<Ts...>)
   {                                                       \
     unittest::detail::for_each_type<TEST>(__VA_ARGS__{}); \
   }
-
-#define DECLARE_VECTOR_UNITTEST_WITH_TYPES(TEST, TYPES, VECTOR, ALLOC) \
-  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, VECTOR, ALLOC, TEST)
 
 namespace unittest
 {
