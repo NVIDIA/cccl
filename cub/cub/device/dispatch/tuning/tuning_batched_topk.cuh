@@ -1546,13 +1546,10 @@ static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(65536, 204
 static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(131072, 512)));
 static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(131072, 1024)));
 
-//! SM 103 cluster sub-policies for keys-only top-k under the non-deterministic requirement (F32 keys). Buckets
-//! transfer proven winners instead of a dedicated B300 keys search: buckets marked "sm103 pairs" carry the same-chip
-//! pairs winner (the B200 keys campaign showed pairs tunings transfer to keys at these shapes), buckets marked
-//! "B200 keys" carry the B200 keys winner (at these shapes B200 needed a dedicated keys search, so the request shape
-//! outweighs the chip). Shapes without a bucket keep the default policy: below the 8K crossover the baseline backend
-//! runs anyway, and at the shapes left out neither donor campaign produced a config that beat the default without
-//! regressing somewhere.
+//! SM 103 cluster sub-policies for keys-only top-k under the non-deterministic requirement (F32 keys).
+//! Buckets marked "sm103 pairs" or "B200 keys" were transferred from the corresponding campaign and verified on B300.
+//! Buckets marked "B300 keys" come from a dedicated keys search. Shapes without an accepted candidate keep the
+//! default policy; below the 8K crossover the baseline backend runs.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
   -> cluster_topk_policy
@@ -1569,43 +1566,43 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
     return make_cluster_policy();
   }
 
-  if (static_max_segment_size <= 8 * 1024) // 8192, all three sm103 pairs
+  if (static_max_segment_size <= 8 * 1024) // 8192
   {
-    if (max_k <= 512)
+    if (max_k <= 512) // B300 keys
+    {
+      return cluster_topk_policy{
+        /*threads_per_block=*/480,
+        /*min_blocks_per_sm=*/1,
+        /*min_chunks_per_block=*/1,
+        /*chunk_bytes=*/27 * 1024,
+        /*load_align_bytes=*/16,
+        /*pipeline_stages=*/7,
+        /*single_block_max_seg_size=*/8 * 1024,
+        /*bits_per_pass=*/11,
+        /*histogram_items_per_thread=*/7,
+        /*tie_break_items_per_thread=*/6,
+        /*copy_items_per_thread=*/16,
+        /*max_blocks_per_cluster=*/0,
+        /*max_chunk_slots_per_block=*/0};
+    }
+    else if (max_k <= 1024) // B300 keys
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
         /*min_blocks_per_sm=*/1,
         /*min_chunks_per_block=*/1,
-        /*chunk_bytes=*/23 * 1024,
+        /*chunk_bytes=*/16 * 1024,
         /*load_align_bytes=*/16,
-        /*pipeline_stages=*/4,
-        /*single_block_max_seg_size=*/8 * 1024,
-        /*bits_per_pass=*/8,
-        /*histogram_items_per_thread=*/8,
-        /*tie_break_items_per_thread=*/2,
-        /*copy_items_per_thread=*/13,
-        /*max_blocks_per_cluster=*/0,
-        /*max_chunk_slots_per_block=*/0};
-    }
-    else if (max_k <= 1024)
-    {
-      return cluster_topk_policy{
-        /*threads_per_block=*/512,
-        /*min_blocks_per_sm=*/2,
-        /*min_chunks_per_block=*/1,
-        /*chunk_bytes=*/17 * 1024,
-        /*load_align_bytes=*/16,
-        /*pipeline_stages=*/8,
+        /*pipeline_stages=*/5,
         /*single_block_max_seg_size=*/8 * 1024,
         /*bits_per_pass=*/11,
-        /*histogram_items_per_thread=*/5,
-        /*tie_break_items_per_thread=*/4,
-        /*copy_items_per_thread=*/7,
+        /*histogram_items_per_thread=*/7,
+        /*tie_break_items_per_thread=*/23,
+        /*copy_items_per_thread=*/12,
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
-    else if (max_k <= 2048)
+    else if (max_k <= 2048) // sm103 pairs
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -1683,20 +1680,20 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
 
   if (static_max_segment_size <= 32 * 1024) // 32768
   {
-    if (max_k <= 512) // sm103 pairs
+    if (max_k <= 512) // B300 keys
     {
       return cluster_topk_policy{
-        /*threads_per_block=*/320,
+        /*threads_per_block=*/352,
         /*min_blocks_per_sm=*/1,
         /*min_chunks_per_block=*/1,
-        /*chunk_bytes=*/9 * 1024,
-        /*load_align_bytes=*/16,
-        /*pipeline_stages=*/6,
+        /*chunk_bytes=*/13 * 1024,
+        /*load_align_bytes=*/32,
+        /*pipeline_stages=*/2,
         /*single_block_max_seg_size=*/8 * 1024,
         /*bits_per_pass=*/8,
-        /*histogram_items_per_thread=*/5,
-        /*tie_break_items_per_thread=*/3,
-        /*copy_items_per_thread=*/8,
+        /*histogram_items_per_thread=*/3,
+        /*tie_break_items_per_thread=*/14,
+        /*copy_items_per_thread=*/23,
         /*max_blocks_per_cluster=*/0,
         /*max_chunk_slots_per_block=*/0};
     }
