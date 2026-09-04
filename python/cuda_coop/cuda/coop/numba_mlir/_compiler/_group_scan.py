@@ -218,18 +218,11 @@ class _ScanPlanning:
         Any | None,
     ]:
         prefix_ref = bound.arguments.get("prefix_op")
-        legacy_ref = bound.arguments.get("block_prefix_callback_op")
         has_prefix = not self._context.is_none(prefix_ref)
-        has_legacy = not self._context.is_none(legacy_ref)
-        if has_prefix and has_legacy:
-            raise ValueError(
-                "cuda.coop.numba_mlir scan prefix_op and "
-                "block_prefix_callback_op are mutually exclusive"
-            )
 
         state = bound.arguments.get("prefix_state")
         has_state = not self._context.is_none(state)
-        if not has_prefix and not has_legacy:
+        if not has_prefix:
             if has_state:
                 raise ValueError(
                     "cuda.coop.numba_mlir scan prefix_state requires a prefix callback"
@@ -240,8 +233,7 @@ class _ScanPlanning:
                 "cuda.coop.numba_mlir scan prefix callbacks apply only to block groups"
             )
 
-        callback_ref = prefix_ref if has_prefix else legacy_ref
-        callback = self._context.constant(callback_ref)
+        callback = self._context.constant(prefix_ref)
         from .._stateful_function import StatefulFunction
 
         if isinstance(callback, StatefulFunction):
@@ -287,7 +279,7 @@ class _ScanPlanning:
                 arg_dtypes=(Dependency("T"),),
                 name="prefix_op",
             )
-            return callback_ref, operator, state
+            return prefix_ref, operator, state
 
         if has_state:
             raise ValueError(
@@ -301,7 +293,7 @@ class _ScanPlanning:
                 "device callable or StatefulFunction"
             )
         return (
-            callback_ref,
+            prefix_ref,
             PythonOperator(
                 ret_dtype=Dependency("T"),
                 arg_dtypes=(Dependency("T"),),

@@ -472,7 +472,6 @@ coop.exclusive_sum(  # expected-error: [call-overload]
 coop.inclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    prefix_op=prefix_from_aggregate,
     block_prefix_callback_op=prefix_from_aggregate,
 )
 coop.inclusive_sum(  # expected-error: [call-overload]
