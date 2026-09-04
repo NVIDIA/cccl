@@ -102,6 +102,7 @@ def _run_single_phase_to_provider_boundary(
             "invalid movement arguments reached provider materialization"
         ),
     )
+    matched_group_call = False
     for label in sorted(func_ir.blocks):
         rewrite.match(
             func_ir,
@@ -109,6 +110,96 @@ def _run_single_phase_to_provider_boundary(
             state.typemap,
             state.calltypes,
         )
+        matched_group_call |= bool(rewrite._matches)
+    assert matched_group_call
+
+
+class _FailingAttribute:
+    def __init__(self, exception_type):
+        self._exception_type = exception_type
+
+    def __getattr__(self, name):
+        raise self._exception_type(name)
+
+
+@pytest.mark.parametrize(
+    "exception_type",
+    (AttributeError, ImportError, KeyError, TypeError, ValueError),
+)
+def test_call_result_dtype_treats_attribute_failure_as_unresolved(exception_type):
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    failing_attribute = _FailingAttribute(exception_type)
+
+    def kernel(value):
+        return failing_attribute.cast(value)
+
+    func_ir = run_frontend(kernel)
+    state = SimpleNamespace(func_ir=func_ir, args=(), typemap={})
+    rewrite = CoopSinglePhaseRewrite(state)
+    call = next(
+        inst.value
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+        and isinstance(inst.value, ir.Expr)
+        and inst.value.op == "call"
+    )
+
+    assert rewrite._resolve_call_result_dtype(call) is None
+
+
+@pytest.mark.parametrize("positional_value", (31, None))
+def test_positional_static_runtime_control_cannot_be_repeated_by_keyword(
+    positional_value,
+):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler._rewrite import (
+        CoopSinglePhaseRewrite,
+        CoopSinglePhaseRewriteError,
+    )
+    from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
+
+    def kernel(source, dynamic_valid_items):
+        output = coop.ThreadData(2, dtype=types.int32)
+        return provider_load(
+            source,
+            output,
+            positional_value,
+            num_valid_items=dynamic_valid_items,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=2,
+        )
+
+    func_ir = run_frontend(kernel)
+    state = SimpleNamespace(
+        func_ir=func_ir,
+        args=(types.Array(types.int32, 1, "C"), types.int32),
+        typingctx=SimpleNamespace(refresh=lambda: None),
+        typemap={},
+        calltypes={},
+        metadata={},
+    )
+    rewrite = CoopSinglePhaseRewrite(state)
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="duplicate runtime argument 'num_valid_items'",
+    ):
+        for label in sorted(func_ir.blocks):
+            rewrite.match(
+                func_ir,
+                func_ir.blocks[label],
+                state.typemap,
+                state.calltypes,
+            )
 
 
 def test_provider_memory_parameters_require_contiguous_arrays():

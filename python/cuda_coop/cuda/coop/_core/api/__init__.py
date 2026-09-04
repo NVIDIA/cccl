@@ -23,6 +23,9 @@ from .thread_group import (
     this_warp,
 )
 
+# Descriptor constructors and group factories do not use the family
+# registration decorator. The Numba rewrite recognizes their exact exported
+# identity plus this tag, which rejects same-named impostor callables.
 for _member_name in (
     "TempStorage",
     "ThreadData",

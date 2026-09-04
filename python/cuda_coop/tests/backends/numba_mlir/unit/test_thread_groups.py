@@ -8,6 +8,8 @@ import cuda.coop as portable_coop
 import cuda.coop.numba_mlir as coop
 from cuda.coop._core import ThreadHierarchy as CoreThreadHierarchy
 
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
 _UNSUPPORTED_THREAD_GROUP_METHODS = frozenset(
     {
         "count",

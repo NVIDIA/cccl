@@ -14,6 +14,8 @@ import pytest
 
 from cuda.coop.numba_mlir._compiler import _activation, _numba_mlir_compat
 
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
 PACKAGE_ROOT = Path(__file__).parents[4]
 
 

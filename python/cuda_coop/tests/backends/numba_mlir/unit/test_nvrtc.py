@@ -17,6 +17,8 @@ from cuda.coop._headers._identity import include_dirs_identity
 from cuda.coop._headers._toolkit import ToolkitCompilerLibraries
 from cuda.coop.numba_mlir._compiler import _nvrtc
 
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
 
 def _fake_nvrtc(
     actual_version: tuple[int, int],

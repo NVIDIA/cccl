@@ -9,6 +9,8 @@ import pytest
 import cuda.coop.numba_mlir as coop
 from cuda.coop.numba_mlir import _thread_data
 
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
 
 class _FakeLocal:
     def __init__(self):

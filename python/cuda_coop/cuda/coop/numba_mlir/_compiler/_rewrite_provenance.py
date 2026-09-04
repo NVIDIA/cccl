@@ -1085,7 +1085,7 @@ class _ProvenanceRewrite:
         if isinstance(func_ref, ir.Var):
             try:
                 func_obj = self._infer_constant(func_ref)
-            except _INFERENCE_EXCEPTIONS:
+            except (*_INFERENCE_EXCEPTIONS, ImportError):
                 func_obj = None
             if func_obj is None:
                 func_def = self._lookup_definition(func_ref)
@@ -1094,16 +1094,10 @@ class _ProvenanceRewrite:
         elif isinstance(func_ref, (ir.Global, ir.FreeVar, ir.Const)):
             func_obj = func_ref.value
         if func_obj is None:
-            chain = self._resolve_attribute_chain(func_ref)
-            if chain is not None:
-                root, attrs = chain
-                obj = root
-                try:
-                    for attr in attrs:
-                        obj = getattr(obj, attr)
-                    func_obj = obj
-                except _INFERENCE_EXCEPTIONS:
-                    func_obj = None
+            try:
+                func_obj = self._resolve_python_value(func_ref)
+            except _INFERENCE_EXCEPTIONS:
+                func_obj = None
         if func_obj is None:
             return None
         from ._parameters import (

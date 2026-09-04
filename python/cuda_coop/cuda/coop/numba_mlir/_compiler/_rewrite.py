@@ -165,16 +165,14 @@ class CoopSinglePhaseRewrite(
 
     def apply(self):
         assert self._block is not None
-        refresh_typing_context = True
         call_invocable_globals: dict[ir.Assign, tuple[str, object]] = {}
         func_var_names_to_clear: set[str] = set()
         candidate_dead_factory_kw_vars: set[str] = set()
         if self._has_temp_storage_requirements():
             self._stage_temp_storage_backing()
         for match_inst, match in self._matches.items():
-            invocable, created = self._materialize_invocable(match)
+            invocable, _ = self._materialize_invocable(match)
             self._record_invocable_specialization(invocable)
-            refresh_typing_context |= created
             candidate_dead_factory_kw_vars.update(
                 (value_var.name for value_var in match.factory_kw_value_vars)
             )
@@ -472,8 +470,7 @@ class CoopSinglePhaseRewrite(
                     continue
                 filtered_block.append(stmt)
             new_block = filtered_block
-        if refresh_typing_context:
-            self._state.typingctx.refresh()
+        self._state.typingctx.refresh()
         return new_block
 
 
