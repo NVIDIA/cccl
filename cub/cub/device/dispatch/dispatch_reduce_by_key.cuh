@@ -35,6 +35,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -188,7 +189,8 @@ template <typename PolicySelector,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT,
-          typename StreamingContextT>
+          typename StreamingContextT,
+          bool StableReductionOrder = false>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
@@ -230,7 +232,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     ReductionOpT,
     OffsetT,
     AccumT,
-    StreamingContextT>;
+    StreamingContextT,
+    ::cuda::std::bool_constant<StableReductionOrder>>;
 
   // Thread block type for reducing tiles of value segments
   using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
@@ -669,7 +672,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
 namespace detail::reduce_by_key
 {
 // we move the conversion of the policy to the agent policy and its use out of the lambda below, so MSVC does not ICE
-template <typename PolicyGetter, typename... Args>
+template <bool StableReductionOrder, typename PolicyGetter, typename... Args>
 _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_getter)
 {
   // TODO(bgruber): refactor this in the future
@@ -683,13 +686,18 @@ _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_get
     delay_constructor_t<policy.lookback.lookback_delay.kind,
                         policy.lookback.lookback_delay.delay,
                         policy.lookback.lookback_delay.l2_write_latency>>;
-  using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
+  using vsmem_helper_t =
+    vsmem_helper_default_fallback_policy_t<Policy,
+                                           AgentReduceByKey,
+                                           Args...,
+                                           ::cuda::std::bool_constant<StableReductionOrder>>;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
                             vsmem_helper_t::vsmem_per_block};
 }
 
-template <typename KeysInputIteratorT,
+template <bool StableReductionOrder = false,
+          typename KeysInputIteratorT,
           typename UniqueOutputIteratorT,
           typename ValuesInputIteratorT,
           typename AggregatesOutputIteratorT,
@@ -699,7 +707,7 @@ template <typename KeysInputIteratorT,
           typename OffsetT,
           typename AccumT         = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
           typename KeyT           = non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>,
-          typename PolicySelector = policy_selector_from_types<ReductionOpT, AccumT, KeyT>>
+          typename PolicySelector = policy_selector_from_types<ReductionOpT, AccumT, KeyT, StableReductionOrder>>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key::reduce_by_key_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -742,6 +750,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const auto [threads_per_block, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
+      StableReductionOrder,
       decltype(policy_getter),
       KeysInputIteratorT,
       UniqueOutputIteratorT,
@@ -822,7 +831,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       ReductionOpT,
       OffsetT,
       AccumT,
-      streaming_context_t>;
+      streaming_context_t,
+      StableReductionOrder>;
 
     // Get SM occupancy for reduce_by_key_kernel (only needed for logging)
     int reduce_by_key_sm_occupancy{};

@@ -5,6 +5,11 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/bit>
+
+#include <random>
+
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -156,3 +161,81 @@ CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, fu
     REQUIRE(expected_keys == out_unique_keys);
   }
 }
+
+#if TEST_LAUNCH == 0 && TEST_TYPES == 0
+CUB_TEST_CASE("Device reduce-by-key is run-to-run deterministic for fp64 sums", "[by_key][reduce][device]", CUB_SMALL)
+{
+  constexpr std::size_t num_items = 65'536;
+  constexpr std::size_t long_run  = 50'000;
+  constexpr std::size_t short_run = 64;
+  constexpr int num_repetitions   = 20;
+
+  c2h::host_vector<std::uint64_t> keys(num_items);
+  c2h::host_vector<double> values(num_items);
+  std::mt19937_64 rng{42};
+  std::uniform_real_distribution<double> distribution{-1.0, 1.0};
+
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    keys[i]   = i < long_run ? 0 : 1 + (i - long_run) / short_run;
+    values[i] = i % 7 == 0 ? distribution(rng) * 1e-2 : 0.0;
+    static_cast<void>(rng()); // Match the issue's integer-control RNG consumption.
+  }
+
+  c2h::device_vector<std::uint64_t> keys_in = keys;
+  c2h::device_vector<double> values_in      = values;
+  c2h::device_vector<std::uint64_t> unique_out(num_items);
+  c2h::device_vector<double> aggregates_out(num_items);
+  c2h::device_vector<std::size_t> num_runs_out(1);
+
+  auto* const d_keys_in        = thrust::raw_pointer_cast(keys_in.data());
+  auto* const d_values_in      = thrust::raw_pointer_cast(values_in.data());
+  auto* const d_unique_out     = thrust::raw_pointer_cast(unique_out.data());
+  auto* const d_aggregates_out = thrust::raw_pointer_cast(aggregates_out.data());
+  auto* const d_num_runs_out   = thrust::raw_pointer_cast(num_runs_out.data());
+
+  std::size_t temp_storage_bytes{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::ReduceByKey(
+      nullptr,
+      temp_storage_bytes,
+      d_keys_in,
+      d_unique_out,
+      d_values_in,
+      d_aggregates_out,
+      d_num_runs_out,
+      cuda::std::plus{},
+      num_items));
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  auto* const d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  std::uint64_t first_result{};
+  for (int repetition = 0; repetition < num_repetitions; ++repetition)
+  {
+    REQUIRE(cudaSuccess == cudaMemset(d_aggregates_out, 0xee, sizeof(double)));
+    REQUIRE(
+      cudaSuccess
+      == cub::DeviceReduce::ReduceByKey(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_unique_out,
+        d_values_in,
+        d_aggregates_out,
+        d_num_runs_out,
+        cuda::std::plus{},
+        num_items));
+
+    const auto result = cuda::std::bit_cast<std::uint64_t>(static_cast<double>(aggregates_out[0]));
+    if (repetition == 0)
+    {
+      first_result = result;
+    }
+    else
+    {
+      REQUIRE(result == first_result);
+    }
+  }
+}
+#endif // TEST_LAUNCH == 0 && TEST_TYPES == 0
