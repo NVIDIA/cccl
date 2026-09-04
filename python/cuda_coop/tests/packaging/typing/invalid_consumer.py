@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 import cuda.coop as portable
@@ -180,4 +182,82 @@ coop.exchange(  # expected-error: [call-overload]
     mode="scatter_to_striped_flagged",
     ranks=np.int32(0),
     valid_flags=floating_flags,
+)
+
+
+def select_left(left: np.int32, right: np.int32) -> np.int32:
+    del right
+    return left
+
+
+portable.reduce(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=False,
+)
+portable.reduce(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    binary_op=0,
+)
+portable.sum(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    broadcast=False,
+    algorithm=0,
+)
+portable.sum(  # expected-error: [call-overload]
+    portable_block,
+    np.complex64(1),
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.bool_(True),
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.complex64(1),
+    binary_op="sum",
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=0,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    broadcast=False,
+    algorithm=0,
+)
+complex_values = cast(portable.ThreadDataLike[np.complex64], object())
+coop.sum(  # expected-error: [type-var]
+    qualified_block,
+    complex_values,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    values,
+    broadcast=False,
+    valid_items=2,
+)
+coop.sum(  # expected-error: [call-overload]
+    coop.this_warp(),
+    np.int32(1),
+    broadcast=False,
+    algorithm="raking",
+)
+coop.reduce(
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,  # expected-error: [arg-type]
+    broadcast=True,
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=False,
+    algorithm="raking_commutative_only",
 )

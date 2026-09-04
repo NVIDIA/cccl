@@ -19,7 +19,7 @@ from io import StringIO
 from numbers import Integral
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
-from typing import BinaryIO, Sequence
+from typing import BinaryIO, Callable, Sequence
 
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.compiler import ExternFunction
@@ -61,6 +61,9 @@ _SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
 _COOP_SPECIALIZATION_COLLECTOR: ContextVar[
     list[tuple[object, int | None, int | tuple[int, ...] | None]] | None
 ] = ContextVar("cuda_coop_numba_mlir_specialization_collector", default=None)
+_DEVICE_LTOIR_CACHE: dict[
+    tuple[object, tuple[int, int], str, tuple[tuple[str, object], ...]], bytes
+] = {}
 
 
 @contextmanager
@@ -145,6 +148,72 @@ def _hash_symbol_value(hasher, value, depth=0):
     hasher.update(
         repr(_numba_semantic_token(value)).encode("utf-8", errors="backslashreplace")
     )
+
+
+def _callable_symbol_component(fn: Callable) -> str:
+    """Return a readable symbol component with exact callable semantics."""
+
+    py_func = getattr(fn, "py_func", fn)
+    module = getattr(py_func, "__module__", "unknown")
+    qualname = getattr(
+        py_func,
+        "__qualname__",
+        getattr(py_func, "__name__", type(py_func).__name__),
+    )
+    hasher = hashlib.sha1()
+    _hash_symbol_value(hasher, py_func)
+    digest = hasher.hexdigest()[:20]
+    return _symbol_component(f"{module}_{qualname}_{digest}")
+
+
+def _python_operator_symbol_name(
+    binary_op: Callable,
+    ret_dtype: types.Type,
+    arg_dtypes: Sequence[types.Type],
+) -> str:
+    """Name a compiled stateless operator without relying on object identity."""
+
+    callable_component = _callable_symbol_component(binary_op)
+    signature_component = f"{_symbol_component(ret_dtype)}__" + "_".join(
+        _symbol_component(dtype) for dtype in arg_dtypes
+    )
+    return f"cuda_coop_numba_mlir_F{callable_component}_{signature_component}"
+
+
+def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
+    if (
+        not isinstance(compute_capability, (tuple, list))
+        or len(compute_capability) != 2
+    ):
+        raise RuntimeError(
+            "cuda.coop.numba_mlir requires a two-component CUDA compute capability"
+        )
+    major, minor = compute_capability
+    if (
+        isinstance(major, bool)
+        or isinstance(minor, bool)
+        or not isinstance(major, Integral)
+        or not isinstance(minor, Integral)
+        or major < 1
+        or minor < 0
+        or minor > 9
+    ):
+        raise RuntimeError(
+            "cuda.coop.numba_mlir received an invalid CUDA compute capability "
+            f"{compute_capability!r}"
+        )
+    return int(major), int(minor)
+
+
+def _current_compute_capability() -> tuple[int, int]:
+    """Return the exact target used for callback device compilation."""
+
+    return _normalize_compute_capability(cuda.get_current_device().compute_capability)
+
+
+def _compute_capability_number(compute_capability: tuple[int, int]) -> int:
+    major, minor = compute_capability
+    return major * 10 + minor
 
 
 def _align_up(value: int, alignment: int) -> int:
@@ -264,6 +333,100 @@ def _size_alignment_from_numba_type(numba_type):
         "compiler-native dtype, Numba-CUDA-MLIR AggregateType, or matching "
         "registered CUDA and MLIR StructModels with inspectable member types"
     )
+
+
+def _compile_device_ltoir(
+    fn: Callable,
+    *,
+    sig,
+    abi_info: dict[str, object],
+    compute_capability: tuple[int, int],
+    semantic_identity=None,
+) -> bytes:
+    """Compile one device callable and cache it by semantic source identity."""
+
+    compute_capability = _normalize_compute_capability(compute_capability)
+    # numba-cuda-mlir's compile() mutates dispatcher target options when passed
+    # an existing dispatcher. Compile the underlying Python function so one
+    # dispatcher can safely participate in multiple cooperative specializations.
+    py_func = getattr(fn, "py_func", fn)
+    identity = py_func if semantic_identity is None else semantic_identity
+    cache_key = (
+        _numba_semantic_token(identity),
+        compute_capability,
+        repr(sig),
+        tuple(
+            sorted(
+                (name, _numba_semantic_token(value)) for name, value in abi_info.items()
+            )
+        ),
+    )
+    cached = _DEVICE_LTOIR_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    ltoir, _ = cuda.compile(
+        py_func,
+        sig=sig,
+        output="ltoir",
+        abi_info=abi_info,
+        forceinline=True,
+        cc=compute_capability,
+    )
+    ltoir_blob = ltoir.encode("utf-8") if isinstance(ltoir, str) else bytes(ltoir)
+    _DEVICE_LTOIR_CACHE[cache_key] = ltoir_blob
+    return ltoir_blob
+
+
+def _adapt_python_operator_abi(
+    py_func: Callable,
+    *,
+    return_by_pointer: bool,
+    arguments_by_pointer: tuple[bool, ...],
+) -> Callable:
+    """Adapt a value-level callable to the aggregate C device ABI."""
+
+    if not return_by_pointer and not any(arguments_by_pointer):
+        return py_func
+    if len(arguments_by_pointer) not in {1, 2}:
+        raise TypeError(
+            "cuda.coop.numba_mlir aggregate Python operators must accept one "
+            "or two value arguments"
+        )
+
+    device_op = cuda.jit(device=True, inline="always")(py_func)
+    first_by_pointer = arguments_by_pointer[0]
+    if len(arguments_by_pointer) == 1:
+        if return_by_pointer:
+
+            def adapted(first, result):
+                first_value = first[0] if first_by_pointer else first
+                result[0] = device_op(first_value)
+
+        else:
+
+            def adapted(first):
+                first_value = first[0] if first_by_pointer else first
+                return device_op(first_value)
+
+        return adapted
+
+    second_by_pointer = arguments_by_pointer[1]
+    if return_by_pointer:
+
+        def adapted(first, second, result):
+            first_value = first[0] if first_by_pointer else first
+            second_value = second[0] if second_by_pointer else second
+            result[0] = device_op(first_value, second_value)
+
+    else:
+
+        def adapted(first, second):
+            first_value = first[0] if first_by_pointer else first
+            second_value = second[0] if second_by_pointer else second
+            return device_op(first_value, second_value)
+
+    return adapted
 
 
 def _ltoir_to_ptx(ltoir: bytes, *, name: str, cc: int) -> str:
@@ -633,6 +796,136 @@ class Constant:
         return self.val
 
 
+class StatelessOperator(Parameter):
+    """A compiled Python callable embedded as a static C++ operator."""
+
+    def __init__(
+        self,
+        name,
+        ret_cpp_type,
+        arg_cpp_types,
+        ltoir,
+        *,
+        compute_capability,
+    ):
+        super().__init__()
+        self.name = name
+        self.ret_cpp_type = ret_cpp_type
+        self.arg_cpp_types = tuple(arg_cpp_types)
+        self.ltoir = bytes(ltoir)
+        self.compute_capability = _normalize_compute_capability(compute_capability)
+
+    def __repr__(self) -> str:
+        return f"StatelessOperator(name={self.name!r})"
+
+    def mangled_name(self):
+        return self.name
+
+    def forward_decl(self):
+        return_type = "void" if self.ret_cpp_type == "storage_t" else self.ret_cpp_type
+        arg_decls = [
+            "const void*" if arg == "storage_t" else arg for arg in self.arg_cpp_types
+        ]
+        if self.ret_cpp_type == "storage_t":
+            arg_decls.append("void*")
+        return (
+            f'extern "C" __device__ {return_type} {self.name}({", ".join(arg_decls)});'
+        )
+
+    def wrap_decl(self, name):
+        param_decls = []
+        param_refs = []
+        for index, arg_type in enumerate(self.arg_cpp_types):
+            arg_name = f"wp_{index}"
+            param_decls.append(f"const {arg_type}& {arg_name}")
+            param_refs.append(f"&{arg_name}" if arg_type == "storage_t" else arg_name)
+
+        param_decls_csv = ", ".join(param_decls)
+        param_refs_csv = ", ".join(param_refs)
+        buf = StringIO()
+        w = buf.write
+        w(f"auto {name} = []({param_decls_csv}) {{\n")
+        if self.ret_cpp_type == "storage_t":
+            w("    storage_t result;\n")
+            call_args = ", ".join((*param_refs, "&result"))
+            w(f"    {self.name}({call_args});\n")
+            w("    return result;\n")
+        else:
+            w(f"    return {self.name}({param_refs_csv});\n")
+        w("};\n")
+        return buf.getvalue()
+
+    def is_provided_by_user(self):
+        return False
+
+
+class DependentPythonOperator:
+    """A stateless Python operator resolved after dtype specialization."""
+
+    def __init__(self, ret_dtype, arg_dtypes, op):
+        self.ret_dtype = ret_dtype
+        self.arg_dtypes = tuple(arg_dtypes)
+        self.op = op
+
+    def specialize(self, template_arguments):
+        op = self.op.resolve(template_arguments)
+        if not callable(op):
+            raise TypeError("Python operator must be a stateless callable")
+
+        ret_dtype = self.ret_dtype.resolve(template_arguments)
+        ret_cpp_type = numba_type_to_cpp(ret_dtype)
+        ret_numba_type = (
+            types.CPointer(ret_dtype) if ret_cpp_type == "storage_t" else ret_dtype
+        )
+        arg_dtypes = tuple(arg.resolve(template_arguments) for arg in self.arg_dtypes)
+        arg_cpp_types = tuple(numba_type_to_cpp(dtype) for dtype in arg_dtypes)
+        arg_numba_types = tuple(
+            types.CPointer(dtype) if cpp_type == "storage_t" else dtype
+            for dtype, cpp_type in zip(arg_dtypes, arg_cpp_types)
+        )
+
+        operator_py_func = getattr(op, "py_func", op)
+        return_by_pointer = ret_cpp_type == "storage_t"
+        arguments_by_pointer = tuple(
+            cpp_type == "storage_t" for cpp_type in arg_cpp_types
+        )
+        compile_op = _adapt_python_operator_abi(
+            operator_py_func,
+            return_by_pointer=return_by_pointer,
+            arguments_by_pointer=arguments_by_pointer,
+        )
+        compile_identity = (
+            "numba-cuda-mlir-stateless-python-operator-abi-v1",
+            operator_py_func,
+            return_by_pointer,
+            arguments_by_pointer,
+        )
+        mangled_name = _python_operator_symbol_name(op, ret_dtype, arg_dtypes)
+        compute_capability = _current_compute_capability()
+        if return_by_pointer:
+            operator_signature = signature(
+                types.void,
+                *arg_numba_types,
+                ret_numba_type,
+            )
+        else:
+            operator_signature = signature(ret_numba_type, *arg_numba_types)
+        ltoir = _compile_device_ltoir(
+            compile_op,
+            sig=operator_signature,
+            abi_info={"abi_name": mangled_name},
+            compute_capability=compute_capability,
+            semantic_identity=compile_identity,
+        )
+        return StatelessOperator(
+            mangled_name,
+            ret_cpp_type,
+            arg_cpp_types,
+            ltoir,
+            compute_capability=compute_capability,
+        )
+
+
 class CxxFunction(Parameter):
     def __init__(self, cpp, func_dtype):
         super().__init__()
@@ -847,9 +1140,7 @@ class Algorithm:
         return f"{self.c_name}{namespace}_{self.method_name}"
 
     def _current_provider_compile_identity(self):
-        device = cuda.get_current_device()
-        cc_major, cc_minor = device.compute_capability
-        cc = int(cc_major) * 10 + int(cc_minor)
+        cc = _compute_capability_number(_current_compute_capability())
         return nvrtc.compiler_identity(
             context=self._resolved_compile_context(),
             cc=cc,
@@ -978,7 +1269,7 @@ class Algorithm:
 
     @staticmethod
     def _ignore_codegen_param(param):
-        return isinstance(param, CxxFunction) or (
+        return isinstance(param, (CxxFunction, StatelessOperator)) or (
             isinstance(param, PointerOffset) and param.static_value is not None
         )
 
@@ -1078,7 +1369,7 @@ class Algorithm:
             f"cuda_coop_numba_mlir_temp_storage_alignment_{suffix}",
         )
 
-    def _collect_support_ltoirs_and_udf_declarations(self):
+    def _collect_support_ltoirs_and_udf_declarations(self, *, provider_cc):
         lto_irs = []
         udf_declarations = OrderedDict()
 
@@ -1086,16 +1377,38 @@ class Algorithm:
             for type_definition in self.type_definitions:
                 lto_irs.extend(type_definition.lto_irs)
 
+        for method in self.parameters:
+            for param in method:
+                if not isinstance(param, StatelessOperator):
+                    continue
+                callback_cc = _compute_capability_number(param.compute_capability)
+                if callback_cc != provider_cc:
+                    major, minor = param.compute_capability
+                    raise RuntimeError(
+                        "Python operator LTO IR target does not match its provider: "
+                        f"callback {major}.{minor}, provider {provider_cc // 10}."
+                        f"{provider_cc % 10}"
+                    )
+                declaration = param.forward_decl()
+                previous = udf_declarations.setdefault(param.name, declaration)
+                if previous != declaration:
+                    raise RuntimeError(
+                        "Python operators produced conflicting device symbols"
+                    )
+                lto_irs.append(param.ltoir)
+
         return _dedupe_ltoirs(lto_irs), udf_declarations
 
     def _source_code(self, threads=None, block_threads=None, *, compile_identity=None):
-        self._qualify_private_symbols(
+        compile_identity = self._qualify_private_symbols(
             threads=threads,
             block_threads=block_threads,
             compile_identity=compile_identity,
         )
         support_lto_irs, udf_declarations = (
-            self._collect_support_ltoirs_and_udf_declarations()
+            self._collect_support_ltoirs_and_udf_declarations(
+                provider_cc=int(compile_identity[0])
+            )
         )
 
         algorithm_name = self.struct_name
@@ -1156,7 +1469,12 @@ class Algorithm:
                 method[1:] if self.storage_abi is StorageABI.LEADING_POINTER else method
             )
             for pid, param in enumerate(provider_parameters):
-                if isinstance(param, CxxFunction):
+                if isinstance(param, StatelessOperator):
+                    func_decls.extend(
+                        param.wrap_decl(f"param_{pid}").rstrip().splitlines()
+                    )
+                    param_args.append(f"param_{pid}")
+                elif isinstance(param, CxxFunction):
                     param_args.append(param.cpp)
                 else:
                     name = f"param_{pid}"
@@ -1481,7 +1799,7 @@ class Algorithm:
 
         def ignore_param(param):
             # C++ functions do not require additional argument handling.
-            ignore = isinstance(param, CxxFunction) or (
+            ignore = isinstance(param, (CxxFunction, StatelessOperator)) or (
                 isinstance(param, PointerOffset) and param.static_value is not None
             )
             return ignore
@@ -1574,8 +1892,18 @@ class _SharedTempFile:
 
 
 def _collect_udf_decls(algo):
-    del algo
-    return OrderedDict()
+    udf_decls = OrderedDict()
+    for method in algo.parameters:
+        for param in method:
+            if not isinstance(param, StatelessOperator):
+                continue
+            declaration = param.forward_decl()
+            previous = udf_decls.setdefault(param.name, declaration)
+            if previous != declaration:
+                raise RuntimeError(
+                    "Python operators produced conflicting device symbols"
+                )
+    return udf_decls
 
 
 def _collect_extra_ltoirs(algo):
@@ -1634,6 +1962,15 @@ def _param_coalesce_key(param):
         return ("Value", str(param.value_type), param.is_output)
     if isinstance(param, CxxFunction):
         return ("CxxFunction", param.cpp, str(param.func_dtype))
+    if isinstance(param, StatelessOperator):
+        return (
+            "StatelessOperator",
+            param.name,
+            param.ret_cpp_type,
+            param.arg_cpp_types,
+            param.compute_capability,
+            _lto_ir_digest(param.ltoir),
+        )
     return (type(param).__name__, repr(param))
 
 
@@ -1947,6 +2284,172 @@ class Invocable:
     def __call__(self, *args):
         raise RuntimeError(
             "__call__ should not be called directly outside of a numba_cuda_mlir.cuda.jit(...) kernel."
+        )
+
+
+class RawCAbiInvocable:
+    """One compiler-local callable backed by a raw C-ABI device function."""
+
+    def __init__(
+        self,
+        *,
+        source: str,
+        symbol: str,
+        return_type: types.Type,
+        parameters: Sequence[Parameter | types.Type],
+        abi_transforms: Sequence[str],
+        cc: int,
+        compile_context: nvrtc.CompileContext,
+        storage_abi: StorageABI,
+        execution_scope: SynchronizationScope,
+        synchronization_scope: SynchronizationScope,
+    ) -> None:
+        if not isinstance(source, str) or not source:
+            raise ValueError("raw C-ABI source must be a non-empty string")
+        if (
+            not isinstance(symbol, str)
+            or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", symbol) is None
+        ):
+            raise ValueError("raw C-ABI symbol must be a valid C identifier")
+        if not isinstance(return_type, types.Type):
+            raise TypeError("raw C-ABI return_type must be a Numba type")
+        if isinstance(cc, bool) or not isinstance(cc, int) or cc < 1:
+            raise ValueError("raw C-ABI cc must be a positive integer")
+        if not isinstance(compile_context, nvrtc.CompileContext):
+            raise TypeError("raw C-ABI compile_context must be a CompileContext")
+
+        parameters = tuple(parameters)
+        abi_transforms = tuple(abi_transforms)
+        if len(parameters) != len(abi_transforms):
+            raise ValueError("raw C-ABI parameter metadata has inconsistent arity")
+        for parameter in parameters:
+            if isinstance(parameter, Parameter):
+                if parameter.is_output or not parameter.is_provided_by_user():
+                    raise ValueError(
+                        "raw C-ABI parameters must be runtime input parameters"
+                    )
+            elif not isinstance(parameter, types.Type):
+                raise TypeError(
+                    "raw C-ABI parameters must be backend Parameter objects "
+                    "or exact Numba types"
+                )
+        if any(transform not in {"ptr", "value"} for transform in abi_transforms):
+            raise ValueError("raw C-ABI transforms must be 'ptr' or 'value'")
+
+        storage_abi = StorageABI(storage_abi)
+        execution_scope = SynchronizationScope(execution_scope)
+        synchronization_scope = SynchronizationScope(synchronization_scope)
+        if storage_abi is not StorageABI.NONE:
+            raise ValueError("raw C-ABI invocables must use storage_abi='none'")
+        if synchronization_scope is not SynchronizationScope.NONE:
+            raise ValueError(
+                "raw C-ABI invocables must use synchronization_scope='none'"
+            )
+
+        abi_types = tuple(
+            types.CPointer(types.none)
+            if transform == "ptr"
+            else parameter.dtype()
+            if isinstance(parameter, Parameter)
+            else parameter
+            for parameter, transform in zip(parameters, abi_transforms)
+        )
+        _, lto_ir = nvrtc.compile(
+            cpp=source,
+            cc=cc,
+            rdc=True,
+            code="lto",
+            context=compile_context,
+        )
+
+        from ._compiler._artifacts import make_binary_tempfile
+
+        temp_file = make_binary_tempfile(bytes(lto_ir), ".ltoir")
+        self.source = source
+        self.symbol = symbol
+        self.return_type = return_type
+        self.parameters = parameters
+        self.abi_transforms = abi_transforms
+        self.abi_types = abi_types
+        self.cc = cc
+        self.compile_context = compile_context
+        self.storage_abi = storage_abi
+        self.execution_scope = execution_scope
+        self.synchronization_scope = synchronization_scope
+        self.specialization = None
+        self._temp_file = temp_file
+        self._temp_file_finalizer = weakref.finalize(
+            self, _cleanup_temp_files, (temp_file.name,)
+        )
+        self._numba_type = None
+
+    @property
+    def temp_storage_bytes(self) -> int:
+        return 0
+
+    @property
+    def temp_storage_alignment(self) -> int:
+        return 1
+
+    @property
+    def files(self) -> list[str]:
+        return [self._temp_file.name]
+
+    @property
+    def _numba_type_(self):
+        """Return a compiler-local callable type without global registration."""
+
+        if self._numba_type is None:
+            link_files = self.files
+            extern_fn = ExternFunction(
+                self.symbol,
+                signature(self.return_type, *self.abi_types),
+                link=link_files,
+                abi="c",
+            )
+            parameters = self.parameters
+            transforms = self.abi_transforms
+            returns_value = self.return_type not in {types.none, types.void}
+
+            def invocable_impl(*actual_types):
+                if len(actual_types) != len(parameters):
+                    return None
+                typing_context = mlir_target.typing_context
+                for actual_type, parameter in zip(actual_types, parameters):
+                    accepted = (
+                        parameter.accepts_actual_type(actual_type, typing_context)
+                        if isinstance(parameter, Parameter)
+                        else actual_type == parameter
+                    )
+                    if not accepted:
+                        return None
+                impl = war_introspection_call_with_transforms(
+                    extern_fn,
+                    transforms,
+                    returns_value=returns_value,
+                )
+                setattr(impl, "__numba_cuda_mlir_link__", link_files)
+                return impl
+
+            wrapped_impl = war_introspection(invocable_impl, len(parameters))
+            setattr(wrapped_impl, "__numba_cuda_mlir_link__", link_files)
+            template = make_overload_template(
+                self,
+                wrapped_impl,
+                {"no_cpython_wrapper": True, "nopython": True},
+                strict=True,
+                inline="always",
+                prefer_literal=False,
+                base=_NumbaCudaMlirOverloadFunctionTemplate,
+            )
+            self._numba_type = types.Function((template,))
+        return self._numba_type
+
+    def __call__(self, *args):
+        del args
+        raise RuntimeError(
+            "raw C-ABI provider invocables may only be called inside a "
+            "numba_cuda_mlir.cuda.jit kernel"
         )
 
 

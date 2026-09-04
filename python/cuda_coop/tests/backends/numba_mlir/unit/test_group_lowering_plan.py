@@ -484,6 +484,132 @@ def test_group_plan_allows_declared_sync_scope_when_auto_sync_is_disabled(
     GroupPlanningContext._validate_provider_contract(plan, object())
 
 
+def test_group_plan_allows_storage_free_group_execution(monkeypatch):
+    from dataclasses import replace
+
+    from cuda.coop._core import SynchronizationScope, this_block
+    from cuda.coop.numba_mlir._compiler import _group_planning
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
+    from cuda.coop.numba_mlir._compiler._operations import (
+        FactoryOperation,
+        StorageABI,
+    )
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(this_block(), _load_store())
+    plan = replace(
+        plan,
+        topology=replace(
+            plan.topology,
+            execution_scope=SynchronizationScope.GROUP,
+        ),
+    )
+    metadata = FactoryOperation(
+        operation="test",
+        namespace="test",
+        storage_abi=StorageABI.NONE,
+        execution_scope=SynchronizationScope.GROUP,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+    monkeypatch.setattr(
+        _group_planning,
+        "factory_operation",
+        lambda _factory: metadata,
+    )
+
+    GroupPlanningContext._validate_provider_contract(plan, object())
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "storage-bearing-plan",
+        "planned-synchronization",
+        "provider-storage",
+        "provider-execution",
+        "provider-synchronization",
+    ],
+)
+def test_group_plan_preserves_other_group_execution_rejections(monkeypatch, case):
+    from dataclasses import replace
+
+    from cuda.coop._core import SynchronizationScope, this_block
+    from cuda.coop.numba_mlir._compiler import _group_planning
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
+    from cuda.coop.numba_mlir._compiler._operations import (
+        FactoryOperation,
+        StorageABI,
+    )
+    from tests.support.group_planning import _load_store, _plan
+
+    storage_bearing = case == "storage-bearing-plan"
+    plan = _plan(
+        this_block(),
+        _load_store(algorithm="transpose" if storage_bearing else "direct"),
+    )
+    planned_synchronization = (
+        SynchronizationScope.GROUP
+        if case in {"storage-bearing-plan", "planned-synchronization"}
+        else SynchronizationScope.NONE
+    )
+    plan = replace(
+        plan,
+        topology=replace(
+            plan.topology,
+            execution_scope=SynchronizationScope.GROUP,
+        ),
+        synchronization=replace(
+            plan.synchronization,
+            storage_reuse_barrier=planned_synchronization,
+        ),
+    )
+    provider_storage = (
+        StorageABI.LEADING_POINTER
+        if case in {"storage-bearing-plan", "provider-storage"}
+        else StorageABI.NONE
+    )
+    provider_execution = (
+        SynchronizationScope.BLOCK
+        if case == "provider-execution"
+        else SynchronizationScope.GROUP
+    )
+    provider_synchronization = (
+        SynchronizationScope.GROUP
+        if case
+        in {
+            "storage-bearing-plan",
+            "planned-synchronization",
+            "provider-synchronization",
+        }
+        else SynchronizationScope.NONE
+    )
+    metadata = FactoryOperation(
+        operation="test",
+        namespace="test",
+        storage_abi=provider_storage,
+        execution_scope=provider_execution,
+        synchronization_scope=provider_synchronization,
+    )
+    monkeypatch.setattr(
+        _group_planning,
+        "factory_operation",
+        lambda _factory: metadata,
+    )
+
+    with pytest.raises(
+        GroupRewriteError,
+        match="supported only for storage-free providers",
+    ):
+        GroupPlanningContext._validate_provider_contract(plan, object())
+
+
 def test_group_plan_rejects_declared_sync_for_implementation_owned_no_sync(
     monkeypatch,
 ):
