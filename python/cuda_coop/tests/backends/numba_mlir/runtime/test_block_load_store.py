@@ -334,6 +334,7 @@ def test_store_writes_only_the_valid_prefix_at_an_independent_offset(valid_items
 @lru_cache(maxsize=None)
 def _algorithm_load_kernel(algorithm: str, qualified: bool):
     if qualified:
+
         @cuda.jit
         def kernel(source, observed, valid_items, source_offset, oob_default):
             thread = cuda.threadIdx.x
@@ -380,6 +381,7 @@ def _algorithm_load_kernel(algorithm: str, qualified: bool):
 @lru_cache(maxsize=None)
 def _algorithm_store_kernel(algorithm: str, qualified: bool):
     if qualified:
+
         @cuda.jit
         def kernel(source, destination, preserved, valid_items, destination_offset):
             thread = cuda.threadIdx.x
@@ -532,6 +534,7 @@ def test_each_block_store_algorithm_matches_its_layout_oracle_and_preserves_inpu
 @lru_cache(maxsize=None)
 def _partial_transpose_load_preserving_kernel(algorithm: str, qualified: bool):
     if qualified:
+
         @cuda.jit
         def kernel(source, initial, observed, valid_items):
             thread = cuda.threadIdx.x
@@ -605,6 +608,7 @@ def test_partial_transpose_load_preserves_each_invalid_payload_slot(
 @lru_cache(maxsize=None)
 def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
     if qualified:
+
         @cuda.jit
         def kernel(load_source, store_source, observed, destination, preserved):
             thread = cuda.threadIdx.x
