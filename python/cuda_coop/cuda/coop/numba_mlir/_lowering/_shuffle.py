@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import operator
+from enum import Enum
 from typing import Any
 
 from numba_cuda_mlir import types
@@ -51,7 +52,7 @@ def _mode(
     *,
     allowed: frozenset[BlockShuffleMode],
 ) -> BlockShuffleMode:
-    if not isinstance(value, str):
+    if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError("shuffle mode must be a string")
     token = value.strip().lower().replace("-", "_")
     try:
@@ -86,7 +87,7 @@ def _static_rotate_distance(distance: ArgumentBinding, block_threads: int) -> No
     if distance.kind is BindingKind.RUNTIME:
         return
     value = 1 if distance.kind is BindingKind.OMITTED else distance.value
-    if isinstance(value, bool):
+    if isinstance(value, (bool, Enum)):
         raise TypeError("static rotate distance must be an integer")
     try:
         value = operator.index(value)
