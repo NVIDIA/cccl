@@ -129,6 +129,10 @@ foreach (thrust_target IN LISTS THRUST_TARGETS)
     endif()
 
     thrust_add_test(test_target ${test_name} "${test_src}" ${thrust_target})
+
+    if ("CUDA" STREQUAL "${config_device}")
+      thrust_configure_cuda_target(${test_target} RDC ${THRUST_FORCE_RDC})
+    endif()
   endforeach()
 endforeach()
 
