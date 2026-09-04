@@ -229,8 +229,13 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
             if isinstance(dtype, Dependency):
                 dependency = dtype
                 dtype = dependency.resolve(specialization.template_arguments)
-                # CxxFunction dependencies use the same bracketed placeholder
-                # convention as DependentCxxOperator; bare tokens are not replaced.
+                # CxxFunction supports a dedicated type-expression placeholder
+                # in addition to the bracketed operator-template convention.
+                # Bare tokens are deliberately not replaced.
+                cpp = cpp.replace(
+                    f"{{{dependency.name}}}",
+                    self.cpp_type(dtype),
+                )
                 cpp = cpp.replace(
                     f"<{dependency.name}>",
                     f"<{self.cpp_type(dtype)}>",
