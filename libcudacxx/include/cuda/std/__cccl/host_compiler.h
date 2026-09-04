@@ -34,13 +34,13 @@
 //!
 //! @warning When used without specifying a minor version, the macro compares only the compiler's
 //! major version. For example, when the compiler is GCC 9.1, ``CCCL_HOST_COMPILER(GCC, >, 9)``
-//! is false even though version 9.1 is greater than 9.
+//! is `false` even though version 9.1 is greater than 9.
 //!
 //! @note This macro is made available when including any libcu++ header. Users that wish to
 //! include the smallest possible header for this macro should include `<cuda/std/version>`.
 //!
-//! For supported host compilers, the macro expands to an implementation-defined true value if the
-//! current host compiler and optional version comparison match, or false otherwise. These values
+//! For supported host compilers, the macro expands to an implementation-defined `true` value if the
+//! current host compiler and optional version comparison match, or `false` otherwise. These values
 //! may be used in boolean expressions (preprocessor or otherwise), but no other guarantees are made.
 //!
 //! Available values for `COMPILER` include:
@@ -59,15 +59,15 @@
 //! @par Example
 //! @code
 //! #if CCCL_HOST_COMPILER(GCC)
-//!   // ...
+//!   // GCC-only code
 //! #endif
 //!
 //! #if CCCL_HOST_COMPILER(MSVC, >=, 19, 35)
-//!   // ...
+//!   // MSVC 2019 or newer code
 //! #endif
 //! @endcode
 //!
-//! @return true if the specified host compiler and optional version comparison match, false otherwise.
+//! @return `true` if the specified host compiler and optional version comparison match, `false` otherwise.
 #ifdef _CCCL_DOXYGEN_INVOKED
 #  define CCCL_HOST_COMPILER(...) /* implementation defined */
 #else
