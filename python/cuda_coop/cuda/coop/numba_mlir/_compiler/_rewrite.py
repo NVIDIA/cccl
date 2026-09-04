@@ -9,7 +9,7 @@ across focused rewrite mixins. This module owns registration, the stable
 operation specification table, match/apply ordering, and whole-function retry.
 """
 
-from ._operations import StorageABI
+from ._operations import _GROUP_LOWERING_PLAN_KWARG, StorageABI
 from ._rewrite_arguments import _ArgumentRewrite
 from ._rewrite_group_metadata import _GroupMetadataRewrite
 from ._rewrite_invocables import _InvocableRewrite
@@ -131,6 +131,7 @@ class CoopSinglePhaseRewrite(
                 )
             except _DeferredCoopRewrite:
                 continue
+            lowering_plan = factory_kwargs.pop(_GROUP_LOWERING_PLAN_KWARG, None)
             family_metadata = self._analyze_family_match(
                 op_name=op_name,
                 runtime_args=runtime_args,
@@ -148,6 +149,7 @@ class CoopSinglePhaseRewrite(
                 factory_kw_value_vars=factory_kw_value_vars,
                 loc=inst.loc,
                 family_metadata=family_metadata,
+                lowering_plan=lowering_plan,
             )
         if self._deferred_launch_dim_inference:
             # Keep all helper constructors and launch-dependent calls intact.
@@ -445,13 +447,23 @@ class CoopSinglePhaseRewrite(
                 runtime_temp_storage_plan is not None
                 and runtime_temp_storage_plan.auto_sync
             ):
+                synchronization_scope = match.factory_metadata.synchronization_scope
+                if match.lowering_plan is not None:
+                    planned_synchronization = match.lowering_plan.synchronization
+                    if planned_synchronization is None:
+                        raise CoopSinglePhaseRewriteError(
+                            "cooperative provider storage requires a "
+                            "synchronization contract."
+                        )
+                    synchronization_scope = (
+                        planned_synchronization.storage_reuse_barrier
+                    )
                 self._emit_temp_storage_auto_sync(
                     new_block,
                     scope=inst.target.scope,
                     loc=inst.loc,
-                    synchronization_scope=(
-                        match.factory_metadata.synchronization_scope
-                    ),
+                    synchronization_scope=synchronization_scope,
+                    lowering_plan=match.lowering_plan,
                 )
         used_var_names: set[str] = set()
         for stmt in new_block.body:

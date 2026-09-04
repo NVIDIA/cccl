@@ -25,6 +25,11 @@ from cuda.coop._core import SynchronizationScope
 
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
+# The whole-function group planner attaches its exact lowering record to the
+# provider marker with this reserved keyword.  The before-inference rewrite
+# consumes it before invoking the registered provider factory.
+_GROUP_LOWERING_PLAN_KWARG = "__cuda_coop_group_lowering_plan__"
+
 
 class _InferPayloadHook(Protocol):
     def __call__(

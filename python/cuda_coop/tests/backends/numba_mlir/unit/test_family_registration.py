@@ -439,12 +439,81 @@ def _resolved_calls(func_ir):
     return calls
 
 
+def _evaluate_ir_value(func_ir, value, *, thread, block):
+    """Evaluate the integer/slice IR emitted for cooperative storage."""
+
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    definitions = {
+        inst.target.name: inst.value
+        for ir_block in func_ir.blocks.values()
+        for inst in ir_block.body
+        if isinstance(inst, ir.Assign)
+    }
+
+    def evaluate(current):
+        if isinstance(current, ir.Var):
+            return evaluate(definitions[current.name])
+        if isinstance(current, ir.Const):
+            return current.value
+        if isinstance(current, ir.Global):
+            return current.value
+        if not isinstance(current, ir.Expr):
+            return current
+        if current.op == "getattr":
+            source = evaluate(current.value)
+            if isinstance(source, tuple) and source[0] == "cuda-dim":
+                dimensions = thread if source[1] == "threadIdx" else block
+                return dimensions[{"x": 0, "y": 1, "z": 2}[current.attr]]
+            if getattr(source, "__name__", None) == "numba_cuda_mlir.cuda" and (
+                current.attr in {"threadIdx", "blockDim"}
+            ):
+                return ("cuda-dim", current.attr)
+            return getattr(source, current.attr)
+        if current.op == "binop":
+            return current.fn(evaluate(current.lhs), evaluate(current.rhs))
+        if current.op == "call":
+            function = evaluate(current.func)
+            return function(*(evaluate(argument) for argument in current.args))
+        raise AssertionError(f"unsupported cooperative storage IR: {current.op}")
+
+    return evaluate(value)
+
+
+def _invocable_storage_slices(func_ir, invocable, *, thread, block):
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    definitions = {
+        inst.target.name: inst.value
+        for ir_block in func_ir.blocks.values()
+        for inst in ir_block.body
+        if isinstance(inst, ir.Assign)
+    }
+    slices = []
+    for target, call in _resolved_calls(func_ir):
+        if target is not invocable:
+            continue
+        storage = definitions[call.args[0].name]
+        assert isinstance(storage, ir.Expr)
+        assert storage.op == "getitem"
+        slices.append(
+            _evaluate_ir_value(
+                func_ir,
+                storage.index,
+                thread=thread,
+                block=block,
+            )
+        )
+    return slices
+
+
 def _register_lazy_fake_frontends():
     from cuda.coop._core.api import _dispatch as portable_dispatch
     from cuda.coop.numba_mlir._compiler import _operations
 
     operations = {
         "scalar": "_test_lazy_family_scalar",
+        "thread_storage": "_test_lazy_family_thread_storage",
         "array": "_test_lazy_family_array",
         "pair": "_test_lazy_family_pair",
     }
@@ -464,6 +533,20 @@ def _register_lazy_fake_frontends():
         del group, value
 
     @portable_dispatch._portable_group_operation(
+        operations["thread_storage"],
+        group_kinds=("thread",),
+    )
+    def portable_thread_storage(group, value):
+        del group, value
+
+    @_operations.group_operation(
+        operations["thread_storage"],
+        family_module=_LAZY_FAKE_FAMILY_MODULE,
+    )
+    def qualified_thread_storage(group, value):
+        del group, value
+
+    @portable_dispatch._portable_group_operation(
         operations["array"],
         group_kinds=("block",),
     )
@@ -479,37 +562,46 @@ def _register_lazy_fake_frontends():
 
     @portable_dispatch._portable_group_operation(
         operations["pair"],
-        group_kinds=("warp",),
+        group_kinds=("warp", "threads_within_warp"),
     )
-    def portable_pair(group, key, values):
-        del group, key, values
+    def portable_pair(group, key, values, temp_storage=None):
+        del group, key, values, temp_storage
 
     @_operations.group_operation(
         operations["pair"],
         family_module=_LAZY_FAKE_FAMILY_MODULE,
     )
-    def qualified_pair(group, key, values):
-        del group, key, values
+    def qualified_pair(group, key, values, temp_storage=None):
+        del group, key, values, temp_storage
 
     return operations, {
         "portable": {
             "scalar": portable_scalar,
+            "thread_storage": portable_thread_storage,
             "array": portable_array,
             "pair": portable_pair,
         },
         "qualified": {
             "scalar": qualified_scalar,
+            "thread_storage": qualified_thread_storage,
             "array": qualified_array,
             "pair": qualified_pair,
         },
     }
 
 
-def _lazy_fake_family_frontend(module, marker, shape, *, result_index=None):
+def _lazy_fake_family_frontend(
+    module,
+    marker,
+    shape,
+    *,
+    result_index=None,
+    logical_width=None,
+):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
-    if shape == "scalar":
+    if shape in {"scalar", "thread_storage"}:
 
         def kernel(value):
             return marker(module.this_thread(), value)
@@ -522,18 +614,40 @@ def _lazy_fake_family_frontend(module, marker, shape, *, result_index=None):
             return marker(module.this_block(), values)
 
         args = ()
-    elif result_index is None:
+    elif result_index is None and logical_width is None:
 
         def kernel(key):
             values = module.ThreadData(3, dtype=types.float32)
             return marker(module.this_warp(), key, values)
 
         args = (types.int32,)
-    else:
+    elif result_index is None:
+
+        def kernel(key):
+            values = module.ThreadData(3, dtype=types.float32)
+            return marker(
+                module.this_warp().group_by(logical_width),
+                key,
+                values,
+            )
+
+        args = (types.int32,)
+    elif logical_width is None:
 
         def kernel(key):
             values = module.ThreadData(3, dtype=types.float32)
             return marker(module.this_warp(), key, values)[result_index]
+
+        args = (types.int32,)
+    else:
+
+        def kernel(key):
+            values = module.ThreadData(3, dtype=types.float32)
+            return marker(
+                module.this_warp().group_by(logical_width),
+                key,
+                values,
+            )[result_index]
 
         args = (types.int32,)
     return run_frontend(kernel), args
@@ -550,7 +664,7 @@ def _return_value(func_ir):
     )
 
 
-def _run_lazy_fake_family_pipeline(func_ir, args):
+def _run_lazy_fake_family_pipeline(func_ir, args, *, block=(64, 1, 1)):
     from cuda.coop.numba_mlir._compiler._group_planner import (
         _GroupCallPlanner,
         has_group_markers,
@@ -567,7 +681,7 @@ def _run_lazy_fake_family_pipeline(func_ir, args):
     )
     planner = _GroupCallPlanner(
         state,
-        {"block": (64, 1, 1), "grid": (1, 1, 1), "cluster": None},
+        {"block": block, "grid": (1, 1, 1), "cluster": None},
     )
     assert has_group_markers(func_ir)
     assert planner.run()
@@ -584,10 +698,12 @@ def _run_lazy_fake_family_pipeline(func_ir, args):
 
 def test_lazy_fake_family_proves_additive_registration_end_to_end():
     from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numbair_transforms import ir
 
     import cuda.coop as portable_coop
     import cuda.coop.numba_mlir as qualified_coop
     from cuda.coop._core import (
+        GroupLoweringPlan,
         LaunchFacts,
         StorageOwnership,
         SynchronizationScope,
@@ -622,6 +738,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
     family = None
     operations = {
         "scalar": "_test_lazy_family_scalar",
+        "thread_storage": "_test_lazy_family_thread_storage",
         "array": "_test_lazy_family_array",
         "pair": "_test_lazy_family_pair",
     }
@@ -682,36 +799,68 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             exact_block_dim=(64, 1, 1),
             exact_grid_dim=(1, 1, 1),
         )
-        core_cases = {
-            "scalar": (
+        core_cases = (
+            (
+                "scalar",
                 this_thread,
                 (types.int32,),
                 SynchronizationScope.NONE,
                 StorageOwnership.NONE,
                 1,
+                None,
+                None,
             ),
-            "array": (
+            (
+                "array",
                 this_block,
                 (types.float32,),
                 SynchronizationScope.BLOCK,
                 StorageOwnership.IMPLEMENTATION,
                 1,
+                1,
+                "cta",
             ),
-            "pair": (
+            (
+                "thread_storage",
+                this_thread,
+                (types.int32,),
+                SynchronizationScope.NONE,
+                StorageOwnership.IMPLEMENTATION,
+                1,
+                64,
+                "linear_thread_rank",
+            ),
+            (
+                "pair",
                 this_warp,
                 (types.int32, types.float32),
                 SynchronizationScope.WARP,
                 StorageOwnership.IMPLEMENTATION,
                 2,
+                2,
+                "linear_thread_rank / 32",
             ),
-        }
-        for shape, (
+            (
+                "pair",
+                lambda: this_warp().group_by(8),
+                (types.int32, types.float32),
+                SynchronizationScope.WARP,
+                StorageOwnership.IMPLEMENTATION,
+                2,
+                8,
+                "linear_thread_rank / 8",
+            ),
+        )
+        for (
+            shape,
             group_factory,
             result_dtypes,
             expected_scope,
             expected_ownership,
             result_count,
-        ) in core_cases.items():
+            expected_instances,
+            expected_instance_index,
+        ) in core_cases:
             semantics = family.LazyFamilySemantics(
                 operation=operations[shape],
                 result_dtypes=result_dtypes,
@@ -722,6 +871,8 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             assert plan.topology.execution_scope is expected_scope
             assert plan.synchronization.storage_reuse_barrier is expected_scope
             assert plan.temp_storage.ownership is expected_ownership
+            assert plan.temp_storage.instances == expected_instances
+            assert plan.temp_storage.instance_index == expected_instance_index
             assert len(plan.result.values) == result_count
             assert tuple(
                 classification.name for classification in call.argument_classifications
@@ -733,6 +884,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
 
         provenance_cases = (
             ("scalar", None, types.int32, False, 1),
+            ("thread_storage", None, types.int32, False, 1),
             ("array", None, types.float32, True, 3),
             ("pair", 0, types.int32, False, 1),
             ("pair", 1, types.float32, True, 3),
@@ -770,7 +922,7 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
         pipeline_cases = [
             (frontend_name, shape)
             for frontend_name in ("portable", "qualified")
-            for shape in ("scalar", "array", "pair")
+            for shape in ("scalar", "thread_storage", "array", "pair")
         ]
         pipeline_results = {("portable", "scalar"): (first_ir, first_rewrite)}
         for frontend_name, shape in pipeline_cases[1:]:
@@ -784,20 +936,48 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             pipeline_results[(frontend_name, shape)] = (func_ir, rewrite)
 
         expected_rewrite = {
-            "scalar": (family.INVOCABLES[operations["scalar"]], 1, None),
+            "scalar": (
+                family.INVOCABLES[operations["scalar"]],
+                1,
+                None,
+                None,
+                None,
+                None,
+            ),
+            "thread_storage": (
+                family.INVOCABLES[operations["thread_storage"]],
+                2,
+                None,
+                512,
+                8,
+                64,
+            ),
             "array": (
                 family.INVOCABLES[operations["array"]],
                 2,
                 cuda.syncthreads,
+                24,
+                24,
+                1,
             ),
             "pair": (
                 family.INVOCABLES[operations["pair"]],
                 3,
                 cuda.syncwarp,
+                64,
+                32,
+                2,
             ),
         }
         for (_, shape), (func_ir, rewrite) in pipeline_results.items():
-            invocable, arg_count, sync = expected_rewrite[shape]
+            (
+                invocable,
+                arg_count,
+                sync,
+                storage_bytes,
+                storage_stride,
+                storage_instances,
+            ) = expected_rewrite[shape]
             calls = _resolved_calls(func_ir)
             invocable_calls = [call for target, call in calls if target is invocable]
             assert len(invocable_calls) == 1
@@ -811,9 +991,24 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             shared_allocations = sum(target is cuda.shared.array for target, _ in calls)
             assert shared_allocations == (0 if shape == "scalar" else 1)
             assert (rewrite._temp_storage_global_plan is None) is (shape == "scalar")
+            assert not any(
+                isinstance(statement, ir.Assign)
+                and isinstance(statement.value, ir.Global)
+                and isinstance(statement.value.value, GroupLoweringPlan)
+                for block in func_ir.blocks.values()
+                for statement in block.body
+            )
+            if storage_bytes is not None:
+                assert rewrite._temp_storage_global_plan.total_size == storage_bytes
+                storage_plan = rewrite._implicit_temp_storage_plan
+                assert storage_plan.size_in_bytes == storage_bytes
+                storage_slice = next(iter(storage_plan.slices_by_call_id.values()))
+                assert storage_slice.stride == storage_stride
+                assert storage_slice.instances == storage_instances
 
         assert {(operation, dtype) for operation, dtype in family.FACTORY_CALLS} == {
             (operations["scalar"], types.int32),
+            (operations["thread_storage"], types.int32),
             (operations["array"], types.float32),
             (operations["pair"], types.float32),
         }
@@ -822,9 +1017,11 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
             for operation, group_kind, is_common_root, _ in family.PLANNING_EVENTS
         } == {
             (operations["scalar"], "thread", True),
+            (operations["thread_storage"], "thread", True),
             (operations["array"], "block", True),
             (operations["pair"], "warp", True),
             (operations["scalar"], "thread", False),
+            (operations["thread_storage"], "thread", False),
             (operations["array"], "block", False),
             (operations["pair"], "warp", False),
         }
@@ -867,18 +1064,298 @@ def test_lazy_fake_family_proves_additive_registration_end_to_end():
     )
 
 
-@pytest.mark.parametrize(
-    ("scope_name", "sync_name"),
-    [
-        ("block", "syncthreads"),
-        ("warp", "syncwarp"),
-        ("none", None),
-    ],
-)
-def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
-    scope_name,
-    sync_name,
+@pytest.mark.parametrize("frontend_name", ["portable", "qualified"])
+def test_lazy_fake_logical_warp_uses_one_aligned_slice_per_group(frontend_name):
+    from numba_cuda_mlir import cuda
+
+    import cuda.coop as portable_coop
+    import cuda.coop.numba_mlir as qualified_coop
+
+    sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+    operations, markers = _register_lazy_fake_frontends()
+    module = portable_coop if frontend_name == "portable" else qualified_coop
+    func_ir, args = _lazy_fake_family_frontend(
+        module,
+        markers[frontend_name]["pair"],
+        "pair",
+        logical_width=8,
+    )
+
+    _, rewrite, _ = _run_lazy_fake_family_pipeline(
+        func_ir,
+        args,
+        block=(4, 4, 4),
+    )
+    family = sys.modules[_LAZY_FAKE_FAMILY_MODULE]
+    invocable = family.INVOCABLES[operations["pair"]]
+    storage_plan = rewrite._implicit_temp_storage_plan
+    assert storage_plan.size_in_bytes == 256
+    assert storage_plan.alignment == 16
+    assert rewrite._temp_storage_global_plan.total_size == 256
+    storage_slice = next(iter(storage_plan.slices_by_call_id.values()))
+    assert storage_slice.offset == 0
+    assert storage_slice.size_in_bytes == 24
+    assert storage_slice.stride == 32
+    assert storage_slice.instances == 8
+    topology = storage_slice.lowering_plan.topology
+    assert topology.logical_width == 8
+    assert topology.instances == 8
+    assert topology.instance_index == "linear_thread_rank / 8"
+
+    sync_calls = [
+        call for target, call in _resolved_calls(func_ir) if target is cuda.syncwarp
+    ]
+    assert len(sync_calls) == 1
+    assert len(sync_calls[0].args) == 1
+    for thread, expected_slice, expected_mask in (
+        ((3, 2, 1), slice(96, 120), 0xFF000000),
+        ((3, 0, 2), slice(128, 152), 0x000000FF),
+    ):
+        assert _invocable_storage_slices(
+            func_ir,
+            invocable,
+            thread=thread,
+            block=(4, 4, 4),
+        ) == [expected_slice]
+        assert (
+            _evaluate_ir_value(
+                func_ir,
+                sync_calls[0].args[0],
+                thread=thread,
+                block=(4, 4, 4),
+            )
+            == expected_mask
+        )
+
+
+def test_lazy_fake_single_lane_groups_emit_the_high_lane_mask():
+    from numba_cuda_mlir import cuda
+
+    import cuda.coop as coop
+
+    sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+    operations, markers = _register_lazy_fake_frontends()
+    func_ir, args = _lazy_fake_family_frontend(
+        coop,
+        markers["portable"]["pair"],
+        "pair",
+        logical_width=1,
+    )
+
+    _, rewrite, _ = _run_lazy_fake_family_pipeline(
+        func_ir,
+        args,
+        block=(32, 1, 1),
+    )
+    family = sys.modules[_LAZY_FAKE_FAMILY_MODULE]
+    invocable = family.INVOCABLES[operations["pair"]]
+    storage_plan = rewrite._implicit_temp_storage_plan
+    assert storage_plan.size_in_bytes == 1024
+    storage_slice = next(iter(storage_plan.slices_by_call_id.values()))
+    assert storage_slice.stride == 32
+    assert storage_slice.instances == 32
+    assert _invocable_storage_slices(
+        func_ir,
+        invocable,
+        thread=(31, 0, 0),
+        block=(32, 1, 1),
+    ) == [slice(992, 1016)]
+
+    sync_calls = [
+        call for target, call in _resolved_calls(func_ir) if target is cuda.syncwarp
+    ]
+    assert len(sync_calls) == 1
+    assert len(sync_calls[0].args) == 1
+    assert (
+        _evaluate_ir_value(
+            func_ir,
+            sync_calls[0].args[0],
+            thread=(31, 0, 0),
+            block=(32, 1, 1),
+        )
+        == 0x80000000
+    )
+
+
+@pytest.mark.parametrize("frontend_name", ["portable", "qualified"])
+def test_lazy_fake_thread_scope_uses_one_aligned_slice_per_thread(frontend_name):
+    from numba_cuda_mlir import cuda
+
+    import cuda.coop as portable_coop
+    import cuda.coop.numba_mlir as qualified_coop
+
+    sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+    operations, markers = _register_lazy_fake_frontends()
+    module = portable_coop if frontend_name == "portable" else qualified_coop
+    func_ir, args = _lazy_fake_family_frontend(
+        module,
+        markers[frontend_name]["thread_storage"],
+        "thread_storage",
+    )
+
+    _, rewrite, _ = _run_lazy_fake_family_pipeline(
+        func_ir,
+        args,
+        block=(4, 4, 4),
+    )
+    family = sys.modules[_LAZY_FAKE_FAMILY_MODULE]
+    invocable = family.INVOCABLES[operations["thread_storage"]]
+    storage_plan = rewrite._implicit_temp_storage_plan
+    assert storage_plan.size_in_bytes == 512
+    assert storage_plan.alignment == 8
+    assert rewrite._temp_storage_global_plan.total_size == 512
+    storage_slice = next(iter(storage_plan.slices_by_call_id.values()))
+    assert storage_slice.offset == 0
+    assert storage_slice.size_in_bytes == 5
+    assert storage_slice.stride == 8
+    assert storage_slice.instances == 64
+    topology = storage_slice.lowering_plan.topology
+    assert topology.execution_scope.value == "none"
+    assert topology.logical_width == 1
+    assert topology.instances == 64
+    assert topology.instance_index == "linear_thread_rank"
+
+    calls = _resolved_calls(func_ir)
+    assert sum(target is cuda.shared.array for target, _ in calls) == 1
+    assert not any(target in {cuda.syncthreads, cuda.syncwarp} for target, _ in calls)
+    for thread, expected_slice in (
+        ((3, 2, 1), slice(216, 221)),
+        ((3, 0, 2), slice(280, 285)),
+    ):
+        assert _invocable_storage_slices(
+            func_ir,
+            invocable,
+            thread=thread,
+            block=(4, 4, 4),
+        ) == [expected_slice]
+
+
+def test_lazy_fake_storage_reuses_only_identical_execution_domains():
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    import cuda.coop as coop
+
+    sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+    operations, markers = _register_lazy_fake_frontends()
+    pair = markers["portable"]["pair"]
+
+    def kernel(key):
+        values = coop.ThreadData(3, dtype=types.float32)
+        pair(coop.this_warp(), key, values)
+        pair(coop.this_warp(), key, values)
+        pair(coop.this_warp().group_by(8), key, values)
+        return key
+
+    func_ir = run_frontend(kernel)
+    _, rewrite, _ = _run_lazy_fake_family_pipeline(
+        func_ir,
+        (types.int32,),
+    )
+    family = sys.modules[_LAZY_FAKE_FAMILY_MODULE]
+    invocable = family.INVOCABLES[operations["pair"]]
+    storage_plan = rewrite._implicit_temp_storage_plan
+    assert storage_plan.size_in_bytes == 320
+    assert rewrite._temp_storage_global_plan.total_size == 320
+
+    slices_by_width = {}
+    for storage_slice in storage_plan.slices_by_call_id.values():
+        width = storage_slice.lowering_plan.topology.logical_width
+        slices_by_width.setdefault(width, []).append(storage_slice)
+    assert set(slices_by_width) == {8, 32}
+    assert len(slices_by_width[32]) == 2
+    assert {storage_slice.offset for storage_slice in slices_by_width[32]} == {0}
+    assert {storage_slice.instances for storage_slice in slices_by_width[32]} == {2}
+    assert len(slices_by_width[8]) == 1
+    assert slices_by_width[8][0].offset == 64
+    assert slices_by_width[8][0].instances == 8
+    assert {
+        storage_slice.stride
+        for storage_slice in (*slices_by_width[32], *slices_by_width[8])
+    } == {32}
+
+    assert _invocable_storage_slices(
+        func_ir,
+        invocable,
+        thread=(40, 0, 0),
+        block=(64, 1, 1),
+    ) == [slice(32, 56), slice(32, 56), slice(224, 248)]
+    sync_calls = [
+        call for target, call in _resolved_calls(func_ir) if target is cuda.syncwarp
+    ]
+    assert [len(call.args) for call in sync_calls] == [0, 0, 1]
+    assert (
+        _evaluate_ir_value(
+            func_ir,
+            sync_calls[-1].args[0],
+            thread=(40, 0, 0),
+            block=(64, 1, 1),
+        )
+        == 0x0000FF00
+    )
+
+
+@pytest.mark.parametrize("frontend_name", ["portable", "qualified"])
+@pytest.mark.parametrize("logical_width", [None, 8], ids=["physical", "logical"])
+def test_lazy_fake_warp_rejects_caller_owned_storage_before_provider(
+    frontend_name,
+    logical_width,
 ):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    import cuda.coop as portable_coop
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+    from cuda.coop.numba_mlir._compiler._group_planner_support import (
+        GroupRewriteError,
+    )
+
+    sys.modules.pop(_LAZY_FAKE_FAMILY_MODULE, None)
+    operations, markers = _register_lazy_fake_frontends()
+    module = portable_coop if frontend_name == "portable" else qualified_coop
+    pair = markers[frontend_name]["pair"]
+    if logical_width is None:
+
+        def kernel(key):
+            storage = module.TempStorage()
+            values = module.ThreadData(3, dtype=types.float32)
+            return pair(
+                module.this_warp(),
+                key,
+                values,
+                temp_storage=storage,
+            )
+
+    else:
+
+        def kernel(key):
+            storage = module.TempStorage()
+            values = module.ThreadData(3, dtype=types.float32)
+            return pair(
+                module.this_warp().group_by(logical_width),
+                key,
+                values,
+                temp_storage=storage,
+            )
+
+    func_ir = run_frontend(kernel)
+    planner = _GroupCallPlanner(
+        SimpleNamespace(func_ir=func_ir, args=(types.int32,)),
+        {"block": (64, 1, 1), "grid": (1, 1, 1), "cluster": None},
+    )
+    with pytest.raises(
+        GroupRewriteError,
+        match="caller-owned TempStorage is not supported for warp-scoped",
+    ):
+        planner.run()
+
+    family = sys.modules[_LAZY_FAKE_FAMILY_MODULE]
+    assert family.FACTORY_CALLS == []
+    assert operations["pair"] in family.OPERATIONS
+
+
+def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
     import numpy as np
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
@@ -892,7 +1369,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
 
     operation = "_test_rewrite_family"
-    synchronization_scope = SynchronizationScope(scope_name)
+    synchronization_scope = SynchronizationScope.BLOCK
     events = []
     contexts = []
     family_metadata = object()
@@ -1022,7 +1499,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite(
     sync_targets = {
         target for target, _ in calls if target in {cuda.syncthreads, cuda.syncwarp}
     }
-    assert sync_targets == (set() if sync_name is None else {getattr(cuda, sync_name)})
+    assert sync_targets == {cuda.syncthreads}
     assert rewrite._temp_storage_global_plan.total_size == 24
     assert rewrite._temp_storage_global_plan.max_alignment == 8
     assert rewrite._implicit_temp_storage_plan.size_in_bytes == 24
