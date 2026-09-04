@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load/store semantics and block or physical-warp lowering.
+"""Load/store semantics and block, physical-warp, or logical-warp lowering.
 
 This module owns portable load/store algorithm normalization and selects the
 corresponding CUB specialization after group resolution. It does not own
@@ -36,7 +36,7 @@ from ..warp.load_store import (
     make_warp_load_spec,
     make_warp_store_spec,
 )
-from ._contracts import _contracts, _unsupported
+from ._contracts import _contracts, _unsupported, _unsupported_cub_warp_width
 from ._dispatch import _register_group_operation_family
 from ._model import (
     ArgumentPrecondition,
@@ -291,13 +291,13 @@ def _plan_load_store(
     launch: LaunchFacts,
     operation: GroupLoadStoreSemantics,
 ) -> GroupLoweringPlan:
-    if resolved.kind not in {"block", "warp"}:
+    if resolved.kind not in {"block", "warp", "threads_within_warp"}:
         return _unsupported(
             call,
             resolved,
             UnsupportedReasonCode.GROUP_KIND,
-            "cuda.coop Load/Store currently supports only this_block() and "
-            "complete physical this_warp() groups",
+            "cuda.coop Load/Store supports this_block(), complete physical "
+            "this_warp(), and power-of-two logical-warp groups",
         )
     group_size = resolved.static_size
     assert group_size is not None
@@ -352,6 +352,10 @@ def _plan_load_store(
         target = GroupLoweringTarget.CUB_BLOCK
         header = f"cub/block/block_{operation.kind.value}.cuh"
     else:
+        warp_width, width_error = _unsupported_cub_warp_width(call, resolved)
+        if width_error is not None:
+            return width_error
+        assert warp_width is not None
         try:
             algorithm = WarpLoadStoreAlgorithm(operation.algorithm.value)
         except ValueError:
@@ -371,29 +375,27 @@ def _plan_load_store(
             dtype=operation.dtype,
             items_per_thread=operation.items_per_thread,
             algorithm=algorithm,
-            threads_in_warp=32,
+            threads_in_warp=warp_width,
             valid_items=operation.valid_items,
             oob_default=operation.oob_default,
             include_full_tile=False,
-            # Every physical warp receives a distinct consecutive tile. The
-            # backend combines this runtime ABI argument with the preserved
+            # Every physical or logical Warp group receives a consecutive tile.
+            # The backend combines this runtime ABI argument with the preserved
             # user offset recorded on ``operation``.
             include_pointer_offset=ArgumentBinding.runtime(),
         ).specialization
         target = GroupLoweringTarget.CUB_WARP
         header = f"cub/warp/warp_{operation.kind.value}.cuh"
-        warp_instances = block_threads // 32
-        maximum_tile_origin = (warp_instances - 1) * tile_items
+        group_instances = block_threads // warp_width
+        maximum_tile_origin = (group_instances - 1) * tile_items
         if maximum_tile_origin > maximum_user_offset:
-            raise ValueError(
-                "physical-warp tile origin must fit a signed 64-bit offset"
-            )
+            raise ValueError("warp-group tile origin must fit a signed 64-bit offset")
         maximum_user_offset -= maximum_tile_origin
     if operation.offset.kind is BindingKind.STATIC and (
         int(operation.offset.value) > maximum_user_offset
     ):
         raise ValueError(
-            "static offset plus the physical-warp tile origin must fit a "
+            "static offset plus the warp-group tile origin must fit a "
             "signed 64-bit integer"
         )
     cpp_class = f"cub::{spec.struct_name}"
@@ -492,10 +494,10 @@ _register_group_operation_family(
     GroupLoadStoreSemantics,
     classifications=_call_classifications,
     planner=_plan_load_store,
-    group_kinds=frozenset({"block", "warp"}),
+    group_kinds=frozenset({"block", "warp", "threads_within_warp"}),
     unsupported_group_message=(
-        "cuda.coop Load/Store currently supports only this_block() and "
-        "complete physical this_warp() groups"
+        "cuda.coop Load/Store supports this_block(), complete physical "
+        "this_warp(), and power-of-two logical-warp groups"
     ),
 )
 
