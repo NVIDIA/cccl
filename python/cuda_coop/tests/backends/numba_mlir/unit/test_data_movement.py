@@ -968,7 +968,10 @@ def test_runtime_scalar_store_requires_exact_destination_dtype(
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
-@pytest.mark.parametrize("source_kind", ["index", "element", "cast"])
+@pytest.mark.parametrize(
+    "source_kind",
+    ["index", "element", "numpy-cast", "compiler-cast"],
+)
 def test_cuda_and_array_scalars_keep_compiler_dtypes_for_store(
     qualified,
     source_kind,
@@ -986,8 +989,10 @@ def test_cuda_and_array_scalars_keep_compiler_dtypes_for_store(
             value = index
         elif source_kind == "element":
             value = source[index]
-        else:
+        elif source_kind == "numpy-cast":
             value = np.int32(index + 1)
+        else:
+            value = types.int32(index + 1)
         module.store(module.this_block(), destination, value)
 
     array_type = types.Array(types.int32, 1, "C")

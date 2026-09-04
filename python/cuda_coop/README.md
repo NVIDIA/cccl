@@ -23,6 +23,12 @@ python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
 Python 3.10 through 3.14 is supported. Importing the portable `cuda.coop`
 package does not require loading a compiler backend.
 
+The Numba backend is intentionally limited to
+`numba-cuda-mlir>=0.5.0,<0.6`. It currently uses a guarded compatibility shim
+for private 0.5.x compiler registration APIs, so another runtime series is
+rejected before compiler registries are changed. Replacing that shim with an
+upstream public API is follow-up work.
+
 When using the portable namespace with Numba-CUDA-MLIR, import the compiler
 runtime first so `cuda.coop` can activate its compiler hooks automatically:
 
@@ -38,13 +44,19 @@ the qualified backend before compiling a kernel:
 
 ```python
 from cuda import coop
-import cuda.coop.numba_mlir  # Activate support for portable coop calls.
+import cuda.coop.numba_mlir as _coop_numba_mlir  # Activate portable calls.
 ```
 
 Importing `cuda.coop` first and compiling without that explicit activation is
 unsupported. Numba-CUDA-MLIR then reports the portable marker as unknown
 (typically `Unknown attribute 'this_block'`) because its compiler hooks were
 not registered.
+
+Keep the alias on the qualified activation import. A bare
+`import cuda.coop.numba_mlir` binds the name `cuda` in the importing scope. If
+that name already refers to the object imported by
+`from numba_cuda_mlir import cuda`, the bare import replaces it and later
+`@cuda.jit` uses the wrong module.
 
 Using `import cuda.coop.numba_mlir as coop` instead activates the backend and
 selects its qualified namespace.
@@ -77,31 +89,40 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 ## Block Load and Store
 
 The portable `cuda.coop` entry points and the qualified
-`cuda.coop.numba_mlir` entry points have matching signatures. The following is
-a kernel-body example, where `source`, `destination`, and `count` are kernel
-arguments:
+`cuda.coop.numba_mlir` entry points have matching signatures. The following
+kernel-body example clamps a grid tile tail, where `source`, `destination`, and
+`count` are kernel arguments:
 
 ```python
-from numba_cuda_mlir import types
+from numba_cuda_mlir import cuda, types
 
 from cuda import coop
 
 block = coop.this_block()
 items = coop.ThreadData(2, dtype=types.int32)
+tile_items = cuda.blockDim.x * 2
+tile_offset = cuda.blockIdx.x * tile_items
+valid_items = count - tile_offset
+if valid_items < 0:
+    valid_items = 0
+elif valid_items > tile_items:
+    valid_items = tile_items
 loaded = coop.load(
     block,
     source,
     items,
     algorithm="direct",
-    valid_items=count,
+    valid_items=valid_items,
     oob_default=0,
+    offset=tile_offset,
 )
 coop.store(
     block,
     destination,
     loaded,
     algorithm="direct",
-    valid_items=count,
+    valid_items=valid_items,
+    offset=tile_offset,
 )
 ```
 
@@ -110,6 +131,24 @@ items across the complete block tile, while `offset` is a nonnegative element
 offset. Runtime offsets are caller-validated. Source and destination arrays
 must be one-dimensional and contiguous. Without `oob_default`, invalid Load
 slots retain their previous values.
+
+> **`valid_items` must satisfy
+> `0 <= valid_items <= group_size * items_per_thread`.** Static values outside
+> that range are rejected while planning. Runtime values are checked rather
+> than saturated; do not rely on CUB's oversized-count behavior. An invalid
+> runtime value executes a deterministic device trap before narrowing to CUB's
+> integer parameter, and that trap poisons the current CUDA context. Clamp
+> grid-stride and tail counts as above. Run intentional failure probes in
+> disposable processes.
+
+Store payloads must have exactly the destination dtype. Numba-CUDA-MLIR may
+promote integer arithmetic even when its operands are 32-bit, so explicitly
+cast computed values before storing them:
+
+```python
+value = types.int32(source[cuda.threadIdx.x] + 1)
+coop.store(block, destination, value, algorithm="direct")
+```
 
 The public Block Load and Store enums retain the complete CUB algorithm
 vocabulary. This release executes only `DIRECT`; selecting another member is

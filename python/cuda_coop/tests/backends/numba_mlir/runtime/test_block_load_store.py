@@ -9,6 +9,7 @@ import subprocess
 import sys
 import textwrap
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -21,6 +22,10 @@ from numba_cuda_mlir import types
 
 import cuda.coop.numba_mlir as qualified_coop
 from cuda import coop as root_coop
+
+assert qualified_coop.__file__ is not None
+_QUALIFIED_COOP_ORIGIN = Path(qualified_coop.__file__).resolve()
+_SAFE_PATH_FLAG = "-P" if sys.version_info >= (3, 11) else "-I"
 
 pytestmark = [
     pytest.mark.backend_numba_mlir,
@@ -300,6 +305,8 @@ def _portable_grid_stride_load_store(source, destination):
     grid_stride = cuda.gridDim.x * _TILE_ITEMS
     while tile_offset < source.size:
         valid_items = source.size - tile_offset
+        # Runtime counts trap rather than saturate. Clamp each grid-stride
+        # remainder to the exact tile accepted by this block.
         if valid_items > _TILE_ITEMS:
             valid_items = _TILE_ITEMS
         payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
@@ -326,6 +333,8 @@ def _qualified_grid_stride_load_store(source, destination):
     grid_stride = cuda.gridDim.x * _TILE_ITEMS
     while tile_offset < source.size:
         valid_items = source.size - tile_offset
+        # Runtime counts trap rather than saturate. Clamp each grid-stride
+        # remainder to the exact tile accepted by this block.
         if valid_items > _TILE_ITEMS:
             valid_items = _TILE_ITEMS
         payload = qualified_coop.ThreadData(
@@ -402,9 +411,18 @@ def _run_invalid_runtime_valid_items_probe(
 import numpy as np
 import numba_cuda_mlir.cuda as cuda
 from numba_cuda_mlir import types
+from pathlib import Path
 
-import cuda.coop.numba_mlir as qualified_coop  # noqa: F401
+import cuda.coop.numba_mlir as _coop_numba_mlir
 from cuda import coop as root_coop
+
+expected_origin = Path({str(_QUALIFIED_COOP_ORIGIN)!r})
+actual_origin = Path(_coop_numba_mlir.__file__).resolve()
+if actual_origin != expected_origin:
+    raise RuntimeError(
+        f"trap probe imported cuda.coop from {{actual_origin}}, "
+        f"expected {{expected_origin}}"
+    )
 
 _THREADS = {_THREADS}
 _ITEMS_PER_THREAD = {_ITEMS_PER_THREAD}
@@ -424,7 +442,7 @@ cuda.synchronize()
 raise AssertionError("invalid valid_items did not trap")
 """
     return subprocess.run(
-        [sys.executable, "-B", "-c", script],
+        [sys.executable, _SAFE_PATH_FLAG, "-B", "-c", script],
         check=False,
         capture_output=True,
         text=True,
