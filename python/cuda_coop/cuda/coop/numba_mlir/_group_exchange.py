@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .._core.api._payload import ThreadDataLike, _ReadableThreadDataLike
 from ._compiler._operations import group_operation
 from ._group_marker import group_primitive_marker
 from ._thread_group import ThreadGroup
@@ -19,14 +20,14 @@ from ._thread_group import ThreadGroup
 )
 def exchange(
     group: ThreadGroup,
-    value: Any,
+    value: _ReadableThreadDataLike[Any],
     /,
     *,
     mode: Any = "striped_to_blocked",
-    ranks: Any = None,
-    valid_flags: Any = None,
-    warp_time_slicing: Any = False,
-) -> Any:
+    ranks: _ReadableThreadDataLike[Any] | None = None,
+    valid_flags: _ReadableThreadDataLike[Any] | None = None,
+    warp_time_slicing: bool = False,
+) -> ThreadDataLike[Any]:
     """Rearrange a fixed-size per-thread payload within a group."""
 
     return group_primitive_marker(
