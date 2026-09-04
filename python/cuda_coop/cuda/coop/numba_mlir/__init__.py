@@ -36,6 +36,7 @@ from ._thread_group import (
 )
 
 if TYPE_CHECKING:
+    from ._group._exchange import exchange
     from ._group._merge_sort import merge_sort_keys, merge_sort_pairs
     from ._group._radix_sort import (
         radix_rank_keys,
@@ -50,6 +51,7 @@ if TYPE_CHECKING:
         inclusive_sum,
         scan,
     )
+    from ._group._shuffle import shuffle
     from ._group._topk import (
         topk_max_keys,
         topk_max_pairs,
@@ -66,6 +68,7 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
@@ -80,6 +83,7 @@ __all__ = [
     "reduce",
     "scan",
     "shared",
+    "shuffle",
     "store",
     "sum",
     "this_block",
@@ -108,12 +112,14 @@ def __getattr__(name):
         "radix_rank_keys",
         "radix_sort_keys",
         "radix_sort_pairs",
+        "exchange",
         "exclusive_scan",
         "exclusive_sum",
         "inclusive_scan",
         "inclusive_sum",
         "reduce",
         "scan",
+        "shuffle",
         "sum",
         "topk_max_keys",
         "topk_max_pairs",
@@ -126,12 +132,14 @@ def __getattr__(name):
             "radix_rank_keys": "_group._radix_sort",
             "radix_sort_keys": "_group._radix_sort",
             "radix_sort_pairs": "_group._radix_sort",
+            "exchange": "_group._exchange",
             "exclusive_scan": "_group._scan",
             "exclusive_sum": "_group._scan",
             "inclusive_scan": "_group._scan",
             "inclusive_sum": "_group._scan",
             "reduce": "_group._reduce",
             "scan": "_group._scan",
+            "shuffle": "_group._shuffle",
             "sum": "_group._reduce",
             "topk_max_keys": "_group._topk",
             "topk_max_pairs": "_group._topk",
