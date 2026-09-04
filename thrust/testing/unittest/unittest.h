@@ -17,10 +17,12 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cstdint>
 #include <cstdlib>
-#include <iosfwd>
 #include <limits>
+#include <ostream>
 #include <string>
+#include <type_traits>
 #include <typeinfo>
 #include <vector>
 
@@ -612,7 +614,7 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out));                     \
   }
 
-#define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) CHECK_THROWS_AS(EXPR, EXCEPTION_TYPE)
+#define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) REQUIRE_THROWS_AS(EXPR, EXCEPTION_TYPE)
 #define KNOWN_FAILURE                       FAIL()
 
 namespace unittest
@@ -756,7 +758,7 @@ inline const std::vector<size_t>& get_test_sizes()
 
 // Same as above, but only for integral types
 #define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST)         \
-  void VTEST##Host()                                    \
+  TEST_CASE(#VTEST, THRUST_PP_STRINGIZE(__FILE__))      \
   {                                                     \
     /* host */                                          \
     VTEST<thrust::host_vector<signed char>>();          \
@@ -865,7 +867,11 @@ inline std::string demangle(const char* name)
   // for demangling the result of type_info.name() with msvc, type_info.name() is already demangled
 #if __GNUC__ && !_NVHPC_CUDA
   int status     = 0;
-  char* realname = abi::__cxa_demangle(name, 0, 0, &status);
+  char* realname = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+  if (realname == nullptr)
+  {
+    return name;
+  }
   std::string result(realname);
   std::free(realname);
   return result;
