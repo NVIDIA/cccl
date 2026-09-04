@@ -107,7 +107,6 @@ static_assert(cuda::std::is_constructible_v<cuda::unicast_logical_endpoint,
                                             cuda::std::uint32_t,
                                             const cuda::unicast_logical_endpoint_spec&,
                                             cuda::std::uint64_t>);
-static_assert(cuda::std::is_constructible_v<cuda::unicast_logical_endpoint, const cuda::logical_endpoint_handle&>);
 static_assert(cuda::std::is_constructible_v<cuda::multicast_logical_endpoint,
                                             const cuda::multicast_logical_endpoint_spec&,
                                             cuda::std::uint64_t>);
@@ -120,7 +119,6 @@ static_assert(cuda::std::is_constructible_v<cuda::multicast_logical_endpoint,
                                             cuda::std::uint32_t,
                                             const cuda::multicast_logical_endpoint_spec&,
                                             cuda::std::uint64_t>);
-static_assert(cuda::std::is_constructible_v<cuda::multicast_logical_endpoint, const cuda::logical_endpoint_handle&>);
 static_assert(!cuda::std::is_constructible_v<cuda::multicast_logical_endpoint, cuda::device_ref, cuda::std::uint64_t>);
 
 static_assert(cuda::std::is_same_v<cuda::transformed_device_argument_t<cuda::unicast_logical_endpoint&>,

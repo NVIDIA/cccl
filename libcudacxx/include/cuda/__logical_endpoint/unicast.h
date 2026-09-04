@@ -141,9 +141,9 @@ public:
 
 //! @brief Move-only owning RAII wrapper for a unicast CUDA logical endpoint.
 //!
-//! This type owns endpoint creation/import and destruction. It can be passed as a kernel argument through
-//! `cuda::launch`; CCCL launch argument transformation converts it to `unicast_logical_endpoint_ref`. Raw `<<<>>>`
-//! launches do not perform that transformation, so they should pass `unicast_logical_endpoint_ref` explicitly.
+//! This type owns endpoint creation and destruction. It can be passed as a kernel argument through `cuda::launch`; CCCL
+//! launch argument transformation converts it to `unicast_logical_endpoint_ref`. Raw `<<<>>>` launches do not perform
+//! that transformation, so they should pass `unicast_logical_endpoint_ref` explicitly.
 class unicast_logical_endpoint
     : public ::cuda::__detail::__logical_endpoint_owner_base<unicast_logical_endpoint_ref,
                                                              ::cuda::__detail::__logical_endpoint_type::__unicast>
@@ -179,13 +179,6 @@ public:
       : unicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __spec, __bytes)
   {}
 
-  //! @brief Reserves one ID and imports a unicast logical endpoint.
-  //!
-  //! @param __handle The exported logical endpoint handle.
-  _CCCL_HOST_API explicit unicast_logical_endpoint(const logical_endpoint_handle& __handle)
-      : unicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __handle)
-  {}
-
   //! @brief Creates a unicast logical endpoint from a caller-managed ID.
   //!
   //! @param __id The caller-managed logical endpoint ID.
@@ -197,16 +190,6 @@ public:
   {
     const auto __prop = ::cuda::__detail::__make_unicast_logical_endpoint_prop(__spec, __bytes);
     this->__create_endpoint(__prop);
-  }
-
-  //! @brief Imports a unicast logical endpoint into a caller-managed ID.
-  //!
-  //! @param __id The caller-managed logical endpoint ID.
-  //! @param __handle The exported logical endpoint handle.
-  _CCCL_HOST_API unicast_logical_endpoint(logical_endpoint_id __id, const logical_endpoint_handle& __handle)
-      : __base(__id)
-  {
-    this->__import_endpoint(__handle);
   }
 
   //! @brief Creates a unicast logical endpoint from an ID in a retained range.
@@ -225,19 +208,6 @@ public:
     this->__retain_id_range(__range);
     const auto __prop = ::cuda::__detail::__make_unicast_logical_endpoint_prop(__spec, __bytes);
     this->__create_endpoint(__prop);
-  }
-
-  //! @brief Imports a unicast logical endpoint into an ID in a retained range.
-  //!
-  //! @param __range The logical endpoint ID range to retain.
-  //! @param __index The ID index in the range.
-  //! @param __handle The exported logical endpoint handle.
-  _CCCL_HOST_API unicast_logical_endpoint(
-    const logical_endpoint_id_range& __range, ::cuda::std::uint32_t __index, const logical_endpoint_handle& __handle)
-      : __base(__range[__index])
-  {
-    this->__retain_id_range(__range);
-    this->__import_endpoint(__handle);
   }
 };
 

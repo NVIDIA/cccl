@@ -31,11 +31,6 @@
 
 #  include "logical_endpoint_test_helper.h"
 
-#  if TEST_HAS_EXCEPTIONS()
-#    include <catch2/matchers/catch_matchers_exception.hpp>
-#    include <catch2/matchers/catch_matchers_string.hpp>
-#  endif // TEST_HAS_EXCEPTIONS()
-
 namespace
 {
 template <class Spec, class... Devices>
@@ -48,6 +43,18 @@ validate_logical_endpoint_support(const Spec& spec, cuda::device_ref device, Dev
     SKIP(support.reason);
   }
   return support.limits;
+}
+
+[[nodiscard]] cuda::unicast_logical_endpoint_spec
+unicast_spec(cuda::device_ref device, cuda::logical_endpoint_flag flags = cuda::logical_endpoint_flag::none)
+{
+  return cuda::unicast_logical_endpoint_spec{device, flags, cuda::logical_endpoint_ipc_handle_type::none};
+}
+
+[[nodiscard]] cuda::multicast_logical_endpoint_spec
+multicast_spec(unsigned int num_devices, cuda::logical_endpoint_flag flags = cuda::logical_endpoint_flag::none)
+{
+  return cuda::multicast_logical_endpoint_spec{num_devices, flags, cuda::logical_endpoint_ipc_handle_type::none};
 }
 
 [[nodiscard]] cuda::std::uint64_t smoke_size(cuda::logical_endpoint_limits limits)
@@ -94,15 +101,6 @@ void skip_if_memory_pools_are_unsupported(cuda::device_ref device, Devices... de
   if (!logical_endpoint_test::memory_pools_supported(device, devices...))
   {
     SKIP("stream-ordered memory pools are not supported");
-  }
-}
-
-template <class... Devices>
-void skip_if_fabric_memory_pools_are_unsupported(cuda::device_ref device, Devices... devices)
-{
-  if (!logical_endpoint_test::fabric_memory_pools_supported(device, devices...))
-  {
-    SKIP("fabric memory pool allocations are not supported");
   }
 }
 
@@ -165,7 +163,7 @@ public:
     allocation_prop.type                 = CU_MEM_ALLOCATION_TYPE_PINNED;
     allocation_prop.location.type        = CU_MEM_LOCATION_TYPE_DEVICE;
     allocation_prop.location.id          = cuda::__driver::__deviceGet(device.get());
-    allocation_prop.requestedHandleTypes = CU_MEM_HANDLE_TYPE_FABRIC;
+    allocation_prop.requestedHandleTypes = CU_MEM_HANDLE_TYPE_NONE;
 
     size_t allocation_granularity = 0;
     REQUIRE(mem_get_allocation_granularity(&allocation_granularity, &allocation_prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM)
@@ -203,12 +201,6 @@ C2H_CCCLRT_TEST("logical endpoint validates host-only state without driver calls
 {
 #  if TEST_HAS_EXCEPTIONS()
   CHECK_THROWS_AS(cuda::logical_endpoint_id_range{0}, std::invalid_argument);
-
-  cuda::logical_endpoint_handle handle{};
-  CHECK(handle.native_handle() != nullptr);
-  CHECK(static_cast<const cuda::logical_endpoint_handle&>(handle).native_handle() != nullptr);
-  CHECK_THROWS_AS((cuda::unicast_logical_endpoint{cuda::logical_endpoint_id{13}, handle}), std::invalid_argument);
-  CHECK_THROWS_AS((cuda::multicast_logical_endpoint{cuda::logical_endpoint_id{17}, handle}), std::invalid_argument);
 #  endif // TEST_HAS_EXCEPTIONS()
 
   cuda::unicast_logical_endpoint unicast;
@@ -231,7 +223,7 @@ C2H_CCCLRT_TEST("logical endpoint validates host-only state without driver calls
 C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
+  auto spec = unicast_spec(device);
 
   auto limits = validate_logical_endpoint_support(spec, device);
   auto bytes  = smoke_size(limits);
@@ -273,7 +265,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range",
 C2H_CCCLRT_TEST("logical endpoint retains caller-owned ID range after source range is destroyed", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
+  auto spec = unicast_spec(device);
 
   auto limits = validate_logical_endpoint_support(spec, device);
   auto bytes  = smoke_size(limits);
@@ -305,7 +297,7 @@ C2H_CCCLRT_TEST("logical endpoint retains caller-owned ID range after source ran
 C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with internally reserved ID", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
+  auto spec = unicast_spec(device);
 
   auto limits = validate_logical_endpoint_support(spec, device);
   auto bytes  = smoke_size(limits);
@@ -326,7 +318,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with internally reserved ID"
 C2H_CCCLRT_TEST("unicast logical endpoint release from explicit ID has no retained ID range", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
+  auto spec = unicast_spec(device);
 
   auto limits = validate_logical_endpoint_support(spec, device);
   auto bytes  = smoke_size(limits);
@@ -345,37 +337,10 @@ C2H_CCCLRT_TEST("unicast logical endpoint release from explicit ID has no retain
   destroy_released_endpoint(released.first);
 }
 
-C2H_CCCLRT_TEST("unicast logical endpoint exports and imports endpoint handles in one process", "[logical_endpoint]")
-{
-  cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
-
-  auto limits = validate_logical_endpoint_support(spec, device);
-  auto bytes  = smoke_size(limits);
-
-  cuda::logical_endpoint_id_range ids{2};
-  cuda::unicast_logical_endpoint local{ids, 0, spec, bytes};
-  REQUIRE(local.wait_until_ready(logical_endpoint_test::ready_timeout));
-
-  cuda::logical_endpoint_handle handle = local.export_handle();
-
-#  if TEST_HAS_EXCEPTIONS()
-  CHECK_THROWS_AS(local.export_handle(cuda::logical_endpoint_ipc_handle_type::none), std::invalid_argument);
-  CHECK_THROWS_AS((cuda::multicast_logical_endpoint{cuda::logical_endpoint_id{123}, handle}), std::invalid_argument);
-#  endif // TEST_HAS_EXCEPTIONS()
-
-  cuda::unicast_logical_endpoint imported{ids, 1, handle};
-  CHECK(imported.has_value());
-  CHECK(imported.id() == ids[1]);
-  CHECK(imported.size() == local.size());
-  CHECK(imported.bind_alignment() == local.bind_alignment());
-  REQUIRE(imported.wait_until_ready(logical_endpoint_test::ready_timeout));
-}
-
 C2H_CCCLRT_TEST("unicast logical endpoint honors reported maximum size", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec   = cuda::unicast_logical_endpoint_spec{device};
+  auto spec   = unicast_spec(device);
   auto limits = validate_logical_endpoint_support(spec, device);
 
   REQUIRE(limits.max_size != 0);
@@ -392,15 +357,15 @@ C2H_CCCLRT_TEST("unicast logical endpoint honors reported maximum size", "[logic
 C2H_CCCLRT_TEST("unicast logical endpoint binds memory pool allocation by address", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
-  skip_if_fabric_memory_pools_are_unsupported(device);
+  auto spec = unicast_spec(device);
+  skip_if_memory_pools_are_unsupported(device);
 
   auto limits                 = validate_logical_endpoint_support(spec, device);
   const auto alignment        = limits.bind_alignment;
   const auto bytes            = smoke_size(limits);
   const auto allocation_bytes = bytes + alignment;
   cuda::stream stream{device};
-  cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
+  auto resource = cuda::device_default_memory_pool(device);
 
   {
     auto allocation = cuda::make_buffer<cuda::std::uint8_t>(stream, resource, allocation_bytes, cuda::no_init);
@@ -419,51 +384,10 @@ C2H_CCCLRT_TEST("unicast logical endpoint binds memory pool allocation by addres
   stream.sync();
 }
 
-C2H_CCCLRT_TEST("owning unicast logical endpoint diagnoses non-fabric-exportable memory pool allocation",
-                "[logical_endpoint]")
-{
-#  if TEST_HAS_EXCEPTIONS()
-  cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
-  skip_if_memory_pools_are_unsupported(device);
-
-  auto limits                 = validate_logical_endpoint_support(spec, device);
-  const auto alignment        = limits.bind_alignment;
-  const auto bytes            = smoke_size(limits);
-  const auto allocation_bytes = bytes + alignment;
-  cuda::stream stream{device};
-  auto resource = cuda::device_default_memory_pool(device);
-
-  if ((resource.attribute(cuda::memory_pool_attributes::export_handle_types) & cudaMemHandleTypeFabric) != 0)
-  {
-    SKIP("default device pool allocations are fabric exportable");
-  }
-
-  {
-    auto allocation = cuda::make_buffer<cuda::std::uint8_t>(stream, resource, allocation_bytes, cuda::no_init);
-    stream.sync();
-    const auto allocation_addr = reinterpret_cast<cuda::std::uintptr_t>(allocation.data());
-    const auto bind_addr       = logical_endpoint_test::align_up(allocation_addr, alignment);
-    void* bind_ptr             = reinterpret_cast<void*>(bind_addr);
-    cuda::unicast_logical_endpoint endpoint{spec, bytes};
-
-    REQUIRE(bind_addr + bytes <= allocation_addr + allocation_bytes);
-    REQUIRE(endpoint.wait_until_ready(logical_endpoint_test::ready_timeout));
-    REQUIRE_THROWS_MATCHES(
-      endpoint.bind(device, 0, bind_ptr, bytes),
-      cuda::cuda_error,
-      Catch::Matchers::MessageMatches(
-        Catch::Matchers::ContainsSubstring("Fabric logical endpoints require backing memory")
-        && Catch::Matchers::ContainsSubstring("cudaMemHandleTypeFabric")));
-  }
-  stream.sync();
-#  endif // TEST_HAS_EXCEPTIONS()
-}
-
 C2H_CCCLRT_TEST("unicast logical endpoint binds generic allocation handle", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
+  auto spec = unicast_spec(device);
   skip_if_vmm_allocations_are_unsupported(device);
 
   auto limits = validate_logical_endpoint_support(spec, device);
@@ -484,8 +408,8 @@ C2H_CCCLRT_TEST("unicast logical endpoint binds generic allocation handle", "[lo
 C2H_CCCLRT_TEST("unicast logical endpoint supports device-side fabric put to a bound endpoint", "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device};
-  skip_if_fabric_memory_pools_are_unsupported(device);
+  auto spec = unicast_spec(device);
+  skip_if_memory_pools_are_unsupported(device);
   skip_if_fabric_ptx_smoke_is_unsupported(device);
 
   auto limits                 = validate_logical_endpoint_support(spec, device);
@@ -493,7 +417,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports device-side fabric put to a b
   const auto bytes            = smoke_size(limits);
   const auto allocation_bytes = bytes + alignment;
   cuda::stream stream{device};
-  cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
+  auto resource = cuda::device_default_memory_pool(device);
 
   {
     auto allocation = cuda::make_buffer<cuda::std::uint8_t>(stream, resource, allocation_bytes, cuda::no_init);
@@ -543,8 +467,8 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports counted device-side fabric pu
                 "[logical_endpoint]")
 {
   cuda::device_ref device{0};
-  auto spec = cuda::unicast_logical_endpoint_spec{device, cuda::logical_endpoint_flag::counted_ops};
-  skip_if_fabric_memory_pools_are_unsupported(device);
+  auto spec = unicast_spec(device, cuda::logical_endpoint_flag::counted_ops);
+  skip_if_memory_pools_are_unsupported(device);
   skip_if_fabric_ptx_smoke_is_unsupported(device);
 
   auto limits               = validate_logical_endpoint_support(spec, device);
@@ -554,7 +478,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports counted device-side fabric pu
     logical_endpoint_test::payload_bytes, logical_endpoint_test::counted_counter_alignment);
   const auto allocation_bytes = bytes + alignment;
   cuda::stream stream{device};
-  cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
+  auto resource = cuda::device_default_memory_pool(device);
 
   REQUIRE(counter_offset + sizeof(cuda::std::uint64_t) <= bytes);
 
@@ -618,9 +542,9 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports counted device-side fabric pu
 C2H_CCCLRT_TEST("unicast logical endpoint supports programming-guide CFT ring with flags", "[logical_endpoint]")
 {
   auto [device, peer_device] = two_unicast_test_devices();
-  auto spec                  = cuda::unicast_logical_endpoint_spec{device};
-  auto peer_spec             = cuda::unicast_logical_endpoint_spec{peer_device};
-  skip_if_fabric_memory_pools_are_unsupported(device, peer_device);
+  auto spec                  = unicast_spec(device);
+  auto peer_spec             = unicast_spec(peer_device);
+  skip_if_memory_pools_are_unsupported(device, peer_device);
   skip_if_fabric_ptx_smoke_is_unsupported(device, peer_device);
 
   auto limits               = validate_logical_endpoint_support(spec, device);
@@ -637,8 +561,8 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports programming-guide CFT ring wi
   const auto peer_allocation_bytes = peer_bytes + peer_alignment;
   cuda::stream stream{device};
   cuda::stream peer_stream{peer_device};
-  cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
-  cuda::shared_device_memory_pool peer_resource{peer_device, logical_endpoint_test::fabric_memory_pool_properties()};
+  auto resource      = cuda::device_default_memory_pool(device);
+  auto peer_resource = cuda::device_default_memory_pool(peer_device);
 
   REQUIRE(sync_offset + logical_endpoint_test::ring_sync_bytes <= bytes);
   REQUIRE(peer_sync_offset + logical_endpoint_test::ring_sync_bytes <= peer_bytes);
@@ -764,9 +688,9 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports programming-guide CFT ring wi
 C2H_CCCLRT_TEST("unicast logical endpoint supports programming-guide counted CFT ring", "[logical_endpoint]")
 {
   auto [device, peer_device] = two_unicast_test_devices();
-  auto spec                  = cuda::unicast_logical_endpoint_spec{device, cuda::logical_endpoint_flag::counted_ops};
-  auto peer_spec = cuda::unicast_logical_endpoint_spec{peer_device, cuda::logical_endpoint_flag::counted_ops};
-  skip_if_fabric_memory_pools_are_unsupported(device, peer_device);
+  auto spec                  = unicast_spec(device, cuda::logical_endpoint_flag::counted_ops);
+  auto peer_spec             = unicast_spec(peer_device, cuda::logical_endpoint_flag::counted_ops);
+  skip_if_memory_pools_are_unsupported(device, peer_device);
   skip_if_fabric_ptx_smoke_is_unsupported(device, peer_device);
 
   auto limits               = validate_logical_endpoint_support(spec, device);
@@ -781,8 +705,8 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports programming-guide counted CFT
   const auto peer_allocation_bytes = peer_bytes + peer_alignment;
   cuda::stream stream{device};
   cuda::stream peer_stream{peer_device};
-  cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
-  cuda::shared_device_memory_pool peer_resource{peer_device, logical_endpoint_test::fabric_memory_pool_properties()};
+  auto resource      = cuda::device_default_memory_pool(device);
+  auto peer_resource = cuda::device_default_memory_pool(peer_device);
 
   REQUIRE(counter_offset + sizeof(cuda::std::uint64_t) <= bytes);
   REQUIRE(counter_offset + sizeof(cuda::std::uint64_t) <= peer_bytes);
@@ -898,7 +822,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint supports programming-guide counted CFT
 C2H_CCCLRT_TEST("multicast logical endpoint adds device and becomes ready", "[logical_endpoint]")
 {
   auto [device, peer_device] = multicast_test_devices();
-  auto spec                  = cuda::multicast_logical_endpoint_spec{2};
+  auto spec                  = multicast_spec(2);
 
   auto limits = validate_logical_endpoint_support(spec, device, peer_device);
   auto bytes  = smoke_size(limits);
@@ -909,17 +833,12 @@ C2H_CCCLRT_TEST("multicast logical endpoint adds device and becomes ready", "[lo
   endpoint.add_device(device);
   endpoint.add_device(peer_device);
   REQUIRE(endpoint.wait_until_ready(logical_endpoint_test::ready_timeout));
-
-  cuda::logical_endpoint_handle handle = endpoint.export_handle();
-#  if TEST_HAS_EXCEPTIONS()
-  CHECK_THROWS_AS((cuda::unicast_logical_endpoint{cuda::logical_endpoint_id{127}, handle}), std::invalid_argument);
-#  endif // TEST_HAS_EXCEPTIONS()
 }
 
 C2H_CCCLRT_TEST("multicast logical endpoint honors reported maximum size", "[logical_endpoint]")
 {
   auto [device, peer_device] = multicast_test_devices();
-  auto spec                  = cuda::multicast_logical_endpoint_spec{2};
+  auto spec                  = multicast_spec(2);
   auto limits                = validate_logical_endpoint_support(spec, device, peer_device);
 
   REQUIRE(limits.max_size != 0);
@@ -938,7 +857,7 @@ C2H_CCCLRT_TEST("multicast logical endpoint honors reported maximum size", "[log
 C2H_CCCLRT_TEST("multicast logical endpoint release from explicit ID has no retained ID range", "[logical_endpoint]")
 {
   auto [device, peer_device] = multicast_test_devices();
-  auto spec                  = cuda::multicast_logical_endpoint_spec{2};
+  auto spec                  = multicast_spec(2);
 
   auto limits = validate_logical_endpoint_support(spec, device, peer_device);
   auto bytes  = smoke_size(limits);
@@ -962,15 +881,15 @@ C2H_CCCLRT_TEST("multicast logical endpoint release from explicit ID has no reta
 C2H_CCCLRT_TEST("multicast logical endpoint binds memory pool allocation by address", "[logical_endpoint]")
 {
   auto [device, peer_device] = multicast_test_devices();
-  auto spec                  = cuda::multicast_logical_endpoint_spec{2};
-  skip_if_fabric_memory_pools_are_unsupported(device);
+  auto spec                  = multicast_spec(2);
+  skip_if_memory_pools_are_unsupported(device);
 
   auto limits                 = validate_logical_endpoint_support(spec, device, peer_device);
   const auto alignment        = limits.bind_alignment;
   const auto bytes            = smoke_size(limits);
   const auto allocation_bytes = bytes + alignment;
   cuda::stream stream{device};
-  cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
+  auto resource = cuda::device_default_memory_pool(device);
 
   {
     auto allocation = cuda::make_buffer<cuda::std::uint8_t>(stream, resource, allocation_bytes, cuda::no_init);
@@ -1000,8 +919,8 @@ C2H_CCCLRT_TEST("multicast logical endpoint supports device-side fabric put to a
 
   cuda::device_ref device{0};
   cuda::device_ref peer_device{1};
-  auto spec = cuda::multicast_logical_endpoint_spec{2};
-  skip_if_fabric_memory_pools_are_unsupported(device, peer_device);
+  auto spec = multicast_spec(2);
+  skip_if_memory_pools_are_unsupported(device, peer_device);
   skip_if_fabric_ptx_smoke_is_unsupported(device, peer_device);
 
   auto limits                 = validate_logical_endpoint_support(spec, device, peer_device);
@@ -1010,8 +929,8 @@ C2H_CCCLRT_TEST("multicast logical endpoint supports device-side fabric put to a
   const auto allocation_bytes = bytes + alignment;
   cuda::stream stream{device};
   cuda::stream peer_stream{peer_device};
-  cuda::shared_device_memory_pool resource{device, logical_endpoint_test::fabric_memory_pool_properties()};
-  cuda::shared_device_memory_pool peer_resource{peer_device, logical_endpoint_test::fabric_memory_pool_properties()};
+  auto resource      = cuda::device_default_memory_pool(device);
+  auto peer_resource = cuda::device_default_memory_pool(peer_device);
 
   {
     auto allocation = cuda::make_buffer<cuda::std::uint8_t>(stream, resource, allocation_bytes, cuda::no_init);
