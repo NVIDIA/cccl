@@ -136,7 +136,9 @@ coop.store(
 items across the selected group tile, while `offset` is a nonnegative element
 offset. Runtime offsets are caller-validated. Source and destination arrays
 must be one-dimensional and contiguous. Without `oob_default`, invalid Load
-slots retain their previous values.
+slots retain their previous values. Every supplied runtime control
+(`valid_items`, `oob_default`, and `offset`) must be uniform within its selected
+group; different groups may use different values.
 
 Runtime `valid_items` and `offset` accept signed integer types through 64 bits
 and unsigned integer types through 32 bits. Boolean, floating-point, and
@@ -189,14 +191,15 @@ blocked payload.
 
 Each Warp group addresses a distinct tile. The compiler advances the memory
 base by `group_index * (group_size * items_per_thread)` and then applies the
-caller's element `offset`. The group index is the x-major linear thread rank
-divided by the selected group size. For a multi-block traversal, include the
-block's global tile origin in the caller offset; the compiler-provided origin
-distinguishes the physical or logical Warp groups within that block and must
-not be added again. Runtime offsets must also leave enough signed 64-bit range
-for the last group origin in the block; static offsets are checked during
-planning. `valid_items` is relative to each group's own tile, not the entire
-block, and must be uniform within that group.
+caller's element `offset`. The offset must be uniform within each participating
+group; different groups may use different offsets. The group index is the
+x-major linear thread rank divided by the selected group size. For a
+multi-block traversal, include the block's global tile origin in the caller
+offset; the compiler-provided origin distinguishes the physical or logical
+Warp groups within that block and must not be added again. Runtime offsets must
+also leave enough signed 64-bit range for the last group origin in the block;
+static offsets are checked during planning. `valid_items` is relative to each
+group's own tile, not the entire block, and must be uniform within that group.
 
 `ThreadGroup` objects are descriptor-only in this release. Runtime query,
 membership, and synchronization methods such as `rank`, `count`, `rank_as`,

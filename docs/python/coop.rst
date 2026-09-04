@@ -241,8 +241,9 @@ number of valid items per thread. A Warp-group tile contains
 ``group_size * items_per_thread`` elements, where ``group_size`` is 32 for
 ``this_warp()`` or the width passed to ``group_by``. The count must be uniform
 within that group. With Load, invalid output slots remain unchanged unless
-``oob_default`` is supplied. A default is valid only when ``valid_items`` is
-present. With Store, elements outside the valid prefix are not written.
+``oob_default`` is supplied; a runtime default must also be uniform within the
+group. A default is valid only when ``valid_items`` is present. With Store,
+elements outside the valid prefix are not written.
 
 .. warning::
 
@@ -258,11 +259,12 @@ present. With Store, elements outside the valid prefix are not written.
    the result to ``[0, group_size * items_per_thread]``.
 
 ``offset`` is an element offset into the source or destination. It is
-independent of ``valid_items`` and is not measured in bytes. Static offsets
-must be nonnegative; a runtime offset is a caller-enforced nonnegative
-precondition. Source and destination arrays must be one-dimensional and
-contiguous. Store accepts both scalar values and multi-item ``ThreadData``
-payloads.
+independent of ``valid_items`` and is not measured in bytes. The value must be
+uniform within each participating group; different groups may use different
+offsets. Static offsets must be nonnegative; a runtime offset is a
+caller-enforced nonnegative precondition. Source and destination arrays must be
+one-dimensional and contiguous. Store accepts both scalar values and
+multi-item ``ThreadData`` payloads.
 
 Runtime ``valid_items`` and ``offset`` accept signed integer types through 64
 bits and unsigned integer types through 32 bits. Boolean, floating-point, and
