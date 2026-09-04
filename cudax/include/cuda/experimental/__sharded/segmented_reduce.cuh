@@ -116,8 +116,8 @@ _CCCL_HOST_API void segmented_reduce(
   _Tp init,
   const _CallEnv& call_env = {})
 {
-  const ::std::size_t num_shards = static_cast<::std::size_t>(out.num_shards());
-  if (static_cast<::std::size_t>(in.num_shards()) != num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(out);
+  if (reserved::__shard_count(in) != num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::segmented_reduce: in/out shard count mismatch");
   }

@@ -98,8 +98,8 @@ template <class _S, class _Envs, class _Pred, class _CallEnv>
 __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env, const char* what)
 {
   using count_type               = ::cuda::std::int64_t;
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": fewer environments than shards");
   }
@@ -111,7 +111,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
   // Refusals first, before any CUDA call: size write-back synchronizes.
   require_sync_allowed(call_env, what);
   places::check_not_capturing(nullptr, what);
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), what);
   }
@@ -119,7 +119,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
   // Entry probe: committing the current sizes is a no-op that throws exactly
   // when this model cannot mutate sizes, before any element moves.
   ::std::vector<size_t> new_sizes(num_shards);
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     new_sizes[g] = static_cast<size_t>(data.shard(g).size);
   }
@@ -153,7 +153,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
       mr.deallocate(::cuda::stream_ref{stream}, ptr, sizeof(count_type), alignof(count_type));
     }
   };
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -176,7 +176,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
     data.commit_sizes(::std::vector<size_t>(num_shards, 0));
   };
   ::std::size_t next = 0;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -193,7 +193,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
   barrier(envs);
 
   size_t total = 0;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     _CCCL_ASSERT(h_new_sizes[g] >= 0 && static_cast<size_t>(h_new_sizes[g]) <= data.shard(g).size,
                  "sharded compaction: select returned an out-of-range count");
@@ -230,12 +230,12 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
   const _SIn& src, const _Envs& envs, _SOut&& dst, _Pred pred, const _CallEnv& call_env, const char* what)
 {
   using count_type               = ::cuda::std::int64_t;
-  const ::std::size_t num_shards = static_cast<::std::size_t>(dst.num_shards());
-  if (static_cast<::std::size_t>(src.num_shards()) != num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(dst);
+  if (reserved::__shard_count(src) != num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": src/dst shard count mismatch");
   }
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": fewer environments than shards");
   }
@@ -243,7 +243,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
   {
     return 0;
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     if (static_cast<::std::size_t>(src.shard(g).size) > static_cast<::std::size_t>(dst.shard(g).capacity))
     {
@@ -255,7 +255,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
   // Refusals first, before any CUDA call: size write-back synchronizes.
   require_sync_allowed(call_env, what);
   places::check_not_capturing(nullptr, what);
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), what);
   }
@@ -263,7 +263,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
   // Entry probe: committing the current sizes is a no-op that throws exactly
   // when this model cannot mutate sizes, before any element moves.
   ::std::vector<size_t> new_sizes(num_shards);
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     new_sizes[g] = static_cast<size_t>(dst.shard(g).size);
   }
@@ -296,7 +296,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
       mr.deallocate(::cuda::stream_ref{stream}, ptr, sizeof(count_type), alignof(count_type));
     }
   };
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     if (src.shard(g).size == 0)
     {
@@ -316,7 +316,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
     dst.commit_sizes(::std::vector<size_t>(num_shards, 0));
   };
   ::std::size_t next = 0;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& si = src.shard(g);
     if (si.size == 0)
@@ -334,7 +334,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
   barrier(envs);
 
   size_t total = 0;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     _CCCL_ASSERT(h_new_sizes[g] >= 0 && static_cast<size_t>(h_new_sizes[g]) <= static_cast<size_t>(src.shard(g).size),
                  "sharded compaction: select returned an out-of-range count");

@@ -97,8 +97,8 @@ _CCCL_REQUIRES(
 count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
 {
   using elem_t                   = view_element_t<_S>;
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::count_if: fewer environments than shards");
   }
@@ -110,7 +110,7 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
   // Refusals first, before any CUDA call: this form synchronizes.
   require_sync_allowed(call_env, "sharded::count_if (synchronous form)");
   places::check_not_capturing(nullptr, "sharded::count_if");
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::count_if");
   }
@@ -129,7 +129,7 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
   }
   ::std::fill(h_counts, h_counts + num_shards, size_t{0});
 
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -156,7 +156,7 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
   barrier(envs);
 
   size_t total = 0;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     total += h_counts[g];
   }

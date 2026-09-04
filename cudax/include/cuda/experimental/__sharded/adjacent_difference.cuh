@@ -108,12 +108,12 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
   using elem_t = shard_element_t<shard_descriptor_t<::cuda::std::remove_cvref_t<_SIn>>>;
 
   reserved::__check_copartitioned(out, in, "sharded::adjacent_difference");
-  const ::std::size_t num_shards = static_cast<::std::size_t>(out.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(out);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::adjacent_difference: fewer environments than shards");
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     if (static_cast<const void*>(in.shard(g).data) == static_cast<const void*>(out.shard(g).data)
         && in.shard(g).size != 0)
@@ -131,7 +131,7 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
   // Refusals first, before any CUDA call: the boundary staging synchronizes.
   require_sync_allowed(call_env, "sharded::adjacent_difference (boundary staging synchronizes)");
   places::check_not_capturing(nullptr, "sharded::adjacent_difference");
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::adjacent_difference");
   }
@@ -154,7 +154,7 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
   // Phase 1: gather each non-empty input shard's last element on its
   // environment stream, then synchronize (the host must see the values and
   // the successor kernels read them zero-copy).
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = in.shard(g);
     if (s.size == 0)
@@ -170,7 +170,7 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
   ::std::vector<const elem_t*> prev(num_shards, nullptr);
   {
     const elem_t* running = nullptr;
-    for (::std::size_t g = 0; g < num_shards; g++)
+    for (const auto g : each(num_shards))
     {
       prev[g] = running;
       if (in.shard(g).size != 0)

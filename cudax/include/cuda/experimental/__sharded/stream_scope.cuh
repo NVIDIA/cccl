@@ -56,6 +56,7 @@
 #include <cuda/experimental/__places/place_group.cuh> // check_not_capturing
 #include <cuda/experimental/__places/stream_pool.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
+#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 
 #include <stdexcept>
 #include <string>
@@ -160,8 +161,8 @@ template <class _S, class _Envs, class _CallEnv, class _PerShard>
 _CCCL_HOST_API void
 __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
 {
-  const ::std::size_t __num_shards = static_cast<::std::size_t>(__data.num_shards());
-  if (static_cast<::std::size_t>(__envs.size()) < __num_shards)
+  const ::std::size_t __num_shards = reserved::__shard_count(__data);
+  if (reserved::__env_count(__envs) < __num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": fewer environments than shards");
   }
@@ -176,7 +177,7 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
     // enqueued (the entry-guard discipline, applied family-wide).
     require_sync_allowed(__call_env, __what);
     places::check_not_capturing(nullptr, __what);
-    for (::std::size_t __g = 0; __g < __num_shards; __g++)
+    for (const auto __g : each(__num_shards))
     {
       places::check_not_capturing(::cuda::get_stream(__envs[__g]).get(), __what);
     }
@@ -189,7 +190,7 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
       // Lane-ordered under capture: every lane must already be part of the
       // capture, or its work would silently escape the graph. Refused at
       // entry, before anything is enqueued (the capture stays valid).
-      for (::std::size_t __g = 0; __g < __num_shards; __g++)
+      for (const auto __g : each(__num_shards))
       {
         if (__data.shard(__g).size != 0 && !places::stream_in_capture(::cuda::get_stream(__envs[__g]).get()))
         {
@@ -204,7 +205,7 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
     }
   }
 
-  for (::std::size_t __g = 0; __g < __num_shards; __g++)
+  for (const auto __g : each(__num_shards))
   {
     const auto& __d = __data.shard(__g);
     if (__d.size == 0)
@@ -234,7 +235,7 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
   {
     if (__bracketed)
     {
-      for (::std::size_t __g = 0; __g < __num_shards; __g++)
+      for (const auto __g : each(__num_shards))
       {
         if (__data.shard(__g).size != 0)
         {
@@ -245,7 +246,7 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
   }
   else
   {
-    for (::std::size_t __g = 0; __g < __num_shards; __g++)
+    for (const auto __g : each(__num_shards))
     {
       if (__data.shard(__g).size != 0)
       {

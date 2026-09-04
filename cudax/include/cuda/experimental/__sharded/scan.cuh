@@ -93,8 +93,8 @@ _CCCL_HOST_API void __scan_generic(
   const _CallEnv& call_env,
   const char* what)
 {
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": fewer environments than shards");
   }
@@ -106,7 +106,7 @@ _CCCL_HOST_API void __scan_generic(
   // Refusals first, before any CUDA call: the host prefix synchronizes.
   require_sync_allowed(call_env, what);
   places::check_not_capturing(nullptr, what);
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), what);
   }
@@ -129,7 +129,7 @@ _CCCL_HOST_API void __scan_generic(
   ::std::fill(h_totals, h_totals + num_shards, identity);
 
   // Phase 1: per-shard totals, collected before any element is mutated.
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -154,7 +154,7 @@ _CCCL_HOST_API void __scan_generic(
   {
     _Tp running    = init_value; // meaningful for the exclusive form only
     bool have_prev = false;
-    for (::std::size_t g = 0; g < num_shards; g++)
+    for (const auto g : each(num_shards))
     {
       if constexpr (_Inclusive)
       {

@@ -85,8 +85,8 @@ _CCCL_REQUIRES(
   const size_t bins = static_cast<size_t>(num_bins);
   ::std::vector<size_t> counts(bins, 0);
 
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::histogram_even: fewer environments than shards");
   }
@@ -98,7 +98,7 @@ _CCCL_REQUIRES(
   // Refusals first, before any CUDA call: this form synchronizes.
   require_sync_allowed(call_env, "sharded::histogram_even (synchronous form)");
   places::check_not_capturing(nullptr, "sharded::histogram_even");
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::histogram_even");
   }
@@ -119,7 +119,7 @@ _CCCL_REQUIRES(
   }
   ::std::fill(h_hists, h_hists + num_shards * bins, counter_type{0});
 
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -141,7 +141,7 @@ _CCCL_REQUIRES(
 
   barrier(envs);
 
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     for (size_t b = 0; b < bins; b++)
     {

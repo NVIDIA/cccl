@@ -138,8 +138,8 @@ _CCCL_REQUIRES(
 _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const _CallEnv& call_env, const _SIn&... ins)
 {
   static_assert(sizeof...(_SIn) >= 1, "zip_transform needs at least one input view");
-  const ::std::size_t num_shards = static_cast<::std::size_t>(out.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(out);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::zip_transform: fewer environments than shards");
   }
@@ -152,13 +152,13 @@ _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const 
     // Refusals first, before any CUDA call: this form synchronizes at the end.
     require_sync_allowed(call_env, "sharded::zip_transform (synchronous form)");
     places::check_not_capturing(nullptr, "sharded::zip_transform");
-    for (::std::size_t g = 0; g < num_shards; g++)
+    for (const auto g : each(num_shards))
     {
       places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::zip_transform");
     }
   }
 
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s_out = out.shard(g);
     if (s_out.size == 0)
@@ -180,7 +180,7 @@ _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const 
   }
   if constexpr (__is_async)
   {
-    for (::std::size_t g = 0; g < num_shards; g++)
+    for (const auto g : each(num_shards))
     {
       if (out.shard(g).size != 0)
       {

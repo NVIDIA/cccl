@@ -10,11 +10,12 @@
 
 /**
  * @file
- * @brief `cuda_safe_call` and `cuda_try` for the sharded tier.
+ * @brief The STF utilities the sharded tier calls unqualified:
+ * `cuda_safe_call`, `cuda_try` and the `each` index range.
  *
- * The tier calls both unqualified from inside `cuda::experimental::sharded`,
+ * The tier calls them unqualified from inside `cuda::experimental::sharded`,
  * which reaches them only through a using-declaration in that namespace.
- * Providing it here — next to the include of the header that defines them —
+ * Providing it here — next to the includes of the headers that define them —
  * lets every header that uses them say so with one include, instead of
  * depending on some other header having been included first.
  */
@@ -31,10 +32,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 namespace cuda::experimental::sharded
 {
 using ::cuda::experimental::stf::cuda_safe_call;
 using ::cuda::experimental::stf::cuda_try;
+using ::cuda::experimental::stf::each;
 } // namespace cuda::experimental::sharded

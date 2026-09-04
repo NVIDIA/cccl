@@ -41,6 +41,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__places/place_group.cuh>
+#include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/concepts.cuh>
 #include <cuda/experimental/__sharded/sharded_array.cuh>
 
@@ -67,7 +68,7 @@ template <class _Tp>
   ::std::vector<shard_env_t> __envs;
   const ::std::size_t __n = __arr.num_shards();
   __envs.reserve(__n);
-  for (::std::size_t __i = 0; __i < __n; ++__i)
+  for (const auto __i : each(__n))
   {
     const auto& __s = __arr.shard(__i);
     __envs.push_back(places::place_group::env(__s.place, __s.stream));

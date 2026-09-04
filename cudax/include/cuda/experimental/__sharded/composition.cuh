@@ -78,13 +78,13 @@ _CCCL_REQUIRES(sharded_env_range<::cuda::std::remove_cvref_t<_Envs>> _CCCL_AND(
 _CCCL_HOST_API void barrier(const _Envs& envs, const _PolicyEnv& policy_env = {})
 {
   require_sync_allowed(policy_env, "sharded::barrier");
-  const ::std::size_t n = static_cast<::std::size_t>(envs.size());
+  const ::std::size_t n = reserved::__env_count(envs);
   places::check_not_capturing(nullptr, "sharded::barrier");
-  for (::std::size_t i = 0; i < n; i++)
+  for (const auto i : each(n))
   {
     places::check_not_capturing(::cuda::get_stream(envs[i]).get(), "sharded::barrier");
   }
-  for (::std::size_t i = 0; i < n; i++)
+  for (const auto i : each(n))
   {
     cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[i]).get()));
   }
@@ -100,8 +100,7 @@ _CCCL_TEMPLATE(class _Envs)
 _CCCL_REQUIRES(sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void barrier(const _Envs& envs, ::cuda::stream_ref stream)
 {
-  const ::std::size_t n = static_cast<::std::size_t>(envs.size());
-  for (::std::size_t i = 0; i < n; i++)
+  for (const auto i : each(reserved::__env_count(envs)))
   {
     __detail::__wait_stream_on(stream.get(), ::cuda::get_stream(envs[i]).get());
   }
@@ -118,7 +117,7 @@ _CCCL_TEMPLATE(class _Envs)
 _CCCL_REQUIRES(sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void lane_wait(const _Envs& envs, ::std::size_t target, ::std::initializer_list<::std::size_t> sources)
 {
-  const ::std::size_t n = static_cast<::std::size_t>(envs.size());
+  const ::std::size_t n = reserved::__env_count(envs);
   if (target >= n)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::lane_wait: target lane out of range");
@@ -146,12 +145,12 @@ _CCCL_HOST_API void lane_wait(
   const _EnvsFrom& envs_from,
   ::std::initializer_list<::std::size_t> sources)
 {
-  if (target >= static_cast<::std::size_t>(envs_to.size()))
+  if (target >= reserved::__env_count(envs_to))
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::lane_wait: target lane out of range");
   }
   const cudaStream_t target_stream = ::cuda::get_stream(envs_to[target]).get();
-  const ::std::size_t nf           = static_cast<::std::size_t>(envs_from.size());
+  const ::std::size_t nf           = reserved::__env_count(envs_from);
   for (const ::std::size_t s : sources)
   {
     if (s >= nf)
@@ -169,7 +168,7 @@ _CCCL_REQUIRES(sharded_env_range<::cuda::std::remove_cvref_t<_Envs>>)
 _CCCL_HOST_API void lane_sync(const _Envs& envs, ::std::size_t i, const _PolicyEnv& policy_env = {})
 {
   require_sync_allowed(policy_env, "sharded::lane_sync");
-  if (i >= static_cast<::std::size_t>(envs.size()))
+  if (i >= reserved::__env_count(envs))
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::lane_sync: lane out of range");
   }

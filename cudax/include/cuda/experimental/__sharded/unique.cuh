@@ -87,8 +87,8 @@ _CCCL_REQUIRES(
 {
   using elem_t                   = view_element_t<_S>;
   using count_type               = ::cuda::std::int64_t;
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::unique: fewer environments than shards");
   }
@@ -100,7 +100,7 @@ _CCCL_REQUIRES(
   // Refusals first, before any CUDA call: size write-back synchronizes.
   require_sync_allowed(call_env, "sharded::unique (synchronous form)");
   places::check_not_capturing(nullptr, "sharded::unique");
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::unique");
   }
@@ -108,7 +108,7 @@ _CCCL_REQUIRES(
   // Entry probe: committing the current sizes throws exactly when this model
   // cannot mutate sizes, before any element moves.
   ::std::vector<size_t> new_sizes(num_shards);
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     new_sizes[g] = static_cast<size_t>(data.shard(g).size);
   }
@@ -148,7 +148,7 @@ _CCCL_REQUIRES(
       mr.deallocate(::cuda::stream_ref{stream}, ptr, sizeof(count_type), alignof(count_type));
     }
   };
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     if (data.shard(g).size == 0)
     {
@@ -167,7 +167,7 @@ _CCCL_REQUIRES(
     data.commit_sizes(::std::vector<size_t>(num_shards, 0));
   };
   ::std::size_t next = 0;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -184,7 +184,7 @@ _CCCL_REQUIRES(
   barrier(envs);
 
   // Phase 2: fetch each locally deduplicated shard's boundary elements.
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s      = data.shard(g);
     const count_type n = h_new_sizes[g];
@@ -204,7 +204,7 @@ _CCCL_REQUIRES(
   // shard; within a shard elements are already consecutive-unique, so at
   // most one element per boundary can match).
   ::std::size_t prev = num_shards;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     if (h_new_sizes[g] == 0)
     {
@@ -218,7 +218,7 @@ _CCCL_REQUIRES(
   }
 
   size_t total = 0;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     new_sizes[g] = static_cast<size_t>(h_new_sizes[g]);
     total += new_sizes[g];

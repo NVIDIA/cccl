@@ -98,6 +98,27 @@ _CCCL_CONCEPT __convertible_to_stream_ref = ::cuda::std::convertible_to<_Tp, ::c
 template <class _Tp>
 _CCCL_CONCEPT __shard_data_pointer = ::cuda::std::is_pointer_v<::cuda::std::remove_cvref_t<_Tp>>;
 
+namespace reserved
+{
+// The concepts below only promise that counts are *convertible* to size_t
+// (foreign size types may be signed or narrower), so these normalize the
+// type once at function entry instead of a static_cast at every use.
+
+//! @brief Number of environments in a `sharded_env_range`, as `size_t`.
+template <class _Envs>
+[[nodiscard]] ::std::size_t __env_count(const _Envs& __envs)
+{
+  return static_cast<::std::size_t>(__envs.size());
+}
+
+//! @brief Number of shards of a `sharded_view`, as `size_t`.
+template <class _S>
+[[nodiscard]] ::std::size_t __shard_count(const _S& __s)
+{
+  return static_cast<::std::size_t>(__s.num_shards());
+}
+} // namespace reserved
+
 template <class _Tp>
 _CCCL_CONCEPT __equality_comparable_place = ::cuda::std::equality_comparable<::cuda::std::remove_cvref_t<_Tp>>;
 
@@ -280,7 +301,7 @@ _CCCL_TEMPLATE(class _S)
 _CCCL_REQUIRES(sharded_view<_S>)
 [[nodiscard]] bool validate(const _S& __s)
 {
-  const ::std::size_t __n = static_cast<::std::size_t>(__s.num_shards());
+  const ::std::size_t __n = reserved::__shard_count(__s);
   ::std::size_t __next    = 0;
   for (::std::size_t __i = 0; __i < __n; ++__i)
   {
@@ -469,11 +490,12 @@ namespace reserved
 template <class _SA, class _SB>
 void __check_copartitioned(const _SA& __a, const _SB& __b, const char* __what)
 {
-  if (static_cast<::std::size_t>(__a.num_shards()) != static_cast<::std::size_t>(__b.num_shards()))
+  const ::std::size_t __n = __shard_count(__a);
+  if (__n != __shard_count(__b))
   {
     throw ::std::invalid_argument(::std::string(__what) + ": shard count mismatch");
   }
-  for (::std::size_t __g = 0; __g < static_cast<::std::size_t>(__a.num_shards()); ++__g)
+  for (::std::size_t __g = 0; __g < __n; ++__g)
   {
     if (static_cast<::std::size_t>(__a.shard(__g).size) != static_cast<::std::size_t>(__b.shard(__g).size)
         || static_cast<::std::size_t>(__a.shard(__g).global_offset)

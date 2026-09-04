@@ -83,8 +83,8 @@ _CCCL_REQUIRES(
 [[nodiscard]] _CCCL_HOST_API _Tp
 reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
 {
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::reduce: fewer environments than shards");
   }
@@ -96,7 +96,7 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   // Refusals first, before any CUDA call: this form synchronizes.
   require_sync_allowed(call_env, "sharded::reduce (synchronous form)");
   places::check_not_capturing(nullptr, "sharded::reduce");
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::reduce");
   }
@@ -128,7 +128,7 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   };
   ::std::vector<__scratch> d_outputs(num_shards, __scratch{nullptr, 0});
 
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -150,13 +150,13 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   // Phase 2: synchronize and combine in shard order (deterministic)
   barrier(envs);
   _Tp result = init_value;
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     result = reduce_op(result, h_partials[g]);
   }
 
   // Release scratch (stream-ordered; safe after the syncs above)
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     if (d_outputs[g].ptr != nullptr)
     {
@@ -237,8 +237,8 @@ _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
 _CCCL_HOST_API void reduce_into(
   const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
 {
-  const ::std::size_t num_shards = static_cast<::std::size_t>(data.num_shards());
-  if (static_cast<::std::size_t>(envs.size()) < num_shards)
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: fewer environments than shards");
   }
@@ -269,7 +269,7 @@ _CCCL_HOST_API void reduce_into(
   // caller's timeline wait for all of them. (Interleaving join into the fork
   // loop would route each shard's start through the previous shard's
   // completion and serialize the shards.)
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     const auto& s = data.shard(g);
     if (s.size == 0)
@@ -285,7 +285,7 @@ _CCCL_HOST_API void reduce_into(
     stream_scope scope(shard_stream.get());
     cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_partials + g, s.size, reduce_op, init_value, env));
   }
-  for (::std::size_t g = 0; g < num_shards; g++)
+  for (const auto g : each(num_shards))
   {
     if (((mask >> g) & 1u) != 0)
     {
