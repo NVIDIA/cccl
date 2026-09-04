@@ -1,8 +1,9 @@
 # `cuda.coop`
 
-`cuda.coop` provides cooperative primitives for CUDA thread groups in Python
-kernel DSLs. The first backend targets Numba-CUDA-MLIR. The table below
-lists the available operations.
+`cuda.coop` provides portable cooperative data-movement and reduction
+constructs for CUDA thread groups in Python kernel DSLs. The first backend
+targets Numba-CUDA-MLIR and lowers data movement to CUB and hierarchy-aware
+reductions to CUDAX or CUB.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, and libcu++ headers. Installed-wheel compilation uses that
@@ -13,18 +14,17 @@ headers from the active CUDA Toolkit.
 
 ## Installation
 
-Install `cuda-coop` without adding Python package dependencies:
+Install the common API without a compiler backend:
 
 ```bash
 python -m pip install cuda-coop
 ```
 
-The wheel includes the common API, every shipped DSL integration (including
-`cuda.coop.numba_mlir`), type declarations, and bundled CCCL headers. The base
-install declares no Python package dependencies. You can import `cuda.coop`
-without a compiler or GPU; using an integration requires its backend
-dependencies to be installed. Numba-CUDA-MLIR is the first supported backend;
-CUTLASS support is planned.
+The base distribution has no Python package dependencies. It provides the
+common API, type declarations, and bundled CCCL headers. You can import
+`cuda.coop` without a compiler or GPU. Running its primitives inside a kernel
+requires a supported backend. Numba-CUDA-MLIR is the first backend; CUTLASS
+support is planned.
 
 For Numba-CUDA-MLIR, choose the extra matching the CUDA Toolkit major version:
 
@@ -32,11 +32,6 @@ For Numba-CUDA-MLIR, choose the extra matching the CUDA Toolkit major version:
 python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
 # Use numba-cuda-mlir-cu12 with CUDA 12.
 ```
-
-Both commands install the same `cuda-coop` wheel with the same DSL
-integrations. The extra only adds the dependency requirements declared in
-`pyproject.toml` so pip installs the supported Numba-CUDA-MLIR stack for the
-selected CUDA major version.
 
 Python 3.10 through 3.14 is supported. The current backend integration
 requires `numba-cuda-mlir>=0.5.0,<0.6`.
@@ -80,14 +75,9 @@ automatically. A standalone `cuda.coop` import does not load optional
 compilers. Explicit registration works when a dependency or earlier notebook
 cell already imported `cuda.coop`.
 
-The common API exposed by `cuda.coop` describes operations independently of
-a particular compiler backend. Its public entry points are implemented in
-`cuda/coop/_core/api/`; the private `_core` package also contains shared
-implementation used by the backends. Each backend implements its supported
-operations, so a common spelling does not guarantee support in every compiler.
-
-To use Numba-specific features, import the qualified backend namespace; this
-also registers it:
+The common namespace describes operations shared across compiler backends.
+To use Numba-specific features, import the backend namespace; this also
+registers it:
 
 ```python
 import cuda.coop.numba_mlir as numba_coop
@@ -126,6 +116,8 @@ Each operation documents its supported groups and result ownership in the
 explain these contracts with interactive diagrams and tested kernel
 examples.
 
+The [overview](https://nvidia.github.io/cccl/unstable/python/coop.html) explains
+groups, data layouts, and temporary storage.
 
 ## Configuration
 
@@ -159,10 +151,10 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The common `cuda.coop` entry points and the qualified
+The portable `cuda.coop` entry points and the qualified
 `cuda.coop.numba_mlir` entry points have matching signatures. The following
-kernel-body example clamps a grid tile tail, where `source`, `destination`,
-`count`, and `items_per_thread` are kernel arguments:
+kernel-body example clamps a grid tile tail, where `source`, `destination`, and
+`count` are kernel arguments:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -170,8 +162,8 @@ from numba_cuda_mlir import cuda, types
 from cuda import coop
 
 block = coop.this_block()
-items = coop.ThreadData(items_per_thread)
-tile_items = cuda.blockDim.x * items_per_thread
+items = coop.ThreadData(items_per_thread=2)
+tile_items = cuda.blockDim.x * 2
 tile_offset = cuda.blockIdx.x * tile_items
 valid_items = count - tile_offset
 if valid_items < 0:
@@ -233,7 +225,7 @@ value = types.int32(source[cuda.threadIdx.x] + 1)
 coop.store(block, destination, value, algorithm="direct")
 ```
 
-Both common and qualified entry points use the same lowercase string
+Both portable and qualified entry points use the same lowercase string
 algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
 `warp_transpose`, and `warp_transpose_timesliced`. All six are executable.
 `striped` exposes a striped per-thread payload; the other Load algorithms
@@ -353,8 +345,86 @@ loop does not add this restriction.
 
 Warp `transpose` uses compiler-owned storage with one disjoint slice per
 physical or logical group and inserts `syncwarp` with the exact group mask.
-Explicit `TempStorage` is rejected by both the common and qualified APIs for
+Explicit `TempStorage` is rejected by both the portable and qualified APIs for
 every Warp Load and Store algorithm, including the storage-free modes.
+
+## Reduce and Sum
+
+`sum(group, value, ...)` and `reduce(group, value, binary_op=..., ...)` return
+one scalar with the payload element dtype. The portable API accepts a numeric
+scalar or fixed-size `ThreadData`; reducing a `ThreadData` payload combines all
+items contributed by every participating member. The qualified
+`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+
+A full built-in reduction has no `valid_items` or explicit `algorithm`. It uses
+the storage-free CUDAX implementation for the current thread, a physical Warp,
+a logical Warp from `this_warp().group_by(width)`, a block, a mapped group of
+physical Warps from `this_block().group_by(warps_per_group)`, or a cluster.
+Cluster reductions require matching cluster launch facts. Every member of the
+selected group must participate.
+
+By default, `broadcast=True` gives every group member the reduced scalar. With
+`broadcast=False`, only rank zero of each selected group has a defined result;
+other members must still execute the call and must not consume their returned
+value. For example, this full block reduction combines two values per thread
+but writes only from the block root:
+
+```python
+from numba_cuda_mlir import cuda, types
+
+from cuda import coop
+
+
+@cuda.jit
+def block_sum(source, output):
+    thread = cuda.threadIdx.x
+    values = coop.ThreadData(2, dtype=types.int32)
+    values[0] = source[2 * thread]
+    values[1] = source[2 * thread + 1]
+    total = coop.sum(coop.this_block(), values, broadcast=False)
+    if thread == 0:
+        output[0] = total
+```
+
+The complete runnable form is in `examples/numba_mlir/block_sum.py`.
+
+`sum` selects addition. `reduce` accepts the aliases `+`, `sum`, `add`, and
+`plus`; `*`, `mul`, `multiply`, and `multiplies`; `min` and `minimum`; `max`
+and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
+`^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
+qualified API additionally recognizes the corresponding Python `operator`
+functions and NumPy ufuncs.
+
+Three controls select a direct CUB reduction instead:
+
+- `valid_items` reduces the first N scalar values by linear group rank. It is
+  available for block, physical-Warp, and logical-Warp groups and requires
+  `broadcast=False`. N must be uniform within the group and satisfy
+  `1 <= N <= group_size`. Static violations are rejected during compilation;
+  runtime violations execute a deterministic device trap before CUB's 32-bit
+  parameter is formed, invalidating the current CUDA context.
+- `algorithm` selects block-only `raking_commutative_only`, `raking`, or
+  `warp_reductions`, also with `broadcast=False`. Scalar and fixed-array
+  payloads are supported. `raking_commutative_only` is restricted to Sum and
+  recognized commutative built-ins. The addition-specific nondeterministic CUB
+  variant is intentionally not exposed.
+- A custom Python device callback is available only through
+  `cuda.coop.numba_mlir.reduce`, must be stateless, and requires
+  `broadcast=False`. It uses CUB for block, physical-Warp, or logical-Warp
+  groups. Warp callbacks accept scalar payloads; block callbacks may also
+  reduce fixed arrays. Stateful callbacks and their per-launch state plumbing
+  are deferred.
+
+Full CUDAX reductions have no external temporary-storage ABI, backing
+allocation, or compiler-inserted post-call barrier; the collective call still
+requires converged group participation. Direct CUB reductions use
+compiler-owned shared storage. Block paths append a block reuse barrier, while
+physical and logical Warp paths append `syncwarp` for the exact participating
+mask. Reduce and Sum do not currently accept caller `TempStorage` descriptors.
+
+Grid Reduce and Sum are unsupported because a grid reduction requires hidden
+per-launch workspace; use a separate kernel or explicitly managed multi-stage
+reduction instead.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.
