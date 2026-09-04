@@ -26,6 +26,7 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         """
         import importlib.metadata
         import importlib.util
+        import inspect
         import os
         import sys
         from pathlib import Path
@@ -36,8 +37,12 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
 
         public_reduce_module = "cuda.coop.numba_mlir._group_reduce"
         compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
+        public_scan_module = "cuda.coop.numba_mlir._group_scan"
+        compiler_scan_module = "cuda.coop.numba_mlir._compiler._group_scan"
         assert public_reduce_module not in sys.modules
         assert compiler_reduce_module not in sys.modules
+        assert public_scan_module not in sys.modules
+        assert compiler_scan_module not in sys.modules
 
         distribution_root = Path(
             importlib.metadata.distribution("cuda-coop").locate_file("")
@@ -61,8 +66,13 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "ThreadGroup",
             "ThreadHierarchy",
             "exchange",
+            "exclusive_scan",
+            "exclusive_sum",
+            "inclusive_scan",
+            "inclusive_sum",
             "load",
             "reduce",
+            "scan",
             "shuffle",
             "store",
             "sum",
@@ -73,23 +83,41 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "this_warp",
         }
         assert required <= set(coop.__all__)
-        assert {"reduce", "sum"} <= set(coop.__all__)
-        assert {"scan"}.isdisjoint(coop.__all__)
-        assert {"exchange", "reduce", "shuffle", "sum"} <= set(
+        scan_names = {
+            "exclusive_scan",
+            "exclusive_sum",
+            "inclusive_scan",
+            "inclusive_sum",
+            "scan",
+        }
+        assert {"reduce", "sum", *scan_names} <= set(coop.__all__)
+        assert {"exchange", "reduce", "shuffle", "sum", *scan_names} <= set(
             qualified_coop.__all__
         )
         assert callable(qualified_coop.exchange)
         assert callable(qualified_coop.shuffle)
         assert callable(qualified_coop.reduce)
         assert callable(qualified_coop.sum)
+        assert all(callable(getattr(qualified_coop, name)) for name in scan_names)
         assert public_reduce_module in sys.modules
         assert compiler_reduce_module not in sys.modules
+        assert public_scan_module in sys.modules
+        assert compiler_scan_module not in sys.modules
+        for name in scan_names:
+            parameters = inspect.signature(getattr(qualified_coop, name)).parameters
+            assert "prefix_op" not in parameters
+            assert "block_prefix_callback_op" not in parameters
+        assert importlib.util.find_spec("cuda.coop.numba_mlir._scan_op") is None
+        assert importlib.util.find_spec("cuda.coop.numba_mlir._stateful_function") is None
 
         from cuda.coop.numba_mlir._compiler._operations import group_primitive
 
         assert group_primitive("reduce") is not None
         assert group_primitive("sum") is not None
+        for name in scan_names:
+            assert group_primitive(name) is not None
         assert compiler_reduce_module in sys.modules
+        assert compiler_scan_module in sys.modules
 
         paths = resolve_include_paths(
             start=Path.cwd(),
@@ -97,10 +125,12 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
                 "cub/block/block_exchange.cuh",
                 "cub/block/block_load.cuh",
                 "cub/block/block_reduce.cuh",
+                "cub/block/block_scan.cuh",
                 "cub/block/block_shuffle.cuh",
                 "cub/block/block_store.cuh",
                 "cub/warp/warp_exchange.cuh",
                 "cub/warp/warp_reduce.cuh",
+                "cub/warp/warp_scan.cuh",
                 "cuda/experimental/coop.cuh",
                 "thrust/detail/raw_pointer_cast.h",
                 "cuda/std/cstdint",
