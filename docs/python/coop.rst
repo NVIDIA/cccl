@@ -3,47 +3,20 @@
 ``cuda.coop``: Cooperative Group Primitives
 ============================================
 
-.. toctree::
-   :hidden:
-   :maxdepth: 2
-
-   Overview <self>
-   coop/programming_guide
-   coop/developer_overview
-   coop/visualizations/index
-   coop/glossary
-   coop/faqs
-
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
-Threads work together to :doc:`load <coop/visualizations/load>` and
-:doc:`store <coop/visualizations/store>` tiles inside a kernel.
-
-The common ``cuda.coop`` API describes those operations independently of a
-kernel compiler. Numba-CUDA-MLIR is the first supported backend; CUTLASS
-support is planned. The backend namespace adds features specific to its
-compiler. See :ref:`Which namespace should I use? <coop-faq-namespaces>`.
-
-Start with the :doc:`Programming Guide <coop/programming_guide>` to write a
-kernel. The :doc:`Visualizations <coop/visualizations/index>` show where each
-value goes, and the :doc:`Glossary <coop/glossary>` explains terms such as
-:term:`blocked` and :term:`striped`. The :doc:`FAQs <coop/faqs>` cover API
-choices and common questions. For compiler integration details, see the
-:doc:`Developer Overview <coop/developer_overview>`.
+The initial backend integrates with Numba-CUDA-MLIR and supports Load, Store,
+Exchange, and Shuffle across blocks, complete physical warps, and power-of-two
+logical warps. Its portable descriptors and planning records let primitive
+families share one dispatch, storage, and compilation model.
 
 Installation
 ------------
 
-Install ``cuda-coop`` without adding Python package dependencies:
+The base install has no Python package dependencies:
 
 .. code-block:: console
 
    python -m pip install cuda-coop
-
-The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
-Thrust, libcu++, and CUDAX headers. The base install declares no Python
-package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
-using an integration requires its backend dependencies to be installed.
 
 For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
 
@@ -52,75 +25,26 @@ For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
    python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
    # Use numba-cuda-mlir-cu12 with CUDA 12.
 
-Both commands install the same ``cuda-coop`` wheel with the same DSL
-integrations. The extra only adds the dependency requirements declared in
-``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
-the selected CUDA major version. The current integration requires
-``numba-cuda-mlir>=0.5.0,<0.6``.
-Installing an extra does not register a backend in a running Python process;
-see :ref:`installation versus registration <coop-faq-installed-extra>`.
+The base ``cuda-coop`` distribution contains the portable API, type
+declarations, and a coherent bundle of CUB, Thrust, libcu++, and CUDAX headers.
+Installed-wheel compilation uses that bundle by default. Development from a
+CCCL source checkout uses the matching checkout headers, and
+``CUDA_COOP_CCCL_ROOT`` can select another source checkout or ``cuda-coop``
+header bundle. Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or
+an accessible GPU.
 
-Installed-wheel compilation uses the bundled CCCL headers. Development from a
-CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
-select another source checkout or ``cuda-coop`` header bundle.
-
-.. _coop-numba-validation:
-
-Numba-CUDA-MLIR validation scope
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The package supports Python 3.10 through 3.14. The CI matrix configures these
-parts of that range:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 36 64
-
-   * - Environment
-     - Automated checks
-   * - Linux x86-64, Python 3.14, CUDA 13
-     - Installed-wheel compilation with GPUs hidden and L4 runtime tests
-       in pull requests; H100 runtime tests with serial synchronization
-       race checking in the nightly matrix
-   * - Linux x86-64, Python 3.14, CUDA 12
-     - Installed-wheel compilation and GPU runtime tests in the nightly matrix
-   * - Linux x86-64, Python 3.10 and 3.14
-     - Common API host contracts and wheel packaging
-   * - Windows x86-64, Python 3.10 and 3.14
-     - Universal-wheel build, base import, and bundled-header checks
-
-The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
-Python versions and platform combinations need separate backend runtime
-qualification. Dependency bounds allow releases in the supported series;
-they do not mean that every patch release in that series has been tested.
-Synchronization race checking requires Compute Sanitizer. A runtime
-job that skips those tests does not qualify synchronization behavior.
-
-.. _coop-numba-context-lifetime:
-
-CUDA devices and context lifetime
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-With Numba-CUDA-MLIR 0.5.0 through 0.5.3, select the CUDA device before a
-kernel's first compilation and keep its dispatcher and configured launch
-callables in that CUDA context. Reusing them on another device or after
-destroying and recreating the context is not qualified: the compiler can
-reuse architecture, compiled overload, or launch state from the original
-context. This also applies to kernels that use ``cuda.coop``.
-
-The upstream `context-isolation fix
-<https://github.com/NVIDIA/numba-cuda-mlir/pull/314>`_ must be released and
-qualified with this integration before relying on that reuse. Switching
-devices does not require re-registering ``cuda.coop``; registration installs
-compiler hooks and does not repair dispatcher context state.
+The Numba backend is intentionally limited to
+``numba-cuda-mlir>=0.5.0,<0.6``. Its private compiler API module
+provides access to overload templates, IR, datamodels, and the registries
+needed to roll back a failed activation. It does not adapt between runtime
+versions. Other runtime series are rejected before compiler registries change.
 
 .. _coop-backend-registration:
 
-Registering a backend
----------------------
+Backend registration
+--------------------
 
-Call :func:`cuda.coop.register` on the host before compiling kernels to
-select the backend explicitly:
+Call ``register`` on the host before compiling a kernel:
 
 .. code-block:: python
 
@@ -130,17 +54,11 @@ select the backend explicitly:
 
    from numba_cuda_mlir import cuda
 
-Registration loads the backend and installs its compiler hooks, so this
-works regardless of whether ``cuda.coop`` or Numba-CUDA-MLIR was imported
-first. Repeated calls are safe and return ``None``. The spelling
-``"numba_cuda_mlir"`` is also accepted. Registration requires the backend's
-dependencies to be installed; it does not install packages.
-
-For convenience, importing ``cuda.coop`` after ``numba_cuda_mlir`` also
-registers the backend automatically. A standalone ``cuda.coop`` import does
-not discover or load optional compilers. Explicit registration is useful in
-libraries and notebooks where another import may already have loaded
-``cuda.coop``.
+Registration works in either import order and is safe to repeat. It also
+accepts ``"numba_cuda_mlir"``. The backend dependencies must already be
+installed. A standalone ``cuda.coop`` import does not load an optional
+compiler; importing it after Numba-CUDA-MLIR activates the backend
+automatically unless ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` is set.
 
 Importing the backend namespace also registers it:
 
@@ -148,10 +66,9 @@ Importing the backend namespace also registers it:
 
    import cuda.coop.numba_mlir as numba_coop
 
-Use ``numba_coop`` when mixing common and backend calls. If your program uses
-only the backend namespace, you can import it as ``coop`` instead. See the
-:ref:`namespace FAQ <coop-faq-numba-only>` and
-:ref:`API comparison <coop-programming-api-choice>`.
+You can use ``as coop`` when only using this backend. Keep the alias so the
+import does not replace a ``cuda`` name imported from Numba-CUDA-MLIR.
+The common API will also support future backends; CUTLASS support is planned.
 
 Configuration
 -------------
@@ -159,15 +76,9 @@ Configuration
 Runtime environment variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For the Boolean switches below, *truthy* means any value other than the
-empty string, ``0``, ``false``, ``no``, or ``off``. For example, ``1``,
-``true``, ``yes``, and ``on`` are all truthy. Values are case-insensitive,
-and leading and trailing whitespace is ignored. An unset variable is false.
-
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
-   :mod:`cuda.coop` import. Explicit ``coop.register(...)`` and
-   backend imports still work.
+   :mod:`cuda.coop` import. Explicit registration and qualified-backend import still work.
 
 ``CUDA_COOP_CCCL_ROOT``
    Selects a CCCL source checkout or a ``cuda-coop`` header bundle. An invalid
@@ -207,10 +118,11 @@ and leading and trailing whitespace is ignored. An unset variable is false.
    Supplies ``<value>/include`` after ``CUDA_HOME`` under the same fallback
    rule.
 
-On Linux and other POSIX systems, ``/usr/local/cuda/include`` is tried last.
-Windows uses ``cuda-pathfinder`` or the configured toolkit roots above; it
-does not try the Unix fallback. If no valid CUDA include directory is found,
-compilation reports a header-resolution error.
+If those mechanisms do not resolve CUDA headers,
+``/usr/local/cuda/include`` is tried last.
+
+For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
+``no``, ``off``, and the empty string are false.
 
 Build-time CMake variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -231,7 +143,7 @@ Build-time CMake variables
 Kernel API
 ----------
 
-The common root and qualified backend expose matching entry points:
+The portable root and qualified backend expose matching entry points:
 
 .. code-block:: python
 
@@ -280,6 +192,7 @@ required:
 Both spellings are compiler markers. Calls must occur in a compatible compiler
 context; they are not host-side data movement operations.
 
+.. _coop-thread-groups:
 
 Groups and thread data
 ----------------------
@@ -287,21 +200,23 @@ Groups and thread data
 :func:`cuda.coop.this_block` describes the current CUDA thread block, and
 :func:`cuda.coop.this_warp` describes the current 32-thread physical warp. A
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
-consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load and Store
-support all three forms. The enclosing block must contain a multiple of 32
+consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store, and
+Exchange support all three forms; Shuffle is block-only. The enclosing block
+must contain a multiple of 32
 threads, with no incomplete final physical warp. For a multidimensional block,
 threads are linearized in x-major order. Every member of a participating group
 must reach its collective; complete sibling logical groups may take different
 control-flow paths.
 
-The common group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, but those are not Load or Store targets.
+The portable group vocabulary also includes thread, cluster, grid, and mapped
+groups of physical warps, but those are not targets for these operations.
 ``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
 compile-time vocabulary for describing a static partition. Runtime query,
 membership, and synchronization methods such as
 ``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
 ``is_member`` are not exposed.
 
+.. _coop-participation:
 
 Participation and synchronization
 ---------------------------------
@@ -322,12 +237,13 @@ the algorithm and storage policy; arrange explicit synchronization wherever
 application-owned shared memory requires it. A barrier does not make
 divergent participation safe.
 
+.. _coop-thread-data:
 
 Per-thread payloads
 -------------------
 
 ``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
-fixed-size register payload owned by each participating thread. Common and
+fixed-size register payload owned by each participating thread. Portable and
 qualified calls use the same inference rules: an untyped Load output infers
 its dtype from the source, and Store combines the destination dtype with
 payload writes. Load fills the supplied output in place and returns ``None``.
@@ -434,11 +350,12 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
+.. _coop-data-layouts:
 
 Data layouts and algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Both common and qualified entry points use the same string algorithm
+Both portable and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
 ``warp_transpose_timesliced``. All six algorithms are executable with the
@@ -454,7 +371,7 @@ Physical and logical Warp Load and Store support ``direct``, ``striped``,
 ``vectorize``, and ``transpose``. Their layouts follow the same rules at the
 selected group width: ``direct`` and ``vectorize`` expose blocked payloads,
 ``striped`` exposes a striped payload, and ``transpose`` uses striped memory
-transactions while exposing a blocked payload. Common and qualified calls
+transactions while exposing a blocked payload. Portable and qualified calls
 use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
@@ -469,6 +386,66 @@ transpose Store implementations copy the payload before calling CUB, so Store
 never modifies the caller's scalar or ``ThreadData`` value while CUB performs
 its in-place reordering.
 
+Exchange semantics
+------------------
+
+The portable signature is:
+
+.. code-block:: python
+
+   exchange(group, value, /, *, mode="striped_to_blocked") -> ThreadData
+
+``value`` must be a fixed-size ``ThreadData`` payload. The result is a fresh
+payload with the same dtype and extent; Exchange does not modify ``value``.
+Block, physical Warp, and logical Warp groups support
+``striped_to_blocked`` and ``blocked_to_striped``. In blocked order, thread
+``t`` owns consecutive tile indices beginning at
+``t * items_per_thread``. In striped order, its item ``i`` has tile index
+``t + i * group_size``.
+
+The qualified :func:`cuda.coop.numba_mlir.exchange` entry point also accepts
+local arrays and adds block warp-striped conversions, block scatter-to-blocked,
+block and Warp scatter-to-striped, guarded scatter, flagged scatter, and block
+warp time slicing. Scatter ``ranks`` are relative to the selected group tile,
+must have a signed integer dtype, and must have the same extent as ``value``.
+``valid_flags`` are required only by flagged scatter, must have a non-boolean
+integer dtype, and must have that same extent.
+
+For unguarded scatter, every rank must be in
+``[0, group_size * items_per_thread)``. Guarded scatter skips negative ranks,
+but every nonnegative rank must still be in range. Flagged scatter uses only
+ranks whose corresponding flag is nonzero; those active ranks must be in
+range. These runtime bounds and unique active destinations are caller
+preconditions. Holes and duplicate destinations produce unspecified result
+slots. ``warp_time_slicing=True`` reduces BlockExchange storage and is not
+available for Warp groups or guarded and flagged scatter modes.
+
+Shuffle semantics
+-----------------
+
+Shuffle is block-only. The portable signature is:
+
+.. code-block:: python
+
+   shuffle(group, value, /, *, mode="down", distance=1) -> ThreadData
+
+The portable API accepts only ``ThreadData``, ``up`` or ``down``, and the
+fixed distance ``1``. The flattened blocked tile moves by one item. The first
+``up`` result or last ``down`` result is unspecified; all other slots come
+from the adjacent tile position. The returned payload is fresh and ``value``
+is unchanged.
+
+The qualified :func:`cuda.coop.numba_mlir.shuffle` entry point also accepts
+scalar values with ``offset`` or ``rotate`` mode. Offset distance is signed,
+may be negative, and may vary by thread. A source rank outside the block leaves
+that thread's result unspecified. Rotate distance may be static or runtime and
+must satisfy ``0 < distance < block_threads``. An invalid runtime Rotate
+distance executes a device trap, which invalidates that CUDA context; validate
+untrusted distances before launching a kernel. Array values remain limited to
+unit ``up`` and ``down``; boundary-output projections are not part of this
+release.
+
+.. _coop-temp-storage:
 
 Temporary storage
 -----------------
@@ -561,11 +538,12 @@ selectors, or descriptor constructor arguments. Write separate calls with
 explicit constants, or use an ordinary loop with one fixed cooperative shape.
 An unrelated ``literal_unroll`` loop does not add this restriction.
 
-Warp ``transpose`` uses compiler-owned storage with one disjoint slice per
-physical or logical group. The compiler inserts ``syncwarp`` with the exact
-logical-group mask. Both the common and qualified APIs reject explicit
-``TempStorage`` for every Warp Load and Store algorithm, including the
-storage-free modes.
+Warp ``transpose`` and Warp Exchange use compiler-owned storage with one
+disjoint slice per physical or logical group. The compiler inserts
+``syncwarp`` with the exact logical-group mask. Exchange and Shuffle always
+use compiler-owned storage and append a group-scoped reuse barrier. Both the
+portable and qualified APIs reject explicit ``TempStorage`` for every Warp
+Load and Store algorithm, including the storage-free modes.
 
 Compilation and headers
 -----------------------
