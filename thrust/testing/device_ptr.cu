@@ -137,22 +137,22 @@ void TestDevicePointerCompare()
     const device_ptr ptr2 = ptr1 + 1;
 
     // Equality
-    ASSERT_EQUAL(true, (ptr1 == ptr1));
-    ASSERT_EQUAL(false, (ptr1 != ptr1));
+    REQUIRE((ptr1 == ptr1));
+    REQUIRE_FALSE((ptr1 != ptr1));
 
-    ASSERT_EQUAL(false, (ptr1 == ptr2));
-    ASSERT_EQUAL(true, (ptr1 != ptr2));
+    REQUIRE_FALSE((ptr1 == ptr2));
+    REQUIRE((ptr1 != ptr2));
 
     // Relations
-    ASSERT_EQUAL(true, (ptr1 < ptr2));
-    ASSERT_EQUAL(true, (ptr1 <= ptr2));
-    ASSERT_EQUAL(true, (ptr2 > ptr1));
-    ASSERT_EQUAL(true, (ptr2 >= ptr1));
+    REQUIRE((ptr1 < ptr2));
+    REQUIRE((ptr1 <= ptr2));
+    REQUIRE((ptr2 > ptr1));
+    REQUIRE((ptr2 >= ptr1));
 
-    ASSERT_EQUAL(false, (ptr2 < ptr1));
-    ASSERT_EQUAL(false, (ptr2 <= ptr1));
-    ASSERT_EQUAL(false, (ptr1 > ptr2));
-    ASSERT_EQUAL(false, (ptr1 >= ptr2));
+    REQUIRE_FALSE((ptr2 < ptr1));
+    REQUIRE_FALSE((ptr2 <= ptr1));
+    REQUIRE_FALSE((ptr1 > ptr2));
+    REQUIRE_FALSE((ptr1 >= ptr2));
   }
 
   using T2 = float;
@@ -175,22 +175,22 @@ void TestDevicePointerCompare()
     const other_ptr ptr2{other_ptr{thrust::raw_pointer_cast(ptr1 + 1)}};
 
     // Equality
-    ASSERT_EQUAL(true, (ptr1 == ptr1));
-    ASSERT_EQUAL(false, (ptr1 != ptr1));
+    REQUIRE((ptr1 == ptr1));
+    REQUIRE_FALSE((ptr1 != ptr1));
 
-    ASSERT_EQUAL(false, (ptr1 == ptr2));
-    ASSERT_EQUAL(true, (ptr1 != ptr2));
+    REQUIRE_FALSE((ptr1 == ptr2));
+    REQUIRE((ptr1 != ptr2));
 
     // Relations
-    ASSERT_EQUAL(true, (ptr1 < ptr2));
-    ASSERT_EQUAL(true, (ptr1 <= ptr2));
-    ASSERT_EQUAL(true, (ptr2 > ptr1));
-    ASSERT_EQUAL(true, (ptr2 >= ptr1));
+    REQUIRE((ptr1 < ptr2));
+    REQUIRE((ptr1 <= ptr2));
+    REQUIRE((ptr2 > ptr1));
+    REQUIRE((ptr2 >= ptr1));
 
-    ASSERT_EQUAL(false, (ptr2 < ptr1));
-    ASSERT_EQUAL(false, (ptr2 <= ptr1));
-    ASSERT_EQUAL(false, (ptr1 > ptr2));
-    ASSERT_EQUAL(false, (ptr1 >= ptr2));
+    REQUIRE_FALSE((ptr2 < ptr1));
+    REQUIRE_FALSE((ptr2 <= ptr1));
+    REQUIRE_FALSE((ptr1 > ptr2));
+    REQUIRE_FALSE((ptr1 >= ptr2));
   }
 
   { // ensure that different pointer types with different element types are not comparable

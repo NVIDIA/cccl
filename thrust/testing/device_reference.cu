@@ -262,22 +262,22 @@ void TestDeviceReferenceCompare()
     const device_ref ref2 = v1.back();
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
   using T2                     = float;
@@ -290,22 +290,22 @@ void TestDeviceReferenceCompare()
     const other_ref ref2  = v2.back();
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
   { // test different reference types
@@ -318,22 +318,22 @@ void TestDeviceReferenceCompare()
     const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v1.data() + 1)}};
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
   { // test different reference types with different element types
@@ -346,22 +346,22 @@ void TestDeviceReferenceCompare()
     const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v2.data() + 1)}};
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
   // For the non-cuda backends host_system_tag and device_system_tag are comparable
@@ -417,22 +417,22 @@ void TestTaggedReferenceCompare()
     const tagged_ref ref2{tagged_ptr{thrust::raw_pointer_cast(v1.data() + 1)}};
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
   using T2                     = float;
@@ -445,22 +445,22 @@ void TestTaggedReferenceCompare()
     const other_ref ref2  = v2.back();
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
   { // test different reference types
@@ -473,22 +473,22 @@ void TestTaggedReferenceCompare()
     const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v1.data() + 1)}};
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
   { // test different reference types with different element types
@@ -501,22 +501,22 @@ void TestTaggedReferenceCompare()
     const other_ref ref2{other_pointer{thrust::raw_pointer_cast(v2.data() + 1)}};
 
     // Equality
-    ASSERT_EQUAL(true, (ref1 == ref1));
-    ASSERT_EQUAL(false, (ref1 != ref1));
+    REQUIRE((ref1 == ref1));
+    REQUIRE_FALSE((ref1 != ref1));
 
-    ASSERT_EQUAL(false, (ref1 == ref2));
-    ASSERT_EQUAL(true, (ref1 != ref2));
+    REQUIRE_FALSE((ref1 == ref2));
+    REQUIRE((ref1 != ref2));
 
     // Relations
-    ASSERT_EQUAL(true, (ref1 < ref2));
-    ASSERT_EQUAL(true, (ref1 <= ref2));
-    ASSERT_EQUAL(true, (ref2 > ref1));
-    ASSERT_EQUAL(true, (ref2 >= ref1));
+    REQUIRE((ref1 < ref2));
+    REQUIRE((ref1 <= ref2));
+    REQUIRE((ref2 > ref1));
+    REQUIRE((ref2 >= ref1));
 
-    ASSERT_EQUAL(false, (ref2 < ref1));
-    ASSERT_EQUAL(false, (ref2 <= ref1));
-    ASSERT_EQUAL(false, (ref1 > ref2));
-    ASSERT_EQUAL(false, (ref1 >= ref2));
+    REQUIRE_FALSE((ref2 < ref1));
+    REQUIRE_FALSE((ref2 <= ref1));
+    REQUIRE_FALSE((ref1 > ref2));
+    REQUIRE_FALSE((ref1 >= ref2));
   }
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
