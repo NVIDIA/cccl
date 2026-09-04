@@ -69,7 +69,9 @@ scope. If that name already refers to the object imported by
 ``@cuda.jit`` uses the wrong module.
 
 Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
-qualified namespace and its backend-specific controls.
+qualified namespace. Its shared operations use the same signatures, selector
+strings, and inference rules as the portable namespace; it adds only backend
+memory namespaces and payload-alignment controls in this release.
 
 Configuration
 -------------
@@ -107,6 +109,9 @@ Runtime environment variables
    Supplies ``<value>/include`` after ``CUDA_HOME`` under the same fallback
    rule.
 
+If those mechanisms do not resolve CUDA headers,
+``/usr/local/cuda/include`` is tried last.
+
 For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
 ``no``, ``off``, and the empty string are false.
 
@@ -133,14 +138,13 @@ The portable root and qualified backend expose matching entry points:
 
 .. code-block:: python
 
-   import numpy as np
    from numba_cuda_mlir import cuda, types
 
    from cuda import coop
 
    # Inside a Numba-CUDA-MLIR kernel:
    block = coop.this_block()
-   items = coop.ThreadData(2, dtype=np.int32)
+   items = coop.ThreadData(2)
    tile_items = cuda.blockDim.x * 2
    tile_offset = cuda.blockIdx.x * tile_items
    valid_items = count - tile_offset
@@ -188,9 +192,11 @@ partition. Runtime query, membership, and synchronization methods such as
 ``is_member`` are not exposed.
 
 ``ThreadData(items_per_thread, dtype=None)`` describes the fixed-size register
-payload owned by each participating thread. An untyped Load output infers its
-dtype from the source. Load returns the identical output object supplied by the
-caller; it does not allocate or substitute another container.
+payload owned by each participating thread. Portable and qualified calls use
+the same inference rules: an untyped Load output infers its dtype from the
+source, and Store combines the destination dtype with payload writes. Load
+returns the identical output object supplied by the caller; it does not
+allocate or substitute another container.
 
 Supported payload types are signed and unsigned 8-, 16-, 32-, and 64-bit
 integers plus 32- and 64-bit floating-point values. Boolean, 16-bit floating
@@ -245,6 +251,13 @@ precondition. Source and destination arrays must be one-dimensional and
 contiguous. Store accepts both scalar values and multi-item ``ThreadData``
 payloads.
 
+Runtime ``valid_items`` and ``offset`` accept signed integer types through 64
+bits and unsigned integer types through 32 bits. Boolean, floating-point, and
+``uint64`` runtime values are rejected. A runtime ``oob_default`` is already
+typed by the compiler and must exactly match the Load payload dtype. Ordinary
+Python integer and floating-point literals are converted contextually and
+range-checked against that dtype before provider generation.
+
 Store payloads must have exactly the destination dtype. Numba-CUDA-MLIR may
 promote integer arithmetic even when its operands are 32-bit. Cast a computed
 value explicitly before storing it:
@@ -254,7 +267,8 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
-The public algorithm vocabulary includes ``direct``, ``striped``,
+Both portable and qualified entry points use the same string algorithm
+vocabulary: ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
 ``warp_transpose_timesliced``. The Numba-CUDA-MLIR capability layer currently
 executes only ``direct``; selecting another algorithm returns a stable
@@ -279,6 +293,8 @@ default-construct the CUB primitive, report zero temporary bytes, and emit no
 shared-memory allocation, storage pointer, or synchronization barrier. An
 explicit descriptor, including an unsized descriptor, is validated as
 compile-time vocabulary but does not change DIRECT code generation.
+Construct ``TempStorage`` inside the kernel; the current Numba-CUDA-MLIR
+frontend does not resolve module-global storage descriptors.
 
 The backend retains generic planning for future registered providers that do
 declare a leading storage-pointer ABI. For those providers, capacity,

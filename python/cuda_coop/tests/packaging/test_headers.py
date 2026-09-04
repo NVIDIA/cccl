@@ -456,7 +456,7 @@ def test_gitless_archive_accepts_explicit_source_revision(tmp_path: Path) -> Non
     source_root = tmp_path / "cccl-archive"
     package_root = _prepare_minimal_cccl_source(source_root)
     git_env = _isolated_git_env()
-    revision = "3" * 40
+    revision = "v1.2.3+archive"
     build_root = tmp_path / "build"
     result = _configure_cuda_coop(
         package_root,

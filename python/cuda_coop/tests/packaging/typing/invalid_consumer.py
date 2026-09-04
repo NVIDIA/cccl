@@ -64,4 +64,9 @@ coop.store(
     values,
     offset="1",  # expected-error: [arg-type]
 )
-bad_algorithm: coop.BlockLoadAlgorithm = 0  # expected-error: [assignment]
+coop.load(  # expected-error: [call-overload]
+    coop.this_block(),
+    object(),
+    values,
+    algorithm=0,
+)
