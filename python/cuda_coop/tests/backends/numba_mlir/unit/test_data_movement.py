@@ -406,6 +406,80 @@ def test_group_planner_selects_algorithm_storage_provider(
     assert bool(preserved_payloads) is (operation == "store" and mutates_store_payload)
 
 
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("operation", ("load", "store"))
+def test_group_planner_normalizes_algorithm_strings(qualified, operation):
+    from numba_cuda_mlir import types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+    from cuda.coop.numba_mlir._lowering import _load_store
+
+    module = numba_coop if qualified else coop
+
+    if operation == "load":
+
+        def memory(values):
+            payload = module.ThreadData(2, dtype=types.int32)
+            module.load(
+                module.this_block(),
+                values,
+                payload,
+                algorithm=" WARP-TRANSPOSE ",
+            )
+
+    else:
+
+        def memory(values):
+            payload = module.ThreadData(2, dtype=types.int32)
+            module.store(
+                module.this_block(),
+                values,
+                payload,
+                algorithm=" WARP-TRANSPOSE ",
+            )
+
+    array_type = types.Array(types.int32, 1, "C")
+    func_ir, planner = _plan(memory, arg_types=(array_type,))
+    assert planner.run()
+
+    calls = [
+        call
+        for factory, call in _planned_factory_calls(func_ir, ir)
+        if factory is getattr(_load_store, f"_{operation}_with_storage")
+    ]
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("operation", ("load", "store"))
+def test_group_planner_rejects_integer_algorithm_selector(qualified, operation):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+
+    module = numba_coop if qualified else coop
+
+    if operation == "load":
+
+        def memory(values):
+            payload = module.ThreadData(2, dtype=types.int32)
+            module.load(module.this_block(), values, payload, algorithm=0)
+
+    else:
+
+        def memory(values):
+            payload = module.ThreadData(2, dtype=types.int32)
+            module.store(module.this_block(), values, payload, algorithm=0)
+
+    array_type = types.Array(types.int32, 1, "C")
+    _, planner = _plan(memory, arg_types=(array_type,))
+    with pytest.raises(TypeError, match="algorithm must be a string"):
+        planner.run()
+
+
 def test_qualified_store_recovers_keyword_local_array_extent():
     from numba_cuda_mlir import cuda, types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -1812,17 +1886,47 @@ def test_block_algorithms_use_their_declared_provider(
 
 
 @pytest.mark.parametrize("operation", ["load", "store"])
+def test_block_algorithm_string_is_normalized_before_materialization(
+    monkeypatch, operation
+):
+    from numba_cuda_mlir import types
+
+    from cuda.coop.numba_mlir._lowering import _load_store
+
+    monkeypatch.setattr(
+        _load_store.NumbaMlirCoreAdapter,
+        "materialize",
+        lambda _self, specialization, **_kwargs: specialization,
+    )
+    monkeypatch.setattr(
+        _load_store,
+        "make_invocable_from_specialization",
+        lambda specialization: specialization,
+    )
+    factory = getattr(_load_store, f"_{operation}_with_storage")
+
+    specialization = factory(
+        types.int32,
+        threads_per_block=32,
+        algorithm=" WARP-TRANSPOSE ",
+    )
+
+    assert specialization.metadata["algorithm"] == "warp_transpose"
+
+
+@pytest.mark.parametrize("operation", ["load", "store"])
 @pytest.mark.parametrize(
-    ("algorithm", "error_type"),
+    ("algorithm", "error_type", "message"),
     [
-        (True, TypeError),
-        (_StringAlgorithm.DIRECT, TypeError),
-        ("stripd", ValueError),
-        (object(), TypeError),
+        (True, TypeError, "algorithm must be a string"),
+        (0, TypeError, "algorithm must be a string"),
+        (_StringAlgorithm.DIRECT, TypeError, "algorithm must be a string"),
+        ("stripd", ValueError, "expected one of"),
+        (object(), TypeError, "algorithm must be a string"),
     ],
 )
 def test_invalid_block_algorithm_values_fail_before_provider_materialization(
-    monkeypatch, operation, algorithm, error_type
+    monkeypatch, operation, algorithm, error_type, message
 ):
     from numba_cuda_mlir import types
 
@@ -1836,7 +1940,7 @@ def test_invalid_block_algorithm_values_fail_before_provider_materialization(
         ),
     )
     factory = getattr(_load_store, operation)
-    with pytest.raises(error_type):
+    with pytest.raises(error_type, match=message):
         factory(types.int32, threads_per_block=32, algorithm=algorithm)
 
 
