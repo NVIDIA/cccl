@@ -94,23 +94,11 @@
 namespace cuda::experimental::places
 {
 // ============================================================================
-// reserved: place-list builders backing the ctors and factories
+// reserved: implementation details of place_group
 // ============================================================================
 
 namespace reserved
 {
-/// @brief Flatten an `exec_place` grid (or a scalar place) into a vector of places.
-inline ::std::vector<exec_place> places_from_grid(const exec_place& grid)
-{
-  ::std::vector<exec_place> result;
-  result.reserve(grid.size());
-  for (size_t i = 0; i < grid.size(); i++)
-  {
-    result.push_back(grid.get_place(i));
-  }
-  return result;
-}
-
 // Detects handle types exposing `get_place_resources() -> exec_place_resources&`
 // (e.g. the STF `async_resources_handle`), without this header depending on them.
 template <typename Handle, typename = void>
@@ -214,7 +202,7 @@ public:
   /// @brief Create a group from an `exec_place` grid (or a scalar place),
   /// flattened to one place per grid entry.
   explicit place_group(const exec_place& grid)
-      : place_group(reserved::places_from_grid(grid))
+      : place_group(grid.places())
   {}
 
   /**
