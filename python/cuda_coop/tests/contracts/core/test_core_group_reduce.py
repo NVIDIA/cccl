@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from enum import Enum
 from importlib import import_module
 
 import numpy as np
@@ -36,6 +37,11 @@ from cuda.coop._core import (
     this_thread,
     this_warp,
 )
+
+
+class _StringSelector(str, Enum):
+    RAKING = "raking"
+    MAXIMUM = "maximum"
 
 
 def _builtin_operator(name="plus"):
@@ -513,12 +519,78 @@ def test_portable_reduce_matrix_and_family_owned_selectors(monkeypatch):
             assert api.reduce(group, _ThreadData(), binary_op="+") is delegated
             assert api.sum(group, np.int32(1), broadcast=False) is delegated
         assert calls[0][1]["binary_op"] == "sum"
+        assert (
+            api.reduce(
+                this_block(),
+                np.int32(1),
+                binary_op=" MAXIMUM ",
+            )
+            is delegated
+        )
+        assert calls[-1][1]["binary_op"] == "max"
+        assert (
+            api.sum(
+                this_block(),
+                np.int32(1),
+                broadcast=False,
+                algorithm=" RAKING-COMMUTATIVE-ONLY ",
+            )
+            is delegated
+        )
+        assert calls[-1][1]["algorithm"] == "raking_commutative_only"
         with pytest.raises(NotImplementedError, match="hidden per-launch workspace"):
             api.sum(this_grid(), np.int32(1))
         with pytest.raises(TypeError, match="value dtypes"):
             api.reduce(this_block(), np.float32(1), binary_op="bit_and")
-        with pytest.raises(ValueError, match="custom operators"):
+        with pytest.raises(TypeError, match="binary_op must be a string"):
             api.reduce(this_block(), np.int32(1), binary_op=object())
+
+
+@pytest.mark.parametrize("selector", [0, _StringSelector.RAKING])
+def test_portable_reduce_algorithm_rejects_non_string_selectors(
+    monkeypatch,
+    selector,
+):
+    dispatch = import_module("cuda.coop._core.api._dispatch")
+    api = import_module("cuda.coop._core.api.reduce")
+    calls = []
+    monkeypatch.setattr(
+        api,
+        "_group_primitive_marker",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    with dispatch._compiler_scope("test.backend"):
+        with pytest.raises(TypeError, match="algorithm must be a string"):
+            api.sum(
+                this_block(),
+                np.int32(1),
+                broadcast=False,
+                algorithm=selector,
+            )
+
+    assert calls == []
+
+
+@pytest.mark.parametrize("selector", [0, _StringSelector.MAXIMUM, lambda x, y: x])
+def test_portable_reduce_operator_rejects_non_string_selectors(
+    monkeypatch,
+    selector,
+):
+    dispatch = import_module("cuda.coop._core.api._dispatch")
+    api = import_module("cuda.coop._core.api.reduce")
+    calls = []
+    monkeypatch.setattr(
+        api,
+        "_group_primitive_marker",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    with dispatch._compiler_scope("test.backend"):
+        with pytest.raises(TypeError, match="binary_op must be a string"):
+            api.reduce(this_block(), np.int32(1), binary_op=selector)
+
+    assert calls == []
 
 
 @pytest.mark.parametrize("operation", ["reduce", "sum"])

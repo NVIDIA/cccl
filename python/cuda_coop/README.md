@@ -286,7 +286,9 @@ The complete runnable form is in `examples/numba_mlir/block_sum.py`.
 and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
 `^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
 qualified API additionally recognizes the corresponding Python `operator`
-functions and NumPy ufuncs.
+functions and NumPy ufuncs. Built-in operator and algorithm selectors are
+normalized to canonical lowercase strings. Enum-like and other non-string
+selector objects are rejected.
 
 Three controls select a direct CUB reduction instead:
 
