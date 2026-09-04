@@ -22,7 +22,6 @@ _SCATTER_MODES = frozenset(
 
 
 def _mode_token(value: object) -> str:
-    value = getattr(value, "value", value)
     if isinstance(value, str):
         return value.strip().lower().replace("-", "_")
     raise CoopSinglePhaseRewriteError(
@@ -133,7 +132,8 @@ def infer_exchange_payload(
             "coop exchange requires value and result arrays to have matching dtype"
         )
 
-    mode = _mode_token(inference.factory_value("mode") or "striped_to_blocked")
+    mode_value = inference.factory_value("mode")
+    mode = _mode_token("striped_to_blocked" if mode_value is None else mode_value)
     uses_ranks = mode in _SCATTER_MODES
     uses_valid_flags = mode == "scatter_to_striped_flagged"
     expected_count = 2 + int(uses_ranks) + int(uses_valid_flags)

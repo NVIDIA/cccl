@@ -122,6 +122,114 @@ def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
     )
 
 
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+def test_portable_python_entry_points_require_string_modes(operation):
+    import importlib
+
+    from cuda.coop._core.api import _dispatch
+    from cuda.coop._core.api.thread_group import this_block
+
+    api = importlib.import_module(f"cuda.coop._core.api.{operation}")
+    mode = SimpleNamespace(
+        value="blocked_to_striped" if operation == "exchange" else "down"
+    )
+    group = this_block()
+
+    with _dispatch._compiler_scope("test.backend"):
+        with pytest.raises(TypeError, match="mode must be a string"):
+            getattr(api, operation)(group, object(), mode=mode)
+
+
+@pytest.mark.parametrize("api", ("portable", "qualified"))
+@pytest.mark.parametrize(
+    ("operation", "valid_mode"),
+    (("exchange", "blocked_to_striped"), ("shuffle", "down")),
+)
+def test_public_modes_reject_non_string_value_objects_before_provider(
+    monkeypatch,
+    api,
+    operation,
+    valid_mode,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified
+    from cuda import coop as portable
+    from cuda.coop.numba_mlir._compiler import _group_exchange, _group_shuffle
+
+    coop = portable if api == "portable" else qualified
+    mode = SimpleNamespace(value=valid_mode)
+    planning = (
+        _group_exchange._ExchangePlanning
+        if operation == "exchange"
+        else _group_shuffle._ShufflePlanning
+    )
+    monkeypatch.setattr(
+        planning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "non-string mode reached provider selection"
+        ),
+    )
+
+    if operation == "exchange":
+
+        def kernel(value):
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            return coop.exchange(coop.this_block(), items, mode=mode)
+
+    else:
+
+        def kernel(value):
+            items = coop.ThreadData(2, dtype=types.int32)
+            items[0] = value
+            items[1] = value
+            return coop.shuffle(coop.this_block(), items, mode=mode)
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(TypeError, match="mode must be .*string"):
+        planner.run()
+
+
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+def test_private_lowering_mode_validation_does_not_unwrap_value_objects(operation):
+    from cuda.coop._core.block.exchange import BlockExchangeMode
+    from cuda.coop._core.block.shuffle import BlockShuffleMode
+    from cuda.coop.numba_mlir._lowering import _exchange, _shuffle
+
+    if operation == "exchange":
+        mode = SimpleNamespace(value="blocked_to_striped")
+        with pytest.raises(TypeError, match="mode must be a string"):
+            _exchange._mode(
+                mode,
+                BlockExchangeMode,
+                operation="block exchange",
+            )
+    else:
+        mode = SimpleNamespace(value="down")
+        with pytest.raises(TypeError, match="mode must be a string"):
+            _shuffle._mode(
+                mode,
+                allowed=frozenset({BlockShuffleMode.UP, BlockShuffleMode.DOWN}),
+            )
+
+
+@pytest.mark.parametrize("operation", ("exchange", "shuffle"))
+def test_rewrite_mode_validation_does_not_unwrap_value_objects(operation):
+    from cuda.coop.numba_mlir._compiler import _rewrite_exchange, _rewrite_shuffle
+    from cuda.coop.numba_mlir._compiler._rewrite_support import (
+        CoopSinglePhaseRewriteError,
+    )
+
+    rewrite = _rewrite_exchange if operation == "exchange" else _rewrite_shuffle
+    token = "blocked_to_striped" if operation == "exchange" else "down"
+    for mode in (SimpleNamespace(value=token), 0):
+        with pytest.raises(CoopSinglePhaseRewriteError, match="compile-time string"):
+            rewrite._mode_token(mode)
+
+
 @pytest.mark.parametrize(
     ("group_kind", "mode", "provider_name"),
     [
@@ -129,8 +237,6 @@ def test_public_shuffle_markers_do_not_advertise_boundary_outputs():
         ("warp", "blocked_to_striped", "warp_exchange"),
         ("logical_warp", "blocked_to_striped", "warp_exchange"),
         ("block", "scatter_to_blocked", "exchange_ranked"),
-        ("warp", "scatter_to_striped", "warp_exchange_ranked"),
-        ("logical_warp", "scatter_to_striped", "warp_exchange_ranked"),
         ("block", "scatter_to_striped_flagged", "exchange_flagged"),
     ],
 )
@@ -198,12 +304,19 @@ def test_exchange_selects_fixed_arity_provider(
     assert len(call.args) == 2 + int(uses_ranks) + int(uses_flags)
 
 
-def test_warp_exchange_copies_scatter_ranks_before_provider_call():
+@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
+def test_warp_exchange_rejects_block_only_scatter_before_provider(
+    monkeypatch,
+    logical_width,
+):
     from numba_cuda_mlir import types
-    from numba_cuda_mlir.numbair_transforms import ir
 
     import cuda.coop.numba_mlir as coop
-    from cuda.coop.numba_mlir._lowering import _exchange
+    from cuda.coop.numba_mlir._compiler import _group_exchange
+
+    group = coop.this_warp()
+    if logical_width is not None:
+        group = group.group_by(logical_width)
 
     def exchange(value):
         items = coop.ThreadData(2, dtype=types.int32)
@@ -213,25 +326,22 @@ def test_warp_exchange_copies_scatter_ranks_before_provider_call():
         ranks[0] = 0
         ranks[1] = 1
         return coop.exchange(
-            coop.this_warp().group_by(8),
+            group,
             items,
             mode="scatter_to_striped",
             ranks=ranks,
         )
 
-    func_ir, planner = _plan(exchange, arg_types=(types.int32,))
-    assert planner.run()
-    call = _provider_call(func_ir, _exchange.warp_exchange_ranked)
-    copied_ranks = call.args[2]
-    assert "preserved_ranks" in copied_ranks.name
-    writes = [
-        statement
-        for block in func_ir.blocks.values()
-        for statement in block.body
-        if isinstance(statement, ir.SetItem)
-        and statement.target.name == copied_ranks.name
-    ]
-    assert len(writes) == 2
+    monkeypatch.setattr(
+        _group_exchange._ExchangePlanning,
+        "_provider",
+        lambda *_args, **_kwargs: pytest.fail(
+            "unsupported Warp mode reached provider selection"
+        ),
+    )
+    _, planner = _plan(exchange, arg_types=(types.int32,))
+    with pytest.raises(ValueError, match="mode for .* groups must be one of"):
+        planner.run()
 
 
 @pytest.mark.parametrize(

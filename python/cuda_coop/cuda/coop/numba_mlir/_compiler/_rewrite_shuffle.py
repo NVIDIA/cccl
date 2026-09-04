@@ -25,7 +25,6 @@ _I32_MAX = (1 << 31) - 1
 
 
 def _mode_token(value: object) -> str:
-    value = getattr(value, "value", value)
     if isinstance(value, str):
         return value.strip().lower().replace("-", "_")
     raise CoopSinglePhaseRewriteError("coop shuffle mode must be a compile-time string")

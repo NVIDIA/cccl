@@ -336,14 +336,15 @@ Block, physical Warp, and logical Warp groups support
 ``t + i * group_size``.
 
 The qualified :func:`cuda.coop.numba_mlir.exchange` entry point also accepts
-local arrays and adds block warp-striped conversions, block scatter-to-blocked,
-block and Warp scatter-to-striped, guarded scatter, flagged scatter, and block
-warp time slicing. Scatter ``ranks`` are relative to the selected group tile,
-must have a signed integer dtype, and must have the same extent as ``value``.
+local arrays. Block groups additionally support warp-striped conversions,
+scatter-to-blocked, scatter-to-striped, guarded scatter, flagged scatter, and
+warp time slicing. Physical and logical Warp groups retain the two portable
+layout modes. Scatter ``ranks`` are relative to the block tile, must have a
+signed integer dtype, and must have the same extent as ``value``.
 ``valid_flags`` are required only by flagged scatter, must have a non-boolean
 integer dtype, and must have that same extent.
 
-For unguarded scatter, every rank must be in
+For unguarded block scatter, every rank must be in
 ``[0, group_size * items_per_thread)``. Guarded scatter skips negative ranks,
 but every nonnegative rank must still be in range. Flagged scatter uses only
 ranks whose corresponding flag is nonzero; those active ranks must be in
