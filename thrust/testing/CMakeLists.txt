@@ -44,7 +44,6 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   # Related target names:
   set(config_framework_target ${config_prefix}.test.framework)
 
-  # todo: prune is_catch2_test
   cccl_add_executable(${test_target} SOURCES "${real_test_src}" ADD_CTEST)
   target_link_libraries(
     ${test_target}
