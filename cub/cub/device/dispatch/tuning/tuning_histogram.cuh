@@ -443,13 +443,14 @@ public:
                                  : range_smem_bytes_per_channel * num_active_channels;
       const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
       const int high_bin_blocks_per_sm       = num_active_channels == 1 ? 2 : 1;
-      const auto with_high_bin_threshold     = [=](HistogramPolicy policy) {
+      const bool use_ordinary_grid_tile      = num_active_channels == 1 && sample_size == 1;
+      const int high_bin_grid_pixels_per_block =
+        num_active_channels == 1 ? 768 * t_scale(12) : 1024 * (is_even ? t_scale(8) : t_scale(16));
+      const auto with_high_bin_threshold = [=](HistogramPolicy policy) {
         policy.high_bin_min_histogram_bytes = high_bin_min_histogram_bytes;
         policy.high_bin_blocks_per_sm       = high_bin_blocks_per_sm;
         policy.high_bin_grid_pixels_per_block =
-          num_active_channels == 1
-            ? (sample_size == 1 ? policy.threads_per_block * policy.pixels_per_thread : 768 * t_scale(12))
-            : 1024 * (is_even ? t_scale(8) : t_scale(16));
+          use_ordinary_grid_tile ? policy.threads_per_block * policy.pixels_per_thread : high_bin_grid_pixels_per_block;
         return policy;
       };
 
