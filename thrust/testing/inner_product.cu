@@ -91,7 +91,7 @@ struct TestInnerProduct
     ASSERT_EQUAL(expected, result);
   }
 };
-VariableUnitTest<TestInnerProduct, IntegralTypes> TestInnerProductInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestInnerProduct, IntegralTypes);
 
 struct only_set_when_both_expected
 {

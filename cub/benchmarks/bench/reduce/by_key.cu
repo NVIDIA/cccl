@@ -58,7 +58,7 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
   caching_allocator_t alloc;
 
   // Run once to get the number of runs for reporting
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     cub::DeviceReduce::ReduceByKey,
     "ReduceByKey failed",
     d_in_keys,
@@ -88,7 +88,7 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
       cuda::execution::tune(bench_reduce_by_key_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceReduce::ReduceByKey,
       "ReduceByKey failed",
       d_in_keys,

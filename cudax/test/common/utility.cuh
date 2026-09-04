@@ -40,7 +40,7 @@ public:
   explicit _malloc_pinned(std::size_t size)
   {
     cuda::__ensure_current_context guard(cuda::device_ref{0});
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
+    _CCCL_TRY_RUNTIME_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()

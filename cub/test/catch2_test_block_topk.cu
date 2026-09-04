@@ -37,6 +37,9 @@ __global__ void topk_kernel(cuda::std::span<const KeyT> g_in, cuda::std::span<Ke
   }
   else
   {
+    // TODO (elstehle): block_topk consumes and returns a blocked arrangement. Enable this branch once the striped
+    // *_striped_to_striped overloads land.
+    static_assert(BlockedInput, "block_topk requires the input in a blocked arrangement");
     cub::LoadDirectStriped<BlockDim>(static_cast<int>(threadIdx.x), g_in.data(), keys, num_valid, oob_sentinel);
   }
 
@@ -129,7 +132,8 @@ CUB_TEST(
   {
     static constexpr bool is_full_tile  = true;
     static constexpr bool blocked_input = true;
-    const int k                         = GENERATE_COPY(values<int>({1, tile_size / 4, tile_size - 1}));
+    // k == tile_size selects every item, which is served by a dedicated short-circuit
+    const int k = GENERATE_COPY(values<int>({1, tile_size / 4, tile_size - 1, tile_size}));
     CAPTURE(k);
     const auto h_ref = sorted_top_k<select_max>(h_in, k);
     check_topk<key_t, threads_per_block, items_per_thread, is_full_tile, blocked_input, select_max>(
@@ -140,7 +144,8 @@ CUB_TEST(
   {
     static constexpr bool is_full_tile  = false;
     static constexpr bool blocked_input = true;
-    const int k                         = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1}));
+    // k == num_valid selects every valid item, which is served by a dedicated short-circuit
+    const int k = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1, num_valid}));
     CAPTURE(num_valid, k);
     const auto h_ref = sorted_top_k<select_max>(h_in_partial, k);
     check_topk<key_t, threads_per_block, items_per_thread, is_full_tile, blocked_input, select_max>(

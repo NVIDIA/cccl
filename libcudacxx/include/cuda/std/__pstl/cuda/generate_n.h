@@ -72,7 +72,7 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     // We pass the policy as an environment to DeviceTransform
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Generate,
       "__pstl_cuda_generate: call to cub device_transform::Generate failed",
       __result,

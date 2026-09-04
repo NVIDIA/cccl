@@ -218,7 +218,8 @@ public:
   {
     if (__primary_ctx_ != nullptr)
     {
-      [[maybe_unused]] const auto __ignore = ::cuda::__driver::__primaryCtxReleaseNoThrow(__device_);
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::__driver::__primaryCtxReleaseNoThrow, "Failed to release primary context", __device_);
     }
   }
 
