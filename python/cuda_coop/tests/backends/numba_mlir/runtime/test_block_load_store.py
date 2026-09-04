@@ -82,6 +82,35 @@ def _sentinel(dtype: np.dtype) -> object:
     return dtype.type(211 if dtype.kind == "u" else -101)
 
 
+@pytest.mark.parametrize(
+    "module", (root_coop, qualified_coop), ids=("portable", "qualified")
+)
+@pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
+@pytest.mark.parametrize("scope", ("block", "warp", "logical-warp"))
+def test_load_mutates_original_payload_and_returns_none(module, dtype, scope):
+    @cuda.jit
+    def kernel(source, destination, returned_none):
+        thread = cuda.threadIdx.x
+        if scope == "block":
+            group = module.this_block()
+        elif scope == "warp":
+            group = module.this_warp()
+        else:
+            group = module.this_warp().group_by(8)
+        payload = module.ThreadData(_ITEMS_PER_THREAD, dtype)
+        result = module.load(group, source, payload)
+        returned_none[thread] = result is None
+        module.store(group, destination, payload)
+
+    source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=19)
+    destination = np.full_like(source, -1)
+    returned_none = np.zeros(_THREADS, dtype=np.int32)
+    kernel[1, _THREADS](source, destination, returned_none)
+
+    np.testing.assert_array_equal(destination, source)
+    np.testing.assert_array_equal(returned_none, np.ones_like(returned_none))
+
+
 @lru_cache(maxsize=None)
 def _full_load_kernel(numba_dtype, algorithm="direct"):
     @cuda.jit
