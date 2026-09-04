@@ -508,7 +508,8 @@ struct Transforms
       ::cuda::std::is_integral<T>;
 #endif // !_CCCL_HAS_INT128()
 
-    using FractionStorageT = ::cuda::std::_If<is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
+    using FractionStorageT =
+      ::cuda::std::_If<UseFastDivision && is_integral_excl_int128<CommonT>::value, IntArithmeticT, CommonT>;
 
     union ScaleT
     {
@@ -539,7 +540,7 @@ struct Transforms
     {
       ScaleT result;
       result.fraction.bins = static_cast<FractionStorageT>(num_levels - 1);
-      if constexpr (::cuda::std::is_integral_v<T>)
+      if constexpr (UseFastDivision && ::cuda::std::is_integral_v<T>)
       {
         using UnsignedT = ::cuda::std::make_unsigned_t<T>;
         const UnsignedT distance =
@@ -642,11 +643,11 @@ struct Transforms
     template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      using UnsignedT               = ::cuda::std::make_unsigned_t<T>;
-      const IntArithmeticT distance = static_cast<IntArithmeticT>(
-        static_cast<UnsignedT>(static_cast<UnsignedT>(sample) - static_cast<UnsignedT>(min_level)));
       if constexpr (UseFastDivision)
       {
+        using UnsignedT               = ::cuda::std::make_unsigned_t<T>;
+        const IntArithmeticT distance = static_cast<IntArithmeticT>(
+          static_cast<UnsignedT>(static_cast<UnsignedT>(sample) - static_cast<UnsignedT>(min_level)));
         if (scale.fraction.bins_equal_range)
         {
           return static_cast<int>(distance);
@@ -660,8 +661,9 @@ struct Transforms
       }
       else
       {
-        return static_cast<int>((distance * static_cast<IntArithmeticT>(scale.fraction.bins))
-                                / static_cast<IntArithmeticT>(scale.fraction.range));
+        return static_cast<int>(
+          (static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins))
+          / static_cast<IntArithmeticT>(scale.fraction.range));
       }
     }
 
@@ -1303,6 +1305,7 @@ struct AgentHistogramCooperative
     typename PrivatizedDecodeOpT::BracketCacheT bracket_cache[NumActiveChannels];
     ::cuda::std::uint32_t* channel_keys[NumActiveChannels];
     CounterT* thread_counts[NumActiveChannels];
+    CounterT* private_histograms[NumActiveChannels];
     int pending_bin[NumActiveChannels];
     CounterT pending_count[NumActiveChannels];
 
@@ -1313,8 +1316,13 @@ struct AgentHistogramCooperative
       CounterT* channel_counts = cache_counts + static_cast<size_t>(ch) * count_replicas * cache_slots_per_channel;
       const int replica        = static_cast<int>((threadIdx.x >> 5) % count_replicas);
       thread_counts[ch]        = channel_counts + static_cast<size_t>(replica) * cache_slots_per_channel;
-      pending_bin[ch]          = -1;
-      pending_count[ch]        = CounterT{0};
+      if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
+      {
+        private_histograms[ch] =
+          d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
+      }
+      pending_bin[ch]   = -1;
+      pending_count[ch] = CounterT{0};
     }
 
     const auto spill_bin = [&](int ch, int selected_bin, CounterT contribution) {
@@ -1329,9 +1337,7 @@ struct AgentHistogramCooperative
         {
           if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
           {
-            CounterT* block_histogram =
-              d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
-            atomicAdd_block(&block_histogram[pending_bin[ch]], pending_count[ch]);
+            atomicAdd_block(&private_histograms[ch][pending_bin[ch]], pending_count[ch]);
           }
           else
           {
@@ -1344,9 +1350,7 @@ struct AgentHistogramCooperative
       }
       else if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
       {
-        CounterT* block_histogram =
-          d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
-        atomicAdd_block(&block_histogram[selected_bin], contribution);
+        atomicAdd_block(&private_histograms[ch][selected_bin], contribution);
       }
       else
       {
@@ -1365,13 +1369,15 @@ struct AgentHistogramCooperative
     };
 
     const auto consume_bin = [&](int ch, int bin) {
-      if constexpr (policy.high_bin_aggregation == HistogramAggregationAlgorithm::warp_coalesced)
+      constexpr bool coalesce_before_probe =
+        policy.high_bin_cache != HistogramCacheAlgorithm::none && sizeof(CounterT) > sizeof(::cuda::std::uint32_t);
+      if constexpr (coalesce_before_probe
+                    || policy.high_bin_aggregation == HistogramAggregationAlgorithm::warp_coalesced)
       {
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_70,
-          (const unsigned int active = __activemask();
-           const unsigned int peers  = __match_any_sync(active, static_cast<unsigned int>(bin));
-           const int leader          = __ffs(static_cast<int>(peers)) - 1;
+          (const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
+           const int leader         = __ffs(static_cast<int>(peers)) - 1;
            if (bin >= 0 && static_cast<int>(lane_id) == leader) {
              update_bin(ch, bin, static_cast<CounterT>(__popc(peers)));
            }),
@@ -1563,9 +1569,7 @@ struct AgentHistogramCooperative
         {
           if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
           {
-            CounterT* block_histogram =
-              d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
-            atomicAdd_block(&block_histogram[pending_bin[ch]], pending_count[ch]);
+            atomicAdd_block(&private_histograms[ch][pending_bin[ch]], pending_count[ch]);
           }
           else
           {
@@ -1597,9 +1601,7 @@ struct AgentHistogramCooperative
           {
             if constexpr (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
             {
-              CounterT* block_histogram =
-                d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
-              atomicAdd_block(&block_histogram[key], count);
+              atomicAdd_block(&private_histograms[ch][key], count);
             }
             else
             {
