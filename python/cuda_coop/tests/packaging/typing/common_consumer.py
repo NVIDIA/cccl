@@ -50,6 +50,7 @@ def check_common_surface(
     logical_warp = warp.group_by(8)
     mapped_warps = block.group_by(2)
     values = coop.ThreadData(items_per_thread=2, dtype=np.int16, alignment=16)
+    read_only_values = _ReadOnlyThreadData(np.int16(1))
     storage = coop.TempStorage(64, alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
@@ -123,6 +124,26 @@ def check_common_surface(
     assert_type(
         coop.store(logical_warp, destination, values, algorithm="striped"),
         None,
+    )
+    assert_type(
+        coop.exchange(block, values, mode="blocked_to_striped"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exchange(logical_warp, values, mode="striped_to_blocked"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.shuffle(block, values, mode="up", distance=1),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exchange(block, read_only_values, mode="blocked_to_striped"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.shuffle(block, read_only_values, mode="down"),
+        coop.ThreadDataLike[np.int16],
     )
     assert_type(coop.sum(block, np.int32(4)), np.int32)
     assert_type(
