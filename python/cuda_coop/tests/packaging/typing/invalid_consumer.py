@@ -226,9 +226,9 @@ coop.sum(  # expected-error: [call-overload]
     broadcast=False,
     algorithm="raking",
 )
-coop.reduce(  # expected-error: [call-overload]
+coop.reduce(
     qualified_block,
     np.int32(1),
-    binary_op=select_left,
+    binary_op=select_left,  # expected-error: [arg-type]
     broadcast=True,
 )
