@@ -553,11 +553,14 @@ struct non_copy_assignable_less
   non_copy_assignable_less(const non_copy_assignable_less&)            = default;
   non_copy_assignable_less& operator=(const non_copy_assignable_less&) = delete;
 
+  // nvcc thinks this isn't used on host passes
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   template <typename T>
   _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
   {
     return a < b;
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 };
 } // namespace
 

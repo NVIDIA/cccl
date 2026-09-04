@@ -88,7 +88,7 @@ public:
     return state != rhs.state;
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const stateful_allocator& alloc)
+  [[maybe_unused]] friend std::ostream& operator<<(std::ostream& os, const stateful_allocator& alloc)
   {
     os << "stateful_alloc(" << alloc.state << ")";
     return os;
