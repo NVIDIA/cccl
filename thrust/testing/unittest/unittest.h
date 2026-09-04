@@ -222,9 +222,9 @@ public:
     fill(other.value[0]);
     return *this;
   }
-  _CCCL_HOST_DEVICE explicit operator bool() const
+  _CCCL_HOST_DEVICE operator void*() const
   {
-    return value[0] != 0;
+    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0]));
   }
 
 #define DEFINE_OPERATOR(op)                               \
