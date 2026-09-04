@@ -77,6 +77,11 @@ _COMPILE_PROBE = textwrap.dedent(
     else:
         raise AssertionError(f"unexpected import order: {import_order!r}")
 
+    qualified_coop = sys.modules["cuda.coop.numba_mlir"]
+    assert {"exchange", "shuffle"} <= set(qualified_coop.__all__)
+    assert callable(qualified_coop.exchange)
+    assert callable(qualified_coop.shuffle)
+
     distribution = importlib.metadata.distribution("cuda-coop")
     distribution_root = Path(distribution.locate_file("")).resolve()
     expected_module = Path(
