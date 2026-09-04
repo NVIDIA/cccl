@@ -51,14 +51,12 @@ def _mode(
     *,
     allowed: frozenset[BlockShuffleMode],
 ) -> BlockShuffleMode:
-    if isinstance(value, bool):
-        raise TypeError("shuffle mode must not be bool")
-    token = getattr(value, "value", value)
-    if isinstance(token, str):
-        token = token.strip().lower().replace("-", "_")
+    if not isinstance(value, str):
+        raise TypeError("shuffle mode must be a string")
+    token = value.strip().lower().replace("-", "_")
     try:
         mode = BlockShuffleMode(token)
-    except (TypeError, ValueError) as exc:
+    except ValueError as exc:
         choices = ", ".join(member.value for member in sorted(allowed, key=str))
         raise ValueError(f"shuffle mode must be one of: {choices}") from exc
     if mode not in allowed:
