@@ -33,8 +33,15 @@ class ComplexPrinter:
         self.type_name = cccl_common.public_type_name(self.type)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
-        yield "real", self.value["__re_"]
-        yield "imag", self.value["__im_"]
+        try:
+            real = self.value["__re_"]
+            imag = self.value["__im_"]
+        except gdb.error:
+            packed = self.value["__repr_"]
+            real = packed["x"]
+            imag = packed["y"]
+        yield "real", real
+        yield "imag", imag
 
     def to_string(self) -> str:
         return self.type_name

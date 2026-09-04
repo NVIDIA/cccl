@@ -10,6 +10,26 @@ cuda::std::complex<double> = {
   imag = -2.25
 }
 =============== complex.std.double end ===============
+=============== complex.std.half begin ===============
+cuda::std::complex<__half> = {
+  real = {
+    __x = 15872
+  },
+  imag = {
+    __x = 49280
+  }
+}
+=============== complex.std.half end ===============
+=============== complex.std.bfloat16 begin ===============
+cuda::std::complex<__nv_bfloat16> = {
+  real = {
+    __x = 16320
+  },
+  imag = {
+    __x = 49168
+  }
+}
+=============== complex.std.bfloat16 end ===============
 =============== complex.cuda.float begin ===============
 cuda::complex<float> = {
   real = 0.5,

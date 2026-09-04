@@ -17,6 +17,13 @@ _CHILD_NAMES = ("real", "imag")
 InternalDict = dict[str, object]
 
 
+def _raw_child(value: lldb.SBValue, name: str) -> lldb.SBValue:
+    child = value.GetChildMemberWithName(name)
+    if child.IsValid():
+        return child.GetNonSyntheticValue()
+    return child
+
+
 def is_cuda_complex(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
     type_name = cccl_common.canonical_type_name(value_type)
     return _COMPLEX_PATTERN.fullmatch(type_name) is not None
@@ -39,17 +46,17 @@ class ComplexSyntheticProvider:
             or ""
         )
         self.parts: list[lldb.SBValue] = []
-        real = self.value.GetChildMemberWithName("__re_")
-        imag = self.value.GetChildMemberWithName("__im_")
+        real = _raw_child(self.value, "__re_")
+        imag = _raw_child(self.value, "__im_")
+        if not real.IsValid() or not imag.IsValid():
+            packed = _raw_child(self.value, "__repr_")
+            if not packed.IsValid():
+                return False
+            real = _raw_child(packed, "x")
+            imag = _raw_child(packed, "y")
         if not real.IsValid() or not imag.IsValid():
             return False
-        scalar_type = real.GetType()
-        self.parts = [
-            self.value.CreateChildAtOffset("real", 0, scalar_type),
-            self.value.CreateChildAtOffset(
-                "imag", scalar_type.GetByteSize(), scalar_type
-            ),
-        ]
+        self.parts = [real.Clone("real"), imag.Clone("imag")]
         return True
 
     def num_children(self) -> int:
