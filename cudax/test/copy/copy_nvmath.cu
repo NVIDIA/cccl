@@ -130,14 +130,15 @@ TEST_CASE("copy d2d nvmath reorder_strides", "[copy][d2d][nvmath][reorder_stride
 
 // src: (63,70,1001):(-1001,-63063,-1), offset=alloc-1
 // dst: (63,70,1001):(70070,1001,1), offset=0
-TEST_CASE("copy d2d nvmath src_neg_stride", "[copy][d2d][nvmath][neg_stride]")
+TEMPLATE_TEST_CASE(
+  "copy d2d nvmath src_neg_stride", "[copy][d2d][nvmath][neg_stride]", int8_t, int16_t, int32_t, int64_t)
 {
   constexpr int alloc      = 63 * 70 * 1001;
   constexpr int src_offset = alloc - 1;
   cuda::std::array<int, 3> shape{63, 70, 1001};
   cuda::std::array<int, 3> src_strides{-1001, -63063, -1};
   cuda::std::array<int, 3> dst_strides{70070, 1001, 1};
-  test_copy_stride_relaxed<data_t>(alloc, src_offset, shape, src_strides, alloc, 0, dst_strides);
+  test_copy_stride_relaxed<TestType>(alloc, src_offset, shape, src_strides, alloc, 0, dst_strides);
 }
 
 /***********************************************************************************************************************
@@ -158,7 +159,7 @@ static cuda::std::array<int, 23> make_flatten_common_dst_strides()
 
 // src: (2,)^23, bit-permuted strides
 // dst: (2,)^23, different bit-permuted strides
-TEST_CASE("copy d2d nvmath flatten_common", "[copy][d2d][nvmath][flatten]")
+TEMPLATE_TEST_CASE("copy d2d nvmath flatten_common", "[copy][d2d][nvmath][flatten]", int8_t, int16_t)
 {
   constexpr int alloc = 1 << 23;
   cuda::std::array<int, 23> shape{};
@@ -166,7 +167,7 @@ TEST_CASE("copy d2d nvmath flatten_common", "[copy][d2d][nvmath][flatten]")
   {
     s = 2;
   }
-  test_copy_stride_relaxed<data_t>(
+  test_copy_stride_relaxed<TestType>(
     alloc, 0, shape, make_flatten_common_src_strides(), alloc, 0, make_flatten_common_dst_strides());
 }
 
@@ -184,6 +185,32 @@ TEST_CASE("copy d2d nvmath flatten_one", "[copy][d2d][nvmath][flatten]")
     1 << 19, 1 << 18, 1 << 17, 1 << 16, 1 << 15, 1 << 14, 1 << 13, 1 << 12, 1 << 11, 1 << 10,
     1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,  1 << 3,  1 << 2,  1 << 1,  1 << 0};
   test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
+}
+
+TEST_CASE("copy d2d simplified static rank dispatch", "[copy][d2d][nvmath][flatten]")
+{
+  constexpr cuda::std::array<int, 5> shape{2, 2, 2, 2, 2};
+
+  SECTION("rank 1")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 4, 8, 16, 32};
+    test_copy_stride_relaxed<data_t>(64, 0, shape, strides);
+  }
+  SECTION("rank 2")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 4, 8, 32, 64};
+    test_copy_stride_relaxed<data_t>(128, 0, shape, strides);
+  }
+  SECTION("rank 3")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 4, 16, 32, 128};
+    test_copy_stride_relaxed<data_t>(256, 0, shape, strides);
+  }
+  SECTION("rank 4")
+  {
+    constexpr cuda::std::array<int, 5> strides{2, 8, 16, 64, 256};
+    test_copy_stride_relaxed<data_t>(512, 0, shape, strides);
+  }
 }
 
 /***********************************************************************************************************************
