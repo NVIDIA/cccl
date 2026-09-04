@@ -4,11 +4,11 @@
 
 """Keep process-wide CUDA compiler libraries aligned with resolved headers.
 
-NVRTC, its builtins library, and nvJitLink are loaded from one CUDA Toolkit
-root before a binding is allowed to resolve either compiler library. NVRTC
-must match the selected CUDA headers exactly. nvJitLink consumes NVRTC's
-LTO-IR, so it may be a newer minor release, but it must have the same major
-version and cannot be older than the headers.
+NVRTC, its builtins library, and nvJitLink are loaded from one monolithic CUDA
+Toolkit root or one split-wheel ``nvidia`` anchor before a binding is allowed
+to resolve either compiler library. NVRTC must match the selected CUDA headers
+exactly. nvJitLink consumes NVRTC's LTO-IR, so it may be a newer minor release,
+but it must have the same major version and cannot be older than the headers.
 """
 
 from __future__ import annotations
@@ -47,6 +47,15 @@ class _ToolkitRootCandidates:
     toolkit_root: Path
     nvrtc_pairs: tuple[tuple[Path, Path], ...]
     nvjitlink: tuple[Path, ...]
+
+
+@dataclass(frozen=True)
+class _ToolkitLibraryLayout:
+    """Compiler-library directories sharing one logical Toolkit root."""
+
+    toolkit_root: Path
+    nvrtc_dirs: tuple[Path, ...]
+    nvjitlink_dirs: tuple[Path, ...]
 
 
 def _cuda_include_dirs(
@@ -88,14 +97,40 @@ def _toolkit_version(
     return next(iter(versions), None)
 
 
-def _library_dirs(cuda_include_dirs: tuple[Path, ...]) -> tuple[Path, ...]:
+def _library_dirs(root: Path) -> tuple[Path, ...]:
     result: list[Path] = []
-    for include_dir in cuda_include_dirs:
-        for name in ("lib", "lib64", "bin"):
-            candidate = include_dir.parent / name
-            if candidate.is_dir() and candidate not in result:
-                result.append(candidate)
+    for name in ("lib", "lib64", "bin"):
+        candidate = root / name
+        if candidate.is_dir():
+            result.append(candidate)
     return tuple(result)
+
+
+def _toolkit_library_layout(include_dir: Path) -> _ToolkitLibraryLayout:
+    """Map CUDA headers to a monolithic or split-wheel Toolkit layout."""
+
+    toolkit_root = include_dir.parent.resolve()
+    if (
+        include_dir.name == "include"
+        and toolkit_root.name == "cuda_runtime"
+        and toolkit_root.parent.name == "nvidia"
+    ):
+        # CUDA 12 wheels install Toolkit components into sibling namespace
+        # packages below one ``site-packages/nvidia`` anchor. Treat that anchor
+        # as the Toolkit root without searching any other site-packages tree.
+        toolkit_root = toolkit_root.parent
+        return _ToolkitLibraryLayout(
+            toolkit_root=toolkit_root,
+            nvrtc_dirs=_library_dirs(toolkit_root / "cuda_nvrtc"),
+            nvjitlink_dirs=_library_dirs(toolkit_root / "nvjitlink"),
+        )
+
+    library_dirs = _library_dirs(toolkit_root)
+    return _ToolkitLibraryLayout(
+        toolkit_root=toolkit_root,
+        nvrtc_dirs=library_dirs,
+        nvjitlink_dirs=library_dirs,
+    )
 
 
 def _library_names(kind: str, major: int) -> tuple[str, ...]:
@@ -123,11 +158,10 @@ def _toolkit_root_candidates(
 ) -> tuple[_ToolkitRootCandidates | None, str]:
     """Find a complete compiler-library set below one CUDA Toolkit root."""
 
-    toolkit_root = include_dir.parent.resolve()
-    library_dirs = _library_dirs((include_dir,))
+    layout = _toolkit_library_layout(include_dir)
     nvrtc_pairs: list[tuple[Path, Path]] = []
     unpaired_nvrtc: list[Path] = []
-    for library_dir in library_dirs:
+    for library_dir in layout.nvrtc_dirs:
         builtins = next(
             (
                 library_dir / name
@@ -147,7 +181,7 @@ def _toolkit_root_candidates(
 
     nvjitlink = tuple(
         candidate
-        for library_dir in library_dirs
+        for library_dir in layout.nvjitlink_dirs
         for name in _library_names("nvJitLink", major)
         if (candidate := library_dir / name).is_file()
     )
@@ -170,10 +204,10 @@ def _toolkit_root_candidates(
         expected_nvjitlink = ", ".join(_library_names("nvJitLink", major))
         missing.append(f"nvJitLink ({expected_nvjitlink})")
     if missing:
-        return None, f"{toolkit_root}: missing {'; '.join(missing)}"
+        return None, f"{layout.toolkit_root}: missing {'; '.join(missing)}"
     return (
         _ToolkitRootCandidates(
-            toolkit_root=toolkit_root,
+            toolkit_root=layout.toolkit_root,
             nvrtc_pairs=tuple(nvrtc_pairs),
             nvjitlink=nvjitlink,
         ),
@@ -365,7 +399,7 @@ def preload_toolkit_compiler_libraries(
     # a later include root must not silently replace it, even at the same
     # reported Toolkit version.
     primary_include = cuda_include_dirs[0]
-    primary_root = primary_include.parent.resolve()
+    primary_root = _toolkit_library_layout(primary_include).toolkit_root
     candidate, diagnostic = _toolkit_root_candidates(
         primary_include,
         major=major,
@@ -373,9 +407,9 @@ def preload_toolkit_compiler_libraries(
     )
     if candidate is None:
         other_roots = tuple(
-            include_dir.parent.resolve()
+            _toolkit_library_layout(include_dir).toolkit_root
             for include_dir in cuda_include_dirs[1:]
-            if include_dir.parent.resolve() != primary_root
+            if _toolkit_library_layout(include_dir).toolkit_root != primary_root
         )
         ignored = (
             "; later ordered CUDA header roots are not eligible: "
