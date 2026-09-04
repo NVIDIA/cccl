@@ -140,6 +140,10 @@ class GroupLoadStoreSemantics:
             object.__setattr__(self, "storage_alignment", None)
             object.__setattr__(self, "storage_auto_sync", False)
         if self.storage_ownership is StorageOwnership.NONE:
+            if self.algorithm is not GroupLoadStoreAlgorithm.DIRECT:
+                raise ValueError(
+                    "storage-free group Load/Store is valid only for DIRECT"
+                )
             if any(
                 value is not None
                 for value in (

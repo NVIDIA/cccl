@@ -4,6 +4,7 @@
 
 """Portable Block Load/Store planning and root API contracts."""
 
+from dataclasses import replace
 from importlib import import_module
 
 import numpy as np
@@ -412,6 +413,13 @@ def test_direct_storage_metadata_is_validated_before_being_ignored(
 ):
     with pytest.raises(exception, match=message):
         _load_store(**kwargs)
+
+
+def test_non_direct_algorithms_cannot_inherit_storage_free_semantics():
+    direct = _load_store()
+
+    with pytest.raises(ValueError, match="storage-free.*only for DIRECT"):
+        replace(direct, algorithm=GroupLoadStoreAlgorithm.TRANSPOSE)
 
 
 def test_storage_bearing_contract_is_part_of_plan_identity():
