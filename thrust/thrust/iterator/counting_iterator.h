@@ -45,12 +45,16 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 struct __runtime_value
 {
+  static constexpr bool __is_compile_time = false;
+
   T value;
 };
 
 template <auto Value>
 struct __compile_time_value
 {
+  static constexpr bool __is_compile_time = true;
+
   static constexpr decltype(Value) value = Value;
 };
 
@@ -214,8 +218,18 @@ public:
       : super_t(x)
       , StrideHolder(stride)
   {
-    // a zero stride is rejected; use cuda::constant_iterator for a fixed value
-    _CCCL_ASSERT(static_cast<decltype(stride.value)>(stride.value) != 0, "counting_iterator stride must be nonzero");
+    // a zero stride is rejected; use cuda::constant_iterator for a fixed value.
+    // a compile-time holder asserts statically: a runtime assert on a constant
+    // condition trips MSVC C4127 under /WX
+    if constexpr (StrideHolder::__is_compile_time)
+    {
+      static_assert(stride.value != 0, "counting_iterator stride must be nonzero");
+    }
+    else
+    {
+      _CCCL_ASSERT(static_cast<decltype(stride.value)>(stride.value) != 0,
+                   "counting_iterator stride must be nonzero");
+    }
   }
 
   //! \cond
