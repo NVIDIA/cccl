@@ -369,10 +369,13 @@ is unchanged.
 
 The qualified :func:`cuda.coop.numba_mlir.shuffle` entry point also accepts
 scalar values with ``offset`` or ``rotate`` mode. Offset distance is signed,
-may be negative, and may vary by thread. A source rank outside the block leaves
-that thread's result unspecified. Rotate distance may be static or runtime and
-must satisfy ``0 < distance < block_threads``. An invalid runtime Rotate
-distance executes a device trap, which invalidates that CUDA context; validate
+may be negative, and may vary by thread, but it must fit a signed 32-bit
+integer. A static overflow is rejected during compilation; a runtime overflow
+executes a device trap before CUB's parameter is narrowed. Within that range,
+a source rank outside the block leaves that thread's result unspecified.
+Rotate distance may be static or runtime and must satisfy
+``0 < distance < block_threads``. An invalid runtime Rotate distance also
+executes a device trap. A trap invalidates that CUDA context, so validate
 untrusted distances before launching a kernel. Array values remain limited to
 unit ``up`` and ``down``; boundary-output projections are not part of this
 release.

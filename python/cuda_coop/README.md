@@ -265,12 +265,14 @@ for guarded or flagged scatter.
 `shuffle(block, value, mode=...)` is block-only. The portable API accepts a
 `ThreadData` payload, `up` or `down`, and the fixed distance `1`; the vacated
 edge item is unspecified. The qualified API also accepts scalar `offset` and
-`rotate` modes. Offset distance is signed and may vary by thread; a source
+`rotate` modes. Offset distance is signed, may vary by thread, and must fit a
+signed 32-bit integer. Static overflows are rejected during compilation;
+runtime overflows trap before narrowing to CUB. Within that range, a source
 rank outside the block leaves that thread's result unspecified. Rotate
 distance may be static or runtime and must satisfy
-`0 < distance < block_threads`. An invalid runtime Rotate distance executes a
-device trap and invalidates that CUDA context, so validate untrusted distances
-before launch.
+`0 < distance < block_threads`. An invalid runtime Rotate distance also
+executes a device trap. A trap invalidates that CUDA context, so validate
+untrusted distances before launch.
 
 Exchange and Shuffle require converged participation by every member of the
 selected group. They use compiler-owned CUB temporary storage and append a
