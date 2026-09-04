@@ -46,6 +46,7 @@ _OperatorReduceAlias: TypeAlias = Callable[[object, object], object]
 _CudaxReduceOperator: TypeAlias = (
     ReduceOperator | _OperatorReduceAlias | _NumpyReduceUfunc
 )
+_CallbackReduceAlgorithm: TypeAlias = Literal["raking", "warp_reductions"]
 
 @overload
 def reduce(
@@ -75,7 +76,7 @@ def reduce(
     value: ThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: ReduceOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    binary_op: _CudaxReduceOperator | None = None,
     broadcast: Literal[False],
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
@@ -83,13 +84,35 @@ def reduce(
 @overload
 def reduce(
     group: BlockGroup,
+    value: ThreadDataLike[_ItemT],
+    /,
+    *,
+    binary_op: Callable[[_ItemT, _ItemT], _ItemT],
+    broadcast: Literal[False],
+    valid_items: None = None,
+    algorithm: _CallbackReduceAlgorithm | None = None,
+) -> _ItemT: ...
+@overload
+def reduce(
+    group: BlockGroup,
     value: _ScalarT,
     /,
     *,
-    binary_op: ReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    binary_op: _CudaxReduceOperator | None = None,
     broadcast: Literal[False],
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
+) -> _ScalarT: ...
+@overload
+def reduce(
+    group: BlockGroup,
+    value: _ScalarT,
+    /,
+    *,
+    binary_op: Callable[[_ScalarT, _ScalarT], _ScalarT],
+    broadcast: Literal[False],
+    valid_items: ValidItems | None = None,
+    algorithm: _CallbackReduceAlgorithm | None = None,
 ) -> _ScalarT: ...
 @overload
 def reduce(
@@ -97,7 +120,9 @@ def reduce(
     value: _ScalarT,
     /,
     *,
-    binary_op: ReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None = None,
+    binary_op: (
+        _CudaxReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None
+    ) = None,
     broadcast: Literal[False],
     valid_items: ValidItems | None = None,
     algorithm: None = None,
