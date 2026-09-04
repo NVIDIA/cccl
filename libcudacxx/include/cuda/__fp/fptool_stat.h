@@ -436,7 +436,7 @@ _CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __str
   // record does not have to outlive the call.
   const fpmp2_stat_data __cleared = __fpmp2_stat_cleared_data();
   fpmp2_stat_data* __data_ptr     = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to clear the fpmp2_stat device record",
     __data_ptr,
@@ -458,7 +458,7 @@ _CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __str
 {
   fpmp2_stat_data __dst{};
   const fpmp2_stat_data* __data_ptr = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to read the fpmp2_stat device record",
     &__dst,

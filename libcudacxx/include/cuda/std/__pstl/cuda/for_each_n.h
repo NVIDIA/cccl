@@ -75,7 +75,7 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
     const auto __count = ::cuda::std::__convert_to_integral(__orig_n);
 
     // We pass the policy as an environment to DeviceFor
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceFor::ForEachN,
       "__pstl_dispatch: kernel launch failed",
       __first,

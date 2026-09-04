@@ -61,7 +61,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(bench_policy_selector<T>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceFind::FindIf,
       "FindIf failed",
       thrust::raw_pointer_cast(dinput.data()),

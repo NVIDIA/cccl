@@ -78,7 +78,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     );
     if constexpr (InPlace::value)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::If,
         "select_if failed",
         d_in,
@@ -89,7 +89,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::If,
         "select_if failed",
         static_cast<const T*>(d_in),

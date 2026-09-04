@@ -43,7 +43,7 @@ template <class _Policy>
   else
   {
     int __curr_device{};
-    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
+    _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
     return __ensure_current_context{device_ref{__curr_device}};
   }
 }

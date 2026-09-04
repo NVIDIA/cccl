@@ -45,6 +45,23 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
+#  define _CCCL_TRY_DRIVER_API(_NAME, _MSG, ...)                                     \
+    do                                                                               \
+    {                                                                                \
+      const ::cudaError_t __cccl_try_driver_api_status = _NAME(__VA_ARGS__);         \
+      if (__cccl_try_driver_api_status != ::cudaSuccess)                             \
+      {                                                                              \
+        _CCCL_THROW(::cuda::cuda_error, __cccl_try_driver_api_status, _MSG, #_NAME); \
+      }                                                                              \
+    } while (0)
+
+#  define _CCCL_ASSERT_DRIVER_API(_NAME, _MSG, ...)                                              \
+    do                                                                                           \
+    {                                                                                            \
+      [[maybe_unused]] const ::cudaError_t __cccl_assert_driver_api_status = _NAME(__VA_ARGS__); \
+      _CCCL_ASSERT(__cccl_assert_driver_api_status == ::cudaSuccess, _MSG);                      \
+    } while (0)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
 // Get the driver function by name using this macro
@@ -386,7 +403,7 @@ __ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept // NOLINT(bugprone-exception
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __ctxGetCurrent()
 {
   ::CUcontext __result;
-  _CCCL_TRY_CUDA_API(::cuda::__driver::__ctxGetCurrentNoThrow, "Failed to get current context", __result);
+  _CCCL_TRY_DRIVER_API(::cuda::__driver::__ctxGetCurrentNoThrow, "Failed to get current context", __result);
   return __result;
 }
 
@@ -580,11 +597,7 @@ __mempoolDestroyNoThrow(::CUmemoryPool __pool) noexcept // NOLINT(bugprone-excep
 
 _CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
 {
-  ::cudaError_t __status = ::cuda::__driver::__mempoolDestroyNoThrow(__pool);
-  if (__status != ::cudaSuccess)
-  {
-    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to destroy a memory pool");
-  }
+  _CCCL_TRY_DRIVER_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool);
 }
 
 _CCCL_HOST_API inline ::CUdeviceptr
@@ -748,7 +761,7 @@ template <::CUpointer_attribute _Attr>
 [[nodiscard]] _CCCL_HOST_API __pointer_attribute_value_type_t<_Attr> __pointerGetAttribute(const void* __ptr)
 {
   __pointer_attribute_value_type_t<_Attr> __result;
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_DRIVER_API(
     ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>, "Failed to get attribute of a pointer", __result, __ptr);
   return __result;
 }
