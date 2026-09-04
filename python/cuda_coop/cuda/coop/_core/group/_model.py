@@ -62,6 +62,32 @@ class SynchronizationScope(str, Enum):
     GROUP = "group"
 
 
+@dataclass(frozen=True)
+class GroupTopologyContract:
+    """Static execution topology shared by primitive families."""
+
+    group_kind: str
+    logical_width: int
+    instances: int
+    instance_index: str
+    execution_scope: SynchronizationScope
+
+    def __post_init__(self) -> None:
+        if not self.group_kind:
+            raise ValueError("group topology kind must not be empty")
+        for name in ("logical_width", "instances"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+                raise ValueError(f"group topology {name} must be a positive integer")
+        if not self.instance_index:
+            raise ValueError("group topology instance index must not be empty")
+        object.__setattr__(
+            self,
+            "execution_scope",
+            SynchronizationScope(self.execution_scope),
+        )
+
+
 class UnsupportedReasonCode(str, Enum):
     MISSING_EXACT_BLOCK_DIM = "missing_exact_block_dim"
     PARTIAL_PHYSICAL_WARP = "partial_physical_warp"
@@ -454,6 +480,7 @@ class GroupLoweringPlan:
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
     implementation: CudaxCallDescription | AlgorithmSpec | None
+    topology: GroupTopologyContract | None
     participation: ParticipationContract | None
     result: ResultContract | None
     synchronization: SynchronizationContract | None
@@ -470,6 +497,7 @@ class GroupLoweringPlan:
             raise TypeError("operation returns_value must be a bool")
         if not is_unsupported and (
             self.implementation is None
+            or self.topology is None
             or self.participation is None
             or self.synchronization is None
             or self.temp_storage is None
@@ -502,6 +530,7 @@ class GroupLoweringPlan:
             self.target.value,
             _group_key(self.resolved_group),
             self.resolved_group.hierarchy.block_dim,
+            self.topology,
             _lowered_operation_semantic_key(self.call.operation, self.target),
             implementation_key,
             self.participation,
@@ -541,6 +570,7 @@ __all__ = [
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupTopologyContract",
     "ImplementationProvenance",
     "LogicalResultContract",
     "ParticipationContract",
