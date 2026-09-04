@@ -446,6 +446,25 @@ def test_nonexhaustive_mapped_topology_respects_physical_parent_boundaries():
     assert warps.temp_storage.ownership is StorageOwnership.NONE
 
 
+def test_complete_nonexhaustive_logical_warp_uses_canonical_cub_topology():
+    plan = _plan(
+        this_warp().group_by(8, exhaustive=False),
+        _reduce(
+            broadcast=False,
+            valid_items=ArgumentBinding.runtime(),
+        ),
+        64,
+    )
+
+    assert plan.target is GroupLoweringTarget.CUB_WARP
+    assert plan.resolved_group.complete_membership is True
+    assert plan.topology.instances == 8
+    assert plan.topology.instance_index == "linear_thread_rank / 8"
+    assert plan.topology.thread_rank == "linear_thread_rank % 8"
+    assert plan.temp_storage.instances == 8
+    assert plan.temp_storage.instance_index == "linear_thread_rank / 8"
+
+
 def test_grid_reduce_has_a_stable_hidden_workspace_rejection():
     plan = _plan(this_grid(), _reduce(), LaunchFacts())
 
