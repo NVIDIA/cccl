@@ -148,9 +148,9 @@ def test_lowering_factories_use_exact_callable_identity(operation):
     assert factory_operation(factory) == FactoryOperation(
         operation=operation,
         namespace="block",
-        storage_abi=StorageABI.LEADING_POINTER,
+        storage_abi=StorageABI.NONE,
         execution_scope=SynchronizationScope.BLOCK,
-        synchronization_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.NONE,
     )
 
     def impostor(*args, **kwargs):

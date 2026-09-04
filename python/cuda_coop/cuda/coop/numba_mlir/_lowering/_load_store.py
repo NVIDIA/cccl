@@ -182,8 +182,8 @@ for _factory in (load, store):
         _factory,
         operation=_factory.__name__,
         namespace="block",
-        storage_abi=StorageABI.LEADING_POINTER,
+        storage_abi=StorageABI.NONE,
         execution_scope=SynchronizationScope.BLOCK,
-        synchronization_scope=SynchronizationScope.BLOCK,
+        synchronization_scope=SynchronizationScope.NONE,
     )
 del _factory
