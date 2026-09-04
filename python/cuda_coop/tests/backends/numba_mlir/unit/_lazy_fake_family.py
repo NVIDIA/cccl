@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from cuda.coop._core import (
@@ -39,27 +39,37 @@ from cuda.coop.numba_mlir._compiler._operations import (
 )
 
 SCALAR_OPERATION = "_test_lazy_family_scalar"
+THREAD_STORAGE_OPERATION = "_test_lazy_family_thread_storage"
 ARRAY_OPERATION = "_test_lazy_family_array"
 PAIR_OPERATION = "_test_lazy_family_pair"
-OPERATIONS = (SCALAR_OPERATION, ARRAY_OPERATION, PAIR_OPERATION)
+OPERATIONS = (
+    SCALAR_OPERATION,
+    THREAD_STORAGE_OPERATION,
+    ARRAY_OPERATION,
+    PAIR_OPERATION,
+)
 
-_GROUP_KIND_BY_OPERATION = {
-    SCALAR_OPERATION: "thread",
-    ARRAY_OPERATION: "block",
-    PAIR_OPERATION: "warp",
+_GROUP_KINDS_BY_OPERATION = {
+    SCALAR_OPERATION: frozenset({"thread"}),
+    THREAD_STORAGE_OPERATION: frozenset({"thread"}),
+    ARRAY_OPERATION: frozenset({"block"}),
+    PAIR_OPERATION: frozenset({"warp", "threads_within_warp"}),
 }
 _EXECUTION_SCOPE_BY_OPERATION = {
     SCALAR_OPERATION: SynchronizationScope.NONE,
+    THREAD_STORAGE_OPERATION: SynchronizationScope.NONE,
     ARRAY_OPERATION: SynchronizationScope.BLOCK,
     PAIR_OPERATION: SynchronizationScope.WARP,
 }
 _STORAGE_ABI_BY_OPERATION = {
     SCALAR_OPERATION: StorageABI.NONE,
+    THREAD_STORAGE_OPERATION: StorageABI.LEADING_POINTER,
     ARRAY_OPERATION: StorageABI.LEADING_POINTER,
     PAIR_OPERATION: StorageABI.LEADING_POINTER,
 }
 _RESULT_SOURCES_BY_OPERATION = {
     SCALAR_OPERATION: (GroupResultSource("value", None),),
+    THREAD_STORAGE_OPERATION: (GroupResultSource("value", None),),
     ARRAY_OPERATION: (GroupResultSource("values", "values"),),
     PAIR_OPERATION: (
         GroupResultSource("key", None),
@@ -112,6 +122,7 @@ def _classifications(
 ) -> tuple[ParameterClassification, ...]:
     names = {
         SCALAR_OPERATION: ("value",),
+        THREAD_STORAGE_OPERATION: ("value",),
         ARRAY_OPERATION: ("values",),
         PAIR_OPERATION: ("key", "values"),
     }[semantics.operation]
@@ -122,7 +133,7 @@ def _classifications(
 
 
 def _result_contract(semantics: LazyFamilySemantics) -> ResultContract:
-    if semantics.operation == SCALAR_OPERATION:
+    if semantics.operation in {SCALAR_OPERATION, THREAD_STORAGE_OPERATION}:
         layouts = (("scalar", GroupOperandKind.SCALAR, 1),)
     elif semantics.operation == ARRAY_OPERATION:
         layouts = (("array", GroupOperandKind.ARRAY, semantics.array_extent),)
@@ -154,10 +165,11 @@ def _plan(
     launch,
     semantics: LazyFamilySemantics,
 ) -> GroupLoweringPlan:
-    expected_group_kind = _GROUP_KIND_BY_OPERATION[semantics.operation]
-    if resolved_group.kind != expected_group_kind:
+    expected_group_kinds = _GROUP_KINDS_BY_OPERATION[semantics.operation]
+    if resolved_group.kind not in expected_group_kinds:
+        expected = ", ".join(sorted(expected_group_kinds))
         raise ValueError(
-            f"{semantics.operation} requires group kind {expected_group_kind!r}"
+            f"{semantics.operation} requires one of these group kinds: {expected}"
         )
     storage_abi = _STORAGE_ABI_BY_OPERATION[semantics.operation]
     storage_ownership = (
@@ -178,6 +190,7 @@ def _plan(
         "thread": GroupLoweringTarget.CUDAX_GROUP,
         "block": GroupLoweringTarget.CUB_BLOCK,
         "warp": GroupLoweringTarget.CUB_WARP,
+        "threads_within_warp": GroupLoweringTarget.CUB_WARP,
     }[resolved_group.kind]
     return GroupLoweringPlan(
         target=target,
@@ -206,7 +219,7 @@ _dispatch._register_group_operation_family(
     LazyFamilySemantics,
     classifications=_classifications,
     planner=_plan,
-    group_kinds=frozenset({"thread", "warp", "block"}),
+    group_kinds=frozenset({"thread", "warp", "threads_within_warp", "block"}),
     unsupported_group_message="lazy fake family requires thread, warp, or block",
 )
 
@@ -232,8 +245,16 @@ INVOCABLES = {
         storage_abi=_STORAGE_ABI_BY_OPERATION[operation],
         execution_scope=_EXECUTION_SCOPE_BY_OPERATION[operation],
         synchronization_scope=_EXECUTION_SCOPE_BY_OPERATION[operation],
-        temp_storage_bytes=(0 if operation == SCALAR_OPERATION else 24),
-        temp_storage_alignment=(1 if operation == SCALAR_OPERATION else 8),
+        temp_storage_bytes=(
+            0
+            if operation == SCALAR_OPERATION
+            else (5 if operation == THREAD_STORAGE_OPERATION else 24)
+        ),
+        temp_storage_alignment=(
+            1
+            if operation == SCALAR_OPERATION
+            else (16 if operation == PAIR_OPERATION else 8)
+        ),
     )
     for operation in OPERATIONS
 }
@@ -308,15 +329,35 @@ def _lower(
         make_group_primitive_call(group, semantics),
         context.launch,
     ).require_supported()
+    temp_storage_value = bound.arguments.get("temp_storage")
+    if not context.is_none(temp_storage_value):
+        descriptor = context.temp_storage(temp_storage_value)
+        if descriptor is None:
+            raise TypeError("lazy fake family requires a TempStorage descriptor")
+        size_in_bytes, alignment, auto_sync, sharing = descriptor
+        assert plan.temp_storage is not None
+        plan = replace(
+            plan,
+            temp_storage=replace(
+                plan.temp_storage,
+                ownership=StorageOwnership.CALLER,
+                exact_layout_required=True,
+                sharing=sharing,
+                requested_size_in_bytes=size_in_bytes,
+                requested_alignment=alignment,
+                auto_sync=auto_sync,
+            ),
+        )
     PLANNING_EVENTS.append((operation, group.kind, is_common_root, plan))
 
     runtime_names = {
         SCALAR_OPERATION: ("value",),
+        THREAD_STORAGE_OPERATION: ("value",),
         ARRAY_OPERATION: ("values",),
         PAIR_OPERATION: ("key", "values"),
     }[operation]
     runtime_args = [bound.arguments[name] for name in runtime_names]
-    if operation == SCALAR_OPERATION:
+    if operation in {SCALAR_OPERATION, THREAD_STORAGE_OPERATION}:
         return_alias = bound.arguments["value"]
         dtype_source = bound.arguments["value"]
     elif operation == ARRAY_OPERATION:
@@ -325,12 +366,15 @@ def _lower(
     else:
         return_alias = (bound.arguments["key"], bound.arguments["values"])
         dtype_source = bound.arguments["values"]
+    factory_kwargs = {"value_type": context.dtype(dtype_source)}
+    if not context.is_none(temp_storage_value):
+        factory_kwargs["temp_storage"] = temp_storage_value
     return context.rewrite_call(
         inst,
         lowering_plan=plan,
         factory=PROVIDERS[operation],
         args=runtime_args,
-        kwargs={"value_type": context.dtype(dtype_source)},
+        kwargs=factory_kwargs,
         return_alias=return_alias,
     )
 
@@ -353,7 +397,7 @@ for _operation in OPERATIONS:
             runtime_factory_kw_prerequisites=(),
             allowed_factory_kwargs=frozenset({"value_type"}),
             required_factory_kwargs=frozenset({"value_type"}),
-            accepts_temp_storage=False,
+            accepts_temp_storage=_operation == PAIR_OPERATION,
             scalar_binding_kwargs=frozenset(),
             runtime_offset_kwarg=None,
             infer_payload=_infer_payload_at(_payload_index),
