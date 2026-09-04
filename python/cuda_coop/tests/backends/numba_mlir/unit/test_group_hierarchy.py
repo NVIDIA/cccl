@@ -46,7 +46,7 @@ def _assigned_var(state, name):
 
 def test_group_marker_detection_distinguishes_group_ir():
     def group_marker_function():
-        return coop.this_block().count()
+        return coop.this_block()
 
     def plain_function(value):
         return value + 1
@@ -96,7 +96,7 @@ def test_planner_recognizes_the_full_group_descriptor_vocabulary(
 
     def describe_group():
         group = constructor()
-        return group.count()
+        return group
 
     state = _state(describe_group)
     planner = _GroupCallPlanner(state, _launch())
@@ -210,19 +210,6 @@ def test_core_resolves_every_physical_group_from_exact_launch_facts(
         assert resolved.hierarchy.cluster_dim == (2, 2, 1)
     if kind == "grid":
         assert resolved.hierarchy.grid_dim == (3, 2, 2)
-
-
-@pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
-def test_thread_group_execution_fails_closed_before_provider_compilation(api):
-    def query():
-        group = api.this_block()
-        return group.count("thread")
-
-    with pytest.raises(
-        NotImplementedError,
-        match="ThreadGroup.count execution is not part of the Block Load/Store",
-    ):
-        _GroupCallPlanner(_state(query), _launch()).run()
 
 
 @pytest.mark.parametrize(
