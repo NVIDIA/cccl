@@ -59,8 +59,7 @@ A cooperative operation acts on a *group* of threads, usually a warp or a
 block. Each thread owns part of the group's data, held in ``ThreadData``.
 Together, those parts form a tile.
 
-These calls load a full tile, compute its prefix sums, and write the
-result back to memory:
+These calls copy a full tile from one array to another:
 
 .. code-block:: python
 
@@ -69,16 +68,12 @@ result back to memory:
    items = coop.ThreadData(items_per_thread)
 
    coop.load(block, source, items, offset=offset)
-   prefixes = coop.exclusive_sum(block, items)
-   coop.store(block, destination, prefixes, offset=offset)
+   coop.store(block, destination, items, offset=offset)
 
 The kernel supplies the tile's ``offset`` and a compile-time
 ``items_per_thread`` count. With 128 threads and four items per thread,
 the block processes 512 values. All threads in the group must reach the
 cooperative calls, including when only part of the tile is valid.
-
-Each block computes its own prefix sum; a device-wide scan also needs
-to combine results across blocks.
 
 The :doc:`programming concepts <coop/concepts>` explain participation,
 data layouts, operation results, and temporary storage.
@@ -112,6 +107,7 @@ To work on the integration, follow a kernel through the
 
 .. raw:: html
 
+   <span id="block-prefix-callbacks"></span>
    <span id="build-time-cmake-variables"></span>
    <span id="compilation-and-headers"></span>
    <span id="configuration"></span>
