@@ -1551,8 +1551,8 @@ static_assert(is_valid_cluster_policy(make_sm103_pairs_cluster_policy(131072, 10
 //! pairs winner (the B200 keys campaign showed pairs tunings transfer to keys at these shapes), buckets marked
 //! "B200 keys" carry the B200 keys winner (at these shapes B200 needed a dedicated keys search, so the request shape
 //! outweighs the chip). Shapes without a bucket keep the default policy: below the 8K crossover the baseline backend
-//! runs anyway, and at the shapes left out neither donor campaign produced a config that beat the default without
-//! regressing somewhere.
+//! runs anyway, and at the shapes left out either no donor campaign produced a config that beat the default without
+//! regressing somewhere, or the transferred candidate regressed on B300 verification (8Ki k <= 1024, 32Ki k <= 512).
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
 make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
   -> cluster_topk_policy
@@ -1569,43 +1569,14 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
     return make_cluster_policy();
   }
 
-  if (static_max_segment_size <= 8 * 1024) // 8192, all three sm103 pairs
+  if (static_max_segment_size <= 8 * 1024) // 8192
   {
-    if (max_k <= 512)
+    // k <= 1024 keeps the default policy: both transferred candidates regressed on B300 verification.
+    if (max_k <= 1024)
     {
-      return cluster_topk_policy{
-        /*threads_per_block=*/512,
-        /*min_blocks_per_sm=*/1,
-        /*min_chunks_per_block=*/1,
-        /*chunk_bytes=*/23 * 1024,
-        /*load_align_bytes=*/16,
-        /*pipeline_stages=*/4,
-        /*single_block_max_seg_size=*/8 * 1024,
-        /*bits_per_pass=*/8,
-        /*histogram_items_per_thread=*/8,
-        /*tie_break_items_per_thread=*/2,
-        /*copy_items_per_thread=*/13,
-        /*max_blocks_per_cluster=*/0,
-        /*max_chunk_slots_per_block=*/0};
+      return make_cluster_policy();
     }
-    else if (max_k <= 1024)
-    {
-      return cluster_topk_policy{
-        /*threads_per_block=*/512,
-        /*min_blocks_per_sm=*/2,
-        /*min_chunks_per_block=*/1,
-        /*chunk_bytes=*/17 * 1024,
-        /*load_align_bytes=*/16,
-        /*pipeline_stages=*/8,
-        /*single_block_max_seg_size=*/8 * 1024,
-        /*bits_per_pass=*/11,
-        /*histogram_items_per_thread=*/5,
-        /*tie_break_items_per_thread=*/4,
-        /*copy_items_per_thread=*/7,
-        /*max_blocks_per_cluster=*/0,
-        /*max_chunk_slots_per_block=*/0};
-    }
-    else if (max_k <= 2048)
+    else if (max_k <= 2048) // sm103 pairs
     {
       return cluster_topk_policy{
         /*threads_per_block=*/512,
@@ -1683,22 +1654,11 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
 
   if (static_max_segment_size <= 32 * 1024) // 32768
   {
-    if (max_k <= 512) // sm103 pairs
+    // k <= 512 keeps the default policy: the transferred candidate regressed 5-11% at high segment counts on B300
+    // verification.
+    if (max_k <= 512)
     {
-      return cluster_topk_policy{
-        /*threads_per_block=*/320,
-        /*min_blocks_per_sm=*/1,
-        /*min_chunks_per_block=*/1,
-        /*chunk_bytes=*/9 * 1024,
-        /*load_align_bytes=*/16,
-        /*pipeline_stages=*/6,
-        /*single_block_max_seg_size=*/8 * 1024,
-        /*bits_per_pass=*/8,
-        /*histogram_items_per_thread=*/5,
-        /*tie_break_items_per_thread=*/3,
-        /*copy_items_per_thread=*/8,
-        /*max_blocks_per_cluster=*/0,
-        /*max_chunk_slots_per_block=*/0};
+      return make_cluster_policy();
     }
     else if (max_k <= 1024) // sm103 pairs
     {
@@ -1875,13 +1835,10 @@ make_sm103_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::c
   return make_cluster_policy();
 }
 
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(8192, 512)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(8192, 1024)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(8192, 2048)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(16384, 512)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(16384, 1024)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(16384, 2048)));
-static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(32768, 512)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(32768, 1024)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(32768, 2048)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(65536, 512)));
