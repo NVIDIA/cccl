@@ -58,6 +58,9 @@ class GroupPlanningContext:
     def try_static_scalar(self, value: Any) -> tuple[bool, Any]:
         return self._planner._try_static_scalar(value)
 
+    def try_static_scalar_provenance(self, value: Any) -> tuple[bool, Any]:
+        return self._planner._try_static_scalar_provenance(value)
+
     def bind(self, function: Any, call: ir.Expr) -> Any:
         return self._planner._bind(function, call)
 

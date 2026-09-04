@@ -4,18 +4,16 @@
 
 """Block Load/Store payload inference and pre-provider validation."""
 
-import math
 from dataclasses import dataclass
-from numbers import Integral, Real
+from numbers import Integral
 from typing import Any
-
-import numpy as np
 
 from cuda.coop._core import ArgumentBinding, BindingKind
 
 from ._rewrite_payload import PayloadInference
 from ._rewrite_support import (
     _GLOBAL_NAME_COUNTER,
+    _UNRESOLVED,
     CoopSinglePhaseRewriteError,
     _cuda_module,
     _dtype_values_match,
@@ -31,41 +29,6 @@ class _LoadStoreMatchMetadata:
 
 
 class _LoadStoreRewrite:
-    @staticmethod
-    def _validate_static_oob_default(value: object) -> None:
-        if isinstance(value, np.generic):
-            value_dtype = value.dtype
-        elif type(value) in {bool, int, float, complex}:
-            value_dtype = type(value)
-        else:
-            raise CoopSinglePhaseRewriteError(
-                "cuda.coop.numba_mlir.load static oob_default must be a "
-                "portable numeric scalar"
-            )
-
-        from ._parameters import _validate_common_numeric_dtype
-
-        try:
-            _validate_common_numeric_dtype(
-                value_dtype,
-                operation="load",
-                parameter="oob_default",
-            )
-        except (TypeError, ValueError) as exc:
-            raise CoopSinglePhaseRewriteError(str(exc)) from exc
-
-        if isinstance(value, Integral):
-            normalized = int(value)
-            if not -(1 << 63) <= normalized <= (1 << 64) - 1:
-                raise CoopSinglePhaseRewriteError(
-                    "cuda.coop.numba_mlir.load static oob_default must fit a "
-                    "64-bit integer"
-                )
-        elif isinstance(value, Real) and not math.isfinite(float(value)):
-            raise CoopSinglePhaseRewriteError(
-                "cuda.coop.numba_mlir.load static oob_default must be finite"
-            )
-
     def _validate_oob_default(
         self,
         *,
@@ -78,7 +41,31 @@ class _LoadStoreRewrite:
         ):
             return
         if binding.kind is BindingKind.STATIC:
-            self._validate_static_oob_default(binding.value)
+            from ._parameters import coerce_static_scalar
+
+            payload_dtype = factory_kwargs.get("dtype")
+            if payload_dtype is None:
+                raise CoopSinglePhaseRewriteError(
+                    "cuda.coop.numba_mlir.load requires an inferred dtype "
+                    "before validating oob_default"
+                )
+            provenance = self._resolve_static_scalar_provenance(binding.value)
+            source_dtype = (
+                None
+                if provenance is _UNRESOLVED or provenance is None
+                else provenance.dtype
+            )
+            try:
+                normalized = coerce_static_scalar(
+                    binding.value,
+                    payload_dtype,
+                    operation="load",
+                    parameter="oob_default",
+                    source_dtype=source_dtype,
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            factory_kwargs["oob_default"] = ArgumentBinding.static(normalized)
             return
 
         runtime_index = 2
@@ -101,10 +88,7 @@ class _LoadStoreRewrite:
         if value_dtype is None:
             value_dtype = self._resolve_var_dtype(value_var)
         if value_dtype is None:
-            raise CoopSinglePhaseRewriteError(
-                "cuda.coop.numba_mlir.load could not infer the runtime "
-                "oob_default dtype before provider materialization"
-            )
+            return
 
         from ._parameters import _validate_common_numeric_dtype
 
@@ -208,7 +192,8 @@ class _LoadStoreRewrite:
                 raise CoopSinglePhaseRewriteError(str(exc)) from exc
 
         if op_name == "load":
-            self._validate_oob_default(
+            _LoadStoreRewrite._validate_oob_default(
+                self,
                 runtime_args=runtime_args,
                 factory_kwargs=factory_kwargs,
             )
@@ -222,22 +207,18 @@ class _LoadStoreRewrite:
             else None
         )
 
+        payload_is_array = payload_spec is not None
         if payload_spec is None:
             payload_dtype = (
                 self._resolve_var_dtype(payload_var)
                 if isinstance(payload_var, ir.Var)
                 else None
             )
-            if inference.op_name == "store":
-                if payload_dtype is None and payload_var is not None:
-                    payload_dtype = self._infer_thread_data_dtype_from_writes(
-                        payload_var
-                    )
-                inference.infer_kwarg("items_per_thread", 1)
-                inference.infer_kwarg(
-                    "dtype",
-                    payload_dtype if payload_dtype is not None else memory_dtype,
-                )
+            inference.infer_kwarg("items_per_thread", 1)
+            inference.infer_kwarg(
+                "dtype",
+                memory_dtype if memory_dtype is not None else payload_dtype,
+            )
         else:
             inference.infer_kwarg("items_per_thread", payload_spec.items_per_thread)
             payload_dtype = payload_spec.dtype
@@ -249,17 +230,33 @@ class _LoadStoreRewrite:
                 and payload_var is not None
             ):
                 payload_dtype = self._infer_thread_data_dtype_from_writes(payload_var)
-            inferred_dtype = (
-                payload_dtype if payload_dtype is not None else memory_dtype
-            )
+            inferred_dtype = memory_dtype if memory_dtype is not None else payload_dtype
             if inferred_dtype is None:
                 inferred_dtype = inference.factory_value("dtype")
             inference.infer_kwarg("dtype", inferred_dtype)
             if inferred_dtype is not None and payload_var is not None:
                 self._record_inferred_thread_data_dtype(payload_var, inferred_dtype)
 
-        provider_dtype = inference.factory_value("dtype")
         from ._parameters import _validate_common_numeric_dtype
+
+        if inference.op_name == "store" and not payload_is_array:
+            provenance = self._resolve_static_scalar_provenance(payload_var)
+            if provenance is not _UNRESOLVED and memory_dtype is not None:
+                from ._parameters import coerce_static_scalar
+
+                try:
+                    coerce_static_scalar(
+                        provenance.value,
+                        memory_dtype,
+                        operation="store",
+                        parameter="value",
+                        source_dtype=provenance.dtype,
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+                payload_dtype = memory_dtype
+
+        provider_dtype = inference.factory_value("dtype")
 
         if provider_dtype is not None:
             try:
@@ -268,29 +265,32 @@ class _LoadStoreRewrite:
                 )
             except (TypeError, ValueError) as exc:
                 raise CoopSinglePhaseRewriteError(str(exc)) from exc
+        if payload_dtype is not None:
+            try:
+                _validate_common_numeric_dtype(
+                    payload_dtype,
+                    operation=inference.op_name,
+                )
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(str(exc)) from exc
         if (
             memory_dtype is not None
             and payload_dtype is not None
             and not _dtype_values_match(memory_dtype, payload_dtype)
         ):
+            if inference.op_name != "store" or payload_is_array:
+                raise CoopSinglePhaseRewriteError(
+                    f"cuda.coop.numba_mlir.{inference.op_name} memory dtype "
+                    f"{memory_dtype} does not match payload dtype {payload_dtype}"
+                )
             raise CoopSinglePhaseRewriteError(
-                f"cuda.coop.numba_mlir.{inference.op_name} memory dtype "
-                f"{memory_dtype} does not match payload dtype {payload_dtype}"
+                "cuda.coop.numba_mlir.store value dtype "
+                f"{payload_dtype} does not match destination dtype {memory_dtype}"
             )
 
 
-class _LoadStoreRewriteHandler(_LoadStoreRewrite):
-    """Family-local rewrite facade over the shared IR analysis context."""
-
-    def __init__(self, rewrite: Any) -> None:
-        self._rewrite = rewrite
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._rewrite, name)
-
-
 def infer_load_store_payload(rewrite: Any, inference: PayloadInference) -> None:
-    _LoadStoreRewriteHandler(rewrite)._infer_load_store_payload(inference)
+    _LoadStoreRewrite._infer_load_store_payload(rewrite, inference)
 
 
 def validate_load_store_runtime_controls(
@@ -300,7 +300,8 @@ def validate_load_store_runtime_controls(
     runtime_args: list[ir.Var],
     factory_kwargs: dict[str, object],
 ) -> None:
-    _LoadStoreRewriteHandler(rewrite)._validate_load_store_runtime_controls(
+    _LoadStoreRewrite._validate_load_store_runtime_controls(
+        rewrite,
         op_name=op_name,
         runtime_args=runtime_args,
         factory_kwargs=factory_kwargs,
@@ -330,7 +331,12 @@ def analyze_load_store_match(
         operand_names = (
             ("source", "output") if op_name == "load" else ("destination", "value")
         )
-        for operand_name, operand in zip(operand_names, runtime_args):
+        operands = list(zip(operand_names, runtime_args))
+        if op_name == "store" and len(runtime_args) >= 2:
+            value_is_array = rewrite._resolve_thread_data_spec(runtime_args[1])
+            if value_is_array is None:
+                operands = operands[:1]
+        for operand_name, operand in operands:
             operand_dtype = rewrite._resolve_var_dtype(operand)
             if operand_dtype is None:
                 raise CoopSinglePhaseRewriteError(

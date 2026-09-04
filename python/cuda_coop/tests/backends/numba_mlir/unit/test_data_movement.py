@@ -556,6 +556,307 @@ def test_runtime_offsets_reject_bool_float_and_uint64_types():
     )
 
 
+_INTEGER_LITERAL_DTYPES = (
+    pytest.param("int8", np.int8, id="int8"),
+    pytest.param("uint8", np.uint8, id="uint8"),
+    pytest.param("int16", np.int16, id="int16"),
+    pytest.param("uint16", np.uint16, id="uint16"),
+    pytest.param("int32", np.int32, id="int32"),
+    pytest.param("uint32", np.uint32, id="uint32"),
+    pytest.param("int64", np.int64, id="int64"),
+    pytest.param("uint64", np.uint64, id="uint64"),
+)
+
+
+@pytest.mark.parametrize(
+    ("operation", "parameter"),
+    [("store", "value"), ("load", "oob_default")],
+)
+@pytest.mark.parametrize(("dtype_name", "numpy_dtype"), _INTEGER_LITERAL_DTYPES)
+def test_python_integer_literal_boundaries_are_checked_against_payload_dtype(
+    operation,
+    parameter,
+    dtype_name,
+    numpy_dtype,
+):
+    from numba_cuda_mlir import types
+
+    from cuda.coop.numba_mlir._compiler._parameters import coerce_static_scalar
+
+    dtype = getattr(types, dtype_name)
+    bounds = np.iinfo(numpy_dtype)
+    for value in (int(bounds.min), int(bounds.max)):
+        result = coerce_static_scalar(
+            value,
+            dtype,
+            operation=operation,
+            parameter=parameter,
+        )
+        assert isinstance(result, numpy_dtype)
+        assert int(result) == value
+
+    for value in (int(bounds.min) - 1, int(bounds.max) + 1):
+        with pytest.raises(ValueError, match="outside the range"):
+            coerce_static_scalar(
+                value,
+                dtype,
+                operation=operation,
+                parameter=parameter,
+            )
+
+
+@pytest.mark.parametrize(
+    ("operation", "parameter"),
+    [("store", "value"), ("load", "oob_default")],
+)
+@pytest.mark.parametrize(
+    ("dtype_name", "numpy_dtype"),
+    [("float32", np.float32), ("float64", np.float64)],
+)
+def test_python_float_literal_boundaries_are_checked_against_payload_dtype(
+    operation,
+    parameter,
+    dtype_name,
+    numpy_dtype,
+):
+    from numba_cuda_mlir import types
+
+    from cuda.coop.numba_mlir._compiler._parameters import coerce_static_scalar
+
+    dtype = getattr(types, dtype_name)
+    maximum = float(np.finfo(numpy_dtype).max)
+    for value in (-maximum, 0, 1, 1.25, maximum):
+        result = coerce_static_scalar(
+            value,
+            dtype,
+            operation=operation,
+            parameter=parameter,
+        )
+        assert isinstance(result, numpy_dtype)
+        assert np.isfinite(result)
+
+    for value in (float("-inf"), float("inf"), float("nan"), 1 << 1024):
+        with pytest.raises(ValueError, match="finite"):
+            coerce_static_scalar(
+                value,
+                dtype,
+                operation=operation,
+                parameter=parameter,
+            )
+
+
+@pytest.mark.parametrize(
+    ("operation", "parameter"),
+    [("store", "value"), ("load", "oob_default")],
+)
+def test_contextual_scalar_conversion_rejects_bool_float_to_int_and_typed_casts(
+    operation,
+    parameter,
+):
+    from numba_cuda_mlir import types
+
+    from cuda.coop.numba_mlir._compiler._parameters import coerce_static_scalar
+
+    with pytest.raises(TypeError, match="must not be bool"):
+        coerce_static_scalar(
+            True,
+            types.int32,
+            operation=operation,
+            parameter=parameter,
+        )
+    with pytest.raises(TypeError, match="float-to-integer"):
+        coerce_static_scalar(
+            1.0,
+            types.int32,
+            operation=operation,
+            parameter=parameter,
+        )
+    assert coerce_static_scalar(
+        np.int32(1),
+        types.int32,
+        operation=operation,
+        parameter=parameter,
+    ).dtype == np.dtype(np.int32)
+    with pytest.raises(TypeError, match="does not match payload dtype"):
+        coerce_static_scalar(
+            np.int64(1),
+            types.int32,
+            operation=operation,
+            parameter=parameter,
+        )
+    assert coerce_static_scalar(
+        1,
+        types.int32,
+        operation=operation,
+        parameter=parameter,
+        source_dtype=types.int32,
+    ).dtype == np.dtype(np.int32)
+    with pytest.raises(TypeError, match="does not match payload dtype"):
+        coerce_static_scalar(
+            1,
+            types.int32,
+            operation=operation,
+            parameter=parameter,
+            source_dtype=types.int64,
+        )
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize(
+    ("dtype_name", "value"),
+    [
+        pytest.param("uint8", 255, id="uint8-upper"),
+        pytest.param("float32", 1, id="int-to-float"),
+        pytest.param("float32", 1.25, id="float-rounding"),
+        pytest.param("int32", np.int32(-7), id="typed-exact"),
+    ],
+)
+def test_scalar_store_literals_are_typed_from_the_destination(
+    qualified,
+    dtype_name,
+    value,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(destination):
+        module.store(module.this_block(), destination, value)
+
+    array_type = types.Array(getattr(types, dtype_name), 1, "C")
+    _, planner = _plan(memory, arg_types=(array_type,))
+    assert planner.run()
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize(
+    ("dtype_name", "value", "error"),
+    [
+        pytest.param("uint8", 256, "outside the range", id="out-of-range"),
+        pytest.param("int32", 1.0, "float-to-integer", id="float-to-int"),
+        pytest.param("int32", True, "bool", id="bool"),
+        pytest.param(
+            "int32",
+            np.int64(1),
+            "does not match payload dtype",
+            id="typed-mismatch",
+        ),
+    ],
+)
+def test_scalar_store_literals_fail_before_provider_selection(
+    monkeypatch,
+    qualified,
+    dtype_name,
+    value,
+    error,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+    from cuda.coop.numba_mlir._compiler import _group_load_store
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(destination):
+        module.store(module.this_block(), destination, value)
+
+    monkeypatch.setattr(
+        _group_load_store._LoadStorePlanning,
+        "_scope_factory",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid scalar Store reached provider selection"
+        ),
+    )
+    array_type = types.Array(getattr(types, dtype_name), 1, "C")
+    with pytest.raises((TypeError, ValueError), match=error):
+        _plan(memory, arg_types=(array_type,))[1].run()
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize(
+    ("value_type_name", "accepted"),
+    [("int32", True), ("int64", False)],
+)
+def test_runtime_scalar_store_requires_exact_destination_dtype(
+    monkeypatch,
+    qualified,
+    value_type_name,
+    accepted,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(destination, value):
+        module.store(module.this_block(), destination, value)
+
+    array_type = types.Array(types.int32, 1, "C")
+    arg_types = (array_type, getattr(types, value_type_name))
+    if accepted:
+        _run_single_phase_to_provider_boundary(
+            memory,
+            arg_types=arg_types,
+            monkeypatch=monkeypatch,
+            allow_provider_bundling=True,
+        )
+    else:
+        with pytest.raises(TypeError, match="does not match payload dtype"):
+            _plan(memory, arg_types=arg_types)[1].run()
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize("source_kind", ["index", "element", "cast"])
+def test_cuda_and_array_scalars_keep_compiler_dtypes_for_store(
+    qualified,
+    source_kind,
+):
+    from numba_cuda_mlir import cuda, types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(source, destination):
+        index = cuda.threadIdx.x
+        if source_kind == "index":
+            value = index
+        elif source_kind == "element":
+            value = source[index]
+        else:
+            value = np.int32(index + 1)
+        module.store(module.this_block(), destination, value)
+
+    array_type = types.Array(types.int32, 1, "C")
+    _, planner = _plan(memory, arg_types=(array_type, array_type))
+    assert planner.run()
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+def test_runtime_scalar_expression_cannot_narrow_into_store(qualified):
+    from numba_cuda_mlir import cuda, types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+
+    def memory(destination):
+        value = cuda.threadIdx.x + 1
+        module.store(module.this_block(), destination, value)
+
+    array_type = types.Array(types.int32, 1, "C")
+    with pytest.raises(TypeError, match="does not match payload dtype"):
+        _plan(memory, arg_types=(array_type,))[1].run()
+
+
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
 @pytest.mark.parametrize("parameter", ["valid_items", "offset"])
 @pytest.mark.parametrize(
@@ -694,7 +995,9 @@ def test_single_phase_rewrite_preserves_static_block_movement_bindings():
     load_match = next(match for match in matches if match.op_name == "load")
     assert len(load_match.runtime_args) == 2
     assert load_match.factory_kwargs["num_valid_items"] == ArgumentBinding.static(31)
-    assert load_match.factory_kwargs["oob_default"] == ArgumentBinding.static(-1)
+    assert load_match.factory_kwargs["oob_default"] == ArgumentBinding.static(
+        np.int32(-1)
+    )
     assert load_match.factory_kwargs["offset"] == ArgumentBinding.static(3)
 
     store_match = next(match for match in matches if match.op_name == "store")

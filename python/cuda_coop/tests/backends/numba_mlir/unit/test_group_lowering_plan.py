@@ -9,6 +9,8 @@ import pytest
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 
+_STATIC_PROVENANCE_GLOBAL = np.int32(3)
+
 
 def _planner(function, *, arg_types, block=(64, 1, 1)):
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
@@ -74,6 +76,64 @@ def test_group_planner_tracks_runtime_scalar_expression_provenance():
         value = _assigned_var(func_ir, name)
         assert planner.context.dtype(value) == dtype
         assert planner.context.planning_binding(value).kind is BindingKind.RUNTIME
+
+
+def test_group_planner_marks_only_explicit_static_scalar_provenance_static():
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numba_cuda.compiler import run_frontend
+
+    from cuda.coop._core import BindingKind
+    from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
+
+    free_scalar = np.int32(4)
+
+    def provenance(literal):
+        constant = 5
+        global_value = _STATIC_PROVENANCE_GLOBAL
+        free_value = free_scalar
+        alias = constant
+        if cuda.threadIdx.x:
+            same_phi = 7
+            different_phi = 8
+        else:
+            same_phi = 7
+            different_phi = 9
+        return (
+            literal,
+            constant,
+            global_value,
+            free_value,
+            alias,
+            same_phi,
+            different_phi,
+        )
+
+    func_ir = run_frontend(provenance)
+    planner = _GroupCallPlanner(
+        SimpleNamespace(
+            func_ir=func_ir,
+            args=(types.IntegerLiteral(np.int32(1)),),
+        ),
+        {"block": (32, 1, 1), "grid": (1, 1, 1), "cluster": None},
+    )
+    expected_static = {
+        "literal": np.int32(1),
+        "constant": 5,
+        "global_value": np.int32(3),
+        "free_value": np.int32(4),
+        "alias": 5,
+        "same_phi": 7,
+    }
+    for name, expected in expected_static.items():
+        binding = planner.context.planning_binding(_assigned_var(func_ir, name))
+        assert binding.kind is BindingKind.STATIC
+        assert binding.value == expected
+        assert type(binding.value) is type(expected)
+
+    different = planner.context.planning_binding(
+        _assigned_var(func_ir, "different_phi")
+    )
+    assert different.kind is BindingKind.RUNTIME
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
@@ -396,6 +456,55 @@ def test_equivalent_dtype_spellings_are_canonicalized_before_planning(
     assert planner.run()
     assert len(plans) == 1
     assert plans[0].call.operation.dtype == types.int32
+
+
+_STATIC_DEFAULT_DTYPES = (
+    pytest.param("int8", np.int8, id="int8"),
+    pytest.param("uint8", np.uint8, id="uint8"),
+    pytest.param("int16", np.int16, id="int16"),
+    pytest.param("uint16", np.uint16, id="uint16"),
+    pytest.param("int32", np.int32, id="int32"),
+    pytest.param("uint32", np.uint32, id="uint32"),
+    pytest.param("int64", np.int64, id="int64"),
+    pytest.param("uint64", np.uint64, id="uint64"),
+    pytest.param("float32", np.float32, id="float32"),
+    pytest.param("float64", np.float64, id="float64"),
+)
+
+
+@pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
+@pytest.mark.parametrize(("dtype_name", "numpy_dtype"), _STATIC_DEFAULT_DTYPES)
+def test_static_oob_default_boundaries_use_the_load_payload_dtype(
+    qualified,
+    dtype_name,
+    numpy_dtype,
+):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+    numpy_kind = np.dtype(numpy_dtype).kind
+    info = np.iinfo(numpy_dtype) if numpy_kind in "iu" else np.finfo(numpy_dtype)
+    boundaries = (int(info.min), int(info.max))
+    if numpy_kind == "f":
+        boundaries = (-float(info.max), float(info.max))
+
+    for oob_default in boundaries:
+
+        def memory(source):
+            output = module.ThreadData(2, dtype=getattr(types, dtype_name))
+            return module.load(
+                module.this_block(),
+                source,
+                output,
+                valid_items=1,
+                oob_default=oob_default,
+            )
+
+        array_type = types.Array(getattr(types, dtype_name), 1, "C")
+        assert _planner(memory, arg_types=(array_type,)).run()
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])
