@@ -8,8 +8,11 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
+from enum import Enum
+
+from ..._core.api._payload import _normalize_alignment
 from .._temp_storage import TempStorage
-from .._thread_data import ThreadData
+from .._thread_data import ThreadData, _normalize_thread_data_alignment
 from ._rewrite_support import (
     _INFERENCE_EXCEPTIONS,
     _MIN_TEMP_STORAGE_ALIGNMENT,
@@ -360,9 +363,7 @@ class _ProvenanceRewrite:
     def _extract_thread_data_spec(self, call: ir.Expr) -> _ThreadDataSpec:
         kw_map = {name: value for name, value in call.kws}
         is_common_root = self._is_common_root_member(call.func, "ThreadData")
-        allowed_keywords = {"items_per_thread", "dtype"}
-        if not is_common_root:
-            allowed_keywords.update(("alignas", "alignment"))
+        allowed_keywords = {"items_per_thread", "dtype", "alignment"}
         unexpected_keywords = sorted(set(kw_map) - allowed_keywords)
         if unexpected_keywords:
             names = ", ".join(unexpected_keywords)
@@ -398,53 +399,19 @@ class _ProvenanceRewrite:
                     "coop.ThreadData received dtype both positionally and by keyword."
                 )
             dtype_ref = kw_map["dtype"]
-        alignment_values = []
-        for alignment_name in ("alignas", "alignment"):
-            alignment_ref = kw_map.get(alignment_name)
-            if alignment_ref is None:
-                continue
+        alignment = None
+        alignment_ref = kw_map.get("alignment")
+        if alignment_ref is not None:
             try:
                 raw_alignment = self._infer_constant(alignment_ref)
             except _INFERENCE_EXCEPTIONS as exc:
                 raise CoopSinglePhaseRewriteError(
-                    "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
+                    "coop.ThreadData alignment must be a compile-time integer or None"
                 ) from exc
-            if alignment_name == "alignment" and raw_alignment is None:
-                continue
-            if isinstance(raw_alignment, bool):
-                raise CoopSinglePhaseRewriteError(
-                    "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
-                )
             try:
-                alignment = operator.index(raw_alignment)
-            except TypeError as exc:
-                raise CoopSinglePhaseRewriteError(
-                    "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
-                ) from exc
-            alignment_values.append((alignment_name, alignment))
-
-        if len(alignment_values) == 2 and (
-            alignment_values[0][1] != alignment_values[1][1]
-        ):
-            raise CoopSinglePhaseRewriteError(
-                "cuda.coop.numba_mlir.ThreadData alignas and alignment must match when both are set"
-            )
-        alignment = None
-        if alignment_values:
-            alignment = alignment_values[-1][1]
-            if alignment < 1:
-                raise CoopSinglePhaseRewriteError(
-                    "cuda.coop.numba_mlir.ThreadData alignment must be a compile-time positive integer"
-                )
-            if alignment & (alignment - 1):
-                raise CoopSinglePhaseRewriteError(
-                    "cuda.coop.numba_mlir.ThreadData alignment must be a power of 2"
-                )
-            if alignment % _MIN_TEMP_STORAGE_ALIGNMENT:
-                raise CoopSinglePhaseRewriteError(
-                    "cuda.coop.numba_mlir.ThreadData alignment must be a multiple "
-                    f"of {_MIN_TEMP_STORAGE_ALIGNMENT}"
-                )
+                alignment = _normalize_thread_data_alignment(raw_alignment)
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(f"coop.ThreadData {exc}") from exc
         try:
             raw_items_per_thread = self._infer_constant(items_ref)
         except _INFERENCE_EXCEPTIONS as exc:
@@ -572,9 +539,9 @@ class _ProvenanceRewrite:
     def _extract_temp_storage_ctor_spec(self, call: ir.Expr) -> _TempStorageCtorSpec:
         kw_map = {name: value for name, value in call.kws}
         parameter_names = ("size_in_bytes", "alignment", "auto_sync", "sharing")
-        if len(call.args) > len(parameter_names):
+        if len(call.args) > 1:
             raise CoopSinglePhaseRewriteError(
-                "TempStorage accepts at most size_in_bytes, alignment, auto_sync, and sharing positional arguments."
+                "TempStorage accepts only size_in_bytes positionally; alignment, auto_sync, and sharing are keyword-only."
             )
         unexpected_keywords = sorted(set(kw_map) - set(parameter_names))
         if unexpected_keywords:
@@ -620,14 +587,12 @@ class _ProvenanceRewrite:
         alignment = None
         if alignment_ref is not None:
             raw_alignment = infer_constant(alignment_ref, name="alignment")
-            if raw_alignment is not None and (
-                not isinstance(raw_alignment, int) or isinstance(raw_alignment, bool)
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "TempStorage alignment must be an integer or None."
-                )
-            if raw_alignment is not None:
-                alignment = _normalize_temp_storage_alignment(raw_alignment)
+            try:
+                alignment = _normalize_alignment(raw_alignment)
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(f"TempStorage {exc}") from exc
+            if alignment is not None:
+                alignment = _normalize_temp_storage_alignment(alignment)
         auto_sync = None
         if auto_sync_ref is not None:
             auto_sync = infer_constant(auto_sync_ref, name="auto_sync")
@@ -638,7 +603,7 @@ class _ProvenanceRewrite:
         sharing = "shared"
         if sharing_ref is not None:
             sharing = infer_constant(sharing_ref, name="sharing")
-            if not isinstance(sharing, str):
+            if not isinstance(sharing, str) or isinstance(sharing, Enum):
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage sharing must be a string: 'shared' or 'exclusive'."
                 )
@@ -823,12 +788,11 @@ class _ProvenanceRewrite:
         if ctor_spec.alignment is None:
             alignment = _default_temp_storage_alignment(required_alignment)
         else:
-            alignment = int(ctor_spec.alignment)
-        _validate_temp_storage_alignment(alignment)
-        if required_alignment > 0 and alignment < required_alignment:
-            raise CoopSinglePhaseRewriteError(
-                f"TempStorage alignment is smaller than required by primitive uses ({alignment} < {required_alignment})."
+            requested_alignment = _normalize_temp_storage_alignment(ctor_spec.alignment)
+            alignment = max(
+                requested_alignment, _default_temp_storage_alignment(required_alignment)
             )
+        _validate_temp_storage_alignment(alignment)
         if ctor_spec.sharing == "exclusive":
             if ctor_spec.auto_sync is True:
                 raise CoopSinglePhaseRewriteError(

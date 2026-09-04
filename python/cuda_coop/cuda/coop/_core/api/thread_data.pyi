@@ -18,6 +18,8 @@ __all__ = ["ThreadData", "ThreadDataLike"]
 def ThreadData(
     items_per_thread: int,
     dtype: type[_PortableNumericT],
+    *,
+    alignment: int | None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
     """Construct a payload; builtin int and float mean 32-bit dtypes."""
 
@@ -25,5 +27,7 @@ def ThreadData(
 def ThreadData(
     items_per_thread: int,
     dtype: object | None = None,
+    *,
+    alignment: int | None = None,
 ) -> ThreadDataLike[Any]:
     """Omit dtype or use an ``Any``-typed external compiler dtype token."""

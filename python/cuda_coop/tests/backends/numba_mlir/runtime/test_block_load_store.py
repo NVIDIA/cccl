@@ -981,3 +981,22 @@ def test_portable_load_is_planned_after_device_helper_inlining():
     _load_through_inlined_device_helper[1, _THREADS](source, observed)
 
     np.testing.assert_array_equal(observed, source)
+
+
+@pytest.mark.parametrize(
+    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+)
+@pytest.mark.parametrize("alignment", [None, 1, 16, 32])
+def test_thread_data_alignment_with_inferred_load_store(module, alignment):
+    @cuda.jit
+    def kernel(source, output):
+        data = module.ThreadData(2, alignment=alignment)
+        block = module.this_block()
+        module.load(block, source, data)
+        module.store(block, output, data)
+
+    source = np.arange(_TILE_ITEMS, dtype=np.int32)
+    device_source = cuda.to_device(source)
+    output = cuda.device_array_like(device_source)
+    kernel[1, _THREADS](device_source, output)
+    np.testing.assert_array_equal(output.copy_to_host(), source)

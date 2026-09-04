@@ -11,6 +11,7 @@ infer backend-specific types or construct lowering plans.
 
 from __future__ import annotations
 
+import operator
 from numbers import Integral
 from typing import Any, Protocol, TypeVar, runtime_checkable
 
@@ -49,6 +50,22 @@ class TempStorageLike(Protocol):
     alignment: int | None
     auto_sync: bool | None
     sharing: str
+
+
+def _normalize_alignment(alignment: Any) -> int | None:
+    if alignment is None:
+        return None
+    if isinstance(alignment, bool):
+        raise TypeError("alignment must be an integer or None")
+    try:
+        alignment = operator.index(alignment)
+    except TypeError as exc:
+        raise TypeError("alignment must be an integer or None") from exc
+    if alignment <= 0:
+        raise ValueError("alignment must be a positive integer")
+    if alignment & (alignment - 1):
+        raise ValueError("alignment must be a power of 2")
+    return alignment
 
 
 def _validate_common_temp_storage(operation: str, value: Any) -> None:

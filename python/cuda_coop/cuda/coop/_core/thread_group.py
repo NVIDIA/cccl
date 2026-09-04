@@ -185,16 +185,6 @@ class ThreadHierarchy:
         return _thread_count(self.block_dim)  # type: ignore[arg-type]
 
     @property
-    def thread_count(self) -> int | None:
-        """Compatibility alias for :attr:`block_thread_count`.
-
-        A hierarchy describes its enclosing CTA, not the size of every group
-        within it. New code should use ``block_thread_count`` explicitly.
-        """
-
-        return self.block_thread_count
-
-    @property
     def symbol_suffix(self) -> str:
         if self.implicit:
             return "current"
@@ -410,18 +400,6 @@ class ThreadGroup:
             assert cluster_blocks is not None
             return block_threads * cluster_blocks * grid_groups
         return None
-
-    @property
-    def static_thread_count(self) -> int | None:
-        """Compatibility alias for :attr:`static_size`."""
-
-        return self.static_size
-
-    @property
-    def thread_count(self) -> int:
-        """Compatibility alias for :attr:`group_thread_count`."""
-
-        return self.group_thread_count
 
     @property
     def is_current(self) -> bool:

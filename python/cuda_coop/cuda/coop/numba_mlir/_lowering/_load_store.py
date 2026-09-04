@@ -9,6 +9,7 @@ and launch facts.
 """
 
 import operator
+from enum import Enum
 
 from numba_cuda_mlir import types
 
@@ -47,7 +48,7 @@ def _positive_int(value, *, name: str) -> int:
 
 
 def _resolve_algorithm(algorithm, primitive_name: str) -> str:
-    if not isinstance(algorithm, str):
+    if not isinstance(algorithm, str) or isinstance(algorithm, Enum):
         raise TypeError(f"{primitive_name} algorithm must be a string")
     token = algorithm.strip().lower().replace("-", "_")
     allowed = {

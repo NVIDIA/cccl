@@ -11,6 +11,8 @@ import numpy as np
 import cuda.coop as portable
 import cuda.coop.numba_mlir as coop
 
+coop.TempStorage(64, 16)  # expected-error: [call-arg]
+portable.TempStorage(64, 16)  # expected-error: [call-arg]
 values = coop.ThreadData(2, np.int32)
 portable_values = portable.ThreadData(2, np.int32)
 portable_block = portable.this_block()

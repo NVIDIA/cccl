@@ -18,8 +18,8 @@ def check_portable_surface(source: object, destination: object) -> None:
     """Exercise public declarations without importing package internals."""
 
     block = coop.this_block()
-    values = coop.ThreadData(2, np.int16)
-    storage = coop.TempStorage(sharing="shared")
+    values = coop.ThreadData(2, np.int16, alignment=16)
+    storage = coop.TempStorage(64, alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
     assert_type(values, coop.ThreadDataLike[np.int16])

@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from enum import Enum
 from importlib import import_module
 from types import ModuleType
 from typing import Any, Callable, TypeVar
@@ -163,7 +164,7 @@ def _portable_selector(
         return value
     if value is None and allow_none:
         return None
-    if not isinstance(value, str):
+    if not isinstance(value, str) or isinstance(value, Enum):
         raise TypeError(f"cuda.coop.{operation} {parameter} must be a string")
     token = value.strip().lower().replace("-", "_")
     try:
