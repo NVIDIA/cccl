@@ -41,17 +41,17 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "load",
-    "local",
-    "reduce",
-    "shared",
-    "store",
-    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
+    "load",
+    "reduce",
+    "store",
+    "sum",
+    "local",
+    "shared",
 ]
 
 
