@@ -32,7 +32,9 @@ _PORTABLE_EXPORTS = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "exchange",
     "load",
+    "shuffle",
     "store",
 ]
 _QUALIFIED_EXPORTS = [
@@ -57,7 +59,7 @@ _EXCLUDED_BACKEND_MODULES = (
 )
 
 
-def test_public_exports_are_only_the_load_store_foundation():
+def test_public_exports_are_only_the_supported_group_families():
     assert portable_coop.__all__ == _PORTABLE_EXPORTS
     assert dir(portable_coop) == sorted(_PORTABLE_EXPORTS)
     assert coop.__all__ == _QUALIFIED_EXPORTS
@@ -202,7 +204,7 @@ def test_python_operator_compilation_remains_absent():
     )
 
 
-@pytest.mark.parametrize("operation", ("load", "store"))
+@pytest.mark.parametrize("operation", ("exchange", "load", "shuffle", "store"))
 def test_group_markers_use_exact_callable_identity(operation):
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 
