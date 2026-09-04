@@ -1286,30 +1286,6 @@ __logicalEndpointUnbind(::CUlogicalEndpointId __le_id, ::CUdevice __device, ::cu
     __driver_fn, "Failed to unbind a logical endpoint range", __le_id, __device, __offset, __bytes);
 }
 
-_CCCL_HOST_API inline void
-__logicalEndpointExport(void* __handle, ::CUlogicalEndpointId __le_id, ::CUlogicalEndpointIpcHandleType __handle_type)
-{
-  static auto __driver_fn =
-    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointExport, cuLogicalEndpointExport, 13, 3);
-  ::cuda::__driver::__call_driver_fn(
-    __driver_fn, "Failed to export a logical endpoint", __handle, __le_id, __handle_type);
-}
-
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointImportNoThrow(
-  ::CUlogicalEndpointId __le_id, const void* __handle, ::CUlogicalEndpointIpcHandleType __handle_type) noexcept
-{
-  static auto __driver_fn =
-    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointImport, cuLogicalEndpointImport, 13, 3);
-  return static_cast<::cudaError_t>(__driver_fn(__le_id, __handle, __handle_type));
-}
-
-_CCCL_HOST_API inline void __logicalEndpointImport(
-  ::CUlogicalEndpointId __le_id, const void* __handle, ::CUlogicalEndpointIpcHandleType __handle_type)
-{
-  const auto __status = ::cuda::__driver::__logicalEndpointImportNoThrow(__le_id, __handle, __handle_type);
-  ::cuda::__driver::__throw_if_cuda_error(__status, "Failed to import a logical endpoint");
-}
-
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::pair<::cuuint64_t, ::cuuint64_t>
 __logicalEndpointGetLimits(const ::CUlogicalEndpointProp* __prop)
 {
