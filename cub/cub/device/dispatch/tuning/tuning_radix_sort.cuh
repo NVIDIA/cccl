@@ -845,15 +845,76 @@ _CCCL_HOST_DEVICE_API constexpr auto get_sm100_tuning(int key_size, int value_si
   return get_sm90_tuning(key_size, value_size, offset_size);
 }
 
-// keys
-_CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning(int key_size, int value_size, int offset_size, type_t key_type)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+get_sm107_tuning(int key_size, int value_size, int offset_size, type_t key_type) noexcept
   -> ::cuda::std::optional<small_key_tuning_values>
 {
+  // pairs 1-byte key
+  if (value_size != 0 && key_size == 1)
+  {
+    // clang-format off
+
+    // ipt_20.tpb_448 1.133  1.236
+    if (value_size == 4 && offset_size == 4) return small_key_tuning_values{448, 20};
+
+    // ipt_24.tpb_384 1.089  1.141
+    if (value_size == 8 && offset_size == 4) return small_key_tuning_values{384, 24};
+
+    // ipt_24.tpb_480 1.228  1.312
+    if (value_size == 8 && offset_size == 8) return small_key_tuning_values{480, 24};
+
+    // clang-format on
+    return {};
+  }
+
+  // pairs 2-byte key
+  if (value_size != 0 && key_size == 2)
+  {
+    // clang-format off
+
+    // ipt_16.tpb_512 1.111  1.156
+    if (value_size == 1 && offset_size == 8) return small_key_tuning_values{512, 16};
+
+    // ipt_22.tpb_384 1.217  1.299
+    if (value_size == 2 && offset_size == 8) return small_key_tuning_values{384, 22};
+
+    // ipt_23.tpb_512 1.189  1.224
+    if (value_size == 4 && offset_size == 8) return small_key_tuning_values{512, 23};
+
+    // ipt_20.tpb_512 1.056  1.060
+    if (value_size == 8 && offset_size == 4) return small_key_tuning_values{512, 20};
+
+    // ipt_22.tpb_512 1.182  1.213
+    if (value_size == 16 && offset_size == 8) return small_key_tuning_values{512, 22};
+
+    // clang-format on
+    return {};
+  }
+
+  // pairs 8-byte key
+  if (value_size != 0 && key_size == 8)
+  {
+    // clang-format off
+
+    // ipt_23.tpb_384 1.173  1.193
+    if (value_size == 8 && offset_size == 4) return small_key_tuning_values{384, 23};
+
+    // ipt_24.tpb_448 1.081  1.070
+    if (value_size == 8 && offset_size == 8) return small_key_tuning_values{448, 24};
+
+    // ipt_24.tpb_480 1.109  1.116
+    if (value_size == 16 && offset_size == 8) return small_key_tuning_values{480, 24};
+
+    // clang-format on
+    return {};
+  }
+
   if (value_size != 0)
   {
     return {};
   }
 
+  // keys
   if (offset_size == 4)
   {
     // clang-format off

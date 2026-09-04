@@ -92,7 +92,7 @@ endfunction()
 
 libcudacxx_init_debugger_testing(testing_enabled)
 
-if (NOT testing_enabled)
+if ((NOT testing_enabled) OR LIBCUDACXX_TEST_WITH_NVRTC)
   return()
 endif()
 
