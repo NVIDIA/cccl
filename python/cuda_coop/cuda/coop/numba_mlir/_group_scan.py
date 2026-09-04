@@ -21,7 +21,7 @@ def scan(
     value: Any,
     /,
     *,
-    mode: Any = "exclusive",
+    mode: str = "exclusive",
     scan_op: Any = None,
     initial_value: Any = None,
     algorithm: Any = None,
