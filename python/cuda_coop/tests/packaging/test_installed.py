@@ -53,7 +53,9 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
             "ThreadDataLike",
             "ThreadGroup",
             "ThreadHierarchy",
+            "exchange",
             "load",
+            "shuffle",
             "store",
             "this_block",
             "this_cluster",
@@ -67,8 +69,11 @@ def test_isolated_python_uses_only_the_installed_wheel(tmp_path: Path) -> None:
         paths = resolve_include_paths(
             start=Path.cwd(),
             required_headers=(
+                "cub/block/block_exchange.cuh",
                 "cub/block/block_load.cuh",
+                "cub/block/block_shuffle.cuh",
                 "cub/block/block_store.cuh",
+                "cub/warp/warp_exchange.cuh",
                 "cuda/experimental/coop.cuh",
                 "thrust/detail/raw_pointer_cast.h",
                 "cuda/std/cstdint",

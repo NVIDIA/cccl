@@ -24,9 +24,8 @@ def test_project_metadata_declares_the_supported_python_range() -> None:
     project = _metadata()["project"]
 
     assert project["name"] == "cuda-coop"
-    assert (
-        project["description"]
-        == "Cooperative CUDA Block and Warp Load and Store for Python DSLs"
+    assert project["description"] == (
+        "Cooperative CUDA group primitives for Python DSLs"
     )
     assert project["requires-python"] == ">=3.10"
     assert set(project["classifiers"]) >= {
@@ -103,4 +102,4 @@ def test_excluded_python_implementations_are_absent() -> None:
         for path in (package / "_core" / "warp").rglob("*")
         if path.is_file() and path.suffix in {".py", ".pyi"}
     }
-    assert warp_files == {"__init__.py", "load_store.py"}
+    assert warp_files == {"__init__.py", "exchange.py", "load_store.py"}
