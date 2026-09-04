@@ -205,6 +205,10 @@ DECLARE_VARIABLE_UNITTEST(TestSetIntersectionMultiset);
 // FIXME: disabled on Windows, because it causes a failure on the internal CI system in one specific configuration.
 // That failure will be tracked in a new NVBug, this is disabled to unblock submitting all the other changes.
 #if !_CCCL_COMPILER(MSVC)
+// gcc >= 11 emits a bogus -Werror=stringop-overflow for the host_vector::push_back below ("writing 8 or more bytes into
+// a region of size 0") when it inlines the vector growth at -O3.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
 void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin1(0);
@@ -222,6 +226,7 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 
   ASSERT_EQUAL(result, expected);
 }
+_CCCL_DIAG_POP
 
 void TestSetDifferenceWithBigIndexes()
 {
