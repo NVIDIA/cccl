@@ -449,11 +449,13 @@ namespace reserved
 // Shared engine for the introspected call forms of `cuda_try<fun>` and `cuda_safe_call<fun>`:
 // selects among the direct / first-output / last-output shapes at compile time and hands the
 // raw status to `check` (a stateless callable: throw for cuda_try, report-and-abort for
-// cuda_safe_call). Known wart, inherited by both fronts: the status checker's defaulted
-// source_location fires HERE rather than at the user's call site, because a parameter pack
-// followed by a defaulted parameter makes the pack non-deduced in C++17. Revisit with C++20.
+// cuda_safe_call). `loc` is the USER's call site: the public fronts are a bounded-arity
+// overload set (no parameter pack), so each carries a trailing defaulted
+// source_location::current() that fires where the user wrote the call. A single variadic
+// front cannot do that (a pack followed by a defaulted parameter is a non-deduced context),
+// which is why the fronts are stamped out per arity.
 template <auto fun, typename Check, typename... Ps>
-auto checked_api_call(Check check, Ps&&... ps)
+auto checked_api_call(Check check, const ::cuda::std::source_location loc, Ps&&... ps)
 {
   constexpr bool direct_form = ::cuda::std::is_invocable_v<decltype(fun), Ps...>;
 
@@ -475,18 +477,18 @@ auto checked_api_call(Check check, Ps&&... ps)
 
   if constexpr (direct_form)
   {
-    check(fun(::cuda::std::forward<Ps>(ps)...));
+    check(fun(::cuda::std::forward<Ps>(ps)...), loc);
   }
   else if constexpr (first_output_form)
   {
     ::cuda::std::remove_pointer_t<reserved::first_param<fun>> result{};
-    check(fun(&result, ::cuda::std::forward<Ps>(ps)...));
+    check(fun(&result, ::cuda::std::forward<Ps>(ps)...), loc);
     return result;
   }
   else if constexpr (last_output_form)
   {
     ::cuda::std::remove_pointer_t<reserved::last_param<fun>> result{};
-    check(fun(::cuda::std::forward<Ps>(ps)..., &result));
+    check(fun(::cuda::std::forward<Ps>(ps)..., &result), loc);
     return result;
   }
   else
@@ -498,14 +500,165 @@ auto checked_api_call(Check check, Ps&&... ps)
 } // namespace reserved
 #endif // !_CCCL_DOXYGEN_INVOKED
 
-template <auto fun, typename... Ps>
-auto cuda_try(Ps&&... ps)
+// The public fronts are a bounded-arity overload set (arities 0..8) rather than one variadic
+// template: each overload's trailing defaulted source_location::current() fires at the USER's
+// call site, which a variadic form cannot achieve (a pack followed by a defaulted parameter is
+// a non-deduced context). Call syntax is unchanged: cuda_try<fun>(args...). No CUDA entry
+// point is known to need more than eight direct parameters (bulk goes through structs).
+template <auto fun>
+auto cuda_try(const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
 {
   return reserved::checked_api_call<fun>(
-    [](auto status) {
-      cuda_try(status);
+    [](auto status, auto l) {
+      cuda_try(status, l);
     },
-    ::cuda::std::forward<Ps>(ps)...);
+    loc);
+}
+
+template <auto fun, typename P0>
+auto cuda_try(P0&& p0, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0));
+}
+
+template <auto fun, typename P0, typename P1>
+auto cuda_try(P0&& p0, P1&& p1, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1));
+}
+
+template <auto fun, typename P0, typename P1, typename P2>
+auto cuda_try(
+  P0&& p0, P1&& p1, P2&& p2, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3>
+auto cuda_try(
+  P0&& p0, P1&& p1, P2&& p2, P3&& p3, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4>
+auto cuda_try(P0&& p0,
+              P1&& p1,
+              P2&& p2,
+              P3&& p3,
+              P4&& p4,
+              const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
+auto cuda_try(P0&& p0,
+              P1&& p1,
+              P2&& p2,
+              P3&& p3,
+              P4&& p4,
+              P5&& p5,
+              const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4),
+    ::cuda::std::forward<P5>(p5));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+auto cuda_try(
+  P0&& p0,
+  P1&& p1,
+  P2&& p2,
+  P3&& p3,
+  P4&& p4,
+  P5&& p5,
+  P6&& p6,
+  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4),
+    ::cuda::std::forward<P5>(p5),
+    ::cuda::std::forward<P6>(p6));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
+auto cuda_try(
+  P0&& p0,
+  P1&& p1,
+  P2&& p2,
+  P3&& p3,
+  P4&& p4,
+  P5&& p5,
+  P6&& p6,
+  P7&& p7,
+  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4),
+    ::cuda::std::forward<P5>(p5),
+    ::cuda::std::forward<P6>(p6),
+    ::cuda::std::forward<P7>(p7));
 }
 
 /**
@@ -517,14 +670,162 @@ auto cuda_try(Ps&&... ps)
  *
  * @snippet this cuda_safe_call2
  */
-template <auto fun, typename... Ps>
-auto cuda_safe_call(Ps&&... ps)
+template <auto fun>
+auto cuda_safe_call(const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
 {
   return reserved::checked_api_call<fun>(
-    [](auto status) {
-      cuda_safe_call(status);
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
     },
-    ::cuda::std::forward<Ps>(ps)...);
+    loc);
+}
+
+template <auto fun, typename P0>
+auto cuda_safe_call(P0&& p0, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0));
+}
+
+template <auto fun, typename P0, typename P1>
+auto cuda_safe_call(P0&& p0, P1&& p1, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1));
+}
+
+template <auto fun, typename P0, typename P1, typename P2>
+auto cuda_safe_call(
+  P0&& p0, P1&& p1, P2&& p2, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3>
+auto cuda_safe_call(
+  P0&& p0, P1&& p1, P2&& p2, P3&& p3, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4>
+auto cuda_safe_call(
+  P0&& p0,
+  P1&& p1,
+  P2&& p2,
+  P3&& p3,
+  P4&& p4,
+  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5>
+auto cuda_safe_call(
+  P0&& p0,
+  P1&& p1,
+  P2&& p2,
+  P3&& p3,
+  P4&& p4,
+  P5&& p5,
+  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4),
+    ::cuda::std::forward<P5>(p5));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
+auto cuda_safe_call(
+  P0&& p0,
+  P1&& p1,
+  P2&& p2,
+  P3&& p3,
+  P4&& p4,
+  P5&& p5,
+  P6&& p6,
+  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4),
+    ::cuda::std::forward<P5>(p5),
+    ::cuda::std::forward<P6>(p6));
+}
+
+template <auto fun, typename P0, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
+auto cuda_safe_call(
+  P0&& p0,
+  P1&& p1,
+  P2&& p2,
+  P3&& p3,
+  P4&& p4,
+  P5&& p5,
+  P6&& p6,
+  P7&& p7,
+  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    loc,
+    ::cuda::std::forward<P0>(p0),
+    ::cuda::std::forward<P1>(p1),
+    ::cuda::std::forward<P2>(p2),
+    ::cuda::std::forward<P3>(p3),
+    ::cuda::std::forward<P4>(p4),
+    ::cuda::std::forward<P5>(p5),
+    ::cuda::std::forward<P6>(p6),
+    ::cuda::std::forward<P7>(p7));
 }
 
 #ifdef UNITTESTED_FILE
