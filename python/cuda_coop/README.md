@@ -1,8 +1,8 @@
 # `cuda.coop`
 
 `cuda.coop` provides portable cooperative Load and Store constructs for CUDA
-thread blocks and physical warps in Python kernel DSLs. The first backend
-targets Numba-CUDA-MLIR and lowers the operations to CUB.
+thread blocks, physical warps, and logical warps in Python kernel DSLs. The
+first backend targets Numba-CUDA-MLIR and lowers the operations to CUB.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -92,7 +92,7 @@ The build recognizes these CMake cache variables:
 For the two Boolean runtime switches, values are case-insensitive; `0`,
 `false`, `no`, `off`, and the empty string are false.
 
-## Block and physical Warp Load and Store
+## Block and Warp Load and Store
 
 The portable `cuda.coop` entry points and the qualified
 `cuda.coop.numba_mlir` entry points have matching signatures. The following
@@ -152,9 +152,9 @@ against that dtype before provider generation.
 > runtime value executes a deterministic device trap before narrowing to CUB's
 > integer parameter, and that trap poisons the current CUDA context. Clamp
 > grid-stride and tail counts as above. Run intentional failure probes in
-> disposable processes. For a physical Warp call, subtract that Warp's tile
+> disposable processes. For a Warp-group call, subtract that group's tile
 > origin from a block-wide remainder and clamp the result to
-> `[0, 32 * items_per_thread]`.
+> `[0, group_size * items_per_thread]`.
 
 Store payloads must have exactly the destination dtype. Numba-CUDA-MLIR may
 promote integer arithmetic even when its operands are 32-bit, so explicitly
@@ -177,33 +177,30 @@ size divisible by 32.
 Algorithm selectors are normalized to lowercase underscore-delimited strings.
 Enum and integer selectors, including `0`, are rejected.
 
-Physical Warp Load and Store accept `this_warp()` and support `direct`,
-`striped`, `vectorize`, and `transpose`. A physical warp always has 32 threads,
-so the enclosing block must contain a multiple of 32 threads and must not have
-an incomplete final warp. Every participating warp must reach the collective
-with all 32 lanes. `direct` and `vectorize` expose blocked payloads, `striped`
-exposes a striped payload, and `transpose` uses striped memory transactions
-while exposing a blocked payload.
+Warp Load and Store accept `this_warp()` and support `direct`, `striped`,
+`vectorize`, and `transpose`. Partition a physical warp into consecutive
+logical groups with `this_warp().group_by(width)`, where `width` is 1, 2, 4, 8,
+16, or 32. The enclosing block must contain a multiple of 32 threads and must
+not have an incomplete final physical warp. Every member of a participating
+group must reach the collective; complete sibling logical groups may diverge.
+`direct` and `vectorize` expose blocked payloads, `striped` exposes a striped
+payload, and `transpose` uses striped memory transactions while exposing a
+blocked payload.
 
-Each physical warp addresses a distinct tile. The compiler advances the memory
-base by
-`physical_warp_index * (32 * items_per_thread)` and then applies the caller's
-element `offset`. The physical-warp index is the x-major linear thread rank
-divided by 32. For a multi-block traversal, include the block's global tile
-origin in the caller offset; the compiler-provided origin distinguishes the
-physical warps within that block and must not be added again. Runtime offsets
-must also leave enough signed 64-bit range for the last physical-Warp origin in
-the block; static offsets are checked during planning. `valid_items` is relative
-to each warp's own `32 * items_per_thread` tile, not the entire block, and must
-be uniform within that warp.
+Each Warp group addresses a distinct tile. The compiler advances the memory
+base by `group_index * (group_size * items_per_thread)` and then applies the
+caller's element `offset`. The group index is the x-major linear thread rank
+divided by the selected group size. For a multi-block traversal, include the
+block's global tile origin in the caller offset; the compiler-provided origin
+distinguishes the physical or logical Warp groups within that block and must
+not be added again. Runtime offsets must also leave enough signed 64-bit range
+for the last group origin in the block; static offsets are checked during
+planning. `valid_items` is relative to each group's own tile, not the entire
+block, and must be uniform within that group.
 
-Logical-warp Load and Store through `this_warp().group_by(...)` are deferred and
-are rejected before provider compilation. `ThreadGroup` objects are
-descriptor-only in this release. `group_by` remains compile-time vocabulary for
-describing a static partition, but does not make that partition a supported
-Load or Store target. Runtime query, membership, and synchronization methods
-such as `rank`, `count`, `rank_as`, `count_as`, `sync`, `sync_aligned`, and
-`is_member` are not exposed.
+`ThreadGroup` objects are descriptor-only in this release. Runtime query,
+membership, and synchronization methods such as `rank`, `count`, `rank_as`,
+`count_as`, `sync`, `sync_aligned`, and `is_member` are not exposed.
 
 ## Temporary storage
 
@@ -219,7 +216,7 @@ storage = coop.TempStorage(
 coop.load(block, source, items, temp_storage=storage)
 ```
 
-For both block and physical Warp operations, `direct`, `striped`, and
+For block, physical Warp, and logical Warp operations, `direct`, `striped`, and
 `vectorize` are storage-free: they default-construct the CUB primitive and emit
 no shared-memory allocation, pointer argument, or barrier. For a block call, an
 explicit descriptor, including an unsized descriptor, is validated as
@@ -235,10 +232,10 @@ exclusive ownership, request a capacity and alignment, or opt into dynamic
 shared memory. The generated provider remains the authority for the required
 byte count and alignment.
 
-Physical Warp `transpose` uses compiler-owned storage with one disjoint slice
-per warp and inserts a warp-wide reuse barrier (`syncwarp`). Explicit
-`TempStorage` is rejected by both the portable and qualified APIs for every
-physical Warp Load and Store algorithm, including the storage-free modes.
+Warp `transpose` uses compiler-owned storage with one disjoint slice per
+physical or logical group and inserts `syncwarp` with the exact group mask.
+Explicit `TempStorage` is rejected by both the portable and qualified APIs for
+every Warp Load and Store algorithm, including the storage-free modes.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.
