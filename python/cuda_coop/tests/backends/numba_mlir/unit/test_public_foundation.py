@@ -46,6 +46,7 @@ _PORTABLE_EXPORTS = [
 ]
 _QUALIFIED_EXPORTS = [
     *(name for name in _PORTABLE_EXPORTS if name != "__version__"),
+    "StatefulFunction",
     "local",
     "shared",
 ]
@@ -53,7 +54,6 @@ _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
     "cuda.coop.numba_mlir._enums",
     "cuda.coop.numba_mlir._scan_op",
-    "cuda.coop.numba_mlir._stateful_function",
     "cuda.coop.numba_mlir._lowering._warp",
 )
 
@@ -69,7 +69,6 @@ def test_public_exports_are_only_the_supported_group_families():
         "BlockReduceAlgorithm",
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",
-        "StatefulFunction",
         "gpu_dataclass",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
@@ -77,6 +76,8 @@ def test_public_exports_are_only_the_supported_group_families():
     assert excluded_exports.isdisjoint(portable_coop.__all__)
     assert excluded_exports.isdisjoint(coop.__all__)
     assert not hasattr(coop, "BlockScanAlgorithm")
+    assert "StatefulFunction" not in portable_coop.__all__
+    assert "StatefulFunction" in coop.__all__
 
     loaded = set(sys.modules)
     assert "cuda.coop.numba_mlir._group_load_store" in loaded
@@ -89,7 +90,11 @@ def test_public_exports_are_only_the_supported_group_families():
 
 
 def test_qualified_surface_is_portable_plus_backend_extensions():
-    assert set(coop.__all__) - set(portable_coop.__all__) == {"local", "shared"}
+    assert set(coop.__all__) - set(portable_coop.__all__) == {
+        "StatefulFunction",
+        "local",
+        "shared",
+    }
     assert set(portable_coop.__all__) - set(coop.__all__) == {"__version__"}
 
     def call_shape(function):
@@ -232,13 +237,14 @@ def test_excluded_backend_implementation_modules_remain_absent(module_name):
     assert not module_path.is_dir()
 
 
-def test_python_operator_compilation_is_stateless_only():
+def test_python_operator_compilation_supports_explicit_state():
     from cuda.coop.numba_mlir import _types
 
     assert hasattr(_types, "_compile_device_ltoir")
     assert hasattr(_types, "DependentPythonOperator")
     assert hasattr(_types, "StatelessOperator")
-    assert not hasattr(_types, "StatefulOperator")
+    assert hasattr(_types, "DependentStatefulOperator")
+    assert hasattr(_types, "StatefulOperator")
     assert tuple(inspect.signature(_types.numba_type_to_wrapper).parameters) == (
         "numba_type",
     )
