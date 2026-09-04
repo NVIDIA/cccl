@@ -4,9 +4,21 @@
 
 import hashlib
 
+import pytest
+
 from cuda.coop.numba_mlir import _types
 from cuda.coop.numba_mlir._compiler import _caching
 from cuda.coop.numba_mlir._semantic import _numba_semantic_token
+
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
+
+
+@pytest.mark.parametrize("payload", ("[]", "3", "null"))
+def test_cache_treats_non_object_json_as_a_miss(tmp_path, payload):
+    path = tmp_path / "cache-entry.json"
+    path.write_text(payload, encoding="utf-8")
+
+    assert _caching._read_cache(path) is _caching._CACHE_MISS
 
 
 def test_disk_cache_disables_itself_when_its_directory_is_unavailable(monkeypatch):
