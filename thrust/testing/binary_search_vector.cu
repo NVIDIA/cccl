@@ -281,7 +281,7 @@ struct TestVectorLowerBound
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorLowerBound, SignedIntegralTypes> TestVectorLowerBoundInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBound, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBound
@@ -305,7 +305,7 @@ struct TestVectorUpperBound
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorUpperBound, SignedIntegralTypes> TestVectorUpperBoundInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBound, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearch
@@ -329,7 +329,7 @@ struct TestVectorBinarySearch
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorBinarySearch, SignedIntegralTypes> TestVectorBinarySearchInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearch, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorLowerBoundDiscardIterator
@@ -354,7 +354,7 @@ struct TestVectorLowerBoundDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestVectorLowerBoundDiscardIterator, SignedIntegralTypes> TestVectorLowerBoundDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBoundDiscardIterator, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBoundDiscardIterator
@@ -379,7 +379,7 @@ struct TestVectorUpperBoundDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestVectorUpperBoundDiscardIterator, SignedIntegralTypes> TestVectorUpperBoundDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBoundDiscardIterator, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearchDiscardIterator
@@ -404,5 +404,4 @@ struct TestVectorBinarySearchDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestVectorBinarySearchDiscardIterator, SignedIntegralTypes>
-  TestVectorBinarySearchDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDiscardIterator, SignedIntegralTypes);

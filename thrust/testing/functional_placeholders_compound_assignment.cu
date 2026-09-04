@@ -5,44 +5,52 @@
 
 #include <unittest/unittest.h>
 
-#define BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, op, reference_functor, type_list)                            \
-  template <typename Vector>                                                                                   \
-  struct TestFunctionalPlaceholders##name                                                                      \
-  {                                                                                                            \
-    void operator()(const size_t)                                                                              \
-    {                                                                                                          \
-      const size_t num_samples = 10000;                                                                        \
-      using T                  = typename Vector::value_type;                                                  \
-      Vector lhs               = unittest::random_samples<T>(num_samples);                                     \
-      Vector rhs               = unittest::random_samples<T>(num_samples);                                     \
-      thrust::replace(rhs.begin(), rhs.end(), T(0), T(1));                                                     \
-                                                                                                               \
-      Vector lhs_reference = lhs;                                                                              \
-      Vector reference(lhs.size());                                                                            \
-      Vector result(lhs_reference.size());                                                                     \
-      using namespace thrust::placeholders;                                                                    \
-                                                                                                               \
-      thrust::transform(                                                                                       \
-        lhs_reference.begin(), lhs_reference.end(), rhs.begin(), reference.begin(), reference_functor<T>());   \
-      thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), result.begin(), _1 op _2);                        \
-      ASSERT_ALMOST_EQUAL(reference, result);                                                                  \
-      ASSERT_ALMOST_EQUAL(lhs_reference, lhs);                                                                 \
-                                                                                                               \
-      thrust::transform(                                                                                       \
-        lhs_reference.begin(),                                                                                 \
-        lhs_reference.end(),                                                                                   \
-        cuda::make_constant_iterator<T>(1),                                                                    \
-        reference.begin(),                                                                                     \
-        reference_functor<T>());                                                                               \
-      thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), result.begin(), _1 op T(1));                      \
-      ASSERT_ALMOST_EQUAL(reference, result);                                                                  \
-      ASSERT_ALMOST_EQUAL(lhs_reference, lhs);                                                                 \
-    }                                                                                                          \
-  };                                                                                                           \
-  VectorUnitTest<TestFunctionalPlaceholders##name, type_list, thrust::device_vector, thrust::device_allocator> \
-    TestFunctionalPlaceholders##name##DeviceInstance;                                                          \
-  VectorUnitTest<TestFunctionalPlaceholders##name, type_list, thrust::host_vector, std::allocator>             \
-    TestFunctionalPlaceholders##name##HostInstance;
+#define BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, op, reference_functor, type_list)                          \
+  template <typename Vector>                                                                                 \
+  struct TestFunctionalPlaceholders##name                                                                    \
+  {                                                                                                          \
+    void operator()(const size_t)                                                                            \
+    {                                                                                                        \
+      const size_t num_samples = 10000;                                                                      \
+      using T                  = typename Vector::value_type;                                                \
+      Vector lhs               = unittest::random_samples<T>(num_samples);                                   \
+      Vector rhs               = unittest::random_samples<T>(num_samples);                                   \
+      thrust::replace(rhs.begin(), rhs.end(), T(0), T(1));                                                   \
+                                                                                                             \
+      Vector lhs_reference = lhs;                                                                            \
+      Vector reference(lhs.size());                                                                          \
+      Vector result(lhs_reference.size());                                                                   \
+      using namespace thrust::placeholders;                                                                  \
+                                                                                                             \
+      thrust::transform(                                                                                     \
+        lhs_reference.begin(), lhs_reference.end(), rhs.begin(), reference.begin(), reference_functor<T>()); \
+      thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), result.begin(), _1 op _2);                      \
+      ASSERT_ALMOST_EQUAL(reference, result);                                                                \
+      ASSERT_ALMOST_EQUAL(lhs_reference, lhs);                                                               \
+                                                                                                             \
+      thrust::transform(                                                                                     \
+        lhs_reference.begin(),                                                                               \
+        lhs_reference.end(),                                                                                 \
+        cuda::make_constant_iterator<T>(1),                                                                  \
+        reference.begin(),                                                                                   \
+        reference_functor<T>());                                                                             \
+      thrust::transform(lhs.begin(), lhs.end(), rhs.begin(), result.begin(), _1 op T(1));                    \
+      ASSERT_ALMOST_EQUAL(reference, result);                                                                \
+      ASSERT_ALMOST_EQUAL(lhs_reference, lhs);                                                               \
+    }                                                                                                        \
+  };                                                                                                         \
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                               \
+    TestFunctionalPlaceholders##name,                                                                        \
+    type_list,                                                                                               \
+    thrust::device_vector,                                                                                   \
+    thrust::device_allocator,                                                                                \
+    TestFunctionalPlaceholders##name##Device);                                                               \
+  DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(                                                               \
+    TestFunctionalPlaceholders##name,                                                                        \
+    type_list,                                                                                               \
+    thrust::host_vector,                                                                                     \
+    std::allocator,                                                                                          \
+    TestFunctionalPlaceholders##name##Host);
 
 template <typename T>
 struct plus_equal_reference

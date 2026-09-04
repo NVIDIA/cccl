@@ -92,7 +92,7 @@ struct TestTupleConstructor
     ASSERT_EQUAL(data[9], get<9>(t10));
   }
 };
-SimpleUnitTest<TestTupleConstructor, BuiltinNumericTypes> TestTupleConstructorInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleConstructor, BuiltinNumericTypes);
 
 template <typename T>
 struct TestMakeTuple
@@ -182,7 +182,7 @@ struct TestMakeTuple
     ASSERT_EQUAL(data[9], get<9>(t10));
   }
 };
-SimpleUnitTest<TestMakeTuple, BuiltinNumericTypes> TestMakeTupleInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestMakeTuple, BuiltinNumericTypes);
 
 template <typename T>
 struct TestTupleGet
@@ -271,7 +271,7 @@ struct TestTupleGet
     ASSERT_EQUAL(data[9], thrust::get<9>(t10));
   }
 };
-SimpleUnitTest<TestTupleGet, BuiltinNumericTypes> TestTupleGetInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleGet, BuiltinNumericTypes);
 
 template <typename T>
 struct TestTupleComparison
@@ -325,7 +325,7 @@ struct TestTupleComparison
     ASSERT_EQUAL(false, lhs >= rhs);
   }
 };
-SimpleUnitTest<TestTupleComparison, NumericTypes> TestTupleComparisonInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleComparison, NumericTypes);
 
 template <typename T>
 struct TestTupleTieFunctor
@@ -456,7 +456,7 @@ struct TestTupleTie
     ASSERT_EQUAL(true, d_result[0]);
   }
 };
-SimpleUnitTest<TestTupleTie, NumericTypes> TestTupleTieInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleTie, NumericTypes);
 
 void TestTupleSwap()
 {
