@@ -26,6 +26,7 @@ from cuda.coop.numba_mlir import _types
 from cuda.coop.numba_mlir._compiler import _caching, _nvrtc
 from cuda.coop.numba_mlir._compiler._operations import StorageABI
 from cuda.coop.numba_mlir._lowering._core import NumbaMlirCoreAdapter
+from cuda.coop.numba_mlir._lowering._load_store import _load_store_value_abis
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
@@ -65,7 +66,14 @@ def _algorithm(
 ) -> _types.Algorithm:
     if valid_items is None:
         valid_items = ArgumentBinding.runtime()
-    adapter = NumbaMlirCoreAdapter()
+    adapter = NumbaMlirCoreAdapter(
+        value_abis=_load_store_value_abis(
+            dtype=dtype,
+            block_dim=block_dim,
+            items_per_thread=items_per_thread,
+            valid_items=valid_items,
+        )
+    )
     factory = make_block_load_spec if operation == "load" else make_block_store_spec
     spec = factory(
         dtype=adapter.core_dtype(dtype),
@@ -339,3 +347,131 @@ def test_provider_symbols_and_cached_lto_are_bound_to_the_compilation_target(
 
     with pytest.raises(RuntimeError, match="different compute capability"):
         sm90.get_lto_ir()
+
+
+@pytest.mark.parametrize(
+    "names",
+    (
+        ("class", "template", "return", "int"),
+        ("items", "items", "items_1", "items"),
+        ("value_", "value_", "value_1", "value_"),
+        ("input", "transformed_input", "cast_input", "temp_storage"),
+        ("out", "ref_out", "cast_out", "out"),
+        ("1input", "two-items", "__ret", "Δ"),
+    ),
+    ids=(
+        "keywords",
+        "duplicates",
+        "trailing-underscores",
+        "generated-locals",
+        "return-local",
+        "invalid-identifiers",
+    ),
+)
+def test_parameter_names_compile_with_keywords_and_collisions(
+    compile_context: _nvrtc.CompileContext,
+    names: tuple[str, ...],
+) -> None:
+    parameters = [
+        _types.TransformedArray(types.uint8, types.int32, 2, "{value} != 0"),
+        _types.Reference(types.int32),
+        _types.Pointer(types.int32),
+        _types.Value(types.int32),
+    ]
+    for parameter, name in zip(parameters, names):
+        parameter.parameter_name = name
+    algorithm = _types.Algorithm(
+        struct_name="NamedProvider",
+        method_name="Run",
+        c_name="named_provider",
+        includes=(),
+        template_parameters=(),
+        parameters=(parameters,),
+        storage_abi=StorageABI.NONE,
+        execution_scope=SynchronizationScope.NONE,
+        synchronization_scope=SynchronizationScope.NONE,
+        type_definitions=[
+            SimpleNamespace(
+                code=(
+                    "namespace cub {\n"
+                    "struct NamedProvider {\n"
+                    "  template<class... Args>\n"
+                    "  __device__ void Run(Args&&...) {}\n"
+                    "};\n"
+                    "}"
+                ),
+                lto_irs=[],
+            )
+        ],
+        compile_context=compile_context,
+    )
+    source = _source(algorithm)
+    assert source == _source(algorithm)
+    _, ltoir = _nvrtc.compile(
+        cpp=source,
+        cc=90,
+        rdc=True,
+        code="lto",
+        context=compile_context,
+    )
+    assert bytes(ltoir)
+
+
+def test_parameter_names_do_not_split_identical_bundle_providers(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    original = _algorithm(compile_context)
+    renamed = _algorithm(compile_context)
+    for method in renamed.parameters:
+        for position, parameter in enumerate(method):
+            parameter.parameter_name = f"renamed_{position}"
+
+    assert _source(original) != _source(renamed)
+    bundle = _types.prepare_ltoir_bundle([original, renamed])
+    assert bundle is None
+    assert original._private_symbol_key == renamed._private_symbol_key
+    assert original.mangled_name(original.parameters[0]) == renamed.mangled_name(
+        renamed.parameters[0]
+    )
+
+
+def test_wrapper_parameters_do_not_shadow_function_type_or_return_local(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    from io import StringIO
+
+    method = [
+        _types.Pointer(types.uint8),
+        _types.Reference(types.int32),
+        _types.Value(types.int32),
+        _types.Reference(types.int32, is_output=True),
+    ]
+    for parameter, name in zip(method, ("invoke", "scratch_t", "out", "result")):
+        parameter.parameter_name = name
+    source_buffer = StringIO()
+    source_buffer.write(
+        "#include <cuda/std/cstdint>\n"
+        "struct scratch_t {};\n"
+        "__device__ void invoke(scratch_t *, ::cuda::std::int32_t &input, "
+        "::cuda::std::int32_t value, ::cuda::std::int32_t &output) {\n"
+        "  output = input + value;\n"
+        "}\n"
+    )
+    _algorithm(compile_context)._emit_abi_wrapper(
+        source_buffer.write,
+        method,
+        exported_name="named_wrapper",
+        internal_name="invoke",
+        temp_storage_type_name="scratch_t",
+    )
+    source = source_buffer.getvalue()
+    assert "named_wrapper__abi(void *__ret," in source
+    assert "*reinterpret_cast<::cuda::std::int32_t *>(__ret) = out;" in source
+    _, ltoir = _nvrtc.compile(
+        cpp=source,
+        cc=90,
+        rdc=True,
+        code="lto",
+        context=compile_context,
+    )
+    assert bytes(ltoir)
