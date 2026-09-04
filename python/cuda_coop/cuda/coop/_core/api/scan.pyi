@@ -9,6 +9,9 @@ from typing import Literal, overload
 from typing_extensions import TypeVar
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ContextualInitialValue,
     NonSumScanOperator,
     ScanAlgorithm,
     ScanOperator,
@@ -30,7 +33,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: SumScanOperator | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: ContextualInitialValue[_ScalarT] | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
@@ -42,7 +45,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: NonSumScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: ContextualInitialValue[_ScalarT],
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
@@ -66,7 +69,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: SumScanOperator | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: ContextualInitialValue[_ItemT] | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_ItemT]: ...
@@ -78,7 +81,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: NonSumScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: ContextualInitialValue[_ItemT],
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_ItemT]: ...
@@ -102,7 +105,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: SumScanOperator | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: ContextualInitialValue[_ScalarT] | None = None,
     algorithm: None = None,
     temp_storage: None = None,
 ) -> _ScalarT: ...
@@ -114,7 +117,7 @@ def scan(
     *,
     mode: Literal["exclusive"] = "exclusive",
     scan_op: NonSumScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: ContextualInitialValue[_ScalarT],
     algorithm: None = None,
     temp_storage: None = None,
 ) -> _ScalarT: ...
@@ -191,7 +194,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: SumScanOperator | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: ContextualInitialValue[_ScalarT] | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
@@ -202,7 +205,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: NonSumScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: ContextualInitialValue[_ScalarT],
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
@@ -213,7 +216,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: SumScanOperator | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: ContextualInitialValue[_ItemT] | None = None,
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_ItemT]: ...
@@ -224,7 +227,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: NonSumScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: ContextualInitialValue[_ItemT],
     algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_ItemT]: ...
@@ -235,7 +238,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: SumScanOperator | None = None,
-    initial_value: CommonNumericScalar | None = None,
+    initial_value: ContextualInitialValue[_ScalarT] | None = None,
     algorithm: None = None,
     temp_storage: None = None,
 ) -> _ScalarT: ...
@@ -246,7 +249,7 @@ def exclusive_scan(
     /,
     *,
     scan_op: NonSumScanOperator,
-    initial_value: CommonNumericScalar,
+    initial_value: ContextualInitialValue[_ScalarT],
     algorithm: None = None,
     temp_storage: None = None,
 ) -> _ScalarT: ...
