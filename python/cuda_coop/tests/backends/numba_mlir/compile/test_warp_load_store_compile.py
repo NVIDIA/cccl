@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 # ruff: noqa: E402
 
-"""GPU-free compilation contracts for physical Warp Load/Store."""
+"""GPU-free compilation contracts for physical and logical Warp Load/Store."""
 
 from __future__ import annotations
 
@@ -73,6 +73,7 @@ def _algorithm(
     operation: str,
     algorithm: str,
     dtype=types.int32,
+    threads_in_warp: int = _WARP_THREADS,
 ) -> _types.Algorithm:
     valid_items = ArgumentBinding.runtime()
     oob_default = (
@@ -82,7 +83,7 @@ def _algorithm(
         value_abis=_load_store_value_abis(
             dtype=dtype,
             items_per_thread=_ITEMS_PER_THREAD,
-            threads_in_warp=_WARP_THREADS,
+            threads_in_warp=threads_in_warp,
             valid_items=valid_items,
             oob_default=oob_default,
         )
@@ -91,7 +92,7 @@ def _algorithm(
     spec = factory(
         dtype=adapter.core_dtype(dtype),
         items_per_thread=_ITEMS_PER_THREAD,
-        threads_in_warp=_WARP_THREADS,
+        threads_in_warp=threads_in_warp,
         algorithm=algorithm,
         valid_items=valid_items,
         oob_default=oob_default,
@@ -108,7 +109,7 @@ def _algorithm(
         extra_type_definitions=(_types.numba_type_to_wrapper(dtype),),
     )
     specialization._compile_context = context
-    specialization.threads = _WARP_THREADS
+    specialization.threads = threads_in_warp
     specialization.block_threads = _BLOCK_THREADS
     return specialization
 
@@ -148,15 +149,18 @@ def _production_launch_config_key() -> tuple[tuple[str, object], ...]:
     )
 
 
-def test_all_physical_warp_algorithms_compile_with_scope_owned_storage(
+@pytest.mark.parametrize("threads_in_warp", (32, 8), ids=("physical", "logical-8"))
+def test_all_warp_algorithms_compile_with_scope_owned_storage(
     compile_context: _nvrtc.CompileContext,
     _fixed_current_device: list[tuple[int, int]],
+    threads_in_warp: int,
 ) -> None:
     algorithms = {
         (operation, name): _algorithm(
             compile_context,
             operation=operation,
             algorithm=name,
+            threads_in_warp=threads_in_warp,
         )
         for operation in ("load", "store")
         for name in _ALGORITHMS
@@ -165,16 +169,22 @@ def test_all_physical_warp_algorithms_compile_with_scope_owned_storage(
     for (operation, name), specialization in algorithms.items():
         source = _source(specialization)
         assert f"::cub::WARP_{operation.upper()}_{name.upper()}" in source
-        assert "if (param_2 < 0 || param_2 > 64)" in source
+        tile_items = threads_in_warp * _ITEMS_PER_THREAD
+        assert f"if (param_2 < 0 || param_2 > {tile_items})" in source
         assert "(param_0 + param_" in source
         assert "__syncthreads" not in source
         assert "bar.sync" not in source
         if name == "transpose":
             assert specialization.storage_abi is StorageABI.LEADING_POINTER
             assert "TempStorage" in source
-            assert "temp_storages[2]" in source
-            assert "__coop_thread_rank / 32" in source
-            assert "__syncwarp();" in source
+            instances = _BLOCK_THREADS // threads_in_warp
+            assert f"temp_storages[{instances}]" in source
+            assert f"__coop_thread_rank / {threads_in_warp}" in source
+            if threads_in_warp == 32:
+                assert "__syncwarp();" in source
+            else:
+                assert "__syncwarp(" in source
+                assert "__syncwarp();" not in source
             assert f"(*temp_storage).{operation.title()}(" in source
         else:
             assert specialization.storage_abi is StorageABI.NONE
@@ -185,7 +195,9 @@ def test_all_physical_warp_algorithms_compile_with_scope_owned_storage(
 
     bundle = _types.prepare_ltoir_bundle(
         list(algorithms.values()),
-        bundle_name="cuda_coop_numba_mlir_all_warp_load_store_algorithms",
+        bundle_name=(
+            f"cuda_coop_numba_mlir_all_warp_load_store_algorithms_{threads_in_warp}"
+        ),
     )
     assert isinstance(bundle, bytes)
     assert bundle
@@ -236,6 +248,44 @@ def test_direct_multi_item_load_store_compiles_for_every_supported_dtype(
     assert all(
         specialization.temp_storage_alignment == 1 for specialization in algorithms
     )
+
+
+def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    algorithms = [
+        _algorithm(
+            compile_context,
+            operation="load",
+            algorithm="transpose",
+            threads_in_warp=width,
+        )
+        for width in (1, 2, 4, 8, 16, 32)
+    ]
+
+    assert [algorithm.threads for algorithm in algorithms] == [1, 2, 4, 8, 16, 32]
+    assert (
+        len(
+            {
+                algorithm._make_lto_ir_cache_key(
+                    threads=algorithm.threads,
+                    block_threads=_BLOCK_THREADS,
+                )
+                for algorithm in algorithms
+            }
+        )
+        == 6
+    )
+    for width, algorithm in zip((1, 2, 4, 8, 16, 32), algorithms):
+        source = _source(algorithm)
+        assert f", {width}>" in source
+        assert f"temp_storages[{_BLOCK_THREADS // width}]" in source
+
+    bundle = _types.prepare_ltoir_bundle(
+        algorithms,
+        bundle_name="cuda_coop_numba_mlir_logical_warp_widths",
+    )
+    assert bundle
 
 
 def test_production_routes_compile_portable_and_qualified_warp_kernels(
@@ -365,6 +415,98 @@ def test_production_routes_compile_portable_and_qualified_warp_kernels(
             assert ".shared" in ptx
         else:
             assert ".shared" not in ptx
+
+
+def test_production_routes_compile_portable_and_qualified_logical_warp_kernels(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    compiler_cuda = _production_compile_environment(monkeypatch)
+
+    def qualified_kernel(algorithm: str):
+        load_algorithm = qualified_coop.WarpLoadAlgorithm[algorithm.upper()]
+        store_algorithm = qualified_coop.WarpStoreAlgorithm[algorithm.upper()]
+
+        @compiler_cuda.jit(chip="sm_90")
+        def kernel(source, destination, valid_items, offset):
+            group = qualified_coop.this_warp().group_by(8)
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = qualified_coop.load(
+                group,
+                source,
+                payload,
+                algorithm=load_algorithm,
+                valid_items=valid_items,
+                oob_default=types.int32(-17),
+                offset=offset,
+            )
+            qualified_coop.store(
+                group,
+                destination,
+                loaded,
+                algorithm=store_algorithm,
+                valid_items=valid_items,
+                offset=offset,
+            )
+
+        return kernel
+
+    def portable_kernel(algorithm: str):
+        @compiler_cuda.jit(chip="sm_90")
+        def kernel(source, destination, valid_items, offset):
+            group = root_coop.this_warp().group_by(8)
+            payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = root_coop.load(
+                group,
+                source,
+                payload,
+                algorithm=algorithm,
+                valid_items=valid_items,
+                oob_default=types.int32(-17),
+                offset=offset,
+            )
+            root_coop.store(
+                group,
+                destination,
+                loaded,
+                algorithm=algorithm,
+                valid_items=valid_items,
+                offset=offset,
+            )
+
+        return kernel
+
+    signature = types.void(
+        types.int32[::1],
+        types.int32[::1],
+        types.int32,
+        types.int64,
+    )
+    launch_config_key = _production_launch_config_key()
+    for algorithm in ("direct", "transpose"):
+        for factory in (portable_kernel, qualified_kernel):
+            dispatcher = factory(algorithm)
+            result = dispatcher._compile_launch_config_signature(
+                signature,
+                launch_config_key,
+            )
+            assert result.metadata["ltoir"]
+            assert result.metadata["cubin"]
+            assert result.metadata["linked_external_link_items"]
+            ptx = next(iter(dispatcher.inspect_lto_ptx().values()))
+            assert "bar.sync" not in ptx
+            if algorithm == "transpose":
+                assert ".shared" in ptx
+            else:
+                assert ".shared" not in ptx
 
 
 @pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
