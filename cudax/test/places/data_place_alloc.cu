@@ -203,9 +203,9 @@ void test_device_default_pool_policy_untouched()
   cudaStream_t stream;
   cuda_try(cudaStreamCreate(&stream));
 
-  auto place       = data_place::locality_domain(0, 0);
-  const size_t n   = size_t{1} << 20;
-  void* ptr        = place.allocate(static_cast<::std::ptrdiff_t>(n), stream);
+  auto place     = data_place::locality_domain(0, 0);
+  const size_t n = size_t{1} << 20;
+  void* ptr      = place.allocate(static_cast<::std::ptrdiff_t>(n), stream);
   cuda_try(cudaStreamSynchronize(stream));
   place.deallocate(ptr, n, stream);
   cuda_try(cudaStreamSynchronize(stream));

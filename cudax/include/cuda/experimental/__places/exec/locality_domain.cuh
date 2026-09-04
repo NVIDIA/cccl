@@ -91,10 +91,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/exception_macros.h>
-
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__memory_pool/memory_pool_base.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__places/exec/cuda_context.cuh>
