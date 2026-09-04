@@ -4,6 +4,7 @@
 
 """Dispatch opaque per-family rewrite metadata and argument preparation."""
 
+from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._rewrite_support import CoopSinglePhaseRewriteError, ir
 
@@ -24,7 +25,7 @@ class _GroupMetadataRewrite:
         if spec.analyze_match is None:
             return None
         return spec.analyze_match(
-            self,
+            GroupRewriteContext(self),
             op_name=op_name,
             runtime_args=runtime_args,
             factory_kwargs=factory_kwargs,
@@ -47,7 +48,7 @@ class _GroupMetadataRewrite:
         if spec.prepare_runtime_args is None:
             return runtime_args
         return spec.prepare_runtime_args(
-            self,
+            GroupRewriteContext(self),
             block,
             match=match,
             runtime_args=runtime_args,

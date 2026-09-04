@@ -8,8 +8,7 @@ Primitive-specific inference lives in the matching ``_rewrite_<family>``
 mixin. This module owns only the common inference context and dispatch order.
 """
 
-from typing import Any
-
+from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._rewrite_support import (
     CoopSinglePhaseRewriteError,
@@ -27,7 +26,7 @@ class PayloadInference:
 
     def __init__(
         self,
-        rewrite: Any,
+        context: GroupRewriteContext,
         op_name: str,
         runtime_args: list[ir.Var],
         allowed_factory_kwargs: set[str],
@@ -35,7 +34,7 @@ class PayloadInference:
         factory_kwargs: dict[str, object],
         dtype_factory_kwargs: frozenset[str],
     ) -> None:
-        self.rewrite = rewrite
+        self.context = context
         self.op_name = self._OPERATION_ALIASES.get(op_name, op_name)
         self.portable_op_name = self._COMMON_OPERATION_ALIASES.get(op_name)
         self.runtime_args = runtime_args
@@ -75,8 +74,8 @@ class PayloadInference:
         value = self.runtime_args[index]
         if not isinstance(value, ir.Var):
             return (None, None)
-        spec = self.rewrite._resolve_thread_data_spec(value)
-        if self.rewrite._is_typed_group_payload_var(value) and (
+        spec = self.context.thread_data(value)
+        if self.context.is_typed_group_payload(value) and (
             spec is None or spec.items_per_thread is None
         ):
             raise CoopSinglePhaseRewriteError(
@@ -93,8 +92,8 @@ class PayloadInference:
         value = self.runtime_args[index]
         if not isinstance(value, ir.Var):
             return (None, None)
-        spec = self.rewrite._resolve_array_spec_from_var(value, seen=set())
-        if self.rewrite._is_typed_group_payload_var(value) and (
+        spec = self.context.array(value)
+        if self.context.is_typed_group_payload(value) and (
             spec is None or spec.items_per_thread is None
         ):
             raise CoopSinglePhaseRewriteError(
@@ -110,9 +109,9 @@ class PayloadInference:
     ):
         dtype = spec.dtype if spec is not None else None
         if dtype is None and value is not None:
-            dtype = self.rewrite._resolve_var_dtype(value)
+            dtype = self.context.dtype(value)
         if dtype is None and value is not None:
-            dtype = self.rewrite._infer_thread_data_dtype_from_writes(value)
+            dtype = self.context.infer_thread_data_write_dtype(value)
         return dtype
 
 
@@ -134,7 +133,7 @@ class _PayloadRewrite:
                 f"unsupported Numba-CUDA-MLIR operation {operation!r}"
             )
         inference = PayloadInference(
-            self,
+            GroupRewriteContext(self),
             op_name,
             runtime_args,
             allowed_factory_kwargs,
@@ -142,7 +141,7 @@ class _PayloadRewrite:
             factory_kwargs,
             spec.dtype_factory_kwargs,
         )
-        spec.infer_payload(self, inference)
+        spec.infer_payload(inference.context, inference)
 
 
 __all__ = ["_PayloadRewrite"]
