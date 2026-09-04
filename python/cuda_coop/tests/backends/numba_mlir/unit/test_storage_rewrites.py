@@ -599,6 +599,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
         this_block,
         this_thread,
     )
+    from cuda.coop._core.group._contracts import _contracts
     from tests.support.group_planning import _load_store, _plan
 
     plan = _plan(
@@ -610,16 +611,26 @@ def test_planned_storage_guardrails_fail_before_materialization(
     if case in {"group", "caller-group"}:
         execution_scope = SynchronizationScope.GROUP
         synchronization_scope = SynchronizationScope.GROUP
+        launch = LaunchFacts(exact_block_dim=(64, 1, 1))
+        resolved_group = resolve_thread_group(
+            this_block().group_by(2), launch
+        ).require_supported()
+        topology, participation, synchronization, storage = _contracts(
+            resolved_group,
+            launch,
+            result=None,
+            storage_ownership=StorageOwnership.IMPLEMENTATION,
+            cpp_type=plan.temp_storage.cpp_type,
+        )
         plan = replace(
             plan,
-            topology=replace(
-                plan.topology,
-                execution_scope=SynchronizationScope.GROUP,
-            ),
-            synchronization=replace(
-                plan.synchronization,
-                storage_reuse_barrier=SynchronizationScope.GROUP,
-            ),
+            target=GroupLoweringTarget.CUDAX_GROUP,
+            call=make_group_primitive_call(resolved_group, plan.call.operation),
+            resolved_group=resolved_group,
+            topology=topology,
+            participation=participation,
+            synchronization=synchronization,
+            temp_storage=storage,
         )
     elif case == "address-space":
         plan = replace(
