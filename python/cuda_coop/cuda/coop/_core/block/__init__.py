@@ -23,6 +23,16 @@ from .load_store import (
     make_block_load_store_specialization,
     make_block_store_specialization,
 )
+from .reduce import (
+    BlockReduceAlgorithm,
+    BlockReduceOperation,
+    BlockReduceSemantics,
+    BlockReduceSpecialization,
+    BlockReduceValueKind,
+    make_block_reduce_semantics,
+    make_block_reduce_specialization,
+    normalize_block_reduce_algorithm,
+)
 from .shuffle import (
     BlockShuffleMode,
     BlockShuffleSemantics,
@@ -43,6 +53,11 @@ __all__ = [
     "BlockLoadStoreAlgorithm",
     "BlockLoadStoreKind",
     "BlockLoadStoreSemantics",
+    "BlockReduceAlgorithm",
+    "BlockReduceOperation",
+    "BlockReduceSemantics",
+    "BlockReduceSpecialization",
+    "BlockReduceValueKind",
     "BlockShuffleMode",
     "BlockShuffleSemantics",
     "BlockShuffleSpecialization",
@@ -54,9 +69,12 @@ __all__ = [
     "make_block_load_specialization",
     "make_block_load_store_semantics",
     "make_block_load_store_specialization",
+    "make_block_reduce_semantics",
+    "make_block_reduce_specialization",
     "make_block_shuffle_semantics",
     "make_block_shuffle_specialization",
     "make_block_store_specialization",
     "normalize_block_dim",
+    "normalize_block_reduce_algorithm",
     "normalize_positive_int",
 ]
