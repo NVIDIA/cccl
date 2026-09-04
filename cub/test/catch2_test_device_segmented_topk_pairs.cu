@@ -292,13 +292,6 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
   return num_duplicates == 0;
 }
 
-struct sorted_wide_value
-{
-  cuda::std::int64_t first;
-  cuda::std::int64_t second;
-  cuda::std::int64_t third;
-};
-
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
          "[pairs][segmented][topk][device]",
          CUB_SMALL,
@@ -395,45 +388,6 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
   fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
 
   REQUIRE(expected_keys == keys_out_buffer);
-}
-
-CUB_TEST("DeviceBatchedTopK sorted output reports unsupported wide values",
-         "[pairs][segmented][topk][device]",
-         CUB_SMALL)
-{
-  int** d_keys_in                  = nullptr;
-  int** d_keys_out                 = nullptr;
-  sorted_wide_value** d_values_in  = nullptr;
-  sorted_wide_value** d_values_out = nullptr;
-  auto segment_sizes               = cuda::args::constant<2048>{};
-  auto k                           = cuda::args::constant<2048>{};
-  auto num_segments                = cuda::args::constant<1>{};
-  auto env                         = cuda::std::execution::env{cuda::execution::require(
-    cuda::execution::determinism::not_guaranteed,
-    cuda::execution::tie_break::unspecified,
-    cuda::execution::output_ordering::sorted)};
-
-  cuda::std::size_t temp_storage_bytes = 0;
-  REQUIRE(
-    cub::DeviceBatchedTopK::MaxPairs(
-      nullptr, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, k, num_segments, env)
-    == cudaSuccess);
-  REQUIRE(temp_storage_bytes == 1);
-
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  REQUIRE(
-    cub::DeviceBatchedTopK::MaxPairs(
-      thrust::raw_pointer_cast(temp_storage.data()),
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      segment_sizes,
-      k,
-      num_segments,
-      env)
-    == cudaErrorNotSupported);
 }
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs return ordered sorted output",

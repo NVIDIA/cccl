@@ -572,6 +572,7 @@ _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_batched
                                                    : traits::max_raw_binary_key(detail::identity_decomposer_t{});
     KeyT default_key                  = reinterpret_cast<KeyT&>(default_key_bits);
 
+    // Unstable sorting permits this register-only striped load, avoiding a shared-memory transpose.
     if constexpr (is_keys_only)
     {
       LoadDirectStriped<ThreadsPerBlock>(threadIdx.x, d_keys, keys, valid_items, default_key);
@@ -585,6 +586,7 @@ _CCCL_LAUNCH_BOUNDS(ThreadsPerBlock) _CCCL_KERNEL_ATTRIBUTES void device_batched
       __syncthreads();
     }
 
+    // `NullType` selects BlockRadixSort's keys-only internal path, so this works for both keys and pairs.
     if constexpr (descending)
     {
       block_radix_sort_t(temp_storage.sort).SortDescendingBlockedToStriped(keys, values);

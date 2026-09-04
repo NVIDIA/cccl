@@ -2220,6 +2220,49 @@ CUB_TEST("DeviceBatchedTopK::MaxKeys sorted output treats zero segments as no wo
   REQUIRE(keys_out == thrust::device_vector<int>(k, sentinel));
 }
 
+CUB_TEST("DeviceBatchedTopK::MaxKeys sorted output treats zero k as no work",
+         "[keys][segmented][topk][device]",
+         CUB_SMALL)
+{
+  constexpr int k_max        = 3;
+  constexpr int segment_size = 8;
+  constexpr int num_segments = 2;
+  constexpr int sentinel     = -12345;
+
+  auto keys_in  = thrust::device_vector<int>{0, 9, 3, 2, 1, 8, 7, 4, /**/ 5, 6, 1, 0, 3, 2, 8, 7};
+  auto keys_out = thrust::device_vector<int>(num_segments * k_max, sentinel);
+  auto d_keys_in =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_in.data())), segment_size);
+  auto d_keys_out =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(keys_out.data())), k_max);
+
+  auto segment_sizes = cuda::args::immediate{cuda::std::int16_t{segment_size}, cuda::args::bounds<0, 100>()};
+  auto k_arg         = cuda::args::immediate{cuda::std::int16_t{0}, cuda::args::bounds<0, k_max>()};
+  auto num_segs      = cuda::args::immediate{cuda::std::int64_t{num_segments}};
+  auto env           = cuda::std::execution::env{cuda::execution::require(
+    cuda::execution::determinism::not_guaranteed,
+    cuda::execution::tie_break::unspecified,
+    cuda::execution::output_ordering::sorted)};
+
+  cuda::std::size_t temp_storage_bytes = 0;
+  auto error                           = cub::DeviceBatchedTopK::MaxKeys(
+    nullptr, temp_storage_bytes, d_keys_in, d_keys_out, segment_sizes, k_arg, num_segs, env);
+  REQUIRE(error == cudaSuccess);
+
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+  error = cub::DeviceBatchedTopK::MaxKeys(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    segment_sizes,
+    k_arg,
+    num_segs,
+    env);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == thrust::device_vector<int>(num_segments * k_max, sentinel));
+}
+
 // Deterministic-requirement counterpart: a gpu_to_gpu requirement routes to the SM90+ cluster backend. A positive size
 // bound means the `max_seg_size <= 0` guard does not apply, so the launch must be elided from `num_segments == 0`
 // alone -- by the dispatch's empty-batch guard, before the cluster arm launches. Where that backend is unavailable the
