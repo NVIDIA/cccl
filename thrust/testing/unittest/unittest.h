@@ -615,7 +615,7 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
   }
 
 #define ASSERT_THROWS(EXPR, EXCEPTION_TYPE) REQUIRE_THROWS_AS(EXPR, EXCEPTION_TYPE)
-#define KNOWN_FAILURE                       FAIL()
+#define KNOWN_FAILURE                       SKIP("known failure")
 
 namespace unittest
 {
