@@ -8,12 +8,14 @@ Import this qualified API on the host before compiling kernels. Importing it
 loads the supported compiler runtime and registers the compiler pass that
 plans and replaces cooperative calls across each kernel before typing.
 Primitive calls and ThreadData are kernel constructs. Group descriptors can
-also be created on the host and used as kernel globals. Construct
+also be created on the host and used as kernel globals. StatefulFunction
+descriptors are created on the host and used as kernel constants. Construct
 TempStorage inside each kernel. During compilation, the compiler rebuilds
 the descriptor from its compile-time constant arguments and validates them.
 The compiler rejects a descriptor that comes from a module global. The
 module loads Load and Store during initialization. Other operation markers,
-and the ``local`` and ``shared`` namespaces load on first access.
+the ``local`` and ``shared`` namespaces, and ``StatefulFunction`` load on
+first access.
 """
 
 import importlib
@@ -58,6 +60,7 @@ if TYPE_CHECKING:
         topk_min_keys,
         topk_min_pairs,
     )
+    from ._stateful_function import StatefulFunction
     from ._thread_data import local, shared
 
 __all__ = [
@@ -100,7 +103,7 @@ __all__ = [
 
 
 def __getattr__(name):
-    """Load operation markers and allocation namespaces.
+    """Load operation markers, allocation namespaces, and state descriptors.
 
     Resolve these exports on first use and cache each object in this module.
     This keeps their imports out of basic namespace initialization.
@@ -159,7 +162,9 @@ def __getattr__(name):
         globals()[name] = value
         return value
     if name == "StatefulFunction":
-        value = getattr(importlib.import_module(f"{__name__}._stateful_function"), name)
+        value = getattr(
+            importlib.import_module(f"{__name__}._stateful_function"), name
+        )
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
