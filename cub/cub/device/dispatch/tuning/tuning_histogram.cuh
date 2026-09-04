@@ -287,6 +287,7 @@ struct policy_selector
   int num_channels;
   int num_active_channels;
   bool is_even;
+  type_t sample_type;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int t_scale(int nominal_items_per_thread) const
@@ -298,6 +299,30 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && !is_even)
+      {
+        if (sample_size == 1)
+        {
+          // ipt_20.tpb_128.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.006  0.989  1.110  1.302
+          return HistogramPolicy{128, 20, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+        }
+        if (sample_size == 2)
+        {
+          // ipt_7.tpb_128.rle_0.ws_0.mem_1.ld_1.laid_0.vec_0 1.037  1.033  1.064  1.050
+          return HistogramPolicy{128, 7, 1, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+        }
+        if (sample_size == 4 && sample_type != type_t::float32)
+        {
+          // ipt_7.tpb_128.rle_1.ws_0.mem_0.ld_0.laid_1.vec_1 1.437  1.315  1.347  1.179
+          return HistogramPolicy{128, 7, 1 << 1, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, true, GMEM, false, 2048};
+        }
+        // float32, 8-byte and 16-byte samples: no clean sm107 candidate, fall through
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
@@ -354,7 +379,8 @@ struct policy_selector_from_types
       int{sizeof(SampleT)},
       NumChannels,
       NumActiveChannels,
-      IsEven};
+      IsEven,
+      classify_type<SampleT>};
     return policies(cc);
   }
 };
