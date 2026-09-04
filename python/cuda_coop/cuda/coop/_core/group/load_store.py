@@ -37,9 +37,13 @@ from ._model import (
     ArgumentPrecondition,
     GroupLoweringPlan,
     GroupLoweringTarget,
+    GroupOperandKind,
     GroupPrimitiveCall,
     ImplementationProvenance,
+    LogicalResultContract,
     PreconditionEnforcement,
+    ResultContract,
+    ResultOwnership,
     ResultVisibility,
     StorageOwnership,
     UnsupportedReasonCode,
@@ -311,11 +315,24 @@ def _plan_load_store(
         else "cub::BlockStore"
     )
     header = f"cub/block/block_{operation.kind.value}.cuh"
+    result = None
+    if operation.kind is GroupLoadStoreKind.LOAD:
+        result = ResultContract(
+            (
+                LogicalResultContract(
+                    name="value",
+                    dtype=operation.dtype,
+                    visibility=ResultVisibility.PER_MEMBER,
+                    ownership=ResultOwnership.EACH_MEMBER,
+                    operand_kind=GroupOperandKind.ARRAY,
+                    items_per_member=operation.items_per_thread,
+                ),
+            )
+        )
     contracts = _contracts(
         resolved,
         launch,
-        operation,
-        visibility=ResultVisibility.PER_MEMBER,
+        result=result,
         storage_ownership=operation.storage_ownership,
         cpp_type=None,
         storage_sharing=operation.storage_sharing,
@@ -364,15 +381,15 @@ def _plan_load_store(
                 else ()
             ),
         ),
-        returns_value=operation.kind is GroupLoadStoreKind.LOAD,
     )
     return GroupLoweringPlan(
         target=target,
         call=call,
         resolved_group=resolved,
         implementation=spec,
-        participation=contracts[0],
-        result=contracts[1],
+        topology=contracts[0],
+        participation=contracts[1],
+        result=result,
         synchronization=contracts[2],
         temp_storage=contracts[3],
         provenance=ImplementationProvenance(
