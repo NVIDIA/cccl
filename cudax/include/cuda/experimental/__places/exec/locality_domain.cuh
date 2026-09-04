@@ -93,6 +93,7 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory_pool/memory_pool_base.h>
 
 #include <cuda/experimental/__places/data_place_interface.cuh>
@@ -635,18 +636,33 @@ public:
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
-    // The driver keeps one default pool per (location, allocation type) and
-    // `cuda::__get_default_memory_pool` is the library-wide site that hands it
-    // out (and that settles its release-threshold policy), so there is nothing
-    // to create, own or cache here: the same handle comes back on every call,
-    // shared with every other consumer of this location in the process.
+    // The driver keeps one default pool per (location, allocation type), so
+    // there is nothing to create, own or cache here: the same handle comes
+    // back on every call, shared with every other consumer of that location
+    // in the process.
+    //
+    // Which accessor depends on WHOSE pool it is. A locality-domain location
+    // is this workload's own: `cuda::__get_default_memory_pool` is the
+    // library-wide site for such pools and settles their release-threshold
+    // policy (retaining freed memory instead of returning it to the OS at
+    // every synchronization, which would re-back algorithm-scale scratch on
+    // every call). The whole-device degrade location is NOT ours — it is the
+    // process-global device default pool that every `cudaMallocAsync` user
+    // shares — so it is fetched raw, inheriting whatever policy the process
+    // already has: this place should not decide retention on other
+    // components' behalf, least of all on machines whose memory is not
+    // partitioned into domains at all.
     //
     // No cudaSetDevice either: unlike the cudaMallocAsync-based places (device,
     // green_ctx), which draw from the *current* device's default pool, the pool
     // is passed explicitly and belongs to this domain's location, so placement
     // does not depend on the current device. This also keeps allocate()
     // symmetric with deallocate(), which never switched.
-    CUmemoryPool pool = ::cuda::__get_default_memory_pool(__pool_location(), ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    const CUmemLocation location = __pool_location();
+    const CUmemoryPool pool =
+      (location.type == CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN)
+        ? ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED)
+        : ::cuda::__driver::__getDefaultMemPool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
 
     CUdeviceptr ptr = 0;
     cuda_try(cuMemAllocFromPoolAsync(&ptr, static_cast<size_t>(size), pool, reinterpret_cast<CUstream>(stream)));
