@@ -27,7 +27,9 @@ Numba-CUDA-MLIR-qualified API
 The qualified module provides the matching Block Load and Store entry points,
 group descriptors, ``ThreadData``, and ``TempStorage``. It additionally exposes
 the complete CUB Block Load and Store algorithm enums, although only DIRECT is
-executable in this release.
+executable in this release. ``ThreadGroup`` values are descriptor-only.
+``group_by`` constructs a static partition descriptor; runtime query,
+membership, and synchronization methods are not part of this release.
 
 See the :github:`Numba-CUDA-MLIR type declarations
 <python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi>` for the complete overload

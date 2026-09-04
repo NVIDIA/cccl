@@ -37,8 +37,8 @@ class CoopIncludePaths:
         if not self.cuda:
             raise HeaderResolutionError(
                 "Unable to locate one CUDA include directory containing "
-                "cuda_runtime.h. Configure CUDA_PATH or CUDA_HOME before "
-                "compiling cuda.coop providers."
+                "cuda_runtime.h. Configure CUDA_PATH, CUDA_HOME, or CUDA_ROOT "
+                "before compiling cuda.coop providers."
             )
         return (*self.cccl, *self.cuda)
 

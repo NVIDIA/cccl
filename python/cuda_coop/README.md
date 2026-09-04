@@ -4,9 +4,12 @@
 for Python CUDA kernel DSLs. The first backend targets Numba-CUDA-MLIR and lowers
 the operations to CUB.
 
-The distribution is a universal Python wheel containing a coherent snapshot of
-CUB, Thrust, libcu++, and CUDAX headers. Compilation always uses that bundled
-snapshot; it does not substitute CUB headers from the active CUDA Toolkit.
+The distribution is a universal Python wheel containing a coherent bundle of
+CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
+bundle by default. Development from a CCCL source checkout uses the matching
+checkout headers, and `CUDA_COOP_CCCL_ROOT` can select a different source
+checkout or `cuda-coop` header bundle. None of these modes substitutes CUB
+headers from the active CUDA Toolkit.
 
 ## Installation
 
@@ -38,8 +41,38 @@ from cuda import coop
 import cuda.coop.numba_mlir  # Activate support for portable coop calls.
 ```
 
+Importing `cuda.coop` first and compiling without that explicit activation is
+unsupported. Numba-CUDA-MLIR then reports the portable marker as unknown
+(typically `Unknown attribute 'this_block'`) because its compiler hooks were
+not registered.
+
 Using `import cuda.coop.numba_mlir as coop` instead activates the backend and
 selects its qualified namespace.
+
+## Configuration
+
+Runtime configuration is controlled by these environment variables:
+
+| Variable | Effect |
+| --- | --- |
+| `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit qualified-backend import still works. |
+| `CUDA_COOP_CCCL_ROOT` | Selects a CCCL source checkout or a `cuda-coop` header bundle. An invalid configured root is an error; resolution does not fall back to another CCCL source. |
+| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache under `~/.cache/cccl`. The value is read when the backend cache module is imported. |
+| `CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR` | Writes content-addressed pre-NVRTC CUDA source files to this directory for compiler diagnostics. |
+| `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
+| `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
+| `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
+
+The build recognizes these CMake cache variables:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `CUDA_COOP_INSTALL_HEADER_BUNDLE` | `ON` | Installs the private CCCL header and CMake-package bundle into the wheel. |
+| `CUDA_COOP_ALLOW_DIRTY_HEADER_BUNDLE` | `OFF` | Allows a Git-worktree bundle when selected inputs are changed or `git status` cannot verify them, and records its source revision as `unknown`. |
+| `CUDA_COOP_CCCL_SOURCE_REVISION` | empty | Supplies the revision token recorded instead of deriving it from Git. A dirty or unverifiable Git worktree still records `unknown`. |
+
+For the two Boolean runtime switches, values are case-insensitive; `0`,
+`false`, `no`, `off`, and the empty string are false.
 
 ## Block Load and Store
 
@@ -82,12 +115,15 @@ The public Block Load and Store enums retain the complete CUB algorithm
 vocabulary. This release executes only `DIRECT`; selecting another member is
 rejected by the Numba-CUDA-MLIR capability layer before provider compilation.
 Load and Store currently support only `this_block()` even though the portable
-API exposes the broader thread-group descriptor vocabulary.
+API exposes the broader thread-group descriptor vocabulary. `ThreadGroup`
+objects are descriptor-only in this release. `group_by` remains compile-time
+vocabulary for describing a static partition. Runtime query, membership, and
+synchronization methods such as `rank`, `count`, `rank_as`, `count_as`, `sync`,
+`sync_aligned`, and `is_member` are not exposed.
 
 ## Temporary storage
 
-Both operations may allocate temporary storage implicitly or accept a caller
-descriptor:
+Both operations accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(
@@ -99,12 +135,15 @@ storage = coop.TempStorage(
 coop.load(block, source, items, temp_storage=storage)
 ```
 
-Shared storage reuses compatible slices and synchronizes automatically by
-default. Exclusive storage receives a distinct slice and cannot request
-automatic synchronization.
+The current DIRECT providers are storage-free: they default-construct the CUB
+primitive and emit no shared-memory allocation, pointer argument, or barrier.
+An explicit descriptor, including an unsized descriptor, is validated as
+compile-time vocabulary but does not change DIRECT code generation. Generic
+capacity, alignment, ownership, synchronization, and dynamic-memory planning
+remains available to future registered providers that declare a storage ABI.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.
 
-See the [CCCL documentation](https://nvidia.github.io/cccl/python/coop.html) for
-the complete signatures.
+See the [CCCL documentation](https://nvidia.github.io/cccl/unstable/python/coop.html)
+for the complete signatures.
