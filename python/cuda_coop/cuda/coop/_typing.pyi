@@ -52,6 +52,7 @@ ReduceAlgorithm: TypeAlias = Literal[
     "raking",
     "warp_reductions",
 ]
+ScanAlgorithm: TypeAlias = Literal["raking", "raking_memoize", "warp_scans"]
 ReduceOperator: TypeAlias = Literal[
     "+",
     "sum",
@@ -72,6 +73,25 @@ ReduceOperator: TypeAlias = Literal[
     "^",
     "bit_xor",
 ]
+SumScanOperator: TypeAlias = Literal["+", "sum", "add", "plus"]
+NonSumScanOperator: TypeAlias = Literal[
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
+ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
+ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
 ExchangeMode: TypeAlias = Literal[
     "striped_to_blocked",
     "blocked_to_striped",
@@ -200,6 +220,11 @@ __all__ = [
     "PortableShuffleMode",
     "ReduceAlgorithm",
     "ReduceOperator",
+    "ScanAlgorithm",
+    "ScanMode",
+    "ScanOperator",
+    "SumScanOperator",
+    "NonSumScanOperator",
     "ScalarShuffleMode",
     "ShuffleMode",
     "SynchronizableGroupKind",
