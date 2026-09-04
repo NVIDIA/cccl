@@ -2118,7 +2118,7 @@ cdef class _DeviceCopyBuild:
         )
         _device_copy_check_cuda(status, "cccl_device_copy")
 
-    def close(self):
+    cdef void _close(self) except *:
         cdef _CUresult status
         if self._closed:
             return
@@ -2179,7 +2179,7 @@ cdef class _DeviceCopyExecutable:
             self._builds_by_rank = ()
             self._closed = True
             return
-        self._build.close()
+        self._build._close()
         self._closed = True
 
 
@@ -2377,7 +2377,7 @@ cdef class _DeviceCopy:
             self._builds_by_rank = ()
             self._closed = True
             return
-        self._build.close()
+        self._build._close()
         self._closed = True
 
     def __enter__(self):
