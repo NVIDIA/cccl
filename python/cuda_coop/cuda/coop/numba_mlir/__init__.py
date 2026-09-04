@@ -36,19 +36,29 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
-    "load",
-    "local",
-    "shared",
-    "store",
     "this_block",
     "this_cluster",
     "this_grid",
     "this_thread",
     "this_warp",
+    "exchange",
+    "load",
+    "shuffle",
+    "store",
+    "local",
+    "shared",
 ]
 
 
 def __getattr__(name):
+    if name in {"exchange", "shuffle"}:
+        module_name = {
+            "exchange": "_group_exchange",
+            "shuffle": "_group_shuffle",
+        }[name]
+        value = getattr(importlib.import_module(f"{__name__}.{module_name}"), name)
+        globals()[name] = value
+        return value
     if name in {"local", "shared"}:
         value = getattr(
             importlib.import_module(f"{__name__}._thread_data"), name
