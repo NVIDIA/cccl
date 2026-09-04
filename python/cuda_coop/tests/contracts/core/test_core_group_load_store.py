@@ -210,19 +210,35 @@ def test_group_load_and_store_select_complete_block_contracts():
     assert load.topology.logical_width == 32
     assert load.topology.instances == 1
     assert load.topology.instance_index == "cta"
+    assert load.topology.thread_rank == "linear_thread_rank"
     assert load.topology.execution_scope is SynchronizationScope.BLOCK
 
 
 @pytest.mark.parametrize(
-    ("group", "logical_width", "instances", "index", "scope"),
+    ("group", "logical_width", "instances", "index", "rank", "scope"),
     [
-        (this_thread(), 1, 64, "linear_thread_rank", SynchronizationScope.NONE),
-        (this_warp(), 32, 2, "linear_thread_rank / 32", SynchronizationScope.WARP),
+        (
+            this_thread(),
+            1,
+            64,
+            "linear_thread_rank",
+            "0",
+            SynchronizationScope.NONE,
+        ),
+        (
+            this_warp(),
+            32,
+            2,
+            "linear_thread_rank / 32",
+            "linear_thread_rank % 32",
+            SynchronizationScope.WARP,
+        ),
         (
             this_warp().group_by(8),
             8,
             8,
             "linear_thread_rank / 8",
+            "linear_thread_rank % 8",
             SynchronizationScope.WARP,
         ),
         (
@@ -230,6 +246,7 @@ def test_group_load_and_store_select_complete_block_contracts():
             32,
             2,
             "linear_thread_rank / 32",
+            "linear_thread_rank % 32",
             SynchronizationScope.WARP,
         ),
         (
@@ -237,9 +254,17 @@ def test_group_load_and_store_select_complete_block_contracts():
             64,
             1,
             "linear_thread_rank / 64",
+            "linear_thread_rank % 64",
             SynchronizationScope.GROUP,
         ),
-        (this_block(), 64, 1, "cta", SynchronizationScope.BLOCK),
+        (
+            this_block(),
+            64,
+            1,
+            "cta",
+            "linear_thread_rank",
+            SynchronizationScope.BLOCK,
+        ),
     ],
 )
 def test_group_topology_is_family_independent(
@@ -247,6 +272,7 @@ def test_group_topology_is_family_independent(
     logical_width,
     instances,
     index,
+    rank,
     scope,
 ):
     launch = LaunchFacts(exact_block_dim=64)
@@ -258,6 +284,7 @@ def test_group_topology_is_family_independent(
     assert topology.logical_width == logical_width
     assert topology.instances == instances
     assert topology.instance_index == index
+    assert topology.thread_rank == rank
     assert topology.execution_scope is scope
 
 
