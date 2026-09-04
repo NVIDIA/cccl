@@ -950,7 +950,8 @@ def test_repeated_exchange_and_shuffle_calls_reuse_implementation_storage() -> N
     )
 
 
-def _run_invalid_runtime_rotate_probe(
+def _run_invalid_runtime_shuffle_probe(
+    mode: str,
     distance: int,
     dtype: str,
 ) -> subprocess.CompletedProcess[str]:
@@ -980,7 +981,7 @@ def kernel(source, distances, observed):
     observed[thread] = qualified_coop.shuffle(
         qualified_coop.this_block(),
         source[thread],
-        mode="rotate",
+        mode={mode!r},
         distance=distances[thread],
     )
 
@@ -989,7 +990,7 @@ distances = np.full(BLOCK_THREADS, {distance}, dtype=np.{dtype})
 observed = np.full(BLOCK_THREADS, -1, dtype=np.int32)
 kernel[1, BLOCK_THREADS](source, distances, observed)
 cuda.synchronize()
-raise AssertionError("invalid runtime Rotate distance did not trap")
+raise AssertionError("invalid runtime Shuffle distance did not trap")
 """
     return subprocess.run(
         [sys.executable, _SAFE_PATH_FLAG, "-B", "-c", script],
@@ -1012,7 +1013,7 @@ def test_invalid_runtime_rotate_distance_traps_in_an_isolated_context(
     distance: int,
     dtype: str,
 ) -> None:
-    result = _run_invalid_runtime_rotate_probe(distance, dtype)
+    result = _run_invalid_runtime_shuffle_probe("rotate", distance, dtype)
     output = result.stdout + result.stderr
 
     assert result.returncode != 0, output
@@ -1028,3 +1029,26 @@ def test_invalid_runtime_rotate_distance_traps_in_an_isolated_context(
     observed = np.full(_BLOCK_THREADS, -2091, dtype=np.int32)
     _static_rotate_kernel(3)[1, _BLOCK_THREADS](source, observed)
     np.testing.assert_array_equal(observed, np.roll(source, -3))
+
+
+@pytest.mark.parametrize(
+    "distance",
+    (
+        pytest.param(-(1 << 40), id="below-int32"),
+        pytest.param(1 << 40, id="above-int32"),
+    ),
+)
+def test_runtime_offset_outside_signed_int32_traps_in_an_isolated_context(
+    distance: int,
+) -> None:
+    result = _run_invalid_runtime_shuffle_probe("offset", distance, "int64")
+    output = result.stdout + result.stderr
+
+    assert result.returncode != 0, output
+    assert any(
+        error in output
+        for error in (
+            "CUDA_ERROR_ILLEGAL_INSTRUCTION",
+            "CUDA_ERROR_LAUNCH_FAILED",
+        )
+    ), output
