@@ -81,6 +81,8 @@ def check_numba_surface(
     mapped_warps = block.group_by(2)
     byte_values = coop.ThreadData(items_per_thread=1, dtype=np.int8)
     values = coop.ThreadData(items_per_thread=2, dtype=np.uint16, alignment=16)
+    int32_aggregate = coop.ThreadData(1, np.int32)
+    uint16_aggregate = coop.ThreadData(1, np.uint16)
     storage = coop.TempStorage(alignment=16, sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
@@ -222,6 +224,79 @@ def check_numba_surface(
             np.int32(4),
             binary_op="max",
             algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.scan(block, values, scan_op=np.add),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(coop.scan(block, np.int32(4), scan_op=np.add), np.int32)
+    assert_type(coop.scan(warp, np.int32(4), scan_op=np.add), np.int32)
+    assert_type(
+        coop.exclusive_scan(block, values, scan_op=np.add),
+        coop.ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.exclusive_scan(block, np.int32(4), scan_op=np.add), np.int32
+    )
+    assert_type(
+        coop.exclusive_scan(warp, np.int32(4), scan_op=np.add), np.int32
+    )
+    assert_type(
+        coop.scan(
+            block,
+            np.int32(4),
+            mode="inclusive",
+            scan_op=np.maximum,
+            algorithm=coop.BlockScanAlgorithm.RAKING_MEMOIZE,
+            aggregate_output=int32_aggregate,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            warp,
+            np.int32(4),
+            scan_op=operator.mul,
+            initial_value=np.int32(1),
+            valid_items=np.int32(7),
+            aggregate_output=int32_aggregate,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            block,
+            np.int32(4),
+            scan_op="max",
+            initial_value=-17,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.inclusive_scan(
+            logical_warp,
+            np.int32(4),
+            scan_op=_select_left_int32,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_sum(
+            block,
+            values,
+            algorithm="warp_scans",
+            aggregate_output=uint16_aggregate,
+        ),
+        ThreadDataLike[np.uint16],
+    )
+    assert_type(
+        coop.inclusive_sum(
+            logical_warp,
+            np.int32(4),
+            valid_items=np.int32(7),
+            aggregate_output=int32_aggregate,
         ),
         np.int32,
     )

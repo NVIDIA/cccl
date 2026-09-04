@@ -34,8 +34,13 @@ _COMMON_EXPORTS = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
+    "scan",
     "store",
     "sum",
 ]
@@ -51,7 +56,8 @@ _QUALIFIED_EXPORTS = [
 _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
     "cuda.coop.numba_mlir._enums",
-    "cuda.coop.numba_mlir._group._scan",
+    "cuda.coop.numba_mlir._group_scan",
+    "cuda.coop.numba_mlir._scan_op",
     "cuda.coop.numba_mlir._stateful_function",
     "cuda.coop.numba_mlir._compiler._group_scan",
     "cuda.coop.numba_mlir._compiler._rewrite_scan",
@@ -72,10 +78,7 @@ def test_public_exports_are_only_the_supported_group_families():
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",
         "StatefulFunction",
-        "exclusive_scan",
         "gpu_dataclass",
-        "inclusive_scan",
-        "scan",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
     }
@@ -83,7 +86,7 @@ def test_public_exports_are_only_the_supported_group_families():
     assert excluded_exports.isdisjoint(coop.__all__)
 
     loaded = set(sys.modules)
-    assert "cuda.coop.numba_mlir._group._load_store" in loaded
+    assert "cuda.coop.numba_mlir._group_load_store" in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert set(_EXCLUDED_BACKEND_MODULES).isdisjoint(loaded)
     assert (
@@ -190,7 +193,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         ]
 
     assert stub_signatures(
-        coop_root / "numba_mlir" / "_group" / "_load_store.pyi"
+        coop_root / "numba_mlir" / "_group_load_store.pyi"
     ) == (stub_signatures(coop_root / "_core" / "api" / "load_store.pyi"))
 
 
@@ -238,7 +241,20 @@ def test_python_operator_compilation_is_stateless_only():
     ) == ("numba_type",)
 
 
-@pytest.mark.parametrize("operation", ("load", "reduce", "store", "sum"))
+@pytest.mark.parametrize(
+    "operation",
+    (
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "load",
+        "reduce",
+        "scan",
+        "store",
+        "sum",
+    ),
+)
 def test_group_markers_use_exact_callable_identity(operation):
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 
