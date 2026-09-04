@@ -9,21 +9,26 @@ import pytest
 
 from cuda.coop._core import (
     ArgumentBinding,
+    ArgumentKind,
     BlockScanAlgorithm,
     CxxFunction,
     CxxOperator,
     Dependency,
     GroupLoweringTarget,
     GroupOperandKind,
+    GroupScanSemantics,
     LaunchFacts,
     ParameterRole,
     PreconditionEnforcement,
+    PythonOperator,
     ResultOwnership,
     ResultVisibility,
+    StatefulOperator,
     StorageOwnership,
     SynchronizationScope,
     UnsupportedReasonCode,
     make_group_primitive_call,
+    make_scan_semantics,
     plan_group_primitive,
     this_block,
     this_cluster,
@@ -294,6 +299,89 @@ def test_custom_exclusive_scan_requires_initial_value():
     assert plan.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
     assert "require an initial value" in plan.unsupported.message
     assert "rank zero" in plan.unsupported.message
+
+
+def test_block_prefix_callback_defines_custom_exclusive_rank_zero():
+    def maximum(left, right):
+        return left if left > right else right
+
+    def running_prefix(state, aggregate):
+        previous = state[0]
+        state[0] = maximum(previous, aggregate)
+        return previous
+
+    operation = GroupScanSemantics(
+        make_scan_semantics(
+            dtype="int32",
+            mode="exclusive",
+            value_kind="scalar",
+            items_per_thread=1,
+            scan_operator=PythonOperator(
+                Dependency("T"),
+                (Dependency("T"), Dependency("T")),
+                maximum,
+                name="scan_op",
+            ),
+            prefix_callback=StatefulOperator(
+                running_prefix,
+                state_dtype="int64",
+                ret_dtype=Dependency("T"),
+                arg_dtypes=(Dependency("T"),),
+                name="prefix_op",
+            ),
+        )
+    )
+    call = make_group_primitive_call(this_block(), operation)
+    plan = plan_group_primitive(call, LaunchFacts(64))
+
+    assert plan.target is GroupLoweringTarget.CUB_BLOCK
+    assert plan.implementation.method_name == "ExclusiveScan"
+    assert [item.name for item in call.argument_classifications] == [
+        "value",
+        "scan_op",
+        "prefix_op",
+        "mode",
+        "algorithm",
+    ]
+    assert [item.kind for item in call.argument_classifications] == [
+        ArgumentKind.RUNTIME,
+        ArgumentKind.STATIC,
+        ArgumentKind.RUNTIME,
+        ArgumentKind.STATIC,
+        ArgumentKind.STATIC,
+    ]
+    assert call.argument_classifications[1].role is ParameterRole.OPERATOR
+    assert call.argument_classifications[2].role is ParameterRole.STATE
+    assert [item.name for item in plan.implementation.parameters[0]] == [
+        "temp_storage",
+        "input",
+        "output",
+        "scan_op",
+        "prefix_op",
+    ]
+    assert plan.participation.uniform_arguments == ()
+
+
+@pytest.mark.parametrize("group", [this_warp(), this_warp().group_by(8)])
+def test_prefix_callbacks_are_block_only(group):
+    operation = GroupScanSemantics(
+        make_scan_semantics(
+            dtype="int32",
+            mode="inclusive",
+            value_kind="scalar",
+            items_per_thread=1,
+            prefix_callback=PythonOperator(
+                Dependency("T"),
+                (Dependency("T"),),
+                lambda value: value,
+                name="prefix_op",
+            ),
+        )
+    )
+    plan = _plan(group, operation)
+
+    assert plan.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
+    assert "only to physical block groups" in plan.unsupported.message
 
 
 @pytest.mark.parametrize("valid_items", [0, -1, 9])
