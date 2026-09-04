@@ -117,7 +117,7 @@ private:
         typename block_scan_t::TempStorage scan_temp_storage;
       } passes;
 
-      struct exchange_t
+      struct
       {
         union
         {
@@ -187,7 +187,7 @@ private:
   }
 
   // Fused prefix sum over buckets + identification of the bucket that the k-th item falls into.
-  // The crossing test runs on the scan's register results (exclusive = inclusive - count).
+  // The crossing test runs on the scan's register results (inclusive = exclusive + count).
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   scan_and_choose_bucket(const histo_counter_t (&histogram)[num_buckets], histo_counter_t k)
   {
@@ -204,13 +204,8 @@ private:
       }
     }
 
-    histo_counter_t inclusive_sums[buckets_per_thread];
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < buckets_per_thread; ++i)
-    {
-      inclusive_sums[i] = counts[i];
-    }
-    block_scan_t(storage.stage.passes.scan_temp_storage).InclusiveSum(inclusive_sums, inclusive_sums);
+    histo_counter_t exclusive_sums[buckets_per_thread];
+    block_scan_t(storage.stage.passes.scan_temp_storage).ExclusiveSum(counts, exclusive_sums);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < buckets_per_thread; ++i)
@@ -218,8 +213,8 @@ private:
       const int bin_idx = base + i;
       if (bin_idx < num_buckets)
       {
-        const histo_counter_t inclusive = inclusive_sums[i];
-        const histo_counter_t exclusive = inclusive - counts[i];
+        const histo_counter_t exclusive = exclusive_sums[i];
+        const histo_counter_t inclusive = exclusive + counts[i];
         // If a bug causes less than k candidates in the histogram, the previous pass' pass_state will persist making
         // debugging harder. This assert should catch such bugs. Should there ever be a valid use case for less than k
         // candidates, the pass_state needs to be reset unconditionally.
@@ -229,7 +224,7 @@ private:
         if (exclusive < k && inclusive >= k)
         {
           storage.pass_state.bucket     = bin_idx;
-          storage.pass_state.candidates = inclusive - exclusive;
+          storage.pass_state.candidates = counts[i];
           storage.pass_state.selected   = exclusive;
         }
       }
@@ -256,7 +251,7 @@ private:
   {
     const bit_ordered_type pass_mask = ::cuda::bitmask<bit_ordered_type>(pass_begin_bit, pass_bits);
 
-    histo_counter_t(&histogram)[num_buckets] = storage.stage.passes.histogram[pass & 1];
+    histo_counter_t(&histogram)[num_buckets] = storage.stage.passes.histogram[pass % 2];
 
     // Compute histogram over the current pass's bits, pre-filtered for keys matching the previous pass's prefix mask
     const auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
@@ -267,7 +262,7 @@ private:
     {
       // Re-zero the other buffer for the next pass. Its last read preceded the previous pass's
       // state barrier, so this shares the histogram phase instead of needing one of its own
-      zero_histogram(storage.stage.passes.histogram[(pass + 1) & 1]);
+      zero_histogram(storage.stage.passes.histogram[(pass + 1) % 2]);
     }
     __syncthreads();
 
