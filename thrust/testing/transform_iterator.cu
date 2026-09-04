@@ -64,7 +64,7 @@ void TestTransformIterator()
 DECLARE_VECTOR_UNITTEST(TestTransformIterator);
 
 template <class Vector>
-void TestMakeTransformIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformIterator()
 {
   using T = typename Vector::value_type;
 
