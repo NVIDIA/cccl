@@ -9,17 +9,8 @@ from __future__ import annotations
 import operator
 import struct
 
+from .._core.api._payload import _normalize_alignment
 from ._compiler._activation import _require_runtime
-
-
-class _DefaultThreadDataAlignment:
-    """Distinguish an omitted legacy keyword while preserving its signature."""
-
-    def __repr__(self):
-        return "8"
-
-
-_DEFAULT_THREAD_DATA_ALIGNMENT = _DefaultThreadDataAlignment()
 
 # Annotations keep the runtime namespaces lazy while documenting module
 # ownership for introspection and static analysis.
@@ -27,11 +18,17 @@ local: object
 shared: object
 
 
+def _normalize_thread_data_alignment(alignment):
+    alignment = _normalize_alignment(alignment)
+    # The compiler requires pointer-aligned arrays. Stronger alignment also
+    # satisfies smaller minimum-alignment requests from the common API.
+    return None if alignment is None else max(struct.calcsize("P"), alignment)
+
+
 def ThreadData(
     items_per_thread,
     dtype=None,
     *,
-    alignas=_DEFAULT_THREAD_DATA_ALIGNMENT,
     alignment=None,
 ):
     """Create fixed-size thread-local storage for cooperative operations."""
@@ -45,29 +42,12 @@ def ThreadData(
     if items_per_thread <= 0:
         raise ValueError("items_per_thread must be a positive integer")
 
-    if alignas is _DEFAULT_THREAD_DATA_ALIGNMENT:
-        alignas = 8 if alignment is None else alignment
-    elif alignment is not None and alignas != alignment:
-        raise ValueError("alignas and alignment must match when both are set")
-
-    if isinstance(alignas, bool):
-        raise TypeError("alignment must be an integer")
-    try:
-        alignas = operator.index(alignas)
-    except TypeError as exc:
-        raise TypeError("alignment must be an integer") from exc
-    if alignas <= 0:
-        raise ValueError("alignment must be a positive integer")
-    if alignas & (alignas - 1):
-        raise ValueError("alignment must be a power of 2")
-    pointer_size = struct.calcsize("P")
-    if alignas % pointer_size:
-        raise ValueError(f"alignment must be a multiple of {pointer_size}")
+    alignment = _normalize_thread_data_alignment(alignment)
 
     return _require_runtime().local.array(
         items_per_thread,
         dtype,
-        alignment=alignas,
+        alignment=alignment,
     )
 
 
