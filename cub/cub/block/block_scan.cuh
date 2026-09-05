@@ -19,6 +19,7 @@
 #endif // no system header
 
 #include <cub/block/specializations/block_scan_raking.cuh>
+#include <cub/block/specializations/block_scan_warp_reduce_then_scan.cuh>
 #include <cub/block/specializations/block_scan_warp_scans.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -100,6 +101,30 @@ enum BlockScanAlgorithm
   //!
   //! @endrst
   BLOCK_SCAN_WARP_SCANS,
+
+  //! @rst
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! A warp-granularity "reduce-then-scan" variant of :cpp:enumerator:`cub::BLOCK_SCAN_WARP_SCANS`
+  //! (which is scan-then-propagate): each warp first *reduces* its inputs to the warp aggregate
+  //! using the single-instruction ``redux.sync`` warp reduction, the aggregates are folded into
+  //! warp prefixes, and only then do the warps scan. Applies whenever the scan operator and data
+  //! type are supported by ``redux.sync`` (integer sum/min/max and bitwise operations on types of
+  //! at most 4 bytes, sm_80+; results are identical). The block-wide barrier then releases as soon as the reductions
+  //! complete, the cross-warp aggregate fold overlaps the warp scans, and — most importantly — a
+  //! ``BlockPrefixCallbackOp`` is invoked one warp-scan earlier, its latency hidden under the
+  //! other warps' scans.
+  //!
+  //! Performance Considerations
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - Latency-oriented: minimizes the time until the block aggregate / block prefix callback
+  //!   is available. Chosen for latency-critical (few resident blocks) usage; the extra warp
+  //!   reduction may slightly reduce throughput at full occupancy.
+  //! - For unsupported operators/types, and on architectures without ``redux.sync``, all
+  //!   methods fall back to the classic :cpp:enumerator:`cub::BLOCK_SCAN_WARP_SCANS` code paths.
+  BLOCK_SCAN_WARP_REDUCE_THEN_SCAN,
 };
 
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
@@ -115,6 +140,8 @@ namespace detail
       return "BLOCK_SCAN_RAKING_MEMOIZE";
     case BLOCK_SCAN_WARP_SCANS:
       return "BLOCK_SCAN_WARP_SCANS";
+    case BLOCK_SCAN_WARP_REDUCE_THEN_SCAN:
+      return "BLOCK_SCAN_WARP_REDUCE_THEN_SCAN";
   }
   return "<unknown BlockScanAlgorithm>";
 }
@@ -165,6 +192,10 @@ CUB_NAMESPACE_BEGIN
 //!      register pressure for intermediate storage.
 //!   #. :cpp:enumerator:`cub::BLOCK_SCAN_WARP_SCANS`:
 //!      A quick (low latency) "tiled warpscans" prefix scan algorithm.
+//!   #. :cpp:enumerator:`cub::BLOCK_SCAN_WARP_REDUCE_THEN_SCAN`:
+//!      A warp-granularity "reduce-then-scan" variant that minimizes the latency until the block aggregate
+//!      (and any block prefix callback) is available, using hardware warp reductions where
+//!      supported.
 //!
 //! Performance Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -242,16 +273,21 @@ private:
    * architectural warp size.
    */
   static constexpr BlockScanAlgorithm SAFE_ALGORITHM =
-    ((Algorithm == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % detail::warp_threads != 0))
+    ((Algorithm == BLOCK_SCAN_WARP_SCANS || Algorithm == BLOCK_SCAN_WARP_REDUCE_THEN_SCAN)
+     && (BLOCK_THREADS % detail::warp_threads != 0))
       ? BLOCK_SCAN_RAKING
       : Algorithm;
 
-  using WarpScans = detail::BlockScanWarpScans<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpScans          = detail::BlockScanWarpScans<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReduceThenScan = detail::BlockScanWarpReduceThenScan<T, BlockDimX, BlockDimY, BlockDimZ>;
   using Raking =
     detail::BlockScanRaking<T, BlockDimX, BlockDimY, BlockDimZ, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
 
   /// Define the delegate type for the desired algorithm
-  using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;
+  using InternalBlockScan =
+    ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS,
+                     WarpScans,
+                     ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_REDUCE_THEN_SCAN, WarpReduceThenScan, Raking>>;
 
   /// Shared memory storage layout type for BlockScan
   using _TempStorage = typename InternalBlockScan::TempStorage;
