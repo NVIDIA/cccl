@@ -564,6 +564,17 @@ public:
      */
     virtual ::std::shared_ptr<impl> get_place(size_t idx);
 
+    /**
+     * @brief All sub-places of this grid, flattened in linear index order
+     *
+     * For scalar places, a single-element vector holding this place. Grids
+     * override this to hand out their stored members wholesale.
+     */
+    virtual ::std::vector<exec_place> places()
+    {
+      return {exec_place(shared_from_this())};
+    }
+
     // ===== Activation/deactivation (indexed) =====
 
     /**
@@ -757,6 +768,18 @@ public:
   exec_place get_place(pos4 p) const
   {
     return get_place(get_dims().get_index(p));
+  }
+
+  /**
+   * @brief All sub-places of this place, flattened in linear index order:
+   * the grid's members, or a single-element vector for a scalar place.
+   *
+   * Equivalent to collecting `get_place(i)` for every `i < size()`, but grids
+   * hand out their stored member vector wholesale.
+   */
+  [[nodiscard]] ::std::vector<exec_place> places() const
+  {
+    return pimpl->places();
   }
 
   /**
@@ -1574,6 +1597,11 @@ public:
     return places_[idx].get_impl();
   }
 
+  ::std::vector<exec_place> places() override
+  {
+    return places_;
+  }
+
   // ===== Activation (delegates to sub-places) =====
 
   exec_place activate(size_t idx) const override
@@ -1677,13 +1705,7 @@ inline exec_place make_grid(::std::vector<exec_place> places)
 
 _CCCL_HOST_API inline exec_place exec_place::reshape(const dim4& dims) const
 {
-  ::std::vector<exec_place> places;
-  places.reserve(size());
-  for (size_t i = 0; i < size(); i++)
-  {
-    places.push_back(get_place(i));
-  }
-  return ::cuda::experimental::places::make_grid(::cuda::experimental::stf::mv(places), dims);
+  return ::cuda::experimental::places::make_grid(places(), dims);
 }
 
 _CCCL_HOST_API inline exec_place exec_place::collapse_axes(const size_t first_axis, const size_t last_axis) const
@@ -2388,6 +2410,28 @@ UNITTEST("grid exec place equality")
   EXPECT(exec_place::all_devices() == exec_place::all_devices());
 
   EXPECT(all != repeated_dev0);
+};
+
+UNITTEST("exec_place::places flattens grids and scalars alike")
+{
+  // Grid: places() matches the get_place(i) enumeration
+  auto grid = exec_place::repeat(exec_place::device(0), 3);
+  auto flat = grid.places();
+  EXPECT(flat.size() == grid.size());
+  for (size_t i = 0; i < flat.size(); i++)
+  {
+    EXPECT(flat[i] == grid.get_place(i));
+  }
+
+  // Scalar: a single-element vector holding the place itself
+  auto dev    = exec_place::device(0);
+  auto single = dev.places();
+  EXPECT(single.size() == 1UL);
+  EXPECT(single[0] == dev);
+
+  auto host_places = exec_place::host().places();
+  EXPECT(host_places.size() == 1UL);
+  EXPECT(host_places[0] == exec_place::host());
 };
 
 UNITTEST("exec place grid reshape preserves linear place order")

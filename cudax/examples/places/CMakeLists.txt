@@ -1,4 +1,8 @@
-set(places_example_sources thrust_device_data_place_allocator.cu)
+set(
+  places_example_sources
+  thrust_device_data_place_allocator.cu
+  sharded_reduce.cu
+)
 
 ## cudax_add_places_example
 #
@@ -27,4 +31,11 @@ endfunction()
 
 foreach (source IN LISTS places_example_sources)
   cudax_add_places_example(example_target "${source}")
+endforeach()
+
+# Vendor tier: the cuRAND examples additionally link the toolkit's cuRAND
+# (random.cuh is opt-in and not part of the umbrella).
+foreach (source IN ITEMS sharded_pi.cu sharded_rejection_sampling.cu)
+  cudax_add_places_example(curand_example_target "${source}")
+  target_link_libraries(${curand_example_target} PRIVATE CUDA::curand)
 endforeach()

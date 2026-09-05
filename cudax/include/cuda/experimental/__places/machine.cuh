@@ -76,6 +76,15 @@ public:
 
       cudaMemPool_t mempool = cuda_try<cudaDeviceGetDefaultMemPool>(d);
 
+      // Retain freed memory in the default pool instead of returning it to
+      // the OS at every synchronization. Set unconditionally: it used to be
+      // set only inside the peer loop below, so single-device machines never
+      // got it and paid milliseconds of re-backing per allocation cycle.
+      {
+        uint64_t threshold = UINT64_MAX;
+        cuda_try(cudaMemPoolSetAttribute(mempool, cudaMemPoolAttrReleaseThreshold, &threshold));
+      }
+
       for (int peer_d = 0; peer_d < ndevices; peer_d++)
       {
         if (peer_d == d)
@@ -83,9 +92,6 @@ public:
           continue;
         }
         int can_access_peer = cuda_try<cudaDeviceCanAccessPeer>(d, peer_d);
-
-        uint64_t threshold = UINT64_MAX;
-        cuda_try(cudaMemPoolSetAttribute(mempool, cudaMemPoolAttrReleaseThreshold, &threshold));
 
         if (can_access_peer)
         {
