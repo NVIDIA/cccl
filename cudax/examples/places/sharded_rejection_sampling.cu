@@ -37,7 +37,10 @@
  *    co-partitioned destination whose per-shard sizes are DATA-DEPENDENT:
  *    the ragged result is held natively (sizes commit, global offsets
  *    re-tile, `validate()` still holds).
- *  - `zip_transform` + `reduce` over the ragged result compute the moments.
+ *  - the POPULATION IS THEN CONSUMED, as it normally would be: `zip_transform`
+ *    + `reduce` estimate functionals of p, and `histogram_even` builds the
+ *    empirical density over the ragged structure directly — downstream
+ *    algorithms take the data-dependent result unchanged.
  *
  * And the reproducibility property compaction inherits from generation: a
  * stable filter of a sharding-invariant stream is itself sharding-invariant,
@@ -49,6 +52,8 @@
 #include <cuda/experimental/__sharded/random.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -88,6 +93,7 @@ struct run_result
   size_t kept;
   double mean;
   double mean_sq;
+  ::std::vector<size_t> hist; // empirical density of the population
   ::std::vector<float2> accepted; // concatenated in global order
 };
 
@@ -129,6 +135,10 @@ run_result sample(place_group& group, const ::std::vector<size_t>& pair_sizes, u
   zip_transform(xs2, square{}, xs);
   const double mean_sq = reduce(xs2, ::cuda::std::plus<float>{}, 0.0f) / static_cast<double>(kept);
 
+  // Consume the population as a distribution: its empirical density. Each
+  // bin's mass should approach the analytic integral of p over the bin.
+  const auto hist = histogram_even(xs, /*num_bins=*/10, 0.0f, 1.0f);
+
   // Concatenate the accepted pairs in global order (host snapshot).
   ::std::vector<float2> host(kept);
   size_t off = 0;
@@ -141,7 +151,7 @@ run_result sample(place_group& group, const ::std::vector<size_t>& pair_sizes, u
       off += s.size;
     }
   }
-  return {kept, mean, mean_sq, ::std::move(host)};
+  return {kept, mean, mean_sq, hist, ::std::move(host)};
 }
 } // namespace
 
@@ -176,6 +186,21 @@ int main()
            r->mean,
            r->mean_sq);
   }
+
+  // The consumed population against the analytic density: bin mass of
+  // p(x) = 6x(1-x) over [l, u] is (3u^2 - 2u^3) - (3l^2 - 2l^3).
+  printf("\n  empirical density (10 bins) vs analytic bin mass:\n");
+  double max_err = 0.0;
+  for (int bin = 0; bin < 10; bin++)
+  {
+    const double l         = bin / 10.0;
+    const double u         = (bin + 1) / 10.0;
+    const double analytic  = (3 * u * u - 2 * u * u * u) - (3 * l * l - 2 * l * l * l);
+    const double empirical = static_cast<double>(a.hist[bin]) / static_cast<double>(a.kept);
+    max_err                = ::std::max(max_err, ::std::abs(empirical - analytic));
+    printf("    [%.1f, %.1f): %.5f vs %.5f\n", l, u, empirical, analytic);
+  }
+  printf("  max bin error: %.5f\n", max_err);
 
   if (a.kept != b.kept || ::std::memcmp(a.accepted.data(), b.accepted.data(), a.kept * sizeof(float2)) != 0)
   {
