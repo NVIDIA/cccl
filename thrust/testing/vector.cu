@@ -143,7 +143,7 @@ void TestVectorFillAssign()
 DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
 
 template <class Vector>
-void TestVectorFillInsert()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestVectorFillInsert()
 {
   { // Insert into empty vector
     Vector v;
