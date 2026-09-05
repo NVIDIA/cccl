@@ -4381,11 +4381,18 @@ UNITTEST("type erasure")
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
- * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In every build type those
- * lambdas are invoked via `on_throw(abort)`: a throw from a guard body is reported (message and
- * location) and the program aborts, rather than reaching `std::terminate` bare through the guard's
- * `noexcept` destructor. The code controlled by `SCOPE(success)` may throw. In all cases the
- * controlled code must return `void` (enforced at compile time).
+ * A guard body that throws is treated the way the language treats exceptions: one at a time is
+ * an error to report, two at once is fatal. `SCOPE(exit)` propagates a failure raised while the
+ * scope is being left NORMALLY, so a cleanup that fails on the happy path reaches the caller as
+ * an ordinary exception; a failure raised while the scope is ALREADY unwinding is reported
+ * (message and location) and aborts, since letting it escape would give `std::terminate` with no
+ * diagnostic. `SCOPE(fail)` runs only while unwinding and therefore always reports and aborts;
+ * `SCOPE(success)` runs only on the normal path and may throw. In all cases the controlled code
+ * must return `void` (enforced at compile time).
+ *
+ * One consequence worth knowing: inside a `noexcept` function, a `SCOPE(exit)` body that throws
+ * on the normal path ends the program through `std::terminate` without STF's report. Use
+ * `SCOPE(fail)` plus `SCOPE(success)` there if the distinction matters.
  *
  * `SCOPE(exit)` runs its code at the natural termination of the current scope. Example: @snippet this SCOPE(exit)
  *
@@ -4436,27 +4443,32 @@ enum class success
 {
 };
 
+// Calls the guard body, passing the outcome when `SCOPE(exit, name)` asked for it and nothing
+// when it did not. Whether a throw from here escapes is the caller's decision, not this one's.
 template <class F>
-void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false)
+void invoke_body(F& f, bool failing)
 {
-  // `SCOPE(exit, name)` gives the body a bool parameter saying whether the scope is being left
-  // by an exception; `SCOPE(exit)` gives it none. All build types: a guard body that throws is
-  // reported and aborts, because the guard destructors are noexcept and the bare-call
-  // alternative is std::terminate with no diagnostics. The try frame costs nothing when the
-  // body does not throw.
   if constexpr (::cuda::std::is_invocable_v<F&, bool>)
   {
     static_assert(::cuda::std::is_void_v<decltype(f(failing))>, "SCOPE requires a void-returning callable");
-    on_throw(exception_policies::abort, loc) << [&] {
-      f(failing);
-    };
+    f(failing);
   }
   else
   {
     (void) failing;
     static_assert(::cuda::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
-    on_throw(exception_policies::abort, loc) << f;
+    f();
   }
+}
+
+// Runs the body under `on_throw(abort)`: a throw is reported (message and location) and the
+// program aborts, rather than escaping a noexcept destructor as a bare std::terminate.
+template <class F>
+void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false)
+{
+  on_throw(exception_policies::abort, loc) << [&] {
+    invoke_body(f, failing);
+  };
 }
 
 template <typename F>
@@ -4481,13 +4493,27 @@ auto operator->*(with_location<exit> where, F&& f)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
-    ~result() noexcept
+    // May throw: see below. Not `noexcept`, so a body that fails on the normal path reports
+    // the failure to the caller instead of ending the program.
+    ~result() noexcept(false)
     {
-      if (exceptions != -1)
+      if (exceptions == -1)
       {
-        // Relative comparison: an exception thrown BY THIS SCOPE, not one this scope was
-        // merely created during (a guard declared inside someone else's catch block, say).
-        invoke_nothrow(f, loc, ::std::uncaught_exceptions() > exceptions);
+        return;
+      }
+      // Relative comparison: an exception thrown BY THIS SCOPE, not one this scope was
+      // merely created during (a guard declared inside someone else's catch block, say).
+      if (::std::uncaught_exceptions() > exceptions)
+      {
+        // Already unwinding. A second exception here is the case the language itself gives
+        // up on, so report and abort rather than let it escape.
+        invoke_nothrow(f, loc, true);
+      }
+      else
+      {
+        // Leaving normally: a failed cleanup is an ordinary error, and the caller is in a
+        // position to handle it. Let it propagate.
+        invoke_body(f, false);
       }
     }
   };
@@ -4592,6 +4618,48 @@ UNITTEST("SCOPE(exit)")
   }
   EXPECT(done);
   //! [SCOPE(exit)]
+};
+
+UNITTEST("SCOPE(exit) throw policy")
+{
+  //! [SCOPE(exit) throw policy]
+  // Leaving normally: a failed cleanup is an ordinary error and reaches the caller.
+  bool propagated = false;
+  _CCCL_TRY
+  {
+    SCOPE(exit)
+    {
+      throw ::std::runtime_error("cleanup failed");
+    };
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::runtime_error& e)
+  {
+    propagated = true;
+  }
+  _CCCL_CATCH_ALL {}
+  EXPECT(propagated, "a SCOPE(exit) body that throws on the normal path must propagate");
+
+  // Leaving by exception: the guard runs, and the original exception is unaffected.
+  bool original = false;
+  int seen      = -1;
+  _CCCL_TRY
+  {
+    SCOPE(exit, failing)
+    {
+      seen = failing ? 1 : 0;
+    };
+    throw ::std::logic_error("original");
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::logic_error& e)
+  {
+    original = true;
+  }
+  _CCCL_CATCH_ALL {}
+  EXPECT(seen == 1, "the guard must see failing=true while unwinding");
+  EXPECT(original, "the original exception must survive the guard");
+  //! [SCOPE(exit) throw policy]
+
+  // A body that throws WHILE unwinding is reported and aborts; not testable in-process.
 };
 
 UNITTEST("SCOPE(exit, outcome)")
