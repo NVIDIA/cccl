@@ -122,16 +122,13 @@ run_result sample(place_group& group, const ::std::vector<size_t>& pair_sizes, u
   auto accepted     = sharded_array<float2>::allocate(group, pair_sizes);
   const size_t kept = copy_if(candidates, accepted, accept_under_parabola{});
 
-  // Moments of the accepted x, over the ragged structure.
-  ::std::vector<size_t> kept_sizes;
-  for (size_t i = 0; i < accepted.num_shards(); i++)
-  {
-    kept_sizes.push_back(accepted.shard(i).size);
-  }
-  auto xs = sharded_array<float>::allocate(group, kept_sizes);
+  // Moments of the accepted x, over the ragged structure. Co-partitioned
+  // scratch comes from allocate_like: same ragged sizes, placements and
+  // reference streams as the (post-commit) source.
+  auto xs = sharded_array<float>::allocate_like(accepted);
   zip_transform(xs, take_x{}, accepted);
   const double mean = reduce(xs, ::cuda::std::plus<float>{}, 0.0f) / static_cast<double>(kept);
-  auto xs2          = sharded_array<float>::allocate(group, kept_sizes);
+  auto xs2          = sharded_array<float>::allocate_like(accepted);
   zip_transform(xs2, square{}, xs);
   const double mean_sq = reduce(xs2, ::cuda::std::plus<float>{}, 0.0f) / static_cast<double>(kept);
 
