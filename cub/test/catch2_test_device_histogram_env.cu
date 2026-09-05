@@ -1992,5 +1992,25 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   STATIC_REQUIRE(p1.high_bin_threads() == p1.threads_per_block);
   STATIC_REQUIRE(high_bin_policy.high_bin_grid_pixels() == 512 * high_bin_policy.high_bin_pixels_per_thread);
   STATIC_REQUIRE(p1.high_bin_grid_pixels() == p1.high_bin_threads() * p1.high_bin_pixels_per_thread);
+
+  constexpr auto sm100 = cuda::compute_capability{10, 0};
+  constexpr auto single_channel_even_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, true>{}(sm100);
+  constexpr auto three_channel_even_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, true>{}(sm100);
+  constexpr auto four_channel_even_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(sm100);
+  constexpr auto three_channel_range_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(sm100);
+
+  // Match the raw selector's dynamic-SMEM tiers: three-active-channel EVEN uses
+  // the full SM100 capacity, while four-channel EVEN and RANGE retain their
+  // measured per-channel crossover budgets.
+  STATIC_REQUIRE(
+    three_channel_even_policy.high_bin_min_histogram_bytes == single_channel_even_policy.high_bin_min_histogram_bytes);
+  STATIC_REQUIRE(
+    four_channel_even_policy.high_bin_min_histogram_bytes < three_channel_even_policy.high_bin_min_histogram_bytes);
+  STATIC_REQUIRE(
+    three_channel_range_policy.high_bin_min_histogram_bytes < three_channel_even_policy.high_bin_min_histogram_bytes);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
