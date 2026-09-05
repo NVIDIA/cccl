@@ -32,10 +32,14 @@
  * library handles (create those under the owning place, before entering
  * generic code, and cache them).
  *
- * Capture note: while a stream is capturing, its device cannot be queried;
- * `get_device_from_stream` then reports the calling thread's current device,
- * which is the device the capture is being constructed on — the correct
- * answer under the sharded capture contract.
+ * Capture note: the device query is capture-safe. On CTK >= 12.8,
+ * `cudaStreamGetDevice` answers during thread-local, relaxed and global
+ * capture, on device and green-context streams, without invalidating the
+ * capture (probed on CTK 13.4) — so this scope is correct while lanes are
+ * capturing, including cross-device captures. (Pre-12.8 toolkits fall back
+ * to the calling thread's current device under capture, which is only
+ * correct on single-device systems; the locality-domain feature set
+ * requires 13.4+ anyway.)
  */
 
 #pragma once
