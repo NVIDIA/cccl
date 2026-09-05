@@ -55,6 +55,7 @@
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/experimental/__utility/scope.cuh>
 
 #include <any>
 #include <chrono>
@@ -4413,6 +4414,11 @@ UNITTEST("type erasure")
  * If two or more `SCOPE` declarations are present in the same scope, they will take effect in the reverse order of
  * their lexical order. Example: @snippet this SCOPE combinations
  *
+ * Implemented on `cuda::experimental::scope_exit`, `scope_fail` and `scope_success`
+ * (`cuda/experimental/__utility/scope.cuh`), which model the Library Fundamentals TS guards.
+ * SCOPE adds the call-site location and the rule that a throwing guard body is reported and
+ * aborts rather than escaping a `noexcept` destructor.
+ *
  *  See Also: https://en.cppreference.com/w/cpp/experimental/scope_exit,
  * https://en.cppreference.com/w/cpp/experimental/scope_fail,
  * https://en.cppreference.com/w/cpp/experimental/scope_success
@@ -4459,40 +4465,23 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false
   }
 }
 
+// The three SCOPE flavors are thin adapters over cudax's Library Fundamentals TS scope
+// guards (cuda/experimental/__utility/scope.cuh), which already own the delicate parts:
+// arming, the relative uncaught_exceptions() comparison, move semantics, release(), and the
+// TS rule that the exit function still runs if copying the functor throws. What STF adds is
+// the call-site location and the report-and-abort discipline for a throwing guard body, both
+// of which live in the wrapper lambda below. Those wrappers are honestly `noexcept`, since
+// invoke_nothrow routes the body through on_throw(abort), which satisfies the TS guards'
+// requirement that the exit function not throw.
 template <typename F>
 auto operator->*(with_location<exit> where, F&& f)
 {
-  struct result
-  {
-    F f;
-    const ::cuda::std::source_location loc;
-    // Uncaught-exception count at construction; move sets -1 to disarm. The count is what
-    // lets `SCOPE(exit, name)` tell the body whether the scope is being left by an exception.
-    int exceptions = ::std::uncaught_exceptions();
-
-    result(F&& f, ::cuda::std::source_location loc)
-        : f(::cuda::std::forward<F>(f))
-        , loc(loc)
-    {}
-    result(result&) = delete;
-    result(result&& rhs)
-        : f(mv(rhs.f))
-        , loc(rhs.loc)
-        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
-    {}
-
-    ~result() noexcept
-    {
-      if (exceptions != -1)
-      {
-        // Relative comparison: an exception thrown BY THIS SCOPE, not one this scope was
-        // merely created during (a guard declared inside someone else's catch block, say).
-        invoke_nothrow(f, loc, ::std::uncaught_exceptions() > exceptions);
-      }
-    }
-  };
-
-  return result{::cuda::std::forward<F>(f), where.loc};
+  return ::cuda::experimental::scope_exit{
+    [__f = ::cuda::std::forward<F>(f), __loc = where.loc, __entry = ::std::uncaught_exceptions()]() mutable noexcept {
+      // Relative comparison: an exception thrown BY THIS SCOPE, not one the scope was merely
+      // created during (a guard declared inside somebody else's handler, say).
+      invoke_nothrow(__f, __loc, ::std::uncaught_exceptions() > __entry);
+    }};
 }
 
 template <typename F>
@@ -4502,76 +4491,26 @@ auto operator->*(with_location<fail> where, F&& f)
                 "SCOPE(fail) runs only when the scope is left by an exception, so its outcome is "
                 "already known and it takes no parameter. Write SCOPE(fail) { ... }, or use "
                 "SCOPE(exit, name) to branch on the outcome.");
-  struct result
-  {
-    F f;
-    const ::cuda::std::source_location loc;
-    // Expected uncaught count, or -1 when disarmed by move.
-    int exceptions;
-
-    result(F&& f, ::cuda::std::source_location loc, int exceptions)
-        : f(::cuda::std::forward<F>(f))
-        , loc(loc)
-        , exceptions(exceptions)
-    {}
-    result(result&) = delete;
-    result(result&& rhs)
-        : f(mv(rhs.f))
-        , loc(rhs.loc)
-        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
-    {}
-
-    ~result() noexcept
-    {
-      if (::std::uncaught_exceptions() == exceptions)
-      {
-        invoke_nothrow(f, loc);
-      }
-    }
-  };
-
-  // Run only if an exception is in flight: uncaught count is one above creation-time count.
-  return result{::cuda::std::forward<F>(f), where.loc, ::std::uncaught_exceptions() + 1};
+  return ::cuda::experimental::scope_fail{[__f = ::cuda::std::forward<F>(f), __loc = where.loc]() mutable noexcept {
+    invoke_nothrow(__f, __loc);
+  }};
 }
 
 template <typename F>
-auto operator->*(success, F&& f)
+auto operator->*(with_location<success> where, F&& f)
 {
   static_assert(::cuda::std::is_invocable_v<F&>,
                 "SCOPE(success) runs only when the scope is left normally, so its outcome is "
                 "already known and it takes no parameter. Write SCOPE(success) { ... }, or use "
                 "SCOPE(exit, name) to branch on the outcome.");
-  // success may throw, so it does not go through invoke_nothrow; keep the same void check.
-  static_assert(::cuda::std::is_void_v<decltype(::cuda::std::forward<F>(f)())>,
+  static_assert(::cuda::std::is_void_v<decltype(::cuda::std::declval<F&>()())>,
                 "SCOPE requires a void-returning callable");
-
-  struct result
-  {
-    F f;
-    // Expected uncaught count, or -1 when disarmed by move.
-    int exceptions;
-
-    result(F&& f, int exceptions)
-        : f(::cuda::std::forward<F>(f))
-        , exceptions(exceptions)
-    {}
-    result(result&) = delete;
-    result(result&& rhs)
-        : f(mv(rhs.f))
-        , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
-    {}
-
-    // May throw — unlike exit/fail.
-    ~result() noexcept(false)
-    {
-      if (::std::uncaught_exceptions() == exceptions)
-      {
-        f();
-      }
-    }
-  };
-
-  return result{::cuda::std::forward<F>(f), ::std::uncaught_exceptions()};
+  // Unlike exit and fail, a success body may throw: the TS guard calls it unwrapped, so a
+  // failed commit propagates to the caller instead of aborting.
+  (void) where;
+  return ::cuda::experimental::scope_success{[__f = ::cuda::std::forward<F>(f)]() mutable {
+    __f();
+  }};
 }
 } // namespace detail::scope_guard_handler
 #endif // !_CCCL_DOXYGEN_INVOKED
