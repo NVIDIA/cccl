@@ -242,15 +242,14 @@ UNITTEST("cuda_exception")
 
 namespace reserved
 {
-// Placeholder for "this function has no such parameter". Nothing converts to it, so a
-// candidate overload keyed on it is silently non-viable rather than a hard error.
-struct no_param
-{};
-
+// `void` is the placeholder for "this function has no such parameter": no object has that
+// type, so `with_location<void>` is ill-formed and any overload keyed on it is silently
+// non-viable rather than a hard error. (A real placeholder type would be nameable, hence
+// passable by a caller.)
 template <typename, typename = void>
 struct first_param_impl
 {
-  using type = no_param;
+  using type = void;
 };
 
 template <typename R, typename P, typename... Ps>
@@ -262,7 +261,7 @@ struct first_param_impl<R (*)(P, Ps...)>
 template <typename, typename = void>
 struct second_param_impl
 {
-  using type = no_param;
+  using type = void;
 };
 
 template <typename R, typename P0, typename P1, typename... Ps>
@@ -287,7 +286,7 @@ struct last_param_impl<P, Ps...> : last_param_impl<Ps...>
 template <typename, typename = void>
 struct function_last_param_impl
 {
-  using type = no_param;
+  using type = void;
 };
 
 template <typename R, typename... Ps>
@@ -296,18 +295,18 @@ struct function_last_param_impl<R (*)(Ps...)>
   using type = typename last_param_impl<Ps...>::type;
 };
 
-// `R (*)()` has no last parameter: the primary template's no_param applies.
+// `R (*)()` has no last parameter: the primary template's `void` applies.
 template <typename R>
 struct function_last_param_impl<R (*)()>
 {
-  using type = no_param;
+  using type = void;
 };
 
-// The pointee of a synthesized output parameter: `T*` -> `T`, anything else -> no_param.
+// The pointee of a synthesized output parameter: `T*` -> `T`, anything else -> `void`.
 template <typename>
 struct out_param_impl
 {
-  using type = no_param;
+  using type = void;
 };
 
 template <typename T>
@@ -330,17 +329,28 @@ using last_param = typename function_last_param_impl<decltype(f)>::type;
 
 /*
 `reserved::second_param<fun>` is an alias for the type of `fun`'s second parameter, or
-`no_param` when it has fewer than two.
+`void` when it has fewer than two.
 */
 template <auto f>
 using second_param = typename second_param_impl<decltype(f)>::type;
 
 /*
-`reserved::out_param<T>` is `T`'s pointee when `T` is a pointer, else `no_param`. Used to
+`reserved::out_param<T>` is `T`'s pointee when `T` is a pointer, else `void`. Used to
 name the type of a synthesized output argument.
 */
 template <typename T>
 using out_param = typename out_param_impl<T>::type;
+
+// True when the same user arguments would satisfy BOTH the first-output and the last-output
+// synthesis for `fun` (e.g. cudaMemGetInfo(size_t*, size_t*) called with one size_t*). The
+// zero-user-argument case is exempt: `fun(&result)` means the same thing either way.
+template <auto fun, typename... Ps>
+inline constexpr bool ambiguous_output_forms =
+  sizeof...(Ps) != 0
+  && (::cuda::std::is_pointer_v<first_param<fun>> && !::cuda::std::is_const_v<out_param<first_param<fun>>>
+      && ::cuda::std::is_invocable_v<decltype(fun), out_param<first_param<fun>>*, Ps...>)
+  && (::cuda::std::is_pointer_v<last_param<fun>> && !::cuda::std::is_const_v<out_param<last_param<fun>>>
+      && ::cuda::std::is_invocable_v<decltype(fun), Ps..., out_param<last_param<fun>>*>);
 
 template <typename...>
 inline constexpr bool dependent_false = false;
@@ -449,10 +459,13 @@ UNITTEST("cuda_try1")
  *
  * @tparam fun The CUDA function to invoke. Must not be an overloaded name (templated overloads in
  *             `cuda_runtime.h` such as `cudaMalloc`/`cudaMallocHost`/`cudaMallocAsync` therefore do not work).
- * @tparam Ps  Argument types deduced from @p ps.
- * @param ps   Arguments forwarded to @p fun.
- * @return     `void` if @p fun does not have a synthesized output parameter (see below); otherwise the value of the
- *             synthesized output parameter.
+ *
+ * The arguments are forwarded to @p fun. The return type is `void` when @p fun has no synthesized output
+ * parameter (see below), and otherwise the value of the synthesized output parameter.
+ *
+ * @note This documents an overload set: calls with arguments take their first argument wrapped so that the
+ *       caller's `source_location` is captured at the point of conversion, and a separate overload serves
+ *       calls with no arguments. All spellings behave identically; the call syntax is `cuda_try<fun>(args...)`.
  *
  * Calls @p fun and translates a non-zero CUDA status into a thrown `cuda_exception`. Three call shapes are
  * supported, selected at compile time in the following order:
@@ -574,10 +587,13 @@ auto cuda_try(const ::cuda::std::source_location loc = ::cuda::std::source_locat
 }
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
-_CCCL_REQUIRES((
-  ::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
-  || ::cuda::std::
-    is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps..., reserved::out_param<reserved::last_param<fun>>*>) )
+_CCCL_REQUIRES(
+  (!::cuda::std::is_void_v<reserved::first_param<fun>>) _CCCL_AND(!reserved::ambiguous_output_forms<fun, Ps...>)
+    _CCCL_AND(::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
+              || ::cuda::std::is_invocable_v<decltype(fun),
+                                             reserved::first_param<fun>,
+                                             Ps...,
+                                             reserved::out_param<reserved::last_param<fun>>*>))
 auto cuda_try(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 {
   return reserved::checked_api_call<fun>(
@@ -591,7 +607,8 @@ auto cuda_try(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
 _CCCL_REQUIRES(
-  ::cuda::std::
+  (!::cuda::std::is_void_v<reserved::second_param<fun>>) _CCCL_AND(
+    !reserved::ambiguous_output_forms<fun, Ps...>) _CCCL_AND ::cuda::std::
     is_invocable_v<decltype(fun), reserved::out_param<reserved::first_param<fun>>*, reserved::second_param<fun>, Ps...>)
 auto cuda_try(with_location<reserved::second_param<fun>> p0, Ps&&... rest)
 {
@@ -600,6 +617,18 @@ auto cuda_try(with_location<reserved::second_param<fun>> p0, Ps&&... rest)
     fun(&result, ::cuda::std::forward<reserved::second_param<fun>>(p0.payload), ::cuda::std::forward<Ps>(rest)...),
     p0.loc);
   return result;
+}
+
+// Ambiguity rejection: when both output-synthesis forms fit the same user arguments, no front
+// is viable and this deleted overload is selected, so the diagnostic names the problem instead
+// of reporting an overload race.
+_CCCL_TEMPLATE(auto fun, typename... Ps)
+_CCCL_REQUIRES(reserved::ambiguous_output_forms<fun, Ps...>)
+void cuda_try(Ps&&...)
+{
+  static_assert(reserved::dependent_false<Ps...>,
+                "Ambiguous cuda_try: both first- and last-output forms apply; "
+                "call the function explicitly to disambiguate.");
 }
 
 /**
@@ -622,10 +651,13 @@ auto cuda_safe_call(const ::cuda::std::source_location loc = ::cuda::std::source
 }
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
-_CCCL_REQUIRES((
-  ::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
-  || ::cuda::std::
-    is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps..., reserved::out_param<reserved::last_param<fun>>*>) )
+_CCCL_REQUIRES(
+  (!::cuda::std::is_void_v<reserved::first_param<fun>>) _CCCL_AND(!reserved::ambiguous_output_forms<fun, Ps...>)
+    _CCCL_AND(::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
+              || ::cuda::std::is_invocable_v<decltype(fun),
+                                             reserved::first_param<fun>,
+                                             Ps...,
+                                             reserved::out_param<reserved::last_param<fun>>*>))
 auto cuda_safe_call(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 {
   return reserved::checked_api_call<fun>(
@@ -639,7 +671,8 @@ auto cuda_safe_call(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
 _CCCL_REQUIRES(
-  ::cuda::std::
+  (!::cuda::std::is_void_v<reserved::second_param<fun>>) _CCCL_AND(
+    !reserved::ambiguous_output_forms<fun, Ps...>) _CCCL_AND ::cuda::std::
     is_invocable_v<decltype(fun), reserved::out_param<reserved::first_param<fun>>*, reserved::second_param<fun>, Ps...>)
 auto cuda_safe_call(with_location<reserved::second_param<fun>> p0, Ps&&... rest)
 {
@@ -648,6 +681,18 @@ auto cuda_safe_call(with_location<reserved::second_param<fun>> p0, Ps&&... rest)
     fun(&result, ::cuda::std::forward<reserved::second_param<fun>>(p0.payload), ::cuda::std::forward<Ps>(rest)...),
     p0.loc);
   return result;
+}
+
+// Ambiguity rejection: when both output-synthesis forms fit the same user arguments, no front
+// is viable and this deleted overload is selected, so the diagnostic names the problem instead
+// of reporting an overload race.
+_CCCL_TEMPLATE(auto fun, typename... Ps)
+_CCCL_REQUIRES(reserved::ambiguous_output_forms<fun, Ps...>)
+void cuda_safe_call(Ps&&...)
+{
+  static_assert(reserved::dependent_false<Ps...>,
+                "Ambiguous cuda_safe_call: both first- and last-output forms apply; "
+                "call the function explicitly to disambiguate.");
 }
 
 #ifdef UNITTESTED_FILE
