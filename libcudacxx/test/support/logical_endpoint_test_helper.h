@@ -142,7 +142,7 @@ template <class... Devices>
 }
 
 #  if __cccl_ptx_isa >= 930
-__device__ bool wait_for_mbarrier_completion(cuda::std::uint64_t* barrier)
+inline __device__ bool wait_for_mbarrier_completion(cuda::std::uint64_t* barrier)
 {
   for (int iteration = 0; iteration < logical_endpoint_test::wait_iterations; ++iteration)
   {
@@ -154,7 +154,7 @@ __device__ bool wait_for_mbarrier_completion(cuda::std::uint64_t* barrier)
   return false;
 }
 
-__device__ bool wait_for_remote_flag(cuda::std::uint32_t* flag)
+inline __device__ bool wait_for_remote_flag(cuda::std::uint32_t* flag)
 {
   cuda::atomic_ref<cuda::std::uint32_t, cuda::thread_scope_system> ref(*flag);
   for (int iteration = 0; iteration < logical_endpoint_test::wait_iterations; ++iteration)
@@ -167,7 +167,7 @@ __device__ bool wait_for_remote_flag(cuda::std::uint32_t* flag)
   return false;
 }
 
-__device__ bool wait_for_counter(cuda::std::uint64_t* counter, cuda::std::uint64_t expected)
+inline __device__ bool wait_for_counter(cuda::std::uint64_t* counter, cuda::std::uint64_t expected)
 {
   cuda::atomic_ref<cuda::std::uint64_t, cuda::thread_scope_system> ref(*counter);
   for (int iteration = 0; iteration < logical_endpoint_test::wait_iterations; ++iteration)
@@ -193,48 +193,40 @@ struct fabric_try_put_smoke_kernel_t
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == 1);
 #  if __cccl_ptx_isa >= 930
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_100,
-      ({
-        __shared__ alignas(16) cuda::std::uint32_t src_words[logical_endpoint_test::payload_words];
-        __shared__ alignas(8) cuda::std::uint64_t barrier;
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                      ({
+                        __shared__ alignas(16) cuda::std::uint32_t src_words[logical_endpoint_test::payload_words];
+                        __shared__ alignas(8) cuda::std::uint64_t barrier;
 
-        src_words[0] = 0x13572468u;
-        src_words[1] = 0x24681357u;
-        src_words[2] = 0xdeadbeefu;
-        src_words[3] = 0xcafef00du;
+                        src_words[0] = 0x13572468u;
+                        src_words[1] = 0x24681357u;
+                        src_words[2] = 0xdeadbeefu;
+                        src_words[3] = 0xcafef00du;
 
-        cuda::ptx::mbarrier_init(&barrier, 1u);
-        cuda::ptx::fence_proxy_async(cuda::ptx::space_shared);
-        cuda::ptx::fabric_try_put(
-          cuda::ptx::space_shared,
-          cuda::ptx::sem_relaxed,
-          cuda::ptx::scope_sys,
-          endpoint.native_handle(),
-          endpoint_offset,
-          src_words,
-          logical_endpoint_test::payload_bytes,
-          &barrier);
-        cuda::ptx::fabric_submit();
-        cuda::ptx::mbarrier_arrive_expect_tx(
-          cuda::ptx::sem_relaxed,
-          cuda::ptx::scope_cta,
-          cuda::ptx::space_shared,
-          &barrier,
-          logical_endpoint_test::payload_bytes / logical_endpoint_test::tx_granularity);
+                        cuda::ptx::mbarrier_init(&barrier, 1u);
+                        cuda::ptx::fence_proxy_async(cuda::ptx::space_shared);
+                        cuda::ptx::fabric_try_put(
+                          cuda::ptx::space_shared,
+                          cuda::ptx::sem_relaxed,
+                          cuda::ptx::scope_sys,
+                          endpoint.native_handle(),
+                          endpoint_offset,
+                          src_words,
+                          logical_endpoint_test::payload_bytes,
+                          &barrier);
+                        cuda::ptx::fabric_submit();
+                        cuda::ptx::mbarrier_arrive_expect_tx(
+                          cuda::ptx::sem_relaxed,
+                          cuda::ptx::scope_cta,
+                          cuda::ptx::space_shared,
+                          &barrier,
+                          logical_endpoint_test::payload_bytes / logical_endpoint_test::tx_granularity);
 
-        for (int iteration = 0; iteration < 1000000; ++iteration)
-        {
-          if (cuda::ptx::mbarrier_try_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, &barrier, 0))
-          {
-            *status = logical_endpoint_test::status_success;
-            return;
-          }
-        }
-
-        *status = logical_endpoint_test::status_timeout;
-      }),
-      ({ *status = logical_endpoint_test::status_unsupported; }))
+                        *status = logical_endpoint_test::wait_for_mbarrier_completion(&barrier)
+                                  ? logical_endpoint_test::status_success
+                                  : logical_endpoint_test::status_timeout;
+                      }),
+                      ({ *status = logical_endpoint_test::status_unsupported; }))
 #  else // ^^^ __cccl_ptx_isa >= 930 ^^^ / vvv __cccl_ptx_isa < 930
     *status = logical_endpoint_test::status_unsupported;
 #  endif // __cccl_ptx_isa < 930
@@ -255,49 +247,41 @@ struct fabric_try_put_counted_smoke_kernel_t
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == 1);
 #  if __cccl_ptx_isa >= 930
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_100,
-      ({
-        __shared__ alignas(16) cuda::std::uint32_t src_words[logical_endpoint_test::payload_words];
-        __shared__ alignas(8) cuda::std::uint64_t barrier;
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                      ({
+                        __shared__ alignas(16) cuda::std::uint32_t src_words[logical_endpoint_test::payload_words];
+                        __shared__ alignas(8) cuda::std::uint64_t barrier;
 
-        src_words[0] = 0x13572468u;
-        src_words[1] = 0x24681357u;
-        src_words[2] = 0xdeadbeefu;
-        src_words[3] = 0xcafef00du;
+                        src_words[0] = 0x13572468u;
+                        src_words[1] = 0x24681357u;
+                        src_words[2] = 0xdeadbeefu;
+                        src_words[3] = 0xcafef00du;
 
-        cuda::ptx::mbarrier_init(&barrier, 1u);
-        cuda::ptx::fence_proxy_async(cuda::ptx::space_shared);
-        cuda::ptx::fabric_try_put_counted(
-          cuda::ptx::space_shared,
-          cuda::ptx::sem_relaxed,
-          cuda::ptx::scope_sys,
-          endpoint.native_handle(),
-          endpoint_offset,
-          counter_offset,
-          src_words,
-          logical_endpoint_test::payload_bytes,
-          &barrier);
-        cuda::ptx::fabric_submit();
-        cuda::ptx::mbarrier_arrive_expect_tx(
-          cuda::ptx::sem_relaxed,
-          cuda::ptx::scope_cta,
-          cuda::ptx::space_shared,
-          &barrier,
-          logical_endpoint_test::payload_bytes / logical_endpoint_test::tx_granularity);
+                        cuda::ptx::mbarrier_init(&barrier, 1u);
+                        cuda::ptx::fence_proxy_async(cuda::ptx::space_shared);
+                        cuda::ptx::fabric_try_put_counted(
+                          cuda::ptx::space_shared,
+                          cuda::ptx::sem_relaxed,
+                          cuda::ptx::scope_sys,
+                          endpoint.native_handle(),
+                          endpoint_offset,
+                          counter_offset,
+                          src_words,
+                          logical_endpoint_test::payload_bytes,
+                          &barrier);
+                        cuda::ptx::fabric_submit();
+                        cuda::ptx::mbarrier_arrive_expect_tx(
+                          cuda::ptx::sem_relaxed,
+                          cuda::ptx::scope_cta,
+                          cuda::ptx::space_shared,
+                          &barrier,
+                          logical_endpoint_test::payload_bytes / logical_endpoint_test::tx_granularity);
 
-        for (int iteration = 0; iteration < 1000000; ++iteration)
-        {
-          if (cuda::ptx::mbarrier_try_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, &barrier, 0))
-          {
-            *status = logical_endpoint_test::status_success;
-            return;
-          }
-        }
-
-        *status = logical_endpoint_test::status_timeout;
-      }),
-      ({ *status = logical_endpoint_test::status_unsupported; }))
+                        *status = logical_endpoint_test::wait_for_mbarrier_completion(&barrier)
+                                  ? logical_endpoint_test::status_success
+                                  : logical_endpoint_test::status_timeout;
+                      }),
+                      ({ *status = logical_endpoint_test::status_unsupported; }))
 #  else // ^^^ __cccl_ptx_isa >= 930 ^^^ / vvv __cccl_ptx_isa < 930
     *status = logical_endpoint_test::status_unsupported;
 #  endif // __cccl_ptx_isa < 930
@@ -502,48 +486,40 @@ struct fabric_try_put_multimem_smoke_kernel_t
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == 1);
 #  if __cccl_ptx_isa >= 930
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_100,
-      ({
-        __shared__ alignas(16) cuda::std::uint32_t src_words[logical_endpoint_test::payload_words];
-        __shared__ alignas(8) cuda::std::uint64_t barrier;
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                      ({
+                        __shared__ alignas(16) cuda::std::uint32_t src_words[logical_endpoint_test::payload_words];
+                        __shared__ alignas(8) cuda::std::uint64_t barrier;
 
-        src_words[0] = 0x13572468u;
-        src_words[1] = 0x24681357u;
-        src_words[2] = 0xdeadbeefu;
-        src_words[3] = 0xcafef00du;
+                        src_words[0] = 0x13572468u;
+                        src_words[1] = 0x24681357u;
+                        src_words[2] = 0xdeadbeefu;
+                        src_words[3] = 0xcafef00du;
 
-        cuda::ptx::mbarrier_init(&barrier, 1u);
-        cuda::ptx::fence_proxy_async(cuda::ptx::space_shared);
-        cuda::ptx::fabric_try_put_multimem(
-          cuda::ptx::space_shared,
-          cuda::ptx::sem_relaxed,
-          cuda::ptx::scope_sys,
-          endpoint.native_handle(),
-          endpoint_offset,
-          src_words,
-          logical_endpoint_test::payload_bytes,
-          &barrier);
-        cuda::ptx::fabric_submit();
-        cuda::ptx::mbarrier_arrive_expect_tx(
-          cuda::ptx::sem_relaxed,
-          cuda::ptx::scope_cta,
-          cuda::ptx::space_shared,
-          &barrier,
-          logical_endpoint_test::payload_bytes / logical_endpoint_test::tx_granularity);
+                        cuda::ptx::mbarrier_init(&barrier, 1u);
+                        cuda::ptx::fence_proxy_async(cuda::ptx::space_shared);
+                        cuda::ptx::fabric_try_put_multimem(
+                          cuda::ptx::space_shared,
+                          cuda::ptx::sem_relaxed,
+                          cuda::ptx::scope_sys,
+                          endpoint.native_handle(),
+                          endpoint_offset,
+                          src_words,
+                          logical_endpoint_test::payload_bytes,
+                          &barrier);
+                        cuda::ptx::fabric_submit();
+                        cuda::ptx::mbarrier_arrive_expect_tx(
+                          cuda::ptx::sem_relaxed,
+                          cuda::ptx::scope_cta,
+                          cuda::ptx::space_shared,
+                          &barrier,
+                          logical_endpoint_test::payload_bytes / logical_endpoint_test::tx_granularity);
 
-        for (int iteration = 0; iteration < 1000000; ++iteration)
-        {
-          if (cuda::ptx::mbarrier_try_wait_parity(cuda::ptx::sem_acquire, cuda::ptx::scope_cta, &barrier, 0))
-          {
-            *status = logical_endpoint_test::status_success;
-            return;
-          }
-        }
-
-        *status = logical_endpoint_test::status_timeout;
-      }),
-      ({ *status = logical_endpoint_test::status_unsupported; }))
+                        *status = logical_endpoint_test::wait_for_mbarrier_completion(&barrier)
+                                  ? logical_endpoint_test::status_success
+                                  : logical_endpoint_test::status_timeout;
+                      }),
+                      ({ *status = logical_endpoint_test::status_unsupported; }))
 #  else // ^^^ __cccl_ptx_isa >= 930 ^^^ / vvv __cccl_ptx_isa < 930
     *status = logical_endpoint_test::status_unsupported;
 #  endif // __cccl_ptx_isa < 930

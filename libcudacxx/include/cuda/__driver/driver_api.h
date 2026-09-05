@@ -1199,6 +1199,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   return __base_le_id;
 }
 
+// TODO: Add a non-throwing driver entry-point lookup and migrate all NoThrow wrappers that lazily resolve driver APIs.
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
 __logicalEndpointIdReleaseNoThrow(::CUlogicalEndpointId __base_le_id, ::cuuint32_t __count) noexcept
 {

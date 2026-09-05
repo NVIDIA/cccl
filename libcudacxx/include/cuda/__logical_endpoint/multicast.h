@@ -25,6 +25,7 @@
 
 #  include <cuda/__logical_endpoint/common.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -40,9 +41,9 @@ class multicast_logical_endpoint_spec
 public:
   //! @brief Creates a multicast endpoint specification.
   //!
-  //! @param __num_devices The number of CUDA devices that will be added to the endpoint.
-  //! @param __flags Logical endpoint creation flags.
-  //! @param __ipc The IPC handle type requested for this endpoint.
+  //! @param[in] __num_devices The number of CUDA devices that will be added to the endpoint.
+  //! @param[in] __flags Logical endpoint creation flags.
+  //! @param[in] __ipc The IPC handle type requested for this endpoint.
   _CCCL_HOST_API explicit multicast_logical_endpoint_spec(
     unsigned int __num_devices,
     logical_endpoint_flag __flags          = logical_endpoint_flag::none,
@@ -78,7 +79,7 @@ public:
 
   //! @brief Checks whether a device supports this multicast endpoint configuration.
   //!
-  //! @param __device Device used for support attribute checks.
+  //! @param[in] __device Device used for support attribute checks.
   //! @return `true` if the requested configuration is supported by the device.
   [[nodiscard]] _CCCL_HOST_API bool is_supported(::cuda::device_ref __device) const;
 
@@ -128,14 +129,14 @@ class multicast_logical_endpoint_ref
 public:
   //! @brief Creates a multicast endpoint reference from a logical endpoint ID.
   //!
-  //! @param __id The logical endpoint ID.
+  //! @param[in] __id The logical endpoint ID.
   _CCCL_HOST_DEVICE_API explicit constexpr multicast_logical_endpoint_ref(logical_endpoint_id __id) noexcept
       : __base(__id)
   {}
 
   //! @brief Adds a CUDA device to the multicast logical endpoint.
   //!
-  //! @param __device The device to add to the endpoint.
+  //! @param[in] __device The device to add to the endpoint.
   _CCCL_HOST_API void add_device(::cuda::device_ref __device) const
   {
     ::cuda::__driver::__logicalEndpointAddDevice(this->native_handle(), ::cuda::__driver::__deviceGet(__device.get()));
@@ -176,8 +177,8 @@ public:
 
   //! @brief Reserves one ID and creates a multicast logical endpoint.
   //!
-  //! @param __spec The endpoint specification.
-  //! @param __bytes The endpoint size in bytes.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API explicit multicast_logical_endpoint(const multicast_logical_endpoint_spec& __spec,
                                                      ::cuda::std::uint64_t __bytes)
       : multicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __spec, __bytes)
@@ -185,9 +186,9 @@ public:
 
   //! @brief Creates a multicast logical endpoint from a caller-managed ID.
   //!
-  //! @param __id The caller-managed logical endpoint ID.
-  //! @param __spec The endpoint specification.
-  //! @param __bytes The endpoint size in bytes.
+  //! @param[in] __id The caller-managed logical endpoint ID.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API multicast_logical_endpoint(
     logical_endpoint_id __id, const multicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
       : __base(__id)
@@ -198,10 +199,10 @@ public:
 
   //! @brief Creates a multicast logical endpoint from an ID in a retained range.
   //!
-  //! @param __range The logical endpoint ID range to retain.
-  //! @param __index The ID index in the range.
-  //! @param __spec The endpoint specification.
-  //! @param __bytes The endpoint size in bytes.
+  //! @param[in] __range The logical endpoint ID range to retain.
+  //! @param[in] __index The ID index in the range.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API multicast_logical_endpoint(
     const logical_endpoint_id_range& __range,
     ::cuda::std::uint32_t __index,
@@ -216,7 +217,7 @@ public:
 
   //! @brief Adds a CUDA device to the multicast logical endpoint.
   //!
-  //! @param __device The device to add to the endpoint.
+  //! @param[in] __device The device to add to the endpoint.
   _CCCL_HOST_API void add_device(::cuda::device_ref __device) const
   {
     _CCCL_ASSERT(this->has_value(), "Cannot add a device to an empty logical endpoint");
@@ -226,7 +227,7 @@ public:
 
 //! @brief Converts a multicast logical endpoint owner to the ref passed to kernels by `cuda::launch`.
 //!
-//! @param __endpoint The non-empty owning endpoint.
+//! @param[in] __endpoint The non-empty owning endpoint.
 //! @return A non-owning multicast endpoint ref for the kernel argument list.
 [[nodiscard]] _CCCL_HOST_API constexpr multicast_logical_endpoint_ref
 transform_launch_argument(::cuda::stream_ref, const multicast_logical_endpoint& __endpoint) noexcept
