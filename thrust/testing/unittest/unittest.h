@@ -229,7 +229,7 @@ public:
   }
   _CCCL_HOST_DEVICE operator void*() const
   {
-    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0]));
+    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0])); // NOLINT(performance-no-int-to-ptr)
   }
 
 #define DEFINE_OPERATOR(op)                               \
