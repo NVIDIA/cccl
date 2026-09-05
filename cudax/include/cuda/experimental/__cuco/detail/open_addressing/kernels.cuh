@@ -84,6 +84,24 @@ template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, c
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __contains_if_fn(_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref)
   -> __contains_if_fn<_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
 
+//! @brief Scalar (cooperative-group size 1) functor applying `callback_op` to every slot matching `first[i]`.
+template <class _InputIt, class _CallbackOp, class _Ref>
+struct __for_each_fn
+{
+  _InputIt __first;
+  _CallbackOp __callback_op;
+  _Ref __ref;
+
+  _CCCL_DEVICE_API void operator()(detail::__index_type __idx) const
+  {
+    __ref.for_each(*(__first + __idx), __callback_op);
+  }
+};
+
+template <class _InputIt, class _CallbackOp, class _Ref>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __for_each_fn(_InputIt, _CallbackOp, _Ref)
+  -> __for_each_fn<_InputIt, _CallbackOp, _Ref>;
+
 //! @brief Inserts all elements in the range `[first, first + n)` and returns the number of
 //! successful insertions if `pred` of the corresponding stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
@@ -280,6 +298,33 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
           *(__output_begin + __idx) = __find_output(__ref, __found);
         }
       }
+    }
+    __idx += __loop_stride;
+  }
+}
+
+//! @brief Applies `__callback_op` to a copy of every slot matching each key in `[__first, __first + __n)`.
+//!
+//! @note The return value of `__callback_op`, if any, is ignored.
+template <int _CgSize, int _BlockSize, class _InputIt, class _CallbackOp, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+__for_each_n(_InputIt __first, detail::__index_type __n, _CallbackOp __callback_op, _Ref __ref)
+{
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
+
+  while (__idx < __n)
+  {
+    const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
+    if constexpr (_CgSize == 1)
+    {
+      __ref.for_each(__key, __callback_op);
+    }
+    else
+    {
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
+        ::cooperative_groups::this_thread_block());
+      __ref.for_each(__tile, __key, __callback_op);
     }
     __idx += __loop_stride;
   }
