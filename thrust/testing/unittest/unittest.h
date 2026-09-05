@@ -221,7 +221,10 @@ public:
 
   _CCCL_HOST_DEVICE custom_numeric& operator=(const custom_numeric& other)
   {
-    fill(other.value[0]);
+    if (this != &other)
+    {
+      fill(other.value[0]);
+    }
     return *this;
   }
   _CCCL_HOST_DEVICE operator void*() const
@@ -350,9 +353,9 @@ private:
 
   _CCCL_HOST_DEVICE void fill(int val)
   {
-    for (int i = 0; i < 5; ++i)
+    for (int& v : value)
     {
-      value[i] = val;
+      v = val;
     }
   }
 };
