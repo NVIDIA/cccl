@@ -22,6 +22,7 @@ set(
   graph_capture/must_not_capture.cu
   graph_capture/graph_owned_memory.cu
   graph_capture/contiguous_capture.cu
+  sparse/sharded_csr.cu
 )
 
 cccl_get_cudatoolkit()
@@ -59,6 +60,18 @@ endforeach()
 # toolkit's cuRAND (random.cuh is opt-in and not part of the umbrella).
 cudax_add_sharded_test(curand_test_target "algorithms/random_fill.cu")
 target_link_libraries(${curand_test_target} PRIVATE CUDA::curand)
+
+# Vendor tier: the cuSPARSE product tests link the toolkit's cuSPARSE
+# (sparse.cuh is opt-in; the sharded_csr container itself is vendor-free
+# and tested in the main list above).
+foreach (
+  source
+  IN
+  ITEMS sparse/spmv_spmm.cu sparse/rebalance.cu sparse/handle_lifecycle.cu
+)
+  cudax_add_sharded_test(cusparse_test_target "${source}")
+  target_link_libraries(${cusparse_test_target} PRIVATE CUDA::cusparse)
+endforeach()
 
 ## Header hygiene: every `__sharded` header must compile on its own, so that
 ## no header silently depends on a name another header happens to introduce
