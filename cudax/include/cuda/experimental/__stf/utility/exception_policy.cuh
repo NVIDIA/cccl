@@ -4381,13 +4381,35 @@ UNITTEST("type erasure")
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
  *
- * The code controlled by `SCOPE(exit)` and `SCOPE(fail)` must not throw. In every build type those
- * lambdas are invoked via `on_throw(abort)`: a throw from a guard body is reported (message and
- * location) and the program aborts, rather than reaching `std::terminate` bare through the guard's
- * `noexcept` destructor. The code controlled by `SCOPE(success)` may throw. In all cases the
- * controlled code must return `void` (enforced at compile time).
+ * A guard body that throws is treated the way the language treats exceptions: one at a time is
+ * an error to report, two at once is fatal. `SCOPE(exit)` propagates a failure raised while the
+ * scope is being left NORMALLY, so a cleanup that fails on the happy path reaches the caller as
+ * an ordinary exception; a failure raised while the scope is ALREADY unwinding is reported
+ * (message and location) and aborts, since letting it escape would give `std::terminate` with no
+ * diagnostic. `SCOPE(fail)` runs only while unwinding and therefore always reports and aborts;
+ * `SCOPE(success)` runs only on the normal path and may throw. In all cases the controlled code
+ * must return `void` (enforced at compile time).
+ *
+ * One consequence worth knowing: inside a `noexcept` function, a `SCOPE(exit)` body that throws
+ * on the normal path ends the program through `std::terminate` without STF's report. Use
+ * `SCOPE(fail)` plus `SCOPE(success)` there if the distinction matters.
  *
  * `SCOPE(exit)` runs its code at the natural termination of the current scope. Example: @snippet this SCOPE(exit)
+ *
+ * `SCOPE(exit, name)` additionally names a `bool` parameter that is `true` when the scope is
+ * being left by an exception thrown within it, letting one guard serve both outcomes:
+ * @code
+ * SCOPE(exit, failing)
+ * {
+ *   failing ? discard(handle) : commit(handle);
+ * };
+ * @endcode
+ * The flag compares `std::uncaught_exceptions()` against its value at construction, so a guard
+ * declared inside somebody else's handler correctly reports `false`. `SCOPE(fail)` and
+ * `SCOPE(success)` reject the parameter: their outcome is already known by construction. The
+ * exception itself is not available to a guard (a destructor is not a handler, and
+ * `std::current_exception()` is null during unwinding); to react to the exception, wrap the
+ * region in `ON_THROW(policy)`.
  *
  * `SCOPE(fail)` runs its code if and only if the current scope is left by means of throwing an exception. Example:
  * @snippet this SCOPE(fail)
@@ -4403,8 +4425,20 @@ UNITTEST("type erasure")
  * https://en.cppreference.com/w/cpp/experimental/scope_success
  */
 ///@{
-#define SCOPE(kind) \
-  auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
+// `SCOPE(exit, name)` needs __VA_OPT__, which is C++20 and is rejected in C++17 under
+// -pedantic-errors. Detected exactly as unittest.cuh detects it for UNITTEST.
+#if defined(__cplusplus) && __cplusplus >= 202002L
+#  define STF_HAS_SCOPE_OUTCOME 1
+#endif
+
+#ifdef STF_HAS_SCOPE_OUTCOME
+#  define SCOPE(kind, ...)                  \
+    auto CUDASTF_UNIQUE_NAME(scope_guard) = \
+      (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&](__VA_OPT__(bool) __VA_ARGS__)
+#else // ^^^ __VA_OPT__ available ^^^ / vvv C++17: the outcome form is unavailable vvv
+#  define SCOPE(kind) \
+    auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
+#endif // STF_HAS_SCOPE_OUTCOME
 ///@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -4420,14 +4454,32 @@ enum class success
 {
 };
 
+// Calls the guard body, passing the outcome when `SCOPE(exit, name)` asked for it and nothing
+// when it did not. Whether a throw from here escapes is the caller's decision, not this one's.
 template <class F>
-void invoke_nothrow(F& f, ::cuda::std::source_location loc)
+void invoke_body(F& f, bool failing)
 {
-  static_assert(::cuda::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
-  // All build types: a guard body that throws is reported and aborts. The guard destructors are
-  // noexcept, so the bare-call alternative is std::terminate with no diagnostics; the report is
-  // worth the try/catch frame, which costs nothing on the non-throwing path.
-  on_throw(exception_policies::abort, loc) << f;
+  if constexpr (::cuda::std::is_invocable_v<F&, bool>)
+  {
+    static_assert(::cuda::std::is_void_v<decltype(f(failing))>, "SCOPE requires a void-returning callable");
+    f(failing);
+  }
+  else
+  {
+    (void) failing;
+    static_assert(::cuda::std::is_void_v<decltype(f())>, "SCOPE requires a void-returning callable");
+    f();
+  }
+}
+
+// Runs the body under `on_throw(abort)`: a throw is reported (message and location) and the
+// program aborts, rather than escaping a noexcept destructor as a bare std::terminate.
+template <class F>
+void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false) noexcept
+{
+  on_throw(exception_policies::abort, loc) << [&] {
+    invoke_body(f, failing);
+  };
 }
 
 template <typename F>
@@ -4437,8 +4489,9 @@ auto operator->*(with_location<exit> where, F&& f)
   {
     F f;
     const ::cuda::std::source_location loc;
-    // Armed when != -1; move sets -1 to disarm. Value is otherwise unused for exit.
-    int exceptions = 0;
+    // Uncaught-exception count at construction; move sets -1 to disarm. The count is what
+    // lets `SCOPE(exit, name)` tell the body whether the scope is being left by an exception.
+    int exceptions = ::std::uncaught_exceptions();
 
     result(F&& f, ::cuda::std::source_location loc)
         : f(::cuda::std::forward<F>(f))
@@ -4451,11 +4504,27 @@ auto operator->*(with_location<exit> where, F&& f)
         , exceptions(::cuda::std::exchange(rhs.exceptions, -1))
     {}
 
-    ~result() noexcept
+    // May throw: see below. Not `noexcept`, so a body that fails on the normal path reports
+    // the failure to the caller instead of ending the program.
+    ~result() noexcept(false)
     {
-      if (exceptions != -1)
+      if (exceptions == -1)
       {
-        invoke_nothrow(f, loc);
+        return;
+      }
+      // Relative comparison: an exception thrown BY THIS SCOPE, not one this scope was
+      // merely created during (a guard declared inside someone else's catch block, say).
+      if (::std::uncaught_exceptions() > exceptions)
+      {
+        // Already unwinding. A second exception here is the case the language itself gives
+        // up on, so report and abort rather than let it escape.
+        invoke_nothrow(f, loc, true);
+      }
+      else
+      {
+        // Leaving normally: a failed cleanup is an ordinary error, and the caller is in a
+        // position to handle it. Let it propagate.
+        invoke_body(f, false);
       }
     }
   };
@@ -4466,6 +4535,10 @@ auto operator->*(with_location<exit> where, F&& f)
 template <typename F>
 auto operator->*(with_location<fail> where, F&& f)
 {
+  static_assert(::cuda::std::is_invocable_v<F&>,
+                "SCOPE(fail) runs only when the scope is left by an exception, so its outcome is "
+                "already known and it takes no parameter. Write SCOPE(fail) { ... }, or use "
+                "SCOPE(exit, name) to branch on the outcome.");
   struct result
   {
     F f;
@@ -4501,6 +4574,10 @@ auto operator->*(with_location<fail> where, F&& f)
 template <typename F>
 auto operator->*(success, F&& f)
 {
+  static_assert(::cuda::std::is_invocable_v<F&>,
+                "SCOPE(success) runs only when the scope is left normally, so its outcome is "
+                "already known and it takes no parameter. Write SCOPE(success) { ... }, or use "
+                "SCOPE(exit, name) to branch on the outcome.");
   // success may throw, so it does not go through invoke_nothrow; keep the same void check.
   static_assert(::cuda::std::is_void_v<decltype(::cuda::std::forward<F>(f)())>,
                 "SCOPE requires a void-returning callable");
@@ -4553,6 +4630,98 @@ UNITTEST("SCOPE(exit)")
   EXPECT(done);
   //! [SCOPE(exit)]
 };
+
+#  ifdef STF_HAS_SCOPE_OUTCOME
+UNITTEST("SCOPE(exit) throw policy")
+{
+  //! [SCOPE(exit) throw policy]
+  // Leaving normally: a failed cleanup is an ordinary error and reaches the caller.
+  bool propagated = false;
+  _CCCL_TRY
+  {
+    SCOPE(exit)
+    {
+      throw ::std::runtime_error("cleanup failed");
+    };
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::runtime_error& e)
+  {
+    propagated = true;
+  }
+  _CCCL_CATCH_ALL {}
+  EXPECT(propagated, "a SCOPE(exit) body that throws on the normal path must propagate");
+
+  // Leaving by exception: the guard runs, and the original exception is unaffected.
+  bool original = false;
+  int seen      = -1;
+  _CCCL_TRY
+  {
+    SCOPE(exit, failing)
+    {
+      seen = failing ? 1 : 0;
+    };
+    throw ::std::logic_error("original");
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::logic_error& e)
+  {
+    original = true;
+  }
+  _CCCL_CATCH_ALL {}
+  EXPECT(seen == 1, "the guard must see failing=true while unwinding");
+  EXPECT(original, "the original exception must survive the guard");
+  //! [SCOPE(exit) throw policy]
+
+  // A body that throws WHILE unwinding is reported and aborts; not testable in-process.
+};
+#  endif // STF_HAS_SCOPE_OUTCOME
+
+#  ifdef STF_HAS_SCOPE_OUTCOME
+UNITTEST("SCOPE(exit, outcome)")
+{
+  //! [SCOPE(exit, outcome)]
+  // One guard, both outcomes: the parameter is true only when the scope is left by an
+  // exception thrown inside it.
+  int seen = -1;
+  {
+    SCOPE(exit, failing)
+    {
+      seen = failing ? 1 : 0;
+    };
+  }
+  EXPECT(seen == 0, "normal exit must report not-failing");
+
+  _CCCL_TRY
+  {
+    SCOPE(exit, failing)
+    {
+      seen = failing ? 1 : 0;
+    };
+    throw 42;
+  }
+  _CCCL_CATCH_ALL {}
+  EXPECT(seen == 1, "exceptional exit must report failing");
+
+  // A guard created while somebody else's exception is being handled is NOT failing: the
+  // comparison is relative to the count at construction.
+  _CCCL_TRY
+  {
+    throw 7;
+  }
+  _CCCL_CATCH_ALL
+  {
+    SCOPE(exit, failing)
+    {
+      seen = failing ? 1 : 0;
+    };
+  }
+  EXPECT(seen == 0, "a guard inside a handler must not report failing");
+  //! [SCOPE(exit, outcome)]
+
+  // Negative-compile expectations (kept as comments next to the code they guard):
+  //  - SCOPE(fail, x) { ... };     // "SCOPE(fail) ... takes no parameter"
+  //  - SCOPE(success, x) { ... };  // "SCOPE(success) ... takes no parameter"
+};
+#  endif // STF_HAS_SCOPE_OUTCOME
 
 UNITTEST("SCOPE(fail)")
 {
