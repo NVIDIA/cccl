@@ -131,6 +131,12 @@ public:
     _CCCL_ASSERT(__mapping_result_.is_valid(), "virtual_group requires all units to be part of the group");
   }
 
+  // Groups can't be copied, moved nor assigned.
+  virtual_group(const virtual_group&)            = delete;
+  virtual_group(virtual_group&&)                 = delete;
+  virtual_group& operator=(const virtual_group&) = delete;
+  virtual_group& operator=(virtual_group&&)      = delete;
+
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
   {
     return __hier_;

@@ -120,6 +120,12 @@ public:
           ::cuda::experimental::__make_synchronizer_instance(__unit, __parent, __mapping_result_, __synchronizer)}
   {}
 
+  // Groups can't be copied, moved nor assigned.
+  group(const group&)            = delete;
+  group(group&&)                 = delete;
+  group& operator=(const group&) = delete;
+  group& operator=(group&&)      = delete;
+
   // todo(dabayer): Delete copy constructor.
   // group(const group&) = delete;
 
