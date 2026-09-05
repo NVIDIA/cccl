@@ -31,6 +31,22 @@ from ._exchange import (  # noqa: F401
 )
 from ._histogram import _group_histogram
 from ._load_store import load, store, warp_load, warp_store
+from ._merge_sort import (
+    merge_sort_keys,
+    merge_sort_pairs,
+    warp_merge_sort_keys,
+    warp_merge_sort_pairs,
+)
+from ._radix import (
+    _common_radix_rank,
+    _common_radix_sort_keys,
+    _common_radix_sort_pairs,
+    radix_rank,
+    radix_sort_keys,
+    radix_sort_keys_descending,
+    radix_sort_pairs,
+    radix_sort_pairs_descending,
+)
 from ._reduce import (
     block_reduce_builtin,
     group_reduce,
@@ -49,6 +65,20 @@ from ._scan import (
     warp_inclusive_sum,
 )
 from ._shuffle import BlockShuffleType, shuffle  # noqa: F401
+from ._topk import (
+    _common_topk_max_keys,
+    _common_topk_max_pairs,
+    _common_topk_min_keys,
+    _common_topk_min_pairs,
+    _qualified_group_topk_max_keys,
+    _qualified_group_topk_max_pairs,
+    _qualified_group_topk_min_keys,
+    _qualified_group_topk_min_pairs,
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 
 
 def _register(namespace: str, *factories: Callable[..., Any]) -> None:
@@ -67,11 +97,33 @@ _register(
     discontinuity,
     exchange,
     load,
+    merge_sort_keys,
+    merge_sort_pairs,
+    radix_rank,
+    radix_sort_keys,
+    radix_sort_keys_descending,
+    radix_sort_pairs,
+    radix_sort_pairs_descending,
     reduce,
     scan,
     shuffle,
     store,
     sum,
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+    _common_radix_rank,
+    _common_radix_sort_keys,
+    _common_radix_sort_pairs,
+    _common_topk_max_keys,
+    _common_topk_max_pairs,
+    _common_topk_min_keys,
+    _common_topk_min_pairs,
+    _qualified_group_topk_max_keys,
+    _qualified_group_topk_max_pairs,
+    _qualified_group_topk_min_keys,
+    _qualified_group_topk_min_pairs,
     _group_histogram,
     _group_run_length_decode,
 )
@@ -87,6 +139,8 @@ _register(
     warp_inclusive_scan,
     warp_inclusive_sum,
     warp_load,
+    warp_merge_sort_keys,
+    warp_merge_sort_pairs,
     warp_reduce,
     warp_reduce_builtin,
     warp_store,

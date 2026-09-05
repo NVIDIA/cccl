@@ -84,6 +84,7 @@ class ThreadGroup(
         """Return a CUTLASS ``Uint8`` membership flag for the current thread."""
 
 MemoryGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp", "block"]]
+MergeSortWarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]
 ReductionGroup: TypeAlias = ThreadGroup[
     Literal[
         "thread",

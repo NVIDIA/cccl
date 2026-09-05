@@ -99,6 +99,10 @@ class _GroupMetadataRewrite:
                 "adjacent_difference": frozenset({"adjacent_difference"}),
                 "discontinuity": frozenset({"discontinuity"}),
                 "shuffle": frozenset({"shuffle"}),
+                "merge_sort_keys": frozenset({"merge_sort_keys"}),
+                "merge_sort_pairs": frozenset({"merge_sort_pairs"}),
+                "warp_merge_sort_keys": frozenset({"merge_sort_keys"}),
+                "warp_merge_sort_pairs": frozenset({"merge_sort_pairs"}),
                 "_group_histogram": frozenset({"histogram"}),
                 "_group_run_length_decode": frozenset({"run_length_decode"}),
             }
@@ -110,6 +114,7 @@ class _GroupMetadataRewrite:
                 )
             from ._parameters import (
                 _validate_common_histogram_dtypes,
+                _validate_common_integer_key_dtype,
                 _validate_common_numeric_dtype,
                 _validate_common_run_length_decode_dtypes,
             )
@@ -127,6 +132,27 @@ class _GroupMetadataRewrite:
                     _validate_common_run_length_decode_dtypes(
                         factory_kwargs.get("item_dtype"),
                         factory_kwargs.get("run_length_dtype"),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"merge_sort_keys", "warp_merge_sort_keys"}:
+                try:
+                    _validate_common_integer_key_dtype(
+                        factory_kwargs.get("dtype"),
+                        operation=common_root_operation,
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"merge_sort_pairs", "warp_merge_sort_pairs"}:
+                try:
+                    _validate_common_integer_key_dtype(
+                        factory_kwargs.get("keys"),
+                        operation=common_root_operation,
+                    )
+                    _validate_common_numeric_dtype(
+                        factory_kwargs.get("values"),
+                        operation=common_root_operation,
+                        parameter="values",
                     )
                 except (TypeError, ValueError) as exc:
                     raise CoopSinglePhaseRewriteError(str(exc)) from exc

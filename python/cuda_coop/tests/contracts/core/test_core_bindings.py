@@ -19,6 +19,7 @@ from cuda.coop._core import (
     i32_parameter,
 )
 from cuda.coop._core.block import ArgumentBinding as BlockArgumentBinding
+from cuda.coop._core.block.topk import binding as topk_binding
 
 
 def test_argument_binding_classifies_omitted_static_and_runtime_values():
@@ -33,6 +34,7 @@ def test_argument_binding_classifies_omitted_static_and_runtime_values():
     assert runtime == ArgumentBinding.runtime()
     assert runtime.argument_kind is ArgumentKind.RUNTIME
     assert BlockArgumentBinding is ArgumentBinding
+    assert topk_binding is binding
 
 
 def test_i32_parameter_materializes_each_binding_kind():

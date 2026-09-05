@@ -34,6 +34,11 @@ def test_cutlass_foundation_exports_current_public_surface():
             "inclusive_scan",
             "inclusive_sum",
             "load",
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_pairs",
             "reduce",
             "run_length_decode",
             "scan",
@@ -45,6 +50,10 @@ def test_cutlass_foundation_exports_current_public_surface():
             "this_grid",
             "this_thread",
             "this_warp",
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
         ]
         assert coop.__all__ == expected
         assert sorted(name for name in dir(coop) if not name.startswith("_")) == expected
@@ -60,7 +69,6 @@ def test_cutlass_foundation_exports_current_public_surface():
         )
         assert "cuda.coop.cutlass._compiler._bundle" not in sys.modules
         assert "cuda.coop.cutlass._compiler._finalize" not in sys.modules
-
         dsl = _cuda_coop_test_dsl.CuTeDSL._get_dsl()
         assert len(dsl.trace_context_factories) == 1
 

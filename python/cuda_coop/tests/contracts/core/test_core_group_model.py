@@ -24,6 +24,7 @@ from tests.support.group_planning import (
     UnsupportedReasonCode,
     _exchange,
     _load_store,
+    _merge_sort,
     _plan,
     _reduce,
     _scan,
@@ -236,6 +237,7 @@ def test_group_requests_reuse_scoped_core_semantics_exactly():
         _exchange(),
         _load_store("load"),
         _load_store("store"),
+        _merge_sort(),
     ],
 )
 def test_cub_backed_logical_warp_rejects_non_power_of_two_width(operation):

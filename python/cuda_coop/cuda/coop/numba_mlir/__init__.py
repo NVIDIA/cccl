@@ -30,12 +30,21 @@ _GROUP_OPERATION_MODULES = {
     "inclusive_scan": "_group_scan",
     "inclusive_sum": "_group_scan",
     "load": "_group_load_store",
+    "merge_sort_keys": "_group_merge_sort",
+    "merge_sort_pairs": "_group_merge_sort",
+    "radix_rank": "_group_radix",
+    "radix_sort_keys": "_group_radix",
+    "radix_sort_pairs": "_group_radix",
     "reduce": "_group_reduce",
     "run_length_decode": "_group_run_length_decode",
     "scan": "_group_scan",
     "shuffle": "_group_shuffle",
     "store": "_group_load_store",
     "sum": "_group_reduce",
+    "topk_max_keys": "_group_topk",
+    "topk_max_pairs": "_group_topk",
+    "topk_min_keys": "_group_topk",
+    "topk_min_pairs": "_group_topk",
 }
 
 __all__ = [
@@ -63,6 +72,11 @@ __all__ = [
     "inclusive_sum",
     "load",
     "local",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
@@ -75,6 +89,10 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
 
 

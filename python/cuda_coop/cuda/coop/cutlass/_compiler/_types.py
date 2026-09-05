@@ -440,6 +440,47 @@ def as_valid_items_arg(value: Any, *, scope: str) -> Any:
         raise TypeError(f"{scope} valid_items must be convertible to Int32") from exc
 
 
+def _static_int_value(value: Any) -> int | None:
+    if isinstance(value, (bool, np.bool_)):
+        raise TypeError("radix bit bounds must be int-like scalars")
+    try:
+        return int(operator.index(value))
+    except TypeError:
+        from cutlass.base_dsl.typing import Boolean, Integer
+
+        if isinstance(value, Boolean) or not isinstance(value, Integer):
+            raise TypeError("radix bit bounds must be int-like scalars") from None
+        return None
+
+
+def validate_radix_bit_range(
+    begin_bit: Any,
+    end_bit: Any | None,
+    key_type: type,
+) -> Any:
+    width_bits = TYPE_SPECS[key_type].width_bits
+    resolved_end_bit = width_bits if end_bit is None else end_bit
+
+    static_begin_bit = _static_int_value(begin_bit)
+    static_end_bit = _static_int_value(resolved_end_bit)
+
+    if static_begin_bit is not None and static_begin_bit < 0:
+        raise ValueError("begin_bit must be non-negative")
+    if static_begin_bit is not None and static_begin_bit >= width_bits:
+        raise ValueError(f"begin_bit must be < {width_bits}")
+    if static_end_bit is not None and static_end_bit < 1:
+        raise ValueError("end_bit must be positive")
+    if (
+        static_begin_bit is not None
+        and static_end_bit is not None
+        and static_end_bit <= static_begin_bit
+    ):
+        raise ValueError("end_bit must be greater than begin_bit")
+    if static_end_bit is not None and static_end_bit > width_bits:
+        raise ValueError(f"end_bit must be <= {width_bits}")
+    return resolved_end_bit
+
+
 def type_size_bytes(value_type: type) -> int:
     return max(1, (TYPE_SPECS[value_type].width_bits + 7) // 8)
 
