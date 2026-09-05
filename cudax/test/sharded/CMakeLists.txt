@@ -56,22 +56,50 @@ foreach (source IN LISTS sharded_test_sources)
   cudax_add_sharded_test(test_target "${source}")
 endforeach()
 
-# Vendor tier: the cuRAND fill certification additionally links the
-# toolkit's cuRAND (random.cuh is opt-in and not part of the umbrella).
-cudax_add_sharded_test(curand_test_target "algorithms/random_fill.cu")
-target_link_libraries(${curand_test_target} PRIVATE CUDA::curand)
+# Vendor tier: cuRAND (random.cuh is opt-in and not part of the umbrella).
+# Gated on the toolkit component so a cuRAND-less install skips cleanly.
+if (TARGET CUDA::curand)
+  cudax_add_sharded_test(curand_test_target "algorithms/random_fill.cu")
+  target_link_libraries(${curand_test_target} PRIVATE CUDA::curand)
 
-# Vendor tier: the cuSPARSE product tests link the toolkit's cuSPARSE
-# (sparse.cuh is opt-in; the sharded_csr container itself is vendor-free
-# and tested in the main list above).
-foreach (
-  source
-  IN
-  ITEMS sparse/spmv_spmm.cu sparse/rebalance.cu sparse/handle_lifecycle.cu
-)
-  cudax_add_sharded_test(cusparse_test_target "${source}")
-  target_link_libraries(${cusparse_test_target} PRIVATE CUDA::cusparse)
-endforeach()
+  set(test_target cudax.test.sharded.header_standalone.random)
+  cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
+  cudax_places_configure_target(${test_target})
+  target_link_libraries(
+    ${test_target}
+    PRIVATE cudax.compiler_interface CUDA::curand
+  )
+  target_compile_definitions(
+    ${test_target}
+    PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/random.cuh>"
+  )
+endif()
+
+# Vendor tier: cuSPARSE (sparse.cuh is opt-in; the sharded_csr container
+# itself is vendor-free and tested in the main list above). Gated on the
+# toolkit component so a cuSPARSE-less install skips cleanly.
+if (TARGET CUDA::cusparse)
+  foreach (
+    source
+    IN
+    ITEMS sparse/spmv_spmm.cu sparse/rebalance.cu sparse/handle_lifecycle.cu
+  )
+    cudax_add_sharded_test(cusparse_test_target "${source}")
+    target_link_libraries(${cusparse_test_target} PRIVATE CUDA::cusparse)
+  endforeach()
+
+  set(test_target cudax.test.sharded.header_standalone.sparse)
+  cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
+  cudax_places_configure_target(${test_target})
+  target_link_libraries(
+    ${test_target}
+    PRIVATE cudax.compiler_interface CUDA::cusparse
+  )
+  target_compile_definitions(
+    ${test_target}
+    PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/sparse.cuh>"
+  )
+endif()
 
 ## Header hygiene: every `__sharded` header must compile on its own, so that
 ## no header silently depends on a name another header happens to introduce
@@ -82,6 +110,10 @@ file(
     "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../include/cuda/experimental/__sharded/*.cuh"
 )
+
+# Vendor headers are opt-in and require their library's dev headers: their
+# hygiene targets are registered in the gated vendor blocks below instead.
+list(REMOVE_ITEM sharded_headers random.cuh sparse.cuh)
 
 foreach (header IN LISTS sharded_headers)
   get_filename_component(header_name "${header}" NAME_WE)
