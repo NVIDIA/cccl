@@ -14,10 +14,19 @@
  *        feeding a RAGGED compaction.
  *
  * Draw candidate pairs (x, u), keep x where u <= f(x): the accepted samples
- * then distribute with density proportional to f. Here f(x) = 4x(1-x)
- * (envelope M = 1), so the normalized target is p(x) = 6x(1-x) with
- * acceptance probability 2/3, E[x] = 1/2 and E[x^2] = 3/10 — three exact
- * checks for free.
+ * then distribute with density proportional to f. THE PRODUCT IS THE SAMPLE
+ * SET ITSELF — a ragged sharded array, already distributed and placed, ready
+ * for downstream sharded consumers (ensemble initialization, MCMC seeding,
+ * evaluating many functionals later) — not a reduced scalar. That makes this
+ * the complementary pole to the pi example: there the samples are an
+ * intermediate and fusing away materialization is the right spelling; here
+ * the output is data-dependent in size and must persist, so ragged
+ * materialized storage is intrinsic, not a style choice.
+ *
+ * Here f(x) = 4x(1-x) (envelope M = 1), so the normalized target is
+ * p(x) = 6x(1-x) with acceptance probability 2/3, E[x] = 1/2 and
+ * E[x^2] = 3/10 — three exact checks for free (the moments are
+ * verification, not the goal).
  *
  * What the pipeline exercises:
  *  - `generate_uniform` (cuRAND tier) fills ONE sharded float array with 2n
