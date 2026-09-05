@@ -243,7 +243,7 @@ using types = c2h::type_list<std::int64_t>;
 #endif
 
 using block_threads     = c2h::enum_type_list<int, 32, 128>;
-using items_per_thread  = c2h::enum_type_list<int, 5, 8>;
+using items_per_thread  = c2h::enum_type_list<int, 1, 4, 5, 8>;
 using warp_time_slicing = c2h::enum_type_list<bool, false, true>;
 
 template <typename TestType>
