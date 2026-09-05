@@ -67,8 +67,11 @@
 #include <cuda/experimental/__sharded/cuda_safe_call.cuh>
 #include <cuda/experimental/__sharded/stream_scope.cuh>
 
+#include <functional>
+#include <mutex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <curand.h>
@@ -87,35 +90,90 @@ inline void __curand_check(curandStatus_t __s, const char* __what)
   }
 }
 
-//! Owns the per-shard host-API generators of one call. Destroyed only after
-//! the call's join: generation kernels must not outlive their generator.
-class __philox_set
+//! Process-wide cache of host-API Philox generators, one per (device, stream).
+//!
+//! Creating a host-API generator is cheap, but its FIRST generate call pays
+//! a lazy state setup (0.2-4 ms, host-blocking) and `curandDestroyGenerator`
+//! is an implicit device sync (0.2-1 ms). Done per shard per call, as the
+//! first version of this tier did, those two serialize on the host and grow
+//! linearly with the shard count: on a 4x GB200 node a 2^26 float fill went
+//! from 0.85 ms at one place to 2.5 ms at four. Seed and offset, by contrast,
+//! are host-side state applied at the next generate — free to reset per call.
+//! So generators are created once per (device, stream) and reused; the
+//! sharding-invariance contract only depends on (seed, offset), never on the
+//! generator's history.
+//!
+//! Keyed by stream as well as device because a generator's offset is per
+//! object: two shards generating concurrently on different streams of one
+//! device need distinct generators. Sequential reuse on one stream is safe
+//! (the offset is captured at enqueue time). The cache is intentionally never
+//! destroyed: tearing down cuRAND/CUDA state from a static destructor races
+//! the runtime's own shutdown.
+class __philox_cache
 {
 public:
-  //! Create a Philox generator for the CURRENT device, seeded and positioned
-  //! per the sharding-invariance contract, bound to @p __stream.
-  curandGenerator_t __make(unsigned long long __seed, unsigned long long __offset, cudaStream_t __stream)
+  static __philox_cache& __instance()
   {
+    static __philox_cache* __c = new __philox_cache(); // deliberately leaked, see above
+    return *__c;
+  }
+
+  //! A generator for the CURRENT device bound to @p __stream, seeded and
+  //! positioned per the sharding-invariance contract.
+  curandGenerator_t __get(unsigned long long __seed, unsigned long long __offset, cudaStream_t __stream)
+  {
+    int __dev = 0;
+    cuda_safe_call(cudaGetDevice(&__dev));
     curandGenerator_t __g = nullptr;
-    __curand_check(curandCreateGenerator(&__g, CURAND_RNG_PSEUDO_PHILOX4_32_10), "create");
-    __gens_.push_back(__g); // owned from this point
-    __curand_check(curandSetGeneratorOrdering(__g, CURAND_ORDERING_PSEUDO_DEFAULT), "ordering");
+    {
+      ::std::lock_guard<::std::mutex> __lock(__mutex_);
+      auto __it = __gens_.find(__key{__dev, __stream});
+      if (__it == __gens_.end())
+      {
+        __curand_check(curandCreateGenerator(&__g, CURAND_RNG_PSEUDO_PHILOX4_32_10), "create");
+        __curand_check(curandSetGeneratorOrdering(__g, CURAND_ORDERING_PSEUDO_DEFAULT), "ordering");
+        __curand_check(curandSetStream(__g, __stream), "stream");
+        __gens_.emplace(__key{__dev, __stream}, __g);
+      }
+      else
+      {
+        __g = __it->second;
+      }
+    }
     __curand_check(curandSetPseudoRandomGeneratorSeed(__g, __seed), "seed");
     __curand_check(curandSetGeneratorOffset(__g, __offset), "offset");
-    __curand_check(curandSetStream(__g, __stream), "stream");
     return __g;
   }
 
-  ~__philox_set()
-  {
-    for (curandGenerator_t __g : __gens_)
-    {
-      (void) curandDestroyGenerator(__g);
-    }
-  }
-
 private:
-  ::std::vector<curandGenerator_t> __gens_;
+  struct __key
+  {
+    int __dev;
+    cudaStream_t __stream;
+    bool operator==(const __key& __o) const
+    {
+      return __dev == __o.__dev && __stream == __o.__stream;
+    }
+  };
+  struct __key_hash
+  {
+    size_t operator()(const __key& __k) const
+    {
+      return ::std::hash<void*>{}(static_cast<void*>(__k.__stream))
+           ^ (static_cast<size_t>(__k.__dev) * 0x9E3779B97F4A7C15ull);
+    }
+  };
+  ::std::mutex __mutex_;
+  ::std::unordered_map<__key, curandGenerator_t, __key_hash> __gens_;
+};
+
+//! Per-call facade over the cache (keeps the call sites' shape).
+struct __philox_set
+{
+  curandGenerator_t __make(unsigned long long __seed, unsigned long long __offset, cudaStream_t __stream)
+  {
+    return __philox_cache::__instance().__get(__seed, __offset, __stream);
+  }
 };
 
 //! Position-pure FP64 fill: element gi is a pure function of (seed, gi) via a
@@ -216,7 +274,6 @@ void generate_uniform(_S&& __data, const _Envs& __envs, unsigned long long __see
           "generate_uniform");
       }
     });
-  // __generic_map's synchronous contract joined every lane: generators may die.
 }
 
 //! @brief Sharding-invariant normal fill (same contract).
