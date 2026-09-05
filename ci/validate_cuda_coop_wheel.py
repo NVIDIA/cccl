@@ -45,6 +45,7 @@ _REQUIRED_STUBS = {
     "cuda/coop/cutlass/_thread_data.pyi",
     "cuda/coop/cutlass/_thread_group.pyi",
     "cuda/coop/cutlass/_typing.pyi",
+    "cuda/coop/cutlass/aot.pyi",
     *{f"cuda/coop/cutlass/_group_{family}.pyi" for family in _PRIMITIVE_FAMILIES},
     "cuda/coop/numba_mlir/__init__.pyi",
     "cuda/coop/numba_mlir/_dataclass.pyi",
