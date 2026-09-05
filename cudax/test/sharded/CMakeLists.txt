@@ -55,6 +55,11 @@ foreach (source IN LISTS sharded_test_sources)
   cudax_add_sharded_test(test_target "${source}")
 endforeach()
 
+# Vendor tier: the cuRAND fill certification additionally links the
+# toolkit's cuRAND (random.cuh is opt-in and not part of the umbrella).
+cudax_add_sharded_test(curand_test_target "algorithms/random_fill.cu")
+target_link_libraries(${curand_test_target} PRIVATE CUDA::curand)
+
 ## Header hygiene: every `__sharded` header must compile on its own, so that
 ## no header silently depends on a name another header happens to introduce
 ## first. One compile-only target per header, each including just that one.
