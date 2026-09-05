@@ -57,7 +57,7 @@ _CCCL_DEVICE_API auto __reduce_impl(...)
 
 template <bool _Broadcasted, class _Hierarchy, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
-  ::cuda::std::bool_constant<_Broadcasted>, this_thread<_Hierarchy>, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+  ::cuda::std::bool_constant<_Broadcasted>, const this_thread<_Hierarchy>&, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
   const auto __result = ::cub::ThreadReduce(__thread_data, __red_fn);
   if constexpr (_Broadcasted)
@@ -72,7 +72,10 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, ::cuda::std::size_t _N
 
 template <bool _Broadcasted, class _Hierarchy, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
-  ::cuda::std::bool_constant<_Broadcasted>, this_warp<_Hierarchy> __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+  ::cuda::std::bool_constant<_Broadcasted>,
+  const this_warp<_Hierarchy>& __group,
+  _Tp (&__thread_data)[_Np],
+  _RedFn __red_fn)
 {
   using _BlockExts = decltype(gpu_thread.extents(block, __group.hierarchy()));
   constexpr auto __nwarps_in_block =
@@ -100,7 +103,10 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, ::cuda::std::size_t _N
 
 template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
-  ::cuda::std::bool_constant<_Broadcasted>, this_block<_Hierarchy> __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+  ::cuda::std::bool_constant<_Broadcasted>,
+  const this_block<_Hierarchy>& __group,
+  _Tp (&__thread_data)[_Np],
+  _RedFn __red_fn)
 {
   using _BlockExts = decltype(gpu_thread.extents(block, __group.hierarchy()));
   static_assert(_BlockExts::rank_dynamic() == 0,
@@ -138,7 +144,10 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
 
 template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
-  ::cuda::std::bool_constant<_Broadcasted>, this_cluster<_Hierarchy> __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+  ::cuda::std::bool_constant<_Broadcasted>,
+  const this_cluster<_Hierarchy>& __group,
+  _Tp (&__thread_data)[_Np],
+  _RedFn __red_fn)
 {
   using _ClusterExts = decltype(block.extents(cluster, __group.hierarchy()));
   static_assert(_ClusterExts::rank_dynamic() == 0,
@@ -231,7 +240,10 @@ _CCCL_DEVICE ::cuda::std::array<_Tp, _Np> __reduce_grid_partials;
 
 template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
-  ::cuda::std::bool_constant<_Broadcasted>, this_grid<_Hierarchy> __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+  ::cuda::std::bool_constant<_Broadcasted>,
+  const this_grid<_Hierarchy>& __group,
+  _Tp (&__thread_data)[_Np],
+  _RedFn __red_fn)
 {
   using _GridExts = decltype(cluster.extents(grid, __group.hierarchy()));
   static_assert(_GridExts::rank_dynamic() == 0,
@@ -294,8 +306,8 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
 _CCCL_REQUIRES(::cuda::std::is_same_v<thread_level, typename _Group::unit_type>
                  _CCCL_AND ::cuda::std::is_same_v<warp_level, typename _Group::level_type>)
-[[nodiscard]] _CCCL_DEVICE_API auto
-__reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+[[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
+  ::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
   using _MappingResult         = typename _Group::__mapping_result_type;
   const auto& __mapping_result = __group.__mapping_result();
@@ -328,10 +340,14 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
 _CCCL_TEMPLATE(bool _Broadcasted, class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn)
 _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
                  _CCCL_AND ::cuda::std::is_same_v<block_level, typename _Group::level_type>)
-[[nodiscard]] _CCCL_DEVICE_API auto
-__reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+[[nodiscard]] _CCCL_DEVICE_API auto __reduce_impl(
+  ::cuda::std::bool_constant<_Broadcasted>, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  constexpr auto __nwarps_in_group = warp.static_count(__group);
+  // Runtime-known references can't be used in constant expressions, so we create a view that can be used in a constant
+  // expression.
+  const group_view __group_view{__group};
+
+  constexpr auto __nwarps_in_group = warp.static_count(__group_view);
   static_assert(__nwarps_in_group != ::cuda::std::dynamic_extent,
                 "cuda::coop::reduce requires the group to have statically known size");
 
@@ -385,24 +401,17 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
 
 template <class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::optional<_Tp>
-reduce(_Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+reduce(const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  static_assert(gpu_thread.static_count(__group) != ::cuda::std::dynamic_extent,
-                "cuda::coop::reduce requires the group to have statically known size");
-
   _CCCL_ASSERT(gpu_thread.is_part_of(__group), "Only threads that are part of the group can call cudax::coop::reduce");
-
   return ::cuda::experimental::coop::__reduce_impl(::cuda::std::false_type{}, __group, __thread_data, __red_fn);
 }
 
 template <class _Group, class _Tp, ::cuda::std::size_t _Np, class _RedFn>
-[[nodiscard]] _CCCL_DEVICE_API _Tp reduce(broadcasted_t, _Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
+[[nodiscard]] _CCCL_DEVICE_API _Tp
+reduce(broadcasted_t, const _Group& __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
-  static_assert(gpu_thread.static_count(__group) != ::cuda::std::dynamic_extent,
-                "cuda::coop::reduce requires the group to have statically known size");
-
   _CCCL_ASSERT(gpu_thread.is_part_of(__group), "Only threads that are part of the group can call cudax::coop::reduce");
-
   return ::cuda::experimental::coop::__reduce_impl(::cuda::std::true_type{}, __group, __thread_data, __red_fn);
 }
 } // namespace cuda::experimental::coop
