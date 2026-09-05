@@ -66,6 +66,33 @@ CUB_TEST_CASE("DeviceHistogram::HistogramEven works with default environment", "
   REQUIRE(d_histogram == expected);
 }
 
+CUB_TEST_CASE("DeviceHistogram::HistogramEven supports wide output counters with default tuning",
+              "[histogram][device]",
+              CUB_SMALL)
+{
+  using counter_t = unsigned long long;
+
+  const auto d_samples           = c2h::device_vector<unsigned int>{0, 2, 1, 0, 3, 4, 2, 1};
+  const int num_samples          = static_cast<int>(d_samples.size());
+  const int num_levels           = 6;
+  const unsigned int lower_level = 0;
+  const unsigned int upper_level = 5;
+  auto d_histogram               = c2h::device_vector<counter_t>(num_levels - 1, counter_t{0});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::HistogramEven(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples));
+
+  const c2h::device_vector<counter_t> expected{2, 2, 2, 1, 1};
+  REQUIRE(d_histogram == expected);
+}
+
 CUB_TEST_CASE("DeviceHistogram::HistogramEven works with user provided memory and environment",
               "[histogram][device]",
               CUB_SMALL)
@@ -1630,6 +1657,54 @@ struct histogram_tuning
   }
 };
 
+template <cub::HistogramHighBinAlgorithm Algorithm,
+          cub::HistogramCacheAlgorithm Cache,
+          cub::HistogramSpillAlgorithm Spill,
+          cub::HistogramAggregationAlgorithm Aggregation,
+          int CacheEntriesPerChannel = 512>
+struct high_bin_histogram_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
+  {
+    auto policy                               = histogram_tuning<128>{}(cuda::compute_capability{});
+    policy.high_bin_algorithm                 = Algorithm;
+    policy.high_bin_cache                     = Cache;
+    policy.high_bin_spill                     = Spill;
+    policy.high_bin_aggregation               = Aggregation;
+    policy.high_bin_cache_entries_per_channel = CacheEntriesPerChannel;
+    policy.high_bin_cache_count_replicas      = 2;
+    policy.high_bin_cache_cuckoo_max_bins     = 4096;
+    policy.high_bin_pixels_per_thread         = 2;
+    policy.high_bin_threads_per_block         = 128;
+    policy.high_bin_min_histogram_bytes       = 0;
+    return policy;
+  }
+};
+
+template <int BlockThreads, typename LocalCounterT>
+struct histogram_tuning_with_local_counter : histogram_tuning<BlockThreads>
+{
+  using local_counter_type = LocalCounterT;
+};
+
+using mixed_counter_tuning_t  = histogram_tuning_with_local_counter<128, unsigned int>;
+using legacy_counter_tuning_t = histogram_tuning<128>;
+
+static_assert(
+  cuda::std::is_same_v<cub::detail::histogram::local_counter_t<mixed_counter_tuning_t, unsigned long long, long long>,
+                       unsigned int>);
+static_assert(
+  cuda::std::is_same_v<cub::detail::histogram::local_counter_t<legacy_counter_tuning_t, unsigned long long, long long>,
+                       unsigned long long>);
+using production_counter_selector =
+  cub::detail::histogram::policy_selector_from_types<unsigned int, unsigned long long, 1, 1, true>;
+static_assert(
+  cuda::std::is_same_v<cub::detail::histogram::local_counter_t<production_counter_selector, unsigned long long, int>,
+                       unsigned int>);
+static_assert(cuda::std::is_same_v<
+              cub::detail::histogram::local_counter_t<production_counter_selector, unsigned long long, long long>,
+              unsigned long long>);
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -1740,6 +1815,121 @@ CUB_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_levels  = 1026;
+  constexpr int num_samples = 32768;
+  c2h::host_vector<int> h_samples(num_samples);
+  c2h::host_vector<int> h_expected(num_levels - 1, 0);
+  for (int i = 0; i < num_samples; ++i)
+  {
+    const int sample = i % (num_levels - 1);
+    h_samples[i]     = sample;
+    ++h_expected[sample];
+  }
+  const c2h::device_vector<int> d_samples = h_samples;
+  const c2h::device_vector<int> expected  = h_expected;
+
+  const auto run = [&](auto tuning) {
+    c2h::device_vector<int> d_histogram(num_levels - 1, 0);
+    auto env = cuda::execution::tune(tuning);
+    histogram_even(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      0,
+      num_levels - 1,
+      static_cast<int>(d_samples.size()),
+      env);
+    REQUIRE(d_histogram == expected);
+  };
+
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::global_memory_privatized,
+                                cub::HistogramCacheAlgorithm::none,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::direct>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::none,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::direct>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::single_probe,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::rle>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced,
+                                8192>{});
+}
+
+CUB_TEST("DeviceHistogram high-bin cooperative strategy handles strided rows", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_channels        = 4;
+  constexpr int num_active_channels = 3;
+  constexpr int num_levels          = 1026;
+  constexpr int num_row_pixels      = 512;
+  constexpr int num_rows            = 4;
+  constexpr int row_stride_pixels   = num_row_pixels + 8;
+  constexpr int row_stride_samples  = row_stride_pixels * num_channels;
+
+  c2h::host_vector<int> h_samples(row_stride_samples * num_rows, num_levels - 1);
+  cuda::std::array<c2h::host_vector<int>, num_active_channels> h_expected{
+    c2h::host_vector<int>(num_levels - 1, 0),
+    c2h::host_vector<int>(num_levels - 1, 0),
+    c2h::host_vector<int>(num_levels - 1, 0)};
+  for (int row = 0; row < num_rows; ++row)
+  {
+    for (int pixel = 0; pixel < num_row_pixels; ++pixel)
+    {
+      for (int channel = 0; channel < num_active_channels; ++channel)
+      {
+        const int sample = (row * num_row_pixels + pixel + channel) % (num_levels - 1);
+        h_samples[row * row_stride_samples + pixel * num_channels + channel] = sample;
+        ++h_expected[channel][sample];
+      }
+    }
+  }
+
+  const c2h::device_vector<int> d_samples = h_samples;
+  cuda::std::array<c2h::device_vector<int>, num_active_channels> d_histograms{
+    c2h::device_vector<int>(num_levels - 1, 0),
+    c2h::device_vector<int>(num_levels - 1, 0),
+    c2h::device_vector<int>(num_levels - 1, 0)};
+  cuda::std::array<int*, num_active_channels> histogram_ptrs{
+    thrust::raw_pointer_cast(d_histograms[0].data()),
+    thrust::raw_pointer_cast(d_histograms[1].data()),
+    thrust::raw_pointer_cast(d_histograms[2].data())};
+  constexpr cuda::std::array<int, num_active_channels> levels{num_levels, num_levels, num_levels};
+  constexpr cuda::std::array<int, num_active_channels> lower_levels{0, 0, 0};
+  constexpr cuda::std::array<int, num_active_channels> upper_levels{num_levels - 1, num_levels - 1, num_levels - 1};
+  const auto env = cuda::execution::tune(
+    high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                              cub::HistogramCacheAlgorithm::cuckoo,
+                              cub::HistogramSpillAlgorithm::output,
+                              cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+
+  multi_histogram_even<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_samples.data()),
+    histogram_ptrs,
+    levels,
+    lower_levels,
+    upper_levels,
+    num_row_pixels,
+    num_rows,
+    row_stride_samples * sizeof(int),
+    env);
+
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(d_histograms[channel] == h_expected[channel]);
+  }
+}
+
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
@@ -1777,9 +1967,50 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
+  REQUIRE(
+    to_string(p1)
+    == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
+       ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
+       ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
+       ", .high_bin_algorithm = HistogramHighBinAlgorithm::global_memory_privatized"
+       ", .high_bin_cache = HistogramCacheAlgorithm::single_probe"
+       ", .high_bin_spill = HistogramSpillAlgorithm::global_memory_privatized"
+       ", .high_bin_aggregation = HistogramAggregationAlgorithm::rle"
+       ", .high_bin_cache_entries_per_channel = 2048"
+       ", .high_bin_cache_count_replicas = 1, .high_bin_cache_cuckoo_max_bins = 262144"
+       ", .high_bin_pixels_per_thread = 4, .high_bin_threads_per_block = 0"
+       ", .high_bin_interpolation_min_bins = 512, .high_bin_min_histogram_bytes = 0"
+       ", .high_bin_blocks_per_sm = 0, .high_bin_grid_pixels_per_block = 0 }");
+
+  constexpr auto high_bin_policy = [] {
+    auto policy =
+      cub::HistogramPolicy{128, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
+    policy.high_bin_threads_per_block = 512;
+    return policy;
+  }();
+  STATIC_REQUIRE(high_bin_policy.high_bin_threads() == 512);
+  STATIC_REQUIRE(p1.high_bin_threads() == p1.threads_per_block);
+  STATIC_REQUIRE(high_bin_policy.high_bin_grid_pixels() == 512 * high_bin_policy.high_bin_pixels_per_thread);
+  STATIC_REQUIRE(p1.high_bin_grid_pixels() == p1.high_bin_threads() * p1.high_bin_pixels_per_thread);
+
+  constexpr auto sm100 = cuda::compute_capability{10, 0};
+  constexpr auto single_channel_even_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, true>{}(sm100);
+  constexpr auto three_channel_even_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, true>{}(sm100);
+  constexpr auto four_channel_even_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(sm100);
+  constexpr auto three_channel_range_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(sm100);
+
+  // Match the raw selector's dynamic-SMEM tiers: three-active-channel EVEN uses
+  // the full SM100 capacity, while four-channel EVEN and RANGE retain their
+  // measured per-channel crossover budgets.
+  STATIC_REQUIRE(
+    three_channel_even_policy.high_bin_min_histogram_bytes == single_channel_even_policy.high_bin_min_histogram_bytes);
+  STATIC_REQUIRE(
+    four_channel_even_policy.high_bin_min_histogram_bytes < three_channel_even_policy.high_bin_min_histogram_bytes);
+  STATIC_REQUIRE(
+    three_channel_range_policy.high_bin_min_histogram_bytes < three_channel_even_policy.high_bin_min_histogram_bytes);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
