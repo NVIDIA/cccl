@@ -32,3 +32,10 @@ def __dir__() -> list[str]:
     """Return only the documented backend-neutral completion surface."""
 
     return sorted(__all__)
+
+
+if _portable_exports:
+    from ._core._auto_registration import _auto_register_known_dsls
+
+    _auto_register_known_dsls()
+    del _auto_register_known_dsls

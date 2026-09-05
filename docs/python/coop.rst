@@ -27,8 +27,11 @@ arguments and ``count`` is the runtime number of valid tile items:
 
 The compiler integration supplies launch facts such as the block dimensions;
 they are not repeated in the operation calls. Importing :mod:`cuda.coop`
-remains compiler-free; a compatible compiler context activates its backend
-when a collective is traced. The initial portable contract covers:
+succeeds without a compiler backend. By default, it also probes for an
+installed compatible CUTLASS DSL and activates it when found. Set
+``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1`` before the import to skip
+automatic compiler probing and register integrations explicitly. The initial
+portable contract covers:
 
 * load and store; and
 * reduce, sum, and inclusive or exclusive scans.
