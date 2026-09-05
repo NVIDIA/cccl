@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU()
+#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU() \
+  || _CCCL_HAS_SIMD_ADD_MIN_MAX()
 
 #  include <cuda/__simd/simd_intrinsics.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -217,6 +218,54 @@ template <typename _Tp, ::cuda::std::size_t _Np>
 
 #  endif // _CCCL_HAS_SIMD_VABSDIFF()
 
+#  if _CCCL_HAS_SIMD_ADD_MIN_MAX()
+
+template <typename _Tp, ::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __viaddmax_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    if constexpr (::cuda::std::is_unsigned_v<_Tp>)
+    {
+      __result_u[__i] = ::__viaddmax_u16x2(__a_u[__i], __b_u[__i], __c_u[__i]);
+    }
+    else
+    {
+      __result_u[__i] = ::__viaddmax_s16x2(__a_u[__i], __b_u[__i], __c_u[__i]);
+    }
+  }
+  return __result_u;
+}
+
+template <typename _Tp, ::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __viaddmin_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    if constexpr (::cuda::std::is_unsigned_v<_Tp>)
+    {
+      __result_u[__i] = ::__viaddmin_u16x2(__a_u[__i], __b_u[__i], __c_u[__i]);
+    }
+    else
+    {
+      __result_u[__i] = ::__viaddmin_s16x2(__a_u[__i], __b_u[__i], __c_u[__i]);
+    }
+  }
+  return __result_u;
+}
+
+#  endif // _CCCL_HAS_SIMD_ADD_MIN_MAX()
+
 #  if _CCCL_HAS_SIMD_MIN_MAX_RELU()
 
 #    if _CCCL_HAS_SIMD_8BIT_PTX()
@@ -311,5 +360,6 @@ _CCCL_END_NAMESPACE_CUDA_SIMD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU()
+#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU() ||
+       // _CCCL_HAS_SIMD_ADD_MIN_MAX()
 #endif // _CUDA___SIMD_SIMD_INTRINSICS_ARRAY_H

@@ -155,6 +155,13 @@ private:
     return basic_vec{__operation(__a.__s_, __b.__s_, __c.__s_), __storage_tag};
   }
 
+  template <typename _Operation>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec __simd_add_min_max_impl(
+    const basic_vec& __a, const basic_vec& __b, const basic_vec& __c, const _Operation& __operation) noexcept
+  {
+    return basic_vec{__operation(__a.__s_, __b.__s_, __c.__s_), __storage_tag};
+  }
+
   template <typename _Up, typename _UAbi, typename _Operation>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr basic_vec __abs_diff_impl(
     const basic_vec<_Up, _UAbi>& __lhs, const basic_vec<_Up, _UAbi>& __rhs, const _Operation& __operation) noexcept
