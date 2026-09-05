@@ -437,10 +437,14 @@ public:
       constexpr int sm100_smem_bytes             = 228352;
       constexpr int range_smem_bytes_per_channel = 8192;
       constexpr int even_smem_bytes_per_channel  = 32768;
+      // Preserve the raw selector's dynamic-SMEM region. Three-active-channel EVEN
+      // can use the full per-CTA capacity; four-channel EVEN and RANGE switch at
+      // their measured per-channel crossover budgets.
+      const bool use_full_smem_capacity = num_active_channels == 1 || (is_even && num_active_channels <= 3);
       const int candidate_smem_bytes =
-        num_active_channels == 1 ? sm100_smem_bytes
-        : is_even                ? even_smem_bytes_per_channel * num_active_channels
-                                 : range_smem_bytes_per_channel * num_active_channels;
+        use_full_smem_capacity ? sm100_smem_bytes
+        : is_even              ? even_smem_bytes_per_channel * num_active_channels
+                               : range_smem_bytes_per_channel * num_active_channels;
       const int high_bin_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
       // The raw occupancy-sized cache resolves to two resident blocks for four-byte multi-channel RANGE samples.
       const int high_bin_blocks_per_sm  = num_active_channels == 1 || (!is_even && sample_size == 4) ? 2 : 1;
