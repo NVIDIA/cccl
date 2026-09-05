@@ -406,6 +406,30 @@ void test_spmv(place_group& group, const host_csr& m)
     cuda_safe_call(cudaFree(d_yraw));
   }
 
+  // Device-resident alpha/beta (consumer-library pointer mode): bitwise
+  // equal to the host-scalar path.
+  {
+    double* d_yraw = nullptr;
+    cuda_safe_call(cudaMalloc(&d_yraw, static_cast<size_t>(m.rows) * sizeof(double)));
+    double *d_a = nullptr, *d_b = nullptr;
+    const double h_a = 1.0, h_b = 0.0;
+    cuda_safe_call(cudaMalloc(&d_a, sizeof(double)));
+    cuda_safe_call(cudaMalloc(&d_b, sizeof(double)));
+    cuda_safe_call(cudaMemcpy(d_a, &h_a, sizeof(double), cudaMemcpyDefault));
+    cuda_safe_call(cudaMemcpy(d_b, &h_b, sizeof(double), cudaMemcpyDefault));
+    spmv(plan, d_x, d_yraw, d_a, d_b);
+    for (size_t i = 0; i < A.num_shards(); i++)
+    {
+      cuda_safe_call(cudaStreamSynchronize(A.shard(i).stream));
+    }
+    ::std::vector<double> raw(static_cast<size_t>(m.rows));
+    cuda_safe_call(cudaMemcpy(raw.data(), d_yraw, raw.size() * sizeof(double), cudaMemcpyDefault));
+    EXPECT(::std::memcmp(raw.data(), first.data(), first.size() * sizeof(double)) == 0);
+    cuda_safe_call(cudaFree(d_a));
+    cuda_safe_call(cudaFree(d_b));
+    cuda_safe_call(cudaFree(d_yraw));
+  }
+
   // A mis-shaped output is refused before any engine work.
   {
     auto bad   = sharded_array<double>::allocate(group, 2 * static_cast<size_t>(m.rows));

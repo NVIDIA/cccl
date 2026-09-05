@@ -246,6 +246,44 @@ struct spmv_shard_plan
       handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, mat, vx, &beta, vy, dt, CUSPARSE_SPMV_CSR_ALG2, workspace));
   }
 
+  //! As `run`, with DEVICE-RESIDENT alpha/beta (the consumer-library pointer
+  //! mode): binds CUSPARSE_POINTER_MODE_DEVICE for the launch and restores
+  //! host mode after (build/warm-up always run in host mode).
+  void run_device_scalars(cusparseHandle_t handle,
+                          const csr_shard<_Tp>& sh,
+                          ::std::int64_t cols,
+                          const _Tp* x,
+                          _Tp* y,
+                          const _Tp* d_alpha,
+                          const _Tp* d_beta,
+                          cudaStream_t stream)
+  {
+    if (!built)
+    {
+      build(handle, sh, cols, x, y, stream);
+    }
+    else
+    {
+      cusparse_safe_call(cusparseSetStream(handle, stream));
+      if (x != bound_x)
+      {
+        cusparse_safe_call(cusparseDnVecSetValues(vx, const_cast<_Tp*>(x)));
+        bound_x = x;
+      }
+      if (y != bound_y)
+      {
+        cusparse_safe_call(cusparseDnVecSetValues(vy, y));
+        bound_y = y;
+      }
+    }
+    const cudaDataType dt = cusparse_data_type<_Tp>::value;
+    cusparse_safe_call(cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_DEVICE));
+    const cusparseStatus_t st = cusparseSpMV(
+      handle, CUSPARSE_OPERATION_NON_TRANSPOSE, d_alpha, mat, vx, d_beta, vy, dt, CUSPARSE_SPMV_CSR_ALG2, workspace);
+    cusparse_safe_call(cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_HOST));
+    cusparse_safe_call(st);
+  }
+
   ~spmv_shard_plan()
   {
     // Best-effort teardown (no throwing from destructors)
@@ -416,6 +454,53 @@ struct spmm_shard_plan
       dt,
       CUSPARSE_SPMM_CSR_ALG3,
       workspace));
+  }
+
+  //! As `run`, with DEVICE-RESIDENT alpha/beta (see spmv_shard_plan).
+  void run_device_scalars(cusparseHandle_t handle,
+                          const csr_shard<_Tp>& sh,
+                          ::std::int64_t cols,
+                          ::std::int64_t n_cols,
+                          const _Tp* B,
+                          _Tp* C,
+                          const _Tp* d_alpha,
+                          const _Tp* d_beta,
+                          cudaStream_t stream)
+  {
+    if (!built)
+    {
+      build(handle, sh, cols, n_cols, B, C, stream);
+    }
+    else
+    {
+      cusparse_safe_call(cusparseSetStream(handle, stream));
+      if (B != bound_B)
+      {
+        cusparse_safe_call(cusparseDnMatSetValues(mB, const_cast<_Tp*>(B)));
+        bound_B = B;
+      }
+      if (C != bound_C)
+      {
+        cusparse_safe_call(cusparseDnMatSetValues(mC, C));
+        bound_C = C;
+      }
+    }
+    const cudaDataType dt = cusparse_data_type<_Tp>::value;
+    cusparse_safe_call(cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_DEVICE));
+    const cusparseStatus_t st = cusparseSpMM(
+      handle,
+      CUSPARSE_OPERATION_NON_TRANSPOSE,
+      CUSPARSE_OPERATION_NON_TRANSPOSE,
+      d_alpha,
+      mat,
+      mB,
+      d_beta,
+      mC,
+      dt,
+      CUSPARSE_SPMM_CSR_ALG3,
+      workspace);
+    cusparse_safe_call(cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_HOST));
+    cusparse_safe_call(st);
   }
 
   ~spmm_shard_plan()
@@ -766,6 +851,59 @@ void spmm(spmm_plan<_Tp>& plan, const _Tp* B, _Tp* C, _Tp alpha = _Tp{1}, _Tp be
     places::exec_place_scope scope(sh.exec);
     plan.shard_plan(i).run(
       plan.handles().get(i), sh, A.num_cols(), plan.n_cols(), B, C + sh.row_begin * plan.n_cols(), alpha, beta, sh.stream);
+  }
+}
+
+/**
+ * @brief As the contiguous-output `spmv`, with DEVICE-RESIDENT alpha/beta
+ * (consumer libraries running their handles in device pointer mode).
+ */
+template <typename _Tp>
+void spmv(spmv_plan<_Tp>& plan, const _Tp* x, _Tp* y, const _Tp* d_alpha, const _Tp* d_beta)
+{
+  auto& A = plan.matrix();
+  for (size_t i = 0; i < A.num_shards(); i++)
+  {
+    auto& sh = A.shard(i);
+    if (sh.rows == 0)
+    {
+      continue;
+    }
+    if (sh.nnz == 0)
+    {
+      _CCCL_THROW(::std::invalid_argument,
+                  "sharded::spmv: shard " + ::std::to_string(i)
+                    + " has rows but no nonzeros; adjust the row boundaries");
+    }
+    places::exec_place_scope scope(sh.exec);
+    plan.shard_plan(i).run_device_scalars(
+      plan.handles().get(i), sh, A.num_cols(), x, y + sh.row_begin, d_alpha, d_beta, sh.stream);
+  }
+}
+
+/**
+ * @brief As the contiguous-output `spmm`, with DEVICE-RESIDENT alpha/beta.
+ */
+template <typename _Tp>
+void spmm(spmm_plan<_Tp>& plan, const _Tp* B, _Tp* C, const _Tp* d_alpha, const _Tp* d_beta)
+{
+  auto& A = plan.matrix();
+  for (size_t i = 0; i < A.num_shards(); i++)
+  {
+    auto& sh = A.shard(i);
+    if (sh.rows == 0)
+    {
+      continue;
+    }
+    if (sh.nnz == 0)
+    {
+      _CCCL_THROW(::std::invalid_argument,
+                  "sharded::spmm: shard " + ::std::to_string(i)
+                    + " has rows but no nonzeros; adjust the row boundaries");
+    }
+    places::exec_place_scope scope(sh.exec);
+    plan.shard_plan(i).run_device_scalars(
+      plan.handles().get(i), sh, A.num_cols(), plan.n_cols(), B, C + sh.row_begin * plan.n_cols(), d_alpha, d_beta, sh.stream);
   }
 }
 
