@@ -573,6 +573,8 @@ auto checked_api_call(Check check, const ::cuda::std::source_location loc, Ps&&.
 } // namespace reserved
 #endif // !_CCCL_DOXYGEN_INVOKED
 
+#if !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_CTK_BELOW(12, 1))
+
 // The public fronts capture the USER's call site. A single variadic front cannot: a parameter
 // pack followed by a defaulted source_location is a non-deduced context. Instead the first
 // user argument (when there is one) is taken as `with_location<T>` where T is COMPUTED from
@@ -713,6 +715,37 @@ void cuda_safe_call(Ps&&...)
                 "call the function explicitly to disambiguate.");
 }
 
+#else // ^^^ everything except nvcc 12.0 ^^^ / vvv nvcc 12.0 vvv
+
+// CTK 12.0 fallback: that toolkit's front end hits an internal codegen error on the
+// location-capturing fronts once the full STF header set is in the translation unit (every
+// isolated reproduction compiles; the failure needs the whole stack). On 12.0 only, use the
+// plain variadic fronts: identical call syntax and semantics, but a failing call reports this
+// header's line instead of the caller's. Drop this branch when 12.0 support ends.
+template <auto fun, typename... Ps>
+auto cuda_try(Ps&&... ps)
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_try(status, l);
+    },
+    ::cuda::std::source_location::current(),
+    ::cuda::std::forward<Ps>(ps)...);
+}
+
+template <auto fun, typename... Ps>
+auto cuda_safe_call(Ps&&... ps)
+{
+  return reserved::checked_api_call<fun>(
+    [](auto status, auto l) {
+      cuda_safe_call(status, l);
+    },
+    ::cuda::std::source_location::current(),
+    ::cuda::std::forward<Ps>(ps)...);
+}
+
+#endif // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_CTK_BELOW(12, 1))
+
 #ifdef UNITTESTED_FILE
 inline cudaError_t test_first_output_param(int* out)
 {
@@ -747,6 +780,7 @@ inline cudaError_t test_lvalue_ref_param(int& x)
   return cudaSuccess;
 }
 
+#  if !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_CTK_BELOW(12, 1))
 UNITTEST("cuda_try location capture")
 {
   // The introspected forms report the CALLER's location, not this header's.
@@ -771,6 +805,7 @@ UNITTEST("cuda_try location capture")
   cuda_try<test_lvalue_ref_param>(v);
   EXPECT(v == 5);
 };
+#  endif // !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_CTK_BELOW(12, 1))
 
 UNITTEST("cuda_safe_call2")
 {
