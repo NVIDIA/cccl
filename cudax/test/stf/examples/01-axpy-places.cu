@@ -51,11 +51,16 @@ void run()
   const int N = 1024 * 1024 * 32;
   double *X, *Y;
 
+  // One guard per resource, each armed immediately: a guard covering both allocations would
+  // leak X when Y's allocation throws.
   X = new double[N];
-  Y = new double[N];
   SCOPE(exit)
   {
     delete[] X;
+  };
+  Y = new double[N];
+  SCOPE(exit)
+  {
     delete[] Y;
   };
 
