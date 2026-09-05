@@ -1,0 +1,177 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+schema_version = 1
+
+[policy]
+# "migration" means qualified legacy surfaces may temporarily satisfy a row
+# through named source globs. Every common-V1 row uses evidence_for markers and
+# fails collection when required conformance evidence is absent.
+mode = "migration"
+allowed_backends = [
+  "core",
+  "numba_mlir",
+  "cutlass",
+]
+allowed_evidence = [
+  "api",
+  "semantics",
+  "lowering",
+  "compile",
+  "runtime",
+  "link",
+  "qualification",
+]
+allowed_statuses = [
+  "executable",
+  "signature_only",
+  "placeholder",
+  "native_equivalent",
+  "blocked",
+  "unsupported",
+  "not_applicable",
+]
+allowed_value_models = [
+  "backend_free",
+  "scoped",
+  "group_first",
+]
+allowed_enforcement = ["required", "migration"]
+
+[policy.required_evidence]
+executable = ["api", "semantics", "lowering", "compile", "runtime", "link"]
+signature_only = ["api", "semantics"]
+placeholder = ["api", "semantics"]
+native_equivalent = ["api", "semantics", "compile", "runtime"]
+blocked = ["api", "semantics"]
+unsupported = ["api", "semantics"]
+not_applicable = []
+
+[[surface]]
+backend = "core"
+scope = "contracts"
+public_surface = "tests/contracts/coverage.toml"
+value_model = "backend_free"
+provider = "test coverage manifest"
+enforcement = "required"
+migration_sources = []
+collection_paths_by_evidence = { semantics = ["tests/contracts/parity/test_coverage_manifest.py"] }
+executable = [
+  { name = "manifest", symbols = ["coverage.toml"], required_evidence = ["semantics"] },
+  { name = "evidence_outcomes", symbols = ["evidence_for"], required_evidence = ["semantics"], collection_paths_by_evidence = { semantics = ["tests/contracts/core/evidence_outcome_fixture.py", "tests/contracts/core/evidence_collection_skip_fixture.py"] } },
+]
+
+[[surface]]
+backend = "numba_mlir"
+scope = "scoped.block"
+public_surface = "cuda.coop.numba_mlir._block"
+value_model = "scoped"
+provider = "Internal Numba-CUDA-MLIR rewrite and public CUB"
+enforcement = "migration"
+migration_sources = [
+  "tests/backends/numba_mlir/**/*.py",
+]
+executable = [
+  { name = "adjacent_difference", symbols = ["adjacent_difference", "make_adjacent_difference"] },
+  { name = "discontinuity", symbols = ["discontinuity", "make_discontinuity"] },
+  { name = "exchange", symbols = ["exchange", "make_exchange"] },
+  { name = "histogram", symbols = ["histogram", "make_histogram"] },
+  { name = "load", symbols = ["load", "make_load"] },
+  { name = "store", symbols = ["store", "make_store"] },
+  { name = "merge_sort", symbols = ["merge_sort_keys", "merge_sort_pairs"] },
+  { name = "radix_rank", symbols = ["radix_rank", "make_radix_rank"] },
+  { name = "radix_sort", symbols = ["radix_sort_keys", "radix_sort_pairs"] },
+  { name = "reduce", symbols = ["reduce", "sum"] },
+  { name = "run_length_decode", symbols = ["run_length", "make_run_length"] },
+  { name = "scan", symbols = ["scan", "exclusive_scan", "inclusive_scan"] },
+  { name = "shuffle", symbols = ["shuffle", "make_shuffle"] },
+  { name = "topk", symbols = ["topk_max_keys", "topk_min_keys", "topk_max_pairs", "topk_min_pairs"] },
+]
+
+[[surface]]
+backend = "numba_mlir"
+scope = "scoped.warp"
+public_surface = "cuda.coop.numba_mlir._warp"
+value_model = "scoped"
+provider = "Internal Numba-CUDA-MLIR rewrite and public CUB"
+enforcement = "migration"
+migration_sources = [
+  "tests/backends/numba_mlir/**/*.py",
+]
+executable = [
+  { name = "exchange", symbols = ["exchange", "make_exchange"] },
+  { name = "load", symbols = ["load", "make_load"] },
+  { name = "store", symbols = ["store", "make_store"] },
+  { name = "merge_sort", symbols = ["merge_sort_keys", "merge_sort_pairs"] },
+  { name = "reduce", symbols = ["reduce", "sum", "min", "max"] },
+  { name = "scan", symbols = ["exclusive_scan", "inclusive_scan"] },
+]
+
+[[surface]]
+backend = "cutlass"
+scope = "scoped.block"
+public_surface = "cuda.coop.cutlass._block"
+value_model = "scoped"
+provider = "Internal CUTLASS DSL adapter and public CUB/CUDAX"
+enforcement = "migration"
+migration_sources = [
+  "tests/backends/cutlass/**/*.py",
+  "tests/providers/cutlass/**/*.py",
+]
+executable = [
+  { name = "adjacent_difference", symbols = ["adjacent_difference", "adjacent_difference_subtract_left", "adjacent_difference_subtract_right"] },
+  { name = "discontinuity", symbols = ["discontinuity", "discontinuity_flag_heads", "discontinuity_flag_tails"] },
+  { name = "exchange", symbols = ["exchange", "exchange_striped_to_blocked", "exchange_blocked_to_striped"] },
+  { name = "histogram", symbols = ["histogram", "make_histogram"] },
+  { name = "load", symbols = ["load", "make_load"] },
+  { name = "store", symbols = ["store", "make_store"] },
+  { name = "merge_sort", symbols = ["merge_sort_keys", "merge_sort_pairs"] },
+  { name = "radix_rank", symbols = ["radix_rank", "make_radix_rank"] },
+  { name = "radix_sort", symbols = ["radix_sort_keys", "radix_sort_pairs"] },
+  { name = "reduce", symbols = ["reduce", "sum"] },
+  { name = "run_length_decode", symbols = ["run_length", "run_length_decode"] },
+  { name = "scan", symbols = ["scan", "exclusive_scan", "inclusive_scan"] },
+  { name = "shuffle", symbols = ["shuffle", "shuffle_up", "shuffle_down", "shuffle_offset", "shuffle_rotate"] },
+  { name = "topk", symbols = ["topk_max_keys", "topk_min_keys", "topk_max_pairs", "topk_min_pairs"] },
+]
+blocked = [
+  { name = "row_reduce", symbols = ["row_sum"], diagnostic = "requires CUB block_row_reduce.cuh" },
+]
+
+[[surface]]
+backend = "cutlass"
+scope = "scoped.warp"
+public_surface = "cuda.coop.cutlass._warp"
+value_model = "scoped"
+provider = "Internal CUTLASS DSL adapter and public CUB/CUDAX"
+enforcement = "migration"
+migration_sources = [
+  "tests/backends/cutlass/**/*.py",
+  "tests/providers/cutlass/**/*.py",
+]
+executable = [
+  { name = "exchange", symbols = ["exchange", "exchange_striped_to_blocked", "exchange_blocked_to_striped"] },
+  { name = "load", symbols = ["load", "make_load"] },
+  { name = "store", symbols = ["store", "make_store"] },
+  { name = "merge_sort", symbols = ["merge_sort_keys", "merge_sort_pairs"] },
+  { name = "reduce", symbols = ["reduce", "sum", "min", "max"] },
+  { name = "scan", symbols = ["scan", "exclusive_scan", "inclusive_scan"] },
+]
+
+[[surface]]
+backend = "cutlass"
+scope = "aot"
+public_surface = "cuda.coop.cutlass.aot"
+value_model = "backend_free"
+provider = "portable exact-bundle CUTLASS provider packs"
+enforcement = "migration"
+migration_sources = [
+  "tests/contracts/public_api/test_cutlass_aot.py",
+  "tests/backends/cutlass/unit/test_aot_pack.py",
+  "tests/backends/cutlass/compile/test_aot_pack_resolution.py",
+]
+collection_paths_by_evidence = { api = ["tests/contracts/public_api/test_cutlass_aot.py"], semantics = ["tests/backends/cutlass/unit/test_aot_pack.py"], compile = ["tests/backends/cutlass/compile/test_aot_pack_resolution.py"] }
+executable = [
+  { name = "pack", symbols = ["capture", "use", "inspect"], required_evidence = ["api", "semantics", "compile"] },
+]

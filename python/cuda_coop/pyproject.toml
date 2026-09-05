@@ -1,0 +1,210 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[build-system]
+requires = ["scikit-build-core>=1.0", "setuptools_scm"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cuda-coop"
+description = "CUDA cooperative primitives for Python DSLs"
+authors = [{ name = "NVIDIA Corporation" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Environment :: GPU :: NVIDIA CUDA",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+]
+requires-python = ">=3.10"
+dependencies = [
+  "cuda-core",
+  "cuda-pathfinder>=1.2.3",
+  "numpy",
+  "typing_extensions>=4.12.0",
+]
+dynamic = ["version"]
+readme = { file = "README.md", content-type = "text/markdown" }
+
+[project.scripts]
+cuda-coop-aot = "cuda.coop.cutlass._aot_cli:main"
+
+[project.optional-dependencies]
+cu12 = [
+  "cuda-bindings>=12.9.1,<13.0.0",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==12.*",
+]
+cu13 = [
+  "cuda-bindings>=13.0.0,<14.0.0",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
+]
+cutlass = [
+  "cuda-coop[cu13]",
+  "nvidia-cutlass-dsl>=4.8,<5",
+]
+cutlass-cu12 = [
+  "cuda-coop[cu12]",
+  "nvidia-cutlass-dsl>=4.8,<5",
+]
+cutlass-cu13 = [
+  "cuda-coop[cu13]",
+  "nvidia-cutlass-dsl>=4.8,<5",
+]
+numba-cuda-mlir = [
+  "cuda-coop[cu13]",
+  "numba-cuda-mlir[cu13]>=0.5.0",
+]
+numba-cuda-mlir-cu12 = [
+  "cuda-coop[cu12]",
+  "numba-cuda-mlir[cu12]>=0.5.0",
+]
+numba-cuda-mlir-cu13 = [
+  "cuda-coop[cu13]",
+  "numba-cuda-mlir[cu13]>=0.5.0",
+]
+examples = ["torch"]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-xdist",
+  "pyright==1.1.411",
+  "tomli>=2.0.1; python_version < '3.11'",
+]
+
+[project.urls]
+Homepage = "https://github.com/NVIDIA/cccl"
+Repository = "https://github.com/NVIDIA/cccl"
+Documentation = "https://nvidia.github.io/cccl"
+Issues = "https://github.com/NVIDIA/cccl/issues"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"
+
+[tool.scikit-build.cmake]
+version = ">=3.21"
+args = []
+build-type = "Release"
+source-dir = "."
+
+[tool.scikit-build.ninja]
+version = ">=1.11"
+make-fallback = true
+
+[[tool.dynamic-metadata]]
+provider = "scikit_build_core.metadata.setuptools_scm"
+
+[tool.setuptools_scm]
+root = "../.."
+git_describe_command = [
+  "git",
+  "describe",
+  "--dirty",
+  "--tags",
+  "--long",
+  "--match",
+  "cuda-coop-v[0-9]*",
+]
+tag_regex = '^cuda-coop-v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:[.-].*)?)$'
+fallback_version = "0.1.0.dev0"
+
+[tool.scikit-build.wheel]
+py-api = "py3"
+platlib = false
+# The repository license is above this package root, so place it explicitly in
+# the wheel metadata tree instead of preserving a parent-relative path.
+license-files = []
+reproducible = true
+
+[tool.scikit-build.wheel.force-include]
+"../../LICENSE" = "${SKBUILD_METADATA_DIR}/licenses/LICENSE"
+"../../cub/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/cub/LICENSE.TXT"
+"../../cudax/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/cudax/LICENSE.TXT"
+"../../libcudacxx/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/libcudacxx/LICENSE.TXT"
+"../../thrust/LICENSE" = "${SKBUILD_METADATA_DIR}/licenses/thrust/LICENSE"
+
+[tool.scikit-build.wheel.packages]
+"cuda/coop" = "cuda/coop"
+
+[tool.mypy]
+cache_dir = "../../.cache/mypy"
+python_version = "3.10"
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  "cuda.bindings",
+  "cuda.coop",
+  "cuda.coop._core",
+  "cuda.coop._core.block",
+  "cuda.coop._core.warp",
+  "cuda.coop.cutlass",
+  "cuda.coop.cutlass._internal",
+  "cuda.coop.cutlass._dsl",
+  "cuda.coop.cutlass._dsl.block",
+  "cuda.coop.cutlass._dsl.warp",
+  "cuda.coop.cutlass._block",
+  "cuda.coop.cutlass._warp",
+  "cuda.coop.numba_mlir",
+  "cuda.coop.numba_mlir._block",
+  "cuda.coop.numba_mlir._warp",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+  "-ra",
+  "--import-mode=importlib",
+  "--strict-config",
+  "--strict-markers",
+]
+xfail_strict = true
+markers = [
+  "evidence_for(scenario, *, backend, evidence): associate a test with a conformance-evidence cell",
+  "contract: backend-free API or semantic contract test",
+  "backend_core: backend-free cuda.coop contract test",
+  "backend_numba_mlir: cuda.coop.numba_mlir backend test",
+  "backend_cutlass: cuda.coop.cutlass backend test",
+  "compile: compiler or lowering test that does not launch a kernel",
+  "unit: backend-local unit test without GPU execution",
+  "runtime: representative backend runtime test",
+  "gpu: test that launches work on an NVIDIA GPU",
+  "link: provider or final-binary link test",
+  "large: intentionally expensive test outside the ordinary PR smoke set",
+  "stress: broad or randomized stress test",
+  "qualification: nightly, weekly, or release qualification test",
+  "requires_sm100: test requires a compute capability 10.0 GPU",
+  "requires_sm120: test requires a compute capability 12.0 GPU",
+  "docs: documentation structure, snippet, or generated-content test",
+  "examples: example import, compile, or execution test",
+  "packaging: wheel, install, or package-boundary test",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["cuda.coop._core"]
+
+[tool.coverage.report]
+fail_under = 87
+show_missing = true
+skip_covered = true
+
+[[tool.mypy.overrides]]
+module = [
+  "cuda.bindings.*",
+  "cuda.core.*",
+  "numba_cuda_mlir.*",
+]
+ignore_missing_imports = true
+follow_imports = "skip"

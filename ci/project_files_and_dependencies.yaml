@@ -161,6 +161,89 @@ projects:
     include_regexes:  ["c/experimental/stf/"]
     exclude_regexes: []
 
+  cuda_coop_ci_harness:
+    name: "Python cuda.coop CI Harness"
+    include_regexes:
+      - "ci/(?:build|test)_cuda_coop_(?:python|cuda_coop_(?:contracts|numba_mlir|cutlass))\\.sh"
+      - "ci/util/python/cuda_coop_test_driver\\.py"
+      - "ci/util/workflow/get_cuda_coop_wheel_artifact_name\\.sh"
+
+  cuda_coop_shared:
+    name: "Python cuda.coop Shared"
+    lite_dependencies: []
+    full_dependencies:
+      - libcudacxx_public
+      - cub_public
+      - thrust_public
+      - cudax_public
+    include_regexes:
+      - "python/cuda_coop/(?:CMakeLists\\.txt|pyproject\\.toml)$"
+      - "python/cuda_coop/cuda/coop/(?:CMakeLists\\.txt|__init__\\.py|pyproject\\.toml)$"
+      - "python/cuda_coop/cuda/coop/(?:_core|_headers)/"
+      - "python/cuda_coop/tests/conftest\\.py$"
+      - "python/cuda_coop/tests/contracts/coverage\\.toml$"
+      - "python/cuda_coop/tests/support/(?:__init__|coverage|paths)\\.py$"
+      - "python/cuda_coop/tests/support/(?:cases|oracles)/"
+
+  cuda_coop_public_surface:
+    name: "Python cuda.coop Public Surface"
+    include_regexes:
+      - "python/cuda_coop/cuda/coop/(?:cutlass|numba_mlir)/__init__\\.py$"
+      - "python/cuda_coop/cuda/coop/(?:cutlass|numba_mlir)/(?:_block|_warp)/__init__\\.py$"
+      - "python/cuda_coop/cuda/coop/(?:cutlass|numba_mlir)/(?:.*\\.pyi|py\\.typed)$"
+
+  cuda_coop_integration:
+    name: "Python cuda.coop Integration"
+    include_regexes:
+      - "python/cuda_coop/examples/"
+      - "python/cuda_coop/tests/integration/"
+
+  cuda_coop_contracts:
+    name: "Python cuda.coop Contracts"
+    matrix_project: "cuda_coop_contracts"
+    full_dependencies:
+      - cuda_coop_ci_harness
+      - cuda_coop_shared
+      - cuda_coop_public_surface
+      - cuda_coop_integration
+      - libcudacxx_public
+      - cub_public
+      - thrust_public
+      - cudax_public
+    include_regexes:
+      - "python/cuda_coop/"
+    exclude_project_files:
+      - cuda_coop_ci_harness
+      - cuda_coop_shared
+      - cuda_coop_public_surface
+      - cuda_coop_integration
+      - cuda_coop_numba_mlir
+      - cuda_coop_cutlass
+
+  cuda_coop_numba_mlir:
+    name: "Python cuda.coop Numba-MLIR"
+    matrix_project: "cuda_coop_numba_mlir"
+    full_dependencies: [cuda_coop_ci_harness, cuda_coop_shared, libcudacxx_public, cub_public, thrust_public, cudax_public]
+    include_regexes:
+      - "python/cuda_coop/cuda/coop/numba_mlir/"
+      - "python/cuda_coop/tests/backends/numba_mlir/"
+      - "python/cuda_coop/examples/numba_mlir/"
+
+  cuda_coop_cutlass:
+    name: "Python cuda.coop CUTLASS"
+    matrix_project: "cuda_coop_cutlass"
+    full_dependencies: [cuda_coop_ci_harness, cuda_coop_shared, cuda_coop_numba_mlir, libcudacxx_public, cub_public, thrust_public, cudax_public]
+    include_regexes:
+      - "python/cuda_coop/cuda/coop/cutlass/"
+      - "python/cuda_coop/tests/backends/cutlass/"
+      - "python/cuda_coop/tests/providers/cutlass/"
+      - "python/cuda_coop/tests/support/(?:fixtures|toolchains)/cutlass"
+      - "python/cuda_coop/tests/support/fixtures/mixed_backend_kernels\\.py$"
+      - "python/cuda_coop/tests/integration/compiler/"
+      - "python/cuda_coop/examples/cutlass/"
+      - "python/cuda_coop/benchmarks/cute/"
+      - "python/cuda_coop/tests/integration/examples/test_cutlass_examples\\.py$"
+
   python:
     name: "Python"
     matrix_project: "python"
