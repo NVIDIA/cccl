@@ -37,6 +37,7 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/cmath>
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
@@ -44,12 +45,16 @@ THRUST_NAMESPACE_BEGIN
 template <typename T>
 struct __runtime_value
 {
+  static constexpr bool __is_compile_time = false;
+
   T value;
 };
 
 template <auto Value>
 struct __compile_time_value
 {
+  static constexpr bool __is_compile_time = true;
+
   static constexpr decltype(Value) value = Value;
 };
 
@@ -212,7 +217,20 @@ public:
   _CCCL_HOST_DEVICE explicit counting_iterator(Incrementable x, StrideHolder stride)
       : super_t(x)
       , StrideHolder(stride)
-  {}
+  {
+    // a zero stride is rejected; use thrust::constant_iterator for a fixed value.
+    // a compile-time holder asserts statically: a runtime assert on a constant
+    // condition trips MSVC C4127 under /WX
+    if constexpr (StrideHolder::__is_compile_time)
+    {
+      static_assert(stride.value != 0, "counting_iterator stride must be nonzero");
+    }
+    else
+    {
+      _CCCL_ASSERT(static_cast<decltype(stride.value)>(stride.value) != 0,
+                   "counting_iterator stride must be nonzero");
+    }
+  }
 
   //! \cond
 
@@ -288,11 +306,38 @@ private:
   {
     if constexpr (::cuda::std::is_integral_v<Incrementable>)
     {
-      return static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
+      const difference_type dist = static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
+      if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
+      {
+        return dist;
+      }
+      else
+      {
+        _CCCL_ASSERT(dist % static_cast<difference_type>(stride()) == 0,
+                     "Underlying iterator difference must be divisible by the stride");
+        return dist / static_cast<difference_type>(stride());
+      }
     }
     else
     {
-      return y.base() - this->base();
+      const auto dist = y.base() - this->base();
+      if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
+      {
+        return dist;
+      }
+      else if constexpr (::cuda::std::is_integral_v<decltype(dist)>)
+      {
+        // a pointer counter with a stride has an integral distance that must
+        // satisfy the same contract as an integral counter
+        _CCCL_ASSERT(dist % static_cast<decltype(dist)>(stride()) == 0,
+                     "Underlying iterator difference must be divisible by the stride");
+        return static_cast<difference_type>(dist / static_cast<decltype(dist)>(stride()));
+      }
+      else
+      {
+        // imprecisions in the floating point domain make truncation unreliable, so round to the nearest position
+        return static_cast<difference_type>(::cuda::std::round(dist / static_cast<decltype(dist)>(stride())));
+      }
     }
   }
 
@@ -326,6 +371,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 template <auto Stride, typename Incrementable>
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
 {
+  static_assert(Stride != decltype(Stride){}, "counting_iterator stride must be nonzero");
   return counting_iterator<Incrementable,
                            use_default,
                            random_access_traversal_tag,
