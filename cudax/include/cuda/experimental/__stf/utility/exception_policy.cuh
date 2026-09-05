@@ -4425,9 +4425,20 @@ UNITTEST("type erasure")
  * https://en.cppreference.com/w/cpp/experimental/scope_success
  */
 ///@{
-#define SCOPE(kind, ...)                  \
-  auto CUDASTF_UNIQUE_NAME(scope_guard) = \
-    (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&](__VA_OPT__(bool) __VA_ARGS__)
+// `SCOPE(exit, name)` needs __VA_OPT__, which is C++20 and is rejected in C++17 under
+// -pedantic-errors. Detected exactly as unittest.cuh detects it for UNITTEST.
+#if defined(__cplusplus) && __cplusplus >= 202002L
+#  define STF_HAS_SCOPE_OUTCOME 1
+#endif
+
+#ifdef STF_HAS_SCOPE_OUTCOME
+#  define SCOPE(kind, ...)                  \
+    auto CUDASTF_UNIQUE_NAME(scope_guard) = \
+      (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&](__VA_OPT__(bool) __VA_ARGS__)
+#else // ^^^ __VA_OPT__ available ^^^ / vvv C++17: the outcome form is unavailable vvv
+#  define SCOPE(kind) \
+    auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
+#endif // STF_HAS_SCOPE_OUTCOME
 ///@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -4464,7 +4475,7 @@ void invoke_body(F& f, bool failing)
 // Runs the body under `on_throw(abort)`: a throw is reported (message and location) and the
 // program aborts, rather than escaping a noexcept destructor as a bare std::terminate.
 template <class F>
-void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false)
+void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false) noexcept
 {
   on_throw(exception_policies::abort, loc) << [&] {
     invoke_body(f, failing);
@@ -4620,6 +4631,7 @@ UNITTEST("SCOPE(exit)")
   //! [SCOPE(exit)]
 };
 
+#  ifdef STF_HAS_SCOPE_OUTCOME
 UNITTEST("SCOPE(exit) throw policy")
 {
   //! [SCOPE(exit) throw policy]
@@ -4661,7 +4673,9 @@ UNITTEST("SCOPE(exit) throw policy")
 
   // A body that throws WHILE unwinding is reported and aborts; not testable in-process.
 };
+#  endif // STF_HAS_SCOPE_OUTCOME
 
+#  ifdef STF_HAS_SCOPE_OUTCOME
 UNITTEST("SCOPE(exit, outcome)")
 {
   //! [SCOPE(exit, outcome)]
@@ -4707,6 +4721,7 @@ UNITTEST("SCOPE(exit, outcome)")
   //  - SCOPE(fail, x) { ... };     // "SCOPE(fail) ... takes no parameter"
   //  - SCOPE(success, x) { ... };  // "SCOPE(success) ... takes no parameter"
 };
+#  endif // STF_HAS_SCOPE_OUTCOME
 
 UNITTEST("SCOPE(fail)")
 {
