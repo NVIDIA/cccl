@@ -126,16 +126,8 @@ __device__ inline size_t count_before(const _Tp* b, size_t n, int i, int r, cons
  * rank-R prefix (ties to run 0). One thread per target.
  */
 template <typename _Tp, typename _Compare>
-__global__ void
-merge_path_select_kernel(
-  const _Tp* a,
-  size_t na,
-  const _Tp* b,
-  size_t nb,
-  const size_t* ranks,
-  int num_targets,
-  size_t* splits,
-  _Compare cmp)
+__global__ void merge_path_select_kernel(
+  const _Tp* a, size_t na, const _Tp* b, size_t nb, const size_t* ranks, int num_targets, size_t* splits, _Compare cmp)
 {
   const int t = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (t >= num_targets)
@@ -588,7 +580,7 @@ void sort_shared_va(place_group& group, sharded_array<_Tp>& data, _Compare comp)
   if (p > 1)
   {
     runs_desc<_Tp> runs{};
-    runs.p = static_cast<int>(p);
+    runs.p       = static_cast<int>(p);
     size_t total = 0;
     for (size_t g = 0; g < p; g++)
     {
@@ -731,10 +723,10 @@ void sort_shared_va(place_group& group, sharded_array<_Tp>& data, _Compare comp)
         cuda_safe_call(cudaGetLastError());
 
         // ---- stage B: windows around the samples' answer, copied local ----
-        auto* d_winbuf  = static_cast<_Tp*>(dalloc(T * p * win_cap * sizeof(_Tp)));
-        auto* d_wlo     = static_cast<size_t*>(dalloc(T * p * sizeof(size_t)));
-        auto* d_wrank   = static_cast<size_t*>(dalloc(T * sizeof(size_t)));
-        auto* d_prob_w  = static_cast<select_problem<_Tp>*>(dalloc(T * sizeof(select_problem<_Tp>)));
+        auto* d_winbuf = static_cast<_Tp*>(dalloc(T * p * win_cap * sizeof(_Tp)));
+        auto* d_wlo    = static_cast<size_t*>(dalloc(T * p * sizeof(size_t)));
+        auto* d_wrank  = static_cast<size_t*>(dalloc(T * sizeof(size_t)));
+        auto* d_prob_w = static_cast<select_problem<_Tp>*>(dalloc(T * sizeof(select_problem<_Tp>)));
 
         build_windows_kernel<_Tp><<<blocks(T * p), blk, 0, s0.stream>>>(
           runs, d_c, stride, win_cap, d_ranks, static_cast<int>(T), d_winbuf, d_wlo, d_wrank, d_prob_w, d_splits);
@@ -742,8 +734,8 @@ void sort_shared_va(place_group& group, sharded_array<_Tp>& data, _Compare comp)
         copy_windows_kernel<_Tp><<<blocks(T * p * win_cap), blk, 0, s0.stream>>>(
           runs, win_cap, static_cast<int>(T), d_wlo, d_prob_w, d_winbuf);
         cuda_safe_call(cudaGetLastError());
-        rank_select_kernel<_Tp, _Compare><<<dim3(grid_x(p * win_cap), static_cast<unsigned>(T)), blk, 0, s0.stream>>>(
-          d_prob_w, comp);
+        rank_select_kernel<_Tp, _Compare>
+          <<<dim3(grid_x(p * win_cap), static_cast<unsigned>(T)), blk, 0, s0.stream>>>(d_prob_w, comp);
         cuda_safe_call(cudaGetLastError());
       }
 

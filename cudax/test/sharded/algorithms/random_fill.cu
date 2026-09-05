@@ -19,13 +19,12 @@
  *        be re-run when the toolkit changes.
  */
 
+#include <cuda/experimental/__sharded/random.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstdio>
 #include <cstring>
 #include <vector>
-
-#include <cuda/experimental/__sharded/random.cuh> // opt-in vendor tier
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::make_locality_domain_grid;
@@ -121,8 +120,7 @@ int run_case(const char* name, place_group& group, bool normal)
     const auto view = make_sharded_view(pieces);
 
     // One env per shard, shard i on domain (i mod P), distinct lanes.
-    std::vector<decltype(place_group::env(std::declval<const cuda::experimental::places::data_place&>(),
-                                          cudaStream_t{}))>
+    std::vector<decltype(place_group::env(std::declval<const cuda::experimental::places::data_place&>(), cudaStream_t{}))>
       envs;
     for (size_t i = 0; i < pieces.size(); i++)
     {

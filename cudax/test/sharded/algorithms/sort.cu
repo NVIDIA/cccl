@@ -292,13 +292,27 @@ void test_many_places(const cuda::experimental::places::exec_place& place)
     {
       const size_t n = (size_t{1} << 20) + 37;
       run_case<int>(
-        group, even(n), rnd(n, [&] { return static_cast<int>(rng()); }), ::cuda::std::less<int>{}, ::std::less<int>{});
+        group,
+        even(n),
+        rnd(n,
+            [&] {
+              return static_cast<int>(rng());
+            }),
+        ::cuda::std::less<int>{},
+        ::std::less<int>{});
     }
     // Heavy ties across runs (16 distinct keys), descending custom comparator (merge-sort path).
     {
       const size_t n = 400009;
       run_case<int>(
-        group, even(n), rnd(n, [&] { return static_cast<int>(rng() % 16); }), descending{}, ::std::greater<int>{});
+        group,
+        even(n),
+        rnd(n,
+            [&] {
+              return static_cast<int>(rng() % 16);
+            }),
+        descending{},
+        ::std::greater<int>{});
     }
     // All keys equal.
     {
@@ -321,7 +335,10 @@ void test_many_places(const cuda::experimental::places::exec_place& place)
       run_case<long long>(
         group,
         sz,
-        rnd(n, [&] { return static_cast<long long>(rng()); }),
+        rnd(n,
+            [&] {
+              return static_cast<long long>(rng());
+            }),
         ::cuda::std::less<long long>{},
         ::std::less<long long>{});
     }
@@ -329,9 +346,16 @@ void test_many_places(const cuda::experimental::places::exec_place& place)
     {
       ::std::vector<size_t> one(P, 1);
       run_case<int>(
-        group, one, rnd(P, [&] { return static_cast<int>(rng() % 5); }), ::cuda::std::less<int>{}, ::std::less<int>{});
+        group,
+        one,
+        rnd(P,
+            [&] {
+              return static_cast<int>(rng() % 5);
+            }),
+        ::cuda::std::less<int>{},
+        ::std::less<int>{});
       ::std::vector<size_t> few(P, 0);
-      few[0] = 2;
+      few[0]     = 2;
       few[P - 1] = 1;
       run_case<int>(group, few, {9, 3, 7}, ::cuda::std::less<int>{}, ::std::less<int>{});
       ::std::vector<size_t> single(P, 0);
