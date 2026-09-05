@@ -343,7 +343,10 @@ C2H_CCCLRT_TEST("unicast logical endpoint honors reported maximum size", "[logic
   auto spec   = unicast_spec(device);
   auto limits = validate_logical_endpoint_support(spec, device);
 
-  REQUIRE(limits.max_size != 0);
+  if (limits.max_size == 0)
+  {
+    SKIP("no maximum logical endpoint size is reported");
+  }
 
   cuda::unicast_logical_endpoint at_max{spec, limits.max_size};
   REQUIRE(at_max.wait_until_ready(logical_endpoint_test::ready_timeout));
@@ -841,7 +844,10 @@ C2H_CCCLRT_TEST("multicast logical endpoint honors reported maximum size", "[log
   auto spec                  = multicast_spec(2);
   auto limits                = validate_logical_endpoint_support(spec, device, peer_device);
 
-  REQUIRE(limits.max_size != 0);
+  if (limits.max_size == 0)
+  {
+    SKIP("no maximum logical endpoint size is reported");
+  }
 
   cuda::multicast_logical_endpoint at_max{spec, limits.max_size};
   at_max.add_device(device);

@@ -108,8 +108,8 @@ enum class logical_endpoint_flag : unsigned
 
 //! @brief Combines CUDA logical endpoint creation flags.
 //!
-//! @param __lhs The first flag set to combine.
-//! @param __rhs The second flag set to combine.
+//! @param[in] __lhs The first flag set to combine.
+//! @param[in] __rhs The second flag set to combine.
 //! @return The combined flag set.
 [[nodiscard]] _CCCL_HOST_API constexpr logical_endpoint_flag
 operator|(logical_endpoint_flag __lhs, logical_endpoint_flag __rhs) noexcept
@@ -169,7 +169,7 @@ public:
   //!
   //! This constructor is intentionally implicit so APIs can accept native IDs without duplicating overloads.
   //!
-  //! @param __id The CUDA logical endpoint ID.
+  //! @param[in] __id The CUDA logical endpoint ID.
   _CCCL_HOST_DEVICE_API constexpr logical_endpoint_id(native_handle_type __id) noexcept
       : __id_(__id)
   {}
@@ -297,7 +297,7 @@ class logical_endpoint_id_range
 public:
   //! @brief Reserves a contiguous range of CUDA logical endpoint IDs.
   //!
-  //! @param __count The number of endpoint IDs to reserve.
+  //! @param[in] __count The number of endpoint IDs to reserve.
   _CCCL_HOST_API explicit logical_endpoint_id_range(::cuda::std::uint32_t __count)
       : __range_(__count)
   {}
@@ -343,7 +343,7 @@ public:
 
   //! @brief Returns an ID from the reserved contiguous range.
   //!
-  //! @param __index The zero-based index into the reserved range.
+  //! @param[in] __index The zero-based index into the reserved range.
   //! @return `base_id() + __index`.
   [[nodiscard]] _CCCL_HOST_API logical_endpoint_id operator[](::cuda::std::uint32_t __index) const noexcept
   {
@@ -441,6 +441,12 @@ __wait_until_ready_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanose
 
   for (int __count = 0;;)
   {
+    const auto __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
+    if (__timeout != ::cuda::std::chrono::nanoseconds::zero() && __timeout <= __elapsed)
+    {
+      return false;
+    }
+
     if (__is_ready())
     {
       return true;
@@ -454,12 +460,6 @@ __wait_until_ready_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanose
       }
       ++__count;
       continue;
-    }
-
-    const auto __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
-    if (__timeout != ::cuda::std::chrono::nanoseconds::zero() && __timeout < __elapsed)
-    {
-      return false;
     }
 
     const auto __step = __elapsed / 4;
@@ -490,7 +490,7 @@ protected:
 public:
   //! @brief Creates a logical endpoint reference base from a logical endpoint ID.
   //!
-  //! @param __id The logical endpoint ID.
+  //! @param[in] __id The logical endpoint ID.
   _CCCL_HOST_DEVICE_API explicit constexpr __logical_endpoint_ref_base(logical_endpoint_id __id) noexcept
       : __id_(__id)
   {}
@@ -521,7 +521,7 @@ public:
 
   //! @brief Waits until the referenced endpoint is ready or a timeout expires.
   //!
-  //! @param __timeout The timeout duration; zero means wait indefinitely.
+  //! @param[in] __timeout The timeout duration; zero means wait indefinitely.
   //! @return `true` if the endpoint became ready before timeout.
   [[nodiscard]] _CCCL_HOST_API bool
   wait_until_ready(::cuda::std::chrono::nanoseconds __timeout = ::cuda::std::chrono::nanoseconds::zero()) const
@@ -544,10 +544,10 @@ public:
 
   //! @brief Binds a device pointer range to an endpoint offset.
   //!
-  //! @param __device The device whose memory is being bound.
-  //! @param __endpoint_offset The byte offset in the logical endpoint.
-  //! @param __ptr The device pointer to bind.
-  //! @param __bytes The number of bytes to bind.
+  //! @param[in] __device The device whose memory is being bound.
+  //! @param[in] __endpoint_offset The byte offset in the logical endpoint.
+  //! @param[in] __ptr The device pointer to bind.
+  //! @param[in] __bytes The number of bytes to bind.
   _CCCL_HOST_API void bind(::cuda::device_ref __device,
                            ::cuda::std::uint64_t __endpoint_offset,
                            void* __ptr,
@@ -567,12 +567,12 @@ public:
 
   //! @brief Binds a generic allocation handle range to an endpoint offset.
   //!
-  //! @param __device The device whose memory is being bound.
-  //! @param __endpoint_offset The byte offset in the logical endpoint.
-  //! @param __handle The CUDA generic allocation handle to bind.
-  //! @param __handle_offset The byte offset in the generic allocation handle.
-  //! @param __bytes The number of bytes to bind.
-  //! @param __bind_flags CUDA logical endpoint bind flags.
+  //! @param[in] __device The device whose memory is being bound.
+  //! @param[in] __endpoint_offset The byte offset in the logical endpoint.
+  //! @param[in] __handle The CUDA generic allocation handle to bind.
+  //! @param[in] __handle_offset The byte offset in the generic allocation handle.
+  //! @param[in] __bytes The number of bytes to bind.
+  //! @param[in] __bind_flags CUDA logical endpoint bind flags.
   _CCCL_HOST_API void
   bind(::cuda::device_ref __device,
        ::cuda::std::uint64_t __endpoint_offset,
@@ -593,9 +593,9 @@ public:
 
   //! @brief Unbinds an endpoint byte range for a device.
   //!
-  //! @param __device The device whose binding is being removed.
-  //! @param __endpoint_offset The byte offset in the logical endpoint.
-  //! @param __bytes The number of bytes to unbind.
+  //! @param[in] __device The device whose binding is being removed.
+  //! @param[in] __endpoint_offset The byte offset in the logical endpoint.
+  //! @param[in] __bytes The number of bytes to unbind.
   _CCCL_HOST_API void
   unbind(::cuda::device_ref __device, ::cuda::std::uint64_t __endpoint_offset, ::cuda::std::uint64_t __bytes) const
   {
@@ -714,7 +714,7 @@ public:
 
   //! @brief Waits until the owned endpoint is ready or a timeout expires.
   //!
-  //! @param __timeout The timeout duration; zero means wait indefinitely.
+  //! @param[in] __timeout The timeout duration; zero means wait indefinitely.
   //! @return `true` if the endpoint became ready before timeout.
   [[nodiscard]] _CCCL_HOST_API bool
   wait_until_ready(::cuda::std::chrono::nanoseconds __timeout = ::cuda::std::chrono::nanoseconds::zero()) const

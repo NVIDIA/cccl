@@ -25,6 +25,8 @@
 
 #  include <cuda/__logical_endpoint/common.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/optional>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -40,9 +42,9 @@ class unicast_logical_endpoint_spec
 public:
   //! @brief Creates a unicast endpoint specification.
   //!
-  //! @param __device The CUDA device for the unicast endpoint.
-  //! @param __flags Logical endpoint creation flags.
-  //! @param __ipc The IPC handle type requested for this endpoint.
+  //! @param[in] __device The CUDA device for the unicast endpoint.
+  //! @param[in] __flags Logical endpoint creation flags.
+  //! @param[in] __ipc The IPC handle type requested for this endpoint.
   _CCCL_HOST_API explicit unicast_logical_endpoint_spec(
     ::cuda::device_ref __device,
     logical_endpoint_flag __flags          = logical_endpoint_flag::none,
@@ -80,7 +82,7 @@ public:
   //!
   //! Construction still uses `device()`. The optional checker device is only used for capability queries.
   //!
-  //! @param __checker Optional device used for support attribute checks.
+  //! @param[in] __checker Optional device used for support attribute checks.
   //! @return `true` if the requested configuration is supported by the checked device.
   [[nodiscard]] _CCCL_HOST_API bool
   is_supported(::cuda::std::optional<::cuda::device_ref> __checker = ::cuda::std::nullopt) const;
@@ -133,7 +135,7 @@ class unicast_logical_endpoint_ref
 public:
   //! @brief Creates a unicast endpoint reference from a logical endpoint ID.
   //!
-  //! @param __id The logical endpoint ID.
+  //! @param[in] __id The logical endpoint ID.
   _CCCL_HOST_DEVICE_API explicit constexpr unicast_logical_endpoint_ref(logical_endpoint_id __id) noexcept
       : __base(__id)
   {}
@@ -172,8 +174,8 @@ public:
 
   //! @brief Reserves one ID and creates a unicast logical endpoint.
   //!
-  //! @param __spec The endpoint specification.
-  //! @param __bytes The endpoint size in bytes.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API explicit unicast_logical_endpoint(const unicast_logical_endpoint_spec& __spec,
                                                    ::cuda::std::uint64_t __bytes)
       : unicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __spec, __bytes)
@@ -181,9 +183,9 @@ public:
 
   //! @brief Creates a unicast logical endpoint from a caller-managed ID.
   //!
-  //! @param __id The caller-managed logical endpoint ID.
-  //! @param __spec The endpoint specification.
-  //! @param __bytes The endpoint size in bytes.
+  //! @param[in] __id The caller-managed logical endpoint ID.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API unicast_logical_endpoint(
     logical_endpoint_id __id, const unicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
       : __base(__id)
@@ -194,10 +196,10 @@ public:
 
   //! @brief Creates a unicast logical endpoint from an ID in a retained range.
   //!
-  //! @param __range The logical endpoint ID range to retain.
-  //! @param __index The ID index in the range.
-  //! @param __spec The endpoint specification.
-  //! @param __bytes The endpoint size in bytes.
+  //! @param[in] __range The logical endpoint ID range to retain.
+  //! @param[in] __index The ID index in the range.
+  //! @param[in] __spec The endpoint specification.
+  //! @param[in] __bytes The endpoint size in bytes.
   _CCCL_HOST_API unicast_logical_endpoint(
     const logical_endpoint_id_range& __range,
     ::cuda::std::uint32_t __index,
@@ -213,7 +215,7 @@ public:
 
 //! @brief Converts a unicast logical endpoint owner to the ref passed to kernels by `cuda::launch`.
 //!
-//! @param __endpoint The non-empty owning endpoint.
+//! @param[in] __endpoint The non-empty owning endpoint.
 //! @return A non-owning unicast endpoint ref for the kernel argument list.
 [[nodiscard]] _CCCL_HOST_API constexpr unicast_logical_endpoint_ref
 transform_launch_argument(::cuda::stream_ref, const unicast_logical_endpoint& __endpoint) noexcept
