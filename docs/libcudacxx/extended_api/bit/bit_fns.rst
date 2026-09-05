@@ -43,6 +43,10 @@ The function performs essentially the following operations in device code, for `
 
 .. note::
 
+    If the caller guarantees ``rank < cuda::std::popcount(value)``, using ``__builtin_assume`` before the call can eliminate the not-found check. A false assumption results in undefined behavior.
+
+.. note::
+
     For a non-zero ``value``, ``bit_fns(value, 0)`` is equal to ``cuda::std::countr_zero(value)``.
 
 Example
