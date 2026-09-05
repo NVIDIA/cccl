@@ -21,18 +21,25 @@ from ._thread_group import (
 )
 
 _GROUP_OPERATION_MODULES = {
+    "adjacent_difference": "_group_adjacent_difference",
+    "discontinuity": "_group_discontinuity",
+    "exchange": "_group_exchange",
     "exclusive_scan": "_group_scan",
     "exclusive_sum": "_group_scan",
+    "histogram": "_group_histogram",
     "inclusive_scan": "_group_scan",
     "inclusive_sum": "_group_scan",
     "load": "_group_load_store",
     "reduce": "_group_reduce",
+    "run_length_decode": "_group_run_length_decode",
     "scan": "_group_scan",
+    "shuffle": "_group_shuffle",
     "store": "_group_load_store",
     "sum": "_group_reduce",
 }
 
 __all__ = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -44,17 +51,23 @@ __all__ = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "local",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
+    "shuffle",
     "store",
     "sum",
     "this_block",
@@ -86,6 +99,7 @@ def __getattr__(name):
         globals()[name] = value
         return value
     if name in {
+        "BlockHistogramAlgorithm",
         "BlockLoadAlgorithm",
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",

@@ -9,15 +9,21 @@ across focused rewrite mixins. This module owns registration, the stable
 operation specification table, match/apply ordering, and whole-function retry.
 """
 
+from ._rewrite_adjacent_difference import _AdjacentDifferenceRewrite
 from ._rewrite_arguments import _ArgumentRewrite
+from ._rewrite_discontinuity import _DiscontinuityRewrite
+from ._rewrite_exchange import _ExchangeRewrite
 from ._rewrite_group_metadata import _GroupMetadataRewrite
+from ._rewrite_histogram import _HistogramRewrite
 from ._rewrite_invocables import _InvocableRewrite
 from ._rewrite_launch import _LaunchRewrite
 from ._rewrite_load_store import _LoadStoreRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
 from ._rewrite_reduce import _ReduceRewrite
+from ._rewrite_run_length_decode import _RunLengthDecodeRewrite
 from ._rewrite_scan import _ScanRewrite
+from ._rewrite_shuffle import _ShuffleRewrite
 from ._rewrite_storage import _StorageRewrite
 from ._rewrite_support import (
     _GLOBAL_NAME_COUNTER,
@@ -40,10 +46,16 @@ class CoopSinglePhaseRewrite(
     _ProvenanceRewrite,
     _ArgumentRewrite,
     _LaunchRewrite,
+    _RunLengthDecodeRewrite,
+    _HistogramRewrite,
     _GroupMetadataRewrite,
-    _ScanRewrite,
-    _LoadStoreRewrite,
     _ReduceRewrite,
+    _ScanRewrite,
+    _AdjacentDifferenceRewrite,
+    _DiscontinuityRewrite,
+    _ShuffleRewrite,
+    _ExchangeRewrite,
+    _LoadStoreRewrite,
     _PayloadRewrite,
     _InvocableRewrite,
     _StorageRewrite,
@@ -56,6 +68,8 @@ class CoopSinglePhaseRewrite(
             "load",
             "scan",
             "store",
+            "adjacent_difference",
+            "discontinuity",
             "warp_load",
             "warp_store",
         }
@@ -129,6 +143,27 @@ class CoopSinglePhaseRewrite(
                 "_common_root_operation",
             },
             "required_factory_kwargs": {"dtype", "threads_per_block"},
+        },
+        "adjacent_difference": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4},
+            "allowed_factory_kwargs": {
+                "block_adjacent_difference_type",
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "difference_op",
+                "methods",
+                "valid_items",
+                "tile_predecessor_item",
+                "tile_successor_item",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "difference_op",
+            },
         },
         "scan": {
             "namespace": "block",
@@ -282,6 +317,103 @@ class CoopSinglePhaseRewrite(
             },
             "required_factory_kwargs": {"threads_per_block", "dtype"},
         },
+        "shuffle": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2, 3},
+            "allowed_factory_kwargs": {
+                "block_suffix",
+                "threads_per_block",
+                "items_per_thread",
+                "_common_root_operation",
+                "distance",
+                "dtype",
+                "block_shuffle_type",
+                "block_prefix",
+                "methods",
+            },
+            "required_factory_kwargs": {"threads_per_block", "dtype"},
+        },
+        "discontinuity": {
+            "namespace": "block",
+            "runtime_arg_counts": {2, 3, 4, 5},
+            "allowed_factory_kwargs": {
+                "dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "flag_op",
+                "flag_dtype",
+                "block_discontinuity_type",
+                "methods",
+                "tile_predecessor_item",
+                "tile_successor_item",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {"dtype", "threads_per_block", "flag_op"},
+        },
+        "exchange": {
+            "namespace": "block",
+            "runtime_arg_counts": {1, 2, 3, 4},
+            "allowed_factory_kwargs": {
+                "use_output_items",
+                "offset_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "_common_root_operation",
+                "dtype",
+                "block_exchange_type",
+                "warp_time_slicing",
+                "methods",
+                "valid_flag_dtype",
+            },
+            "required_factory_kwargs": {"threads_per_block", "dtype"},
+        },
+        "_group_histogram": {
+            "namespace": "block",
+            "runtime_arg_counts": {2},
+            "allowed_factory_kwargs": {
+                "item_dtype",
+                "counter_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "bins",
+                "algorithm",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "item_dtype",
+                "counter_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "bins",
+            },
+        },
+        "_group_run_length_decode": {
+            "namespace": "block",
+            "runtime_arg_counts": {5, 6},
+            "allowed_factory_kwargs": {
+                "item_dtype",
+                "run_length_dtype",
+                "decoded_offset_dtype",
+                "total_decoded_size_dtype",
+                "relative_offset_dtype",
+                "threads_per_block",
+                "runs_per_thread",
+                "decoded_items_per_thread",
+                "with_relative_offsets",
+                "_static_decoded_window_offset",
+                "_common_root_operation",
+            },
+            "required_factory_kwargs": {
+                "item_dtype",
+                "run_length_dtype",
+                "decoded_offset_dtype",
+                "total_decoded_size_dtype",
+                "threads_per_block",
+                "runs_per_thread",
+                "decoded_items_per_thread",
+                "with_relative_offsets",
+            },
+        },
         "warp_load": {
             "namespace": "warp",
             "runtime_arg_counts": {2, 3, 4},
@@ -318,7 +450,24 @@ class CoopSinglePhaseRewrite(
             },
             "required_factory_kwargs": {"dtype"},
         },
+        "warp_exchange": {
+            "namespace": "warp",
+            "runtime_arg_counts": {2, 3},
+            "allowed_factory_kwargs": {
+                "warp_exchange_type",
+                "use_output_items",
+                "offset_dtype",
+                "threads_per_block",
+                "items_per_thread",
+                "_common_root_operation",
+                "threads_in_warp",
+                "dtype",
+                "methods",
+            },
+            "required_factory_kwargs": {"dtype"},
+        },
     }
+
     for _spec in _OP_SPECS.values():
         if (
             _spec["namespace"] == "block"
@@ -332,6 +481,7 @@ class CoopSinglePhaseRewrite(
     )
     _WARP_OPS = frozenset(
         {
+            "warp_exchange",
             "warp_exclusive_scan",
             "warp_exclusive_sum",
             "warp_inclusive_scan",

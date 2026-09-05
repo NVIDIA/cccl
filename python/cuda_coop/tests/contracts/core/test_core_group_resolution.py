@@ -15,7 +15,7 @@ from tests.support.group_planning import (
     LaunchFactOrigin,
     LaunchFacts,
     UnsupportedReasonCode,
-    _load_store,
+    _exchange,
     _plan,
     _reduce,
     merge_launch_facts,
@@ -424,13 +424,13 @@ def test_partial_physical_warp_partition_fails_closed():
     assert mapped_plan.unsupported.code is UnsupportedReasonCode.PARTIAL_PHYSICAL_WARP
 
 
-def test_load_requires_exact_launch_and_complete_physical_warps():
+def test_exchange_requires_exact_launch_and_complete_physical_warps():
     missing_exact = _plan(
         this_block(),
-        _load_store(),
+        _exchange(),
         LaunchFacts(max_block_dim=128),
     )
-    partial_warp = _plan(this_warp(), _load_store(), 48)
+    partial_warp = _plan(this_warp(), _exchange(), 48)
 
     assert (
         missing_exact.unsupported.code is UnsupportedReasonCode.MISSING_EXACT_BLOCK_DIM

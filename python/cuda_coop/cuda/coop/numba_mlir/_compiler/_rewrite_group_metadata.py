@@ -94,6 +94,13 @@ class _GroupMetadataRewrite:
                 "warp_inclusive_sum": frozenset({"scan", "inclusive_sum"}),
                 "warp_exclusive_scan": frozenset({"scan", "exclusive_scan"}),
                 "warp_inclusive_scan": frozenset({"scan", "inclusive_scan"}),
+                "exchange": frozenset({"exchange"}),
+                "warp_exchange": frozenset({"exchange"}),
+                "adjacent_difference": frozenset({"adjacent_difference"}),
+                "discontinuity": frozenset({"discontinuity"}),
+                "shuffle": frozenset({"shuffle"}),
+                "_group_histogram": frozenset({"histogram"}),
+                "_group_run_length_decode": frozenset({"run_length_decode"}),
             }
             if common_root_operation not in operation_families.get(
                 op_name, frozenset()
@@ -101,9 +108,29 @@ class _GroupMetadataRewrite:
                 raise CoopSinglePhaseRewriteError(
                     "_common_root_operation does not match the rewritten group operation"
                 )
-            from ._parameters import _validate_common_numeric_dtype
+            from ._parameters import (
+                _validate_common_histogram_dtypes,
+                _validate_common_numeric_dtype,
+                _validate_common_run_length_decode_dtypes,
+            )
 
-            if op_name in {"load", "warp_load", "store", "warp_store"}:
+            if op_name == "_group_histogram":
+                try:
+                    _validate_common_histogram_dtypes(
+                        factory_kwargs.get("item_dtype"),
+                        factory_kwargs.get("counter_dtype"),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name == "_group_run_length_decode":
+                try:
+                    _validate_common_run_length_decode_dtypes(
+                        factory_kwargs.get("item_dtype"),
+                        factory_kwargs.get("run_length_dtype"),
+                    )
+                except (TypeError, ValueError) as exc:
+                    raise CoopSinglePhaseRewriteError(str(exc)) from exc
+            elif op_name in {"load", "warp_load", "store", "warp_store"}:
                 operand_names = (
                     ("source", "output")
                     if op_name in {"load", "warp_load"}

@@ -15,6 +15,7 @@ from cuda.coop.numba_mlir import (
 from cuda.coop.numba_mlir._compiler import _activation
 
 _PUBLIC_EXPORTS = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
@@ -26,17 +27,23 @@ _PUBLIC_EXPORTS = [
     "ThreadHierarchy",
     "WarpLoadAlgorithm",
     "WarpStoreAlgorithm",
+    "adjacent_difference",
+    "discontinuity",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "gpu_dataclass",
     "gpu_dataclass_argument_handler",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "local",
     "reduce",
+    "run_length_decode",
     "scan",
     "shared",
+    "shuffle",
     "store",
     "sum",
     "this_block",
@@ -60,8 +67,6 @@ def test_public_exports_cover_the_incremental_primitive_families():
     assert "cuda.coop.numba_mlir._group_load_store" in loaded
     assert "cuda.coop.numba_mlir._group_reduce" in loaded
     assert "cuda.coop.numba_mlir._group_scan" in loaded
-    assert "cuda.coop.numba_mlir._group_exchange" not in loaded
-    assert "cuda.coop.numba_mlir._group_shuffle" not in loaded
     assert "cuda.coop.numba_mlir._compiler._rewrite" in loaded
     assert importlib.import_module("cuda.coop.numba_mlir._lowering").__all__ == ()
 

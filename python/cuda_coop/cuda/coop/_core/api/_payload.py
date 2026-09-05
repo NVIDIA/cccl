@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Shared payload validation for portable root calls.
+"""Shared payload and dtype validation for portable root calls.
 
 Family frontends use these import-light helpers before delegating to a compiler
 backend. The validators define the conservative portable contract and do not
@@ -15,6 +15,7 @@ from numbers import Integral
 from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from ..dtype_policy import (
+    validate_portable_integer_key_dtype_name,
     validate_portable_integer_value_dtype_name,
     validate_portable_numeric_dtype_name,
 )
@@ -170,6 +171,12 @@ def _common_numeric_dtype_name(dtype: Any) -> str:
     return str(dtype).lower()
 
 
+def _common_integer_dtype_name(dtype: Any) -> str:
+    """Normalize a Python or structural compiler integer dtype to its name."""
+
+    return _common_numeric_dtype_name(dtype)
+
+
 def _is_common_numeric_scalar(value: Any) -> bool:
     """Return whether ``value`` has the portable scalar representation."""
 
@@ -309,6 +316,118 @@ def _validate_common_numeric_operator(
             operation=operation,
             parameter=parameter,
         )
+
+
+def _validate_common_run_length_decode_dtype(
+    parameter: str,
+    value: ThreadDataLike[Any],
+    *,
+    allow_uint8: bool,
+) -> tuple[int, bool]:
+    """Require one portable decode dtype and return its width and signedness."""
+
+    dtype_name = _common_integer_dtype_name(
+        _common_payload_dtype("run_length_decode", parameter, value)
+    )
+    validator = (
+        validate_portable_integer_value_dtype_name
+        if allow_uint8
+        else validate_portable_integer_key_dtype_name
+    )
+    dtype_name = validator(
+        dtype_name,
+        operation="run_length_decode",
+        parameter=parameter,
+    )
+    return int(
+        dtype_name.removeprefix("u").removeprefix("int")
+    ), not dtype_name.startswith("u")
+
+
+def _is_compiler_integer(value: Any) -> bool:
+    """Return whether a dynamic value exposes the portable integer protocol."""
+
+    missing = object()
+    width = getattr(value, "width", missing)
+    signed = getattr(value, "signed", missing)
+    dtype = getattr(value, "dtype", missing)
+    ir_value = getattr(value, "ir_value", missing)
+    return (
+        isinstance(width, Integral)
+        and not isinstance(width, bool)
+        and width > 0
+        and isinstance(signed, bool)
+        and dtype is not missing
+        and callable(ir_value)
+    )
+
+
+def _validate_common_run_length_decode_controls(
+    *,
+    decoded_items_per_thread: Any,
+    decoded_window_offset: Any,
+    run_length_width: int,
+    run_length_signed: bool,
+) -> None:
+    """Validate trace-static output shape and the portable window scalar."""
+
+    if isinstance(decoded_items_per_thread, bool) or not isinstance(
+        decoded_items_per_thread, Integral
+    ):
+        raise TypeError(
+            "cuda.coop.run_length_decode decoded_items_per_thread must be a "
+            "compile-time positive integer"
+        )
+    if int(decoded_items_per_thread) <= 0:
+        raise ValueError(
+            "cuda.coop.run_length_decode decoded_items_per_thread must be a "
+            "compile-time positive integer"
+        )
+
+    if isinstance(decoded_window_offset, bool):
+        raise TypeError(
+            "cuda.coop.run_length_decode decoded_window_offset must be an "
+            "int-like scalar"
+        )
+    if isinstance(decoded_window_offset, Integral):
+        normalized_offset = int(decoded_window_offset)
+        if normalized_offset < 0:
+            raise ValueError(
+                "cuda.coop.run_length_decode decoded_window_offset must be non-negative"
+            )
+        value_bits = run_length_width - 1 if run_length_signed else run_length_width
+        if normalized_offset >= 1 << value_bits:
+            raise ValueError(
+                "cuda.coop.run_length_decode decoded_window_offset must be "
+                "representable in the run_lengths dtype"
+            )
+        return
+    if not _is_compiler_integer(decoded_window_offset):
+        raise TypeError(
+            "cuda.coop.run_length_decode decoded_window_offset must be an "
+            "int-like scalar"
+        )
+
+
+def _validate_common_integer_dtype(
+    operation: str,
+    parameter: str,
+    dtype: Any,
+    *,
+    allow_uint8: bool,
+) -> None:
+    """Require one portable integral dtype used by a specialized operation."""
+
+    validator = (
+        validate_portable_integer_value_dtype_name
+        if allow_uint8
+        else validate_portable_integer_key_dtype_name
+    )
+    validator(
+        _common_integer_dtype_name(dtype),
+        operation=operation,
+        parameter=parameter,
+    )
 
 
 __all__ = ["TempStorageLike", "ThreadDataLike"]

@@ -12,6 +12,10 @@ live in the adjacent semantic group mixins.
 import cuda.coop._core.api._dispatch as _portable_dispatch
 
 from .._thread_data import ThreadData
+from ._group_adjacent_difference import _AdjacentDifferencePlanning
+from ._group_discontinuity import _DiscontinuityPlanning
+from ._group_exchange import _ExchangePlanning
+from ._group_histogram import _HistogramPlanning
 from ._group_load_store import _LoadStorePlanning
 from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
@@ -44,13 +48,21 @@ from ._group_planner_support import (
     types,
 )
 from ._group_reduce import _ReducePlanning
+from ._group_run_length_decode import _RunLengthDecodePlanning
 from ._group_scan import _ScanPlanning
+from ._group_shuffle import _ShufflePlanning
 
 
 class _GroupCallPlanner(
     _LoadStorePlanning,
     _ReducePlanning,
     _ScanPlanning,
+    _ExchangePlanning,
+    _AdjacentDifferencePlanning,
+    _DiscontinuityPlanning,
+    _ShufflePlanning,
+    _HistogramPlanning,
+    _RunLengthDecodePlanning,
 ):
     """Coordinate semantic family lowering against one function IR."""
 
@@ -274,6 +286,23 @@ class _GroupCallPlanner(
                 "algorithm",
                 _portable_dispatch._SCAN_ALGORITHMS,
                 True,
+            ),
+            "exchange": ("mode", _portable_dispatch._EXCHANGE_MODES, False),
+            "adjacent_difference": (
+                "direction",
+                _portable_dispatch._ADJACENT_DIFFERENCE_DIRECTIONS,
+                False,
+            ),
+            "discontinuity": (
+                "mode",
+                _portable_dispatch._DISCONTINUITY_MODES,
+                False,
+            ),
+            "shuffle": ("mode", _portable_dispatch._SHUFFLE_MODES, False),
+            "histogram": (
+                "algorithm",
+                _portable_dispatch._HISTOGRAM_ALGORITHMS,
+                False,
             ),
         }
         spec = selector_specs.get(operation)
@@ -509,6 +538,31 @@ class _GroupCallPlanner(
             )
         if definition.op != "call":
             return False
+        function = self._callable(definition.func)
+        operation = _group_operation_name(function)
+        if operation == "discontinuity":
+            bound = self._bind(function, definition)
+            from cuda.coop._core.block import BlockDiscontinuityMode
+
+            try:
+                mode = BlockDiscontinuityMode(self._constant(bound.arguments["mode"]))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cuda.coop.numba_mlir.discontinuity mode must be "
+                    "'heads', 'tails', or 'heads_and_tails'"
+                ) from exc
+            if mode is not BlockDiscontinuityMode.HEADS_AND_TAILS:
+                return False
+            if index < 0:
+                index += 2
+            if not 0 <= index < 2:
+                return False
+            return self._is_array_value(
+                bound.arguments["value"],
+                seen=seen,
+                thread_data_only=thread_data_only,
+            )
+
         return False
 
     def _is_array_value(
@@ -588,13 +642,39 @@ class _GroupCallPlanner(
             )
         if function is _cuda_module.local.array:
             return not thread_data_only
+        if operation == "discontinuity":
+            bound = self._bind(function, definition)
+            from cuda.coop._core.block import BlockDiscontinuityMode
+
+            try:
+                mode = BlockDiscontinuityMode(self._constant(bound.arguments["mode"]))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cuda.coop.numba_mlir.discontinuity mode must be "
+                    "'heads', 'tails', or 'heads_and_tails'"
+                ) from exc
+            if mode is BlockDiscontinuityMode.HEADS_AND_TAILS:
+                return False
+            return self._is_array_value(
+                bound.arguments["value"],
+                seen=seen,
+                thread_data_only=thread_data_only,
+            )
+        if thread_data_only and operation in {"histogram", "run_length_decode"}:
+            return True
         array_result_argument = {
+            "adjacent_difference": "value",
+            "discontinuity": "value",
+            "exchange": "value",
+            "histogram": "samples",
             "load": "output",
             "scan": "value",
             "exclusive_sum": "value",
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "run_length_decode": "run_values",
+            "shuffle": "value",
         }.get(operation)
         if array_result_argument is None:
             return False
@@ -775,6 +855,27 @@ class _GroupCallPlanner(
             return self._array_extent(items[index], seen=set(seen))
         if definition.op != "call":
             return None
+        function = self._callable(definition.func)
+        operation = _group_operation_name(function)
+        if operation == "discontinuity":
+            bound = self._bind(function, definition)
+            from cuda.coop._core.block import BlockDiscontinuityMode
+
+            try:
+                mode = BlockDiscontinuityMode(self._constant(bound.arguments["mode"]))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cuda.coop.numba_mlir.discontinuity mode must be "
+                    "'heads', 'tails', or 'heads_and_tails'"
+                ) from exc
+            if mode is not BlockDiscontinuityMode.HEADS_AND_TAILS:
+                return None
+            if index < 0:
+                index += 2
+            if not 0 <= index < 2:
+                return None
+            return self._array_extent(bound.arguments["value"], seen=set(seen))
+
         return None
 
     def _array_extent_definition(
@@ -849,13 +950,35 @@ class _GroupCallPlanner(
                 return int(extent)
             return None
         operation = _group_operation_name(function)
+        if operation == "histogram":
+            bound = self._bind(function, definition)
+            try:
+                extent = self._constant(bound.arguments["bins_per_thread"])
+            except GroupRewriteError:
+                return None
+            if isinstance(extent, Integral) and not isinstance(extent, bool):
+                return int(extent)
+            return None
+        if operation == "run_length_decode":
+            bound = self._bind(function, definition)
+            try:
+                extent = self._constant(bound.arguments["decoded_items_per_thread"])
+            except GroupRewriteError:
+                return None
+            if isinstance(extent, Integral) and not isinstance(extent, bool):
+                return int(extent)
+            return None
         shape_argument = {
+            "adjacent_difference": "value",
+            "discontinuity": "value",
+            "exchange": "value",
             "load": "output",
             "scan": "value",
             "exclusive_sum": "value",
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "shuffle": "value",
         }.get(operation)
         if shape_argument is None:
             return None
@@ -944,6 +1067,105 @@ class _GroupCallPlanner(
         )
         return payload
 
+    def _thread_data_payload(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        items_per_thread: Any,
+        dtype: Any,
+    ) -> ir.Var:
+        """Emit an explicitly typed ThreadData marker for a fresh result."""
+
+        result = self._new_var(scope, loc, f"{stem}_payload")
+        proxy = ir.Assign(ir.Const(None, loc), result, loc)
+        statements.extend(
+            self._rewritten_call(
+                proxy,
+                factory=ThreadData,
+                args=[items_per_thread, dtype],
+                kwargs={},
+            )
+        )
+        return result
+
+    def _emit_factory_call(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        factory: Any,
+        args: list[Any],
+        kwargs: dict[str, Any],
+    ) -> ir.Var:
+        """Emit one planner-private provider call."""
+
+        result = self._new_var(scope, loc, stem)
+        proxy = ir.Assign(ir.Const(None, loc), result, loc)
+        statements.extend(
+            self._rewritten_call(
+                proxy,
+                factory=factory,
+                args=args,
+                kwargs=kwargs,
+            )
+        )
+        return result
+
+    def _emit_shared_array(
+        self,
+        statements: list[Any],
+        *,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+        items: Any,
+        dtype: Any,
+    ) -> ir.Var:
+        """Emit a statically sized compiler-owned shared array."""
+
+        from numba_cuda_mlir import cuda as cuda_module
+
+        module_var = self._new_var(scope, loc, f"{stem}_cuda")
+        shared_var = self._new_var(scope, loc, f"{stem}_shared")
+        array_var = self._new_var(scope, loc, f"{stem}_array")
+        statements.append(
+            ir.Assign(ir.Global(module_var.name, cuda_module, loc), module_var, loc)
+        )
+        statements.append(
+            ir.Assign(ir.Expr.getattr(module_var, "shared", loc), shared_var, loc)
+        )
+        statements.append(
+            ir.Assign(ir.Expr.getattr(shared_var, "array", loc), array_var, loc)
+        )
+        items_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_items",
+            value=items,
+        )
+        dtype_var = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_dtype",
+            value=dtype,
+        )
+        result = self._new_var(scope, loc, f"{stem}_result")
+        statements.append(
+            ir.Assign(
+                ir.Expr.call(array_var, [items_var, dtype_var], (), loc),
+                result,
+                loc,
+            )
+        )
+        return result
+
     def _boxed_group_operand(
         self,
         statements: list[Any],
@@ -1021,6 +1243,7 @@ class _GroupCallPlanner(
         from cuda.coop._core.group._contracts import _cub_warp_width
 
         name = {
+            "exchange": "warp_exchange",
             "load": "warp_load",
             "store": "warp_store",
             "sum": "warp_sum",
@@ -1073,11 +1296,21 @@ class _GroupCallPlanner(
             else:
                 bound.arguments.setdefault("scan_op", None)
                 bound.arguments["initial_value"] = None
+        bound.arguments.setdefault("difference_op", None)
+        bound.arguments.setdefault("flag_op", None)
+        bound.arguments.setdefault("block_prefix", None)
+        bound.arguments.setdefault("block_suffix", None)
         bound.arguments.setdefault("valid_items", None)
         bound.arguments.setdefault("aggregate_output", None)
         bound.arguments.setdefault("prefix_state", None)
         bound.arguments.setdefault("prefix_op", None)
         bound.arguments.setdefault("block_prefix_callback_op", None)
+        bound.arguments.setdefault("ranks", None)
+        bound.arguments.setdefault("valid_flags", None)
+        bound.arguments.setdefault("warp_time_slicing", False)
+        bound.arguments.setdefault("relative_offsets", None)
+        bound.arguments.setdefault("total_decoded_size", None)
+        bound.arguments.setdefault("decoded_offset_dtype", None)
         if is_common_root:
             self._validate_common_arguments(operation, bound)
         normalized_scan_op = None
@@ -1131,6 +1364,42 @@ class _GroupCallPlanner(
             replacement = self._lower_scan(
                 inst,
                 operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "exchange":
+            replacement = self._lower_exchange(
+                inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation == "adjacent_difference":
+            replacement = self._lower_adjacent_difference(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "discontinuity":
+            replacement = self._lower_discontinuity(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "shuffle":
+            replacement = self._lower_shuffle(
+                inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation == "histogram":
+            replacement = self._lower_histogram(
+                inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "run_length_decode":
+            replacement = self._lower_run_length_decode(
+                inst,
                 group=group,
                 bound=bound,
                 is_common_root=is_common_root,

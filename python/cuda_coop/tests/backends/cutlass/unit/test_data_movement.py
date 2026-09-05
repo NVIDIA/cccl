@@ -35,7 +35,9 @@ def test_public_data_movement_exports_and_signatures():
     import cuda.coop.cutlass as coop
 
     expected_modules = {
+        "exchange": "cuda.coop.cutlass._group_exchange",
         "load": "cuda.coop.cutlass._group_load_store",
+        "shuffle": "cuda.coop.cutlass._group_shuffle",
         "store": "cuda.coop.cutlass._group_load_store",
     }
     for name, module in expected_modules.items():
@@ -45,6 +47,8 @@ def test_public_data_movement_exports_and_signatures():
             not parameter.startswith("_")
             for parameter in inspect.signature(getattr(coop, name)).parameters
         )
+    assert "output" not in inspect.signature(coop.exchange).parameters
+    assert "temp_storage" not in inspect.signature(coop.exchange).parameters
 
 
 def test_frontends_delegate_resolved_groups_and_plans(monkeypatch):
@@ -52,8 +56,11 @@ def test_frontends_delegate_resolved_groups_and_plans(monkeypatch):
     from cutlass.base_dsl.typing import Int32
 
     import cuda.coop.cutlass as coop
+    import cuda.coop.cutlass._lowering._exchange as exchange_provider
+    import cuda.coop.cutlass._lowering._load_store as load_store_provider
+    import cuda.coop.cutlass._lowering._shuffle as shuffle_provider
+    from cuda.coop._core import GroupLoweringPlan
     from cuda.coop.cutlass._compiler import _launch
-    from cuda.coop.cutlass._lowering import _load_store as load_store_provider
 
     monkeypatch.setattr(_launch, "current_kernel_launch_facts", _launch_facts)
     calls = []
@@ -67,15 +74,33 @@ def test_frontends_delegate_resolved_groups_and_plans(monkeypatch):
         "provider_store",
         lambda **payload: calls.append(("store", payload)),
     )
+    monkeypatch.setattr(
+        exchange_provider,
+        "provider_exchange",
+        lambda **payload: calls.append(("exchange", payload)) or payload["value"],
+    )
+    monkeypatch.setattr(
+        shuffle_provider,
+        "provider_shuffle",
+        lambda **payload: calls.append(("shuffle", payload)) or payload["value"],
+    )
 
     block = coop.this_block()
     output = coop.ThreadData(2, dtype=Int32)
     items = coop.ThreadData.from_values(Int32(1), Int32(2), dtype=Int32)
     assert coop.load(block, object(), output, valid_items=17, offset=4) is output
     coop.store(block, object(), items, algorithm="striped")
-    assert [name for name, _ in calls] == ["load", "store"]
-    for _, payload in calls:
-        group = payload["group"]
+    assert coop.exchange(block, items, mode="blocked_to_striped") is items
+    assert coop.shuffle(block, items, mode="down") is items
+
+    assert [name for name, _ in calls] == ["load", "store", "exchange", "shuffle"]
+    for name, payload in calls:
+        if name == "exchange":
+            assert isinstance(payload["plan"], GroupLoweringPlan)
+            group = payload["plan"].resolved_group
+            assert payload.keys() == {"plan", "value", "ranks", "valid_flags"}
+        else:
+            group = payload["group"]
         assert group.hierarchy.block_dim == (64, 1, 1)
         assert group is not block
 
@@ -207,6 +232,138 @@ def test_load_store_plans_bindings_rendering_and_layout_proofs():
     assert contiguous_layout_reason(singleton_mode) is None
     assert "not a compact" in contiguous_layout_reason(Layout((8, 4, 2), (12, 3, 1)))
     assert "incongruent" in contiguous_layout_reason(Layout(((8, 4), 2), (1, 8)))
+
+
+def test_exchange_requests_render_block_logical_warp_ranks_and_flags():
+    _provider_dependencies()
+    from cutlass.base_dsl.typing import Int32, Uint32
+
+    import cuda.coop.cutlass as coop
+    from cuda.coop._core import LaunchFacts
+    from cuda.coop.cutlass._lowering import _exchange as provider
+
+    block_plan = provider._make_group_exchange_plan(
+        group=coop.this_block(),
+        launch=LaunchFacts(exact_block_dim=64),
+        dtype=Int32,
+        items_per_thread=2,
+        mode="scatter_to_striped_flagged",
+        rank_dtype=Int32,
+        valid_flag_dtype=Uint32,
+    ).require_supported()
+    block_request = provider._CubExchangeRequest(
+        block_plan,
+        Int32,
+        rank_type=Int32,
+        valid_flag_type=Uint32,
+    )
+    block_source = "\n".join(provider._render_cub_exchange(block_request))
+    assert "::cub::BlockExchange<int, 64, 2, 0, 1, 1>" in block_source
+    assert ".ScatterToStripedFlagged(" in block_source
+    assert "input_items, output_items, ranks, valid_flags" in block_source
+    assert "external_scratch" not in block_source
+
+    logical_plan = provider._make_group_exchange_plan(
+        group=coop.this_warp().group_by(8),
+        launch=LaunchFacts(exact_block_dim=64),
+        dtype=Int32,
+        items_per_thread=2,
+        mode="scatter_to_striped",
+        rank_dtype=Int32,
+    ).require_supported()
+    logical_request = provider._CubExchangeRequest(
+        logical_plan,
+        Int32,
+        rank_type=Int32,
+    )
+    logical_source = "\n".join(provider._render_cub_exchange(logical_request))
+    assert "::cub::WarpExchange<int, 2, 8" in logical_source
+    assert "TempStorage storage[8]" in logical_source
+    assert "cuda_coop_cutlass_linear_tid() / 8u" in logical_source
+    assert "cuda_coop_cutlass_warp_sync(8u);" in logical_source
+
+    with pytest.raises(TypeError, match="GroupLoweringPlan"):
+        provider._CubExchangeRequest(None, Int32)
+
+
+def test_exchange_symbols_distinguish_lowering_plans():
+    _provider_dependencies()
+    from cutlass.base_dsl.typing import Int32
+
+    import cuda.coop.cutlass as coop
+    from cuda.coop._core import LaunchFacts
+    from cuda.coop.cutlass._lowering import _exchange as provider
+
+    def request(group, *, warp_time_slicing=False):
+        plan = provider._make_group_exchange_plan(
+            group=group,
+            launch=LaunchFacts(exact_block_dim=64),
+            dtype=Int32,
+            items_per_thread=2,
+            mode="blocked_to_striped",
+            warp_time_slicing=warp_time_slicing,
+        ).require_supported()
+        return provider._CubExchangeRequest(plan, Int32)
+
+    block = request(coop.this_block())
+    time_sliced_block = request(coop.this_block(), warp_time_slicing=True)
+    logical_warp_8 = request(coop.this_warp().group_by(8))
+    logical_warp_16 = request(coop.this_warp().group_by(16))
+
+    assert (
+        len(
+            {
+                block.symbol_name,
+                time_sliced_block.symbol_name,
+                logical_warp_8.symbol_name,
+                logical_warp_16.symbol_name,
+            }
+        )
+        == 4
+    )
+
+
+def test_shuffle_routes_and_renderers():
+    _provider_dependencies()
+    from cutlass.base_dsl.typing import Int32
+
+    import cuda.coop.cutlass as coop
+    from cuda.coop._core import LaunchFacts
+    from cuda.coop._core.block import BlockShuffleMode
+    from cuda.coop.cutlass import _group_shuffle as frontend
+    from cuda.coop.cutlass._lowering import _shuffle as provider
+    from cuda.coop.cutlass._lowering._core import render_cutlass_core_artifact
+
+    request = provider._make_request(
+        group=coop.this_block(),
+        launch=LaunchFacts(exact_block_dim=(8, 4, 2)),
+        value_type=Int32,
+        items_per_thread=4,
+        mode=BlockShuffleMode.UP,
+        block_prefix=False,
+        block_suffix=True,
+    )
+    source = "\n".join(render_cutlass_core_artifact(request))
+    assert "::cub::BlockShuffle<int, 8, 4, 2>" in source
+    assert ".Up(input_items, output_items, *block_suffix)" in source
+
+    items = coop.ThreadData.from_values(Int32(1), Int32(2), dtype=Int32)
+    with pytest.raises(NotImplementedError, match="only distance=1"):
+        frontend._normalize_shuffle_route(
+            items,
+            mode=BlockShuffleMode.UP,
+            distance=2,
+            block_prefix=None,
+            block_suffix=None,
+        )
+    with pytest.raises(NotImplementedError, match="only public-CUB Up/Down"):
+        frontend._normalize_shuffle_route(
+            items,
+            mode=BlockShuffleMode.ROTATE,
+            distance=1,
+            block_prefix=None,
+            block_suffix=None,
+        )
 
 
 def test_deferred_load_store_requests_do_not_collide():

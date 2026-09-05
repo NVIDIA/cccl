@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import StatefulOperator
+from ..block.shuffle import BlockShuffleValueKind
 from ..launch import LaunchFacts
 from ..thread_group import ThreadGroup
 from ._model import (
@@ -77,8 +78,10 @@ def _contracts(
     SynchronizationContract,
     TempStorageContract,
 ]:
+    from .discontinuity import GroupDiscontinuitySemantics
     from .reduce import GroupReduceSemantics
     from .scan import GroupScanSemantics
+    from .shuffle import GroupShuffleSemantics
 
     group_size = resolved_group.static_size
     assert group_size is not None
@@ -108,6 +111,13 @@ def _contracts(
     elif isinstance(operation, GroupScanSemantics):
         result_kind = operation.operand_kind
         result_items_per_member = operation.items_per_thread
+    elif isinstance(operation, GroupShuffleSemantics):
+        result_kind = (
+            GroupOperandKind.ARRAY
+            if operation.primitive.value_kind is BlockShuffleValueKind.ARRAY
+            else GroupOperandKind.SCALAR
+        )
+        result_items_per_member = operation.items_per_thread
     else:
         result_kind = GroupOperandKind.ARRAY
         result_items_per_member = operation.items_per_thread
@@ -117,7 +127,26 @@ def _contracts(
         else ResultOwnership.EACH_MEMBER
     )
     results = []
-    if returns_value:
+    if isinstance(operation, GroupDiscontinuitySemantics):
+        for name, enabled in (
+            ("head_flags", operation.primitive.has_heads),
+            ("tail_flags", operation.primitive.has_tails),
+        ):
+            if enabled:
+                results.append(
+                    LogicalResultContract(
+                        name=name,
+                        dtype=operation.flag_dtype,
+                        visibility=visibility,
+                        ownership=ownership,
+                        operand_kind=GroupOperandKind.ARRAY,
+                        items_per_member=operation.items_per_thread,
+                        root_rank=(
+                            0 if ownership is ResultOwnership.GROUP_ROOT else None
+                        ),
+                    )
+                )
+    elif returns_value:
         results.append(
             LogicalResultContract(
                 name="value",
@@ -129,6 +158,22 @@ def _contracts(
                 root_rank=(0 if ownership is ResultOwnership.GROUP_ROOT else None),
             )
         )
+    if isinstance(operation, GroupShuffleSemantics):
+        for name, enabled in (
+            ("block_prefix", operation.primitive.block_prefix),
+            ("block_suffix", operation.primitive.block_suffix),
+        ):
+            if enabled:
+                results.append(
+                    LogicalResultContract(
+                        name=name,
+                        dtype=operation.dtype,
+                        visibility=ResultVisibility.ALL_MEMBERS,
+                        ownership=ResultOwnership.EACH_MEMBER,
+                        operand_kind=GroupOperandKind.SCALAR,
+                        items_per_member=1,
+                    )
+                )
     if isinstance(operation, GroupScanSemantics) and operation.aggregate:
         results.append(
             LogicalResultContract(

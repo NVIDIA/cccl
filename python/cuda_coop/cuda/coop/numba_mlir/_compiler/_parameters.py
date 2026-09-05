@@ -17,6 +17,8 @@ import numpy as np
 from numba_cuda_mlir import types as numba_mlir_types
 
 from cuda.coop._core.dtype_policy import (
+    validate_portable_integer_key_dtype_name,
+    validate_portable_integer_value_dtype_name,
     validate_portable_numeric_dtype_name,
 )
 
@@ -177,6 +179,47 @@ def _validate_common_numeric_dtype(
         parameter=parameter,
     )
     return dtype
+
+
+def _validate_common_histogram_dtypes(sample_dtype, counter_dtype):
+    """Normalize and validate the portable histogram dtype pair."""
+
+    sample_dtype, sample_dtype_name = _normalize_common_dtype(sample_dtype)
+    counter_dtype, counter_dtype_name = _normalize_common_dtype(counter_dtype)
+    validate_portable_integer_value_dtype_name(
+        sample_dtype_name,
+        operation="histogram",
+        parameter="sample",
+    )
+    validate_portable_integer_key_dtype_name(
+        counter_dtype_name,
+        operation="histogram",
+        parameter="counter",
+    )
+    return sample_dtype, counter_dtype
+
+
+def _validate_common_run_length_decode_dtypes(
+    run_values_dtype,
+    run_lengths_dtype,
+):
+    """Normalize and validate the portable Run Length Decode dtype pair."""
+
+    run_values_dtype, run_values_dtype_name = _normalize_common_dtype(run_values_dtype)
+    run_lengths_dtype, run_lengths_dtype_name = _normalize_common_dtype(
+        run_lengths_dtype
+    )
+    validate_portable_integer_value_dtype_name(
+        run_values_dtype_name,
+        operation="run_length_decode",
+        parameter="run_values",
+    )
+    validate_portable_integer_key_dtype_name(
+        run_lengths_dtype_name,
+        operation="run_length_decode",
+        parameter="run_lengths",
+    )
+    return run_values_dtype, run_lengths_dtype
 
 
 def _scalar_cpp_literal(value):

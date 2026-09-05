@@ -4,8 +4,13 @@
 
 """Re-export the typing contracts owned by portable API families."""
 
+from .adjacent_difference import adjacent_difference
+from .discontinuity import discontinuity
+from .exchange import exchange
+from .histogram import histogram
 from .load_store import load, store
 from .reduce import reduce, sum
+from .run_length_decode import run_length_decode
 from .scan import (
     exclusive_scan,
     exclusive_sum,
@@ -13,6 +18,7 @@ from .scan import (
     inclusive_sum,
     scan,
 )
+from .shuffle import shuffle
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -34,13 +40,19 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "reduce",
+    "run_length_decode",
     "scan",
+    "shuffle",
     "store",
     "sum",
     "this_block",

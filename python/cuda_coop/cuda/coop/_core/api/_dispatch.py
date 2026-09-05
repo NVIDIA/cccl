@@ -30,13 +30,19 @@ _ACTIVE_COMMON_ROOT_OPERATION: ContextVar[str | None] = ContextVar(
     default=None,
 )
 _GROUP_OPERATIONS = (
+    "adjacent_difference",
+    "discontinuity",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
     "reduce",
+    "run_length_decode",
     "scan",
+    "shuffle",
     "store",
     "sum",
 )
@@ -49,6 +55,7 @@ _REDUCTION_GROUPS = (
     "block",
     "cluster",
 )
+_BLOCK_ONLY = ("block",)
 _PORTABLE_OPERATION_GROUPS = {
     "load": _BLOCK_AND_WARP_GROUPS,
     "store": _BLOCK_AND_WARP_GROUPS,
@@ -59,6 +66,12 @@ _PORTABLE_OPERATION_GROUPS = {
     "inclusive_sum": _BLOCK_AND_WARP_GROUPS,
     "exclusive_scan": _BLOCK_AND_WARP_GROUPS,
     "inclusive_scan": _BLOCK_AND_WARP_GROUPS,
+    "exchange": _BLOCK_AND_WARP_GROUPS,
+    "adjacent_difference": _BLOCK_ONLY,
+    "discontinuity": _BLOCK_ONLY,
+    "shuffle": _BLOCK_ONLY,
+    "histogram": _BLOCK_ONLY,
+    "run_length_decode": _BLOCK_ONLY,
 }
 _LOAD_STORE_ALGORITHMS = frozenset(
     {
@@ -93,6 +106,11 @@ _PORTABLE_OPERATOR_ALIASES = {
     "^": "bit_xor",
     "bit_xor": "bit_xor",
 }
+_EXCHANGE_MODES = frozenset({"striped_to_blocked", "blocked_to_striped"})
+_ADJACENT_DIFFERENCE_DIRECTIONS = frozenset({"left", "right"})
+_DISCONTINUITY_MODES = frozenset({"heads", "tails"})
+_SHUFFLE_MODES = frozenset({"down", "up"})
+_HISTOGRAM_ALGORITHMS = frozenset({"atomic", "sort"})
 
 
 class UnsupportedCoopBackendOperationError(NotImplementedError):
