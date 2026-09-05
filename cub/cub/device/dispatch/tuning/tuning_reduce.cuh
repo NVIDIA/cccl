@@ -277,6 +277,45 @@ get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
   return {};
 }
 
+// min/max
+
+_CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int accum_size)
+  -> ::cuda::std::optional<sm100_tuning_values>
+{
+  if (operation_t != op_kind_t::min && operation_t != op_kind_t::max)
+  {
+    return {};
+  }
+
+  if (accum_size == 2 && (accum_t == type_t::int16 || accum_t == type_t::uint16))
+  {
+    // ipt_16.tpb_128.ipv_2  2^16 1.217  2^20 1.115  2^24 1.142  2^28 1.038
+    return sm100_tuning_values{16, 128, 2};
+  }
+  if (accum_size == 4)
+  {
+    // ipt_22.tpb_512.ipv_1  2^28: float 1.026, int32 1.034
+    return sm100_tuning_values{22, 512, 1};
+  }
+  if (accum_size == 8)
+  {
+    if (accum_t == type_t::float64)
+    {
+      // ipt_24.tpb_320.ipv_1  2^16 1.068  2^20 1.051  2^24 1.077  2^28 1.039
+      return sm100_tuning_values{24, 320, 1};
+    }
+    // ipt_22.tpb_320.ipv_1  2^24 1.045  2^28 1.023
+    return sm100_tuning_values{22, 320, 1};
+  }
+  if (accum_size == 16)
+  {
+    // ipt_24.tpb_288.ipv_2  2^20 1.049  2^24 1.058  2^28 1.021
+    return sm100_tuning_values{24, 288, 2};
+  }
+
+  return {};
+}
+
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
@@ -444,6 +483,18 @@ struct policy_selector
           sm107_tuning->items_per_vec_load,
           BLOCK_REDUCE_WARP_REDUCTIONS,
           LOAD_LDG};
+        return {rp, rp};
+      }
+      if (const auto sm107_tuning = get_sm107_tuning(accum_t, operation_t, accum_size))
+      {
+        const auto [scaled_items, scaled_threads] =
+          scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
+        const auto rp = ReducePassPolicy{
+          scaled_threads,
+          scaled_items,
+          1 << sm107_tuning->items_per_vec_load,
+          BLOCK_REDUCE_WARP_REDUCTIONS,
+          LOAD_DEFAULT};
         return {rp, rp};
       }
     }
