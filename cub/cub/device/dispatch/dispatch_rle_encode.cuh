@@ -111,9 +111,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
                           policy.lookback.lookback_delay.delay,
                           policy.lookback.lookback_delay.l2_write_latency>>;
 
-    using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
+    using vsmem_helper_t = reduce_by_key::vsmem_helper_t<
+      false,
       AgentReduceByKeyPolicyT,
-      reduce_by_key::AgentReduceByKey,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,

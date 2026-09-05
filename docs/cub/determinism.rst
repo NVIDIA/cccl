@@ -41,10 +41,17 @@ Support matrix
      - ``run_to_run``
      - ``gpu_to_gpu``
      - Default
-   * - ``cub::DeviceReduce`` (``Reduce``, ``Sum``, ``Min``, ``Max``, ``TransformReduce``, ...)
+   * - ``cub::DeviceReduce`` (``Reduce``, ``Sum``, ``Min``, ``Max``, ``TransformReduce``, ...; excluding ``ReduceByKey``)
      - Yes
      - Yes
      - Yes (partial)
+     - ``run_to_run``
+   * - ``cub::DeviceReduce::ReduceByKey``
+     - Yes
+     - Integral accumulators with known CUDA binary operators; primitive accumulators with min/max;
+       floating-point accumulators (including CUDA extended types) with ``cuda::std::plus``
+     - Integral accumulators with known CUDA binary operators; primitive accumulators with min/max.
+       Floating-point addition is unsupported; ``ReduceByKey`` does not use RFA.
      - ``run_to_run``
    * - ``cub::DeviceScan`` (``ExclusiveSum``, ``ExclusiveScan``, ``InclusiveSum``, ``InclusiveScan``, ...)
      - Yes
@@ -56,6 +63,13 @@ Support matrix
      - Yes
      - No
      - ``run_to_run``
+
+For ``ReduceByKey``, known CUDA binary operators are ``cuda::minimum``, ``cuda::maximum``, and
+``cuda::std::plus``, ``multiplies``, ``bit_and``, ``bit_or``, ``bit_xor``, ``logical_and``, and
+``logical_or``. Primitive accumulators are the types recognized by ``cub::Traits``; floating-point
+accumulators are recognized by ``cuda::is_floating_point_v``. The operator must support the accumulator
+type. These constraints apply to the environment overload; ``not_guaranteed`` removes the determinism
+requirement without changing the algorithm's other requirements.
 
 .. note::
 

@@ -46,6 +46,7 @@
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/argument>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
@@ -53,7 +54,6 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/indirectly_comparable.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
@@ -154,7 +154,9 @@ inline constexpr bool is_non_deterministic_v =
 //! ====================================
 //!
 //! ``cub::DeviceReduce`` supports all three :ref:`determinism guarantees <cccl-determinism>`; the
-//! default is ``run_to_run``.
+//! default is ``run_to_run``. ``ReduceByKey`` has separate type/operator constraints, documented in the
+//! :ref:`CUB determinism support matrix <cub-determinism>`. The implementation details below apply to the other
+//! reductions; ``ReduceByKey`` does not use RFA or atomic accumulation.
 //!
 //! - ``run_to_run`` (the default) is reproducible because, for a given GPU, every launch with the same input,
 //!   build, and launch configuration selects the *same* tuning policy and therefore performs the *same* fixed
@@ -2858,7 +2860,7 @@ public:
     constexpr bool is_primitive_min_max_op =
       detail::is_primitive_v<accum_t> && detail::is_cuda_minimum_maximum_v<ReductionOpT, accum_t>;
     constexpr bool is_fp_plus_op =
-      ::cuda::std::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ReductionOpT, accum_t>;
+      ::cuda::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ReductionOpT, accum_t>;
 
     static_assert(!is_run_to_run_required || is_safe_integral_op || is_primitive_min_max_op || is_fp_plus_op,
                   "run_to_run deterministic reduce-by-key requires integral types with known operators, "
@@ -3049,7 +3051,7 @@ public:
     using EqualityOp = ::cuda::std::equal_to<>;
 
     static constexpr bool stable_reduction_order =
-      ::cuda::std::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ReductionOpT, accum_t>;
+      ::cuda::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ReductionOpT, accum_t>;
 
     return detail::reduce_by_key::dispatch<stable_reduction_order>(
       d_temp_storage,

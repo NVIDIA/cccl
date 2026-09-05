@@ -34,7 +34,6 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -113,6 +112,14 @@ struct streaming_context
   }
 };
 
+// Bind the stability flag while selecting the default and fallback agent policies.
+template <bool StableReductionOrder, typename Policy, typename... Args>
+using vsmem_helper_t =
+  vsmem_helper_with_fallback_impl<Policy,
+                                  AgentReduceByKey<Policy, StableReductionOrder, Args...>,
+                                  policy_wrapper_t<Policy, 64, 1>,
+                                  AgentReduceByKey<policy_wrapper_t<Policy, 64, 1>, StableReductionOrder, Args...>>;
+
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
  *
@@ -145,6 +152,9 @@ struct streaming_context
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
+ *
+ * @tparam StableReductionOrder
+ *   Whether to use a stable reduction order across tiles
  *
  * @param d_keys_in
  *   Pointer to the input sequence of keys
@@ -189,7 +199,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename StreamingContextT,
-          bool StableReductionOrder = false>
+          bool StableReductionOrder>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
@@ -219,9 +229,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
                         policy.lookback.lookback_delay.delay,
                         policy.lookback.lookback_delay.l2_write_latency>>;
 
-  using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
+  using vsmem_helper_t = reduce_by_key::vsmem_helper_t<
+    StableReductionOrder,
     AgentReduceByKeyPolicyT,
-    AgentReduceByKey,
     KeysInputIteratorT,
     UniqueOutputIteratorT,
     ValuesInputIteratorT,
@@ -231,8 +241,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     ReductionOpT,
     OffsetT,
     AccumT,
-    StreamingContextT,
-    ::cuda::std::bool_constant<StableReductionOrder>>;
+    StreamingContextT>;
 
   // Thread block type for reducing tiles of value segments
   using agent_reduce_by_key_t = typename vsmem_helper_t::agent_t;
@@ -377,9 +386,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Invoke(ScanInitKernelT init_kernel, ReduceByKeyKernelT reduce_by_key_kernel)
   {
-    using vsmem_helper_t = detail::vsmem_helper_default_fallback_policy_t<
+    using vsmem_helper_t = detail::reduce_by_key::vsmem_helper_t<
+      false,
       typename ActivePolicyT::ReduceByKeyPolicyT,
-      detail::reduce_by_key::AgentReduceByKey,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,
@@ -558,7 +567,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         ReductionOpT,
         OffsetT,
         AccumT,
-        streaming_context_t>);
+        streaming_context_t,
+        false>);
   }
 
   /**
@@ -667,17 +677,13 @@ _CCCL_HOST_DEVICE_API auto determine_threads_items_vsmem(PolicyGetter policy_get
     delay_constructor_t<policy.lookback.lookback_delay.kind,
                         policy.lookback.lookback_delay.delay,
                         policy.lookback.lookback_delay.l2_write_latency>>;
-  using vsmem_helper_t =
-    vsmem_helper_default_fallback_policy_t<Policy,
-                                           AgentReduceByKey,
-                                           Args...,
-                                           ::cuda::std::bool_constant<StableReductionOrder>>;
+  using vsmem_helper_t = reduce_by_key::vsmem_helper_t<StableReductionOrder, Policy, Args...>;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
                             vsmem_helper_t::vsmem_per_block};
 }
 
-template <bool StableReductionOrder = false,
+template <bool StableReductionOrder,
           typename KeysInputIteratorT,
           typename UniqueOutputIteratorT,
           typename ValuesInputIteratorT,
