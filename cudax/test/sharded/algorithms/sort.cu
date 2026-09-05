@@ -20,9 +20,11 @@
 #include <cuda/experimental/sharded.cuh>
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <random>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 using namespace cuda::experimental::sharded;
@@ -237,19 +239,75 @@ void test_shape_mismatch(place_group& group)
   sort(group, empty);
   EXPECT(empty.size() == 0);
 }
+
+// True when every place of the group is backed by the same device: the
+// precondition of the shared-address-space engine.
+bool on_one_device(place_group& group)
+{
+  const int dev = device_ordinal(group.place(0).affine_data_place());
+  for (size_t i = 1; i < group.size(); i++)
+  {
+    if (device_ordinal(group.place(i).affine_data_place()) != dev)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+// A group spanning several devices is refused up front (documented contract:
+// the cross-address-space engine is a separate change), with the array untouched.
+void test_cross_device_refusal(place_group& group)
+{
+  const size_t n = 4096;
+  auto data      = sharded_array<int>::allocate(group, n);
+  ::std::vector<int> host(n);
+  for (size_t i = 0; i < n; i++)
+  {
+    host[i] = static_cast<int>(n - i);
+  }
+  data.copy_from_host(host.data());
+
+  bool threw = false;
+  try
+  {
+    sort(group, data);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+
+  ::std::vector<int> got(n);
+  data.copy_to_host(got.data());
+  EXPECT(::std::memcmp(got.data(), host.data(), n * sizeof(int)) == 0);
+}
 } // namespace
 
 int main()
 {
   cuda_safe_call(cudaSetDevice(0));
 
-  auto group = place_group{make_locality_domain_grid()};
+  // The full locality-domain grid: on a multi-GPU machine it spans devices.
+  auto grid_group = place_group{make_locality_domain_grid()};
+  test_shape_mismatch(grid_group);
+
+  if (!on_one_device(grid_group))
+  {
+    test_cross_device_refusal(grid_group);
+    printf("sort: the grid spans several devices; running the engine tests on device 0 only.\n");
+  }
+
+  // The engine proper runs on one device's domains (the whole grid when that
+  // is already single-device).
+  auto group = on_one_device(grid_group) ? ::std::move(grid_group) : place_group{make_locality_domain_grid(0)};
 
   test_distributions(group);
   test_custom_comparator(group);
   test_contiguous(group);
   test_repeated_runs(group);
-  test_shape_mismatch(group);
 
+  printf("sort: all tests passed\n");
   return 0;
 }

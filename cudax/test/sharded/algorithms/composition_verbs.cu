@@ -141,9 +141,10 @@ void test_lane_wait(place_group& group)
     return; // needs two lanes
   }
   const size_t per = 100003;
+  const ::std::vector<size_t> sizes(group.size(), per); // one shard per place
   // x on one lane set, y on another (distinct lane_ids = independent lanes).
-  auto x      = sharded_array<long long>::allocate(group, {per, per}, 0);
-  auto y      = sharded_array<long long>::allocate(group, {per, per}, 1);
+  auto x      = sharded_array<long long>::allocate(group, sizes, 0);
+  auto y      = sharded_array<long long>::allocate(group, sizes, 1);
   auto envs_x = default_envs(x);
   auto envs_y = default_envs(y);
 
@@ -161,9 +162,9 @@ void test_lane_wait(place_group& group)
   zip_transform(y, envs_y, copy_op{}, default_call_env{}, x);
   barrier(envs_y);
 
-  ::std::vector<long long> host(2 * per);
+  ::std::vector<long long> host(group.size() * per);
   y.copy_to_host(host.data());
-  for (size_t i = 0; i < 2 * per; i++)
+  for (size_t i = 0; i < host.size(); i++)
   {
     EXPECT(host[i] == static_cast<long long>(i) + 1);
   }
