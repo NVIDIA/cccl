@@ -13,6 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
+// A host translation unit is fine with just the CTK headers: the CUDA backend's algorithms are guarded by
+// _CCCL_CUDA_COMPILATION(), so only the types and execution policies remain, and those need the CTK and nothing more.
+#if !_CCCL_CUDA_COMPILATION() && !_CCCL_HAS_CTK() && !defined(THRUST_IGNORE_CUDA_COMPILER_CHECK)
+#  error "The Thrust CUDA device system requires a CUDA compiler or the CUDA toolkit headers. Either compile as CUDA, \
+make the CUDA toolkit headers available, or set THRUST_DEVICE_SYSTEM to THRUST_DEVICE_SYSTEM_CPP, \
+THRUST_DEVICE_SYSTEM_OMP, or THRUST_DEVICE_SYSTEM_TBB. Define THRUST_IGNORE_CUDA_COMPILER_CHECK to ignore this."
+#endif
+
 #ifdef THRUST_DEBUG_SYNC
 
 #  if _CCCL_COMPILER(MSVC)
