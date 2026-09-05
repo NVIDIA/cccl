@@ -91,6 +91,9 @@ int run_case(const char* name, place_group& group, bool normal)
     {"1 shard", {}},
     {"even halves", {N / 2}},
     {"prime cuts", {104729, 1299709, 2750159}},
+    // Size-1 shards at odd offsets: pins the normal path's even-count
+    // boundary decomposition (head-only, tail-only shards).
+    {"tiny + odd", {1, 2, 3, 104730}},
   };
   {
     std::vector<size_t> cuts;

@@ -28,6 +28,9 @@
  * Paths per element type:
  *  - float: the host API with `curandSetGeneratorOffset(global_offset)` —
  *    bitwise identical to a stock whole-array `curandGenerateUniform/Normal`.
+ *    Normal generation honors the documented even-count requirement at any
+ *    shard boundary by decomposing into an even-aligned main run plus
+ *    boundary elements from 2-element runs (same global sequence).
  *  - double: a per-element device-API kernel (`curand_init` with
  *    subsequence = the global element index), position-pure by construction.
  *    WORKAROUND: the host API's FP64 offset positioning measured inconsistent
@@ -234,10 +237,51 @@ void generate_normal(
       }
       else
       {
-        curandGenerator_t __g = __gens.__make(__seed, static_cast<unsigned long long>(__d.global_offset), __stream);
-        reserved::__curand_check(
-          reserved::__host_generate_normal<_Tp>(__g, __d.data, static_cast<::std::size_t>(__d.size), __mean, __stddev),
-          "generate_normal");
+        // Documented cuRAND contract: pseudo-random normal generation
+        // requires an EVEN count (CURAND_STATUS_LENGTH_NOT_MULTIPLE
+        // otherwise; some toolkits accept odd n, but the documented contract
+        // is even — review r3940236061). Decompose the shard into an
+        // even-offset/even-count main run plus up to two boundary elements,
+        // each taken from a 2-element run at an even offset: every host-API
+        // call is contract-conforming and the global sequence is unchanged.
+        const unsigned long long __o    = static_cast<unsigned long long>(__d.global_offset);
+        const unsigned long long __n    = static_cast<unsigned long long>(__d.size);
+        const unsigned long long __head = __o & 1ull; // shard starts mid-pair
+        const unsigned long long __main = (__n - __head) & ~1ull; // even
+        const bool __tail               = (__head + __main) != __n; // one trailing element
+
+        if (__main != 0)
+        {
+          curandGenerator_t __g = __gens.__make(__seed, __o + __head, __stream);
+          reserved::__curand_check(
+            reserved::__host_generate_normal<_Tp>(
+              __g, __d.data + __head, static_cast<::std::size_t>(__main), __mean, __stddev),
+            "generate_normal");
+        }
+        if (__head || __tail)
+        {
+          // Boundary elements land in a small stream-ordered scratch first:
+          // the 2-run also produces the neighboring element, which belongs
+          // to the adjacent shard and must not be written here.
+          _Tp* __scratch = nullptr;
+          cuda_safe_call(cudaMallocAsync(&__scratch, 4 * sizeof(_Tp), __stream));
+          if (__head) // element __o, second of the pair starting at __o - 1
+          {
+            curandGenerator_t __gh = __gens.__make(__seed, __o - 1, __stream);
+            reserved::__curand_check(
+              reserved::__host_generate_normal<_Tp>(__gh, __scratch, 2, __mean, __stddev), "generate_normal head");
+            cuda_safe_call(cudaMemcpyAsync(__d.data, __scratch + 1, sizeof(_Tp), cudaMemcpyDeviceToDevice, __stream));
+          }
+          if (__tail) // element __o + __n - 1, first of the pair starting there (even by construction)
+          {
+            curandGenerator_t __gt = __gens.__make(__seed, __o + __n - 1, __stream);
+            reserved::__curand_check(
+              reserved::__host_generate_normal<_Tp>(__gt, __scratch + 2, 2, __mean, __stddev), "generate_normal tail");
+            cuda_safe_call(
+              cudaMemcpyAsync(__d.data + (__n - 1), __scratch + 2, sizeof(_Tp), cudaMemcpyDeviceToDevice, __stream));
+          }
+          cuda_safe_call(cudaFreeAsync(__scratch, __stream));
+        }
       }
     });
 }
