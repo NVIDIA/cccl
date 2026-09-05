@@ -194,6 +194,7 @@ C2H_TEST("reduce/this_cluster Integral Type Tests",
          cluster_size_list)
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;
@@ -226,6 +227,7 @@ C2H_TEST("reduce/this_cluster Floating-Point Type Tests",
          cluster_size_list)
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;
@@ -254,6 +256,7 @@ C2H_TEST("reduce/this_cluster Floating-Point Type Tests",
 C2H_TEST("reduce/this_cluster Broadcasted", "[reduce][this_cluster]", integral_type_list, cluster_size_list)
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;
@@ -283,6 +286,7 @@ C2H_TEST("reduce/this_cluster Broadcasted", "[reduce][this_cluster]", integral_t
 C2H_TEST("reduce/this_cluster can reuse scratch", "[reduce][this_cluster]")
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;

@@ -201,6 +201,7 @@ C2H_TEST("reduce/this_grid Integral Type Tests",
          grid_size_list)
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;
@@ -233,6 +234,7 @@ C2H_TEST(
   "reduce/this_grid Floating-Point Type Tests", "[reduce][this_grid]", fp_type_list, operator_fp_list, grid_size_list)
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;
@@ -264,6 +266,7 @@ C2H_TEST(
 C2H_TEST("reduce/this_grid Broadcasted", "[reduce][this_grid]", integral_type_list, grid_size_list)
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;
@@ -296,6 +299,7 @@ C2H_TEST("reduce/this_grid Broadcasted", "[reduce][this_grid]", integral_type_li
 C2H_TEST("reduce/this_grid can reuse scratch", "[reduce][this_grid]")
 {
   const auto device = cuda::devices[0];
+  // thread block clusters require compute capability at least 9.0
   if (cuda::device_attributes::compute_capability_major(device) < 9)
   {
     return;
