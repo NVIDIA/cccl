@@ -240,6 +240,119 @@ void test_shape_mismatch(place_group& group)
   EXPECT(empty.size() == 0);
 }
 
+// The P > 2 selection path (sample, then window, both exact) has its own
+// edge cases: ties across runs, descending/custom comparators, uneven and
+// empty shards, inputs smaller than the sample stride. Exercise it through
+// the public API on ONE device by grouping several copies of one place: the
+// engine only requires a shared address space, not distinct places.
+template <typename T, typename Cmp, typename HostCmp>
+void run_case(place_group& group, const ::std::vector<size_t>& sizes, ::std::vector<T> host, Cmp cmp, HostCmp hcmp)
+{
+  size_t n = 0;
+  for (auto v : sizes)
+  {
+    n += v;
+  }
+  EXPECT(host.size() == n);
+  auto data = sharded_array<T>::allocate(group, sizes);
+  data.copy_from_host(host.data());
+  sort(group, data, cmp);
+  ::std::vector<T> got(n);
+  data.copy_to_host(got.data());
+  ::std::sort(host.begin(), host.end(), hcmp);
+  EXPECT(::std::memcmp(got.data(), host.data(), n * sizeof(T)) == 0);
+  EXPECT(data.validate());
+  for (size_t g = 0; g < data.num_shards(); g++)
+  {
+    EXPECT(data.shard(g).size == sizes[g]);
+  }
+}
+
+void test_many_places(const cuda::experimental::places::exec_place& place)
+{
+  ::std::mt19937_64 rng(77);
+  for (size_t P : {size_t{3}, size_t{4}, size_t{5}, size_t{7}})
+  {
+    place_group group{::std::vector<cuda::experimental::places::exec_place>(P, place)};
+    auto even = [&](size_t n) {
+      ::std::vector<size_t> sz(P, n / P);
+      sz[P - 1] += n % P;
+      return sz;
+    };
+    auto rnd = [&](size_t n, auto gen) {
+      ::std::vector<decltype(gen())> h(n);
+      for (auto& v : h)
+      {
+        v = gen();
+      }
+      return h;
+    };
+
+    // Random, even split, larger than the sample stride.
+    {
+      const size_t n = (size_t{1} << 20) + 37;
+      run_case<int>(
+        group, even(n), rnd(n, [&] { return static_cast<int>(rng()); }), ::cuda::std::less<int>{}, ::std::less<int>{});
+    }
+    // Heavy ties across runs (16 distinct keys), descending custom comparator (merge-sort path).
+    {
+      const size_t n = 400009;
+      run_case<int>(
+        group, even(n), rnd(n, [&] { return static_cast<int>(rng() % 16); }), descending{}, ::std::greater<int>{});
+    }
+    // All keys equal.
+    {
+      const size_t n = 200003;
+      run_case<int>(group, even(n), ::std::vector<int>(n, 42), ::cuda::std::less<int>{}, ::std::less<int>{});
+    }
+    // Uneven sizes with empty shards, at the ends and inside.
+    {
+      ::std::vector<size_t> sz(P, 0);
+      sz[1] = 100003;
+      if (P > 3)
+      {
+        sz[P - 2] = 77777;
+      }
+      size_t n = 0;
+      for (auto v : sz)
+      {
+        n += v;
+      }
+      run_case<long long>(
+        group,
+        sz,
+        rnd(n, [&] { return static_cast<long long>(rng()); }),
+        ::cuda::std::less<long long>{},
+        ::std::less<long long>{});
+    }
+    // Tiny inputs: one key per shard, fewer keys than shards, a single key.
+    {
+      ::std::vector<size_t> one(P, 1);
+      run_case<int>(
+        group, one, rnd(P, [&] { return static_cast<int>(rng() % 5); }), ::cuda::std::less<int>{}, ::std::less<int>{});
+      ::std::vector<size_t> few(P, 0);
+      few[0] = 2;
+      few[P - 1] = 1;
+      run_case<int>(group, few, {9, 3, 7}, ::cuda::std::less<int>{}, ::std::less<int>{});
+      ::std::vector<size_t> single(P, 0);
+      single[P / 2] = 1;
+      run_case<int>(group, single, {5}, ::cuda::std::less<int>{}, ::std::less<int>{});
+    }
+    // Presorted and reverse-sorted (splits land exactly on run boundaries).
+    {
+      const size_t n = 300000;
+      ::std::vector<int> asc(n), desc(n);
+      for (size_t i = 0; i < n; i++)
+      {
+        asc[i]  = static_cast<int>(i);
+        desc[i] = static_cast<int>(n - i);
+      }
+      run_case<int>(group, even(n), asc, ::cuda::std::less<int>{}, ::std::less<int>{});
+      run_case<int>(group, even(n), desc, ::cuda::std::less<int>{}, ::std::less<int>{});
+    }
+  }
+}
+
 // True when every place of the group is backed by the same device: the
 // precondition of the shared-address-space engine.
 bool on_one_device(place_group& group)
@@ -307,6 +420,7 @@ int main()
   test_custom_comparator(group);
   test_contiguous(group);
   test_repeated_runs(group);
+  test_many_places(group.place(0));
 
   printf("sort: all tests passed\n");
   return 0;
