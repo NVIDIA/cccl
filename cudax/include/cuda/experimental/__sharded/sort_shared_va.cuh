@@ -449,7 +449,10 @@ void merge_into(
 
   // Pairwise merge tree. Levels alternate between the destination and one
   // scratch buffer; a trailing odd node is copied so every level's inputs
-  // live outside its output buffer.
+  // live outside its output buffer. The first level's buffer is chosen so
+  // that the LAST level lands in the destination: the level that reads the
+  // (possibly remote) runs is the expensive one, the local levels are cheap,
+  // and a trailing whole-shard copy would be pure waste.
   places::place_memory_resource mr(dplace);
   _Tp* scratch = static_cast<_Tp*>(mr.allocate(::cuda::stream_ref{stream}, total * sizeof(_Tp), alignof(_Tp)));
   deferred->push_back(scoped_alloc{mr, scratch, total * sizeof(_Tp), stream});
@@ -457,7 +460,12 @@ void merge_into(
   ::std::vector<merge_range<_Tp>> cur = ranges;
   ::std::vector<merge_range<_Tp>> next;
   _Tp* bufs[2] = {dest, scratch};
-  int wb       = 0;
+  int levels   = 0;
+  for (size_t n = cur.size(); n > 1; n = (n + 1) / 2)
+  {
+    levels++;
+  }
+  int wb = (levels - 1) & 1; // level l writes bufs[(wb + l) & 1]; level levels-1 must write bufs[0]
 
   while (cur.size() > 1)
   {
@@ -488,10 +496,7 @@ void merge_into(
     wb ^= 1;
   }
 
-  if (cur[0].ptr != dest)
-  {
-    cuda_safe_call(cudaMemcpyAsync(dest, cur[0].ptr, total * sizeof(_Tp), cudaMemcpyDefault, stream));
-  }
+  _CCCL_ASSERT(cur[0].ptr == dest, "merge tree parity: the last level must land in the destination");
 }
 
 /**
