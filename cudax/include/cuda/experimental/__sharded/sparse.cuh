@@ -714,6 +714,62 @@ void spmm(spmm_plan<_Tp>& plan, const _Tp* B, sharded_array<_Tp>& C, _Tp alpha =
 }
 
 /**
+ * @brief Localized SpMV into a CONTIGUOUS output: y is one device pointer to
+ * A.num_rows() values (e.g. a caller library's own whole-device buffer);
+ * each shard writes its disjoint row block at y + row_begin. The
+ * integration-facing overload: no sharded_array required on the output side.
+ */
+template <typename _Tp>
+void spmv(spmv_plan<_Tp>& plan, const _Tp* x, _Tp* y, _Tp alpha = _Tp{1}, _Tp beta = _Tp{0})
+{
+  auto& A = plan.matrix();
+  for (size_t i = 0; i < A.num_shards(); i++)
+  {
+    auto& sh = A.shard(i);
+    if (sh.rows == 0)
+    {
+      continue;
+    }
+    if (sh.nnz == 0)
+    {
+      _CCCL_THROW(::std::invalid_argument,
+                  "sharded::spmv: shard " + ::std::to_string(i)
+                    + " has rows but no nonzeros; adjust the row boundaries");
+    }
+    places::exec_place_scope scope(sh.exec);
+    plan.shard_plan(i).run(plan.handles().get(i), sh, A.num_cols(), x, y + sh.row_begin, alpha, beta, sh.stream);
+  }
+}
+
+/**
+ * @brief Localized SpMM into a CONTIGUOUS row-major output: C is one device
+ * pointer (ld = plan.n_cols()); each shard writes rows [row_begin,
+ * row_begin + rows) at C + row_begin * n_cols. See the spmv overload.
+ */
+template <typename _Tp>
+void spmm(spmm_plan<_Tp>& plan, const _Tp* B, _Tp* C, _Tp alpha = _Tp{1}, _Tp beta = _Tp{0})
+{
+  auto& A = plan.matrix();
+  for (size_t i = 0; i < A.num_shards(); i++)
+  {
+    auto& sh = A.shard(i);
+    if (sh.rows == 0)
+    {
+      continue;
+    }
+    if (sh.nnz == 0)
+    {
+      _CCCL_THROW(::std::invalid_argument,
+                  "sharded::spmm: shard " + ::std::to_string(i)
+                    + " has rows but no nonzeros; adjust the row boundaries");
+    }
+    places::exec_place_scope scope(sh.exec);
+    plan.shard_plan(i).run(
+      plan.handles().get(i), sh, A.num_cols(), plan.n_cols(), B, C + sh.row_begin * plan.n_cols(), alpha, beta, sh.stream);
+  }
+}
+
+/**
  * @brief Measure each shard's solo (confined) SpMV time through the exact
  * call path `spmv` uses (same plans, streams, places). Feed the result to
  * `sharded_csr::time_balanced_boundaries` to rebalance a time-skewed split.

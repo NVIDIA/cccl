@@ -390,6 +390,22 @@ void test_spmv(place_group& group, const host_csr& m)
     EXPECT(::std::memcmp(contig.data(), first.data(), first.size() * sizeof(double)) == 0);
   }
 
+  // Raw-pointer contiguous output (the integration-facing overload): each
+  // shard writes its row block into one plain device buffer; bitwise equal.
+  {
+    double* d_yraw = nullptr;
+    cuda_safe_call(cudaMalloc(&d_yraw, static_cast<size_t>(m.rows) * sizeof(double)));
+    spmv(plan, d_x, d_yraw);
+    for (size_t i = 0; i < A.num_shards(); i++)
+    {
+      cuda_safe_call(cudaStreamSynchronize(A.shard(i).stream));
+    }
+    ::std::vector<double> raw(static_cast<size_t>(m.rows));
+    cuda_safe_call(cudaMemcpy(raw.data(), d_yraw, raw.size() * sizeof(double), cudaMemcpyDefault));
+    EXPECT(::std::memcmp(raw.data(), first.data(), first.size() * sizeof(double)) == 0);
+    cuda_safe_call(cudaFree(d_yraw));
+  }
+
   // A mis-shaped output is refused before any engine work.
   {
     auto bad   = sharded_array<double>::allocate(group, 2 * static_cast<size_t>(m.rows));
@@ -452,6 +468,21 @@ void test_spmm(place_group& group, const host_csr& m, ::std::int64_t n_cols)
     ::std::vector<double> contig(first.size());
     cuda_safe_call(cudaMemcpy(contig.data(), Cc.contiguous_data(), contig.size() * sizeof(double), cudaMemcpyDefault));
     EXPECT(::std::memcmp(contig.data(), first.data(), first.size() * sizeof(double)) == 0);
+  }
+
+  // Raw-pointer contiguous output (the integration-facing overload).
+  {
+    double* d_Craw = nullptr;
+    cuda_safe_call(cudaMalloc(&d_Craw, first.size() * sizeof(double)));
+    spmm(plan, d_B, d_Craw);
+    for (size_t i = 0; i < A.num_shards(); i++)
+    {
+      cuda_safe_call(cudaStreamSynchronize(A.shard(i).stream));
+    }
+    ::std::vector<double> raw(first.size());
+    cuda_safe_call(cudaMemcpy(raw.data(), d_Craw, raw.size() * sizeof(double), cudaMemcpyDefault));
+    EXPECT(::std::memcmp(raw.data(), first.data(), first.size() * sizeof(double)) == 0);
+    cuda_safe_call(cudaFree(d_Craw));
   }
 
   cuda_safe_call(cudaFree(d_B));
