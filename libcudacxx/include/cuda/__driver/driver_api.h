@@ -33,6 +33,7 @@
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/pair.h>
 #  if _CCCL_HOSTED()
 #    if _CCCL_OS(WINDOWS)
 #      include <windows.h>
@@ -42,6 +43,7 @@
 #  endif // _CCCL_HOSTED()
 
 #  include <cuda.h>
+#  include <cudaTypedefs.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -189,6 +191,14 @@ _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args
   }
 }
 
+_CCCL_HOST_API inline void __throw_if_cuda_error(::cudaError_t __status, const char* __err_msg)
+{
+  if (__status != ::cudaSuccess)
+  {
+    _CCCL_THROW(::cuda::cuda_error, __status, __err_msg);
+  }
+}
+
 //! @brief Initializes the CUDA Driver.
 //!
 //! @param __get_proc_addr_fn The pointer to cuGetProcAddress function.
@@ -256,19 +266,36 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 
 // Device management
 
-[[nodiscard]] _CCCL_HOST_API inline ::CUdevice __deviceGet(int __ordinal)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __deviceGetNoThrow( // NOLINT(bugprone-exception-escape)
+  ::CUdevice* __device,
+  int __ordinal) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGet);
+  return static_cast<::cudaError_t>(__driver_fn(__device, __ordinal));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUdevice __deviceGet(int __ordinal)
+{
   ::CUdevice __result;
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get device", &__result, __ordinal);
+  const auto __status = ::cuda::__driver::__deviceGetNoThrow(&__result, __ordinal);
+  ::cuda::__driver::__throw_if_cuda_error(__status, "Failed to get device");
   return __result;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __deviceGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
+  int* __value,
+  ::CUdevice_attribute __attr,
+  ::CUdevice __device) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetAttribute);
+  return static_cast<::cudaError_t>(__driver_fn(__value, __attr, __device));
 }
 
 [[nodiscard]] _CCCL_HOST_API inline int __deviceGetAttribute(::CUdevice_attribute __attr, ::CUdevice __device)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetAttribute);
   int __result;
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get device attribute", &__result, __attr, __device);
+  const auto __status = ::cuda::__driver::__deviceGetAttributeNoThrow(&__result, __attr, __device);
+  ::cuda::__driver::__throw_if_cuda_error(__status, "Failed to get device attribute");
   return __result;
 }
 
@@ -574,10 +601,19 @@ _CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemP
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
 }
 
-_CCCL_HOST_API inline void __mempoolGetAttributeImpl(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __mempoolGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
+  ::CUmemoryPool __pool,
+  ::CUmemPool_attribute __attr,
+  void* __value) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, __value);
+  return static_cast<::cudaError_t>(__driver_fn(__pool, __attr, __value));
+}
+
+_CCCL_HOST_API inline void __mempoolGetAttributeImpl(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value)
+{
+  const auto __status = ::cuda::__driver::__mempoolGetAttributeNoThrow(__pool, __attr, __value);
+  ::cuda::__driver::__throw_if_cuda_error(__status, "Failed to get attribute for a memory pool");
 }
 
 template <class _Tp>
@@ -722,6 +758,10 @@ template <::CUpointer_attribute _Attr>
   else if constexpr (_Attr == ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL)
   {
     return int{};
+  }
+  else if constexpr (_Attr == ::CU_POINTER_ATTRIBUTE_ALLOWED_HANDLE_TYPES)
+  {
+    return ::CUmemAllocationHandleType{};
   }
   else if constexpr (_Attr == ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE)
   {
@@ -1159,6 +1199,129 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceCanAccessPeer);
   return static_cast<::cudaError_t>(__driver_fn(&__result, __dev, __peer_dev));
 }
+
+// Logical endpoints
+
+#  if _CCCL_CTK_AT_LEAST(13, 3)
+[[nodiscard]] _CCCL_HOST_API inline ::CUlogicalEndpointId __logicalEndpointIdReserve(::cuuint32_t __count)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointIdReserve, cuLogicalEndpointIdReserve, 13, 3);
+  ::CUlogicalEndpointId __base_le_id{};
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to reserve logical endpoint IDs", &__base_le_id, __count);
+  return __base_le_id;
+}
+
+// TODO: Add a non-throwing driver entry-point lookup and migrate all NoThrow wrappers that lazily resolve driver APIs.
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__logicalEndpointIdReleaseNoThrow(::CUlogicalEndpointId __base_le_id, ::cuuint32_t __count) noexcept
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointIdRelease, cuLogicalEndpointIdRelease, 13, 3);
+  return static_cast<::cudaError_t>(__driver_fn(__base_le_id, __count));
+}
+
+_CCCL_HOST_API inline void __logicalEndpointCreate(::CUlogicalEndpointId __le_id, const ::CUlogicalEndpointProp* __prop)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointCreate, cuLogicalEndpointCreate, 13, 3);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to create a logical endpoint", __le_id, __prop);
+}
+
+_CCCL_HOST_API inline void __logicalEndpointAddDevice(::CUlogicalEndpointId __le_id, ::CUdevice __device)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointAddDevice, cuLogicalEndpointAddDevice, 13, 3);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to add a device to a logical endpoint", __le_id, __device);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointDestroyNoThrow(::CUlogicalEndpointId __le_id) noexcept
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointDestroy, cuLogicalEndpointDestroy, 13, 3);
+  return static_cast<::cudaError_t>(__driver_fn(__le_id));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointBindAddrNoThrow( // NOLINT(bugprone-exception-escape)
+  ::CUlogicalEndpointId __le_id,
+  ::CUdevice __device,
+  ::cuuint64_t __offset,
+  void* __ptr,
+  ::cuuint64_t __bytes,
+  unsigned long long __flags = 0) noexcept
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointBindAddr, cuLogicalEndpointBindAddr, 13, 3);
+  return static_cast<::cudaError_t>(__driver_fn(__le_id, __device, __offset, __ptr, __bytes, __flags));
+}
+
+_CCCL_HOST_API inline void __logicalEndpointBindAddr(
+  ::CUlogicalEndpointId __le_id,
+  ::CUdevice __device,
+  ::cuuint64_t __offset,
+  void* __ptr,
+  ::cuuint64_t __bytes,
+  unsigned long long __flags = 0)
+{
+  const auto __status =
+    ::cuda::__driver::__logicalEndpointBindAddrNoThrow(__le_id, __device, __offset, __ptr, __bytes, __flags);
+  ::cuda::__driver::__throw_if_cuda_error(__status, "Failed to bind a virtual address to a logical endpoint");
+}
+
+_CCCL_HOST_API inline void __logicalEndpointBindMem(
+  ::CUlogicalEndpointId __le_id,
+  ::CUdevice __device,
+  ::cuuint64_t __offset,
+  ::CUmemGenericAllocationHandle __handle,
+  ::cuuint64_t __handle_offset,
+  ::cuuint64_t __bytes,
+  unsigned long long __flags = 0)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointBindMem, cuLogicalEndpointBindMem, 13, 3);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to bind a memory handle to a logical endpoint",
+    __le_id,
+    __device,
+    __offset,
+    __handle,
+    __handle_offset,
+    __bytes,
+    __flags);
+}
+
+_CCCL_HOST_API inline void
+__logicalEndpointUnbind(::CUlogicalEndpointId __le_id, ::CUdevice __device, ::cuuint64_t __offset, ::cuuint64_t __bytes)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointUnbind, cuLogicalEndpointUnbind, 13, 3);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to unbind a logical endpoint range", __le_id, __device, __offset, __bytes);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::pair<::cuuint64_t, ::cuuint64_t>
+__logicalEndpointGetLimits(const ::CUlogicalEndpointProp* __prop)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointGetLimits, cuLogicalEndpointGetLimits, 13, 3);
+  ::cuuint64_t __bind_alignment{};
+  ::cuuint64_t __max_size{};
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to get logical endpoint limits", &__bind_alignment, &__max_size, __prop);
+  return {__bind_alignment, __max_size};
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __logicalEndpointQuery(::CUlogicalEndpointId __le_id, ::cuuint32_t __count)
+{
+  static auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointQuery, cuLogicalEndpointQuery, 13, 3);
+  int __query_status{};
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to query logical endpoint readiness", __le_id, __count, &__query_status);
+  return __query_status != 0;
+}
+#  endif // _CCCL_CTK_AT_LEAST(13, 3)
 
 // Green contexts
 
