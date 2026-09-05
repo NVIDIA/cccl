@@ -17,7 +17,9 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
-void f()
+#include "test_macros.h"
+
+TEST_FUNC void f()
 {
   int array[] = {1, 2, 3, 4};
   cuda::std::span<const int, 4> sp(array);

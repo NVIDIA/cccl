@@ -15,7 +15,9 @@
 
 // test explicitness
 
-#include <cuda/std/>
+#include <cuda/std/iterator>
+
+#include "test_macros.h"
 
 int main(int, char**)
 {
