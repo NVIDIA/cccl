@@ -344,13 +344,19 @@ using out_param = typename out_param_impl<T>::type;
 // True when the same user arguments would satisfy BOTH the first-output and the last-output
 // synthesis for `fun` (e.g. cudaMemGetInfo(size_t*, size_t*) called with one size_t*). The
 // zero-user-argument case is exempt: `fun(&result)` means the same thing either way.
-template <auto fun, typename... Ps>
+// `Args` are the arguments as the engine will see them, i.e. including the one the front
+// took wrapped. Direct invocability is checked FIRST and settles the matter: if `fun(Args...)`
+// is a valid call, nothing is synthesized and there is nothing to be ambiguous about. This
+// matters because CUDA handle types (cudaStream_t and friends) are themselves pointers, so
+// without the direct-form test a call like `cudaFreeAsync(void*, cudaStream_t)` looks like it
+// has output pointers at both ends.
+template <auto fun, typename... Args>
 inline constexpr bool ambiguous_output_forms =
-  sizeof...(Ps) != 0
+  sizeof...(Args) != 0 && !::cuda::std::is_invocable_v<decltype(fun), Args...>
   && (::cuda::std::is_pointer_v<first_param<fun>> && !::cuda::std::is_const_v<out_param<first_param<fun>>>
-      && ::cuda::std::is_invocable_v<decltype(fun), out_param<first_param<fun>>*, Ps...>)
+      && ::cuda::std::is_invocable_v<decltype(fun), out_param<first_param<fun>>*, Args...>)
   && (::cuda::std::is_pointer_v<last_param<fun>> && !::cuda::std::is_const_v<out_param<last_param<fun>>>
-      && ::cuda::std::is_invocable_v<decltype(fun), Ps..., out_param<last_param<fun>>*>);
+      && ::cuda::std::is_invocable_v<decltype(fun), Args..., out_param<last_param<fun>>*>);
 
 template <typename...>
 inline constexpr bool dependent_false = false;
@@ -587,13 +593,13 @@ auto cuda_try(const ::cuda::std::source_location loc = ::cuda::std::source_locat
 }
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
-_CCCL_REQUIRES(
-  (!::cuda::std::is_void_v<reserved::first_param<fun>>) _CCCL_AND(!reserved::ambiguous_output_forms<fun, Ps...>)
-    _CCCL_AND(::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
-              || ::cuda::std::is_invocable_v<decltype(fun),
-                                             reserved::first_param<fun>,
-                                             Ps...,
-                                             reserved::out_param<reserved::last_param<fun>>*>))
+_CCCL_REQUIRES((!::cuda::std::is_void_v<reserved::first_param<fun>>) _CCCL_AND(
+  !reserved::ambiguous_output_forms<fun, reserved::first_param<fun>, Ps...>)
+                 _CCCL_AND(::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
+                           || ::cuda::std::is_invocable_v<decltype(fun),
+                                                          reserved::first_param<fun>,
+                                                          Ps...,
+                                                          reserved::out_param<reserved::last_param<fun>>*>))
 auto cuda_try(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 {
   return reserved::checked_api_call<fun>(
@@ -607,9 +613,15 @@ auto cuda_try(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
 _CCCL_REQUIRES(
-  (!::cuda::std::is_void_v<reserved::second_param<fun>>) _CCCL_AND(
-    !reserved::ambiguous_output_forms<fun, Ps...>) _CCCL_AND ::cuda::std::
-    is_invocable_v<decltype(fun), reserved::out_param<reserved::first_param<fun>>*, reserved::second_param<fun>, Ps...>)
+  (!::cuda::std::is_void_v<reserved::second_param<fun>>)
+    _CCCL_AND(!reserved::ambiguous_output_forms<fun, reserved::second_param<fun>, Ps...>)
+  // The same guards the shared engine applies to first_output_form: the synthesized parameter
+  // must be a real, writable output pointer. Without the non-const test, `f(const int*, int)`
+  // would synthesize a `const int` and return its never-written default value.
+  _CCCL_AND(::cuda::std::is_pointer_v<reserved::first_param<fun>>) _CCCL_AND(
+    !::cuda::std::is_void_v<reserved::out_param<reserved::first_param<fun>>>)
+    _CCCL_AND(!::cuda::std::is_const_v<reserved::out_param<reserved::first_param<fun>>>) _CCCL_AND ::cuda::std::
+      is_invocable_v<decltype(fun), reserved::out_param<reserved::first_param<fun>>*, reserved::second_param<fun>, Ps...>)
 auto cuda_try(with_location<reserved::second_param<fun>> p0, Ps&&... rest)
 {
   reserved::out_param<reserved::first_param<fun>> result{};
@@ -651,13 +663,13 @@ auto cuda_safe_call(const ::cuda::std::source_location loc = ::cuda::std::source
 }
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
-_CCCL_REQUIRES(
-  (!::cuda::std::is_void_v<reserved::first_param<fun>>) _CCCL_AND(!reserved::ambiguous_output_forms<fun, Ps...>)
-    _CCCL_AND(::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
-              || ::cuda::std::is_invocable_v<decltype(fun),
-                                             reserved::first_param<fun>,
-                                             Ps...,
-                                             reserved::out_param<reserved::last_param<fun>>*>))
+_CCCL_REQUIRES((!::cuda::std::is_void_v<reserved::first_param<fun>>) _CCCL_AND(
+  !reserved::ambiguous_output_forms<fun, reserved::first_param<fun>, Ps...>)
+                 _CCCL_AND(::cuda::std::is_invocable_v<decltype(fun), reserved::first_param<fun>, Ps...>
+                           || ::cuda::std::is_invocable_v<decltype(fun),
+                                                          reserved::first_param<fun>,
+                                                          Ps...,
+                                                          reserved::out_param<reserved::last_param<fun>>*>))
 auto cuda_safe_call(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 {
   return reserved::checked_api_call<fun>(
@@ -671,9 +683,15 @@ auto cuda_safe_call(with_location<reserved::first_param<fun>> p0, Ps&&... rest)
 
 _CCCL_TEMPLATE(auto fun, typename... Ps)
 _CCCL_REQUIRES(
-  (!::cuda::std::is_void_v<reserved::second_param<fun>>) _CCCL_AND(
-    !reserved::ambiguous_output_forms<fun, Ps...>) _CCCL_AND ::cuda::std::
-    is_invocable_v<decltype(fun), reserved::out_param<reserved::first_param<fun>>*, reserved::second_param<fun>, Ps...>)
+  (!::cuda::std::is_void_v<reserved::second_param<fun>>)
+    _CCCL_AND(!reserved::ambiguous_output_forms<fun, reserved::second_param<fun>, Ps...>)
+  // The same guards the shared engine applies to first_output_form: the synthesized parameter
+  // must be a real, writable output pointer. Without the non-const test, `f(const int*, int)`
+  // would synthesize a `const int` and return its never-written default value.
+  _CCCL_AND(::cuda::std::is_pointer_v<reserved::first_param<fun>>) _CCCL_AND(
+    !::cuda::std::is_void_v<reserved::out_param<reserved::first_param<fun>>>)
+    _CCCL_AND(!::cuda::std::is_const_v<reserved::out_param<reserved::first_param<fun>>>) _CCCL_AND ::cuda::std::
+      is_invocable_v<decltype(fun), reserved::out_param<reserved::first_param<fun>>*, reserved::second_param<fun>, Ps...>)
 auto cuda_safe_call(with_location<reserved::second_param<fun>> p0, Ps&&... rest)
 {
   reserved::out_param<reserved::first_param<fun>> result{};
