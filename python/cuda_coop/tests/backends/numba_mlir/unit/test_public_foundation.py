@@ -52,7 +52,6 @@ _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._compiler._group_scan",
     "cuda.coop.numba_mlir._compiler._rewrite_scan",
     "cuda.coop.numba_mlir._lowering._scan",
-    "cuda.coop.numba_mlir._lowering._thread_group",
     "cuda.coop.numba_mlir._lowering._warp",
 )
 
@@ -143,6 +142,18 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         ("auto_sync", inspect.Parameter.KEYWORD_ONLY, None),
         ("sharing", inspect.Parameter.KEYWORD_ONLY, "shared"),
     )
+    for method in (
+        "rank",
+        "count",
+        "rank_as",
+        "count_as",
+        "sync",
+        "sync_aligned",
+        "is_member",
+    ):
+        assert inspect.signature(
+            getattr(coop.ThreadGroup, method)
+        ) == inspect.signature(getattr(portable_coop.ThreadGroup, method))
     assert call_shape(coop.ThreadGroup.group_by) == call_shape(
         portable_coop.ThreadGroup.group_by
     )
