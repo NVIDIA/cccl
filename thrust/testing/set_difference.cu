@@ -171,7 +171,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetDifferenceMultiset);
 // FIXME: disabled on Windows, because it causes a failure on the internal CI system in one specific configuration.
 // That failure will be tracked in a new NVBug, this is disabled to unblock submitting all the other changes.
 #if !_CCCL_COMPILER(MSVC)
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestSetDifferenceWithBigIndexesHelper(int magnitude)
+void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(0);
   thrust::counting_iterator<long long> end        = begin + (1ll << magnitude);
@@ -182,8 +182,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestSetDifferenceWithBigIndexesHelper(
   result.resize(1);
   thrust::set_difference(thrust::device, begin, end_longer, begin, end, result.begin());
 
-  thrust::host_vector<long long> expected;
-  expected.push_back(*end);
+  thrust::host_vector<long long> expected{*end};
 
   ASSERT_EQUAL(result, expected);
 }
