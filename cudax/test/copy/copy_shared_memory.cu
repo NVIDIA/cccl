@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/experimental/__copy/copy_shared_memory_utils.cuh>
+
 #include "copy_common.cuh"
 
 using data_t = int;
@@ -45,6 +47,32 @@ TEST_CASE("copy d2d shared_memory 2D partial tiles", "[copy][d2d][shared_memory]
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
+TEMPLATE_TEST_CASE(
+  "copy d2d shared_memory 2D typed transpose", "[copy][d2d][shared_memory][transpose][typed]", char, short, long long)
+{
+  SECTION("column-major to row-major")
+  {
+    constexpr int M     = 8192;
+    constexpr int N     = 32;
+    constexpr int alloc = M * N;
+    cuda::std::array<int, 2> shape{M, N};
+    cuda::std::array<int, 2> src_strides{1, M};
+    cuda::std::array<int, 2> dst_strides{N, 1};
+    test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+  }
+
+  SECTION("partial column-major to row-major")
+  {
+    constexpr int M     = 8193;
+    constexpr int N     = 37;
+    constexpr int alloc = M * N;
+    cuda::std::array<int, 2> shape{M, N};
+    cuda::std::array<int, 2> src_strides{1, M};
+    cuda::std::array<int, 2> dst_strides{N, 1};
+    test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+  }
+}
+
 // src: (8192,16,16):(1,8192,131072), column-major
 // dst: (8192,16,16):(256,16,1), row-major
 // The simplified tensor rank remains 3, covering the generic shared-memory launch.
@@ -60,14 +88,46 @@ TEST_CASE("copy d2d shared_memory 3D transpose", "[copy][d2d][shared_memory][tra
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
-// src: (8193,16,16):(1,8193,131088), column-major
-// dst: (8193,16,16):(256,16,1), row-major
-// The first dimension is not tile-aligned, so rank-3 boundary tiles use the direct-copy fallback.
+// src: (8193,17,19):(1,8193,139281), column-major
+// dst: (8193,17,19):(323,19,1), row-major
+// All dimensions are odd, so rank-3 boundary tiles exercise multiple clipped dimensions.
 TEST_CASE("copy d2d shared_memory 3D partial tiles", "[copy][d2d][shared_memory][transpose][3d][partial]")
 {
   constexpr int D0    = 8193;
-  constexpr int D1    = 16;
-  constexpr int D2    = 16;
+  constexpr int D1    = 17;
+  constexpr int D2    = 19;
+  constexpr int alloc = D0 * D1 * D2;
+  cuda::std::array<int, 3> shape{D0, D1, D2};
+  cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
+  cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
+  test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+}
+
+// src: (257,17,19,5):(1,257,5000,100000), padded after the second and third dimensions
+// dst: (257,17,19,5):(2000,100,5,1), padded after the second dimension
+// The odd extents and padding exercise rank-4 partial tiles with irregular source and destination strides.
+TEST_CASE("copy d2d shared_memory 4D irregular partial tiles", "[copy][d2d][shared_memory][transpose][4d][partial]")
+{
+  constexpr int D0        = 257;
+  constexpr int D1        = 17;
+  constexpr int D2        = 19;
+  constexpr int D3        = 5;
+  constexpr int src_alloc = (D0 - 1) + (D1 - 1) * 257 + (D2 - 1) * 5000 + (D3 - 1) * 100000 + 1;
+  constexpr int dst_alloc = (D0 - 1) * 2000 + (D1 - 1) * 100 + (D2 - 1) * 5 + D3;
+  cuda::std::array<int, 4> shape{D0, D1, D2, D3};
+  cuda::std::array<int, 4> src_strides{1, 257, 5000, 100000};
+  cuda::std::array<int, 4> dst_strides{2000, 100, 5, 1};
+  test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
+}
+
+// src: (33,257,33):(1,33,8481), column-major
+// dst: (33,257,33):(8481,33,1), row-major
+// Greedy 32x32x32 tiling requires 128 KiB, so devices with a smaller per-block limit use the logical 2D fallback.
+TEST_CASE("copy d2d shared_memory 3D logical 2D fallback", "[copy][d2d][shared_memory][transpose][3d][fallback]")
+{
+  constexpr int D0    = 33;
+  constexpr int D1    = 257;
+  constexpr int D2    = 33;
   constexpr int alloc = D0 * D1 * D2;
   cuda::std::array<int, 3> shape{D0, D1, D2};
   cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
@@ -90,4 +150,58 @@ TEST_CASE("copy d2d shared_memory 3D padded small dimension", "[copy][d2d][share
   cuda::std::array<int, 3> src_strides{1, D0 * D2, D0};
   cuda::std::array<int, 3> dst_strides{D1 * dst_pitch, dst_pitch, 1};
   test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// internal utilities
+
+TEST_CASE("copy shared_memory tiling preserves greedy candidate", "[copy][shared_memory][tiling]")
+{
+  using raw_tensor_t = cuda::experimental::__raw_tensor<int, int, data_t, 3>;
+
+  constexpr cuda::std::array<int, 3> shape{1024, 1024, 1024};
+  const raw_tensor_t src{nullptr, 3, shape, {1, 1024, 1024 * 1024}};
+  const raw_tensor_t dst{nullptr, 3, shape, {1024 * 1024, 1024, 1}};
+
+  constexpr cuda::std::size_t max_shared_mem_bytes = 128 * 1024;
+  constexpr cuda::std::size_t num_sms              = 1;
+  const auto result =
+    cuda::experimental::__find_shared_mem_tiling_with_limits<data_t>(src, dst, max_shared_mem_bytes, num_sms);
+
+  constexpr cuda::std::array<unsigned, 3> expected_tile_sizes{32, 32, 32};
+  REQUIRE(result.__is_valid);
+  REQUIRE(result.__tile_sizes == expected_tile_sizes);
+}
+
+TEST_CASE("copy shared_memory tiling falls back to logical 2D", "[copy][shared_memory][tiling][fallback]")
+{
+  using raw_tensor_t = cuda::experimental::__raw_tensor<int, int, data_t, 3>;
+
+  constexpr cuda::std::size_t max_shared_mem_bytes = 99 * 1024;
+  constexpr cuda::std::size_t num_sms              = 1;
+  constexpr cuda::std::array<unsigned, 3> expected_tile_sizes{32, 1, 32};
+
+  SECTION("power-of-two extents")
+  {
+    constexpr cuda::std::array<int, 3> shape{1024, 1024, 1024};
+    const raw_tensor_t src{nullptr, 3, shape, {1, 1024, 1024 * 1024}};
+    const raw_tensor_t dst{nullptr, 3, shape, {1024 * 1024, 1024, 1}};
+    const auto result =
+      cuda::experimental::__find_shared_mem_tiling_with_limits<data_t>(src, dst, max_shared_mem_bytes, num_sms);
+
+    REQUIRE(result.__is_valid);
+    REQUIRE(result.__tile_sizes == expected_tile_sizes);
+  }
+
+  SECTION("odd extents")
+  {
+    constexpr cuda::std::array<int, 3> shape{1023, 1025, 1024};
+    const raw_tensor_t src{nullptr, 3, shape, {1, 1023, 1023 * 1025}};
+    const raw_tensor_t dst{nullptr, 3, shape, {1025 * 1024, 1024, 1}};
+    const auto result =
+      cuda::experimental::__find_shared_mem_tiling_with_limits<data_t>(src, dst, max_shared_mem_bytes, num_sms);
+
+    REQUIRE(result.__is_valid);
+    REQUIRE(result.__tile_sizes == expected_tile_sizes);
+  }
 }

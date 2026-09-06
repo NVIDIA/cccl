@@ -199,6 +199,27 @@ void several_dimensions_non_square(nvbench::state& state)
 NVBENCH_BENCH(several_dimensions_non_square).set_name("several_dimensions_non_square (5D, int, 4GB)");
 
 /***********************************************************************************************************************
+ * High-rank simplification benchmarks
+ **********************************************************************************************************************/
+
+void flatten_common(nvbench::state& state)
+{
+  cuda::std::array<int, 23> shape{};
+  for (auto& extent : shape)
+  {
+    extent = 2;
+  }
+  cuda::std::array<int, 23> src_strides{
+    1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22, 1 << 14, 1 << 13, 1 << 12, 1 << 11,
+    1 << 10, 1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,  1 << 3,  1 << 2,  1 << 0,  1 << 1};
+  cuda::std::array<int, 23> dst_strides{
+    1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22, 1 << 14, 1 << 13, 1 << 12, 1 << 11,
+    1 << 10, 1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,  1 << 3,  1 << 1,  1 << 2,  1 << 0};
+  bench_copy<int8_t>(state, 0, shape, src_strides, 0, dst_strides);
+}
+NVBENCH_BENCH(flatten_common).set_name("flatten_common (23D, int8_t, 8MB)");
+
+/***********************************************************************************************************************
  * Transpose benchmark
  **********************************************************************************************************************/
 
