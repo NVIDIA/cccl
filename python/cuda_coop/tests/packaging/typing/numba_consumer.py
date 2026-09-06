@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Generic, Literal, Protocol, TypeVar
+from typing import Any, Generic, Literal, Protocol, TypeVar
 
 import numpy as np
 from typing_extensions import assert_type
@@ -60,6 +60,7 @@ def check_numba_surface(
     source: object,
     destination: object,
     readonly_values: _ReadonlyUInt16Payload,
+    compiler_integer_dtype: Any,
 ) -> None:
     """Exercise Numba declarations through their public package."""
 
@@ -83,6 +84,25 @@ def check_numba_surface(
         logical_warp,
         coop.ThreadGroup[Literal["threads_within_warp"]],
     )
+    generic_group: coop.ThreadGroup = block
+    generic_group.rank()
+    generic_group.count("warp")
+    assert_type(generic_group.rank_as(np.uint32), np.uint32)
+    assert_type(generic_group.count_as(int, "warp"), int)
+    assert_type(block.rank(), np.uint32 | np.uint64)
+    assert_type(block.count("warp"), np.uint32 | np.uint64)
+    assert_type(block.rank_as(np.uint16), np.uint16)
+    assert_type(block.rank_as(int), int)
+    assert_type(block.count_as(np.int64, "grid"), np.int64)
+    block.count_as(compiler_integer_dtype)
+    assert_type(block.is_member(), np.uint8)
+    assert_type(block.sync(), None)
+    assert_type(block.sync_aligned(), None)
+    assert_type(logical_warp.sync(), None)
+    assert_type(mapped_warps.rank("warp"), np.uint32 | np.uint64)
+    assert_type(mapped_warps.count("block"), np.uint32 | np.uint64)
+    assert_type(mapped_warps.is_member(), np.uint8)
+    assert_type(coop.this_grid().rank(), np.uint32 | np.uint64)
     assert_type(byte_values, coop.ThreadDataLike[np.int8])
     assert_type(values, coop.ThreadDataLike[np.uint16])
     assert_type(storage, coop.TempStorage)

@@ -11,13 +11,16 @@ from functools import reduce
 from operator import mul
 from typing import Any, TypeVar
 
-# Hierarchy levels identify the coordinate spaces used by group descriptors.
+# Hierarchy levels are the coordinate spaces accepted by rank and count queries.
 THREAD_LEVELS = frozenset({"thread", "warp", "block", "cluster", "grid"})
 # Physical group kinds identify runtime execution groups rather than mapped groups.
 PHYSICAL_GROUP_KINDS = frozenset({"thread", "warp", "block", "cluster", "grid"})
 MAPPED_GROUP_KINDS = frozenset({"threads_within_warp", "warps_within_block"})
 THREAD_GROUP_KINDS = PHYSICAL_GROUP_KINDS | MAPPED_GROUP_KINDS
 COMPLETE_WARP_GROUP_KINDS = frozenset({"warp"}) | MAPPED_GROUP_KINDS
+THREAD_GROUP_QUERY_DTYPE_NAMES = frozenset(
+    {"int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64"}
+)
 _ThreadGroupT = TypeVar("_ThreadGroupT", bound="ThreadGroup")
 _CPP_LEVEL_EXPR = {
     "thread": "::cuda::gpu_thread",
@@ -30,6 +33,13 @@ _CPP_LEVEL_EXPR = {
 
 class CoopCompilerContextRequiredError(RuntimeError):
     """A compiler-facing cooperative value escaped its compiler context."""
+
+
+def _compiler_method_marker(method: str) -> Any:
+    raise CoopCompilerContextRequiredError(
+        f"cuda.coop.ThreadGroup.{method} requires compiler-owned activation "
+        "or a qualified backend import before compilation"
+    )
 
 
 def normalize_thread_dim(
@@ -88,6 +98,21 @@ def normalize_thread_group_kind(kind: str, *, scope: str, feature: str) -> str:
     return kind
 
 
+def validate_thread_group_query_dtype(dtype: Any, *, scope: str) -> str:
+    """Validate the integral result domain shared by thread-group backends."""
+
+    token = getattr(dtype, "name", None)
+    if token is None:
+        token = getattr(dtype, "__name__", None)
+    if token is None:
+        token = str(dtype)
+    token = str(token).lower()
+    if token not in THREAD_GROUP_QUERY_DTYPE_NAMES:
+        names = ", ".join(sorted(THREAD_GROUP_QUERY_DTYPE_NAMES))
+        raise TypeError(f"{scope}.ThreadGroup query dtype must be one of: {names}")
+    return token
+
+
 def _thread_count(block_dim: tuple[int, int, int] | None) -> int | None:
     if block_dim is None:
         return None
@@ -130,7 +155,7 @@ class ThreadHierarchy:
         block_dim: int | tuple[int, ...] | list[int],
         grid_dim: int | tuple[int, ...] | list[int] | None = None,
         cluster_dim: int | tuple[int, ...] | list[int] | None = None,
-    ) -> ThreadHierarchy:
+    ) -> "ThreadHierarchy":
         """Materialize planner-verified extents from launch facts."""
 
         hierarchy = object.__new__(cls)
@@ -169,7 +194,7 @@ class ThreadHierarchy:
         return hierarchy
 
     @classmethod
-    def current(cls) -> ThreadHierarchy:
+    def current(cls) -> "ThreadHierarchy":
         """Describe C++ default ``this_*()`` hierarchy construction."""
 
         return cls()
@@ -304,13 +329,13 @@ class ThreadGroup:
     warps; see :ref:`thread groups <coop-thread-groups>`.
 
     Group descriptors can also be constructed in ordinary Python. Runtime
-    rank, size, membership, and synchronization queries are not available
-    in this API layer.
+    rank, size, membership, and synchronization queries require a
+    supported kernel compiler.
     """
 
     kind: str
     hierarchy: ThreadHierarchy = field(default_factory=ThreadHierarchy.current)
-    parent: ThreadGroup | None = None
+    parent: "ThreadGroup | None" = None
     mapping: GroupByMapping | None = None
     # Provenance is excluded from semantic identity and cache keys, but planners
     # may still use it to preserve policy at public API boundaries.
@@ -498,8 +523,7 @@ class ThreadGroup:
             self.hierarchy.semantic_key,  # type: ignore[union-attr]
         )
 
-    # Keep runtime annotations dependency-free on Python 3.10.
-    def with_hierarchy(  # noqa: PYI019
+    def with_hierarchy(
         self: _ThreadGroupT,
         hierarchy: ThreadHierarchy,
         *,
@@ -518,8 +542,7 @@ class ThreadGroup:
             source=source,
         )
 
-    # Keep runtime annotations dependency-free on Python 3.10.
-    def group_by(  # noqa: PYI019
+    def group_by(
         self: _ThreadGroupT,
         count: int,
         *,
@@ -597,6 +620,45 @@ class ThreadGroup:
             mapping=mapping,
             source="group_by",
         )
+
+    def rank(self, level: str = "thread") -> Any:
+        """Return this group's rank relative to another hierarchy level."""
+
+        del level
+        return _compiler_method_marker("rank")
+
+    def count(self, level: str = "thread") -> Any:
+        """Return this group's count relative to another hierarchy level."""
+
+        del level
+        return _compiler_method_marker("count")
+
+    def rank_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        """Return the group rank converted to an integral dtype."""
+
+        del dtype, level
+        return _compiler_method_marker("rank_as")
+
+    def count_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        """Return the group count converted to an integral dtype."""
+
+        del dtype, level
+        return _compiler_method_marker("count_as")
+
+    def sync(self) -> None:
+        """Synchronize the participating members of this group."""
+
+        _compiler_method_marker("sync")
+
+    def sync_aligned(self) -> None:
+        """Synchronize an aligned group in converged control flow."""
+
+        _compiler_method_marker("sync_aligned")
+
+    def is_member(self) -> Any:
+        """Return whether the current thread belongs to this group."""
+
+        return _compiler_method_marker("is_member")
 
 
 def make_thread_group(
@@ -713,10 +775,8 @@ def render_group_decl_lines(
             [
                 f"{indent}::cuda::experimental::coop::generic_group {var_name}{{",
                 f"{indent}    ::cuda::gpu_thread, {parent_name},",
-                (
-                    f"{indent}    ::cuda::experimental::coop::group_by<"
-                    f"{mapping.count}, {exhaustive}>{{}},"
-                ),
+                f"{indent}    ::cuda::experimental::coop::group_by<"
+                f"{mapping.count}, {exhaustive}>{{}},",
                 f"{indent}    ::cuda::experimental::coop::lane_synchronizer{{}}}};",
             ]
         )
@@ -728,29 +788,21 @@ def render_group_decl_lines(
     lines.extend(
         [
             f"{indent}using {var_name}_barriers_type =",
-            (
-                f"{indent}    ::cuda::barrier<::cuda::thread_scope_block>"
-                f"[{groups_per_parent}];"
-            ),
+            f"{indent}    ::cuda::barrier<::cuda::thread_scope_block>"
+            f"[{groups_per_parent}];",
             f"{indent}__shared__ ::cuda::std::aligned_storage_t<",
             f"{indent}    sizeof({var_name}_barriers_type),",
-            (
-                f"{indent}    alignof({var_name}_barriers_type)> "
-                f"{var_name}_barriers_storage;"
-            ),
+            f"{indent}    alignof({var_name}_barriers_type)> "
+            f"{var_name}_barriers_storage;",
             f"{indent}auto& {var_name}_barriers =",
             f"{indent}    reinterpret_cast<{var_name}_barriers_type&>(",
             f"{indent}        {var_name}_barriers_storage);",
             f"{indent}::cuda::experimental::coop::generic_group {var_name}{{",
             f"{indent}    ::cuda::warp, {parent_name},",
-            (
-                f"{indent}    ::cuda::experimental::coop::group_by<"
-                f"{mapping.count}, {exhaustive}>{{}},"
-            ),
-            (
-                f"{indent}    ::cuda::experimental::coop::barrier_synchronizer{{"
-                f"{var_name}_barriers}}}};"
-            ),
+            f"{indent}    ::cuda::experimental::coop::group_by<"
+            f"{mapping.count}, {exhaustive}>{{}},",
+            f"{indent}    ::cuda::experimental::coop::barrier_synchronizer{{"
+            f"{var_name}_barriers}}}};",
         ]
     )
     return lines
@@ -786,11 +838,12 @@ def this_grid() -> ThreadGroup:
 
 __all__ = [
     "COMPLETE_WARP_GROUP_KINDS",
+    "CoopCompilerContextRequiredError",
     "MAPPED_GROUP_KINDS",
     "PHYSICAL_GROUP_KINDS",
-    "THREAD_GROUP_KINDS",
     "THREAD_LEVELS",
-    "CoopCompilerContextRequiredError",
+    "THREAD_GROUP_KINDS",
+    "THREAD_GROUP_QUERY_DTYPE_NAMES",
     "GroupByMapping",
     "Hierarchy",
     "ThreadGroup",
@@ -808,4 +861,5 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "validate_thread_group_query_dtype",
 ]

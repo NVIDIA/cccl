@@ -19,7 +19,7 @@ import pytest
 _PACKAGE_ROOT = Path(__file__).parents[2]
 _CONSUMER_ROOT = Path(__file__).with_name("typing")
 _VALID_CONSUMERS = ("portable_consumer.py", "numba_consumer.py")
-_UNSUPPORTED_THREAD_GROUP_METHODS = frozenset(
+_THREAD_GROUP_HIERARCHY_METHODS = frozenset(
     {
         "count",
         "count_as",
@@ -94,7 +94,7 @@ def _expected_diagnostics(consumer: Path) -> set[tuple[int, str]]:
     ("_core/api/thread_group.pyi", "numba_mlir/_thread_group.pyi"),
     ids=("portable", "qualified"),
 )
-def test_thread_group_stubs_are_descriptor_only(relative_path: str) -> None:
+def test_thread_group_stubs_expose_hierarchy_operations(relative_path: str) -> None:
     stub = _package_stub_source() / relative_path
     module = ast.parse(stub.read_text(encoding="utf-8"), filename=str(stub))
     thread_group = next(
@@ -106,7 +106,7 @@ def test_thread_group_stubs_are_descriptor_only(relative_path: str) -> None:
         node.name for node in thread_group.body if isinstance(node, ast.FunctionDef)
     }
 
-    assert _UNSUPPORTED_THREAD_GROUP_METHODS.isdisjoint(methods)
+    assert _THREAD_GROUP_HIERARCHY_METHODS <= methods
 
 
 def test_public_stubs_pass_strict_consumer_type_checks(tmp_path: Path) -> None:
