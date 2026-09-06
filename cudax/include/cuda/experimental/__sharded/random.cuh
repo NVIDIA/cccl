@@ -310,10 +310,9 @@ void generate_normal(
         if (__main != 0)
         {
           curandGenerator_t __g = __gens.__make(__seed, __o + __head, __stream);
-          reserved::__curand_check(
-            reserved::__host_generate_normal<_Tp>(
-              __g, __d.data + __head, static_cast<::std::size_t>(__main), __mean, __stddev),
-            "generate_normal");
+          reserved::__curand_check(reserved::__host_generate_normal<_Tp>(
+                                     __g, __d.data + __head, static_cast<::std::size_t>(__main), __mean, __stddev),
+                                   "generate_normal");
         }
         if (__head || __tail)
         {
@@ -325,15 +324,15 @@ void generate_normal(
           if (__head) // element __o, second of the pair starting at __o - 1
           {
             curandGenerator_t __gh = __gens.__make(__seed, __o - 1, __stream);
-            reserved::__curand_check(
-              reserved::__host_generate_normal<_Tp>(__gh, __scratch, 2, __mean, __stddev), "generate_normal head");
+            reserved::__curand_check(reserved::__host_generate_normal<_Tp>(__gh, __scratch, 2, __mean, __stddev),
+                                     "generate_normal head");
             cuda_safe_call(cudaMemcpyAsync(__d.data, __scratch + 1, sizeof(_Tp), cudaMemcpyDeviceToDevice, __stream));
           }
           if (__tail) // element __o + __n - 1, first of the pair starting there (even by construction)
           {
             curandGenerator_t __gt = __gens.__make(__seed, __o + __n - 1, __stream);
-            reserved::__curand_check(
-              reserved::__host_generate_normal<_Tp>(__gt, __scratch + 2, 2, __mean, __stddev), "generate_normal tail");
+            reserved::__curand_check(reserved::__host_generate_normal<_Tp>(__gt, __scratch + 2, 2, __mean, __stddev),
+                                     "generate_normal tail");
             cuda_safe_call(
               cudaMemcpyAsync(__d.data + (__n - 1), __scratch + 2, sizeof(_Tp), cudaMemcpyDeviceToDevice, __stream));
           }

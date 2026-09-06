@@ -48,13 +48,12 @@
  * tiers composing on it in place.
  */
 
+#include <cuda/experimental/__sharded/sparse.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
 #include <cmath>
 #include <cstdio>
 #include <vector>
-
-#include <cuda/experimental/__sharded/sparse.cuh> // opt-in vendor tier
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::make_locality_domain_grid;
@@ -62,7 +61,6 @@ using cuda::experimental::places::place_group;
 
 namespace
 {
-
 // 7-point Poisson on a g^3 grid: A(i,i) = 6, A(i,j) = -1 for the 6 axis
 // neighbors. SPD, uniform ~7 nnz/row, so an even row split is also
 // nnz-balanced. deg(i) = number of in-bounds neighbors of cell i.
@@ -71,7 +69,8 @@ struct poisson
   int g;
   __host__ __device__ int deg(int64_t i) const
   {
-    const int x = static_cast<int>(i % g), y = static_cast<int>((i / g) % g), z = static_cast<int>(i / (int64_t(g) * g));
+    const int x = static_cast<int>(i % g), y = static_cast<int>((i / g) % g),
+              z = static_cast<int>(i / (int64_t(g) * g));
     return (x > 0) + (x + 1 < g) + (y > 0) + (y + 1 < g) + (z > 0) + (z + 1 < g);
   }
   // Writes row i's segment (ascending columns) at colinds/values[offs[i]].
@@ -126,7 +125,6 @@ double dot(const sharded_array<double>& a, const sharded_array<double>& b, shard
     b);
   return sum(scratch);
 }
-
 } // namespace
 
 int main()
@@ -219,7 +217,7 @@ int main()
     });
   }
 
-  double rr = dot(r, r, scratch);
+  double rr        = dot(r, r, scratch);
   const double rr0 = rr;
   ::std::printf("initial |r|^2 = %.6e\n", rr0);
 

@@ -44,5 +44,8 @@ endforeach()
 # (sparse.cuh is opt-in and not part of the umbrella).
 foreach (source IN ITEMS sharded_cg.cu)
   cudax_add_places_example(cusparse_example_target "${source}")
-  target_link_libraries(${cusparse_example_target} PRIVATE CUDA::cusparse CUDA::cuda_driver)
+  target_link_libraries(
+    ${cusparse_example_target}
+    PRIVATE CUDA::cusparse CUDA::cuda_driver
+  )
 endforeach()

@@ -47,11 +47,10 @@
  * bitwise reproducible across shardings, which this example checks for both.
  */
 
+#include <cuda/experimental/__sharded/random.cuh> // opt-in vendor tier
 #include <cuda/experimental/sharded.cuh>
 
 #include <cstdio>
-
-#include <cuda/experimental/__sharded/random.cuh> // opt-in vendor tier
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::make_locality_domain_grid;
@@ -71,8 +70,8 @@ struct in_unit_circle
 // range, generates the sample pair positionally, tests and block-reduces —
 // nothing is materialized. (The future generic form of this loop is a
 // tabulate/transform_reduce over a lazy random input view.)
-__global__ void fused_pi_kernel(
-  unsigned long long offset, unsigned long long n, unsigned long long seed, unsigned long long* hits)
+__global__ void
+fused_pi_kernel(unsigned long long offset, unsigned long long n, unsigned long long seed, unsigned long long* hits)
 {
   const unsigned long long stride = static_cast<unsigned long long>(gridDim.x) * blockDim.x;
   unsigned long long acc          = 0;
@@ -104,7 +103,8 @@ __global__ void fused_pi_kernel(
 
 unsigned long long fused_hits(place_group& group, const ::std::vector<size_t>& shard_sizes, unsigned long long seed)
 {
-  unsigned long long* d_hits = static_cast<unsigned long long*>(group.memory_resource(0).allocate_sync(sizeof(*d_hits)));
+  unsigned long long* d_hits =
+    static_cast<unsigned long long*>(group.memory_resource(0).allocate_sync(sizeof(*d_hits)));
   cuda_safe_call(cudaMemset(d_hits, 0, sizeof(*d_hits)));
 
   size_t offset = 0;

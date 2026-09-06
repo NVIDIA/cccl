@@ -249,14 +249,15 @@ struct spmv_shard_plan
   //! As `run`, with DEVICE-RESIDENT alpha/beta (the consumer-library pointer
   //! mode): binds CUSPARSE_POINTER_MODE_DEVICE for the launch and restores
   //! host mode after (build/warm-up always run in host mode).
-  void run_device_scalars(cusparseHandle_t handle,
-                          const csr_shard<_Tp>& sh,
-                          ::std::int64_t cols,
-                          const _Tp* x,
-                          _Tp* y,
-                          const _Tp* d_alpha,
-                          const _Tp* d_beta,
-                          cudaStream_t stream)
+  void run_device_scalars(
+    cusparseHandle_t handle,
+    const csr_shard<_Tp>& sh,
+    ::std::int64_t cols,
+    const _Tp* x,
+    _Tp* y,
+    const _Tp* d_alpha,
+    const _Tp* d_beta,
+    cudaStream_t stream)
   {
     if (!built)
     {
@@ -457,15 +458,16 @@ struct spmm_shard_plan
   }
 
   //! As `run`, with DEVICE-RESIDENT alpha/beta (see spmv_shard_plan).
-  void run_device_scalars(cusparseHandle_t handle,
-                          const csr_shard<_Tp>& sh,
-                          ::std::int64_t cols,
-                          ::std::int64_t n_cols,
-                          const _Tp* B,
-                          _Tp* C,
-                          const _Tp* d_alpha,
-                          const _Tp* d_beta,
-                          cudaStream_t stream)
+  void run_device_scalars(
+    cusparseHandle_t handle,
+    const csr_shard<_Tp>& sh,
+    ::std::int64_t cols,
+    ::std::int64_t n_cols,
+    const _Tp* B,
+    _Tp* C,
+    const _Tp* d_alpha,
+    const _Tp* d_beta,
+    cudaStream_t stream)
   {
     if (!built)
     {
@@ -817,9 +819,9 @@ void spmv(spmv_plan<_Tp>& plan, const _Tp* x, _Tp* y, _Tp alpha = _Tp{1}, _Tp be
     }
     if (sh.nnz == 0)
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "sharded::spmv: shard " + ::std::to_string(i)
-                    + " has rows but no nonzeros; adjust the row boundaries");
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        "sharded::spmv: shard " + ::std::to_string(i) + " has rows but no nonzeros; adjust the row boundaries");
     }
     places::exec_place_scope scope(sh.exec);
     plan.shard_plan(i).run(plan.handles().get(i), sh, A.num_cols(), x, y + sh.row_begin, alpha, beta, sh.stream);
@@ -844,13 +846,21 @@ void spmm(spmm_plan<_Tp>& plan, const _Tp* B, _Tp* C, _Tp alpha = _Tp{1}, _Tp be
     }
     if (sh.nnz == 0)
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "sharded::spmm: shard " + ::std::to_string(i)
-                    + " has rows but no nonzeros; adjust the row boundaries");
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        "sharded::spmm: shard " + ::std::to_string(i) + " has rows but no nonzeros; adjust the row boundaries");
     }
     places::exec_place_scope scope(sh.exec);
     plan.shard_plan(i).run(
-      plan.handles().get(i), sh, A.num_cols(), plan.n_cols(), B, C + sh.row_begin * plan.n_cols(), alpha, beta, sh.stream);
+      plan.handles().get(i),
+      sh,
+      A.num_cols(),
+      plan.n_cols(),
+      B,
+      C + sh.row_begin * plan.n_cols(),
+      alpha,
+      beta,
+      sh.stream);
   }
 }
 
@@ -871,9 +881,9 @@ void spmv(spmv_plan<_Tp>& plan, const _Tp* x, _Tp* y, const _Tp* d_alpha, const 
     }
     if (sh.nnz == 0)
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "sharded::spmv: shard " + ::std::to_string(i)
-                    + " has rows but no nonzeros; adjust the row boundaries");
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        "sharded::spmv: shard " + ::std::to_string(i) + " has rows but no nonzeros; adjust the row boundaries");
     }
     places::exec_place_scope scope(sh.exec);
     plan.shard_plan(i).run_device_scalars(
@@ -897,13 +907,21 @@ void spmm(spmm_plan<_Tp>& plan, const _Tp* B, _Tp* C, const _Tp* d_alpha, const 
     }
     if (sh.nnz == 0)
     {
-      _CCCL_THROW(::std::invalid_argument,
-                  "sharded::spmm: shard " + ::std::to_string(i)
-                    + " has rows but no nonzeros; adjust the row boundaries");
+      _CCCL_THROW(
+        ::std::invalid_argument,
+        "sharded::spmm: shard " + ::std::to_string(i) + " has rows but no nonzeros; adjust the row boundaries");
     }
     places::exec_place_scope scope(sh.exec);
     plan.shard_plan(i).run_device_scalars(
-      plan.handles().get(i), sh, A.num_cols(), plan.n_cols(), B, C + sh.row_begin * plan.n_cols(), d_alpha, d_beta, sh.stream);
+      plan.handles().get(i),
+      sh,
+      A.num_cols(),
+      plan.n_cols(),
+      B,
+      C + sh.row_begin * plan.n_cols(),
+      d_alpha,
+      d_beta,
+      sh.stream);
   }
 }
 
