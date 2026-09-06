@@ -65,57 +65,60 @@ namespace
 
 // 7-point Poisson on a g^3 grid: A(i,i) = 6, A(i,j) = -1 for the 6 axis
 // neighbors. SPD, uniform ~7 nnz/row, so an even row split is also
-// nnz-balanced.
-void build_poisson_csr(int g, ::std::vector<int>& offsets, ::std::vector<int>& colinds, ::std::vector<double>& values)
+// nnz-balanced. deg(i) = number of in-bounds neighbors of cell i.
+struct poisson
 {
-  const int64_t n = int64_t(g) * g * g;
-  offsets.assign(static_cast<size_t>(n) + 1, 0);
-  colinds.reserve(static_cast<size_t>(n) * 7);
-  values.reserve(static_cast<size_t>(n) * 7);
-  auto idx = [g](int x, int y, int z) {
-    return (int64_t(z) * g + y) * g + x;
-  };
-  for (int z = 0; z < g; z++)
+  int g;
+  __host__ __device__ int deg(int64_t i) const
   {
-    for (int y = 0; y < g; y++)
+    const int x = static_cast<int>(i % g), y = static_cast<int>((i / g) % g), z = static_cast<int>(i / (int64_t(g) * g));
+    return (x > 0) + (x + 1 < g) + (y > 0) + (y + 1 < g) + (z > 0) + (z + 1 < g);
+  }
+  // Writes row i's segment (ascending columns) at colinds/values[offs[i]].
+  __device__ void write_row(int64_t i, const int* offs, int* colinds, double* values) const
+  {
+    const int64_t gg = int64_t(g) * g;
+    int o            = offs[i];
+    auto push        = [&](int64_t col, double v) {
+      colinds[o] = static_cast<int>(col);
+      values[o]  = v;
+      o++;
+    };
+    const int x = static_cast<int>(i % g), y = static_cast<int>((i / g) % g), z = static_cast<int>(i / gg);
+    if (z > 0)
     {
-      for (int x = 0; x < g; x++)
-      {
-        const int64_t row = idx(x, y, z);
-        auto push         = [&](int64_t col, double v) {
-          colinds.push_back(static_cast<int>(col));
-          values.push_back(v);
-        };
-        // Ascending column order within the row.
-        if (z > 0)
-        {
-          push(idx(x, y, z - 1), -1.0);
-        }
-        if (y > 0)
-        {
-          push(idx(x, y - 1, z), -1.0);
-        }
-        if (x > 0)
-        {
-          push(idx(x - 1, y, z), -1.0);
-        }
-        push(row, 6.0);
-        if (x + 1 < g)
-        {
-          push(idx(x + 1, y, z), -1.0);
-        }
-        if (y + 1 < g)
-        {
-          push(idx(x, y + 1, z), -1.0);
-        }
-        if (z + 1 < g)
-        {
-          push(idx(x, y, z + 1), -1.0);
-        }
-        offsets[static_cast<size_t>(row) + 1] = static_cast<int>(colinds.size());
-      }
+      push(i - gg, -1.0);
+    }
+    if (y > 0)
+    {
+      push(i - g, -1.0);
+    }
+    if (x > 0)
+    {
+      push(i - 1, -1.0);
+    }
+    push(i, 6.0);
+    if (x + 1 < g)
+    {
+      push(i + 1, -1.0);
+    }
+    if (y + 1 < g)
+    {
+      push(i + g, -1.0);
+    }
+    if (z + 1 < g)
+    {
+      push(i + gg, -1.0);
     }
   }
+};
+
+// iota through the generic tier: 1,1,1,... exclusive-scanned is 0,1,2,...
+template <class Arr>
+void device_iota(Arr& a)
+{
+  fill(a, typename Arr::value_type{1});
+  exclusive_scan(a, ::cuda::std::plus<>{}, typename Arr::value_type{0});
 }
 
 // dot(a, b) through the generic tier: multiply into per-place scratch, then
@@ -148,9 +151,9 @@ int main()
 
   const int g     = 96; // 884k rows, ~6.1M nnz
   const int64_t n = int64_t(g) * g * g;
-  ::std::vector<int> h_offsets, h_colinds;
-  ::std::vector<double> h_values;
-  build_poisson_csr(g, h_offsets, h_colinds, h_values);
+  const poisson P{g};
+  // Face cells miss one neighbor each: nnz is analytic, nothing to count.
+  const int64_t nnz = 7 * n - 6 * int64_t(g) * g;
 
   // Even row split shared by the matrix and every vector (uniform stencil:
   // even rows == nnz-balanced). The boundaries passed to the CSR are the
@@ -168,9 +171,40 @@ int main()
     }
   }
 
+  // DEVICE-NATIVE assembly, all through the generic tier — the matrix never
+  // exists on the host. offsets is one in-place pipeline over an (n+1)-array:
+  // iota -> per-row counts (tail slot 0) -> exclusive scan. The scan's last
+  // output is then total nnz by construction; here it is analytic anyway.
+  auto offsets = sharded_array<int>::allocate_contiguous(group, static_cast<size_t>(n) + 1);
+  device_iota(offsets);
+  transform(offsets, [P, n] __device__(int i) {
+    return int64_t{i} < n ? 1 + P.deg(i) : 0;
+  });
+  exclusive_scan(offsets, ::cuda::std::plus<>{}, 0);
+
+  // Column indices and values: a for_each over the row space (spelled as an
+  // identity transform over a row iota) scatters each row's segment through
+  // the contiguous views.
+  auto colinds = sharded_array<int>::allocate_contiguous(group, static_cast<size_t>(nnz));
+  auto values  = sharded_array<double>::allocate_contiguous(group, static_cast<size_t>(nnz));
+  {
+    auto rows = sharded_array<int>::allocate(group, sizes);
+    device_iota(rows);
+    offsets.sync(); // the scatter below reads offsets across lane boundaries
+    int* d_ci    = colinds.contiguous_data();
+    double* d_v  = values.contiguous_data();
+    const int* d_off = offsets.contiguous_data();
+    transform(rows, [P, d_off, d_ci, d_v] __device__(int i) {
+      P.write_row(i, d_off, d_ci, d_v);
+      return i;
+    });
+    rows.sync();
+  }
+
   // The operator, row-partitioned over the group; the vendor-state scope
   // (handles + per-shard plans) is caller-held, like every tier resource.
-  sharded_csr<double> A(group, n, n, h_offsets.data(), h_colinds.data(), h_values.data(), bounds);
+  auto A = sharded_csr<double>::from_device(
+    group, n, n, offsets.contiguous_data(), colinds.contiguous_data(), values.contiguous_data(), bounds);
   cusparse_handles handles(group);
   spmv_plan<double> plan(handles, A);
 
@@ -182,21 +216,16 @@ int main()
   auto scratch = sharded_array<double>::allocate(group, sizes);
   auto p       = sharded_array<double>::allocate_contiguous(group, static_cast<size_t>(n));
 
-  // b = A * ones is the row-sum, assembled on the host. Start from x0 = 0,
-  // so r0 = b and p0 = r0.
+  // b = A * ones is the row-sum: analytically 6 - deg(i) for this stencil,
+  // assembled in place from an iota — the host never sees b either. Start
+  // from x0 = 0, so r0 = b and p0 = r0.
   fill(x, 0.0);
+  for (auto* v : {&r, &p})
   {
-    ::std::vector<double> h_b(static_cast<size_t>(n));
-    for (int64_t i = 0; i < n; i++)
-    {
-      h_b[static_cast<size_t>(i)] = 0.0;
-      for (int k = h_offsets[static_cast<size_t>(i)]; k < h_offsets[static_cast<size_t>(i) + 1]; k++)
-      {
-        h_b[static_cast<size_t>(i)] += h_values[static_cast<size_t>(k)];
-      }
-    }
-    r.copy_from_host(h_b.data());
-    p.copy_from_host(h_b.data()); // p0 = r0 = b
+    device_iota(*v);
+    transform(*v, [P] __device__(double i) {
+      return 6.0 - P.deg(static_cast<int64_t>(i));
+    });
   }
 
   double rr = dot(r, r, scratch);
@@ -211,7 +240,19 @@ int main()
     // Closed tier: the vendor call consumes the sharded operator and the
     // contiguous view of p, and writes the row-partitioned q — in place,
     // where every operand lives.
+    //
+    // Composition contract: the generic-tier convenience calls in this loop
+    // are SYNCHRONOUS (empty call environment), so they order one another
+    // through the host. spmv is the one lane-asynchronous call (it enqueues
+    // on the MATRIX's shard streams and records no edges), so its coupling
+    // to the q-readers below is made explicit here. The fully asynchronous
+    // spelling (stream-carrying call environments + lane_wait edges +
+    // graph replay) is the production path, deliberately not taken.
     spmv(plan, p.contiguous_data(), q);
+    for (size_t i = 0; i < A.num_shards(); i++)
+    {
+      cuda_safe_call(cudaStreamSynchronize(A.shard(i).stream));
+    }
 
     const double pq    = dot(p, q, scratch);
     const double alpha = rr / pq;
