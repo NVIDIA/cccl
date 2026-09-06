@@ -37,10 +37,15 @@
  * either way.
  *
  * Problem: 7-point Poisson stencil on a g^3 grid (SPD), b = A * ones, CG
- * from x0 = 0; converged x must recover ones. Per-place work and reductions
- * use the tier's default envs; scalar recurrences run on the host (one sync
- * per dot — an iterative solver at this size is bandwidth-, not
- * latency-limited).
+ * from x0 = 0; converged x must recover ones.
+ *
+ * This example is written for CLARITY, not solver throughput: scalar
+ * recurrences run on the host (one sync per dot), and each dot is a
+ * two-pass zip_transform + sum. A production spelling would keep the
+ * scalars on the device (reduce_into is async and capture-compatible),
+ * fuse the dots, and replay iterations as a CUDA graph — none of which
+ * changes the point demonstrated here: one placed layout, open and closed
+ * tiers composing on it in place.
  */
 
 #include <cuda/experimental/sharded.cuh>
