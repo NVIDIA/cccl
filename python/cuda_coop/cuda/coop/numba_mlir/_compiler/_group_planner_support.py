@@ -70,6 +70,18 @@ _PORTABLE_GROUP_CONSTRUCTORS = frozenset(
         _portable_api.this_grid,
     }
 )
+_GROUP_METHODS = frozenset(
+    {
+        "rank",
+        "count",
+        "rank_as",
+        "count_as",
+        "sync",
+        "sync_aligned",
+        "group_by",
+        "is_member",
+    }
+)
 
 
 class GroupRewriteError(Exception):

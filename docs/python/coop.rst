@@ -193,12 +193,33 @@ must reach its collective; complete sibling logical groups may take different
 control-flow paths.
 
 The portable group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, but those are not targets for these operations.
-``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
-compile-time vocabulary for describing a static partition. Runtime query,
-membership, and synchronization methods such as
-``rank``, ``count``, ``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and
-``is_member`` are not exposed.
+groups of physical warps, although those are not Load, Store, Exchange, or
+Shuffle targets. ``ThreadGroup`` exposes the C++ hierarchy query surface.
+``rank(level="thread")`` and ``count(level="thread")`` accept ``thread`` (or
+``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``. Their default
+result is the unsigned product type used by the corresponding C++ hierarchy
+operation: normally ``uint32``, and ``uint64`` when the group or queried outer
+level is the grid. ``rank_as(dtype, level="thread")`` and
+``count_as(dtype, level="thread")`` select an explicit signed or unsigned 8-,
+16-, 32-, or 64-bit integer dtype. ``is_member()`` returns an integer
+membership flag.
+
+``sync()`` and ``sync_aligned()`` expose the matching non-grid barriers. Every
+participating member must reach ``sync()``. ``sync_aligned()`` additionally
+requires an aligned and converged group. Grid synchronization is unavailable
+because the backend cannot request a cooperative grid launch.
+
+``group_by`` remains static compiler vocabulary: ``count`` and ``exhaustive``
+must be compile-time constants. A mapped threads-within-warp group can query
+its threads and immediate parent Warp. A mapped warps-within-block group can
+query its threads, physical Warps, and immediate parent block. Queries above
+the immediate physical parent are rejected. Mapped warps-within-block groups
+support queries and ``is_member()`` but not ``sync()`` or ``sync_aligned()``;
+their block-barrier lifetime requires a future planner-owned contract. For a
+non-exhaustive partition, use ``is_member()`` to guard rank-dependent work for
+excluded threads. Do not use that branch to skip a collective unless the
+collective's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the collective.
 
 ``ThreadData(items_per_thread, dtype=None)`` describes the fixed-size register
 payload owned by each participating thread. Portable and qualified calls use

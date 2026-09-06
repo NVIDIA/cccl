@@ -202,9 +202,32 @@ also leave enough signed 64-bit range for the last group origin in the block;
 static offsets are checked during planning. `valid_items` is relative to each
 group's own tile, not the entire block, and must be uniform within that group.
 
-`ThreadGroup` objects are descriptor-only in this release. Runtime query,
-membership, and synchronization methods such as `rank`, `count`, `rank_as`,
-`count_as`, `sync`, `sync_aligned`, and `is_member` are not exposed.
+`ThreadGroup` follows the C++ hierarchy query surface. `rank(level="thread")`
+and `count(level="thread")` accept `thread` (or `gpu_thread`), `warp`, `block`,
+`cluster`, and `grid`. Their default result is the unsigned product type used
+by the corresponding C++ hierarchy operation: normally `uint32`, and `uint64`
+when the group or queried outer level is the grid. Use
+`rank_as(dtype, level="thread")` or `count_as(dtype, level="thread")` to select
+an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
+`is_member()` returns an integer membership flag.
+
+`sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
+participating members must reach `sync()`. `sync_aligned()` additionally
+requires the caller to keep the group aligned and converged. Grid
+synchronization is not available because this backend cannot request a
+cooperative grid launch.
+
+`group_by` remains static compiler vocabulary: `count` and `exhaustive` must be
+compile-time constants. A logical threads-within-warp group can query its
+threads and immediate parent Warp; a mapped warps-within-block group can query
+its threads, physical Warps, and immediate parent block. Queries above the
+immediate physical parent are rejected. Mapped warps-within-block groups expose
+queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
+barrier lifetime must be owned by a future planner contract. For a
+non-exhaustive partition, use `is_member()` to guard rank-dependent work for
+excluded threads. Do not use that branch to skip a collective unless the
+collective's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the collective.
 
 ## Temporary storage
 
