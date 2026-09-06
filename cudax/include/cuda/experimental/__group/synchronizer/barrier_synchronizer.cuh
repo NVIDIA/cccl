@@ -65,27 +65,15 @@ inline constexpr thread_scope __barrier_scope_v = thread_scope_system;
 template <thread_scope _Sco, class _ComplFn>
 inline constexpr thread_scope __barrier_scope_v<barrier<_Sco, _ComplFn>> = _Sco;
 
-template <class _Barrier, class _Unit, bool _Owning = true>
-class __barrier_synchronizer_instance
+template <class _Barrier>
+class __barrier_synchronizer_instance_view
 {
   _Barrier* __barrier_;
 
 public:
-  [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance invalid() noexcept
-  {
-    return __barrier_synchronizer_instance{nullptr};
-  }
-
-  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier) noexcept
+  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance_view(_Barrier* __barrier) noexcept
       : __barrier_{__barrier}
   {}
-
-  // todo(dabayer): Delete copy constructor for owning variant and provide only move constructor.
-  // __barrier_synchronizer_instance(const __barrier_synchronizer_instance&) = delete;
-
-  // _CCCL_DEVICE_API __barrier_synchronizer_instance(__barrier_synchronizer_instance&& __other) noexcept
-  //    : __barrier_{::cuda::std::exchange(__other.__barrier_, )}
-  // {}
 
   template <class _MappingResult, class _Hierarchy>
   _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const noexcept
@@ -101,27 +89,62 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE_API auto view() const noexcept
   {
-    return __barrier_synchronizer_instance<_Barrier, _Unit, /*is-owning*/ false>{__barrier_};
+    return *this;
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void deinit(const _MappingResult& __mapping_result, const _Hierarchy& __hier) noexcept
-  {
-    if constexpr (_Owning)
-    {
-      if (__barrier_ != nullptr)
-      {
-        ::cuda::std::size_t __thread_rank_in_unit = 0u;
-        if constexpr (!::cuda::std::is_same_v<_Unit, thread_level>)
-        {
-          __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __hier);
-        }
+  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) const noexcept
+  {}
+};
 
-        if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
-        {
-          ::cuda::std::destroy_at(__barrier_);
-        }
-      }
+template <class _Barrier, class _Unit>
+class __barrier_synchronizer_instance
+{
+  _Barrier* __barrier_;
+
+public:
+  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier) noexcept
+      : __barrier_{__barrier}
+  {}
+
+  // This synchronizer instance doesn't provide copy/move/assignment methods.
+  __barrier_synchronizer_instance(const __barrier_synchronizer_instance&)            = delete;
+  __barrier_synchronizer_instance(__barrier_synchronizer_instance&&)                 = delete;
+  __barrier_synchronizer_instance& operator=(const __barrier_synchronizer_instance&) = delete;
+  __barrier_synchronizer_instance& operator=(__barrier_synchronizer_instance&&)      = delete;
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API __barrier_synchronizer_instance_view<_Barrier> view() const noexcept
+  {
+    return __barrier_synchronizer_instance_view<_Barrier>{__barrier_};
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void deinit(const _MappingResult& __mapping_result, const _Hierarchy& __hier) const noexcept
+  {
+    _CCCL_ASSERT(__mapping_result.is_valid(),
+                 "internal error - invoking deinit() from a thread that is not part of the group");
+
+    ::cuda::std::size_t __thread_rank_in_unit = 0u;
+    if constexpr (!::cuda::std::is_same_v<_Unit, thread_level>)
+    {
+      __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __hier);
+    }
+
+    if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
+    {
+      ::cuda::std::destroy_at(__barrier_);
     }
   }
 };
