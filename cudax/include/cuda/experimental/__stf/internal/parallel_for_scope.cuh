@@ -452,36 +452,6 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 }
 
 /**
- * @brief Resource wrapper for managing parallel_for host callback arguments
- *
- * This manages the memory allocated for parallel_for host callback arguments using the
- * ctx_resource system instead of manual delete in each callback.
- */
-template <typename ArgsType>
-class parallel_for_args_resource : public ctx_resource
-{
-public:
-  explicit parallel_for_args_resource(::std::unique_ptr<ArgsType> args)
-      : args_(mv(args))
-  {}
-
-  bool can_release_in_callback() const noexcept override
-  {
-    return true;
-  }
-
-  void release_in_callback() noexcept override
-  {
-    args_.reset();
-  }
-
-private:
-  //! Owning, so that a resource destroyed without its callback ever running -- a context torn
-  //! down without finalize(), or a throw from ctx_resource_set::release() -- still frees.
-  ::std::unique_ptr<ArgsType> args_;
-};
-
-/**
  * @brief Supporting class for the parallel_for construct
  *
  * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
@@ -1174,7 +1144,7 @@ public:
     {
       // The resource owns `args` from here on; `args` below is a non-owning view used to
       // reference the tuple from the graph node.
-      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(::std::unique_ptr<args_t>(args));
+      auto resource = ::std::make_shared<callback_args_resource<args_t>>(::std::unique_ptr<args_t>(args));
       ctx.add_resource(mv(resource));
     }
 

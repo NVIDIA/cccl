@@ -112,34 +112,6 @@ private:
   void (*dtor_)(void*) = nullptr; // optional destructor for user_data_buf_ contents
 };
 
-//! \brief Resource wrapper for managing host callback arguments
-//!
-//! This manages the memory allocated for host callback arguments using the
-//! ctx_resource system instead of manual delete in each callback.
-template <typename WrapperType>
-class host_callback_args_resource : public ctx_resource
-{
-public:
-  explicit host_callback_args_resource(::std::unique_ptr<WrapperType> wrapper)
-      : wrapper_(mv(wrapper))
-  {}
-
-  bool can_release_in_callback() const noexcept override
-  {
-    return true;
-  }
-
-  void release_in_callback() noexcept override
-  {
-    wrapper_.reset();
-  }
-
-private:
-  //! Owning, so that a resource destroyed without its callback ever running -- a context torn
-  //! down without finalize(), or a throw from ctx_resource_set::release() -- still frees.
-  ::std::unique_ptr<WrapperType> wrapper_;
-};
-
 /**
  * @brief Result of `host_launch` (below)
  *
@@ -365,7 +337,7 @@ public:
         // object until release().)
         using wrapper_type = ::cuda::std::remove_reference_t<decltype(*resolved)>;
         auto* args         = resolved.get();
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(resolved)));
+        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(mv(resolved)));
         cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
@@ -436,7 +408,7 @@ public:
         // object until release().)
         using wrapper_type = ::cuda::std::remove_reference_t<decltype(*wrapper)>;
         auto* args         = wrapper.get();
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(wrapper)));
+        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(mv(wrapper)));
         cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);

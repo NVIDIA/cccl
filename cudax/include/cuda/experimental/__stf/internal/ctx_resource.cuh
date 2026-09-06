@@ -173,4 +173,37 @@ private:
   ::std::vector<::std::shared_ptr<ctx_resource>> resources;
   bool resources_released = false; // Safety flag to prevent double release
 };
+namespace reserved
+{
+//! \brief A `ctx_resource` that owns a heap-allocated payload referenced by a CUDA callback.
+//!
+//! The payload outlives the call that enqueues the callback, so it cannot live on the stack, and
+//! it may be referenced by a graph node that is replayed more than once, so the callback itself
+//! must not free it. The context frees it once, when it releases its resources.
+//!
+//! Ownership is held in a `unique_ptr` rather than a raw pointer so that a resource which is
+//! destroyed without `release_in_callback()` ever running -- a context torn down without
+//! `finalize()`, or a throw from `ctx_resource_set::release()` -- still frees the payload.
+template <typename T>
+class callback_args_resource : public ctx_resource
+{
+public:
+  explicit callback_args_resource(::std::unique_ptr<T> payload)
+      : payload_(mv(payload))
+  {}
+
+  bool can_release_in_callback() const noexcept override
+  {
+    return true;
+  }
+
+  void release_in_callback() noexcept override
+  {
+    payload_.reset();
+  }
+
+private:
+  ::std::unique_ptr<T> payload_;
+};
+} // end namespace reserved
 } // end namespace cuda::experimental::stf
