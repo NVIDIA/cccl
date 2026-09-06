@@ -39,3 +39,10 @@ foreach (source IN ITEMS sharded_pi.cu sharded_rejection_sampling.cu)
   cudax_add_places_example(curand_example_target "${source}")
   target_link_libraries(${curand_example_target} PRIVATE CUDA::curand)
 endforeach()
+
+# Vendor tier: the cuSPARSE example additionally links the toolkit's cuSPARSE
+# (sparse.cuh is opt-in and not part of the umbrella).
+foreach (source IN ITEMS sharded_cg.cu)
+  cudax_add_places_example(cusparse_example_target "${source}")
+  target_link_libraries(${cusparse_example_target} PRIVATE CUDA::cusparse CUDA::cuda_driver)
+endforeach()
