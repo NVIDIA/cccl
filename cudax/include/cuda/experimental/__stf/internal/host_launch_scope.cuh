@@ -357,13 +357,18 @@ public:
 
       if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
-        cudaHostNodeParams params = {.fn = callback, .userData = resolved.get()};
+        // Register ownership *before* the node references the args. The resource owns the
+        // wrapper outright, so a throw from cudaGraphAddHostNode leaves it owned by the
+        // context rather than freed, and there is no window in which a live graph node
+        // points at a freed payload. (Registering first was unsafe while the resource held
+        // a raw pointer, because both it and the unique_ptr would have owned the same
+        // object until release().)
+        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*resolved)>;
+        auto* args         = resolved.get();
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(resolved)));
+        cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
-        // The node now references the args; move ownership into a ctx resource, which frees
-        // them in release_in_callback -- or in its own destructor if that never runs.
-        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*resolved)>;
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(resolved)));
       }
       else
       {
@@ -423,13 +428,18 @@ public:
 
       if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
-        cudaHostNodeParams params = {.fn = callback, .userData = wrapper.get()};
+        // Register ownership *before* the node references the args. The resource owns the
+        // wrapper outright, so a throw from cudaGraphAddHostNode leaves it owned by the
+        // context rather than freed, and there is no window in which a live graph node
+        // points at a freed payload. (Registering first was unsafe while the resource held
+        // a raw pointer, because both it and the unique_ptr would have owned the same
+        // object until release().)
+        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*wrapper)>;
+        auto* args         = wrapper.get();
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(wrapper)));
+        cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
-        // Transfer ownership only after the node references the args, so a throw
-        // from cudaGraphAddHostNode leaves the unique_ptr as the sole owner.
-        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*wrapper)>;
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(wrapper)));
       }
       else
       {
