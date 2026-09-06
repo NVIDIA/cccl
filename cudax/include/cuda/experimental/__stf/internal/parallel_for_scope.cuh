@@ -1144,8 +1144,7 @@ public:
     {
       // The resource owns `args` from here on; `args` below is a non-owning view used to
       // reference the tuple from the graph node.
-      auto resource = ::std::make_shared<callback_args_resource<args_t>>(::std::unique_ptr<args_t>(args));
-      ctx.add_resource(mv(resource));
+      ctx.add_resource(::std::make_shared<callback_args_resource<args_t>>(::std::unique_ptr<args_t>(args)));
     }
 
     // The function which the host callback will execute
