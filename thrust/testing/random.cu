@@ -422,7 +422,6 @@ void TestRanlux48BaseUnequal()
 
   TestEngineUnequal<Engine>();
 }
-
 DECLARE_UNITTEST(TestRanlux48BaseUnequal);
 
 void TestMinstdRandValidation()
