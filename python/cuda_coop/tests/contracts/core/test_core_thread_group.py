@@ -12,7 +12,9 @@ from cuda.coop._core import (
     MAPPED_GROUP_KINDS,
     PHYSICAL_GROUP_KINDS,
     THREAD_GROUP_KINDS,
+    THREAD_GROUP_QUERY_DTYPE_NAMES,
     THREAD_LEVELS,
+    CoopCompilerContextRequiredError,
     GroupByMapping,
     LaunchFacts,
     ThreadGroup,
@@ -21,7 +23,9 @@ from cuda.coop._core import (
     normalize_thread_level,
     resolve_thread_group,
     this_block,
+    this_thread,
     this_warp,
+    validate_thread_group_query_dtype,
 )
 from cuda.coop._core.group import _resolution as _group_resolution
 
@@ -39,6 +43,46 @@ def test_thread_group_kind_sets_preserve_distinct_contracts():
     assert frozenset(_group_resolution._THREAD_LEVEL_ORDER) == THREAD_LEVELS
     assert frozenset(_group_resolution._MAPPED_PARENT_LEVEL) == MAPPED_GROUP_KINDS
     assert frozenset(_group_resolution._MAPPED_PARENT_LEVEL.values()) <= THREAD_LEVELS
+    assert THREAD_GROUP_QUERY_DTYPE_NAMES == frozenset(
+        {
+            "int8",
+            "uint8",
+            "int16",
+            "uint16",
+            "int32",
+            "uint32",
+            "int64",
+            "uint64",
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "method,args",
+    [
+        ("rank", ()),
+        ("count", ("block",)),
+        ("rank_as", ("uint32",)),
+        ("count_as", ("uint64", "grid")),
+        ("sync", ()),
+        ("sync_aligned", ()),
+        ("is_member", ()),
+    ],
+)
+def test_thread_group_methods_require_compiler_owned_activation(method, args):
+    with pytest.raises(CoopCompilerContextRequiredError, match=method):
+        getattr(this_block(), method)(*args)
+
+
+@pytest.mark.parametrize("dtype", sorted(THREAD_GROUP_QUERY_DTYPE_NAMES))
+def test_thread_group_query_dtype_accepts_integral_types(dtype):
+    assert validate_thread_group_query_dtype(dtype, scope="example") == dtype
+
+
+@pytest.mark.parametrize("dtype", [bool, "bool", float, "float32", "complex64"])
+def test_thread_group_query_dtype_rejects_non_integral_types(dtype):
+    with pytest.raises(TypeError, match="query dtype must be one of"):
+        validate_thread_group_query_dtype(dtype, scope="example")
 
 
 def _resolved_hierarchy(
@@ -224,6 +268,37 @@ def test_hierarchy_does_not_invent_grid_facts_and_group_extents_are_distinct():
     assert ThreadGroup(kind="thread", hierarchy=hierarchy).static_size == 1
     assert current_warp.static_size == 32
     assert not current_warp.is_static
+
+
+def test_block_warp_queries_allow_a_partial_final_physical_warp():
+    resolved = resolve_thread_group(
+        this_block(),
+        LaunchFacts(exact_block_dim=48),
+        through_level="warp",
+    ).require_supported()
+
+    assert resolved.hierarchy.block_thread_count == 48
+
+
+def test_block_warp_queries_require_at_least_one_complete_physical_warp():
+    with pytest.raises(
+        NotImplementedError, match="at least one complete 32-thread Warp"
+    ):
+        resolve_thread_group(
+            this_block(),
+            LaunchFacts(exact_block_dim=16),
+            through_level="warp",
+        ).require_supported()
+
+
+def test_thread_parent_warp_queries_allow_a_subwarp_block():
+    resolved = resolve_thread_group(
+        this_thread(),
+        LaunchFacts(exact_block_dim=16),
+        through_level="warp",
+    ).require_supported()
+
+    assert resolved.hierarchy.block_thread_count == 16
 
 
 def test_this_warp_rejects_all_explicit_launch_metadata():

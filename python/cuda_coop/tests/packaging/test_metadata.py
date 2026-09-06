@@ -84,11 +84,11 @@ def test_excluded_python_implementations_are_absent() -> None:
         "numba_mlir/_stateful_function.py",
         "numba_mlir/_group_scan.py",
         "numba_mlir/_lowering/_scan.py",
-        "numba_mlir/_lowering/_thread_group.py",
         "numba_mlir/_compiler/_rewrite_scan.py",
     )
 
     assert not [relative for relative in forbidden if (package / relative).exists()]
+    assert (package / "numba_mlir/_lowering/_thread_group.py").is_file()
 
     warp_files = {
         path.relative_to(package / "_core" / "warp").as_posix()
