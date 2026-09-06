@@ -16,11 +16,10 @@ for complete kernels and launch examples.
 
 .. _coop-backend-registration:
 
-Registering a backend
----------------------
+Backend registration
+--------------------
 
-When you cannot ensure import order, call :func:`cuda.coop.register` on the
-host before compiling kernels to select the backend explicitly:
+Call ``register`` on the host before compiling a kernel:
 
 .. code-block:: python
 
@@ -30,17 +29,11 @@ host before compiling kernels to select the backend explicitly:
 
    from numba_cuda_mlir import cuda
 
-Registration loads the backend and installs its compiler hooks, so this
-works regardless of whether ``cuda.coop`` or Numba-CUDA-MLIR was imported
-first. Repeated calls are safe and return ``None``. The spelling
-``"numba_cuda_mlir"`` is also accepted. Registration requires the backend's
-dependencies to be installed; it does not install packages.
-
-For convenience, importing ``cuda.coop`` after ``numba_cuda_mlir`` also
-registers the backend automatically. A standalone ``cuda.coop`` import does
-not discover or load optional compilers. Explicit registration is useful in
-libraries and notebooks where another import may already have loaded
-``cuda.coop``.
+Registration works in either import order and is safe to repeat. It also
+accepts ``"numba_cuda_mlir"``. The backend dependencies must already be
+installed. A standalone ``cuda.coop`` import does not load an optional
+compiler; importing it after Numba-CUDA-MLIR activates the backend
+automatically unless ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` is set.
 
 Importing the backend namespace also registers it:
 
@@ -48,16 +41,15 @@ Importing the backend namespace also registers it:
 
    import cuda.coop.numba_mlir as numba_coop
 
-Use ``numba_coop`` when mixing common and backend calls. If your program uses
-only the backend namespace, you can import it as ``coop`` instead. See the
-:ref:`namespace FAQ <coop-faq-numba-only>` and
-:ref:`API comparison <coop-programming-api-choice>`.
+You can use ``as coop`` when only using this backend. Keep the alias so the
+import does not replace a ``cuda`` name imported from Numba-CUDA-MLIR.
+The common API will also support future backends; CUTLASS support is planned.
 
 
 Kernel API
 ----------
 
-The common root and qualified backend expose matching entry points:
+The portable root and qualified backend expose matching entry points:
 
 .. code-block:: python
 
@@ -65,10 +57,10 @@ The common root and qualified backend expose matching entry points:
 
    from cuda import coop
 
-   # Inside a Numba-CUDA-MLIR kernel with an items_per_thread argument:
+   # Inside a Numba-CUDA-MLIR kernel:
    block = coop.this_block()
-   items = coop.ThreadData(items_per_thread)
-   tile_items = cuda.blockDim.x * items_per_thread
+   items = coop.ThreadData(2)
+   tile_items = cuda.blockDim.x * 2
    tile_offset = cuda.blockIdx.x * tile_items
    valid_items = count - tile_offset
    if valid_items < 0:
@@ -107,6 +99,8 @@ Both spellings are compiler markers. Calls must occur in a compatible compiler
 context; they are not host-side data movement operations.
 
 
+.. _coop-thread-groups:
+
 Groups and thread data
 ----------------------
 
@@ -121,14 +115,37 @@ in x-major order. Every member of a participating group must reach its
 collective; complete sibling logical groups may take different control-flow
 paths.
 
-The common group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, but those are not targets for these operations.
-``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
-compile-time vocabulary for describing a static partition. Runtime query,
-membership, and synchronization methods such as ``rank``, ``count``,
-``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and ``is_member`` are
-not exposed.
+The portable group vocabulary also includes thread, cluster, grid, and mapped
+groups of physical warps, although those are not Load, Store, Exchange, or
+Shuffle targets. ``ThreadGroup`` exposes the C++ hierarchy query surface.
+``rank(level="thread")`` and ``count(level="thread")`` accept ``thread`` (or
+``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``. Their default
+result is the unsigned product type used by the corresponding C++ hierarchy
+operation: normally ``uint32``, and ``uint64`` when the group or queried outer
+level is the grid. ``rank_as(dtype, level="thread")`` and
+``count_as(dtype, level="thread")`` select an explicit signed or unsigned 8-,
+16-, 32-, or 64-bit integer dtype. ``is_member()`` returns an integer
+membership flag.
 
+``sync()`` and ``sync_aligned()`` expose the matching non-grid barriers. Every
+participating member must reach ``sync()``. ``sync_aligned()`` additionally
+requires an aligned and converged group. Grid synchronization is unavailable
+because the backend cannot request a cooperative grid launch.
+
+``group_by`` remains static compiler vocabulary: ``count`` and ``exhaustive``
+must be compile-time constants. A mapped threads-within-warp group can query
+its threads and immediate parent Warp. A mapped warps-within-block group can
+query its threads, physical Warps, and immediate parent block. Queries above
+the immediate physical parent are rejected. Mapped warps-within-block groups
+support queries and ``is_member()`` but not ``sync()`` or ``sync_aligned()``;
+their block-barrier lifetime requires a future planner-owned contract. For a
+non-exhaustive partition, use ``is_member()`` to guard rank-dependent work for
+excluded threads. Do not use that branch to skip a collective unless the
+collective's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the collective.
+
+
+.. _coop-participation:
 
 Participation and synchronization
 ---------------------------------
@@ -149,21 +166,21 @@ application-owned shared memory requires it. A barrier does not make
 divergent participation safe.
 
 
+.. _coop-thread-data:
+
 Per-thread payloads
 -------------------
 
-``coop.ThreadData(items_per_thread)`` gives each participating thread a
-fixed-size payload with that many items. Pass ``items_per_thread`` as a
-kernel argument; Numba-CUDA-MLIR specializes the kernel for its value.
-Common and qualified calls use the same inference rules: an untyped Load
-output infers its dtype from the source, and Store combines the destination
-dtype with payload writes. Load fills the supplied output in place and
-returns ``None``.
+``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
+fixed-size register payload owned by each participating thread. Portable and
+qualified calls use the same inference rules: an untyped Load output infers
+its dtype from the source, and Store combines the destination dtype with
+payload writes. Load fills the supplied output in place and returns ``None``.
 
 Both namespaces accept ``alignment`` as a compile-time positive power of two
 in bytes. It specifies minimum alignment when the compiler materializes
 payload storage; ``None`` lets the compiler choose. For example,
-``coop.ThreadData(items_per_thread, alignment=16)`` requests at least
+``coop.ThreadData(4, dtype=np.float32, alignment=16)`` requests at least
 16-byte alignment. The backend may use stronger alignment, including for
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
@@ -266,13 +283,15 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
+.. _coop-data-layouts:
 
 Data layouts and algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Both common and qualified entry points use the same string algorithm
+Both portable and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``, ``vectorize``, ``transpose``,
-``warp_transpose``, and ``warp_transpose_timesliced``. All six work with the
+``warp_transpose``, and ``warp_transpose_timesliced``. All six algorithms are
+executable with the
 Numba-CUDA-MLIR backend. ``direct`` and ``vectorize`` use blocked ordering, so
 each thread owns a contiguous segment of the tile. ``striped`` exposes striped
 ordering, where item ``i`` for a thread is separated from its next item by the
@@ -285,7 +304,7 @@ Physical and logical Warp Load and Store support ``direct``, ``striped``,
 ``vectorize``, and ``transpose``. Their layouts follow the same rules at the
 selected group width: ``direct`` and ``vectorize`` expose blocked payloads,
 ``striped`` exposes a striped payload, and ``transpose`` uses striped memory
-transactions while exposing a blocked payload. Common and qualified calls
+transactions while exposing a blocked payload. Portable and qualified calls
 use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
@@ -304,7 +323,7 @@ arrangement again.
 Exchange semantics
 ------------------
 
-The common signature is:
+The portable signature is:
 
 .. code-block:: python
 
@@ -321,7 +340,7 @@ Block, physical Warp, and logical Warp groups support
 The qualified :func:`cuda.coop.numba_mlir.exchange` entry point also accepts
 local arrays. Block groups additionally support warp-striped conversions,
 scatter-to-blocked, scatter-to-striped, guarded scatter, flagged scatter, and
-warp time slicing. Physical and logical Warp groups retain the two common
+warp time slicing. Physical and logical Warp groups retain the two portable
 layout modes. Scatter ``ranks`` are relative to the block tile, must have a
 signed integer dtype, and must have the same extent as ``value``.
 ``valid_flags`` are required only by flagged scatter, must have a non-boolean
@@ -340,13 +359,13 @@ available for Warp groups or guarded and flagged scatter modes.
 Shuffle semantics
 -----------------
 
-Shuffle is block-only. The common signature is:
+Shuffle is block-only. The portable signature is:
 
 .. code-block:: python
 
    shuffle(group, value, /, *, mode="down", distance=1) -> ThreadData
 
-The common API accepts only ``ThreadData``, ``up`` or ``down``, and the
+The portable API accepts only ``ThreadData``, ``up`` or ``down``, and the
 fixed distance ``1``. The flattened blocked tile moves by one item. The first
 ``up`` result or last ``down`` result is unspecified; all other slots come
 from the adjacent tile position. The returned payload is fresh and ``value``
@@ -365,6 +384,8 @@ untrusted distances before launching a kernel. Array values remain limited to
 unit ``up`` and ``down``; boundary-output projections are not part of this
 release.
 
+
+.. _coop-temp-storage:
 
 Temporary storage
 -----------------
@@ -463,5 +484,5 @@ Warp ``transpose`` and Warp Exchange use compiler-owned storage with one
 disjoint slice per physical or logical group. The compiler inserts
 ``syncwarp`` with the exact logical-group mask. Exchange and Shuffle always
 use compiler-owned storage and append a group-scoped reuse barrier. Both the
-common and qualified APIs reject explicit ``TempStorage`` for every Warp
+portable and qualified APIs reject explicit ``TempStorage`` for every Warp
 Load and Store algorithm, including the storage-free modes.

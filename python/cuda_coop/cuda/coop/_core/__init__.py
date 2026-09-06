@@ -119,6 +119,7 @@ from .thread_group import (
     MAPPED_GROUP_KINDS,
     PHYSICAL_GROUP_KINDS,
     THREAD_GROUP_KINDS,
+    THREAD_GROUP_QUERY_DTYPE_NAMES,
     THREAD_LEVELS,
     CoopCompilerContextRequiredError,
     GroupByMapping,
@@ -138,6 +139,7 @@ from .thread_group import (
     this_grid,
     this_thread,
     this_warp,
+    validate_thread_group_query_dtype,
 )
 from .warp import (
     WarpExchangeMode,
@@ -160,6 +162,7 @@ __all__ = [
     "MAPPED_GROUP_KINDS",
     "PHYSICAL_GROUP_KINDS",
     "THREAD_GROUP_KINDS",
+    "THREAD_GROUP_QUERY_DTYPE_NAMES",
     "THREAD_LEVELS",
     "UINT8",
     "UINT16",
@@ -282,4 +285,5 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "validate_thread_group_query_dtype",
 ]
