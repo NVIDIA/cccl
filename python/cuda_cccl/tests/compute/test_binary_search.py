@@ -285,3 +285,43 @@ def test_serialize_deserialize_upper_bound_round_trip():
 
     expected = np.searchsorted(h_data, h_values, side="right").astype(np.uintp)
     np.testing.assert_array_equal(d_out.copy_to_host(), expected)
+
+
+@pytest.mark.parametrize(
+    "factory, side",
+    [
+        (make_lower_bound, "left"),
+        (make_upper_bound, "right"),
+    ],
+)
+def test_binary_search_cache_reuses_artifact_when_output_allocation_changes(
+    factory, side
+):
+    """Fresh d_out allocations share one wrapper: the cache key excludes pointers."""
+    cuda.compute.clear_all_caches()
+
+    h_data = np.array([1, 3, 3, 5, 7, 9], dtype=np.int32)
+    h_values = np.array([0, 3, 4, 10], dtype=np.int32)
+
+    d_data = DeviceArray.from_numpy(h_data)
+    d_values = DeviceArray.from_numpy(h_values)
+    d_out_1 = DeviceArray.empty(len(h_values), np.uintp)
+    d_out_2 = DeviceArray.empty(len(h_values), np.uintp)
+
+    searcher_1 = factory(d_data=d_data, d_values=d_values, d_out=d_out_1)
+    searcher_2 = factory(d_data=d_data, d_values=d_values, d_out=d_out_2)
+
+    # The compiled artifact depends only on the dtypes and the comparator, so a
+    # different output allocation must not force a new build.
+    assert searcher_1 is searcher_2
+
+    searcher_2(
+        d_data=d_data,
+        num_items=len(h_data),
+        d_values=d_values,
+        num_values=len(h_values),
+        d_out=d_out_2,
+        comp=None,
+    )
+    expected = np.searchsorted(h_data, h_values, side=side).astype(np.uintp)
+    np.testing.assert_array_equal(d_out_2.copy_to_host(), expected)
