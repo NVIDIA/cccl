@@ -29,6 +29,7 @@ from numba_cuda_mlir.extending import (
     set_required_dynamic_shared_memory,
 )
 
+from cuda.coop._core import GroupLoweringPlan
 from cuda.coop._core import api as _portable_api
 
 from .. import _lowering  # noqa: F401 - registers factories
@@ -182,6 +183,7 @@ class _RewriteMatch:
     factory_kw_value_vars: tuple[ir.Var, ...]
     loc: ir.Loc
     family_metadata: object = None
+    lowering_plan: GroupLoweringPlan | None = None
 
 
 @dataclass(frozen=True)
@@ -228,6 +230,7 @@ class _TempStorageUseRequirement:
     order: int
     size_in_bytes: int
     alignment: int
+    lowering_plan: GroupLoweringPlan | None = None
 
 
 @dataclass
@@ -241,6 +244,9 @@ class _TempStorageRequirementSummary:
 class _TempStorageSlice:
     offset: int
     size_in_bytes: int
+    stride: int | None = None
+    instances: int = 1
+    lowering_plan: GroupLoweringPlan | None = None
 
 
 @dataclass(frozen=True)

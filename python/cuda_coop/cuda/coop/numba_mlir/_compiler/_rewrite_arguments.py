@@ -8,10 +8,10 @@ This mixin is composed by CoopSinglePhaseRewrite. Registration and pass
 ordering remain in the rewrite orchestrator.
 """
 
-from cuda.coop._core import ArgumentBinding
+from cuda.coop._core import ArgumentBinding, GroupLoweringPlan
 
 from ._group_rewriting import GroupRewriteContext
-from ._operations import rewrite_operation
+from ._operations import _GROUP_LOWERING_PLAN_KWARG, rewrite_operation
 from ._rewrite_support import (
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
@@ -64,6 +64,8 @@ class _ArgumentRewrite:
         seen_runtime_factory_kwargs: set[str] = set()
         runtime_factory_kw_vars: dict[str, ir.Var] = {}
         runtime_offset_var = None
+        lowering_plan = None
+        seen_lowering_plan = False
         if runtime_factory_kwargs:
             if extra_runtime_arg_count > len(runtime_factory_kwargs):
                 raise CoopSinglePhaseRewriteError(
@@ -94,6 +96,24 @@ class _ArgumentRewrite:
                 seen_factory_kwargs.add(name)
                 seen_runtime_factory_kwargs.add(name)
         for name, value_var in call.kws:
+            if name == _GROUP_LOWERING_PLAN_KWARG:
+                if seen_lowering_plan:
+                    raise CoopSinglePhaseRewriteError(
+                        "cooperative group provider marker received duplicate "
+                        "lowering-plan metadata."
+                    )
+                seen_lowering_plan = True
+                lowering_plan = self._resolve_factory_kwarg_value(
+                    op_name, name, value_var
+                )
+                if not isinstance(lowering_plan, GroupLoweringPlan):
+                    raise CoopSinglePhaseRewriteError(
+                        "cooperative group provider marker carries invalid "
+                        "lowering-plan metadata."
+                    )
+                if isinstance(value_var, ir.Var):
+                    factory_kw_value_vars.append(value_var)
+                continue
             if name == "temp_storage" and spec.accepts_temp_storage:
                 if runtime_temp_storage is not None:
                     raise CoopSinglePhaseRewriteError(
@@ -261,6 +281,8 @@ class _ArgumentRewrite:
                 f"cooperative group operation {op_name!r} does not support "
                 "runtime temp_storage."
             )
+        if lowering_plan is not None:
+            factory_kwargs[_GROUP_LOWERING_PLAN_KWARG] = lowering_plan
         return (
             tuple(runtime_args),
             runtime_temp_storage,
