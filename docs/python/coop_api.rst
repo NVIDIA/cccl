@@ -55,8 +55,24 @@ Each Warp group receives an automatic memory origin of
 ``group_index * (group_size * items_per_thread)`` before the caller's element
 offset is applied, where the index is the x-major linear thread rank divided by
 the group size. Its ``valid_items`` count is relative to that group tile.
-``ThreadGroup`` values are descriptor-only; runtime query, membership, and
-synchronization methods are not part of this release.
+
+``ThreadGroup`` exposes ``rank``, ``count``, ``rank_as``, ``count_as``,
+``is_member``, ``sync``, and ``sync_aligned`` with the C++ hierarchy semantics.
+Queries accept the thread, Warp, block, cluster, and grid levels. Default query
+results use the C++ unsigned product type, normally ``uint32`` and ``uint64``
+when the group or queried outer level is the grid; ``*_as`` accepts explicit
+signed or unsigned 8-, 16-, 32-, and 64-bit integer dtypes.
+
+``group_by`` accepts only compile-time ``count`` and ``exhaustive`` values.
+Mapped groups may query their constituents and immediate physical parent but
+not a higher level. Mapped warps-within-block groups provide queries and
+membership only; their synchronization methods are rejected. Grid
+synchronization is also rejected because this backend does not request a
+cooperative grid launch. Callers of non-exhaustive partitions should use
+``is_member()`` to guard rank-dependent work for excluded threads, but must not
+skip a collective unless that collective's participation contract permits it.
+All supported synchronization calls require the participating group to
+converge; ``sync_aligned`` additionally requires an aligned group.
 
 See the :github:`Numba-CUDA-MLIR type declarations
 <python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi>` for the complete overload
