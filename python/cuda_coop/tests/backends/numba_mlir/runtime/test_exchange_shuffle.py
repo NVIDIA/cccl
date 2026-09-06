@@ -347,6 +347,41 @@ def test_common_exchange_layouts_match_independent_oracles_and_preserve_input(
     np.testing.assert_array_equal(preserved, source)
 
 
+@cuda.jit
+def _untyped_load_exchange_kernel(source, observed):
+    thread = cuda.threadIdx.x
+    payload = qualified_coop.ThreadData(2)
+    loaded = root_coop.load(
+        root_coop.this_block(),
+        source,
+        payload,
+        algorithm="direct",
+    )
+    exchanged = root_coop.exchange(
+        root_coop.this_block(),
+        loaded,
+        mode="blocked_to_striped",
+    )
+    observed[thread * 2] = exchanged[0]
+    observed[thread * 2 + 1] = exchanged[1]
+
+
+def test_untyped_load_result_composes_directly_into_exchange() -> None:
+    items_per_thread = 2
+    source = _values(_BLOCK_THREADS * items_per_thread, shift=29)
+    observed = np.full(source.size, -2005, dtype=np.int32)
+    expected = _structured_exchange_oracle(
+        source,
+        group_width=_BLOCK_THREADS,
+        items_per_thread=items_per_thread,
+        mode="blocked_to_striped",
+    )
+
+    _untyped_load_exchange_kernel[1, _BLOCK_THREADS](source, observed)
+
+    np.testing.assert_array_equal(observed, expected)
+
+
 @lru_cache(maxsize=None)
 def _qualified_block_exchange_kernel(mode: str, warp_time_slicing: bool):
     if mode in {
