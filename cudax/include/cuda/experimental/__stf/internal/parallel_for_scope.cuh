@@ -40,6 +40,7 @@
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -460,8 +461,8 @@ template <typename ArgsType>
 class parallel_for_args_resource : public ctx_resource
 {
 public:
-  explicit parallel_for_args_resource(ArgsType* args)
-      : args_(args)
+  explicit parallel_for_args_resource(::std::unique_ptr<ArgsType> args)
+      : args_(mv(args))
   {}
 
   bool can_release_in_callback() const noexcept override
@@ -471,11 +472,13 @@ public:
 
   void release_in_callback() noexcept override
   {
-    delete args_;
+    args_.reset();
   }
 
 private:
-  ArgsType* args_;
+  //! Owning, so that a resource destroyed without its callback ever running -- a context torn
+  //! down without finalize(), or a throw from ctx_resource_set::release() -- still frees.
+  ::std::unique_ptr<ArgsType> args_;
 };
 
 /**
@@ -1169,7 +1172,9 @@ public:
     // For stream contexts, delete immediately in callback (better memory efficiency)
     if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
-      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
+      // The resource owns `args` from here on; `args` below is a non-owning view used to
+      // reference the tuple from the graph node.
+      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(::std::unique_ptr<args_t>(args));
       ctx.add_resource(mv(resource));
     }
 

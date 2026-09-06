@@ -120,8 +120,8 @@ template <typename WrapperType>
 class host_callback_args_resource : public ctx_resource
 {
 public:
-  explicit host_callback_args_resource(WrapperType* wrapper)
-      : wrapper_(wrapper)
+  explicit host_callback_args_resource(::std::unique_ptr<WrapperType> wrapper)
+      : wrapper_(mv(wrapper))
   {}
 
   bool can_release_in_callback() const noexcept override
@@ -131,11 +131,13 @@ public:
 
   void release_in_callback() noexcept override
   {
-    delete wrapper_;
+    wrapper_.reset();
   }
 
 private:
-  WrapperType* wrapper_;
+  //! Owning, so that a resource destroyed without its callback ever running -- a context torn
+  //! down without finalize(), or a throw from ctx_resource_set::release() -- still frees.
+  ::std::unique_ptr<WrapperType> wrapper_;
 };
 
 /**
@@ -358,20 +360,20 @@ public:
         cudaHostNodeParams params = {.fn = callback, .userData = resolved.get()};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
-        // The node now references the args; hand ownership to a ctx resource
-        // that deletes them (in release_in_callback) when the ctx is released.
+        // The node now references the args; move ownership into a ctx resource, which frees
+        // them in release_in_callback -- or in its own destructor if that never runs.
         using wrapper_type = ::cuda::std::remove_reference_t<decltype(*resolved)>;
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(resolved.get()));
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(resolved)));
       }
       else
       {
         // For a stream the callback owns the args once the launch succeeds.
         cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, resolved.get());
       }
-      // Ownership has transferred (to the ctx resource for graph, or to the
-      // callback for stream). These enqueues are asynchronous, so on a throw
-      // above the callback has not run and the unique_ptr still owns the args;
-      // release it now that ownership has moved on.
+      // The graph branch already moved ownership into the resource, leaving `resolved` empty,
+      // so this releases only on the stream path, where the callback is now the owner. The
+      // enqueues are asynchronous, so on a throw above the callback has not run and the
+      // unique_ptr is still the sole owner.
       resolved.release();
     }
     else
@@ -427,12 +429,14 @@ public:
         // Transfer ownership only after the node references the args, so a throw
         // from cudaGraphAddHostNode leaves the unique_ptr as the sole owner.
         using wrapper_type = ::cuda::std::remove_reference_t<decltype(*wrapper)>;
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper.get()));
+        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(mv(wrapper)));
       }
       else
       {
         cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, wrapper.get());
       }
+      // Empty already on the graph path (ownership moved into the resource); this releases
+      // only on the stream path, where the callback owns the args once the launch succeeded.
       wrapper.release();
     }
   }
