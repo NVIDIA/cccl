@@ -454,6 +454,7 @@ def test_group_planner_normalizes_algorithm_strings(qualified, operation):
 
 
 @pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("logical_width", (None, 8), ids=("physical", "logical"))
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     ("algorithm", "storage_free", "mutates_store_payload"),
@@ -464,8 +465,13 @@ def test_group_planner_normalizes_algorithm_strings(qualified, operation):
         ("transpose", False, True),
     ),
 )
-def test_physical_warp_planner_selects_declared_provider(
-    qualified, operation, algorithm, storage_free, mutates_store_payload
+def test_warp_planner_selects_declared_provider(
+    qualified,
+    logical_width,
+    operation,
+    algorithm,
+    storage_free,
+    mutates_store_payload,
 ):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numbair_transforms import ir
@@ -475,13 +481,16 @@ def test_physical_warp_planner_selects_declared_provider(
     from cuda.coop.numba_mlir._lowering import _load_store
 
     module = numba_coop if qualified else coop
+    group = module.this_warp()
+    if logical_width is not None:
+        group = group.group_by(logical_width)
 
     if operation == "load":
 
         def memory(values):
             payload = module.ThreadData(2, dtype=types.int32)
             module.load(
-                module.this_warp(),
+                group,
                 values,
                 payload,
                 algorithm=algorithm,
@@ -492,7 +501,7 @@ def test_physical_warp_planner_selects_declared_provider(
         def memory(values):
             payload = module.ThreadData(2, dtype=types.int32)
             module.store(
-                module.this_warp(),
+                group,
                 values,
                 payload,
                 algorithm=algorithm,
@@ -519,7 +528,9 @@ def test_physical_warp_planner_selects_declared_provider(
         if isinstance(inst, ir.Assign) and isinstance(inst.value, ir.Const)
     }
     keywords = dict(calls[0].kws)
-    assert constants[keywords["threads_in_warp"].name] == 32
+    assert constants[keywords["threads_in_warp"].name] == (
+        32 if logical_width is None else logical_width
+    )
     assert constants[keywords["threads_per_block"].name] == (64, 1, 1)
     assert constants[keywords["algorithm"].name] == algorithm
     assert "warp_tile_effective_offset" in keywords["offset"].name
@@ -534,7 +545,7 @@ def test_physical_warp_planner_selects_declared_provider(
     assert bool(preserved_payloads) is (operation == "store" and mutates_store_payload)
 
 
-@pytest.mark.parametrize("group_kind", ("block", "warp"))
+@pytest.mark.parametrize("group_kind", ("block", "warp", "logical_warp"))
 @pytest.mark.parametrize("operation", ("load", "store"))
 @pytest.mark.parametrize(
     "algorithm",
@@ -553,19 +564,23 @@ def test_qualified_planner_rejects_non_string_algorithm(
 
     import cuda.coop.numba_mlir as coop
 
-    group_factory = getattr(coop, f"this_{group_kind}")
+    group = (
+        coop.this_warp().group_by(8)
+        if group_kind == "logical_warp"
+        else getattr(coop, f"this_{group_kind}")()
+    )
 
     if operation == "load":
 
         def memory(values):
             payload = coop.ThreadData(2, dtype=types.int32)
-            coop.load(group_factory(), values, payload, algorithm=algorithm)
+            coop.load(group, values, payload, algorithm=algorithm)
 
     else:
 
         def memory(values):
             payload = coop.ThreadData(2, dtype=types.int32)
-            coop.store(group_factory(), values, payload, algorithm=algorithm)
+            coop.store(group, values, payload, algorithm=algorithm)
 
     array_type = types.Array(types.int32, 1, "C")
     _, planner = _plan(memory, arg_types=(array_type,))
@@ -575,7 +590,11 @@ def test_qualified_planner_rejects_non_string_algorithm(
 
 @pytest.mark.parametrize(
     ("group_kind", "algorithm"),
-    (("block", "stripd"), ("warp", "warp_transpose")),
+    (
+        ("block", "stripd"),
+        ("warp", "warp_transpose"),
+        ("logical_warp", "warp_transpose"),
+    ),
 )
 @pytest.mark.parametrize("operation", ("load", "store"))
 def test_qualified_planner_rejects_unsupported_algorithm(
@@ -587,19 +606,23 @@ def test_qualified_planner_rejects_unsupported_algorithm(
 
     import cuda.coop.numba_mlir as coop
 
-    group_factory = getattr(coop, f"this_{group_kind}")
+    group = (
+        coop.this_warp().group_by(8)
+        if group_kind == "logical_warp"
+        else getattr(coop, f"this_{group_kind}")()
+    )
 
     if operation == "load":
 
         def memory(values):
             payload = coop.ThreadData(2, dtype=types.int32)
-            coop.load(group_factory(), values, payload, algorithm=algorithm)
+            coop.load(group, values, payload, algorithm=algorithm)
 
     else:
 
         def memory(values):
             payload = coop.ThreadData(2, dtype=types.int32)
-            coop.store(group_factory(), values, payload, algorithm=algorithm)
+            coop.store(group, values, payload, algorithm=algorithm)
 
     array_type = types.Array(types.int32, 1, "C")
     _, planner = _plan(memory, arg_types=(array_type,))
@@ -607,16 +630,21 @@ def test_qualified_planner_rejects_unsupported_algorithm(
         planner.run()
 
 
-def test_physical_warp_effective_offset_uses_x_major_group_index():
+@pytest.mark.parametrize("logical_width", [None, 8], ids=["physical", "logical"])
+def test_warp_effective_offset_uses_x_major_group_index(logical_width):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numbair_transforms import ir
 
     from cuda import coop
     from cuda.coop.numba_mlir._lowering import _load_store
 
+    group = coop.this_warp()
+    if logical_width is not None:
+        group = group.group_by(logical_width)
+
     def memory(values, offset):
         payload = coop.ThreadData(2, dtype=types.int32)
-        coop.load(coop.this_warp(), values, payload, offset=offset)
+        coop.load(group, values, payload, offset=offset)
 
     array_type = types.Array(types.int32, 1, "C")
     func_ir, planner = _plan(
@@ -656,6 +684,18 @@ def test_physical_warp_effective_offset_uses_x_major_group_index():
     assert origin.fn is operator.mul
     assert linear_rank.fn is operator.add
 
+    group_width = next(
+        value for name, value in definitions.items() if "warp_tile_group_width" in name
+    )
+    group_tile_items = next(
+        value
+        for name, value in definitions.items()
+        if "warp_tile_group_tile_items" in name
+    )
+    expected_width = 32 if logical_width is None else logical_width
+    assert group_width.value == expected_width
+    assert group_tile_items.value == expected_width * 2
+
 
 def test_qualified_store_recovers_keyword_local_array_extent():
     from numba_cuda_mlir import cuda, types
@@ -691,11 +731,10 @@ def test_qualified_store_recovers_keyword_local_array_extent():
     "group_factory",
     [
         lambda module: module.this_thread(),
-        lambda module: module.this_warp().group_by(8),
         lambda module: module.this_cluster(),
         lambda module: module.this_grid(),
     ],
-    ids=["thread", "logical-warp", "cluster", "grid"],
+    ids=["thread", "cluster", "grid"],
 )
 def test_unsupported_load_group_returns_typed_plan_before_compile(
     monkeypatch, qualified, group_factory
@@ -726,19 +765,16 @@ def test_unsupported_load_group_returns_typed_plan_before_compile(
     )
     with pytest.raises(
         NotImplementedError,
-        match=(
-            r"does not support group kind|"
-            r"supports only this_block\(\) and complete physical "
-            r"this_warp\(\) groups"
-        ),
+        match=r"does not support group kind|supports this_block\(\)",
     ):
         planner.run()
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["portable", "qualified"])
 @pytest.mark.parametrize("operation", ["load", "store"])
-def test_physical_warp_rejects_explicit_temp_storage_before_provider(
-    monkeypatch, qualified, operation
+@pytest.mark.parametrize("logical_width", [None, 8], ids=["physical", "logical"])
+def test_warp_rejects_explicit_temp_storage_before_provider(
+    monkeypatch, qualified, operation, logical_width
 ):
     from numba_cuda_mlir import types
 
@@ -747,6 +783,9 @@ def test_physical_warp_rejects_explicit_temp_storage_before_provider(
     from cuda.coop.numba_mlir._compiler import _group_load_store
 
     module = numba_coop if qualified else coop
+    group = module.this_warp()
+    if logical_width is not None:
+        group = group.group_by(logical_width)
 
     if operation == "load":
 
@@ -754,7 +793,7 @@ def test_physical_warp_rejects_explicit_temp_storage_before_provider(
             storage = module.TempStorage()
             payload = module.ThreadData(2, dtype=types.int32)
             module.load(
-                module.this_warp(),
+                group,
                 values,
                 payload,
                 temp_storage=storage,
@@ -766,7 +805,7 @@ def test_physical_warp_rejects_explicit_temp_storage_before_provider(
             storage = module.TempStorage()
             payload = module.ThreadData(2, dtype=types.int32)
             module.store(
-                module.this_warp(),
+                group,
                 values,
                 payload,
                 temp_storage=storage,
@@ -776,12 +815,12 @@ def test_physical_warp_rejects_explicit_temp_storage_before_provider(
         _group_load_store._LoadStorePlanning,
         "_scope_factory",
         lambda *_args, **_kwargs: pytest.fail(
-            "explicit physical Warp storage reached provider selection"
+            "explicit Warp storage reached provider selection"
         ),
     )
     array_type = types.Array(types.int32, 1, "C")
     _, planner = _plan(memory, arg_types=(array_type,))
-    with pytest.raises(ValueError, match="temp_storage.*physical Warp"):
+    with pytest.raises(ValueError, match="temp_storage.*Warp groups"):
         planner.run()
 
 
@@ -2181,8 +2220,9 @@ def test_block_algorithm_string_is_normalized_before_materialization(
         ("transpose", False),
     ],
 )
-def test_physical_warp_algorithms_use_their_declared_provider(
-    monkeypatch, operation, algorithm, storage_free
+@pytest.mark.parametrize("threads_in_warp", [1, 2, 4, 8, 16, 32])
+def test_warp_algorithms_use_their_declared_provider(
+    monkeypatch, operation, algorithm, storage_free, threads_in_warp
 ):
     from numba_cuda_mlir import types
 
@@ -2210,7 +2250,7 @@ def test_physical_warp_algorithms_use_their_declared_provider(
 
     specialization, invocation_kwargs = factory(
         types.int32,
-        threads_in_warp=32,
+        threads_in_warp=threads_in_warp,
         threads_per_block=(64, 1, 1),
         algorithm=algorithm,
     )
@@ -2225,7 +2265,10 @@ def test_physical_warp_algorithms_use_their_declared_provider(
     assert materializations[0][1]["synchronization_scope"] is (
         SynchronizationScope.NONE if storage_free else SynchronizationScope.WARP
     )
-    assert invocation_kwargs == {"threads": 32, "block_threads": (64, 1, 1)}
+    assert invocation_kwargs == {
+        "threads": threads_in_warp,
+        "block_threads": (64, 1, 1),
+    }
 
 
 @pytest.mark.parametrize("operation", ["load", "store"])
@@ -2260,8 +2303,8 @@ def test_invalid_physical_warp_algorithm_fails_before_materialization(
 
 
 @pytest.mark.parametrize("operation", ["load", "store"])
-@pytest.mark.parametrize("threads", [1, 8, 16, 31, 64, True, 32.0])
-def test_physical_warp_provider_requires_exact_width_before_materialization(
+@pytest.mark.parametrize("threads", [0, 3, 31, 64, True, 32.0])
+def test_warp_provider_rejects_invalid_width_before_materialization(
     monkeypatch, operation, threads
 ):
     from numba_cuda_mlir import types
@@ -2272,12 +2315,15 @@ def test_physical_warp_provider_requires_exact_width_before_materialization(
         _load_store.NumbaMlirCoreAdapter,
         "materialize",
         lambda *args, **kwargs: pytest.fail(
-            "invalid physical Warp width reached provider materialization"
+            "invalid Warp width reached provider materialization"
         ),
     )
     factory = getattr(_load_store, f"warp_{operation}")
 
-    with pytest.raises((TypeError, ValueError), match="32|integer"):
+    with pytest.raises(
+        (TypeError, ValueError),
+        match=r"logical width|integer|positive",
+    ):
         factory(
             types.int32,
             threads_in_warp=threads,

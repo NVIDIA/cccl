@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Block and physical-Warp Load/Store provider lowering."""
+"""Block and physical or logical Warp Load/Store provider lowering."""
 
 import operator
 from enum import Enum
@@ -26,6 +26,7 @@ from .._compiler._parameters import (
 from .._types import (
     BoundedInteger,
     ExactValue,
+    _validate_logical_warp_threads,
     make_invocable_from_specialization,
     numba_type_to_wrapper,
 )
@@ -135,11 +136,9 @@ def _load_store_value_abis(
     return value_abis
 
 
-def _physical_warp_threads(value) -> int:
+def _warp_threads(value) -> int:
     value = _positive_int(value, name="threads_in_warp")
-    if value != 32:
-        raise ValueError("physical WarpLoad and WarpStore require threads_in_warp=32")
-    return value
+    return _validate_logical_warp_threads(value)
 
 
 def _load(
@@ -185,7 +184,7 @@ def _load(
         )
         group_kwargs = {"block_dim": block_dim}
     elif registered.namespace == "warp":
-        threads_in_warp = _physical_warp_threads(threads_in_warp)
+        threads_in_warp = _warp_threads(threads_in_warp)
         algorithm = _resolve_algorithm(
             algorithm,
             _WARP_LOAD_STORE_ALGORITHMS,
@@ -303,7 +302,7 @@ def warp_load(
     oob_default=None,
     offset=None,
 ):
-    """Build a storage-free physical WarpLoad invocable."""
+    """Build a storage-free physical or logical WarpLoad invocable."""
 
     return _load(
         warp_load,
@@ -328,7 +327,7 @@ def _warp_load_with_storage(
     oob_default=None,
     offset=None,
 ):
-    """Build a storage-bearing physical WarpLoad invocable."""
+    """Build a storage-bearing physical or logical WarpLoad invocable."""
 
     return _load(
         _warp_load_with_storage,
@@ -378,7 +377,7 @@ def _store(
         )
         group_kwargs = {"block_dim": block_dim}
     elif registered.namespace == "warp":
-        threads_in_warp = _physical_warp_threads(threads_in_warp)
+        threads_in_warp = _warp_threads(threads_in_warp)
         algorithm = _resolve_algorithm(
             algorithm,
             _WARP_LOAD_STORE_ALGORITHMS,
@@ -496,7 +495,7 @@ def warp_store(
     oob_default=None,
     offset=None,
 ):
-    """Build a storage-free physical WarpStore invocable."""
+    """Build a storage-free physical or logical WarpStore invocable."""
 
     return _store(
         warp_store,
@@ -521,7 +520,7 @@ def _warp_store_with_storage(
     oob_default=None,
     offset=None,
 ):
-    """Build a storage-bearing physical WarpStore invocable."""
+    """Build a storage-bearing physical or logical WarpStore invocable."""
 
     return _store(
         _warp_store_with_storage,

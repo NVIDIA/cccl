@@ -4,7 +4,7 @@
 
 """Typing contract for portable cooperative load and store."""
 
-from typing import Literal, overload
+from typing import overload
 
 from typing_extensions import TypeVar
 
@@ -19,7 +19,7 @@ from cuda.coop._typing import (
     WarpLoadStoreAlgorithm,
 )
 
-from .thread_group import BlockGroup, ThreadGroup
+from .thread_group import BlockGroup, WarpGroup
 
 _PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 
@@ -55,7 +55,7 @@ def load(
 
 @overload
 def load(
-    group: ThreadGroup[Literal["warp"]],
+    group: WarpGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
@@ -66,11 +66,11 @@ def load(
     offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
-    """Populate and return ``output`` with one physical-warp tile."""
+    """Populate and return ``output`` with one physical or logical warp tile."""
 
 @overload
 def load(
-    group: ThreadGroup[Literal["warp"]],
+    group: WarpGroup,
     source: object,
     output: ThreadDataLike[_PortableNumericT],
     /,
@@ -81,7 +81,7 @@ def load(
     offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> ThreadDataLike[_PortableNumericT]:
-    """Populate a partial physical-warp tile and fill invalid items."""
+    """Populate a partial physical or logical warp tile and fill invalid items."""
 
 @overload
 def store(
@@ -99,7 +99,7 @@ def store(
 
 @overload
 def store(
-    group: ThreadGroup[Literal["warp"]],
+    group: WarpGroup,
     destination: object,
     value: _PortableNumericT | PortableThreadDataLike[_PortableNumericT],
     /,
@@ -109,4 +109,4 @@ def store(
     offset: IntegerValue | None = None,
     temp_storage: None = None,
 ) -> None:
-    """Store one scalar or per-thread payload across a physical warp."""
+    """Store one scalar or per-thread payload across a Warp group."""

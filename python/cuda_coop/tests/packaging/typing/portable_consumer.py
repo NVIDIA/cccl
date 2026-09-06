@@ -19,11 +19,16 @@ def check_portable_surface(source: object, destination: object) -> None:
 
     block = coop.this_block()
     warp = coop.this_warp()
+    logical_warp = warp.group_by(8)
     values = coop.ThreadData(2, np.int16)
     storage = coop.TempStorage(sharing="shared")
 
     assert_type(block, coop.ThreadGroup[Literal["block"]])
     assert_type(warp, coop.ThreadGroup[Literal["warp"]])
+    assert_type(
+        logical_warp,
+        coop.ThreadGroup[Literal["threads_within_warp"]],
+    )
     assert_type(values, coop.ThreadDataLike[np.int16])
     assert_type(storage, coop.TempStorageLike)
     assert_type(
@@ -61,5 +66,13 @@ def check_portable_surface(source: object, destination: object) -> None:
     )
     assert_type(
         coop.store(warp, destination, values, algorithm="vectorize"),
+        None,
+    )
+    assert_type(
+        coop.load(logical_warp, source, values, algorithm="transpose"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.store(logical_warp, destination, values, algorithm="striped"),
         None,
     )
