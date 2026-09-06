@@ -11,12 +11,28 @@ Creating a descriptor does not query a running kernel or synchronize threads.
 
 from __future__ import annotations
 
-from cuda.coop._core import ThreadHierarchy, make_thread_group
+from typing import Any
+
+from cuda.coop._core import ThreadHierarchy, make_thread_group, normalize_thread_level
 from cuda.coop._core.thread_group import ThreadGroup as PortableThreadGroup
 
 _ROOT_SCOPE = __name__.rsplit(".", 1)[0]
 
 Hierarchy = ThreadHierarchy
+
+
+def _thread_group_method_marker(
+    group: ThreadGroup,
+    operation: str,
+    *args: Any,
+) -> Any:
+    """Mark a group operation that the whole-function planner must erase."""
+
+    del group, operation, args
+    raise RuntimeError(
+        "cuda.coop.numba_mlir ThreadGroup methods are compile-time kernel "
+        "constructs and must be lowered by the whole-function planner"
+    )
 
 
 class ThreadGroup(PortableThreadGroup):
@@ -26,6 +42,38 @@ class ThreadGroup(PortableThreadGroup):
     A descriptor can exist even when a particular operation does not support
     that group; operation planning checks support separately.
     """
+
+    def rank(self, level: str = "thread") -> Any:
+        """Return this group's rank relative to another hierarchy level."""
+
+        return self.rank_as(None, level)
+
+    def count(self, level: str = "thread") -> Any:
+        """Return this group's count relative to another hierarchy level."""
+
+        return self.count_as(None, level)
+
+    def rank_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        level = normalize_thread_level(
+            level,
+            scope=_ROOT_SCOPE,
+            feature="ThreadGroup.rank",
+        )
+        return _thread_group_method_marker(self, "rank", dtype, level)
+
+    def count_as(self, dtype: Any = None, level: str = "thread") -> Any:
+        level = normalize_thread_level(
+            level,
+            scope=_ROOT_SCOPE,
+            feature="ThreadGroup.count",
+        )
+        return _thread_group_method_marker(self, "count", dtype, level)
+
+    def sync(self) -> None:
+        _thread_group_method_marker(self, "sync")
+
+    def sync_aligned(self) -> None:
+        _thread_group_method_marker(self, "sync_aligned")
 
     def group_by(
         self,
@@ -40,6 +88,11 @@ class ThreadGroup(PortableThreadGroup):
         The returned descriptor does not synchronize or rearrange threads.
         """
         return super().group_by(count, exhaustive=exhaustive)
+
+    def is_member(self) -> Any:
+        """Return whether the current thread belongs to this group."""
+
+        return _thread_group_method_marker(self, "is_member")
 
 
 # These names support explicit imports used by the adjacent typing stubs. They
