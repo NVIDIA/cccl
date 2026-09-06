@@ -33,7 +33,6 @@ SynchronizableGroupKind: TypeAlias = Literal[
     "block",
     "cluster",
     "threads_within_warp",
-    "warps_within_block",
 ]
 BlockLoadStoreAlgorithm: TypeAlias = Literal[
     "direct",
@@ -134,6 +133,17 @@ ScalarValue: TypeAlias = (
 IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
 SignedIntegerScalar: TypeAlias = int | numpy.signedinteger[Any] | CompilerIntegerLike
 IntegralScalar: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
+ThreadGroupQueryScalar: TypeAlias = (
+    numpy.int8
+    | numpy.uint8
+    | numpy.int16
+    | numpy.uint16
+    | numpy.int32
+    | numpy.uint32
+    | numpy.int64
+    | numpy.uint64
+    | CompilerIntegerLike
+)
 TraceInteger: TypeAlias = int | numpy.integer[Any]
 ValidItems: TypeAlias = IntegerValue
 
@@ -188,6 +198,7 @@ __all__ = [
     "ReduceOperator",
     "ScalarShuffleMode",
     "ShuffleMode",
+    "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",

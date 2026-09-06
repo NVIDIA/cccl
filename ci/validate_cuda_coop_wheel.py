@@ -81,6 +81,7 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_lowering/_load_store.py",
     "cuda/coop/numba_mlir/_lowering/_reduce.py",
     "cuda/coop/numba_mlir/_lowering/_shuffle.py",
+    "cuda/coop/numba_mlir/_lowering/_thread_group.py",
     "cuda/coop/numba_mlir/_temp_storage.py",
     "cuda/coop/numba_mlir/_temp_storage.pyi",
     "cuda/coop/numba_mlir/_thread_data.py",
@@ -137,7 +138,6 @@ _FORBIDDEN_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_stateful_function.py",
     "cuda/coop/numba_mlir/_group_scan.py",
     "cuda/coop/numba_mlir/_lowering/_scan.py",
-    "cuda/coop/numba_mlir/_lowering/_thread_group.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite_scan.py",
 }
 
