@@ -24,6 +24,7 @@ portable.this_grid().sync()  # expected-error: [misc]
 portable_block.group_by(2).sync()  # expected-error: [misc]
 portable_block.group_by(2).rank("grid")  # expected-error: [call-overload]
 portable.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
+portable.StatefulFunction  # expected-error: [attr-defined]
 qualified_block = coop.this_block()
 qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
 qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
@@ -190,6 +191,85 @@ def select_left(left: np.int32, right: np.int32) -> np.int32:
     return left
 
 
+def prefix_from_aggregate(block_aggregate: np.int32) -> np.int32:
+    return block_aggregate
+
+
+def carry_prefix(
+    state: portable.ThreadDataLike[np.int32],
+    block_aggregate: np.int32,
+) -> np.int32:
+    previous = state[0]
+    state[0] = block_aggregate
+    return previous
+
+
+def float32_prefix(block_aggregate: np.float32) -> np.float32:
+    return block_aggregate
+
+
+def float32_return_prefix(block_aggregate: np.int32) -> np.float32:
+    return np.float32(block_aggregate)
+
+
+def unary_stateful_prefix(block_aggregate: np.int32) -> np.int32:
+    return block_aggregate
+
+
+def carry_int64_state(
+    state: portable.ThreadDataLike[np.int64],
+    block_aggregate: np.int32,
+) -> np.int32:
+    return block_aggregate + np.int32(state[0])
+
+
+def carry_float32_value(
+    state: portable.ThreadDataLike[np.int32],
+    block_aggregate: np.float32,
+) -> np.float32:
+    return block_aggregate + np.float32(state[0])
+
+
+def carry_wrong_return(
+    state: portable.ThreadDataLike[np.int32],
+    block_aggregate: np.int32,
+) -> np.float32:
+    return np.float32(block_aggregate + state[0])
+
+
+class Float32PrefixFunctor:
+    def __call__(self, block_aggregate: np.float32) -> np.float32:
+        return block_aggregate
+
+
+class BinaryPrefixFunctor:
+    def __call__(self, left: np.int32, right: np.int32) -> np.int32:
+        return left + right
+
+
+prefix_state = coop.ThreadData(1, np.int32)
+stateful_prefix = coop.StatefulFunction(carry_prefix, np.int32)
+stateful_int64_state = coop.StatefulFunction(carry_int64_state, np.int64)
+stateful_float32_value = coop.StatefulFunction(carry_float32_value, np.int32)
+coop.StatefulFunction(
+    unary_stateful_prefix,  # expected-error: [arg-type]
+    np.int32,
+)
+coop.StatefulFunction(42, np.int32)  # expected-error: [arg-type]
+coop.StatefulFunction(  # expected-error: [misc]
+    carry_wrong_return,
+    np.int32,
+)
+bad_functor: coop.StatefulFunction[np.int64, np.int32] = coop.StatefulFunction(
+    Float32PrefixFunctor,  # expected-error: [arg-type]
+    np.int64,
+)
+bad_binary_functor: coop.StatefulFunction[np.int64, np.int32] = coop.StatefulFunction(
+    BinaryPrefixFunctor,  # expected-error: [arg-type]
+    np.int64,
+)
+
+
 portable.reduce(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
@@ -352,8 +432,97 @@ coop.inclusive_scan(  # expected-error: [call-overload]
     np.complex64(1),
     scan_op="max",
 )
-coop.scan(  # expected-error: [call-overload]
+coop.scan(
     qualified_block,
     np.int32(1),
-    prefix_op=select_left,
+    prefix_op=select_left,  # expected-error: [arg-type]
+)
+portable.inclusive_sum(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    prefix_op=prefix_from_aggregate,
+)
+coop.inclusive_sum(
+    coop.this_warp(),  # expected-error: [arg-type]
+    np.int32(1),
+    prefix_op=prefix_from_aggregate,
+)
+coop.exclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    prefix_state,
+    prefix_op=prefix_from_aggregate,
+)
+coop.exclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    prefix_op=stateful_prefix,
+)
+coop.exclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    prefix_state,
+)
+coop.exclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    prefix_state=prefix_state,
+    prefix_op=stateful_prefix,
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    block_prefix_callback_op=prefix_from_aggregate,
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    aggregate_output=coop.ThreadData(1, np.int32),
+    prefix_op=prefix_from_aggregate,
+)
+coop.exclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    scan_op=select_left,
+    initial_value=np.int32(0),
+    prefix_op=prefix_from_aggregate,
+)
+coop.inclusive_sum(
+    qualified_block,
+    np.int32(1),
+    prefix_op=float32_prefix,  # expected-error: [arg-type]
+)
+coop.inclusive_sum(
+    qualified_block,
+    np.int32(1),
+    prefix_op=float32_return_prefix,  # expected-error: [arg-type]
+)
+coop.inclusive_sum(
+    qualified_block,
+    values,
+    prefix_op=float32_prefix,  # expected-error: [arg-type]
+)
+bool_prefix_values = cast(portable.ThreadDataLike[np.bool_], object())
+coop.inclusive_sum(  # expected-error: [type-var]
+    qualified_block,
+    bool_prefix_values,
+    prefix_op=lambda aggregate: aggregate,
+)
+complex_prefix_values = cast(portable.ThreadDataLike[np.complex64], object())
+coop.inclusive_sum(  # expected-error: [type-var]
+    qualified_block,
+    complex_prefix_values,
+    prefix_op=lambda aggregate: aggregate,
+)
+coop.exclusive_sum(  # expected-error: [misc]
+    qualified_block,
+    np.int32(1),
+    prefix_state,
+    prefix_op=stateful_int64_state,
+)
+coop.exclusive_sum(  # expected-error: [misc]
+    qualified_block,
+    np.int32(1),
+    prefix_state,
+    prefix_op=stateful_float32_value,
 )
