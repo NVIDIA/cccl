@@ -196,13 +196,7 @@ int main()
       }
     }
     r.copy_from_host(h_b.data());
-    // p0 = r0 through the generic tier (shard views of the contiguous p).
-    zip_transform(
-      p,
-      [] __device__(double rv) {
-        return rv;
-      },
-      r);
+    p.copy_from_host(h_b.data()); // p0 = r0 = b
   }
 
   double rr = dot(r, r, scratch);
@@ -256,14 +250,12 @@ int main()
   }
   ::std::printf("converged in %d iterations: |r|^2 = %.6e (rel %.3e)\n", it, rr, rr / rr0);
 
-  // x must recover ones: max |x_i - 1| through the generic tier.
-  zip_transform(
-    scratch,
-    [] __device__(double xv) {
-      return fabs(xv - 1.0);
-    },
-    x);
-  const double max_err = ::cuda::experimental::sharded::max(scratch);
+  // x must recover ones: max |x_i - 1| through the generic tier (x is not
+  // needed past this point, so the transform runs in place).
+  transform(x, [] __device__(double xv) {
+    return fabs(xv - 1.0);
+  });
+  const double max_err = ::cuda::experimental::sharded::max(x);
   ::std::printf("max |x - 1| = %.3e\n", max_err);
 
   // The error bound carries the conditioning of the operator
