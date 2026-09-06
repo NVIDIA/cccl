@@ -3,18 +3,18 @@
 
 #pragma once
 
-#include <thrust/detail/config/device_system.h>
-
-#include <c2h/detail/generators.cuh>
-
 //! @file
 //! This file includes a custom Catch2 main function. When CMake is configured to build each test as a separate
 //! executable, this header is included into each test. On the other hand, when all the tests are compiled into a single
 //! executable, this header is excluded from the tests and included into catch2_runner.cpp
 
-#include <catch2/catch_session.hpp>
-
 #ifdef C2H_CONFIG_MAIN
+
+#  include <thrust/detail/config/device_system.h>
+
+#  include <c2h/detail/generators.cuh>
+#  include <catch2/catch_session.hpp>
+
 #  if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #    include <c2h/catch2_runner_helper.h>
 

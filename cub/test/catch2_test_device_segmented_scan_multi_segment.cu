@@ -5,20 +5,30 @@
 
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 
-#include <thrust/generate.h>
-#include <thrust/tabulate.h>
-
+#include <cuda/buffer>
+#include <cuda/cmath>
+#include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/iterator>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
+#include <cuda/std/initializer_list>
 #include <cuda/std/type_traits> // std::integral_constant
+#include <cuda/std/utility>
+#include <cuda/stream>
 
+#include <cstddef>
 #include <cstdint>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include "catch2_test_device_scan.cuh"
+#include <cuda_runtime_api.h>
+
+#include "catch2_test_device_segmented_scan_utils.cuh"
 #include "catch2_test_launch_helper.h"
-#include "cub_test_macros.h"
+#include "cub_test_macros_lightweight.h"
+#include <c2h/checked_memory_resource.cuh>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -39,9 +49,9 @@ struct bicyclic_monoid_op
 
   pair_t __host__ __device__ operator()(pair_t v1, pair_t v2)
   {
-    auto [m, n] = v1;
-    auto [r, s] = v2;
-    auto min_nr = min_t{}(n, r);
+    auto [m, n]       = v1;
+    auto [r, s]       = v2;
+    const auto min_nr = min_t{}(n, r);
     return {m + r - min_nr, s + n - min_nr};
   }
 };
@@ -70,6 +80,14 @@ struct populate_bicyclic_monoid_input
 
 namespace
 {
+using segmented_scan_test::copy_to_host;
+using segmented_scan_test::current_device;
+using segmented_scan_test::enqueue_copy_to_device;
+using segmented_scan_test::make_device_buffer_from_host;
+using segmented_scan_test::make_host_buffer;
+using segmented_scan_test::make_tabulated_host_buffer;
+using segmented_scan_test::require_ranges_equal;
+
 template <typename T>
 constexpr unsigned int get_max_elems()
 {
@@ -134,21 +152,22 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
 void run_dispatch_scan(
   DispatchT dispatch_fn,
+  [[maybe_unused]] cuda::stream_ref stream,
   cub::detail::segmented_scan::worker worker_choice,
-  const c2h::device_vector<OffsetT>& offsets,
-  const c2h::device_vector<OffsetT>& out_offsets,
-  const c2h::device_vector<InputT>& input,
-  c2h::device_vector<OutputT>& output,
+  const cuda::device_buffer<OffsetT>& offsets,
+  const cuda::device_buffer<OffsetT>& out_offsets,
+  const cuda::device_buffer<InputT>& input,
+  cuda::device_buffer<OutputT>& output,
   ScanOpT scan_op,
   InitValueT init_value,
   int segments_per_worker)
 {
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
-  const auto d_input       = thrust::raw_pointer_cast(input.data());
-  auto d_output            = thrust::raw_pointer_cast(output.data());
-  const auto d_offsets     = thrust::raw_pointer_cast(offsets.data());
-  const auto d_out_offsets = thrust::raw_pointer_cast(out_offsets.data());
+  const auto d_input       = input.data();
+  const auto d_output      = output.data();
+  const auto d_offsets     = offsets.data();
+  const auto d_out_offsets = out_offsets.data();
 
   dispatch_fn(
     d_input,
@@ -161,26 +180,30 @@ void run_dispatch_scan(
     init_value,
     segments_per_worker,
     worker_choice
-#if TEST_LAUNCH != 2
+#if TEST_LAUNCH == 0
     ,
-    nullptr
-#endif // TEST_LAUNCH != 2
+    stream.get()
+#elif TEST_LAUNCH == 1
+    ,
+    nullptr // Host stream handles are invalid for device-side launches.
+#endif // TEST_LAUNCH == 0 / TEST_LAUNCH == 1
   );
 }
 
 template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
 void run_dispatch_scan(
   DispatchT dispatch_fn,
+  [[maybe_unused]] cuda::stream_ref stream,
   cub::detail::segmented_scan::worker worker_choice,
-  const c2h::device_vector<OffsetT>& offsets,
-  const c2h::device_vector<InputT>& input,
-  c2h::device_vector<OutputT>& output,
+  const cuda::device_buffer<OffsetT>& offsets,
+  const cuda::device_buffer<InputT>& input,
+  cuda::device_buffer<OutputT>& output,
   ScanOpT scan_op,
   InitValueT init_value,
   int segments_per_worker)
 {
   run_dispatch_scan(
-    dispatch_fn, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker);
+    dispatch_fn, stream, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker);
 }
 
 template <typename ValueT>
@@ -210,19 +233,6 @@ struct numeric_op
     return (r_a + r_b) % m;
   }
 };
-
-template <typename ValueT>
-struct constant_value_op
-{
-  using value_t = ValueT;
-
-  value_t value;
-
-  __host__ __device__ value_t operator()() const
-  {
-    return value;
-  }
-};
 } // namespace
 
 CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative op",
@@ -240,13 +250,15 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
-  unsigned num_items = block_size * items_per_thread * 101 + 1;
-  c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
-  size_t num_segments = offsets.size() - 1;
+  const auto device = current_device();
+  auto copy_stream  = cuda::stream{device};
 
-  c2h::device_vector<pair_t> input(num_items, thrust::default_init);
-  thrust::tabulate(input.begin(), input.end(), impl::populate_bicyclic_monoid_input<unsigned int>{});
-  c2h::device_vector<pair_t> output(input.size(), thrust::default_init);
+  const unsigned num_items = block_size * items_per_thread * 101 + 1;
+  const auto h_offsets     = make_host_buffer<offset_t>(
+    copy_stream,
+    device,
+    cuda::std::initializer_list<offset_t>{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items});
+  const std::size_t num_segments = h_offsets.size() - 1;
 
   auto inclusive_scan_dispatch = [](auto&&... args) {
     dispatch_segmented_scan<
@@ -263,9 +275,14 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       policy_t>(std::forward<decltype(args)>(args)...);
   };
 
-  c2h::host_vector<pair_t> h_input(input);
-  c2h::host_vector<pair_t> h_expected(input.size(), thrust::default_init);
-  c2h::host_vector<offset_t> h_offsets(offsets);
+  const auto h_input = make_tabulated_host_buffer<pair_t>(
+    copy_stream, device, num_items, impl::populate_bicyclic_monoid_input<unsigned int>{});
+  auto h_expected = make_host_buffer<pair_t>(copy_stream, device, h_input.size(), cuda::no_init);
+
+  auto offsets = make_device_buffer_from_host(copy_stream, device, h_offsets);
+  auto input   = make_device_buffer_from_host(copy_stream, device, h_input);
+  auto output  = c2h::make_device_buffer<pair_t>(copy_stream, device, h_input.size(), cuda::no_init);
+  copy_stream.sync();
 
   op_t op{};
   pair_t h_init{0, 0};
@@ -288,6 +305,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   {
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -296,9 +314,10 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       d_no_init,
       one_segment_per_worker);
 
-    c2h::host_vector<pair_t> h_output(output);
+    auto h_output = make_host_buffer<pair_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
 
-    REQUIRE(h_expected == h_output);
+    require_ranges_equal(h_expected, h_output);
   }
 
   const int two_segments_per_worker = 2;
@@ -307,6 +326,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   {
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -315,9 +335,10 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       d_no_init,
       two_segments_per_worker);
 
-    c2h::host_vector<pair_t> h_output(output);
+    auto h_output = make_host_buffer<pair_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
 
-    REQUIRE(h_expected == h_output);
+    require_ranges_equal(h_expected, h_output);
   }
 }
 
@@ -328,6 +349,9 @@ CUB_TEST(
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
+  const auto device = current_device();
+  auto copy_stream  = cuda::stream{device};
+
   constexpr auto max_nelems = get_max_elems<value_t>();
 
   // repeat the test for multiple values of num_segments
@@ -337,16 +361,18 @@ CUB_TEST(
 
   CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
 
-  c2h::host_vector<offset_t> h_offsets(num_segments + 1, thrust::default_init);
+  auto h_offsets = make_host_buffer<offset_t>(copy_stream, device, num_segments + 1, cuda::no_init);
   for (unsigned i = 0; i <= num_segments; ++i)
   {
     h_offsets[i] = i * items_per_segment;
   }
 
-  c2h::device_vector<offset_t> offsets = h_offsets;
-  c2h::device_vector<value_t> input(num_items);
-  thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
-  c2h::device_vector<value_t> output(input.size(), thrust::no_init);
+  const auto h_input = make_tabulated_host_buffer<value_t>(copy_stream, device, num_items, init_op<value_t>{});
+
+  auto offsets = make_device_buffer_from_host(copy_stream, device, h_offsets);
+  auto input   = make_device_buffer_from_host(copy_stream, device, h_input);
+  auto output  = c2h::make_device_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
+  copy_stream.sync();
 
   // WAR for MSVC which incorrectly deduces that these variables are declared, but unused
   [[maybe_unused]] static constexpr int items_per_thread       = 11;
@@ -371,8 +397,7 @@ CUB_TEST(
       policy_t>(std::forward<decltype(args)>(args)...);
   };
 
-  c2h::host_vector<value_t> h_input(input);
-  c2h::host_vector<value_t> h_expected(input.size(), thrust::default_init);
+  auto h_expected = make_host_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
 
   op_t op{};
   value_t h_init{3};
@@ -395,6 +420,7 @@ CUB_TEST(
   {
     run_dispatch_scan(
       exclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -403,8 +429,9 @@ CUB_TEST(
       d_init_v,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
-    REQUIRE(h_expected == h_output);
+    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
+    require_ranges_equal(h_expected, h_output);
   }
 }
 
@@ -417,6 +444,9 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
+  const auto device = current_device();
+  auto copy_stream  = cuda::stream{device};
+
   // WAR for MSVC which incorrectly deduces that these variables are declared, but unused
   [[maybe_unused]] static constexpr int items_per_thread       = 4;
   [[maybe_unused]] static constexpr int block_size             = 128;
@@ -425,12 +455,18 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
   const unsigned num_items = block_size * items_per_thread * 132;
-  c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
-  size_t num_segments = offsets.size() - 1;
+  const auto h_offsets     = make_host_buffer<offset_t>(
+    copy_stream,
+    device,
+    cuda::std::initializer_list<offset_t>{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items});
+  const std::size_t num_segments = h_offsets.size() - 1;
 
-  c2h::device_vector<value_t> input(num_items, thrust::default_init);
-  thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
-  c2h::device_vector<value_t> output(input.size(), thrust::default_init);
+  const auto h_input = make_tabulated_host_buffer<value_t>(copy_stream, device, num_items, init_op<value_t>{});
+
+  auto offsets = make_device_buffer_from_host(copy_stream, device, h_offsets);
+  auto input   = make_device_buffer_from_host(copy_stream, device, h_input);
+  auto output  = c2h::make_device_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
+  copy_stream.sync();
 
   auto inclusive_scan_dispatch = [](auto&&... args) {
     dispatch_segmented_scan<
@@ -447,9 +483,7 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
       policy_t>(std::forward<decltype(args)>(args)...);
   };
 
-  c2h::host_vector<value_t> h_input(input);
-  c2h::host_vector<value_t> h_expected(input.size(), thrust::default_init);
-  c2h::host_vector<offset_t> h_offsets(offsets);
+  auto h_expected = make_host_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
 
   op_t op{};
   value_t h_init{0};
@@ -472,6 +506,7 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
   {
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -480,8 +515,9 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
       d_no_init,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
-    REQUIRE(h_expected == h_output);
+    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
+    require_ranges_equal(h_expected, h_output);
   }
 }
 
@@ -494,13 +530,16 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
+  const auto device = current_device();
+  auto copy_stream  = cuda::stream{device};
+
   constexpr auto max_nelems = get_max_elems<value_t>();
 
   const unsigned int num_segments      = GENERATE(7, 11, 13, 129);
   const unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
   const unsigned int num_items         = num_segments * items_per_segment;
 
-  c2h::host_vector<offset_t> h_offsets(num_segments + 1, thrust::default_init);
+  auto h_offsets = make_host_buffer<offset_t>(copy_stream, device, num_segments + 1, cuda::no_init);
   for (unsigned i = 0; i <= num_segments; ++i)
   {
     h_offsets[i] = i * items_per_segment;
@@ -508,10 +547,12 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
 
   CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
 
-  c2h::device_vector<offset_t> offsets = h_offsets;
-  c2h::device_vector<value_t> input(num_items, thrust::default_init);
-  thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
-  c2h::device_vector<value_t> output(input.size(), thrust::default_init);
+  const auto h_input = make_tabulated_host_buffer<value_t>(copy_stream, device, num_items, init_op<value_t>{});
+
+  auto offsets = make_device_buffer_from_host(copy_stream, device, h_offsets);
+  auto input   = make_device_buffer_from_host(copy_stream, device, h_input);
+  auto output  = c2h::make_device_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
+  copy_stream.sync();
 
   // WAR for MSVC which incorrectly deduces that these variables are declared, but unused
   [[maybe_unused]] static constexpr int items_per_thread       = 4;
@@ -536,8 +577,7 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
       policy_t>(std::forward<decltype(args)>(args)...);
   };
 
-  c2h::host_vector<value_t> h_input(input);
-  c2h::host_vector<value_t> h_expected(input.size(), thrust::default_init);
+  auto h_expected = make_host_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
 
   op_t op{};
   value_t h_init{3};
@@ -562,6 +602,7 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
   {
     run_dispatch_scan(
       inclusive_init_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input,
@@ -570,8 +611,9 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
       d_init_v,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
-    REQUIRE(h_expected == h_output);
+    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
+    require_ranges_equal(h_expected, h_output);
   }
 }
 
@@ -619,6 +661,9 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   using value_t  = unsigned int;
   using offset_t = unsigned int;
 
+  const auto device = current_device();
+  auto copy_stream  = cuda::stream{device};
+
   [[maybe_unused]] static constexpr int items_per_thread       = c2h::get<0, TestType>::value;
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
@@ -632,18 +677,18 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   const auto [in_offsets_v, out_offsets_v] = make_in_out_offsets(segment_sizes, gap);
 
-  c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
-  c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
-
   const auto num_segments = static_cast<cuda::std::size_t>(segment_sizes.size());
   const auto num_items    = static_cast<cuda::std::size_t>(in_offsets_v.back());
 
   const auto num_output = static_cast<cuda::std::size_t>(out_offsets_v.back());
 
-  c2h::device_vector<value_t> input(num_items, thrust::default_init);
-  c2h::device_vector<value_t> output(num_output, thrust::default_init);
+  const auto h_input = make_tabulated_host_buffer<value_t>(copy_stream, device, num_items, cuda::std::identity{});
 
-  thrust::tabulate(input.begin(), input.end(), cuda::std::identity{});
+  auto offsets     = make_device_buffer_from_host(copy_stream, device, in_offsets_v);
+  auto out_offsets = make_device_buffer_from_host(copy_stream, device, out_offsets_v);
+  auto input       = make_device_buffer_from_host(copy_stream, device, h_input);
+  auto output      = c2h::make_device_buffer<value_t>(copy_stream, device, num_output, cuda::no_init);
+  copy_stream.sync();
 
   constexpr int segments_per_worker = 2;
 
@@ -651,22 +696,18 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   value_t h_init_v{0};
   cub::NullType d_no_init{};
 
-  c2h::host_vector<value_t> h_input(input);
-  c2h::host_vector<offset_t> h_offsets(offsets);
-  c2h::host_vector<offset_t> h_out_offsets(out_offsets);
-
-  c2h::host_vector<value_t> h_expected(output.size(), canary);
+  auto h_expected = make_host_buffer<value_t>(copy_stream, device, output.size(), canary);
 
   for (cuda::std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
-    if (h_offsets[segment_id] >= h_offsets[segment_id + 1])
+    if (in_offsets_v[segment_id] >= in_offsets_v[segment_id + 1])
     {
       continue;
     }
     compute_inclusive_scan_reference(
-      h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
-      h_expected.begin() + h_out_offsets[segment_id],
+      h_input.begin() + in_offsets_v[segment_id],
+      h_input.begin() + in_offsets_v[segment_id + 1],
+      h_expected.begin() + out_offsets_v[segment_id],
       op,
       h_init_v);
   }
@@ -688,9 +729,13 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   SECTION("worker block")
   {
-    thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
+    const auto h_canaries = make_host_buffer<value_t>(copy_stream, device, output.size(), canary);
+    enqueue_copy_to_device(copy_stream, h_canaries, output);
+    copy_stream.sync();
+
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       out_offsets,
@@ -700,8 +745,9 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
       d_no_init,
       segments_per_worker);
 
-    const c2h::host_vector<value_t> h_output(output);
-    REQUIRE(h_output == h_expected);
+    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
+    require_ranges_equal(h_output, h_expected);
   }
 }
 
@@ -710,6 +756,9 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
   using offset_t = int;
+
+  const auto device = current_device();
+  auto copy_stream  = cuda::stream{device};
 
   [[maybe_unused]] static constexpr int items_per_thread       = 7;
   [[maybe_unused]] static constexpr int block_size             = 128;
@@ -738,18 +787,18 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
     REQUIRE(offset >= offset_t{0});
   }
 
-  c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
-  c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
-
   const auto num_segments = segment_sizes.size();
   const auto num_items    = static_cast<cuda::std::size_t>(in_offsets_v.back());
 
   const auto num_output = static_cast<cuda::std::size_t>(out_offsets_v.back());
 
-  c2h::device_vector<value_t> input(num_items, thrust::default_init);
-  c2h::device_vector<value_t> output(num_output, thrust::default_init);
+  const auto h_input = make_tabulated_host_buffer<value_t>(copy_stream, device, num_items, cuda::std::identity{});
 
-  thrust::tabulate(input.begin(), input.end(), cuda::std::identity{});
+  auto offsets     = make_device_buffer_from_host(copy_stream, device, in_offsets_v);
+  auto out_offsets = make_device_buffer_from_host(copy_stream, device, out_offsets_v);
+  auto input       = make_device_buffer_from_host(copy_stream, device, h_input);
+  auto output      = c2h::make_device_buffer<value_t>(copy_stream, device, num_output, cuda::no_init);
+  copy_stream.sync();
 
   constexpr int segments_per_worker = 2;
 
@@ -757,22 +806,18 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
   value_t h_init_v{0};
   cub::NullType d_no_init{};
 
-  c2h::host_vector<value_t> h_input(input);
-  c2h::host_vector<offset_t> h_offsets(offsets);
-  c2h::host_vector<offset_t> h_out_offsets(out_offsets);
-
-  c2h::host_vector<value_t> h_expected(output.size(), canary);
+  auto h_expected = make_host_buffer<value_t>(copy_stream, device, output.size(), canary);
 
   for (cuda::std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
-    if (h_offsets[segment_id] >= h_offsets[segment_id + 1])
+    if (in_offsets_v[segment_id] >= in_offsets_v[segment_id + 1])
     {
       continue;
     }
     compute_inclusive_scan_reference(
-      h_input.begin() + h_offsets[segment_id],
-      h_input.begin() + h_offsets[segment_id + 1],
-      h_expected.begin() + h_out_offsets[segment_id],
+      h_input.begin() + in_offsets_v[segment_id],
+      h_input.begin() + in_offsets_v[segment_id + 1],
+      h_expected.begin() + out_offsets_v[segment_id],
       op,
       h_init_v);
   }
@@ -794,9 +839,13 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
 
   SECTION("worker block")
   {
-    thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
+    const auto h_canaries = make_host_buffer<value_t>(copy_stream, device, output.size(), canary);
+    enqueue_copy_to_device(copy_stream, h_canaries, output);
+    copy_stream.sync();
+
     run_dispatch_scan(
       inclusive_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       out_offsets,
@@ -806,8 +855,9 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
       d_no_init,
       segments_per_worker);
 
-    const c2h::host_vector<value_t> h_output(output);
-    REQUIRE(h_output == h_expected);
+    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
+    require_ranges_equal(h_output, h_expected);
   }
 }
 
@@ -819,8 +869,9 @@ template <typename DispatchT,
           typename InitValueT>
 void run_dispatch_scan_iterator(
   DispatchT dispatch_fn,
+  [[maybe_unused]] cuda::stream_ref stream,
   cub::detail::segmented_scan::worker worker_choice,
-  const c2h::device_vector<OffsetT>& offsets,
+  const cuda::device_buffer<OffsetT>& offsets,
   InputIterT input_it,
   OutputIterT output_it,
   ScanOpT scan_op,
@@ -830,8 +881,8 @@ void run_dispatch_scan_iterator(
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
   const auto d_input   = input_it;
-  auto d_output        = output_it;
-  const auto d_offsets = thrust::raw_pointer_cast(offsets.data());
+  const auto d_output  = output_it;
+  const auto d_offsets = offsets.data();
 
   dispatch_fn(
     d_input,
@@ -844,10 +895,13 @@ void run_dispatch_scan_iterator(
     init_value,
     segments_per_worker,
     worker_choice
-#if TEST_LAUNCH != 2
+#if TEST_LAUNCH == 0
     ,
-    nullptr
-#endif // TEST_LAUNCH != 2
+    stream.get()
+#elif TEST_LAUNCH == 1
+    ,
+    nullptr // Host stream handles are invalid for device-side launches.
+#endif // TEST_LAUNCH == 0 / TEST_LAUNCH == 1
   );
 }
 
@@ -856,6 +910,9 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   using op_t     = cuda::std::plus<>;
   using value_t  = unsigned int;
   using offset_t = unsigned int;
+
+  const auto device = current_device();
+  auto copy_stream  = cuda::stream{device};
 
   [[maybe_unused]] static constexpr int items_per_thread       = 9;
   [[maybe_unused]] static constexpr int block_size             = 128;
@@ -869,7 +926,7 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   const unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
   const unsigned int num_items         = num_segments * items_per_segment;
 
-  c2h::host_vector<offset_t> h_offsets(num_segments + 1);
+  auto h_offsets = make_host_buffer<offset_t>(copy_stream, device, num_segments + 1, cuda::no_init);
   for (unsigned i = 0; i <= num_segments; ++i)
   {
     h_offsets[i] = i * items_per_segment;
@@ -877,12 +934,13 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
 
   CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
 
-  c2h::device_vector<offset_t> offsets = h_offsets;
+  auto offsets = make_device_buffer_from_host(copy_stream, device, h_offsets);
 
   const auto input_it = cuda::make_transform_iterator(cuda::counting_iterator<value_t>(0), init_op<value_t>{});
 
-  c2h::device_vector<value_t> output(num_items);
-  auto output_it = cuda::make_transform_output_iterator(output.begin(), init_op<value_t>{});
+  auto output    = c2h::make_device_buffer<value_t>(copy_stream, device, num_items, cuda::no_init);
+  auto output_it = cuda::make_transform_output_iterator(output.data(), init_op<value_t>{});
+  copy_stream.sync();
 
   using input_it_t  = decltype(input_it);
   using output_it_t = decltype(output_it);
@@ -903,8 +961,8 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
       policy_t>(std::forward<decltype(args)>(args)...);
   };
 
-  c2h::host_vector<value_t> h_input(input_it, input_it + num_items);
-  c2h::host_vector<value_t> h_expected(num_items, thrust::default_init);
+  const auto h_input = make_tabulated_host_buffer<value_t>(copy_stream, device, num_items, init_op<value_t>{});
+  auto h_expected    = make_host_buffer<value_t>(copy_stream, device, num_items, cuda::no_init);
 
   op_t op{};
   value_t h_init{3};
@@ -933,6 +991,7 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   {
     run_dispatch_scan_iterator(
       inclusive_init_scan_dispatch,
+      copy_stream,
       cub::detail::segmented_scan::worker::block,
       offsets,
       input_it,
@@ -941,7 +1000,8 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
       d_init_v,
       segments_per_worker);
 
-    c2h::host_vector<value_t> h_output(output);
-    REQUIRE(h_expected == h_output);
+    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
+    copy_to_host(copy_stream, output, h_output);
+    require_ranges_equal(h_expected, h_output);
   }
 }

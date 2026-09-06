@@ -3,20 +3,30 @@
 
 #include <cub/device/device_copy.cuh>
 
+#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tabulate.h>
+#include <thrust/version.h>
 
 #include <cuda/iterator>
 #include <cuda/std/optional>
+#include <cuda/std/span>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/stream>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 #include <c2h/half.cuh>
 #include <c2h/vector.h>
 
@@ -65,31 +75,79 @@ public:
 
   float* prepare_random_generator(seed_t seed, std::size_t num_items)
   {
-    m_distribution.resize(num_items);
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+    return prepare_random_generator(::cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
+#else // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+    resize_distribution(num_items);
 
-#if C2H_HAS_CURAND
+#  if C2H_HAS_CURAND
     curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-#else
+#  else // C2H_HAS_CURAND
     m_gen.seed(seed.get());
-#endif
+#  endif // C2H_HAS_CURAND
 
     generate();
 
     return thrust::raw_pointer_cast(m_distribution.data());
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
   }
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+  {
+    resize_distribution(num_items);
+
+#  if C2H_HAS_CURAND
+    curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
+#  else // C2H_HAS_CURAND
+    m_gen.seed(seed.get());
+#  endif // C2H_HAS_CURAND
+
+    generate(stream);
+
+    return thrust::raw_pointer_cast(m_distribution.data());
+  }
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
   // re-fills the currently held distribution vector with new random values
   void generate()
   {
-#if C2H_HAS_CURAND
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+    generate(::cuda::stream_ref{::cudaStream_t{}});
+#else // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  if C2H_HAS_CURAND
     curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
-#else
+#  else // C2H_HAS_CURAND
     thrust::tabulate(device_policy, m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
     m_gen.discard(m_distribution.size());
-#endif
+#  endif // C2H_HAS_CURAND
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
   }
 
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  // re-fills the currently held distribution vector with new random values
+  void generate(::cuda::stream_ref stream)
+  {
+#  if C2H_HAS_CURAND
+    curandSetStream(m_gen, stream.get());
+    curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
+#  else
+    thrust::tabulate(c2h::device_policy_on(stream), m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
+    m_gen.discard(m_distribution.size());
+#  endif
+  }
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
 private:
+  void resize_distribution(std::size_t num_items)
+  {
+#if THRUST_VERSION >= 300100
+    m_distribution.resize(num_items, thrust::no_init);
+#else // THRUST_VERSION >= 300100
+    m_distribution.resize(num_items);
+#endif // THRUST_VERSION >= 300100
+  }
+
 #if C2H_HAS_CURAND
   curandGenerator_t
 #else
@@ -112,6 +170,13 @@ float* prepare_random_data(seed_t seed, std::size_t num_items)
 {
   return generator.value().prepare_random_generator(seed, num_items);
 }
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+{
+  return generator.value().prepare_random_generator(stream, seed, num_items);
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 void cleanup_generator()
 {
@@ -138,18 +203,43 @@ struct random_to_custom_t
 void gen_custom_type_state(
   seed_t seed,
   char* d_out,
-  custom_type_state_t /* min */,
-  custom_type_state_t /* max */,
+  custom_type_state_t min,
+  custom_type_state_t max,
   std::size_t elements,
   std::size_t element_size)
 {
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  gen_custom_type_state(::cuda::stream_ref{::cudaStream_t{}}, seed, d_out, min, max, elements, element_size);
+#else // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  (void) min;
+  (void) max;
   // FIXME(bgruber): implement min/max handling for custom_type_state_t
   float* d_in = prepare_random_data(seed, elements * 2);
   thrust::for_each(device_policy,
                    thrust::counting_iterator<std::size_t>{0},
                    thrust::counting_iterator<std::size_t>{elements},
                    random_to_custom_t{d_in, d_out, element_size});
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 }
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+void gen_custom_type_state(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  char* d_out,
+  custom_type_state_t /* min */,
+  custom_type_state_t /* max */,
+  std::size_t elements,
+  std::size_t element_size)
+{
+  // FIXME(bgruber): implement min/max handling for custom_type_state_t
+  float* d_in = prepare_random_data(stream, seed, elements * 2);
+  thrust::for_each(c2h::device_policy_on(stream),
+                   thrust::counting_iterator<std::size_t>{0},
+                   thrust::counting_iterator<std::size_t>{elements},
+                   random_to_custom_t{d_in, d_out, element_size});
+}
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 template <typename T>
 struct spaced_out_it_op

@@ -6,7 +6,6 @@
 #include <cuda/std/detail/__config>
 
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/buffer>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
@@ -14,13 +13,20 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
+#include <optional>
+#include <sstream>
+#include <string>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 #include <c2h/catch2_main.h>
+#include <c2h/catch2_nvtx.h>
+#include <c2h/catch2_seed.h>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_allocator.cuh>
 #include <c2h/device_policy.h>
@@ -597,22 +603,6 @@ struct Catch::StringMaker<cudaError>
 #include <c2h/custom_type.h>
 #include <c2h/generators.h>
 
-namespace detail
-{
-struct nvtx_c2h_domain
-{
-  static constexpr const char* name = "C2H";
-};
-
-template <typename T>
-class nvtx_fixture
-{
-#if _CCCL_HAS_NVTX3()
-  ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range{Catch::getResultCapture().getCurrentTestName()};
-#endif // _CCCL_HAS_NVTX3()
-};
-} // namespace detail
-
 #define C2H_TEST_NAME_IMPL(NAME, PARAM) C2H_TEST_STR(NAME) "(" C2H_TEST_STR(PARAM) ")"
 
 #define C2H_TEST_NAME(NAME) C2H_TEST_NAME_IMPL(NAME, VAR_IDX)
@@ -647,30 +637,3 @@ class nvtx_fixture
   C2H_TEST_LIST_WITH_FIXTURE_IMPL(__LINE__, FIXTURE, NAME, TAG, __VA_ARGS__)
 
 #define C2H_TEST_STR(a) #a
-
-namespace c2h
-{
-inline std::size_t get_override_seed_count()
-{
-  // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
-  // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
-  static std::optional<std::string> override_str = c2h::detail::get_env("C2H_SEED_COUNT_OVERRIDE");
-  static const int override_seeds =
-    override_str ? static_cast<int>(std::strtol(override_str->c_str(), nullptr, 10)) : 0;
-  return override_seeds;
-}
-
-inline std::size_t adjust_seed_count(std::size_t requested)
-{
-  static std::size_t override_seeds = get_override_seed_count();
-  return override_seeds != 0 ? override_seeds : requested;
-}
-} // namespace c2h
-
-#define C2H_SEED(N)                                                                         \
-  c2h::seed_t                                                                               \
-  {                                                                                         \
-    GENERATE_COPY(take(c2h::adjust_seed_count(N),                                           \
-                       random(::cuda::std::numeric_limits<unsigned long long int>::min(),   \
-                              ::cuda::std::numeric_limits<unsigned long long int>::max()))) \
-  }
