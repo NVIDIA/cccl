@@ -215,6 +215,8 @@ int main()
   auto q       = sharded_array<double>::allocate(group, sizes);
   auto scratch = sharded_array<double>::allocate(group, sizes);
   auto p       = sharded_array<double>::allocate_contiguous(group, static_cast<size_t>(n));
+  // Seam stream for the one cross-lane coupling in the loop (see below).
+  const cudaStream_t seam = group.get_stream(0, 0);
 
   // b = A * ones is the row-sum: analytically 6 - deg(i) for this stencil,
   // assembled in place from an iota — the host never sees b either. Start
@@ -244,15 +246,17 @@ int main()
     // Composition contract: the generic-tier convenience calls in this loop
     // are SYNCHRONOUS (empty call environment), so they order one another
     // through the host. spmv is the one lane-asynchronous call (it enqueues
-    // on the MATRIX's shard streams and records no edges), so its coupling
-    // to the q-readers below is made explicit here. The fully asynchronous
-    // spelling (stream-carrying call environments + lane_wait edges +
-    // graph replay) is the production path, deliberately not taken.
+    // on the MATRIX's shard streams and records no edges), so the CONSUMERS
+    // of q own the coupling — expressed as device-side event edges (host
+    // synchronization is unnecessary): the matrix's lanes join a seam
+    // stream, and the lanes that will read q (the dot's scratch, and r's
+    // update) fork from it. The fully asynchronous spelling (stream-carrying
+    // call environments + lane_wait edges + graph replay) is the production
+    // path, deliberately not taken.
     spmv(plan, p.contiguous_data(), q);
-    for (size_t i = 0; i < A.num_shards(); i++)
-    {
-      cuda_safe_call(cudaStreamSynchronize(A.shard(i).stream));
-    }
+    A.join_into(seam);
+    scratch.fork_from(seam);
+    r.fork_from(seam);
 
     const double pq    = dot(p, q, scratch);
     const double alpha = rr / pq;
