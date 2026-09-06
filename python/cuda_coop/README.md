@@ -165,9 +165,16 @@ coop.store(block, destination, value, algorithm="direct")
 
 Both portable and qualified entry points use the same lowercase string
 algorithm vocabulary: `direct`, `striped`, `vectorize`, `transpose`,
-`warp_transpose`, and `warp_transpose_timesliced`. This release executes only
-`direct`; selecting another string is rejected by the Numba-CUDA-MLIR
-capability layer before provider compilation.
+`warp_transpose`, and `warp_transpose_timesliced`. All six are executable.
+`striped` exposes a striped per-thread payload; the other Load algorithms expose
+blocked payloads. Store consumes the matching arrangement. The transpose Store
+implementations copy their payload before calling CUB, so the caller's
+`ThreadData` remains unchanged. The two warp-transpose modes require a block
+size divisible by 32.
+
+Algorithm selectors are normalized to lowercase underscore-delimited strings.
+Enum and integer selectors, including `0`, are rejected.
+
 Load and Store currently support only `this_block()` even though the portable
 API exposes the broader thread-group descriptor vocabulary. `ThreadGroup`
 objects are descriptor-only in this release. `group_by` remains compile-time
@@ -189,14 +196,19 @@ storage = coop.TempStorage(
 coop.load(block, source, items, temp_storage=storage)
 ```
 
-The current DIRECT providers are storage-free: they default-construct the CUB
-primitive and emit no shared-memory allocation, pointer argument, or barrier.
-An explicit descriptor, including an unsized descriptor, is validated as
-compile-time vocabulary but does not change DIRECT code generation. Generic
-capacity, alignment, ownership, synchronization, and dynamic-memory planning
-remains available to future registered providers that declare a storage ABI.
-Construct `TempStorage` inside the kernel; the current Numba-CUDA-MLIR frontend
-does not resolve module-global storage descriptors.
+`direct`, `striped`, and `vectorize` are storage-free: they default-construct the
+CUB primitive and emit no shared-memory allocation, pointer argument, or
+barrier. An explicit descriptor, including an unsized descriptor, is validated
+as compile-time vocabulary but does not change code generation for those
+algorithms. Construct `TempStorage` inside the kernel; the current
+Numba-CUDA-MLIR frontend does not resolve module-global storage descriptors.
+
+The three transpose algorithms use CUB temporary storage. Without a descriptor,
+the compiler allocates the specialization's exact storage and inserts a block
+reuse barrier. A caller descriptor can instead select shared or exclusive
+ownership, request a capacity and alignment, or opt into dynamic shared memory.
+The generated provider remains the authority for the required byte count and
+alignment.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.
