@@ -237,6 +237,29 @@ void for_each_owner_run(const ::std::vector<pos4>& owners, F&& fn)
   }
 }
 
+//! Linear grid index of an owner position, validated per dimension.
+//!
+//! dim4::get_index only asserts its bounds, so in release builds an owner
+//! position that overflows a fast dimension while remaining inside the grid's
+//! total size (e.g. (2, 0) on a 2x2 grid, aliasing (0, 1)) would silently
+//! misattribute placement to another grid position. Owner positions come from
+//! user-provided mappers (possibly through a foreign ABI), so they are
+//! validated here — the one place every accounting path funnels through — and
+//! rejected with a defined error instead.
+inline size_t checked_grid_index(const dim4& grid_dims, const pos4& p)
+{
+  const bool in_range =
+    p.get(0) >= 0 && static_cast<size_t>(p.get(0)) < static_cast<size_t>(grid_dims.x) && p.get(1) >= 0
+    && static_cast<size_t>(p.get(1)) < static_cast<size_t>(grid_dims.y) && p.get(2) >= 0
+    && static_cast<size_t>(p.get(2)) < static_cast<size_t>(grid_dims.z) && p.get(3) >= 0
+    && static_cast<size_t>(p.get(3)) < static_cast<size_t>(grid_dims.t);
+  if (!in_range)
+  {
+    _CCCL_THROW(::std::out_of_range, "placement mapper returned a position outside the grid");
+  }
+  return grid_dims.get_index(p);
+}
+
 //! Merge a one-owner-per-block vector into maximal block runs.
 inline ::std::vector<block_run> owners_to_block_runs(const ::std::vector<pos4>& owners)
 {
@@ -275,7 +298,7 @@ public:
   template <typename F>
   localized_array(
     exec_place grid,
-    partition_fn_t mapper,
+    partition_mapper mapper,
     F&& delinearize,
     size_t total_size,
     size_t elemsize,
@@ -479,10 +502,11 @@ private:
 
     for (const auto& r : runs)
     {
-      data_place place  = grid_pos_to_place(r.owner);
-      size_t alloc_size = r.num_blocks * block_size_bytes;
+      const size_t grid_index = checked_grid_index(this->grid.get_dims(), r.owner);
+      data_place place        = grid_pos_to_place(r.owner);
+      size_t alloc_size       = r.num_blocks * block_size_bytes;
       stats.bytes_per_place[place.to_string()] += alloc_size;
-      stats.bytes_per_grid_index[this->grid.get_dims().get_index(r.owner)] += alloc_size;
+      stats.bytes_per_grid_index[grid_index] += alloc_size;
       meta.emplace_back(mv(place), alloc_size, r.first_block * block_size_bytes);
     }
 
@@ -640,7 +664,7 @@ private:
   }
 
   exec_place grid;
-  partition_fn_t mapper = nullptr;
+  partition_mapper mapper;
   ::std::vector<metadata> meta;
 
   size_t block_size_bytes = 0;
@@ -655,6 +679,67 @@ private:
 
   localized_stats stats;
 };
+
+/**
+ * @brief Evaluate - without allocating anything - how a localized allocation
+ * would distribute a tensor over the places of a grid, from a generic owner
+ * function instead of a raw partition_fn_t mapper.
+ *
+ * The owner function maps a linear element index to the grid position owning
+ * it, mirroring the localized_array constructor of the same shape. Use this
+ * overload for an owner that a bare partition_fn_t cannot express: a stateful
+ * partition object, or a mapper reached through a foreign ABI (the C API
+ * converts its own coordinate structs in such an adapter rather than casting
+ * the callback to partition_fn_t, which would not be a compatible function
+ * type).
+ *
+ * Extents follow the dimension-0-fastest convention of dim4::get_index().
+ *
+ * @param grid Grid of execution places the owner function distributes over
+ * @param owner_of Callable mapping a linear element index to its owning grid position
+ * @param data_dims Extents of the tensor
+ * @param elemsize Size of one element in bytes
+ * @param probes Number of samples per block for the majority vote
+ * @param block_size Placement granularity in bytes; 0 selects the allocation
+ *        granularity queried on device 0 when a device is present (granularity
+ *        is assumed uniform across the machine's devices), or a 2 MiB default
+ *        otherwise (this granularity query is the only driver interaction)
+ */
+template <typename OwnerFn, typename = ::cuda::std::enable_if_t<::cuda::std::is_invocable_r_v<pos4, OwnerFn, size_t>>>
+[[nodiscard]] localized_stats evaluate_localized_placement(
+  const exec_place& grid,
+  OwnerFn&& owner_of,
+  dim4 data_dims,
+  size_t elemsize,
+  size_t probes     = localized_placement_default_probes,
+  size_t block_size = 0)
+{
+  if (block_size == 0)
+  {
+    block_size = default_placement_block_size();
+  }
+
+  localized_stats stats;
+
+  const size_t total_elems = data_dims.size();
+  stats.total_bytes        = total_elems * elemsize;
+  stats.vm_bytes           = ((stats.total_bytes + block_size - 1) / block_size) * block_size;
+  stats.block_size         = block_size;
+  stats.nblocks            = stats.vm_bytes / block_size;
+
+  const ::std::vector<pos4> owners = compute_block_owners(
+    ::cuda::std::forward<OwnerFn>(owner_of), stats.nblocks, block_size, elemsize, total_elems, probes, stats);
+
+  for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
+    const size_t grid_index = checked_grid_index(grid.get_dims(), p);
+    const data_place place  = grid.get_place(p).affine_data_place();
+    stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
+    stats.bytes_per_grid_index[grid_index] += num_blocks * block_size;
+    stats.nallocs++;
+  });
+
+  return stats;
+}
 
 /**
  * @brief Evaluate - without allocating anything - how a localized allocation
@@ -683,42 +768,18 @@ private:
   size_t probes     = localized_placement_default_probes,
   size_t block_size = 0)
 {
-  if (block_size == 0)
-  {
-    block_size = default_placement_block_size();
-  }
-
-  localized_stats stats;
-
-  const size_t total_elems = data_dims.size();
-  stats.total_bytes        = total_elems * elemsize;
-  stats.vm_bytes           = ((stats.total_bytes + block_size - 1) / block_size) * block_size;
-  stats.block_size         = block_size;
-  stats.nblocks            = stats.vm_bytes / block_size;
-
   const dim4 grid_dims = grid.get_dims();
-
-  const ::std::vector<pos4> owners = compute_block_owners(
-    [&](size_t index) {
+  return evaluate_localized_placement(
+    grid,
+    [mapper, data_dims, grid_dims](size_t index) {
       pos4 eplace_coords(0);
       mapper(&eplace_coords, data_dims.index_to_pos(index), data_dims, grid_dims);
       return eplace_coords;
     },
-    stats.nblocks,
-    block_size,
+    data_dims,
     elemsize,
-    total_elems,
     probes,
-    stats);
-
-  for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
-    const data_place place = grid.get_place(p).affine_data_place();
-    stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
-    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
-    stats.nallocs++;
-  });
-
-  return stats;
+    block_size);
 }
 
 inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_composite_alloc_registry()
@@ -729,8 +790,8 @@ inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_comp
 
 inline void* allocate_composite_data_place(const data_place_composite& p, dim4 data_dims, size_t elemsize)
 {
-  const exec_place& grid       = p.get_grid();
-  const partition_fn_t& mapper = p.get_partitioner();
+  const exec_place& grid         = p.get_grid();
+  const partition_mapper& mapper = p.get_partitioner();
   // Linear memory follows the dimension-0-fastest convention of
   // dim4::get_index(), like STF slices; the partitioner receives true element
   // coordinates within data_dims.
