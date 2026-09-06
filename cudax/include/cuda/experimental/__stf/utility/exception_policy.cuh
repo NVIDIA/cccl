@@ -4425,20 +4425,17 @@ UNITTEST("type erasure")
  * https://en.cppreference.com/w/cpp/experimental/scope_success
  */
 ///@{
-// `SCOPE(exit, name)` needs __VA_OPT__, which is C++20 and is rejected in C++17 under
-// -pedantic-errors. Detected exactly as unittest.cuh detects it for UNITTEST.
-#if defined(__cplusplus) && __cplusplus >= 202002L
-#  define STF_HAS_SCOPE_OUTCOME 1
-#endif
-
-#ifdef STF_HAS_SCOPE_OUTCOME
-#  define SCOPE(kind, ...)                  \
-    auto CUDASTF_UNIQUE_NAME(scope_guard) = \
-      (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&](__VA_OPT__(bool) __VA_ARGS__)
-#else // ^^^ __VA_OPT__ available ^^^ / vvv C++17: the outcome form is unavailable vvv
-#  define SCOPE(kind) \
-    auto CUDASTF_UNIQUE_NAME(scope_guard) = (::cuda::experimental::stf::detail::scope_guard_handler::kind) {}->*[&]()
-#endif // STF_HAS_SCOPE_OUTCOME
+// Emulates `__VA_OPT__(bool)`, which would otherwise confine the outcome form to C++20:
+// __VA_OPT__ is rejected in C++17 under -pedantic-errors. `_CCCL_PP_THIRD` yields `bool` only
+// when the caller supplied a name (pushing `bool` into the third slot) and nothing otherwise, so
+// `SCOPE(exit)` gets a genuinely empty parameter list -- which is what lets `SCOPE(fail)` and
+// `SCOPE(success)` keep rejecting a parameter. `_CCCL_PP_SECOND` then supplies the name itself,
+// or nothing. The trailing `~` and the padding commas feed the ellipses, which may not go empty
+// in C++17.
+#define SCOPE(...)                                                                             \
+  auto CUDASTF_UNIQUE_NAME(scope_guard) =                                                      \
+    (::cuda::experimental::stf::detail::scope_guard_handler::_CCCL_PP_FIRST(__VA_ARGS__, )) {} \
+      ->*[&](_CCCL_PP_THIRD(__VA_ARGS__, bool, , ~) _CCCL_PP_SECOND(__VA_ARGS__, , ))
 ///@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -4631,7 +4628,6 @@ UNITTEST("SCOPE(exit)")
   //! [SCOPE(exit)]
 };
 
-#  ifdef STF_HAS_SCOPE_OUTCOME
 UNITTEST("SCOPE(exit) throw policy")
 {
   //! [SCOPE(exit) throw policy]
@@ -4673,9 +4669,7 @@ UNITTEST("SCOPE(exit) throw policy")
 
   // A body that throws WHILE unwinding is reported and aborts; not testable in-process.
 };
-#  endif // STF_HAS_SCOPE_OUTCOME
 
-#  ifdef STF_HAS_SCOPE_OUTCOME
 UNITTEST("SCOPE(exit, outcome)")
 {
   //! [SCOPE(exit, outcome)]
@@ -4721,7 +4715,6 @@ UNITTEST("SCOPE(exit, outcome)")
   //  - SCOPE(fail, x) { ... };     // "SCOPE(fail) ... takes no parameter"
   //  - SCOPE(success, x) { ... };  // "SCOPE(success) ... takes no parameter"
 };
-#  endif // STF_HAS_SCOPE_OUTCOME
 
 UNITTEST("SCOPE(fail)")
 {

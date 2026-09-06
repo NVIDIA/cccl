@@ -36,23 +36,10 @@ void writeplotfile(int m, int n, int scale)
   FILE* gnuplot = EXPECT(fopen("cfd.plt", "w"));
   // One guard, both outcomes: a failed close is a real error on the normal path, and best
   // effort while an exception is unwinding (a throwing guard body would abort the program).
-#ifdef STF_HAS_SCOPE_OUTCOME
-  // One guard, both outcomes: a failed close is a real error on the normal path, and best
-  // effort while unwinding (a guard body that throws there aborts the program).
   SCOPE(exit, failing)
   {
     failing ? (void) fclose(gnuplot) : (void) EXPECT(fclose(gnuplot) == 0);
   };
-#else // ^^^ C++20 ^^^ / vvv C++17 has no outcome parameter vvv
-  SCOPE(success)
-  {
-    EXPECT(fclose(gnuplot) == 0);
-  };
-  SCOPE(fail)
-  {
-    fclose(gnuplot);
-  };
-#endif // STF_HAS_SCOPE_OUTCOME
 
   fprintf(gnuplot,
           "set terminal pngcairo\n"
