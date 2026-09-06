@@ -405,11 +405,11 @@ struct AgentRadixSortDownsweep
       valid_items = ::cuda::device::warp_shuffle_idx(valid_items, 0);
       if constexpr (LOAD_WARP_STRIPED)
       {
-        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
+        LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, default_key);
       }
       else
       {
-        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
+        BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, default_key);
         __syncthreads();
       }
     }
