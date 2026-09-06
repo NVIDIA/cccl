@@ -11,6 +11,11 @@
 
 #include <unittest/unittest.h>
 
+// gcc >= 11 emits bogus -Werror=stringop-overflow and -Werror=array-bounds diagnostics for the memmove that thrust uses
+// to copy small vectors of narrow types (e.g. host_vector<signed char>).
+_CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
+_CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
+
 template <class Vector>
 void TestVectorZeroSize()
 {
@@ -143,7 +148,7 @@ void TestVectorFillAssign()
 DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestVectorFillInsert()
+void TestVectorFillInsert()
 {
   { // Insert into empty vector
     Vector v;
