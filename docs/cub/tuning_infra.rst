@@ -306,20 +306,13 @@ Search Process
 
 During the Search Process we are covering all variants for all compile-time workloads to find a variant with a maximum (at least locally) score.
 
-To get started with tuning, you need to configure CMake.
-You can use the following command:
+You can run the tuning search for a specific algorithm and compile-time workload with a CCCL internal script.
+It configures its own build directories, so it is run from the CCCL source root,
+and forwards any :code:`-D` options to CMake:
 
 .. code:: bash
 
-  $ mkdir build
-  $ cd build
-  $ cmake .. --preset=cub-tune
-
-You can then run the tuning search for a specific algorithm and compile-time workload. We use a CCCL internal script for that:
-
-.. code:: bash
-
-  $ ../benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
+  $ ./benchmarks/scripts/search.py -DCMAKE_CUDA_ARCHITECTURES=native -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
   cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6 0.6805093269929858
   cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677
   ...
@@ -350,7 +343,7 @@ you can add the :code:`-l` option:
 
 .. code:: bash
 
-  $ ../benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28' -l
+  $ ./benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28' -l
   ctk:  12.6.85
   cccl:  v2.7.0
   ### Benchmarks
@@ -363,7 +356,7 @@ you can add the :code:`-l` option:
 It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
 as a result of the Cartesian product of all its tuning parameter spaces.
 
-The tuning infrastructure stores the results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
+The tuning infrastructure stores the results in an SQLite database called :code:`cccl_meta_bench.db` in each build directory.
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
@@ -383,13 +376,18 @@ Check whether a build directory already contains a :code:`cccl_meta_bench.db` fr
     I think this is possible, but would it then create a database per GPU (because 1 baseline per GPU)?
     Does search.py do this automatically, or do I need to pass a flag? Or does this only work with our "internal extensions"?
 
-Because the search space can be separated based on different axis values,
-a tuning search can be run on multiple GPUs in parallel, even across multiple physical machines (e.g., on a cluster).
-To do this, :code:`search.py` is invoked in parallel, one invocation/process per GPU,
-with different axis values specified for each invocation.
-A dedicated tuning database will be created per physical GPU.
-If a shared filesystem is in use, make sure that :code:`search.py` is run from different directories,
-so the :code:`cccl_meta_bench.db` files are placed into distinct paths.
+On a single machine this is handled for you: :code:`search.py` uses every visible GPU,
+creating and configuring a build directory per GPU under :code:`build/gpu<N>/`,
+each with its own tuning database, and spreading the variants of one generation across them.
+Restrict the GPUs it uses with :code:`CUDA_VISIBLE_DEVICES`.
+
+Each GPU gets several *lanes* (:code:`build/gpu<N>/lane<K>`), so one variant can be compiled while another
+is benchmarked on the same GPU; only one benchmark runs per GPU at a time.
+The lane count defaults to 4 and is set with :code:`--lanes-per-gpu`.
+Each lane costs roughly one CPU core while compiling and 800 MB of disk.
+
+Across multiple physical machines (e.g., on a cluster), the search space can still be separated based on
+different axis values, running one search per node with different axis values specified for each.
 
 It is recommended to drive a multi-GPU/multi-node search process from a script,
 iterating the axis values and invoking :code:`search.py` for each variant.
