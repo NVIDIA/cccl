@@ -830,7 +830,7 @@ void for_each_type(L<Ts...>, Args&&... args)
   // don't forward args, since the arguments are passed multiple times
 #if _CCCL_COMPILER(MSVC, <=, 19, 50)
   // MSVC crashes with a C1001 internal compiler error on the fold-expression below, so expand into an initializer list
-  [[maybe_unused]] int dummy[] = {(TestFunc<Ts>{}(args...), 0)...};
+  [[maybe_unused]] int dummy[] = {0, (TestFunc<Ts>{}(args...), 0)...}; // leading 0 in case args is empty
 #else // _CCCL_COMPILER(MSVC, ==, 19, 50)
   (..., TestFunc<Ts>{}(args...));
 #endif // _CCCL_COMPILER(MSVC, ==, 19, 50)
