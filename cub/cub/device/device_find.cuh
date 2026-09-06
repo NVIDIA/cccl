@@ -796,6 +796,9 @@ struct DeviceFind
   //!   is a model of [Strict Weak Ordering] over the value types of both
   //!   iterator types.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
@@ -822,9 +825,9 @@ struct DeviceFind
   //! @param[in] comp
   //!   Comparison function object (Strict Weak Ordering).
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   //!
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
@@ -835,7 +838,8 @@ struct DeviceFind
             typename ValuesIteratorT,
             typename ValuesNumItemsT,
             typename OutputIteratorT,
-            typename CompareOpT>
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t LowerBoundSortedValues(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -845,7 +849,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::LowerBoundSortedValues");
 
@@ -853,16 +857,24 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
     using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
 
-    return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_range,
-      static_cast<OffsetT>(range_num_items),
-      d_values,
-      static_cast<OffsetT>(values_num_items),
-      d_output,
-      comp,
-      stream);
+    using default_policy_selector =
+      detail::find_bound_sorted_values::policy_selector_from_types<detail::it_value_t<RangeIteratorT>,
+                                                                   detail::it_value_t<ValuesIteratorT>>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::lower_bound_mode>(
+          storage,
+          bytes,
+          d_range,
+          static_cast<OffsetT>(range_num_items),
+          d_values,
+          static_cast<OffsetT>(values_num_items),
+          d_output,
+          comp,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1036,6 +1048,9 @@ struct DeviceFind
   //!   is a model of [Strict Weak Ordering] over the value types of both
   //!   iterator types.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
@@ -1062,9 +1077,9 @@ struct DeviceFind
   //! @param[in] comp
   //!   Comparison function object (Strict Weak Ordering).
   //!
-  //! @param[in] stream
+  //! @param[in] env
   //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   //!
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
@@ -1075,7 +1090,8 @@ struct DeviceFind
             typename ValuesIteratorT,
             typename ValuesNumItemsT,
             typename OutputIteratorT,
-            typename CompareOpT>
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t UpperBoundSortedValues(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1085,7 +1101,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::UpperBoundSortedValues");
 
@@ -1093,16 +1109,24 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
     using OffsetT       = ::cuda::std::common_type_t<RangeOffsetT, ValuesOffsetT>;
 
-    return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_range,
-      static_cast<OffsetT>(range_num_items),
-      d_values,
-      static_cast<OffsetT>(values_num_items),
-      d_output,
-      comp,
-      stream);
+    using default_policy_selector =
+      detail::find_bound_sorted_values::policy_selector_from_types<detail::it_value_t<RangeIteratorT>,
+                                                                   detail::it_value_t<ValuesIteratorT>>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::find_bound_sorted_values::dispatch<detail::find_bound_sorted_values::upper_bound_mode>(
+          storage,
+          bytes,
+          d_range,
+          static_cast<OffsetT>(range_num_items),
+          d_values,
+          static_cast<OffsetT>(values_num_items),
+          d_output,
+          comp,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
