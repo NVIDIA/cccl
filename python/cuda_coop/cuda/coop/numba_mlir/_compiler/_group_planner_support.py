@@ -67,6 +67,18 @@ _COMMON_GROUP_CONSTRUCTORS = frozenset(
         _common_api.this_grid,
     }
 )
+_GROUP_METHODS = frozenset(
+    {
+        "rank",
+        "count",
+        "rank_as",
+        "count_as",
+        "sync",
+        "sync_aligned",
+        "group_by",
+        "is_member",
+    }
+)
 
 
 class GroupRewriteError(Exception):
