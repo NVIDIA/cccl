@@ -469,8 +469,6 @@ void TestScanWithLargeTypes()
 #if !defined(__QNX__)
   _TestScanWithLargeTypes<int, 8>();
   _TestScanWithLargeTypes<int, 64>();
-#else
-  KNOWN_FAILURE;
 #endif
 }
 DECLARE_UNITTEST(TestScanWithLargeTypes);
