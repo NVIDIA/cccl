@@ -3,7 +3,7 @@
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <unittest/unittest.h>
 
 template <typename... Ts>
 using mt = thrust::detail::minimum_type<Ts...>;

@@ -271,26 +271,18 @@ DECLARE_UNITTEST(TestGetTemporaryBufferDispatchExplicit);
 
 void TestGetTemporaryBufferDispatchImplicit()
 {
-  if (are_same(thrust::device_system_tag(), thrust::system::cpp::tag()))
-  {
-    // XXX cpp uses the internal scalar backend, which currently elides user tags
-    KNOWN_FAILURE;
-  }
-  else
-  {
-    thrust::device_vector<int> vec(9001);
+  thrust::device_vector<int> vec(9001);
 
-    thrust::sequence(vec.begin(), vec.end());
-    thrust::reverse(vec.begin(), vec.end());
+  thrust::sequence(vec.begin(), vec.end());
+  thrust::reverse(vec.begin(), vec.end());
 
-    // call something we know will invoke get_temporary_buffer
-    my_memory_system sys(0);
+  // call something we know will invoke get_temporary_buffer
+  my_memory_system sys(0);
 
-    thrust::sort(sys, vec.begin(), vec.end());
+  thrust::sort(sys, vec.begin(), vec.end());
 
-    ASSERT_EQUAL(true, thrust::is_sorted(vec.begin(), vec.end()));
-    ASSERT_EQUAL(true, sys.is_valid());
-  }
+  ASSERT_EQUAL(true, thrust::is_sorted(vec.begin(), vec.end()));
+  ASSERT_EQUAL(true, sys.is_valid());
 }
 DECLARE_UNITTEST(TestGetTemporaryBufferDispatchImplicit);
 
