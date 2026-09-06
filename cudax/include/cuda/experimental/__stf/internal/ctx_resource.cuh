@@ -181,15 +181,22 @@ namespace reserved
 //! it may be referenced by a graph node that is replayed more than once, so the callback itself
 //! must not free it. The context frees it once, when it releases its resources.
 //!
-//! Ownership is held in a `unique_ptr` rather than a raw pointer so that a resource which is
-//! destroyed without `release_in_callback()` ever running -- a context torn down without
-//! `finalize()`, or a throw from `ctx_resource_set::release()` -- still frees the payload.
-template <typename T>
+//! The constructor takes a `unique_ptr` so the handoff is exception-safe: until the resource
+//! exists, the caller still owns the payload.
+//!
+//! It then stores a RAW pointer, and the destructor deliberately does not free. The payload must
+//! outlive any asynchronous work referencing it, and only the stream-ordered release callback
+//! knows when that work has finished -- a destructor cannot. A context abandoned without
+//! `finalize()` therefore leaks the payload rather than freeing it out from under a graph node
+//! that is still pending. `mix_stream_and_graph.cu` does exactly that: it submits a graph_ctx
+//! and lets it go out of scope without syncing, and freeing here segfaults when the host node
+//! later runs.
+template <typename Payload>
 class callback_args_resource : public ctx_resource
 {
 public:
-  explicit callback_args_resource(::std::unique_ptr<T> payload)
-      : payload_(mv(payload))
+  explicit callback_args_resource(::std::unique_ptr<Payload> payload) noexcept
+      : payload_(payload.release())
   {}
 
   bool can_release_in_callback() const noexcept override
@@ -199,11 +206,13 @@ public:
 
   void release_in_callback() noexcept override
   {
-    payload_.reset();
+    delete payload_;
+    payload_ = nullptr;
   }
 
 private:
-  ::std::unique_ptr<T> payload_;
+  //! Raw and intentionally never freed by the destructor; see the note above.
+  Payload* payload_ = nullptr;
 };
 } // end namespace reserved
 } // end namespace cuda::experimental::stf
