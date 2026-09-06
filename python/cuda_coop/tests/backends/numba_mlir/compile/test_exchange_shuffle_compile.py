@@ -475,3 +475,45 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
     assert ".visible .entry" in ptx
     assert ".shared" in ptx
     assert "bar.sync" in ptx
+
+
+def test_untyped_load_composes_directly_into_exchange(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    compiler_cuda = _production_compile_environment(monkeypatch)
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as portable_coop
+
+    @compiler_cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        thread = compiler_cuda.threadIdx.x
+        payload = qualified_coop.ThreadData(2)
+        loaded = portable_coop.load(
+            portable_coop.this_block(),
+            source,
+            payload,
+            algorithm="direct",
+        )
+        exchanged = portable_coop.exchange(
+            portable_coop.this_block(),
+            loaded,
+            mode="blocked_to_striped",
+        )
+        destination[thread * 2] = exchanged[0]
+        destination[thread * 2 + 1] = exchanged[1]
+
+    signature = types.void(types.int32[::1], types.int32[::1])
+    launch_config_key = (
+        ("grid", (1, 1, 1)),
+        ("block", (_BLOCK_THREADS, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    result = kernel._compile_launch_config_signature(
+        signature,
+        launch_config_key,
+    )
+    assert result.metadata["ltoir"]
+    assert result.metadata["cubin"]
+    assert result.metadata["linked_external_link_items"]
