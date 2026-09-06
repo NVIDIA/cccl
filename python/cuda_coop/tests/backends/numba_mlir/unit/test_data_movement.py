@@ -226,7 +226,7 @@ def test_common_direct_block_load_store_lowers_to_private_factories():
 
     def memory(source, destination):
         storage = coop.TempStorage()
-        output = coop.ThreadData(2, dtype=types.int32)
+        output = coop.ThreadData(2)
         loaded = coop.load(
             coop.this_block(),
             source,

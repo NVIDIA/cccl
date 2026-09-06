@@ -396,7 +396,7 @@ for _operation in ("load", "store"):
         _operation,
         lower=_lower_registered_load_store,
         results=(
-            (GroupResultSource("output", "output"),) if _operation == "load" else ()
+            (GroupResultSource("source", "output"),) if _operation == "load" else ()
         ),
         validate_common_arguments=_validate_registered_common_arguments,
     )
