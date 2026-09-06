@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 import cuda.coop as portable
@@ -15,21 +17,21 @@ values = coop.ThreadData(2, np.int32)
 coop.ThreadData(2, np.int32, alignment=8)  # expected-error: [call-overload]
 portable_values = portable.ThreadData(2, np.int32)
 portable_block = portable.this_block()
-portable_block.rank()  # expected-error: [attr-defined]
-portable_block.count()  # expected-error: [attr-defined]
-portable_block.rank_as(np.uint32)  # expected-error: [attr-defined]
-portable_block.count_as(np.uint32)  # expected-error: [attr-defined]
-portable_block.sync()  # expected-error: [attr-defined]
-portable_block.sync_aligned()  # expected-error: [attr-defined]
-portable_block.is_member()  # expected-error: [attr-defined]
+portable_block.rank_as(np.float32)  # expected-error: [arg-type]
+portable_block.count_as(np.bool_)  # expected-error: [arg-type]
+portable_block.rank_as(bool)  # expected-error: [arg-type]
+portable.this_grid().sync()  # expected-error: [misc]
+portable_block.group_by(2).sync()  # expected-error: [misc]
+portable_block.group_by(2).rank("grid")  # expected-error: [call-overload]
+portable.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
 qualified_block = coop.this_block()
-qualified_block.rank()  # expected-error: [attr-defined]
-qualified_block.count()  # expected-error: [attr-defined]
-qualified_block.rank_as(np.uint32)  # expected-error: [attr-defined]
-qualified_block.count_as(np.uint32)  # expected-error: [attr-defined]
-qualified_block.sync()  # expected-error: [attr-defined]
-qualified_block.sync_aligned()  # expected-error: [attr-defined]
-qualified_block.is_member()  # expected-error: [attr-defined]
+qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
+qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
+qualified_block.count_as(bool)  # expected-error: [arg-type]
+coop.this_grid().sync_aligned()  # expected-error: [misc]
+qualified_block.group_by(2).sync_aligned()  # expected-error: [misc]
+qualified_block.group_by(2).count("grid")  # expected-error: [call-overload]
+coop.this_warp().group_by(8).rank("cluster")  # expected-error: [call-overload]
 portable.load(  # expected-error: [call-overload]
     portable.this_block(),
     object(),
@@ -180,4 +182,82 @@ coop.exchange(  # expected-error: [call-overload]
     mode="scatter_to_striped_flagged",
     ranks=np.int32(0),
     valid_flags=floating_flags,
+)
+
+
+def select_left(left: np.int32, right: np.int32) -> np.int32:
+    del right
+    return left
+
+
+portable.reduce(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=False,
+)
+portable.reduce(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    binary_op=0,
+)
+portable.sum(  # expected-error: [call-overload]
+    portable_block,
+    np.int32(1),
+    broadcast=False,
+    algorithm=0,
+)
+portable.sum(  # expected-error: [call-overload]
+    portable_block,
+    np.complex64(1),
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.bool_(True),
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.complex64(1),
+    binary_op="sum",
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=0,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    broadcast=False,
+    algorithm=0,
+)
+complex_values = cast(portable.ThreadDataLike[np.complex64], object())
+coop.sum(  # expected-error: [type-var]
+    qualified_block,
+    complex_values,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    values,
+    broadcast=False,
+    valid_items=2,
+)
+coop.sum(  # expected-error: [call-overload]
+    coop.this_warp(),
+    np.int32(1),
+    broadcast=False,
+    algorithm="raking",
+)
+coop.reduce(
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,  # expected-error: [arg-type]
+    broadcast=True,
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=False,
+    algorithm="raking_commutative_only",
 )

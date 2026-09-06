@@ -82,9 +82,7 @@ def resolve_thread_group(
         (group_level, through_level or group_level),
         key=_THREAD_LEVEL_ORDER.__getitem__,
     )
-    needs_complete_warp = (
-        group.kind in COMPLETE_WARP_GROUP_KINDS or through_level == "warp"
-    )
+    needs_complete_warp = group.kind in COMPLETE_WARP_GROUP_KINDS
     if required_level == "thread":
         return ThreadGroupResolution(group)
 
@@ -188,19 +186,30 @@ def resolve_thread_group(
             f"group grid dimensions {group.hierarchy.grid_dim!r} do not match "
             f"exact hierarchy dimensions {resolved_hierarchy.grid_dim!r}"
         )
-    if needs_complete_warp and launch.exact_block_threads % 32 != 0:  # type: ignore[operator]
+    block_threads = launch.exact_block_threads
+    assert block_threads is not None
+    if needs_complete_warp and block_threads % 32 != 0:
         return _resolution_failure(
             group,
             UnsupportedReasonCode.PARTIAL_PHYSICAL_WARP,
             "physical-warp operation requires complete 32-thread warps and "
             "every physical warp in the enclosing CTA to be complete; got "
-            f"{launch.exact_block_threads} block threads",
+            f"{block_threads} block threads",
+        )
+    queries_warps_as_constituents = (
+        through_level == "warp"
+        and _THREAD_LEVEL_ORDER[group_level] > _THREAD_LEVEL_ORDER["warp"]
+    )
+    if queries_warps_as_constituents and block_threads < 32:
+        return _resolution_failure(
+            group,
+            UnsupportedReasonCode.PARTIAL_PHYSICAL_WARP,
+            "physical-Warp hierarchy queries require at least one complete "
+            f"32-thread Warp; got {block_threads} block threads",
         )
     if group.mapping is not None:
         parent_units = (
-            32
-            if group.kind == "threads_within_warp"
-            else launch.exact_block_threads // 32  # type: ignore[operator]
+            32 if group.kind == "threads_within_warp" else block_threads // 32
         )
         if group.mapping.count > parent_units:
             return _resolution_failure(

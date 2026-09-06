@@ -1,9 +1,9 @@
 # `cuda.coop`
 
-`cuda.coop` provides portable cooperative data-movement constructs for CUDA
-thread blocks, physical warps, and logical warps in Python kernel DSLs. The
-first backend targets Numba-CUDA-MLIR and lowers Load, Store, Exchange, and
-Shuffle operations to CUB.
+`cuda.coop` provides portable cooperative data-movement and reduction
+constructs for CUDA thread groups in Python kernel DSLs. The first backend
+targets Numba-CUDA-MLIR and lowers data movement to CUB and hierarchy-aware
+reductions to CUDAX or CUB.
 
 The distribution is a universal Python wheel containing a coherent bundle of
 CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
@@ -202,9 +202,32 @@ also leave enough signed 64-bit range for the last group origin in the block;
 static offsets are checked during planning. `valid_items` is relative to each
 group's own tile, not the entire block, and must be uniform within that group.
 
-`ThreadGroup` objects are descriptor-only in this release. Runtime query,
-membership, and synchronization methods such as `rank`, `count`, `rank_as`,
-`count_as`, `sync`, `sync_aligned`, and `is_member` are not exposed.
+`ThreadGroup` follows the C++ hierarchy query surface. `rank(level="thread")`
+and `count(level="thread")` accept `thread` (or `gpu_thread`), `warp`, `block`,
+`cluster`, and `grid`. Their default result is the unsigned product type used
+by the corresponding C++ hierarchy operation: normally `uint32`, and `uint64`
+when the group or queried outer level is the grid. Use
+`rank_as(dtype, level="thread")` or `count_as(dtype, level="thread")` to select
+an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
+`is_member()` returns an integer membership flag.
+
+`sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
+participating members must reach `sync()`. `sync_aligned()` additionally
+requires the caller to keep the group aligned and converged. Grid
+synchronization is not available because this backend cannot request a
+cooperative grid launch.
+
+`group_by` remains static compiler vocabulary: `count` and `exhaustive` must be
+compile-time constants. A logical threads-within-warp group can query its
+threads and immediate parent Warp; a mapped warps-within-block group can query
+its threads, physical Warps, and immediate parent block. Queries above the
+immediate physical parent are rejected. Mapped warps-within-block groups expose
+queries and `is_member()` but not `sync()` or `sync_aligned()`; their block
+barrier lifetime must be owned by a future planner contract. For a
+non-exhaustive partition, use `is_member()` to guard rank-dependent work for
+excluded threads. Do not use that branch to skip a collective unless the
+collective's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the collective.
 
 ## Temporary storage
 
@@ -240,6 +263,86 @@ Warp `transpose` uses compiler-owned storage with one disjoint slice per
 physical or logical group and inserts `syncwarp` with the exact group mask.
 Explicit `TempStorage` is rejected by both the portable and qualified APIs for
 every Warp Load and Store algorithm, including the storage-free modes.
+
+## Reduce and Sum
+
+`sum(group, value, ...)` and `reduce(group, value, binary_op=..., ...)` return
+one scalar with the payload element dtype. The portable API accepts a numeric
+scalar or fixed-size `ThreadData`; reducing a `ThreadData` payload combines all
+items contributed by every participating member. The qualified
+`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+
+A full built-in reduction has no `valid_items` or explicit `algorithm`. It uses
+the storage-free CUDAX implementation for the current thread, a physical Warp,
+a logical Warp from `this_warp().group_by(width)`, a block, a mapped group of
+physical Warps from `this_block().group_by(warps_per_group)`, or a cluster.
+Cluster reductions require matching cluster launch facts. Every member of the
+selected group must participate.
+
+By default, `broadcast=True` gives every group member the reduced scalar. With
+`broadcast=False`, only rank zero of each selected group has a defined result;
+other members must still execute the call and must not consume their returned
+value. For example, this full block reduction combines two values per thread
+but writes only from the block root:
+
+```python
+from numba_cuda_mlir import cuda, types
+
+from cuda import coop
+
+
+@cuda.jit
+def block_sum(source, output):
+    thread = cuda.threadIdx.x
+    values = coop.ThreadData(2, dtype=types.int32)
+    values[0] = source[2 * thread]
+    values[1] = source[2 * thread + 1]
+    total = coop.sum(coop.this_block(), values, broadcast=False)
+    if thread == 0:
+        output[0] = total
+```
+
+The complete runnable form is in `examples/numba_mlir/block_sum.py`.
+
+`sum` selects addition. `reduce` accepts the aliases `+`, `sum`, `add`, and
+`plus`; `*`, `mul`, `multiply`, and `multiplies`; `min` and `minimum`; `max`
+and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
+`^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
+qualified API additionally recognizes the corresponding Python `operator`
+functions and NumPy ufuncs. Built-in operator and algorithm selectors are
+normalized to canonical lowercase strings. Enum-like and other non-string
+selector objects are rejected.
+
+Three controls select a direct CUB reduction instead:
+
+- `valid_items` reduces the first N scalar values by linear group rank. It is
+  available for block, physical-Warp, and logical-Warp groups and requires
+  `broadcast=False`. N must be uniform within the group and satisfy
+  `1 <= N <= group_size`. Static violations are rejected during compilation;
+  runtime violations execute a deterministic device trap before CUB's 32-bit
+  parameter is formed, invalidating the current CUDA context.
+- `algorithm` selects block-only `raking_commutative_only`, `raking`, or
+  `warp_reductions`, also with `broadcast=False`. Scalar and fixed-array
+  payloads are supported. `raking_commutative_only` is restricted to Sum and
+  recognized commutative built-ins. The addition-specific nondeterministic CUB
+  variant is intentionally not exposed.
+- A custom Python device callback is available only through
+  `cuda.coop.numba_mlir.reduce`, must be stateless, and requires
+  `broadcast=False`. It uses CUB for block, physical-Warp, or logical-Warp
+  groups. Warp callbacks accept scalar payloads; block callbacks may also
+  reduce fixed arrays. Stateful callbacks and their per-launch state plumbing
+  are deferred.
+
+Full CUDAX reductions have no external temporary-storage ABI, backing
+allocation, or compiler-inserted post-call barrier; the collective call still
+requires converged group participation. Direct CUB reductions use
+compiler-owned shared storage. Block paths append a block reuse barrier, while
+physical and logical Warp paths append `syncwarp` for the exact participating
+mask. Reduce and Sum do not currently accept caller `TempStorage` descriptors.
+
+Grid Reduce and Sum are unsupported because a grid reduction requires hidden
+per-launch workspace; use a separate kernel or explicitly managed multi-stage
+reduction instead.
 
 ## Exchange and Shuffle
 

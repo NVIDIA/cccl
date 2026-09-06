@@ -6,7 +6,8 @@
 
 from __future__ import annotations
 
-from typing import Generic, Literal, TypeVar
+import operator
+from typing import Any, Generic, Literal, Protocol, TypeVar
 
 import numpy as np
 from typing_extensions import assert_type
@@ -36,12 +37,38 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
         return self._value
 
 
-def check_numba_surface(source: object, destination: object) -> None:
+class _ReadonlyUInt16Payload(Protocol):
+    items_per_thread: int
+    dtype: object | None
+
+    def __len__(self) -> int: ...
+
+    def __getitem__(self, index: int, /) -> np.uint16: ...
+
+
+def _select_left_int32(left: np.int32, right: np.int32) -> np.int32:
+    del right
+    return left
+
+
+def _select_left_uint16(left: np.uint16, right: np.uint16) -> np.uint16:
+    del right
+    return left
+
+
+def check_numba_surface(
+    source: object,
+    destination: object,
+    readonly_values: _ReadonlyUInt16Payload,
+    compiler_integer_dtype: Any,
+) -> None:
     """Exercise Numba declarations through their public package."""
 
     block = coop.this_block()
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
+    mapped_warps = block.group_by(2)
+    cluster = coop.this_cluster()
     byte_values = coop.ThreadData(1, np.int8)
     values = coop.ThreadData(2, np.uint16, alignas=16)
     ranks = coop.ThreadData(2, np.int32)
@@ -57,6 +84,25 @@ def check_numba_surface(source: object, destination: object) -> None:
         logical_warp,
         coop.ThreadGroup[Literal["threads_within_warp"]],
     )
+    generic_group: coop.ThreadGroup = block
+    generic_group.rank()
+    generic_group.count("warp")
+    assert_type(generic_group.rank_as(np.uint32), np.uint32)
+    assert_type(generic_group.count_as(int, "warp"), int)
+    assert_type(block.rank(), np.uint32 | np.uint64)
+    assert_type(block.count("warp"), np.uint32 | np.uint64)
+    assert_type(block.rank_as(np.uint16), np.uint16)
+    assert_type(block.rank_as(int), int)
+    assert_type(block.count_as(np.int64, "grid"), np.int64)
+    block.count_as(compiler_integer_dtype)
+    assert_type(block.is_member(), np.uint8)
+    assert_type(block.sync(), None)
+    assert_type(block.sync_aligned(), None)
+    assert_type(logical_warp.sync(), None)
+    assert_type(mapped_warps.rank("warp"), np.uint32 | np.uint64)
+    assert_type(mapped_warps.count("block"), np.uint32 | np.uint64)
+    assert_type(mapped_warps.is_member(), np.uint8)
+    assert_type(coop.this_grid().rank(), np.uint32 | np.uint64)
     assert_type(byte_values, coop.ThreadDataLike[np.int8])
     assert_type(values, coop.ThreadDataLike[np.uint16])
     assert_type(storage, coop.TempStorage)
@@ -190,4 +236,102 @@ def check_numba_surface(source: object, destination: object) -> None:
             algorithm="striped",
         ),
         None,
+    )
+    assert_type(coop.sum(block, np.int32(4)), np.int32)
+    assert_type(
+        coop.reduce(logical_warp, np.float32(4), binary_op="max"),
+        np.float32,
+    )
+    assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
+    assert_type(coop.reduce(cluster, values, binary_op="min"), np.uint16)
+    assert_type(
+        coop.reduce(cluster, readonly_values, binary_op="min"),
+        np.uint16,
+    )
+    assert_type(coop.sum(cluster, readonly_values), np.uint16)
+    assert_type(coop.reduce(cluster, values, binary_op=np.maximum), np.uint16)
+    assert_type(
+        coop.reduce(mapped_warps, np.int32(4), binary_op=operator.add),
+        np.int32,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op="max",
+            broadcast=False,
+            algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op=np.maximum,
+            broadcast=False,
+            algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op=operator.add,
+            broadcast=False,
+            algorithm="raking_commutative_only",
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
+        np.int32,
+    )
+    assert_type(
+        coop.sum(block, values, broadcast=False, algorithm="raking"),
+        np.uint16,
+    )
+    assert_type(
+        coop.sum(block, readonly_values, broadcast=False, algorithm="raking"),
+        np.uint16,
+    )
+    assert_type(
+        coop.reduce(
+            warp,
+            np.int32(4),
+            binary_op=_select_left_int32,
+            broadcast=False,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            values,
+            binary_op=_select_left_uint16,
+            broadcast=False,
+            algorithm="warp_reductions",
+        ),
+        np.uint16,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            readonly_values,
+            binary_op=_select_left_uint16,
+            broadcast=False,
+            algorithm="warp_reductions",
+        ),
+        np.uint16,
+    )
+    assert_type(
+        coop.reduce(
+            block,
+            np.int32(4),
+            binary_op=_select_left_int32,
+            broadcast=False,
+            algorithm="raking",
+        ),
+        np.int32,
     )

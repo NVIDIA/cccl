@@ -6,6 +6,7 @@
 
 from .exchange import exchange
 from .load_store import load, store
+from .reduce import reduce, sum
 from .shuffle import shuffle
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
@@ -30,8 +31,10 @@ __all__ = [
     "ThreadHierarchy",
     "exchange",
     "load",
+    "reduce",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
