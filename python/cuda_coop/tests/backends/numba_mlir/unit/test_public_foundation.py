@@ -36,25 +36,13 @@ _PORTABLE_EXPORTS = [
     "store",
 ]
 _QUALIFIED_EXPORTS = [
-    "Hierarchy",
-    "TempStorage",
-    "TempStorageLike",
-    "ThreadData",
-    "ThreadDataLike",
-    "ThreadGroup",
-    "ThreadHierarchy",
-    "load",
+    *(name for name in _PORTABLE_EXPORTS if name != "__version__"),
     "local",
     "shared",
-    "store",
-    "this_block",
-    "this_cluster",
-    "this_grid",
-    "this_thread",
-    "this_warp",
 ]
 _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
+    "cuda.coop.numba_mlir._enums",
     "cuda.coop.numba_mlir._group_reduce",
     "cuda.coop.numba_mlir._group_scan",
     "cuda.coop.numba_mlir._stateful_function",
@@ -76,19 +64,19 @@ def test_public_exports_are_only_the_load_store_foundation():
     assert dir(coop) == sorted(_QUALIFIED_EXPORTS)
 
     excluded_exports = {
-        "BlockReduceAlgorithm",
         "BlockLoadAlgorithm",
+        "BlockReduceAlgorithm",
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",
         "StatefulFunction",
-        "WarpLoadAlgorithm",
-        "WarpStoreAlgorithm",
         "exclusive_scan",
         "gpu_dataclass",
         "inclusive_scan",
         "reduce",
         "scan",
         "sum",
+        "WarpLoadAlgorithm",
+        "WarpStoreAlgorithm",
     }
     assert excluded_exports.isdisjoint(portable_coop.__all__)
     assert excluded_exports.isdisjoint(coop.__all__)
@@ -257,6 +245,47 @@ def test_lowering_factories_use_exact_callable_identity(operation):
     assert factory_operation(impostor) is None
 
 
+@pytest.mark.parametrize("operation", ("load", "store"))
+def test_physical_warp_factories_use_exact_callable_identity(operation):
+    from cuda.coop._core import SynchronizationScope
+    from cuda.coop.numba_mlir._compiler._operations import (
+        FactoryOperation,
+        StorageABI,
+        factory_operation,
+    )
+    from cuda.coop.numba_mlir._lowering import _load_store
+
+    for storage_bearing in (False, True):
+        factory = getattr(
+            _load_store,
+            (
+                f"_warp_{operation}_with_storage"
+                if storage_bearing
+                else f"warp_{operation}"
+            ),
+        )
+        assert factory_operation(factory) == FactoryOperation(
+            operation=operation,
+            namespace="warp",
+            storage_abi=(
+                StorageABI.LEADING_POINTER if storage_bearing else StorageABI.NONE
+            ),
+            execution_scope=SynchronizationScope.WARP,
+            synchronization_scope=(
+                SynchronizationScope.WARP
+                if storage_bearing
+                else SynchronizationScope.NONE
+            ),
+        )
+
+        def impostor(*args, **kwargs):
+            del args, kwargs
+
+        impostor.__module__ = factory.__module__
+        impostor.__name__ = factory.__name__
+        assert factory_operation(impostor) is None
+
+
 def test_compiler_hooks_are_registered_exactly_once_and_idempotently():
     group_rewrites = importlib.import_module(
         "cuda.coop.numba_mlir._compiler._group_planner"
@@ -298,5 +327,7 @@ def test_public_runtime_helpers_have_semantic_module_owners():
     assert coop.shared is importlib.import_module("numba_cuda_mlir.cuda").shared
     assert coop.ThreadData is _thread_data.ThreadData
     assert coop.TempStorage is _temp_storage.TempStorage
+    assert coop.ThreadDataLike is portable_coop.ThreadDataLike
+    assert coop.TempStorageLike is portable_coop.TempStorageLike
     assert coop.ThreadData.__module__ == "cuda.coop.numba_mlir._thread_data"
     assert coop.TempStorage.__module__ == "cuda.coop.numba_mlir._temp_storage"

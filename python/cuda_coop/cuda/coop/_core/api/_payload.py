@@ -47,7 +47,7 @@ class TempStorageLike(Protocol):
 
     size_in_bytes: int | None
     alignment: int | None
-    auto_sync: bool | None
+    auto_sync: bool
     sharing: str
 
 
