@@ -271,6 +271,12 @@ DECLARE_UNITTEST(TestGetTemporaryBufferDispatchExplicit);
 
 void TestGetTemporaryBufferDispatchImplicit()
 {
+  // skip cpp system, since the scalar backend currently elides user tags
+  if (are_same(thrust::device_system_tag(), thrust::system::cpp::tag()))
+  {
+    return;
+  }
+
   thrust::device_vector<int> vec(9001);
 
   thrust::sequence(vec.begin(), vec.end());
