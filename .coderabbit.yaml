@@ -140,6 +140,7 @@ knowledge_base:
       - "docs/cccl/development/visibility.rst"
       - "docs/cccl/development/testing.rst"
       - "docs/cccl/development/coding_guidelines.rst"
+      - "docs/cub/developer_overview.rst"
       - "docs/cub/developer/*.rst"
       - "docs/libcudacxx/releases/versioning.rst"
       - "docs/cub/developer_overview.rst"
