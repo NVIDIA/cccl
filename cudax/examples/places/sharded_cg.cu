@@ -113,14 +113,6 @@ struct poisson
   }
 };
 
-// iota through the generic tier: 1,1,1,... exclusive-scanned is 0,1,2,...
-template <class Arr>
-void device_iota(Arr& a)
-{
-  fill(a, typename Arr::value_type{1});
-  exclusive_scan(a, ::cuda::std::plus<>{}, typename Arr::value_type{0});
-}
-
 // dot(a, b) through the generic tier: multiply into per-place scratch, then
 // the tier's host-returning sum (synchronous contract: one sync per dot).
 double dot(const sharded_array<double>& a, const sharded_array<double>& b, sharded_array<double>& scratch)
@@ -172,31 +164,29 @@ int main()
   }
 
   // DEVICE-NATIVE assembly, all through the generic tier — the matrix never
-  // exists on the host. offsets is one in-place pipeline over an (n+1)-array:
-  // iota -> per-row counts (tail slot 0) -> exclusive scan. The scan's last
-  // output is then total nnz by construction; here it is analytic anyway.
+  // exists on the host: per-row counts by tabulate (data[i] = f(global i),
+  // with a zero tail slot), then one exclusive scan makes them offsets — its
+  // construction puts total nnz in the tail; here it is analytic anyway.
   auto offsets = sharded_array<int>::allocate_contiguous(group, static_cast<size_t>(n) + 1);
-  device_iota(offsets);
-  transform(offsets, [P, n] __device__(int i) {
-    return int64_t{i} < n ? 1 + P.deg(i) : 0;
+  tabulate(offsets, [P, n] __device__(size_t i) {
+    return static_cast<int64_t>(i) < n ? 1 + P.deg(static_cast<int64_t>(i)) : 0;
   });
   exclusive_scan(offsets, ::cuda::std::plus<>{}, 0);
 
-  // Column indices and values: a for_each over the row space (spelled as an
-  // identity transform over a row iota) scatters each row's segment through
-  // the contiguous views.
+  // Column indices and values: a for_each over the row space (spelled as a
+  // tabulate over global row ids) scatters each row's segment through the
+  // contiguous views.
   auto colinds = sharded_array<int>::allocate_contiguous(group, static_cast<size_t>(nnz));
   auto values  = sharded_array<double>::allocate_contiguous(group, static_cast<size_t>(nnz));
   {
     auto rows = sharded_array<int>::allocate(group, sizes);
-    device_iota(rows);
     offsets.sync(); // the scatter below reads offsets across lane boundaries
-    int* d_ci    = colinds.contiguous_data();
-    double* d_v  = values.contiguous_data();
+    int* d_ci        = colinds.contiguous_data();
+    double* d_v      = values.contiguous_data();
     const int* d_off = offsets.contiguous_data();
-    transform(rows, [P, d_off, d_ci, d_v] __device__(int i) {
-      P.write_row(i, d_off, d_ci, d_v);
-      return i;
+    tabulate(rows, [P, d_off, d_ci, d_v] __device__(size_t i) {
+      P.write_row(static_cast<int64_t>(i), d_off, d_ci, d_v);
+      return static_cast<int>(i);
     });
     rows.sync();
   }
@@ -219,13 +209,12 @@ int main()
   const cudaStream_t seam = group.get_stream(0, 0);
 
   // b = A * ones is the row-sum: analytically 6 - deg(i) for this stencil,
-  // assembled in place from an iota — the host never sees b either. Start
-  // from x0 = 0, so r0 = b and p0 = r0.
+  // tabulated in place — the host never sees b either. Start from x0 = 0,
+  // so r0 = b and p0 = r0.
   fill(x, 0.0);
   for (auto* v : {&r, &p})
   {
-    device_iota(*v);
-    transform(*v, [P] __device__(double i) {
+    tabulate(*v, [P] __device__(size_t i) {
       return 6.0 - P.deg(static_cast<int64_t>(i));
     });
   }
