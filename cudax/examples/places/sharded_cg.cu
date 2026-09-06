@@ -24,9 +24,9 @@
  * The vendor product itself is placement-NEUTRAL at full power (measured);
  * that is fine — and is the enabler: because the closed call accepts the
  * sharded structures where they live, every open-tier stage around it keeps
- * domain-local data, and the locality pays where it pays (power-bound
- * operation, stitch-limited parts, downstream consumers) without this code
- * changing.
+ * domain-local data, and the locality pays where it pays (power-constrained
+ * operation, parts where cross-domain bandwidth is relatively scarcer,
+ * downstream consumers) without this code changing.
  *
  * One structural detail carries the composition: the row-split SpMV needs
  * its INPUT vector whole at every place (each shard's rows gather arbitrary
