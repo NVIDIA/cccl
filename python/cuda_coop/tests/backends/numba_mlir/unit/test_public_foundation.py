@@ -54,7 +54,6 @@ _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._enums",
     "cuda.coop.numba_mlir._scan_op",
     "cuda.coop.numba_mlir._stateful_function",
-    "cuda.coop.numba_mlir._lowering._thread_group",
     "cuda.coop.numba_mlir._lowering._warp",
 )
 
