@@ -41,6 +41,7 @@ from .load_store import (
     GroupLoadStoreSemantics,
 )
 from .reduce import GroupReduceSemantics
+from .scan import GroupScanMode, GroupScanSemantics
 from .shuffle import GroupShuffleSemantics
 
 __all__ = [
@@ -58,6 +59,8 @@ __all__ = [
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
     "GroupReduceSemantics",
+    "GroupScanMode",
+    "GroupScanSemantics",
     "GroupShuffleSemantics",
     "GroupTopologyContract",
     "ImplementationProvenance",
