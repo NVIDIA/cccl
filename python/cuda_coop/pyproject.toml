@@ -1,0 +1,125 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[build-system]
+requires = ["scikit-build-core>=0.10", "setuptools_scm"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cuda-coop"
+description = "Cooperative CUDA primitives for Python DSLs"
+authors = [{ name = "NVIDIA Corporation" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Environment :: GPU :: NVIDIA CUDA",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: POSIX :: Linux",
+]
+requires-python = ">=3.10"
+dependencies = [
+  "cuda-pathfinder>=1.2.3",
+  "numpy",
+]
+dynamic = ["version"]
+readme = { file = "README.md", content-type = "text/markdown" }
+
+[project.optional-dependencies]
+numba-cuda-mlir-cu12 = [
+  "numba-cuda-mlir[cu12]>=0.5.0,<0.6",
+]
+numba-cuda-mlir-cu13 = [
+  "numba-cuda-mlir[cu13]>=0.5.0,<0.6",
+]
+test = [
+  "mypy",
+  "numpy",
+  "pytest>=8.2",
+  "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/NVIDIA/cccl"
+Repository = "https://github.com/NVIDIA/cccl"
+Documentation = "https://nvidia.github.io/cccl"
+Issues = "https://github.com/NVIDIA/cccl/issues"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"
+
+[tool.scikit-build.cmake]
+version = ">=3.21"
+build-type = "Release"
+source-dir = "."
+
+[tool.scikit-build.ninja]
+version = ">=1.11"
+make-fallback = true
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.setuptools_scm"
+
+[tool.setuptools_scm]
+root = "../.."
+git_describe_command = [
+  "git",
+  "describe",
+  "--dirty",
+  "--tags",
+  "--long",
+  "--match",
+  "cuda-coop-v[0-9]*",
+]
+tag_regex = '^cuda-coop-v(?P<version>[0-9]+(?:\.[0-9]+){2}(?:[.-].*)?)$'
+fallback_version = "0.1.0.dev0"
+
+[tool.scikit-build.wheel]
+py-api = "py3"
+platlib = false
+license-files = []
+reproducible = true
+
+[tool.scikit-build.wheel.force-include]
+"../../LICENSE" = "${SKBUILD_METADATA_DIR}/licenses/LICENSE"
+"../../cub/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/cub/LICENSE.TXT"
+"../../libcudacxx/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/libcudacxx/LICENSE.TXT"
+"../../thrust/LICENSE" = "${SKBUILD_METADATA_DIR}/licenses/thrust/LICENSE"
+
+[tool.scikit-build.wheel.packages]
+"cuda/coop" = "cuda/coop"
+
+[tool.mypy]
+cache_dir = ".cache/mypy"
+python_version = "3.10"
+
+[[tool.mypy.overrides]]
+module = [
+  "cuda.pathfinder.*",
+  "numpy",
+  "numpy.*",
+]
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = [
+  "cuda.coop",
+  "cuda.coop._core",
+  "cuda.coop.numba_mlir",
+  "cuda.coop.numba_mlir._compiler",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

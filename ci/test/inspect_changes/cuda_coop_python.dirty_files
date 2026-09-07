@@ -1,0 +1,2 @@
+python/cuda_coop/cuda/coop/__init__.py
+ci/test_cuda_coop_python.sh
