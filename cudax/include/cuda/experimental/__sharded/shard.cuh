@@ -53,20 +53,23 @@ struct shard
   exec_place exec; //!< execution place to activate for this shard
   cudaStream_t stream = nullptr; //!< reference stream for stream-ordered operations
 
-  // Iterators over valid elements
-  _Tp* begin()
+  // Iterators over valid elements. Host and device: a shard may be passed by
+  // value to a kernel and iterated there. Only the span members (`data`,
+  // `size`, `global_offset`) are meaningful in device code; `place`, `exec`
+  // and `stream` are host-side placement metadata.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Tp* begin() noexcept
   {
     return data;
   }
-  _Tp* end()
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _Tp* end() noexcept
   {
     return data + size;
   }
-  const _Tp* begin() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* begin() const noexcept
   {
     return data;
   }
-  const _Tp* end() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* end() const noexcept
   {
     return data + size;
   }
