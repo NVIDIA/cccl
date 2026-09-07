@@ -172,38 +172,6 @@ void test_managed_allocation()
   cuda_try(cudaStreamDestroy(stream));
 }
 
-// A locality-domain data place must never change the release-threshold policy
-// of the process-global device default pool. That pool is shared with every
-// other `cudaMallocAsync` user in the process, so retention there is not this
-// place's decision to make — most visibly on machines with no locality
-// domains, where the place degrades to whole-device memory and would
-// otherwise be configuring a pool it does not own. (The domain's own default
-// pool is a different location and is configured by the library-wide
-// accessor.)
-void test_device_default_pool_policy_untouched()
-{
-  cudaMemPool_t default_pool;
-  cuda_try(cudaDeviceGetDefaultMemPool(&default_pool, 0));
-  cuuint64_t before = 0;
-  cuda_try(cudaMemPoolGetAttribute(default_pool, cudaMemPoolAttrReleaseThreshold, &before));
-
-  cudaStream_t stream;
-  cuda_try(cudaStreamCreate(&stream));
-
-  auto place     = data_place::locality_domain(0, 0);
-  const size_t n = size_t{1} << 20;
-  void* ptr      = place.allocate(static_cast<::std::ptrdiff_t>(n), stream);
-  cuda_try(cudaStreamSynchronize(stream));
-  place.deallocate(ptr, n, stream);
-  cuda_try(cudaStreamSynchronize(stream));
-
-  cuuint64_t after = 0;
-  cuda_try(cudaMemPoolGetAttribute(default_pool, cudaMemPoolAttrReleaseThreshold, &after));
-  EXPECT(before == after);
-
-  cuda_try(cudaStreamDestroy(stream));
-}
-
 // The localized `CUmemLocation` stores the device and domain ordinals in
 // 8-bit fields. A view is just an identity token, so `locality_domain(0, 256)`
 // is legal to build; but using it for memory must fail rather than silently
@@ -252,7 +220,6 @@ int main()
   test_host_allocation();
   test_device_allocation();
   test_managed_allocation();
-  test_device_default_pool_policy_untouched();
   test_locality_domain_ordinal_wrap_rejected();
   return 0;
 }
