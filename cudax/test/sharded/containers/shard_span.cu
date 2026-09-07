@@ -86,9 +86,9 @@ void test_span_as_kernel_argument()
     fill_global_index_kernel<<<grid, block, 0, s.stream>>>(s.span(), s.global_offset);
     cuda_safe_call(cudaGetLastError());
   };
-  arr.sync();
 
-  // Verify on the host
+  // Verify on the host. No sync needed: copy_to_host copies each shard on
+  // s.stream, ordered after the kernel above, and is itself synchronous.
   ::std::vector<unsigned long long> host(n);
   arr.copy_to_host(host.data());
   for (size_t i = 0; i < n; i++)
