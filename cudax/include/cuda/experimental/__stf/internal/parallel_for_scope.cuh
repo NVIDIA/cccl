@@ -40,6 +40,7 @@
 #include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -449,34 +450,6 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
     per_block_redux_buffer[0].fill_results(targs);
   }
 }
-
-/**
- * @brief Resource wrapper for managing parallel_for host callback arguments
- *
- * This manages the memory allocated for parallel_for host callback arguments using the
- * ctx_resource system instead of manual delete in each callback.
- */
-template <typename ArgsType>
-class parallel_for_args_resource : public ctx_resource
-{
-public:
-  explicit parallel_for_args_resource(ArgsType* args)
-      : args_(args)
-  {}
-
-  bool can_release_in_callback() const noexcept override
-  {
-    return true;
-  }
-
-  void release_in_callback() noexcept override
-  {
-    delete args_;
-  }
-
-private:
-  ArgsType* args_;
-};
 
 /**
  * @brief Supporting class for the parallel_for construct
@@ -1169,8 +1142,9 @@ public:
     // For stream contexts, delete immediately in callback (better memory efficiency)
     if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
-      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
-      ctx.add_resource(mv(resource));
+      // The context becomes responsible for `args` once add_resource() returns; `args` stays
+      // usable below as the pointer the graph node references.
+      ctx.add_resource(::std::make_shared<callback_args_resource<args_t>>(args));
     }
 
     // The function which the host callback will execute
