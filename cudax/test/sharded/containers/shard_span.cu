@@ -96,28 +96,27 @@ void test_span_as_kernel_argument()
     EXPECT(host[i] == static_cast<unsigned long long>(i));
   }
 
-  // Verify from device code through the const span
-  ::std::vector<int*> errors(arr.num_shards(), nullptr);
-  for (size_t i = 0; i < arr.num_shards(); i++)
-  {
-    const auto& s = arr.shard(i);
-    cuda_safe_call(cudaSetDevice(0));
-    cuda_safe_call(cudaMalloc(&errors[i], sizeof(int)));
-    cuda_safe_call(cudaMemset(errors[i], 0, sizeof(int)));
+  // Verify from device code through the const span. The per-shard error flag
+  // lives at the shard's own place and everything is ordered on s.stream:
+  // allocate, clear, check, read back, release -- then one join.
+  ::std::vector<int> h_errors(arr.num_shards(), -1);
+  arr.each_shard->*[&h_errors](size_t i, const auto& s) {
+    int* d_error = static_cast<int*>(s.place.allocate(sizeof(int), s.stream));
+    cuda_safe_call(cudaMemsetAsync(d_error, 0, sizeof(int), s.stream));
 
     const int block = 256;
     const int grid  = static_cast<int>((s.size + block - 1) / block);
-    check_kernel<<<grid, block, 0, s.stream>>>(s.span(), s.global_offset, errors[i]);
+    check_kernel<<<grid, block, 0, s.stream>>>(s.span(), s.global_offset, d_error);
     cuda_safe_call(cudaGetLastError());
-  }
+
+    cuda_safe_call(cudaMemcpyAsync(&h_errors[i], d_error, sizeof(int), cudaMemcpyDefault, s.stream));
+    s.place.deallocate(d_error, sizeof(int), s.stream);
+  };
   arr.sync();
 
-  for (size_t i = 0; i < arr.num_shards(); i++)
+  for (int h_error : h_errors)
   {
-    int h_error = -1;
-    cuda_safe_call(cudaMemcpy(&h_error, errors[i], sizeof(int), cudaMemcpyDeviceToHost));
     EXPECT(h_error == 0);
-    cuda_safe_call(cudaFree(errors[i]));
   }
 }
 
