@@ -69,10 +69,12 @@
 #define __cccl_lib_unreachable                   202202L
 #define __cccl_lib_void_t                        201411L
 
-#define __cccl_lib_as_const     201510L
-#define __cccl_lib_bit_cast     201806L
-#define __cccl_lib_chrono_udls  201304L
-#define __cccl_lib_complex_udls 201309L
+#define __cccl_lib_as_const                 201510L
+#define __cccl_lib_bit_cast                 201806L
+#define __cccl_lib_chrono_udls              201304L
+#define __cccl_lib_common_reference         202302L
+#define __cccl_lib_common_reference_wrapper 202302L
+#define __cccl_lib_complex_udls             201309L
 #ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  define __cccl_lib_constexpr_complex 201711L
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
