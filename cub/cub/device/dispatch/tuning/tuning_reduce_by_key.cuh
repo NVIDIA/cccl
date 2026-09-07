@@ -1714,7 +1714,7 @@ struct policy_selector_from_hub
   }
 };
 
-template <class ReductionOpT, class AccumT, class KeyT, bool StableReductionOrder>
+template <class ReductionOpT, class AccumT, class KeyT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const

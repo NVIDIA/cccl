@@ -386,8 +386,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Invoke(ScanInitKernelT init_kernel, ReduceByKeyKernelT reduce_by_key_kernel)
   {
+    // Preserve the deprecated dispatcher's original reduction ordering.
     using vsmem_helper_t = detail::reduce_by_key::vsmem_helper_t<
-      false,
+      /* StableReductionOrder */ false,
       typename ActivePolicyT::ReduceByKeyPolicyT,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
@@ -568,7 +569,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         OffsetT,
         AccumT,
         streaming_context_t,
-        false>);
+        /* StableReductionOrder */ false>); // Match the legacy virtual-memory agent's ordering.
   }
 
   /**
@@ -694,7 +695,7 @@ template <bool StableReductionOrder,
           typename OffsetT,
           typename AccumT         = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
           typename KeyT           = non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>,
-          typename PolicySelector = policy_selector_from_types<ReductionOpT, AccumT, KeyT, StableReductionOrder>>
+          typename PolicySelector = policy_selector_from_types<ReductionOpT, AccumT, KeyT>>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key::reduce_by_key_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()

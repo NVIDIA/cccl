@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // %PARAM% TEST_ERR err 0:1
 

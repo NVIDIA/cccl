@@ -2878,8 +2878,7 @@ public:
                   "primitive types with min/max");
 
     static constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
-    using default_policy_selector =
-      detail::reduce_by_key::policy_selector_from_types<ReductionOpT, accum_t, key_t, stable_reduction_order>;
+    using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<ReductionOpT, accum_t, key_t>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::reduce_by_key::dispatch<stable_reduction_order>(
