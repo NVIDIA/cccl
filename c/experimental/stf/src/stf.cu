@@ -42,6 +42,14 @@ static_assert(sizeof(pos4) == sizeof(stf_pos4), "pos4 and stf_pos4 must have ide
 static_assert(sizeof(dim4) == sizeof(stf_dim4), "dim4 and stf_dim4 must have identical layout for C/C++ interop");
 static_assert(alignof(pos4) == alignof(stf_pos4), "pos4 and stf_pos4 must have identical alignment");
 static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have identical alignment");
+// The coordinate structs cross the C boundary through bit_cast, which requires
+// both sides to be trivially copyable. Note this licenses converting the
+// structs only: it says nothing about casting between function types that
+// differ in their parameter types, which the mapper adapters avoid doing.
+static_assert(::std::is_trivially_copyable_v<pos4> && ::std::is_trivially_copyable_v<stf_pos4>,
+              "pos4 and stf_pos4 must be trivially copyable to convert via bit_cast");
+static_assert(::std::is_trivially_copyable_v<dim4> && ::std::is_trivially_copyable_v<stf_dim4>,
+              "dim4 and stf_dim4 must be trivially copyable to convert via bit_cast");
 
 template <class T, class = void>
 struct is_complete : ::std::false_type
@@ -204,6 +212,44 @@ template <class Opaque>
 {
   auto* const c = from_opaque_const(h);
   return const_cast<::std::remove_const_t<::std::remove_pointer_t<decltype(c)>>*>(c);
+}
+} // namespace
+
+namespace
+{
+// Shared tail of the two stf_placement_evaluate* entry points
+int stf_fill_placement_outputs(
+  const localized_stats& stats, const exec_place& grid, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+{
+  out_stats->total_bytes        = stats.total_bytes;
+  out_stats->vm_bytes           = stats.vm_bytes;
+  out_stats->block_size         = stats.block_size;
+  out_stats->nblocks            = stats.nblocks;
+  out_stats->nallocs            = stats.nallocs;
+  out_stats->total_samples      = stats.total_samples;
+  out_stats->matching_samples   = stats.matching_samples;
+  out_stats->replication_factor = stats.replication_factor;
+
+  if (bytes_per_grid_index != nullptr)
+  {
+    const size_t grid_size = grid.get_dims().size();
+    for (size_t i = 0; i < grid_size; i++)
+    {
+      bytes_per_grid_index[i] = 0;
+    }
+    for (const auto& entry : stats.bytes_per_grid_index)
+    {
+      if (entry.first >= grid_size)
+      {
+        // A mapper returned coordinates outside the grid: refuse to write
+        // past the caller's buffer and report the failure.
+        fprintf(stderr, "placement evaluation: mapper returned a position outside the grid\n");
+        return 1;
+      }
+      bytes_per_grid_index[entry.first] = entry.second;
+    }
+  }
+  return 0;
 }
 } // namespace
 
@@ -544,10 +590,22 @@ stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_g
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
   auto* grid_ptr = from_opaque(grid);
-  // Distinct function pointer types (C typedef vs C++ alias) are not
-  // convertible via static_cast under nvcc.
-  const auto cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp              = stf_try_allocate([cpp_mapper, grid_ptr] {
+  // Adapt the C callback rather than calling through a partition_fn_t: the two
+  // function types differ in their parameter types. The cast below is used
+  // only as the mapper's identity - never invoked - which is what makes two
+  // composite places built from the same C callback compare equal and share a
+  // cached mapping.
+  ::cuda::experimental::places::partition_mapper cpp_mapper(
+    [mapper](pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims) {
+      stf_pos4 c_result{};
+      mapper(&c_result,
+             ::std::bit_cast<stf_pos4>(data_coords),
+             ::std::bit_cast<stf_dim4>(data_dims),
+             ::std::bit_cast<stf_dim4>(grid_dims));
+      *result = ::std::bit_cast<pos4>(c_result);
+    },
+    reinterpret_cast<partition_fn_t>(mapper));
+  auto* dp = stf_try_allocate([&cpp_mapper, grid_ptr] {
     return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
   });
   return to_opaque(dp);
@@ -784,8 +842,100 @@ int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
   return from_opaque(h)->allocation_is_stream_ordered() ? 1 : 0;
 }
 
+int stf_placement_evaluate(
+  stf_exec_place_handle grid,
+  stf_get_executor_fn mapper,
+  const stf_dim4* data_dims,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
+  _CCCL_ASSERT(data_dims != nullptr, "data_dims must not be null");
+  _CCCL_ASSERT(out_stats != nullptr, "out_stats must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  dim4 dims;
+  ::std::memcpy(&dims, data_dims, sizeof(dims));
+  try
+  {
+    // Adapt the C callback rather than casting it to partition_fn_t: the two
+    // function types differ in their parameter types, so the cast would not
+    // yield a compatible function type. The coordinate structs themselves are
+    // layout-identical (static_asserted above), so bit_cast converts them.
+    const dim4 grid_dims = grid_ptr->get_dims();
+    const auto stats     = ::cuda::experimental::places::evaluate_localized_placement(
+      *grid_ptr,
+      [mapper, dims, grid_dims](size_t index) {
+        stf_pos4 result{};
+        mapper(&result,
+               ::std::bit_cast<stf_pos4>(dims.index_to_pos(index)),
+               ::std::bit_cast<stf_dim4>(dims),
+               ::std::bit_cast<stf_dim4>(grid_dims));
+        return ::std::bit_cast<pos4>(result);
+      },
+      dims,
+      elemsize,
+      probes ? probes : ::cuda::experimental::places::localized_placement_default_probes,
+      block_size);
+    return stf_fill_placement_outputs(stats, *grid_ptr, out_stats, bytes_per_grid_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_placement_evaluate failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_placement_evaluate failed: unknown exception\n");
+    return 1;
+  }
+}
+
+int stf_placement_evaluate_partition(
+  stf_exec_place_handle grid,
+  stf_cute_partition_handle partition,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index)
+{
+  _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
+  _CCCL_ASSERT(partition != nullptr, "partition handle must not be null");
+  _CCCL_ASSERT(out_stats != nullptr, "out_stats must not be null");
+  const auto* grid_ptr = from_opaque_const(grid);
+  const auto* part     = from_opaque_const(partition);
+  try
+  {
+    const auto stats = ::cuda::experimental::places::evaluate_localized_placement(
+      *grid_ptr,
+      *part,
+      elemsize,
+      probes ? probes : ::cuda::experimental::places::localized_placement_default_probes,
+      block_size);
+    return stf_fill_placement_outputs(stats, *grid_ptr, out_stats, bytes_per_grid_index);
+  }
+  catch (const ::std::exception& e)
+  {
+    fprintf(stderr, "stf_placement_evaluate_partition failed: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    fprintf(stderr, "stf_placement_evaluate_partition failed: unknown exception\n");
+    return 1;
+  }
+}
+
 stf_cute_partition_handle stf_cute_partition_create(
-  const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank)
+  const stf_dim4* true_dims,
+  const stf_dim4* grid_dims,
+  const stf_partition_dim_spec* spec,
+  size_t rank,
+  uint32_t replicated_axes_mask)
 {
   _CCCL_ASSERT(true_dims != nullptr, "true_dims must not be null");
   _CCCL_ASSERT(grid_dims != nullptr, "grid_dims must not be null");
@@ -809,8 +959,21 @@ stf_cute_partition_handle stf_cute_partition_create(
       cpp_spec[d].mesh_axis = spec[d].mesh_axis;
       cpp_spec[d].block     = spec[d].block;
     }
-    return new cute_partition_descriptor(::cuda::experimental::places::make_partition_descriptor(td, cpp_spec, gd));
+    return new cute_partition_descriptor(
+      ::cuda::experimental::places::make_partition_descriptor(td, cpp_spec, gd, replicated_axes_mask));
   }));
+}
+
+uint32_t stf_cute_partition_replicated_axes(stf_cute_partition_handle p)
+{
+  _CCCL_ASSERT(p != nullptr, "partition handle must not be null");
+  return static_cast<uint32_t>(from_opaque(p)->replicated_axes_mask());
+}
+
+uint64_t stf_cute_partition_replication_factor(stf_cute_partition_handle p)
+{
+  _CCCL_ASSERT(p != nullptr, "partition handle must not be null");
+  return static_cast<uint64_t>(from_opaque(p)->replication_factor());
 }
 
 stf_cute_partition_handle stf_cute_partition_from_leaves(

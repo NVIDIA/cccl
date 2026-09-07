@@ -83,6 +83,7 @@ set(
   places/affinity_gc.cu
   places/replicated_data_place.cu
   places/replicated_frozen_import.cu
+  places/replicated_composite_frozen_get.cu
   places/cute_parallel_for.cu
   places/locality_domain_alloc.cu
   places/locality_domain_enumeration.cu

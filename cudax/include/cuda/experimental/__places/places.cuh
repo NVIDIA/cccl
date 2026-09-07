@@ -203,11 +203,15 @@ public:
     return device(cuda_try<cudaGetDevice>());
   }
 
-  // User-visible API when using a different partitioner than the one of the grid
-  template <typename partitioner_t /*, typename scalar_exec_place_t */>
+  // User-visible API when using a different partitioner than the one of the grid.
+  // Constrained to partitioner objects so a raw partition function still picks
+  // the partition_mapper overload below rather than being deduced here.
+  template <
+    typename partitioner_t,
+    typename = ::cuda::std::enable_if_t<::cuda::std::is_class_v<partitioner_t>> /*, typename scalar_exec_place_t */>
   static data_place composite(partitioner_t p, const exec_place& g);
 
-  static data_place composite(partition_fn_t f, const exec_place& grid);
+  static data_place composite(partition_mapper f, const exec_place& grid);
 
   /**
    * @brief Replicated data place: one full copy of the data in the affine
@@ -390,7 +394,7 @@ public:
     return p.pimpl_->get_device_ordinal();
   }
 
-  const partition_fn_t& get_partitioner() const
+  const partition_mapper& get_partitioner() const
   {
     return pimpl_->get_partitioner();
   }
@@ -1925,7 +1929,7 @@ inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_
 class data_place_composite final : public data_place_interface
 {
 public:
-  data_place_composite(exec_place grid, partition_fn_t partitioner_func)
+  data_place_composite(exec_place grid, partition_mapper partitioner_func)
       : grid_(mv(grid))
       , partitioner_func_(mv(partitioner_func))
   {}
@@ -1965,7 +1969,7 @@ public:
     const auto& o = static_cast<const data_place_composite&>(other);
     if (get_partitioner() != o.get_partitioner())
     {
-      return ::std::less<partition_fn_t>{}(o.get_partitioner(), get_partitioner()) ? 1 : -1;
+      return (o.get_partitioner() < get_partitioner()) ? 1 : -1;
     }
     if (grid_ == o.grid_)
     {
@@ -2005,7 +2009,7 @@ public:
     return grid_.get_impl();
   }
 
-  const partition_fn_t& get_partitioner() const override
+  const partition_mapper& get_partitioner() const override
   {
     return partitioner_func_;
   }
@@ -2017,7 +2021,7 @@ public:
 
 private:
   exec_place grid_;
-  partition_fn_t partitioner_func_;
+  partition_mapper partitioner_func_;
 };
 
 /**
@@ -2078,7 +2082,7 @@ public:
 
   //! Instance index of a linear grid place: mixed radix over the
   //! REPLICATED axes (dimension 0 fastest); shared-axis coordinates drop out
-  size_t instance_of(size_t place_index) const
+  size_t instance_of(size_t place_index) const override
   {
     if (deferred_)
     {
@@ -2096,6 +2100,12 @@ public:
       }
     }
     return idx;
+  }
+
+  //! The r-th instance's place: the representative member's affine place
+  ::std::shared_ptr<data_place_interface> member_impl(size_t r) const override
+  {
+    return grid_.get_place(representative_place(r)).affine_data_place().get_impl();
   }
 
   //! Linear grid place of the instance's representative (shared coords = 0)
@@ -2225,13 +2235,22 @@ private:
 //! Whether this replicated data place still needs its grid bound
 inline bool replicated_is_deferred(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->is_deferred();
+  // Only the axis-replicated place has a deferred form; other replicated
+  // places (e.g. a composite place with replicated partition axes) are
+  // always concrete.
+  const auto* rep = dynamic_cast<const data_place_replicated*>(dp.get_impl().get());
+  return rep != nullptr && rep->is_deferred();
 }
 
-//! Grid of a replicated data place
+//! Grid of an axis-replicated data place
 inline const exec_place& replicated_grid(const data_place& dp)
 {
-  return static_cast<const data_place_replicated*>(dp.get_impl().get())->get_grid();
+  const auto* rep = dynamic_cast<const data_place_replicated*>(dp.get_impl().get());
+  if (rep == nullptr)
+  {
+    _CCCL_THROW(::std::invalid_argument, "replicated_grid: not an axis-replicated data place");
+  }
+  return rep->get_grid();
 }
 
 inline bool data_place::is_composite() const
@@ -2256,22 +2275,33 @@ inline data_place data_place::member(size_t r) const
   {
     return *this;
   }
-  const auto* rep = static_cast<const data_place_replicated*>(get_impl().get());
-  return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
+  // Fast path for the axis-replicated place, kept static on purpose: with
+  // member_impl() as the only resolution path here, nvcc 12.0-13.3
+  // misclassifies unrelated STF host types as __host__ __device__ in TUs
+  // that combine STF with CUB (deferred #20011 errors naming event_list /
+  // task / task_dep_untyped, attributed to mdspan headers; see
+  // examples/stf/08-cub-reduce.cu). The static branch anchors the
+  // classification; the virtual below covers every other multi-instance
+  // place (e.g. a composite place with replicated partition axes).
+  if (const auto* rep = dynamic_cast<const data_place_replicated*>(get_impl().get()))
+  {
+    return rep->get_grid().get_place(rep->representative_place(r)).affine_data_place();
+  }
+  if (auto m = pimpl_->member_impl(r))
+  {
+    return data_place(mv(m));
+  }
+  return *this;
 }
 
 inline size_t data_place::instance_of(size_t place_index) const
 {
-  if (!is_replicated())
-  {
-    return 0;
-  }
-  return static_cast<const data_place_replicated*>(get_impl().get())->instance_of(place_index);
+  return pimpl_->instance_of(place_index);
 }
 
-inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
+inline data_place data_place::composite(partition_mapper f, const exec_place& grid)
 {
-  return data_place(::std::make_shared<data_place_composite>(grid, f));
+  return data_place(::std::make_shared<data_place_composite>(grid, mv(f)));
 }
 
 inline data_place data_place::replicated(const exec_place& grid)
@@ -2319,10 +2349,10 @@ data_place data_place::replicated(const exec_place& grid, replicate_over_t<axes.
 }
 
 // User-visible API when the same partitioner as the one of the grid
-template <typename partitioner_t>
+template <typename partitioner_t, typename>
 data_place data_place::composite(partitioner_t, const exec_place& g)
 {
-  return data_place::composite(&partitioner_t::get_executor, g);
+  return data_place::composite(partition_mapper(&partitioner_t::get_executor), g);
 }
 
 inline augmented_stream data_place::getDataStream(exec_place_resources& res) const

@@ -151,6 +151,14 @@ are complementary and a consumer picks the semantics by construction:
   consumer's stream after the allocation stream with an event wait (nothing
   blocks on the host).
 
+The localized-allocation surface (``interop.pytorch.localized_empty``)
+exposes the same choice as ``lifetime="pinned"`` (CAI import; the metadata
+registry pins the pages until :func:`release`) versus ``lifetime="gc"``
+(DLPack import; the tensor -- typically an ``nn.Parameter``, where it is the
+default -- owns the pages, so unloading the module frees the VMM and the
+placement metadata). See ``tests/stf/test_device_array_dlpack.py`` and
+``tests/stf/interop/test_localized_weights_example.py``.
+
 Interop adapters
 ----------------
 
@@ -372,7 +380,10 @@ Physical placement is page-granular: memory is localized in blocks of the
 device's allocation granularity (typically 2 MiB), and a block landing on the
 boundary between two owners is placed with the majority owner. Placement can
 therefore only approximate element ownership when ownership runs are smaller
-than a page.
+than a page. Use ``placement_evaluate(grid, partition, None, elemsize)`` to
+score a candidate mapping -- its ``accuracy`` is the fraction of bytes local to
+their owner -- before committing memory. The third argument is the data shape;
+pass ``None`` with a ``cute_partition``, which carries its own extents.
 
 **Tensor of tiles.** Multidimensional distributions match the page granularity
 best when storage is reorganized into tiles: a ``(tiles_y, tiles_x, tile_y,
@@ -406,8 +417,8 @@ placement without re-implementing any policy::
     assert partition.owner((i, j, y, x)) == tile_partition.owner((i, j))
 
 Note that ``owner()`` is exact element-level ownership; the *physical*
-placement of an allocation is page-granular and may only approximate it.
-Note that tile-major storage is a real storage format: viewing it as
+placement of an allocation is page-granular and may only approximate it
+(``placement_evaluate`` quantifies the difference). Note that tile-major storage is a real storage format: viewing it as
 a conventional ``(rows, columns)`` spatial tensor requires a permutation, not a
 reshape.
 
