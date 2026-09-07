@@ -351,6 +351,7 @@ void TestVectorToAndFromHostVector()
 
   ASSERT_EQUAL(v, h);
 
+  // NOLINTNEXTLINE(misc-redundant-expression): self-assignment is what this test checks
   v = v;
 
   ASSERT_EQUAL(v, h);
@@ -404,6 +405,7 @@ void TestVectorToAndFromDeviceVector()
 
   ASSERT_EQUAL(v, h);
 
+  // NOLINTNEXTLINE(misc-redundant-expression): self-assignment is what this test checks
   v = v;
 
   ASSERT_EQUAL(v, h);

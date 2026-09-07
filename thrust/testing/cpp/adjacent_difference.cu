@@ -34,6 +34,9 @@ struct detect_wrong_difference
     return *this;
   }
 
+  // Write-only test proxy: assignment records whether the difference was as expected.
+  // There is no meaningful object to return.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_DEVICE void operator=(long long difference) const
   {
     if (difference != 1)

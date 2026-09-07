@@ -70,7 +70,7 @@
   {                                                    \
     unittest::UnitTestKnownFailure f;                  \
     f << "[" << FILE_ ":" << LINE_ << "]";             \
-    throw f;                                           \
+    throw cuda::std::move(f);                          \
   }                                                    \
   /**/
 
@@ -125,11 +125,11 @@ void assert_equal(T1 a, T2 b, const std::string& filename = "unknown", int linen
     f << "[" << filename << ":" << lineno << "] ";
     f << "values are not equal: " << a << " " << b;
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
-void assert_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a == b))
   {
@@ -137,7 +137,7 @@ void assert_equal(char a, char b, const std::string& filename = "unknown", int l
     f << "[" << filename << ":" << lineno << "] ";
     f << "values are not equal: " << int(a) << " " << int(b);
     f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -151,7 +151,7 @@ void assert_equal_quiet(const T1& a, const T2& b, const std::string& filename = 
     f << "[" << filename << ":" << lineno << "] ";
     f << "values are not equal";
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -166,11 +166,11 @@ void assert_not_equal(T1 a, T2 b, const std::string& filename = "unknown", int l
     f << "[" << filename << ":" << lineno << "] ";
     f << "values are equal: " << a << " " << b;
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
-void assert_not_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_not_equal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (a == b)
   {
@@ -178,7 +178,7 @@ void assert_not_equal(char a, char b, const std::string& filename = "unknown", i
     f << "[" << filename << ":" << lineno << "] ";
     f << "values are equal: " << int(a) << " " << int(b);
     f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -192,7 +192,7 @@ void assert_not_equal_quiet(const T1& a, const T2& b, const std::string& filenam
     f << "[" << filename << ":" << lineno << "] ";
     f << "values are equal";
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -205,11 +205,11 @@ void assert_less(T1 a, T2 b, const std::string& filename = "unknown", int lineno
     f << "[" << filename << ":" << lineno << "] ";
     f << a << " is greater or equal to " << b;
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
-void assert_less(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_less(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a < b))
   {
@@ -217,7 +217,7 @@ void assert_less(char a, char b, const std::string& filename = "unknown", int li
     f << "[" << filename << ":" << lineno << "] ";
     f << int(a) << " is greater than or equal to " << int(b);
     f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -230,11 +230,11 @@ void assert_greater(T1 a, T2 b, const std::string& filename = "unknown", int lin
     f << "[" << filename << ":" << lineno << "] ";
     f << a << " is less than or equal to " << b;
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
-void assert_greater(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_greater(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a > b))
   {
@@ -242,7 +242,7 @@ void assert_greater(char a, char b, const std::string& filename = "unknown", int
     f << "[" << filename << ":" << lineno << "] ";
     f << int(a) << " is less than or equal to " << int(b);
     f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -255,11 +255,11 @@ void assert_lequal(T1 a, T2 b, const std::string& filename = "unknown", int line
     f << "[" << filename << ":" << lineno << "] ";
     f << a << " is greater than " << b;
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
-void assert_lequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_lequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a <= b))
   {
@@ -267,7 +267,7 @@ void assert_lequal(char a, char b, const std::string& filename = "unknown", int 
     f << "[" << filename << ":" << lineno << "] ";
     f << int(a) << " is greater than " << int(b);
     f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -280,11 +280,11 @@ void assert_gequal(T1 a, T2 b, const std::string& filename = "unknown", int line
     f << "[" << filename << ":" << lineno << "] ";
     f << a << " is less than " << b;
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
-void assert_gequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
+inline void assert_gequal(char a, char b, const std::string& filename = "unknown", int lineno = -1)
 {
   if (!(a >= b))
   {
@@ -292,12 +292,12 @@ void assert_gequal(char a, char b, const std::string& filename = "unknown", int 
     f << "[" << filename << ":" << lineno << "] ";
     f << int(a) << " is less than " << int(b);
     f << " [type='" << type_name<char>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
 // will catch everything implicitly convertible to a double
-bool almost_equal(double a, double b, double a_tol, double r_tol)
+inline bool almost_equal(double a, double b, double a_tol, double r_tol)
 {
   if (std::abs(a - b) > r_tol * (std::abs(a) + std::abs(b)) + a_tol)
   {
@@ -309,8 +309,6 @@ bool almost_equal(double a, double b, double a_tol, double r_tol)
   }
 }
 
-namespace
-{ // anonymous namespace
 template <typename>
 struct is_complex : public THRUST_NS_QUALIFIER::false_type
 {};
@@ -322,7 +320,6 @@ struct is_complex<THRUST_NS_QUALIFIER::complex<T>> : public THRUST_NS_QUALIFIER:
 template <typename T>
 struct is_complex<std::complex<T>> : public THRUST_NS_QUALIFIER::true_type
 {};
-} // namespace
 
 template <typename T1, typename T2>
 inline ::cuda::std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value, bool>
@@ -347,7 +344,7 @@ void assert_almost_equal(
     f << "[" << filename << ":" << lineno << "] ";
     f << "values are not approximately equal: " << a << " " << b;
     f << " [type='" << type_name<T1>() << "']";
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -470,7 +467,7 @@ void assert_equal(
 
   if (failure)
   {
-    throw f;
+    throw cuda::std::move(f);
   }
 }
 
@@ -732,7 +729,7 @@ enum threw_status
   threw_right_type
 };
 
-void check_assert_throws(
+inline void check_assert_throws(
   threw_status s, std::string const& exception_name, std::string const& file_name = "unknown", int line_number = -1)
 {
   switch (s)
@@ -740,19 +737,19 @@ void check_assert_throws(
     case did_not_throw: {
       unittest::UnitTestFailure f;
       f << "[" << file_name << ":" << line_number << "] did not throw anything";
-      throw f;
+      throw cuda::std::move(f);
     }
     case threw_wrong_type: {
       unittest::UnitTestFailure f;
       f << "[" << file_name << ":" << line_number << "] did not throw an "
         << "object of type " << exception_name;
-      throw f;
+      throw cuda::std::move(f);
     }
     case threw_right_type_but_wrong_value: {
       unittest::UnitTestFailure f;
       f << "[" << file_name << ":" << line_number << "] threw an object of the "
         << "correct type (" << exception_name << ") but wrong value";
-      throw f;
+      throw cuda::std::move(f);
     }
     case threw_right_type:
       break;
@@ -760,7 +757,7 @@ void check_assert_throws(
       unittest::UnitTestFailure f;
       f << "[" << file_name << ":" << line_number << "] encountered an "
         << "unknown error";
-      throw f;
+      throw cuda::std::move(f);
     }
   }
 }

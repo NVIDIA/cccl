@@ -143,7 +143,7 @@ class __temporary_storage
     {
       // If no stream was specified, use the current device.
       int __curr_device{};
-      _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
+      _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
       return ::cuda::device_default_memory_pool(__curr_device);
     }
   }

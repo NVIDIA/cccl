@@ -107,12 +107,12 @@ using tbb_par_info    = policy_info<thrust::system::tbb::detail::par_t, thrust::
 using cuda_par_info = policy_info<thrust::system::cuda::detail::par_t, thrust::cuda_cub::execute_on_stream_base>;
 #endif
 
-SimpleUnitTest<TestAllocatorAttachment,
-               unittest::type_list<sequential_info,
+using test_types =
+  unittest::type_list<sequential_info,
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-                                   cuda_par_info,
+                      cuda_par_info,
 #endif
-                                   cpp_par_info,
-                                   omp_par_info,
-                                   tbb_par_info>>
-  TestAllocatorAttachmentInstance;
+                      cpp_par_info,
+                      omp_par_info,
+                      tbb_par_info>;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestAllocatorAttachment, test_types);

@@ -247,6 +247,36 @@ get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
   return {};
 }
 
+// tunings from cub/benchmarks/bench/reduce/arg_extrema.cu. These are raw measured values and must not be passed
+// through scale_mem_bound.
+_CCCL_HOST_DEVICE_API constexpr auto
+get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int accum_size)
+  -> ::cuda::std::optional<sm100_tuning_values>
+{
+  if (operation_t != op_kind_t::other || accum_t != type_t::other || offset_size != 4)
+  {
+    return {};
+  }
+
+  if (accum_size == 8)
+  {
+    // ipt_16.tpb_256.ipv_2  2^28 mean 1.264 across int8/int16/int32/float, worst small-size cost -9%
+    return sm100_tuning_values{16, 256, 2};
+  }
+  if (accum_size == 16)
+  {
+    // ipt_17.tpb_416.ipv_2  2^28: double 1.314, int64 ~1.29
+    return sm100_tuning_values{17, 416, 2};
+  }
+  if (accum_size == 32)
+  {
+    // ipt_10.tpb_384.ipv_2  2^28: int128 1.345
+    return sm100_tuning_values{10, 384, 2};
+  }
+
+  return {};
+}
+
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
@@ -404,6 +434,20 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_two_phase_tuning(::cuda::compute_capability cc) const
     -> ReducePolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (const auto sm107_tuning = get_sm107_tuning(accum_t, operation_t, offset_size, accum_size))
+      {
+        const auto rp = ReducePassPolicy{
+          sm107_tuning->threads,
+          sm107_tuning->items,
+          sm107_tuning->items_per_vec_load,
+          BLOCK_REDUCE_WARP_REDUCTIONS,
+          LOAD_LDG};
+        return {rp, rp};
+      }
+    }
+
     // if we don't have a tuning for sm100, fall through
     auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
     if (cc >= ::cuda::compute_capability{10, 0} && sm100_tuning)

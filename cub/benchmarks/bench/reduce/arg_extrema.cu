@@ -62,7 +62,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
     );
     if constexpr (cuda::std::is_same_v<OpT, cub::detail::arg_min>)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceReduce::ArgMin,
         "ArgMin failed",
         d_in,
@@ -74,7 +74,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceReduce::ArgMax,
         "ArgMax failed",
         d_in,

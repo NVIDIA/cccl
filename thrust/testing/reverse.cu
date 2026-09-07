@@ -55,14 +55,6 @@ DECLARE_UNITTEST(TestReverseDispatchImplicit);
 template <typename Vector>
 void TestReverseCopySimple()
 {
-#if _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 10)
-
-  if (typeid(Vector) == typeid(thrust::host_vector<custom_numeric>))
-  {
-    KNOWN_FAILURE // WAR NVBug 2481122
-  }
-#endif // _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 10)
-
   using Iterator = typename Vector::iterator;
 
   Vector input{1, 2, 3, 4, 5};
@@ -127,7 +119,7 @@ struct TestReverse
     ASSERT_EQUAL(h_data, d_data);
   }
 };
-VariableUnitTest<TestReverse, ReverseTypes> TestReverseInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverse, ReverseTypes);
 
 template <typename T>
 struct TestReverseCopy
@@ -146,7 +138,7 @@ struct TestReverseCopy
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestReverseCopy, ReverseTypes> TestReverseCopyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopy, ReverseTypes);
 
 template <typename T>
 struct TestReverseCopyToDiscardIterator
@@ -168,7 +160,7 @@ struct TestReverseCopyToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestReverseCopyToDiscardIterator, ReverseTypes> TestReverseCopyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopyToDiscardIterator, ReverseTypes);
 
 void TestReverseZippedHost()
 {

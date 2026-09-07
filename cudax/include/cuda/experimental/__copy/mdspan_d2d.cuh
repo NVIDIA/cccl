@@ -186,7 +186,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       if (static_cast<::cuda::std::size_t>(__tile_size) == __tensor_size)
       {
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           CUB_NS_QUALIFIER::DeviceTransform::Transform,
           "cub::DeviceTransform::Transform failed",
           __src_simplified.__data,

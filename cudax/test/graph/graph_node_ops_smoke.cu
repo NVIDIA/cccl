@@ -21,15 +21,13 @@
 
 namespace
 {
-namespace test
-{
 // ─── helpers ───────────────────────────────────────────────────────────────
 
 // RAII wrapper around a pinned-memory allocation of N elements of type T.
 template <typename T>
 struct pinned_array
 {
-  _malloc_pinned mem;
+  test::_malloc_pinned mem;
   std::size_t n;
 
   explicit pinned_array(std::size_t __n, T __init = T{})
@@ -72,7 +70,6 @@ struct count_down_and_stop
   }
 };
 #  endif // _CCCL_CTK_AT_LEAST(12, 4)
-} // namespace test
 } // namespace
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -84,7 +81,7 @@ C2H_TEST("graph fill_bytes sets every byte to the requested value", "[graph][fil
   cudax::stream s{cuda::device_ref{0}};
 
   constexpr std::size_t N = 64;
-  test::pinned_array<int> mem{N, static_cast<int>(0xDEADBEEF)};
+  pinned_array<int> mem{N, static_cast<int>(0xDEADBEEF)};
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
@@ -107,7 +104,7 @@ C2H_TEST("graph fill_bytes with non-zero value", "[graph][fill_bytes]")
   cudax::stream s{cuda::device_ref{0}};
 
   constexpr std::size_t N = 8;
-  test::pinned_array<unsigned char> mem{N};
+  pinned_array<unsigned char> mem{N};
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
@@ -133,8 +130,8 @@ C2H_TEST("graph copy_bytes copies data from source to destination", "[graph][cop
   cudax::stream s{cuda::device_ref{0}};
 
   constexpr std::size_t N = 32;
-  test::pinned_array<int> src{N};
-  test::pinned_array<int> dst{N, -1};
+  pinned_array<int> src{N};
+  pinned_array<int> dst{N, -1};
 
   for (std::size_t i = 0; i < N; ++i)
   {
@@ -161,8 +158,8 @@ C2H_TEST("graph copy_bytes can be chained after fill_bytes", "[graph][fill_bytes
   cudax::stream s{cuda::device_ref{0}};
 
   constexpr std::size_t N = 16;
-  test::pinned_array<unsigned char> src{N};
-  test::pinned_array<unsigned char> dst{N};
+  pinned_array<unsigned char> src{N};
+  pinned_array<unsigned char> dst{N};
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
@@ -239,7 +236,7 @@ C2H_TEST("graph host_launch with arguments", "[graph][host_launch]")
 C2H_TEST("graph host_launch can be chained with kernel nodes", "[graph][host_launch]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
@@ -266,7 +263,7 @@ C2H_TEST("graph host_launch can be chained with kernel nodes", "[graph][host_lau
 C2H_TEST("graph host_launch can be launched multiple times", "[graph][host_launch]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
   int* ptr = mem.get();
 
   cudax::graph_builder g;
@@ -320,7 +317,7 @@ C2H_TEST("graph record_event and wait(event_ref) impose ordering across independ
          "[graph][event_record][event_wait]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
 
   cuda::event ev{cuda::device_ref{0}};
 
@@ -375,7 +372,7 @@ C2H_TEST("graph wait(event_ref) node has the correct node type", "[graph][event_
 C2H_TEST("graph insert_child_graph embeds a subgraph", "[graph][child_graph]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
   int* val = mem.get();
 
   // Build the child graph: kernel that assigns 42.
@@ -403,7 +400,7 @@ C2H_TEST("graph insert_child_graph embeds a subgraph", "[graph][child_graph]")
 C2H_TEST("graph insert_child_graph with ownership transfer", "[graph][child_graph]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
   int* val = mem.get();
 
   cudax::graph_builder child_g;
@@ -454,7 +451,7 @@ C2H_TEST("graph insert_child_graph node has the correct node type", "[graph][chi
 C2H_TEST("graph make_if_node body executes when handle is non-zero", "[graph][conditional][if_node]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
   int* val = mem.get();
 
   cudax::graph_builder g;
@@ -479,7 +476,7 @@ C2H_TEST("graph make_if_node body executes when handle is non-zero", "[graph][co
 C2H_TEST("graph make_if_node body is skipped when handle is zero", "[graph][conditional][if_node]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
   int* val = mem.get();
 
   cudax::graph_builder g;
@@ -504,7 +501,7 @@ C2H_TEST("graph make_if_node body is skipped when handle is zero", "[graph][cond
 C2H_TEST("graph make_while_node body executes the expected number of times", "[graph][conditional][while_node]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1, 5}; // will be decremented to 0
+  pinned_array<int> mem{1, 5}; // will be decremented to 0
 
   cudax::graph_builder g;
   cudax::path_builder pb = cudax::start_path(g);
@@ -515,7 +512,7 @@ C2H_TEST("graph make_while_node body executes the expected number of times", "[g
   // Body: decrement counter and stop when done.
   {
     cudax::path_builder body_pb = cudax::start_path(body_graph);
-    cudax::launch(body_pb, test::one_thread_dims, test::count_down_and_stop{}, handle, mem.get());
+    cudax::launch(body_pb, test::one_thread_dims, count_down_and_stop{}, handle, mem.get());
   }
 
   auto exec = g.instantiate();
@@ -528,7 +525,7 @@ C2H_TEST("graph make_while_node body executes the expected number of times", "[g
 C2H_TEST("graph make_if_node with pre-constructed handle", "[graph][conditional][if_node]")
 {
   cudax::stream s{cuda::device_ref{0}};
-  test::pinned_array<int> mem{1};
+  pinned_array<int> mem{1};
   int* val = mem.get();
 
   cudax::graph_builder g;

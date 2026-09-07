@@ -108,7 +108,7 @@ void seg_sort(nvbench::state& state,
                  cuda::execution::tune(policy_selector{})
 #endif // !TUNE_BASE
                );
-               _CCCL_TRY_CUDA_API(
+               _CCCL_TRY_RUNTIME_API(
                  cub::DeviceSegmentedSort::SortKeys,
                  "SortKeys failed",
                  d_buffer_1,

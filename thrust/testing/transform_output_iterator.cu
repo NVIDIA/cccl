@@ -106,4 +106,4 @@ struct TestTransformOutputIteratorScan
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestTransformOutputIteratorScan, SignedIntegralTypes> TestTransformOutputIteratorScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformOutputIteratorScan, SignedIntegralTypes);
