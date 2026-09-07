@@ -5,6 +5,7 @@ set(
   concepts/models.cu
   concepts/foreign_models.cu
   containers/sharded_array.cu
+  containers/shard_span.cu
   containers/contiguous.cu
   containers/fork_join.cu
   algorithms/elementwise.cu

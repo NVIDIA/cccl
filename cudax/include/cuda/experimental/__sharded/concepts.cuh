@@ -77,6 +77,7 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/span>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -165,6 +166,13 @@ struct basic_shard_view
   ::std::size_t size          = 0; //!< number of elements
   ::std::size_t global_offset = 0; //!< first global index covered
   _PlaceId place{}; //!< equality-comparable place identity
+
+  //! The elements as a span: the placeless, device-passable view. Not part of
+  //! the `shard_descriptor` concept; a convenience every descriptor can offer.
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<_Tp> span() const noexcept
+  {
+    return {data, size};
+  }
 };
 
 //! @brief A minimal owned-descriptor sharded view: a vector of

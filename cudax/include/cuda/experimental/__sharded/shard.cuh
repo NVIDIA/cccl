@@ -27,6 +27,8 @@
 
 #include <cuda/experimental/__places/places.cuh>
 
+#include <cuda/std/span>
+
 #include <cuda_runtime.h>
 
 namespace cuda::experimental::sharded
@@ -43,9 +45,10 @@ using ::cuda::experimental::places::exec_place;
  * the shard's starting index in the logical (whole-array) index space.
  *
  * A shard is a host-side handle. Places are host concepts, so every member
- * function is host-only and a shard is not meant to cross into device code:
- * a kernel receives the span it needs (`data`, `size`, `global_offset`) as
- * arguments, which is how this library's own kernels are written.
+ * function is host-only and a shard is not meant to cross into device code.
+ * What crosses is `span()`: the placeless view of the elements, which a
+ * kernel takes by value (with `global_offset` alongside if it needs the
+ * logical index space).
  */
 template <typename _Tp>
 struct shard
@@ -74,6 +77,17 @@ struct shard
   [[nodiscard]] _CCCL_HOST_API const _Tp* end() const noexcept
   {
     return data + size;
+  }
+
+  /// @brief The valid elements as a span: the device-passable view of a
+  /// shard. Carries no placement, so it is what a kernel takes by value.
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<_Tp> span() noexcept
+  {
+    return {data, size};
+  }
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const _Tp> span() const noexcept
+  {
+    return {data, size};
   }
 
   /// @brief Logical size in bytes.
