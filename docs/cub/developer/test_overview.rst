@@ -20,9 +20,9 @@ Directory and File Naming
 *************************************
 
 Our tests can be found in the ``test`` directory.
-Legacy tests have the following naming scheme: ``test_SCOPE_FACILITY[_ASPECT].cu``.
+Standalone tests have the following naming scheme: ``test_SCOPE_FACILITY[_ASPECT].cu``.
 Catch2-based tests additionally have the prefix ``catch2_``,
-which is used by CMake to distinguish new tests from legacy ones.
+which is used by CMake to distinguish Catch2 tests from standalone ones.
 
 For instance, here are the reduce tests:
 
