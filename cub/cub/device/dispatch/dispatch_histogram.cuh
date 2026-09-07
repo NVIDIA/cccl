@@ -146,9 +146,8 @@ struct DeviceHistogramKernelSource
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
-      const IntArithmeticT range =
-        TransformsT::ScaleTransform::unsigned_difference(upper_level[channel], lower_level[channel]);
-      return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+      return static_cast<IntArithmeticT>(upper_level[channel] - lower_level[channel])
+           > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
     else
     {
@@ -1030,7 +1029,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
       num_privatized_levels[channel] = 257;
 
       int num_levels = num_output_levels[channel];
-      if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
+      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
         {
@@ -1096,7 +1095,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
       int num_levels = num_output_levels[channel];
-      if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
+      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
         {
