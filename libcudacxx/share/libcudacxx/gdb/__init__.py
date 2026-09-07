@@ -22,6 +22,7 @@ import atomic  # noqa: E402
 import buffer  # noqa: E402
 import complex  # noqa: E402
 import event  # noqa: E402
+import expected  # noqa: E402
 import hierarchy  # noqa: E402
 import inplace_vector  # noqa: E402
 import mdspan  # noqa: E402
@@ -44,6 +45,7 @@ _PRINTERS = (
     tuple,
     inplace_vector,
     event,
+    expected,
     hierarchy,
     mdspan,
     memory_pool,
