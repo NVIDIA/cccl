@@ -40,6 +40,40 @@ available. In CI, they may download GHA artifacts instead.
 For fast local iteration on a single target rather than a whole project, see
 :doc:`/cccl/development/build_and_bisect_tools`.
 
+Testing Python in a minimal container
+-------------------------------------
+
+``cuda.compute`` is meant to work with nothing installed beyond its declared pip
+dependencies.
+
+The Python test lanes therefore fetch the wheel in the devcontainer (which needs ``gh``)
+and then run the test payload in a sibling container holding nothing but Python, launched
+through the host's docker daemon by ``ci/util/python/run_in_minimal_container.sh``. This
+is the same docker-outside-of-docker arrangement the wheel builds already use. An undeclared
+dependency fails there instead of passing silently. The same applies to both the v1
+(NVRTC) and v2 (HostJIT) backends.
+
+The sibling is handed the specific GPUs the driver reports, rather than ``--gpus all``,
+which would reach GPUs belonging to other jobs on a shared runner.
+
+``test_headers`` is the one lane here that needs no GPU -- it asserts that headers
+shipped in the wheel are on disk and never launches a kernel -- so its entry point sets
+``CCCL_MINIMAL_CONTAINER_NO_GPU=1``, which tells the helper not to hand the sibling any
+devices.
+
+Each lane is therefore two scripts: an entry point that provisions the wheel and
+dispatches (``ci/test_<lane>.sh``), and a payload that must survive in the minimal image
+(``ci/util/python/run_<lane>_tests.sh``). Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the
+devcontainer instead, which is useful locally and for comparing the two environments.
+
+These lanes deliberately stay in the devcontainer, because they need what it provides:
+
+* ``py_ctk_mode: sysctk`` -- exists specifically to test against a *system-provided* CUDA
+  toolkit.
+* ``python_tsan`` -- ``LD_PRELOAD``\ s the runner's ``libtsan``, located via ``gcc``.
+* ``test_py_stf`` -- ``cuda-stf`` is a separate wheel with its own producer and test
+  script, which does not use this path.
+
 Utility scripts: ci/util/
 -------------------------
 

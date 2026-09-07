@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF()
+#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
 
 #  include <cuda/std/cstdint>
 
@@ -99,6 +99,220 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #  endif // _CCCL_HAS_SIMD_SAT()
 
+#  if _CCCL_HAS_SIMD_IDOT()
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp4a_u8x4_u8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
+  NV_IF_TARGET(NV_IS_DEVICE, (return ::__dp4a(__lhs, __rhs, __init);))
+#    elif _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("dp4a.u32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp4a_u8x4_u8x4: Unsupported architecture");
+  return ::cuda::std::uint32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_s8x4_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (return ::__dp4a(static_cast<::cuda::std::int32_t>(__lhs), static_cast<::cuda::std::int32_t>(__rhs), __init);))
+#    elif _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp4a.s32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp4a_s8x4_s8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_u8x4_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp4a.u32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp4a_u8x4_s8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp4a_s8x4_u8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp4a.s32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp4a_s8x4_u8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp2a_lo_u16x2_u8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
+  NV_IF_TARGET(NV_IS_DEVICE, (return ::__dp2a_lo(__lhs, __rhs, __init);))
+#    elif _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("dp2a.lo.u32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_lo_u16x2_u8x4: Unsupported architecture");
+  return ::cuda::std::uint32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __dp2a_hi_u16x2_u8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
+  NV_IF_TARGET(NV_IS_DEVICE, (return ::__dp2a_hi(__lhs, __rhs, __init);))
+#    elif _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("dp2a.hi.u32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_hi_u16x2_u8x4: Unsupported architecture");
+  return ::cuda::std::uint32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_s16x2_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (return ::__dp2a_lo(static_cast<::cuda::std::int32_t>(__lhs), static_cast<::cuda::std::int32_t>(__rhs), __init);))
+#    elif _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp2a.lo.s32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_lo_s16x2_s8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_s16x2_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_INTRINSICS()
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (return ::__dp2a_hi(static_cast<::cuda::std::int32_t>(__lhs), static_cast<::cuda::std::int32_t>(__rhs), __init);))
+#    elif _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp2a.hi.s32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_INTRINSICS() || _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_hi_s16x2_s8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_u16x2_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp2a.lo.u32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_lo_u16x2_s8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_u16x2_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp2a.hi.u32.s32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_hi_u16x2_s8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_lo_s16x2_u8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp2a.lo.s32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_lo_s16x2_u8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::int32_t __dp2a_hi_s16x2_u8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs,
+  [[maybe_unused]] const ::cuda::std::uint32_t __rhs,
+  [[maybe_unused]] const ::cuda::std::int32_t __init) noexcept
+{
+#    if _CCCL_HAS_SIMD_IDOT_PTX()
+  NV_IF_TARGET(NV_IS_DEVICE, ({
+                 ::cuda::std::int32_t __result{};
+                 asm("dp2a.hi.s32.u32 %0, %1, %2, %3;" : "=r"(__result) : "r"(__lhs), "r"(__rhs), "r"(__init));
+                 return __result;
+               }))
+#    endif // _CCCL_HAS_SIMD_IDOT_PTX()
+  _CCCL_VERIFY(false, "cuda::simd::__dp2a_hi_s16x2_u8x4: Unsupported architecture");
+  return ::cuda::std::int32_t{};
+}
+
+#  endif // _CCCL_HAS_SIMD_IDOT()
+
 #  if _CCCL_HAS_SIMD_VABSDIFF()
 
 [[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vabsdiff_u8x4(
@@ -135,5 +349,5 @@ _CCCL_END_NAMESPACE_CUDA_SIMD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF()
+#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
 #endif // _CUDA___SIMD_SIMD_INTRINSICS_H

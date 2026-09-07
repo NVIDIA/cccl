@@ -392,7 +392,7 @@ class __fmt_allocating_buffer : public __fmt_output_buffer<_CharT>
     // _CharT is an implicit lifetime type so can be used without explicit
     // construction or destruction.
     _Alloc __alloc;
-    auto __result = ::cuda::std::__allocate_at_least(__alloc, __capacity);
+    auto __result = ::cuda::std::allocate_at_least(__alloc, __capacity);
     ::cuda::std::copy_n(__ptr_, this->__size(), __result.ptr);
     if (__ptr_ != __small_buffer_)
     {

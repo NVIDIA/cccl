@@ -86,7 +86,7 @@ struct TestStableSort
     ASSERT_EQUAL(h_data, d_data);
   }
 };
-VariableUnitTest<TestStableSort, SignedIntegralTypes> TestStableSortInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStableSort, SignedIntegralTypes);
 
 template <typename T>
 struct TestStableSortSemantics
@@ -102,8 +102,8 @@ struct TestStableSortSemantics
     ASSERT_EQUAL(h_data, d_data);
   }
 };
-VariableUnitTest<TestStableSortSemantics, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestStableSortSemanticsInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStableSortSemantics,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
 
 template <typename T>
 struct comp_mod3

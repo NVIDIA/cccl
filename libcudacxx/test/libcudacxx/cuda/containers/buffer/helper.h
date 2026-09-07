@@ -90,7 +90,7 @@ bool compare_value(const T& value, const T& expected)
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the value to host
     T host_value;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaMemcpy,
       "failed to copy value",
       cuda::std::addressof(host_value),
@@ -112,7 +112,7 @@ void assign_value(T& value, const T& input)
   {
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the input to device
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaMemcpy,
       "failed to copy value",
       cuda::std::addressof(value),

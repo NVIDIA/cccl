@@ -158,6 +158,26 @@ private:
     return basic_vec::__abs_diff_impl(__lhs, __rhs, __operation);
   }
 
+  template <typename _Up, typename _AccumT, typename _Operation>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _AccumT __dot_impl(
+    const basic_vec& __lhs,
+    const basic_vec<_Up, _Abi>& __rhs,
+    const _AccumT __init,
+    const _Operation& __operation) noexcept
+  {
+    return __operation(__lhs.__s_, __rhs.__s_, __init);
+  }
+
+  template <typename _Up, typename _AccumT, typename _Operation>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr _AccumT __simd_dot_impl(
+    const basic_vec& __lhs,
+    const basic_vec<_Up, _Abi>& __rhs,
+    const _AccumT __init,
+    const _Operation& __operation) noexcept
+  {
+    return basic_vec::__dot_impl(__lhs, __rhs, __init, __operation);
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr basic_vec
   __simd_min_impl(const basic_vec& __lhs, const basic_vec& __rhs) noexcept
   {

@@ -75,7 +75,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
 
     // Determine temporary device storage requirements for max_element
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceReduce::ArgMax,
       "__pstl_cuda_max_element: determination of device storage for cub::DeviceReduce::ArgMax failed",
       static_cast<void*>(nullptr),
@@ -91,7 +91,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
       __temporary_storage<size_t> __storage{__policy, __num_bytes, 1};
 
       // Run the reduction
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceReduce::ArgMax,
         "__pstl_cuda_max_element: kernel launch of cub::DeviceReduce::ArgMax failed",
         __storage.__get_temp_storage(),
@@ -104,7 +104,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
         __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_max_element: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),

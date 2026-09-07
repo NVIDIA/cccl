@@ -76,7 +76,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     _OffsetType __num_selected = 0;
 
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::Unique,
       "__pstl_cuda_unique: determination of device storage for cub::DeviceSelect::Unique failed",
       static_cast<void*>(nullptr),
@@ -90,7 +90,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
     { // Create temporary storage for the return value (num_selected) and CUB internal scratch space
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::Unique,
         "__pstl_cuda_unique: kernel launch of cub::DeviceSelect::Unique failed",
         __storage.__get_temp_storage(),
@@ -101,7 +101,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
         ::cuda::std::move(__pred),
         __policy);
 
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_unique: copy of num_selected from device to host failed",
         ::cuda::std::addressof(__num_selected),

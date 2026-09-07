@@ -47,11 +47,11 @@
 
 namespace cuda::experimental::__detail
 {
-#define __CUDAX_MULTI_GPU_DISPATCH(__stream, __call, ...)                                \
-  do                                                                                     \
-  {                                                                                      \
-    const auto __cur_context = ::cuda::__ensure_current_context{__stream};               \
-    _CCCL_TRY_CUDA_API(__call, "performing " #__call "(" #__VA_ARGS__ ")", __VA_ARGS__); \
+#define __CUDAX_MULTI_GPU_DISPATCH(__stream, __call, ...)                                   \
+  do                                                                                        \
+  {                                                                                         \
+    const auto __cur_context = ::cuda::__ensure_current_context{__stream};                  \
+    _CCCL_TRY_RUNTIME_API(__call, "performing " #__call "(" #__VA_ARGS__ ")", __VA_ARGS__); \
   } while (0)
 
 template <class _Env>

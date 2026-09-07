@@ -43,45 +43,33 @@ public:
   {}
 
   template <bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void max_pairs(
-    KeyT (&keys)[ItemsPerThread],
-    ValueT (&values)[ItemsPerThread],
-    int k,
-    int num_valid,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  max_pairs(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int k, int num_valid)
   {
     internal_block_topk_t(storage.topk_storage)
-      .template select_pairs<detail::topk::select::max, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
+      .template select_pairs<detail::topk::select::max, IsFullTile>(keys, values, k, num_valid);
+  }
+
+  template <bool IsFullTile>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void max_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid)
+  {
+    internal_block_topk_t(storage.topk_storage)
+      .template select_keys<detail::topk::select::max, IsFullTile>(keys, k, num_valid);
   }
 
   template <bool IsFullTile>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  max_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  min_pairs(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int k, int num_valid)
   {
     internal_block_topk_t(storage.topk_storage)
-      .template select_keys<detail::topk::select::max, IsFullTile>(keys, k, num_valid, begin_bit, end_bit);
+      .template select_pairs<detail::topk::select::min, IsFullTile>(keys, values, k, num_valid);
   }
 
   template <bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void min_pairs(
-    KeyT (&keys)[ItemsPerThread],
-    ValueT (&values)[ItemsPerThread],
-    int k,
-    int num_valid,
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void min_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid)
   {
     internal_block_topk_t(storage.topk_storage)
-      .template select_pairs<detail::topk::select::min, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
-  }
-
-  template <bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  min_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
-  {
-    internal_block_topk_t(storage.topk_storage)
-      .template select_keys<detail::topk::select::min, IsFullTile>(keys, k, num_valid, begin_bit, end_bit);
+      .template select_keys<detail::topk::select::min, IsFullTile>(keys, k, num_valid);
   }
 };
 } // namespace detail

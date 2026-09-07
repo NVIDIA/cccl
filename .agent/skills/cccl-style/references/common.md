@@ -46,6 +46,14 @@ Then apply the guidance in this file across CCCL unless a path-specific style re
 - A local `using` declaration, e.g. `using ::cuda::std::size_t;`, is acceptable to avoid repetition within a function body.
 - Static member functions of a class template inherit the class's namespace.
 
+# Using CUDA APIs
+
+- In headers, all CUDA Runtime (`cudaXxx(...)`) and CUDA Driver (`cuXxx(...)` or `cuda::__driver::xxxNoThrow(...)`) calls must have their return values handled or explicitly ignored with a comment why it's being ignored.
+  - CUDA Runtime calls shall use `_CCCL_TRY_RUNTIME_API` or `_CCCL_ASSERT_RUNTIME_API` macros to handle the return values.
+  - CUDA Driver calls shall use `_CCCL_TRY_DRIVER_API` or `_CCCL_ASSERT_DRIVER_API` macros to handle the return values.
+  - Alternatively, the return value might be checked manually.
+- In tests, all CUDA Runtime/Driver calls must have their return values checked either manually or using`assert(...)` in lit-style tests or `(CHECK|REQUIRE)_(CUDA|CUDART)` macros in catch2-style tests.
+
 ## Comments
 
 - Commented code without a description is not allowed.

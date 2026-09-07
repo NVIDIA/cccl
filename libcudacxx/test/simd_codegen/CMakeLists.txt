@@ -83,6 +83,7 @@ if (libcudacxx_codegen_filecheck_simd_sass)
       GLOB simd_codegen_sass_tests
       CONFIGURE_DEPENDS
       "abs_diff/*.cu"
+      "dot/*.cu"
       "floating_point/*.cu"
       "integer/*.cu"
       "min_max/*.cu"

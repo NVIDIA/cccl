@@ -81,7 +81,7 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
                                                 + static_cast<iter_difference_t<_OutputIterator>>(__count2);
 
     // We pass the policy as an environment to DeviceMerge
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
       "__pstl_cuda_merge: kernel launch of cub::DeviceMerge::MergeKeys failed",
       ::cuda::std::move(__first1),
