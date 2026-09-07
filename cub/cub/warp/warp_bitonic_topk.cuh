@@ -23,6 +23,7 @@
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/swap.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -69,24 +70,21 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void compare_and_replace(
 template <int Len, int LogicalWarpThreads, typename KeyT, typename ValueT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, int lane, unsigned int member_mask)
 {
-  const int src_lane = LogicalWarpThreads - lane - 1;
-
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < Len / 2; ++i)
   {
     const int other_i = Len - i - 1;
 
-    const KeyT key = keys[i];
-    keys[i]        = keys[other_i];
-    keys[other_i]  = key;
+    using ::cuda::std::swap;
+    swap(keys[i], keys[other_i]);
 
     if constexpr (!::cuda::std::is_same_v<ValueT, NullType>)
     {
-      const ValueT value = values[i];
-      values[i]          = values[other_i];
-      values[other_i]    = value;
+      swap(values[i], values[other_i]);
     }
   }
+
+  const int src_lane = LogicalWarpThreads - lane - 1;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < Len; ++i)
@@ -100,21 +98,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, in
 }
 } // namespace warp_bitonic_topk
 
-//! @brief Algorithms used by WarpBitonicTopK.
 enum class WarpBitonicTopKAlgorithm
 {
-  //! Eagerly sort and merge each input tile.
+  //! Eagerly sort and merge every MaxK items.
   eager,
   //! Buffer candidates that pass the current key threshold before merging them.
   buffered,
 };
-
-template <int MaxK,
-          typename KeyT,
-          typename ValueT                    = NullType,
-          WarpBitonicTopKAlgorithm Algorithm = WarpBitonicTopKAlgorithm::eager,
-          int LogicalWarpThreads             = detail::warp_threads>
-class WarpBitonicTopK;
 
 //! @rst
 //! The WarpBitonicTopK class provides methods for selecting top-k items from data partitioned across a logical warp.
@@ -124,13 +114,16 @@ class WarpBitonicTopK;
 //!
 //!   WarpBitonicTopK selects the ``k`` items ordered first by a comparison functor with less-than semantics.
 //!
-//!   The TopK functions operate on items already held by each lane or read arbitrary-length input through random-access
-//!   iterators in array-sized tiles. Output items use a striped arrangement across logical warp lanes.
+//!   Two kinds of TopK functions are provided:
+//!   (1) Array overloads operate on items already held by each lane. Input and
+//!       output items use a striped arrangement across logical warp lanes.
+//!   (2) Iterator overloads read arbitrary-length input through random-access iterators. Output items use a striped
+//!       arrangement across logical warp lanes. Supported only by the buffered algorithm.
 //!
 //! Simple Examples
 //! ++++++++++++++++
 //!
-//! The code snippet below illustrates the array API. The input contains 64 integer keys partitioned across
+//! The code snippet below illustrates the array overload. The input contains 64 integer keys partitioned across
 //! 32 threads, with each thread owning 2 items in a striped arrangement. The top 30 items are selected.
 //!
 //! .. code-block:: c++
@@ -160,11 +153,35 @@ class WarpBitonicTopK;
 //!        WarpBitonicTopKT{temp_storage}.TopK(thread_keys, CustomLess{}, 30);
 //!    }
 //!
-//! Suppose the set of input ``thread_keys`` across a logical warp of threads is
+//! Suppose the set of input ``thread_keys`` across a warp of threads is
 //! ``{ [0,63], [1,62], [2,61], ..., [31,32] }``.
 //! The corresponding output ``thread_keys`` in those threads will be
 //! ``{ [0,?], [1,?], [2,?], ..., [29,?], [?,?], [?,?] }``.
-//! Note keys are in a :ref:`striped arrangement <flexible-data-arrangement>` across logical warp lanes.
+//! (``?`` represents an undetermined value.)
+//! Note keys are in a :ref:`striped arrangement <flexible-data-arrangement>` across warp lanes.
+//!
+//! The code snippet below illustrates the iterator overload. The input ``keys_in`` points to ``num_items`` items. The
+//! top 30 keys are selected.
+//!
+//! .. code-block:: c++
+//!
+//!    __global__ void IteratorExampleKernel(const int* keys_in, int num_items)
+//!    {
+//!        constexpr int max_k = 32;
+//!        constexpr int warp_threads = 32;
+//!
+//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<
+//!          max_k, int, warp_threads, cub::NullType, cub::detail::WarpBitonicTopKAlgorithm::buffered>;
+//!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage;
+//!
+//!        int keys_out[max_k / warp_threads];
+//!
+//!        WarpBitonicTopKT{temp_storage}.TopK(keys_in, CustomLess{}, 30, num_items, keys_out);
+//!    }
+//!
+//! Suppose the input ``keys_in`` is [0, 1, ..., 63]. The output ``keys_out`` in a warp of threads will be
+//! ``{ [0,?], [1,?], [2,?], ..., [29,?], [?,?], [?,?] }``.
+//! Note keys in ``keys_out`` are in a :ref:`striped arrangement <flexible-data-arrangement>` across warp lanes.
 //!
 //! @endrst
 //!
@@ -174,14 +191,24 @@ class WarpBitonicTopK;
 //! @tparam KeyT
 //!   Key type.
 //!
-//! @tparam ValueT
-//!   <b>[optional]</b> Value type (default: cub::NullType, which indicates keys-only top-k).
-//!
 //! @tparam LogicalWarpThreads
 //!   <b>[optional]</b> Number of threads per logical warp. Must be a power of two no greater than the architectural
 //!   warp size.
-template <int MaxK, typename KeyT, typename ValueT, int LogicalWarpThreads>
-class WarpBitonicTopK<MaxK, KeyT, ValueT, WarpBitonicTopKAlgorithm::eager, LogicalWarpThreads>
+//!
+//! @tparam ValueT
+//!   <b>[optional]</b> Value type (default: cub::NullType, which indicates keys-only top-k).
+//!
+//! @tparam Algorithm
+//!   <b>[optional]</b> WarpBitonicTopKAlgorithm to use (default: WarpBitonicTopKAlgorithm::buffered).
+template <int MaxK,
+          typename KeyT,
+          int LogicalWarpThreads             = detail::warp_threads,
+          typename ValueT                    = NullType,
+          WarpBitonicTopKAlgorithm Algorithm = WarpBitonicTopKAlgorithm::buffered>
+class WarpBitonicTopK;
+
+template <int MaxK, typename KeyT, int LogicalWarpThreads, typename ValueT>
+class WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::eager>
 {
 private:
   static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
@@ -193,8 +220,8 @@ private:
 
   template <int ItemsPerThread>
   using WarpBitonicSortT = WarpBitonicSort<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
+  using MaxKSortT        = WarpBitonicSortT<max_k_per_thread>;
 
-  using MaxKSortT    = WarpBitonicSortT<max_k_per_thread>;
   using _TempStorage = cub::NullType;
 
 public:
@@ -232,16 +259,16 @@ public:
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Total number of valid keys across the logical warp.
+  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] valid_items Total number of valid keys across the logical warp.
   //! @param[in] oob_default Default value for out-of-bound key.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int num_items, KeyT oob_default) const
+  TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int valid_items, KeyT oob_default) const
   {
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
-    TopK(keys, values, compare_op, k, num_items, oob_default);
+    TopK(keys, values, compare_op, k, valid_items, oob_default);
   }
 
   //! @brief Selects top-k keys from partially valid per-thread arrays across a logical warp.
@@ -252,15 +279,15 @@ public:
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Total number of valid keys across the logical warp.
+  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] valid_items Total number of valid keys across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int num_items) const
+  TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int valid_items) const
   {
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
-    TopK(keys, values, compare_op, k, num_items);
+    TopK(keys, values, compare_op, k, valid_items);
   }
 
   //! @brief Selects top-k key-value pairs from per-thread arrays across a logical warp.
@@ -337,8 +364,8 @@ public:
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Total number of valid pairs across the logical warp.
+  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] valid_items Total number of valid pairs across the logical warp.
   //! @param[in] oob_default Default value for out-of-bound key.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -346,13 +373,13 @@ public:
        ValueT (&values)[ItemsPerThread],
        CompareOp compare_op,
        int k,
-       int num_items,
+       int valid_items,
        KeyT oob_default) const
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
-      if (i * LogicalWarpThreads + lane >= num_items)
+      if (i * LogicalWarpThreads + lane >= valid_items)
       {
         keys[i] = oob_default;
       }
@@ -360,7 +387,7 @@ public:
     TopK(keys, values, compare_op, k);
   }
 
-  //! @brief Selects top-k key-value pairs from partially valid arrays across a logical warp of threads.
+  //! @brief Selects top-k key-value pairs from partially valid per-thread arrays across a logical warp of threads.
   //!
   //! @tparam ItemsPerThread Number of key-value pairs per thread.
   //! @tparam CompareOp Comparison functor type.
@@ -369,21 +396,21 @@ public:
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Total number of valid pairs across the logical warp.
+  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] valid_items Total number of valid pairs across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread],
        ValueT (&values)[ItemsPerThread],
        CompareOp compare_op,
        [[maybe_unused]] int k,
-       int num_items) const
+       int valid_items) const
   {
     static_assert(ItemsPerThread * LogicalWarpThreads >= MaxK);
 
-    if (num_items < MaxK) // using "<=" is slower
+    if (valid_items < MaxK) // using "<=" is slower
     {
-      MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op, num_items);
+      MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
       return;
     }
 
@@ -392,7 +419,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = max_k_per_thread; i <= ItemsPerThread - max_k_per_thread; i += max_k_per_thread)
     {
-      const int remain_items = num_items - i * LogicalWarpThreads;
+      const int remain_items = valid_items - i * LogicalWarpThreads;
       if (remain_items >= MaxK)
       {
         MaxKSortT{}.template sort<CompareOp, false>(keys + i, values + i, compare_op);
@@ -413,7 +440,7 @@ public:
     if constexpr (constexpr int remain = ItemsPerThread % max_k_per_thread; remain != 0)
     {
       constexpr int offset   = ItemsPerThread / max_k_per_thread * max_k_per_thread;
-      const int remain_items = num_items - offset * LogicalWarpThreads;
+      const int remain_items = valid_items - offset * LogicalWarpThreads;
       if (remain_items > 0)
       {
         WarpBitonicSortT<remain>{}.template sort<CompareOp, false>(
@@ -427,168 +454,16 @@ public:
     warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys, values, lane, member_mask);
   }
 
-  //! @brief Selects top-k key-value pairs from arbitrary-length iterator input using array tiles.
-  //!
-  //! @tparam KeyInputIteratorT Random-access iterator type for input keys.
-  //! @tparam ValueInputIteratorT Random-access iterator type for input values.
-  //! @tparam CompareOp Comparison functor type.
-  //!
-  //! @param[in] keys_in Iterator pointing to the first input key of a logical warp. All lanes in a logical warp should
-  //! pass the same iterator.
-  //! @param[in] values_in Iterator pointing to the first input value of a logical warp. All lanes in a logical warp
-  //! should pass the same iterator.
-  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Number of input pairs.
-  //! @param[out] keys_out Selected keys in striped arrangement.
-  //! @param[out] values_out Values selected together with their corresponding keys.
-  template <typename KeyInputIteratorT, typename ValueInputIteratorT, typename CompareOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  TopK(KeyInputIteratorT keys_in,
-       ValueInputIteratorT values_in,
-       CompareOp compare_op,
-       int k,
-       int num_items,
-       KeyT (&keys_out)[MaxK / LogicalWarpThreads],
-       ValueT (&values_out)[MaxK / LogicalWarpThreads]) const
-  {
-    constexpr int tile_items_per_thread = 2 * max_k_per_thread;
-    constexpr int tile_items            = tile_items_per_thread * LogicalWarpThreads;
-    KeyT keys[tile_items_per_thread];
-    ValueT values[tile_items_per_thread];
-
-    const int first_tile_items = num_items < tile_items ? num_items : tile_items;
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < tile_items_per_thread; ++i)
-    {
-      const int pos = i * LogicalWarpThreads + lane;
-      if (pos < first_tile_items)
-      {
-        keys[i] = keys_in[pos];
-        if constexpr (!keys_only)
-        {
-          values[i] = values_in[pos];
-        }
-      }
-    }
-    TopK(keys, values, compare_op, k, first_tile_items);
-
-    for (int offset = first_tile_items; offset < num_items; offset += MaxK)
-    {
-      const int incoming_items = num_items - offset < MaxK ? num_items - offset : MaxK;
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < max_k_per_thread; ++i)
-      {
-        const int pos = i * LogicalWarpThreads + lane;
-        if (pos < incoming_items)
-        {
-          keys[max_k_per_thread + i] = keys_in[offset + pos];
-          if constexpr (!keys_only)
-          {
-            values[max_k_per_thread + i] = values_in[offset + pos];
-          }
-        }
-      }
-      TopK(keys, values, compare_op, k, MaxK + incoming_items);
-    }
-
-    const int output_items = num_items < MaxK ? num_items : MaxK;
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < max_k_per_thread; ++i)
-    {
-      if (i * LogicalWarpThreads + lane < output_items)
-      {
-        keys_out[i] = keys[i];
-        if constexpr (!keys_only)
-        {
-          values_out[i] = values[i];
-        }
-      }
-    }
-  }
-
-  //! @brief Selects top-k keys from arbitrary-length iterator input using array tiles.
-  //!
-  //! @tparam KeyInputIteratorT Random-access iterator type for input keys.
-  //! @tparam CompareOp Comparison functor type.
-  //!
-  //! @param[in] keys_in Iterator pointing to the first input key of a logical warp. All lanes in a logical warp should
-  //! pass the same iterator.
-  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Number of input keys.
-  //! @param[out] keys_out Selected keys in striped arrangement.
-  template <typename KeyInputIteratorT, typename CompareOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  TopK(KeyInputIteratorT keys_in,
-       CompareOp compare_op,
-       int k,
-       int num_items,
-       KeyT (&keys_out)[MaxK / LogicalWarpThreads]) const
-  {
-    static_assert(keys_only);
-    ValueT values_out[max_k_per_thread];
-    TopK(keys_in, nullptr, compare_op, k, num_items, keys_out, values_out);
-  }
-
 private:
   int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
   unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
 };
 
-//! @rst
-//! The buffered WarpBitonicTopK specialization selects top-k items from arrays or arbitrary-length iterator input
-//! across a logical warp.
-//!
-//! Overview
-//! ++++++++++++++++
-//!
-//!   The buffered WarpBitonicTopK specialization initializes a retained top-k set from per-thread arrays or
-//!   random-access iterators, buffers candidates that pass the current key threshold, and merges them into the retained
-//!   set. Input and output items use a striped arrangement across logical warp lanes.
-//!
-//! Simple Example
-//! ++++++++++++++
-//!
-//! The code snippet below selects the top 30 keys from ``num_items`` integer keys.
-//!
-//! .. code-block:: c++
-//!
-//!    #include <cub/cub.cuh>  // or equivalently <cub/warp/warp_bitonic_topk.cuh>
-//!
-//!    __global__ void IteratorExampleKernel(const int* keys_in, int num_items)
-//!    {
-//!        constexpr int max_k = 32;
-//!
-//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<
-//!          max_k, int, cub::NullType, cub::detail::WarpBitonicTopKAlgorithm::buffered>;
-//!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage;
-//!
-//!        int keys_out[max_k / 32];
-//!
-//!        WarpBitonicTopKT{temp_storage}.TopK(keys_in, CustomLess{}, 30, num_items, keys_out);
-//!    }
-//!
-//! Suppose the input ``keys_in`` is [0, 1, ..., 63]. The output ``keys_out`` in a logical warp of threads will be
-//! ``{ [0,?], [1,?], [2,?], ..., [29,?], [?,?], [?,?] }``.
-//! Note keys are in a :ref:`striped arrangement <flexible-data-arrangement>` across logical warp lanes.
-//!
-//! @endrst
-//!
-//! @tparam MaxK
-//!   The maximum number of selected items. Must be a multiple of the logical warp size.
-//!
-//! @tparam KeyT
-//!   Key type.
-//!
-//! @tparam ValueT
-//!   <b>[optional]</b> Value type (default: cub::NullType, which indicates keys-only top-k).
-//!
-//! @tparam LogicalWarpThreads
-//!   <b>[optional]</b> Number of threads per logical warp. Must be a power of two no greater than the architectural
-//!   warp size.
-template <int MaxK, typename KeyT, typename ValueT, int LogicalWarpThreads>
-class WarpBitonicTopK<MaxK, KeyT, ValueT, WarpBitonicTopKAlgorithm::buffered, LogicalWarpThreads>
+// The buffered WarpBitonicTopK specialization initializes a retained top-k set from per-thread arrays or
+// random-access iterators, buffers candidates that pass the current key threshold, and merges them into the retained
+// set. Input and output items use a striped arrangement across logical warp lanes.
+template <int MaxK, typename KeyT, int LogicalWarpThreads, typename ValueT>
+class WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::buffered>
 {
 private:
   static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
@@ -600,9 +475,8 @@ private:
 
   template <int ItemsPerThread>
   using WarpBitonicSortT = WarpBitonicSort<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
-
-  using MaxKSortT      = WarpBitonicSortT<max_k_per_thread>;
-  using CandidateSortT = WarpBitonicSortT<1>;
+  using MaxKSortT        = WarpBitonicSortT<max_k_per_thread>;
+  using CandidateSortT   = WarpBitonicSortT<1>;
 
   struct _TempStorage
   {
@@ -616,12 +490,12 @@ public:
 
   //! @brief Constructs a WarpBitonicTopK object.
   //!
-  //! @param[in] temp_storage Logical-warp-private temporary storage used to buffer candidates.
+  //! @param[in] temp_storage Temporary storage.
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicTopK(TempStorage& temp_storage)
       : storage(&temp_storage.Alias())
   {}
 
-  //! @brief Selects top-k keys from per-thread arrays using a candidate buffer.
+  //! @brief Selects top-k keys from per-thread arrays across a logical warp.
   //!
   //! @tparam ItemsPerThread Number of keys per thread.
   //! @tparam CompareOp Comparison functor type.
@@ -638,7 +512,7 @@ public:
     TopK(keys, values, compare_op, k);
   }
 
-  //! @brief Selects top-k keys from partially valid per-thread arrays using a candidate buffer.
+  //! @brief Selects top-k keys from partially valid per-thread arrays across a logical warp.
   //!
   //! @tparam ItemsPerThread Number of keys per thread.
   //! @tparam CompareOp Comparison functor type.
@@ -646,17 +520,18 @@ public:
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Total number of valid keys across the logical warp.
+  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] valid_items Total number of valid keys across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int num_items)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int valid_items)
   {
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
-    TopK(keys, values, compare_op, k, num_items);
+    TopK(keys, values, compare_op, k, valid_items);
   }
 
-  //! @brief Selects top-k key-value pairs from per-thread arrays using a candidate buffer.
+  //! @brief Selects top-k key-value pairs from per-thread arrays across a logical warp.
   //!
   //! @tparam ItemsPerThread Number of key-value pairs per thread.
   //! @tparam CompareOp Comparison functor type.
@@ -673,7 +548,7 @@ public:
     TopK(keys, values, compare_op, k, ItemsPerThread * LogicalWarpThreads);
   }
 
-  //! @brief Selects top-k key-value pairs from partially valid per-thread arrays using a candidate buffer.
+  //! @brief Selects top-k key-value pairs from partially valid per-thread arrays across a logical warp.
   //!
   //! @tparam ItemsPerThread Number of key-value pairs per thread.
   //! @tparam CompareOp Comparison functor type.
@@ -682,17 +557,17 @@ public:
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Total number of valid pairs across the logical warp.
+  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] valid_items Total number of valid pairs across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-  TopK(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int k, int num_items)
+  TopK(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int k, int valid_items)
   {
     static_assert(ItemsPerThread * LogicalWarpThreads >= MaxK);
 
-    if (num_items <= MaxK)
+    if (valid_items <= MaxK)
     {
-      MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op, num_items);
+      MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
       return;
     }
 
@@ -707,12 +582,32 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = max_k_per_thread; i < ItemsPerThread; ++i)
     {
-      const bool is_candidate = i * LogicalWarpThreads + lane < num_items;
+      const bool is_candidate = i * LogicalWarpThreads + lane < valid_items;
       process_candidate(
         keys, values, keys[i], values[i], compare_op, is_candidate, k_th_item, k_th_lane, k_th, num_candidates);
     }
     flush_candidates(keys, values, compare_op, num_candidates);
     warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys, values, lane, member_mask);
+  }
+
+  //! @brief Selects top-k keys from iterator input.
+  //!
+  //! @tparam KeyInputIteratorT Random-access iterator type for input keys.
+  //! @tparam CompareOp Comparison functor type.
+  //!
+  //! @param[in] keys_in Iterator pointing to the first input key of a logical warp. All lanes in a logical warp should
+  //! pass the same iterator.
+  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
+  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``num_items``.
+  //! @param[in] num_items Number of input keys.
+  //! @param[out] keys_out Selected keys in striped arrangement.
+  template <typename KeyInputIteratorT, typename CompareOp>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(
+    KeyInputIteratorT keys_in, CompareOp compare_op, int k, int num_items, KeyT (&keys_out)[MaxK / LogicalWarpThreads])
+  {
+    static_assert(keys_only);
+    ValueT values_out[max_k_per_thread];
+    TopK(keys_in, nullptr, compare_op, k, num_items, keys_out, values_out);
   }
 
   //! @brief Selects top-k key-value pairs from iterator input.
@@ -791,26 +686,6 @@ public:
     warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys_out, values_out, lane, member_mask);
   }
 
-  //! @brief Selects top-k keys from iterator input.
-  //!
-  //! @tparam KeyInputIteratorT Random-access iterator type for input keys.
-  //! @tparam CompareOp Comparison functor type.
-  //!
-  //! @param[in] keys_in Iterator pointing to the first input key of a logical warp. All lanes in a logical warp should
-  //! pass the same iterator.
-  //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``num_items``.
-  //! @param[in] num_items Number of input keys.
-  //! @param[out] keys_out Selected keys in striped arrangement.
-  template <typename KeyInputIteratorT, typename CompareOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(
-    KeyInputIteratorT keys_in, CompareOp compare_op, int k, int num_items, KeyT (&keys_out)[MaxK / LogicalWarpThreads])
-  {
-    static_assert(keys_only);
-    ValueT values_out[max_k_per_thread];
-    TopK(keys_in, nullptr, compare_op, k, num_items, keys_out, values_out);
-  }
-
 private:
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_candidate(
@@ -875,7 +750,6 @@ private:
         temp_storage.values[pos] = value;
       }
     }
-    __syncwarp(member_mask);
   }
 
   template <typename CompareOp>
@@ -884,6 +758,7 @@ private:
   {
     if (num_candidates)
     {
+      __syncwarp(member_mask);
       const _TempStorage& temp_storage = *storage;
       KeyT key                         = (lane < num_candidates) ? temp_storage.keys[lane] : KeyT{};
       ValueT value{};
