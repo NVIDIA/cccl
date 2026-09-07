@@ -246,6 +246,10 @@ using block_threads     = c2h::enum_type_list<int, 32, 128>;
 using items_per_thread  = c2h::enum_type_list<int, 1, 4, 5, 8>;
 using warp_time_slicing = c2h::enum_type_list<bool, false, true>;
 
+// Warp time-slicing is unsupported for guarded and flagged scatter exchanges:
+// https://github.com/NVIDIA/cccl/issues/870
+using no_warp_time_slicing = c2h::enum_type_list<bool, false>;
+
 template <typename TestType>
 struct params_t
 {
@@ -418,7 +422,7 @@ CUB_TEST("Block exchange guarded scatter to striped works in-place",
          types,
          block_threads,
          items_per_thread,
-         warp_time_slicing)
+         no_warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -442,7 +446,7 @@ CUB_TEST("Block exchange flagged scatter to striped works in-place",
          types,
          block_threads,
          items_per_thread,
-         warp_time_slicing)
+         no_warp_time_slicing)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
