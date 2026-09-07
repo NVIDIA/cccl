@@ -36,9 +36,8 @@ NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
 
 using modes        = nvbench::enum_type_list<Mode::Latency, Mode::Throughput>;
 using algos        = nvbench::enum_type_list<WarpBitonicTopKAlgorithm::eager, WarpBitonicTopKAlgorithm::buffered>;
-using eager_algos  = nvbench::enum_type_list<WarpBitonicTopKAlgorithm::eager>;
 using key_types    = nvbench::type_list<std::int16_t, float>;
-using value_types  = offset_types;
+using value_types  = nvbench::type_list<int32_t>;
 using len_values   = nvbench::enum_type_list<32, 64, 96, 128, 160>;
 using max_k_values = nvbench::enum_type_list<32, 64, 96>;
 
@@ -47,6 +46,7 @@ using max_k_values = nvbench::enum_type_list<32, 64, 96>;
 // (2) num_items is always set to len (ItemsPerThread * 32), though partial variants accept smaller values.
 //     Because adding a num_items axis would bloat the benchmark combinations, and using a len much larger than
 //     num_items is inefficient for these APIs.
+// (3) the perf of the partial (with oob_default) API is nearly the same as the full API, so not benchmark it
 
 template <WarpBitonicTopKAlgorithm Algo, int WarpsPerBlock, int MaxK>
 struct full_op_t
@@ -54,7 +54,7 @@ struct full_op_t
   template <typename KeyT, typename ValueT, int ItemsPerThread>
   __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
   {
-    using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT, Algo>;
+    using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, warp_threads, ValueT, Algo>;
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
     warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(keys, values, CustomLess{}, 1);
   }
@@ -77,43 +77,12 @@ NVBENCH_BENCH_TYPES(full, NVBENCH_TYPE_AXES(modes, algos, key_types, value_types
   .set_type_axes_names({"mode", "algo", "KeyT", "ValueT", "len", "max_k"});
 
 template <WarpBitonicTopKAlgorithm Algo, int WarpsPerBlock, int MaxK>
-struct partial_oob_op_t
-{
-  template <typename KeyT, typename ValueT, int ItemsPerThread>
-  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
-  {
-    using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT, Algo>;
-    __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
-    warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(
-      keys, values, CustomLess{}, 1, ItemsPerThread * warp_threads, CustomLess::oob_default<KeyT>);
-  }
-};
-
-template <Mode BenchMode, WarpBitonicTopKAlgorithm Algo, typename KeyT, typename ValueT, int Len, int MaxK>
-void partial_oob(
-  nvbench::state& state,
-  nvbench::type_list<nvbench::enum_type<BenchMode>,
-                     nvbench::enum_type<Algo>,
-                     KeyT,
-                     ValueT,
-                     nvbench::enum_type<Len>,
-                     nvbench::enum_type<MaxK>>)
-{
-  constexpr int warps_per_block = get_run_params<BenchMode>().block_dim / warp_threads;
-  run_topk<partial_oob_op_t<Algo, warps_per_block, MaxK>, BenchMode, KeyT, ValueT, Len, MaxK>(state);
-}
-
-NVBENCH_BENCH_TYPES(partial_oob,
-                    NVBENCH_TYPE_AXES(modes, eager_algos, key_types, value_types, len_values, max_k_values))
-  .set_type_axes_names({"mode", "algo", "KeyT", "ValueT", "len", "max_k"});
-
-template <WarpBitonicTopKAlgorithm Algo, int WarpsPerBlock, int MaxK>
 struct partial_op_t
 {
   template <typename KeyT, typename ValueT, int ItemsPerThread>
   __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread]) const
   {
-    using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT, Algo>;
+    using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, warp_threads, ValueT, Algo>;
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
     warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(
       keys, values, CustomLess{}, 1, ItemsPerThread * warp_threads);
@@ -139,7 +108,7 @@ NVBENCH_BENCH_TYPES(partial, NVBENCH_TYPE_AXES(modes, algos, key_types, value_ty
 template <WarpBitonicTopKAlgorithm Algo, int WarpsPerBlock, int MaxK, typename KeyT, typename ValueT>
 __global__ void iterator_topk_kernel(int num_iterations, KeyT* keys_in, ValueT* values_in, int k, int num_items)
 {
-  using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, ValueT, Algo>;
+  using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, warp_threads, ValueT, Algo>;
 
   __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
 
@@ -199,7 +168,10 @@ void iterator(
   });
 }
 
-NVBENCH_BENCH_TYPES(iterator, NVBENCH_TYPE_AXES(modes, algos, key_types, value_types, max_k_values))
+NVBENCH_BENCH_TYPES(
+  iterator,
+  NVBENCH_TYPE_AXES(
+    modes, nvbench::enum_type_list<WarpBitonicTopKAlgorithm::buffered>, key_types, value_types, max_k_values))
   .set_type_axes_names({"mode", "algo", "KeyT", "ValueT", "max_k"})
   .add_int64_axis("len", {32, 64, 96, 128, 256, 512, 1024, 2048})
   .add_int64_axis("k", {32});
