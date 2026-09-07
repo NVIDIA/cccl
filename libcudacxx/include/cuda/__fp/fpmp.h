@@ -80,7 +80,7 @@
 
     Example Usage:
     -------------------------------------------------------------------------
-        #include <cuda/fpmp>
+        #include <cuda/experimental/fpmp>
 
         // Basic arithmetic with double-float precision
         fp32mp2 a = 1.23456789123456789;       // double-float precision from double value
@@ -1532,7 +1532,7 @@ _CCCL_REQUIRES(
  * counterpart, so host-only translation units never see them.
  *
  * These are thread-cooperation primitives (not math), so they live in the core
- * header and are available via <cuda/fpmp>.
+ * header and are available via <cuda/experimental/fpmp>.
  * ============================================================================
  */
 

@@ -18,13 +18,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/fpemu>
 #include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/random>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/fpemu>
 
 #include <nv/target>
 

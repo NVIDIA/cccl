@@ -27,8 +27,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/fpemu>
 #include <cuda/std/cassert>
+
+#include <cuda/experimental/fpemu>
 
 #include "test_macros.h"
 
