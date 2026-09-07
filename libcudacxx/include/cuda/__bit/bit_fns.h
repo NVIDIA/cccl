@@ -43,7 +43,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr int bit_fns(const _Tp __value, const int __rank) noexcept
 {
   constexpr int __digits = ::cuda::std::numeric_limits<_Tp>::digits;
-  _CCCL_ASSERT(__rank >= 0 && __rank < __digits, "cuda::bit_fns: rank out of range");
+  _CCCL_ASSERT(__rank >= 0 && __rank < __digits, "rank out of range");
   if (__rank >= ::cuda::std::popcount(__value))
   {
     return -1;
