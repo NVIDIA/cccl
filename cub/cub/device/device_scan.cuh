@@ -306,6 +306,7 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //! - @devicestorage
   //!
   //! Snippet
@@ -416,6 +417,7 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -486,6 +488,7 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //! - @devicestorage
   //!
   //! Snippet
@@ -573,6 +576,7 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -633,6 +637,7 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //! - @devicestorage
   //!
   //! Snippet
@@ -766,6 +771,7 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -862,6 +868,7 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //! - @devicestorage
   //!
   //! Snippet
@@ -977,6 +984,7 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1050,6 +1058,7 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1189,6 +1198,7 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1311,6 +1321,7 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1393,6 +1404,7 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
+  //! - The last input item does not contribute to the result of an exclusive scan and is not read.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
