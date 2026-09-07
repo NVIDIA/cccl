@@ -4,19 +4,11 @@
 #include <thrust/device_vector.h>
 #include <thrust/remove.h>
 
+#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
-
-struct is_even
-{
-  template <class T>
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return static_cast<int>(val) % 2 == 0;
-  }
-};
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
@@ -32,10 +24,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc{};
 
-  state.exec(
-    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      do_not_optimize(thrust::remove_copy_if(policy(alloc, launch), in.begin(), in.end(), out.begin(), is_even{}));
-    });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(
+                 thrust::remove_copy_if(policy(alloc, launch), in.begin(), in.end(), out.begin(), cuda::__is_even{}));
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

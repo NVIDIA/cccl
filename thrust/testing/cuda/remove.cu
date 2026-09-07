@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/remove.h>
 
+#include <cuda/functional>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -55,15 +57,6 @@ __global__ void remove_copy_if_kernel(
   *result_end = thrust::remove_copy_if(exec, first, last, stencil_first, result, pred);
 }
 #endif
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (static_cast<unsigned int>(x) & 1) == 0;
-  }
-};
 
 template <typename T>
 struct is_true
@@ -373,14 +366,13 @@ DECLARE_UNITTEST(TestRemoveCopyCudaStreams);
 void TestRemoveIfCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
 
   Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), is_even<T>());
+  Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), cuda::__is_even{});
 
   ASSERT_EQUAL(end - data.begin(), 3);
   data.erase(end, data.end());
@@ -420,7 +412,6 @@ DECLARE_UNITTEST(TestRemoveIfStencilCudaStreams);
 void TestRemoveCopyIfCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
-  using T      = Vector::value_type;
 
   Vector data{1, 2, 1, 3, 2};
 
@@ -430,7 +421,7 @@ void TestRemoveCopyIfCudaStreams()
   cudaStreamCreate(&s);
 
   Vector::iterator end =
-    thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), is_even<T>());
+    thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
 
   ASSERT_EQUAL(end - result.begin(), 3);
   result.erase(end, result.end());
