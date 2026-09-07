@@ -54,7 +54,9 @@ d_output = cp.empty(data.shape, dtype=ValueFlag.dtype)
 h_init = ValueFlag(0, 0)
 
 # Perform the segmented scan.
-cuda.compute.inclusive_scan(zip_it, d_output, schwartz_sum, h_init, data.size)
+cuda.compute.inclusive_scan(
+    d_in=zip_it, d_out=d_output, op=schwartz_sum, init_value=h_init, num_items=data.size
+)
 
 # Verify the result.
 expected_prefix = np.asarray([1, 2, 1, 2, 3, 1, 1, 2], dtype=np.int64)

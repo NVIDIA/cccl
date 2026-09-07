@@ -57,7 +57,7 @@ Example
     {
         constexpr auto uint_max = cuda::std::numeric_limits<unsigned>::max();
 
-        const auto result = cuda::saturating_sub_overflow(42, uint_max); // saturated
+        const auto result = cuda::saturating_sub_overflow(42u, uint_max); // saturated
         assert(result.value == 0);
         assert(result.overflow);
 
@@ -66,7 +66,7 @@ Example
         {
             assert(false); // shouldn't be reached
         }
-        assert(value == 982);
+        assert(value == -982);
     }
 
     int main()
@@ -75,4 +75,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/4cnTKPjbG>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/1M9j9oG9z>`_

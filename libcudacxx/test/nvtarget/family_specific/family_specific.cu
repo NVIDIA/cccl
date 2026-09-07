@@ -37,8 +37,7 @@
 #ifdef __CUDACC_TILE__
 __tile__
 #endif // __CUDACC_TILE__
-  __host__ __device__ void
-  fn()
+  __host__ __device__ void fn()
 {
 #if defined(__CUDA_ARCH__)
   CHECK_TRUE(NV_IS_EXACTLY_SM_103);

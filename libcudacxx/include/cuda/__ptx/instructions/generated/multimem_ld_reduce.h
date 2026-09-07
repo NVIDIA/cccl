@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_MULTIMEM_LD_REDUCE_H_
 #define _CUDA_PTX_GENERATED_MULTIMEM_LD_REDUCE_H_
 
@@ -14,22 +17,15 @@ __device__ static inline uint32_t multimem_ld_reduce(
   const uint32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::uint32_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.min.u32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -46,18 +42,16 @@ __device__ static inline uint32_t multimem_ld_reduce(
   const uint32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
   const ::cuda::std::uint32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -116,11 +110,6 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -135,22 +124,15 @@ __device__ static inline uint64_t multimem_ld_reduce(
   const uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::uint64_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.min.u64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -167,18 +149,16 @@ __device__ static inline uint64_t multimem_ld_reduce(
   const uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
   const ::cuda::std::uint64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -237,11 +217,6 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -256,22 +231,15 @@ __device__ static inline int32_t multimem_ld_reduce(
   const int32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::int32_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::int32_t __dest;
   asm("multimem.ld_reduce.weak.global.min.s32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -288,18 +256,16 @@ __device__ static inline int32_t multimem_ld_reduce(
   const int32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
   const ::cuda::std::int32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::int32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -358,11 +324,6 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -377,22 +338,15 @@ __device__ static inline int64_t multimem_ld_reduce(
   const int64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int64_t
+_CCCL_DEVICE_API ::cuda::std::int64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_min_t, const ::cuda::std::int64_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::int64_t __dest;
   asm("multimem.ld_reduce.weak.global.min.s64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -409,18 +363,16 @@ __device__ static inline int64_t multimem_ld_reduce(
   const int64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
   const ::cuda::std::int64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_min (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_min (due to parameter type constraint)
   ::cuda::std::int64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -479,11 +431,6 @@ _CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -498,22 +445,15 @@ __device__ static inline uint32_t multimem_ld_reduce(
   const uint32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::uint32_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.max.u32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -530,18 +470,16 @@ __device__ static inline uint32_t multimem_ld_reduce(
   const uint32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
   const ::cuda::std::uint32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -600,11 +538,6 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -619,22 +552,15 @@ __device__ static inline uint64_t multimem_ld_reduce(
   const uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::uint64_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.max.u64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -651,18 +577,16 @@ __device__ static inline uint64_t multimem_ld_reduce(
   const uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
   const ::cuda::std::uint64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -721,11 +645,6 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -740,22 +659,15 @@ __device__ static inline int32_t multimem_ld_reduce(
   const int32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::int32_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::int32_t __dest;
   asm("multimem.ld_reduce.weak.global.max.s32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -772,18 +684,16 @@ __device__ static inline int32_t multimem_ld_reduce(
   const int32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
   const ::cuda::std::int32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::int32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -842,11 +752,6 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -861,22 +766,15 @@ __device__ static inline int64_t multimem_ld_reduce(
   const int64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int64_t
+_CCCL_DEVICE_API ::cuda::std::int64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_max_t, const ::cuda::std::int64_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::int64_t __dest;
   asm("multimem.ld_reduce.weak.global.max.s64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -893,18 +791,16 @@ __device__ static inline int64_t multimem_ld_reduce(
   const int64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
   const ::cuda::std::int64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_max (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_max (due to parameter type constraint)
   ::cuda::std::int64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -963,11 +859,6 @@ _CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -982,22 +873,15 @@ __device__ static inline uint32_t multimem_ld_reduce(
   const uint32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::uint32_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.add.u32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1014,18 +898,16 @@ __device__ static inline uint32_t multimem_ld_reduce(
   const uint32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
   const ::cuda::std::uint32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1084,11 +966,6 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1103,22 +980,15 @@ __device__ static inline uint64_t multimem_ld_reduce(
   const uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::uint64_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.add.u64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1135,18 +1005,16 @@ __device__ static inline uint64_t multimem_ld_reduce(
   const uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
   const ::cuda::std::uint64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1205,11 +1073,6 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1224,22 +1087,15 @@ __device__ static inline int32_t multimem_ld_reduce(
   const int32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::int32_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::int32_t __dest;
   asm("multimem.ld_reduce.weak.global.add.s32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1256,18 +1112,16 @@ __device__ static inline int32_t multimem_ld_reduce(
   const int32_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
   const ::cuda::std::int32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::int32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1326,11 +1180,6 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1345,22 +1194,15 @@ __device__ static inline int64_t multimem_ld_reduce(
   const int64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int64_t
+_CCCL_DEVICE_API ::cuda::std::int64_t
 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_add_t, const ::cuda::std::int64_t* __addr)
 {
-// __sem == sem_weak (due to parameter type constraint)
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  // __sem == sem_weak (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::int64_t __dest;
   asm("multimem.ld_reduce.weak.global.add.u64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1377,18 +1219,16 @@ __device__ static inline int64_t multimem_ld_reduce(
   const int64_t* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
+_CCCL_DEVICE_API ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
   const ::cuda::std::int64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
-// __op == op_add (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  // __op == op_add (due to parameter type constraint)
   ::cuda::std::int64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1447,11 +1287,6 @@ _CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
         : "memory");
   }
   return __dest;
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  return 0;
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1466,23 +1301,15 @@ __device__ static inline B32 multimem_ld_reduce(
   const B32* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B32* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.and.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint32_t __err_out_var = 0;
-  return *reinterpret_cast<_B32*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1499,19 +1326,17 @@ __device__ static inline B32 multimem_ld_reduce(
   const B32* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_and_op_t, const _B32* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1570,12 +1395,6 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(
         : "memory");
   }
   return *reinterpret_cast<_B32*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint32_t __err_out_var = 0;
-  return *reinterpret_cast<_B32*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1590,23 +1409,15 @@ __device__ static inline B32 multimem_ld_reduce(
   const B32* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B32* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.or.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint32_t __err_out_var = 0;
-  return *reinterpret_cast<_B32*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1623,19 +1434,17 @@ __device__ static inline B32 multimem_ld_reduce(
   const B32* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_or_op_t, const _B32* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1694,12 +1503,6 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(
         : "memory");
   }
   return *reinterpret_cast<_B32*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint32_t __err_out_var = 0;
-  return *reinterpret_cast<_B32*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1714,23 +1517,15 @@ __device__ static inline B32 multimem_ld_reduce(
   const B32* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B32* __addr)
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B32* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.xor.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B32*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint32_t __err_out_var = 0;
-  return *reinterpret_cast<_B32*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1747,19 +1542,17 @@ __device__ static inline B32 multimem_ld_reduce(
   const B32* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B32 multimem_ld_reduce(
+_CCCL_DEVICE_API _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_xor_op_t, const _B32* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B32) == 4, "");
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1818,12 +1611,6 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(
         : "memory");
   }
   return *reinterpret_cast<_B32*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint32_t __err_out_var = 0;
-  return *reinterpret_cast<_B32*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1838,23 +1625,15 @@ __device__ static inline B64 multimem_ld_reduce(
   const B64* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_and_op_t, const _B64* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.and.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint64_t __err_out_var = 0;
-  return *reinterpret_cast<_B64*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1871,19 +1650,17 @@ __device__ static inline B64 multimem_ld_reduce(
   const B64* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_and_op_t, const _B64* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -1942,12 +1719,6 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(
         : "memory");
   }
   return *reinterpret_cast<_B64*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint64_t __err_out_var = 0;
-  return *reinterpret_cast<_B64*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1962,23 +1733,15 @@ __device__ static inline B64 multimem_ld_reduce(
   const B64* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_or_op_t, const _B64* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.or.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint64_t __err_out_var = 0;
-  return *reinterpret_cast<_B64*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -1995,19 +1758,17 @@ __device__ static inline B64 multimem_ld_reduce(
   const B64* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_or_op_t, const _B64* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -2066,12 +1827,6 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(
         : "memory");
   }
   return *reinterpret_cast<_B64*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint64_t __err_out_var = 0;
-  return *reinterpret_cast<_B64*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -2086,23 +1841,15 @@ __device__ static inline B64 multimem_ld_reduce(
   const B64* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B64* __addr)
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cuda::ptx::op_xor_op_t, const _B64* __addr)
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.xor.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
   return *reinterpret_cast<_B64*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint64_t __err_out_var = 0;
-  return *reinterpret_cast<_B64*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
 
@@ -2119,19 +1866,17 @@ __device__ static inline B64 multimem_ld_reduce(
   const B64* addr);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _CCCL_DEVICE void __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
 template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline _B64 multimem_ld_reduce(
+_CCCL_DEVICE_API _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_xor_op_t, const _B64* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8);
-#  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
+  static_assert(sizeof(_B64) == 8, "");
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
   {
@@ -2190,13 +1935,9 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(
         : "memory");
   }
   return *reinterpret_cast<_B64*>(&__dest);
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  ::cuda::std::uint64_t __err_out_var = 0;
-  return *reinterpret_cast<_B64*>(&__err_out_var);
-#  endif
 }
 #endif // __cccl_ptx_isa >= 810
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_MULTIMEM_LD_REDUCE_H_

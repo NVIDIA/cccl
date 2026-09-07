@@ -6,7 +6,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#include "cuda/std/__memory/assume_aligned.h"
+
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
+#include <cuda/std/memory>
 
 #include <test_macros.h>
 

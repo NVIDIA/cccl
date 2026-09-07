@@ -298,7 +298,7 @@ struct TestTransformScan
     ASSERT_EQUAL(d_output, h_output);
   }
 };
-VariableUnitTest<TestTransformScan, IntegralTypes> TestTransformScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScan, IntegralTypes);
 
 template <class Vector>
 void TestTransformScanCountingIterator()
@@ -325,7 +325,7 @@ struct TestTransformScanToDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     thrust::discard_iterator<> h_result = thrust::transform_inclusive_scan(
       h_input.begin(), h_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
@@ -371,7 +371,7 @@ struct TestTransformScanToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestTransformScanToDiscardIterator, IntegralTypes> TestTransformScanToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformScanToDiscardIterator, IntegralTypes);
 
 // Regression test for https://github.com/NVIDIA/thrust/issues/1332
 // The issue was the internal transform_input_iterator_t created by the

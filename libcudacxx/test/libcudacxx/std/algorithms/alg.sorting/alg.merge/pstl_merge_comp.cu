@@ -67,7 +67,7 @@ void test_merge(const Policy& policy,
       out.begin(),
       ::cuda::std::greater<int>{});
     CHECK(res == out.begin() + size2);
-    CHECK(thrust::equal(out.begin(), res, in2.begin()));
+    CHECK(cuda::std::equal(policy, out.begin(), res, in2.begin()));
   }
 
   cuda::std::fill(policy, out.begin(), out.end(), -1);
@@ -81,7 +81,7 @@ void test_merge(const Policy& policy,
       out.begin(),
       ::cuda::std::greater<int>{});
     CHECK(res == out.begin() + size1);
-    CHECK(thrust::equal(out.begin(), res, in1.begin()));
+    CHECK(cuda::std::equal(policy, out.begin(), res, in1.begin()));
   }
 
   cuda::std::fill(policy, out.begin(), out.end(), -1);
@@ -94,8 +94,9 @@ void test_merge(const Policy& policy,
     // First subrange is equal to [2 * size1 - 2, 2 * size1 - 4, ..., 2 * size2)
     // The rest is equal [2 * size2 - 1, 2 * size2 - 1, ..., 0)
     const auto mid = out.begin() + (size1 - size2);
-    CHECK(thrust::equal(out.begin(), mid, cuda::strided_iterator{cuda::counting_iterator{2 * size1 - 2}, -2}));
-    CHECK(thrust::equal(mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2 - 1}, -1}));
+    CHECK(
+      cuda::std::equal(policy, out.begin(), mid, cuda::strided_iterator{cuda::counting_iterator{2 * size1 - 2}, -2}));
+    CHECK(cuda::std::equal(policy, mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2 - 1}, -1}));
   }
 
   cuda::std::fill(policy, out.begin(), out.end(), -1);
@@ -109,8 +110,9 @@ void test_merge(const Policy& policy,
     // First subrange is equal to [2 * size1 - 2, 2 * size1 - 4, ..., 2 * size2)
     // The rest is equal [2 * size2 - 1, 2 * size2 - 1, ..., 0)
     const auto mid = out.begin() + (size1 - size2);
-    CHECK(thrust::equal(out.begin(), mid, cuda::strided_iterator{cuda::counting_iterator{2 * size1 - 2}, -2}));
-    CHECK(thrust::equal(mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2 - 1}, -1}));
+    CHECK(
+      cuda::std::equal(policy, out.begin(), mid, cuda::strided_iterator{cuda::counting_iterator{2 * size1 - 2}, -2}));
+    CHECK(cuda::std::equal(policy, mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2 - 1}, -1}));
   }
 
   cuda::std::fill(policy, out.begin(), out.end(), -1);
@@ -124,8 +126,9 @@ void test_merge(const Policy& policy,
     // First subrange is equal to [2 * size1 - 2, 2 * size1 - 4, ..., 2 * size2)
     // The rest is equal [2 * size2 - 1, 2 * size2 - 1, ..., 0)
     const auto mid = out.begin() + (size1 - size2);
-    CHECK(thrust::equal(out.begin(), mid, cuda::strided_iterator{cuda::counting_iterator{2 * size1 - 2}, -2}));
-    CHECK(thrust::equal(mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2 - 1}, -1}));
+    CHECK(
+      cuda::std::equal(policy, out.begin(), mid, cuda::strided_iterator{cuda::counting_iterator{2 * size1 - 2}, -2}));
+    CHECK(cuda::std::equal(policy, mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2 - 1}, -1}));
   }
 }
 

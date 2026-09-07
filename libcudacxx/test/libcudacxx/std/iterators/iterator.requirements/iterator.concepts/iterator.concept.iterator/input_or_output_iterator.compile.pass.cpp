@@ -60,8 +60,7 @@ struct missing_dereference
   TEST_FUNC missing_dereference& operator++(int);
 };
 static_assert(cuda::std::weakly_incrementable<missing_dereference>
-                && !cuda::std::input_or_output_iterator<missing_dereference>,
-              "");
+              && !cuda::std::input_or_output_iterator<missing_dereference>);
 
 struct void_dereference
 {
@@ -71,8 +70,8 @@ struct void_dereference
   TEST_FUNC void_dereference& operator++();
   TEST_FUNC void_dereference& operator++(int);
 };
-static_assert(
-  cuda::std::weakly_incrementable<void_dereference> && !cuda::std::input_or_output_iterator<void_dereference>, "");
+static_assert(cuda::std::weakly_incrementable<void_dereference>
+              && !cuda::std::input_or_output_iterator<void_dereference>);
 
 struct not_weakly_incrementable
 {

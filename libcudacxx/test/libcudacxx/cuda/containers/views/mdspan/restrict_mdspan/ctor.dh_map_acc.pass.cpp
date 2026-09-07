@@ -33,10 +33,7 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
 {
   using MDS = cuda::restrict_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   // use formulation of constructor which tests that it is not explicit
   MDS m = {handle, map, acc};
   test_move_counter<MDS, H>();
@@ -98,31 +95,27 @@ TEST_FUNC constexpr bool test()
   using acc_t                         = cuda::std::default_accessor<float>;
 
   // sanity check
-  static_assert(cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, 3, D, D>>, acc_t>::value,
-                "");
+  static_assert(cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, 3, D, D>>, acc_t>::value);
 
   // test non-constructibility from wrong accessor
   static_assert(!cuda::std::is_constructible<mds_t,
                                              float*,
                                              mapping_t<cuda::std::extents<int, 3, D, D>>,
-                                             cuda::std::default_accessor<const float>>::value,
-                "");
+                                             cuda::std::default_accessor<const float>>::value);
 
   // test non-constructibility from wrong mapping type
   // wrong rank
-  static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D>>, acc_t>::value,
-                "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D>>, acc_t>::value);
   static_assert(
-    !cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D, D>>, acc_t>::value, "");
+    !cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D, D>>, acc_t>::value);
   // wrong type in general: note the map constructor does NOT convert, since it takes by const&
-  static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D>>, acc_t>::value,
-                "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D>>, acc_t>::value);
   static_assert(
-    !cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<unsigned, 3, D, D>>, acc_t>::value, "");
+    !cuda::std::is_constructible<mds_t, float*, mapping_t<cuda::std::extents<unsigned, 3, D, D>>, acc_t>::value);
 
   // test non-constructibility from wrong handle_type
   static_assert(
-    !cuda::std::is_constructible<mds_t, const float*, mapping_t<cuda::std::extents<int, 3, D, D>>, acc_t>::value, "");
+    !cuda::std::is_constructible<mds_t, const float*, mapping_t<cuda::std::extents<int, 3, D, D>>, acc_t>::value);
 
   return true;
 }

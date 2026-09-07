@@ -108,7 +108,7 @@ struct TestTransformIteratorReduce
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestTransformIteratorReduce, IntegralTypes> TestTransformIteratorReduceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformIteratorReduce, IntegralTypes);
 
 struct ExtractValue
 {
@@ -145,7 +145,7 @@ struct flip_value
 
 struct pass_ref
 {
-  _CCCL_HOST_DEVICE const bool& operator()(const bool& b) const
+  _CCCL_HOST_DEVICE const bool& operator()(const bool& b _CCCL_LIFETIMEBOUND) const
   {
     return b;
   }

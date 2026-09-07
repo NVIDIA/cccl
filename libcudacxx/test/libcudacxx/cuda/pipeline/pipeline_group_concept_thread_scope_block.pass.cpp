@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 #include "pipeline_group_concept.h"
 
 int main(int argc, char** argv)

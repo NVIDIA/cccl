@@ -114,7 +114,7 @@ TEST_FUNC void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().extents()), const E&>::value);
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>()(Idxs...)), typename M::index_type>::value);
   static_assert(
-    cuda::std::is_same<decltype(cuda::std::declval<M>().required_span_size()), typename M::index_type>::value, "");
+    cuda::std::is_same<decltype(cuda::std::declval<M>().required_span_size()), typename M::index_type>::value);
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_unique()), bool>::value);
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_exhaustive()), bool>::value);
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_strided()), bool>::value);

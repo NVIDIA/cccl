@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -58,13 +58,13 @@ echo "::group::Setting up clone of CUDA environment with custom CCCL..."
 export PATH="$PWD/cuda/bin:$PATH"
 export CUDA_HOME="$PWD/cuda"
 export CUDA_PATH="$PWD/cuda"
-which nvcc
+command -v nvcc
 nvcc --version
 echo "::endgroup::"
 
 echo "::group::Cloning PyTorch..."
 rm -rf pytorch
-git clone ${pytorch_repo} -b ${pytorch_branch} --recursive --depth 1
+git clone "${pytorch_repo}" -b "${pytorch_branch}" --recursive --depth 1
 echo "PyTorch HEAD:"
 git -C pytorch log -1 --format=short
 echo "::endgroup::"
@@ -83,7 +83,7 @@ declare -a cmake_args=(
   # Need to define this explicitly, torch's FindCUDA logic adds ancient arches if left undefined:
   "-DTORCH_CUDA_ARCH_LIST=7.5;8.0;9.0;10.0;12.0"
 )
-cmake -S ./pytorch -B ./build -G Ninja "${cmake_args[@]}"
+SCCACHE_NO_DIST_COMPILE=1 cmake -S ./pytorch -B ./build -G Ninja "${cmake_args[@]}"
 echo "::endgroup::"
 
 # Verify that the configured build is using the custom CUDA dir for CTK and nvcc:
@@ -120,7 +120,11 @@ fi
 echo "::endgroup::"
 
 echo "::group::Building $num_targets pytorch CUDA targets with custom CCCL..."
-ninja -C ./build $(xargs -a build/cuda_targets.txt)
+torch_cuda_targets="$(xargs -a build/cuda_targets.txt)"
+declare -a torch_cuda_targets="($torch_cuda_targets)"
+
+time ninja -C ./build "${torch_cuda_targets[@]}" "-j${PARALLEL_LEVEL:-}"
+
 echo "::endgroup::"
 
 echo "PyTorch CUDA targets built successfully with custom CCCL."

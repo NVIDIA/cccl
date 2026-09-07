@@ -216,7 +216,7 @@ _CCCL_API constexpr void __fill_n_impl(__bit_iterator<_Cp, false> __first, typen
   }
   // do middle whole words
   __storage_type __nw = __n / __bits_per_word;
-  ::cuda::std::fill_n(::cuda::std::__to_address(__first.__seg_), __nw, _FillVal ? ~static_cast<__storage_type>(0) : 0);
+  ::cuda::std::fill_n(::cuda::std::to_address(__first.__seg_), __nw, _FillVal ? ~static_cast<__storage_type>(0) : 0);
   __n -= (__nw * __bits_per_word).__data;
   // do last partial word
   if (__n > 0)
@@ -290,8 +290,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_aligned(
     // __first.__ctz_ == 0;
     // do middle words
     __storage_type __nw = __n / __bits_per_word;
-    ::cuda::std::copy_n(
-      ::cuda::std::__to_address(__first.__seg_), __nw.__data, ::cuda::std::__to_address(__result.__seg_));
+    ::cuda::std::copy_n(::cuda::std::to_address(__first.__seg_), __nw.__data, ::cuda::std::to_address(__result.__seg_));
     __result.__seg_ += __nw.__data;
     __n -= (__nw * __bits_per_word).__data;
     // do last word
@@ -434,8 +433,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_aligned(
     __storage_type __nw = __n / __bits_per_word;
     __result.__seg_ -= __nw.__data;
     __last.__seg_ -= __nw.__data;
-    ::cuda::std::copy_n(
-      ::cuda::std::__to_address(__last.__seg_), __nw.__data, ::cuda::std::__to_address(__result.__seg_));
+    ::cuda::std::copy_n(::cuda::std::to_address(__last.__seg_), __nw.__data, ::cuda::std::to_address(__result.__seg_));
     __n -= (__nw * __bits_per_word).__data;
     // do last word
     if (__n > 0)
@@ -933,19 +931,27 @@ _CCCL_API constexpr bool __equal_unaligned(
     // do middle words
     unsigned __clz_r   = __bits_per_word - __first2.__ctz_;
     __storage_type __m = ~__storage_type(0) << __first2.__ctz_;
+    bool __result      = true;
     for (; __n >= __bits_per_word; __n -= __bits_per_word, ++__first1.__seg_)
     {
       __storage_type __b = *__first1.__seg_;
       if ((*__first2.__seg_ & __m) != (__b << __first2.__ctz_))
       {
-        return false;
+        __result = false;
+        break;
       }
       ++__first2.__seg_;
       if ((*__first2.__seg_ & ~__m) != (__b >> __clz_r))
       {
-        return false;
+        __result = false;
+        break;
       }
     }
+    if (!__result)
+    {
+      return false;
+    }
+
     // do last word
     if (__n > 0)
     {
@@ -1004,13 +1010,20 @@ _CCCL_API constexpr bool __equal_aligned(
     // __first1.__ctz_ == 0;
     // __first2.__ctz_ == 0;
     // do middle words
+    bool __result = true;
     for (; __n >= __bits_per_word; __n -= __bits_per_word, ++__first1.__seg_, ++__first2.__seg_)
     {
       if (*__first2.__seg_ != *__first1.__seg_)
       {
-        return false;
+        __result = false;
+        break;
       }
     }
+    if (!__result)
+    {
+      return false;
+    }
+
     // do last word
     if (__n > 0)
     {

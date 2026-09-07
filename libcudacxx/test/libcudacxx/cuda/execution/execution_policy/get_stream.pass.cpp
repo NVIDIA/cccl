@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/functional>
@@ -26,7 +30,7 @@ void test(Policy pol)
 {
   namespace execution = cuda::std::execution;
 
-  cuda::stream_ref default_stream{cudaStreamPerThread};
+  cuda::stream_ref default_stream{::cudaStream_t{}};
   { // Ensure that the plain policy does not provide a stream
     assert(cuda::__call_or(::cuda::get_stream, default_stream, pol) == default_stream);
   }

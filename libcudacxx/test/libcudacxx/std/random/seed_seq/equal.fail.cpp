@@ -8,10 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 #include <cuda/std/cassert>
 #include <cuda/std/random>
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   ::cuda::std::seed_seq seq1{1, 2, 3};
   ::cuda::std::seed_seq seq2;

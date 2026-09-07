@@ -7,12 +7,13 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/generators.h>
 
 using offset_types = c2h::type_list<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;
 
-C2H_TEST("GridEvenShare handles edge cases (zero/negative items)", "[grid][even_share][edge_cases]", offset_types)
+CUB_TEST(
+  "GridEvenShare handles edge cases (zero/negative items)", "[grid][even_share][edge_cases]", CUB_SMALL, offset_types)
 {
   using offset_t = typename c2h::get<0, TestType>;
 
@@ -46,7 +47,7 @@ C2H_TEST("GridEvenShare handles edge cases (zero/negative items)", "[grid][even_
   CHECK(grid_share.block_end == 0);
 }
 
-C2H_TEST("GridEvenShare works with num_items > 0", "[grid][even_share]", offset_types)
+CUB_TEST("GridEvenShare works with num_items > 0", "[grid][even_share]", CUB_SMALL, offset_types)
 {
   using offset_t = typename c2h::get<0, TestType>;
 

@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 
 // <cuda/ptx>
@@ -15,6 +19,7 @@
 #include <cuda/std/utility>
 
 #include "generated/mbarrier_arrive.h"
+#include "generated/mbarrier_arrive_drop.h"
 #include "generated/mbarrier_arrive_expect_tx.h"
 #include "generated/mbarrier_arrive_no_complete.h"
 

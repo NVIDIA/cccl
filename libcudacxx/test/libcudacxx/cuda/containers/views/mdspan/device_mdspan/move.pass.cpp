@@ -41,9 +41,8 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
 
   static_assert(
     cuda::std::is_trivially_move_assignable<MDS>::value
-      == (cuda::std::is_trivially_move_assignable<H>::value && cuda::std::is_trivially_move_assignable<M>::value
-          && cuda::std::is_trivially_move_assignable<A>::value),
-    "");
+    == (cuda::std::is_trivially_move_assignable<H>::value && cuda::std::is_trivially_move_assignable<M>::value
+        && cuda::std::is_trivially_move_assignable<A>::value));
 }
 
 template <class H, class L, class A>
@@ -63,14 +62,12 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   // make sure we test a trivially copyable mapping
   static_assert(cuda::std::is_trivially_move_assignable<
-                  typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>::value,
-                "");
+                typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>::value);
   mixin_extents(handle, cuda::std::layout_left(), acc);
   mixin_extents(handle, cuda::std::layout_right(), acc);
   // make sure we test a not trivially copyable mapping
   static_assert(!cuda::std::is_trivially_move_assignable<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>::value,
-                "");
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>::value);
   mixin_extents(handle, layout_wrapping_integral<4>(), acc);
 }
 

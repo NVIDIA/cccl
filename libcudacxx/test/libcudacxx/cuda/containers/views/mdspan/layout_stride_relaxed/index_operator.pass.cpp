@@ -155,7 +155,9 @@ int main(int, char**)
   test();
   static_assert(test());
 
+#if !_CCCL_TILE_COMPILATION() // nvbug6081143: Error: Internal Compiler Error (tile codegen): "unhandled type!"
   // The large test iterates over ~10k loop indices.
   test_large();
+#endif // !_CCCL_TILE_COMPILATION()
   return 0;
 }

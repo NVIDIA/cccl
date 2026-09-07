@@ -294,24 +294,18 @@ TEST_FUNC constexpr void AssertComparisonsReturnBool()
 template <class T, class U = T>
 TEST_FUNC constexpr void AssertComparisonsConvertibleToBool()
 {
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value),
-    "");
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>::value),
-    "");
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() < cuda::std::declval<const U&>()), bool>::value),
-    "");
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>()), bool>::value),
-    "");
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() > cuda::std::declval<const U&>()), bool>::value),
-    "");
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>()), bool>::value),
-    "");
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value));
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>::value));
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() < cuda::std::declval<const U&>()), bool>::value));
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() <= cuda::std::declval<const U&>()), bool>::value));
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() > cuda::std::declval<const U&>()), bool>::value));
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() >= cuda::std::declval<const U&>()), bool>::value));
 }
 
 #if TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -420,12 +414,10 @@ TEST_FUNC constexpr void AssertEqualityReturnBool()
 template <class T, class U = T>
 TEST_FUNC constexpr void AssertEqualityConvertibleToBool()
 {
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value),
-    "");
-  static_assert(
-    (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>::value),
-    "");
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value));
+  static_assert((
+    cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>::value));
 }
 
 struct LessAndEqComp

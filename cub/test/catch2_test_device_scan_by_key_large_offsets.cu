@@ -11,7 +11,7 @@
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
@@ -72,7 +72,7 @@ struct div_op
   }
 };
 
-C2H_TEST("DeviceScan::ScanByKey works for very large number of items", "[by_key][scan][device]", offset_types)
+CUB_TEST("DeviceScan::ScanByKey works for very large number of items", "[by_key][scan][device]", CUB_LARGE, offset_types)
 try
 {
   using op_t     = cuda::std::plus<>;
@@ -101,8 +101,8 @@ try
   // Run test
   SECTION("ExclusiveScanByKey")
   {
-    constexpr bool is_exclusive = true;
-    auto initial_value          = item_t{42};
+    [[maybe_unused]] constexpr bool is_exclusive = true;
+    auto initial_value                           = item_t{42};
     device_exclusive_scan_by_key(
       keys_it, items_it, d_items_out_it, op_t{}, initial_value, num_items, cuda::std::equal_to<>{});
 
@@ -114,8 +114,8 @@ try
   }
   SECTION("InclusiveScanByKey")
   {
-    constexpr bool is_exclusive = false;
-    auto initial_value          = item_t{0};
+    [[maybe_unused]] constexpr bool is_exclusive = false;
+    auto initial_value                           = item_t{0};
     device_inclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, num_items, cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output
@@ -128,4 +128,5 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
 }

@@ -263,7 +263,7 @@ struct TestUniqueByKey
     ASSERT_EQUAL(h_vals, d_vals);
   }
 };
-VariableUnitTest<TestUniqueByKey, IntegralTypes> TestUniqueByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueByKey, IntegralTypes);
 
 template <typename K>
 struct TestUniqueCopyByKey
@@ -309,7 +309,7 @@ struct TestUniqueCopyByKey
     ASSERT_EQUAL(h_vals_output, d_vals_output);
   }
 };
-VariableUnitTest<TestUniqueCopyByKey, IntegralTypes> TestUniqueCopyByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKey, IntegralTypes);
 
 template <typename K>
 struct TestUniqueCopyByKeyToDiscardIterator
@@ -342,7 +342,8 @@ struct TestUniqueCopyByKeyToDiscardIterator
       d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), thrust::make_discard_iterator());
 
     cuda::std::pair<thrust::discard_iterator<>, thrust::discard_iterator<>> reference1 = cuda::std::make_pair(
-      thrust::make_discard_iterator(num_unique_keys), thrust::make_discard_iterator(num_unique_keys));
+      thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
+      thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     ASSERT_EQUAL_QUIET(reference1, h_result1);
     ASSERT_EQUAL_QUIET(reference1, d_result1);
@@ -357,10 +358,12 @@ struct TestUniqueCopyByKeyToDiscardIterator
         d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys_output.begin(), thrust::make_discard_iterator());
 
     cuda::std::pair<typename thrust::host_vector<K>::iterator, thrust::discard_iterator<>> h_reference2 =
-      cuda::std::make_pair(h_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
+      cuda::std::make_pair(h_keys_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys),
+                           thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     cuda::std::pair<typename thrust::device_vector<K>::iterator, thrust::discard_iterator<>> d_reference2 =
-      cuda::std::make_pair(d_keys_output.begin() + num_unique_keys, thrust::make_discard_iterator(num_unique_keys));
+      cuda::std::make_pair(d_keys_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys),
+                           thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)));
 
     ASSERT_EQUAL(h_keys_output, d_keys_output);
     ASSERT_EQUAL_QUIET(h_reference2, h_result2);
@@ -376,17 +379,19 @@ struct TestUniqueCopyByKeyToDiscardIterator
         d_keys.begin(), d_keys.end(), d_vals.begin(), thrust::make_discard_iterator(), d_vals_output.begin());
 
     cuda::std::pair<thrust::discard_iterator<>, typename thrust::host_vector<V>::iterator> h_reference3 =
-      cuda::std::make_pair(thrust::make_discard_iterator(num_unique_keys), h_vals_output.begin() + num_unique_keys);
+      cuda::std::make_pair(thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
+                           h_vals_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys));
 
     cuda::std::pair<thrust::discard_iterator<>, typename thrust::device_vector<V>::iterator> d_reference3 =
-      cuda::std::make_pair(thrust::make_discard_iterator(num_unique_keys), d_vals_output.begin() + num_unique_keys);
+      cuda::std::make_pair(thrust::make_discard_iterator(static_cast<::cuda::std::ptrdiff_t>(num_unique_keys)),
+                           d_vals_output.begin() + static_cast<std::ptrdiff_t>(num_unique_keys));
 
     ASSERT_EQUAL(h_vals_output, d_vals_output);
     ASSERT_EQUAL_QUIET(h_reference3, h_result3);
     ASSERT_EQUAL_QUIET(d_reference3, d_result3);
   }
 };
-VariableUnitTest<TestUniqueCopyByKeyToDiscardIterator, IntegralTypes> TestUniqueCopyByKeyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyToDiscardIterator, IntegralTypes);
 
 // OpenMP has issues with these tests, NVIDIA/cccl#1715
 #if THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_OMP
@@ -424,7 +429,7 @@ struct TestUniqueCopyByKeyLargeInput
     ASSERT_EQUAL(reference_values, values_out);
   }
 };
-SimpleUnitTest<TestUniqueCopyByKeyLargeInput, IntegralTypes> TestUniqueCopyByKeyLargeInputInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyLargeInput, IntegralTypes);
 
 template <typename K>
 struct TestUniqueCopyByKeyLargeOutCount
@@ -448,7 +453,7 @@ struct TestUniqueCopyByKeyLargeOutCount
     ASSERT_EQUAL(num_selected_out, ::cuda::std::distance(values_out, selected_aut_end.second));
   }
 };
-SimpleUnitTest<TestUniqueCopyByKeyLargeOutCount, IntegralTypes> TestUniqueCopyByKeyLargeOutCountInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueCopyByKeyLargeOutCount, IntegralTypes);
 
 #  endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 

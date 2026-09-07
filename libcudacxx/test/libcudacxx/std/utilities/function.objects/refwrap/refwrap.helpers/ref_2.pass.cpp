@@ -60,6 +60,7 @@ int main(int, char**)
   test();
   static_assert(test());
 
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   {
     unary_counting_predicate<bool (*)(int), int> cp(is5);
     assert(!cp(6));
@@ -69,6 +70,7 @@ int main(int, char**)
     assert(call_pred(cuda::std::ref(cp)));
     assert(cp.count() == 2);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

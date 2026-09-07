@@ -111,7 +111,7 @@ void TestMergeToDiscardIterator(size_t n)
   const auto h_result = thrust::merge(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), thrust::make_discard_iterator());
   const auto d_result = thrust::merge(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), thrust::make_discard_iterator());
 
-  thrust::discard_iterator<> reference(2 * n);
+  thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
   ASSERT_EQUAL_QUIET(reference, h_result);
   ASSERT_EQUAL_QUIET(reference, d_result);

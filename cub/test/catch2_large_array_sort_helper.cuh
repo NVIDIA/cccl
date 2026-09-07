@@ -47,15 +47,15 @@ class key_sort_ref_key_transform
 
 public:
   key_sort_ref_key_transform(std::size_t num_items, bool is_descending)
-      : m_conversion(max_key / num_items)
+      : m_conversion(max_key / static_cast<double>(num_items))
       , m_num_items(num_items)
       , m_is_descending(is_descending)
   {}
 
   __host__ __device__ KeyType operator()(std::size_t idx) const
   {
-    return m_is_descending ? static_cast<KeyType>((m_num_items - 1 - idx) * m_conversion)
-                           : static_cast<KeyType>(idx * m_conversion);
+    return m_is_descending ? static_cast<KeyType>(static_cast<double>(m_num_items - 1 - idx) * m_conversion)
+                           : static_cast<KeyType>(static_cast<double>(idx) * m_conversion);
   }
 };
 

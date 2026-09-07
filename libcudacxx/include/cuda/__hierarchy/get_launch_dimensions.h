@@ -23,11 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__hierarchy/block_level.h>
-#  include <cuda/__hierarchy/cluster_level.h>
-#  include <cuda/__hierarchy/grid_level.h>
-#  include <cuda/__hierarchy/thread_level.h>
-#  include <cuda/__hierarchy/traits.h>
+#  include <cuda/__hierarchy/hierarchy_levels.h>
 #  include <cuda/std/tuple>
 
 #  include <cuda/std/__cccl/prologue.h>

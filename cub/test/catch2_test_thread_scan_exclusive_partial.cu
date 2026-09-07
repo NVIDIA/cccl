@@ -7,11 +7,12 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
+#include <cuda/std/mdspan>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
+#include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
 #include <c2h/operator.cuh>
@@ -86,8 +87,6 @@ __global__ void thread_scan_exclusive_partial_kernel_span(
   }
 }
 
-#if _CCCL_STD_VER >= 2023
-
 template <int NumItems, typename T, typename ScanOperator>
 __global__ void thread_scan_exclusive_partial_kernel_mdspan(
   const T* d_in, T* d_out, ScanOperator scan_operator, int valid_items, T prefix, bool apply_prefix)
@@ -108,8 +107,6 @@ __global__ void thread_scan_exclusive_partial_kernel_mdspan(
     d_out[i] = thread_data[i];
   }
 }
-
-#endif // _CCCL_STD_VER >= 2023
 
 /***********************************************************************************************************************
  * Type list definition
@@ -144,8 +141,9 @@ using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_s
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("ThreadScanExclusive Integral Type Tests",
+CUB_TEST("ThreadScanExclusive Integral Type Tests",
          "[scan][thread]",
+         CUB_SMALL,
          integral_type_list,
          cub_operator_integral_list,
          items_per_thread_list)
@@ -201,8 +199,9 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests",
   REQUIRE(reference_result == d_out);
 }
 
-C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
+CUB_TEST("ThreadScanExclusive Floating-Point Type Tests",
          "[scan][thread]",
+         CUB_SMALL,
          fp_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -260,8 +259,9 @@ C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
 
 #if TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
+CUB_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
          "[scan][thread][narrow]",
+         CUB_SMALL,
          narrow_precision_type_list,
          cub_operator_fp_list,
          items_per_thread_list)
@@ -322,7 +322,7 @@ C2H_TEST("ThreadScanExclusive Narrow PrecisionType Tests",
 
 #endif // TEST_HALF_T() || TEST_BF_T()
 
-C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
+CUB_TEST("ThreadScanExclusive Container Tests", "[scan][thread]", CUB_SMALL)
 {
   c2h::device_vector<int> d_in(max_size, thrust::no_init);
   c2h::device_vector<int> d_out(max_size, thrust::no_init);
@@ -361,7 +361,6 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
 
-#if _CCCL_STD_VER >= 2023
   thrust::fill(d_out.begin(), d_out.end(), 0);
   thread_scan_exclusive_partial_kernel_mdspan<max_size><<<1, 1>>>(
     thrust::raw_pointer_cast(d_in.data()),
@@ -373,10 +372,9 @@ C2H_TEST("ThreadScanExclusive Container Tests", "[scan][thread]")
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(reference_result == d_out);
-#endif // _CCCL_STD_VER >= 2023
 }
 
-C2H_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]")
+CUB_TEST("ThreadScanExclusive Invalid Test", "[scan][thread]", CUB_SMALL)
 {
   const auto in_it = cuda::make_transform_iterator(
     thrust::make_zip_iterator(cuda::counting_iterator<segment::offset_t>{1},

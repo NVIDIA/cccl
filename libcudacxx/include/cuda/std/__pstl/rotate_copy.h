@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/std/__algorithm/rotate_copy.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -62,12 +62,7 @@ _CCCL_HOST_API _OutputIterator rotate_copy(
     {
       return __result;
     }
-    else if (__first == __middle)
-    {
-      return ::cuda::std::copy(
-        __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result));
-    }
-    else if (__middle == __last)
+    else if (__first == __middle || __middle == __last)
     {
       return ::cuda::std::copy(
         __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result));
@@ -94,6 +89,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_ROTATE_COPY_H

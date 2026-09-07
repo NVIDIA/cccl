@@ -13,13 +13,13 @@
 
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, memcpy_batched);
 
-C2H_TEST("DeviceMemcpy::Batched works", "[memcpy]")
+CUB_TEST("DeviceMemcpy::Batched works", "[memcpy]", CUB_SMALL)
 try
 {
   using src_ptr_t = const uint8_t*;
@@ -112,8 +112,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
-C2H_TEST("DeviceMemcpy::Batched works for a very large buffer",
-         "[memcpy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
+CUB_TEST("DeviceMemcpy::Batched works for a very large buffer",
+         "[memcpy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using data_t        = uint64_t;
@@ -144,8 +145,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
-C2H_TEST("DeviceMemcpy::Batched works for a very large number of buffer",
-         "[memcpy][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
+CUB_TEST("DeviceMemcpy::Batched works for a very large number of buffer",
+         "[memcpy][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         CUB_LARGE)
 try
 {
   using src_ptr_t       = const cuda::std::uint8_t*;

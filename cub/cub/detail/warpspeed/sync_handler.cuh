@@ -49,7 +49,7 @@ struct SyncHandler
 
   // we need constant destruction for the host side single stage SMEM amount, which is only possible in C++20
 #if _CCCL_STD_VER >= 2020
-  _CCCL_API constexpr ~SyncHandler()
+  _CCCL_HOST_DEVICE_API constexpr ~SyncHandler()
   {
     _WS_CONSTANT_ASSERT(mHasInitialized, "SyncHandler must have been initialized at end of kernel.");
   }
@@ -63,7 +63,7 @@ struct SyncHandler
   SyncHandler& operator=(const SyncHandler&&) = delete; // Delete move assignment
 
   // registerResource and registerPhase can be called on host and device.
-  [[nodiscard]] _CCCL_API constexpr int registerResource(int numStages)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int registerResource(int numStages)
   {
     _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot register resource after SyncHandler has been initialized.");
     // Avoid exceeding the max number of stages
@@ -78,7 +78,7 @@ struct SyncHandler
     return handle;
   }
 
-  _CCCL_API void constexpr registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
+  _CCCL_HOST_DEVICE_API void constexpr registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
   {
     _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot register phase after SyncHandler has been initialized.");
     _WS_CONSTANT_ASSERT(resourceHandle < mNextResourceHandle, "Invalid resource handle.");
@@ -121,7 +121,7 @@ struct SyncHandler
         uint64_t* ptrBar     = mPtrBar[ri][pi];
         int numOwningThreads = mNumOwningThreads[ri][pi];
         // use block strided iteration to vectorize setup of barriers
-        for (int si = sr.threadIdxX; si < numStages; si += NumThreads)
+        for (int si = static_cast<int>(sr.threadIdxX); si < numStages; si += NumThreads)
         {
           ::cuda::ptx::mbarrier_init(&ptrBar[si], numOwningThreads);
         }

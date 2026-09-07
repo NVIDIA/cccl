@@ -229,7 +229,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
 };
 
 template <class... _Ts>
-_CCCL_HOST_DEVICE __tuple(_Ts...) -> __tuple<_Ts...>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __tuple(_Ts...) -> __tuple<_Ts...>;
 
 //
 // __apply(fn, tuple, extra...)
@@ -290,7 +290,7 @@ __apply(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) noexcept(__detail::__nothrow
 #undef _CCCL_TUPLE_GET
 
 template <class _Fn, class _Tuple, class... _Us>
-using __apply_result_t _CCCL_NODEBUG_ALIAS =
+using __apply_result_t _CCCL_NODEBUG =
   decltype(::cuda::std::__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...));
 
 template <class _Fn, class _Tuple, class... _Us>
@@ -375,7 +375,7 @@ _CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tupl) noexcept -> auto&&
 // __decayed_tuple<Ts...>
 //
 template <class... _Ts>
-using __decayed_tuple _CCCL_NODEBUG_ALIAS = __tuple<decay_t<_Ts>...>;
+using __decayed_tuple _CCCL_NODEBUG = __tuple<decay_t<_Ts>...>;
 
 //
 // __pair
@@ -388,7 +388,7 @@ struct __pair
 };
 
 template <class _First, class _Second>
-_CCCL_HOST_DEVICE __pair(_First, _Second) -> __pair<_First, _Second>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __pair(_First, _Second) -> __pair<_First, _Second>;
 
 //
 // __tuple_size_v
@@ -415,7 +415,7 @@ template <class _Tp>
 _CCCL_API auto __remove_rvalue_ref(_Tp&&) noexcept -> _Tp;
 
 template <size_t _Index, class _Tuple>
-using __tuple_element_t _CCCL_NODEBUG_ALIAS =
+using __tuple_element_t _CCCL_NODEBUG =
   decltype(::cuda::std::__remove_rvalue_ref(::cuda::std::__get<_Index>(declval<_Tuple>())));
 
 _CCCL_END_NAMESPACE_CUDA_STD

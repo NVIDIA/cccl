@@ -45,22 +45,16 @@ _CCCL_CONCEPT check_mdspan_ctor_implicit2 =
   _CCCL_REQUIRES_EXPR((MDS, variadic Args), MDS m, Args... args)((m = {args...}));
 
 template <class MDS>
-TEST_FUNC void check_implicit_construction(MDS);
+TEST_FUNC cuda::std::true_type check_implicit_construction(MDS);
 
 template <class MDS, class... Args>
-TEST_FUNC constexpr bool check_implicit_construction_impl(...)
-{
-  return false;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(...) -> cuda::std::false_type;
 template <class MDS, class... Args>
 TEST_FUNC constexpr auto check_implicit_construction_impl(int)
-  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<Args>()...}), true)
-{
-  return true;
-}
+  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<Args>()...}));
 
 template <class MDS, class... Args>
-_CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Args...>(0);
+_CCCL_CONCEPT check_mdspan_ctor_implicit = decltype(check_implicit_construction_impl<MDS, Args...>(0))::value;
 
 template <bool mec, bool ac, class H, class M, class A, class... Idxs, cuda::std::enable_if_t<mec && ac, int> = 0>
 TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
@@ -69,16 +63,12 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
 
   static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
   static_assert(ac == cuda::std::is_default_constructible<A>::value);
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   MDS m(handle, idxs...);
   test_move_counter<MDS, H>();
 
   // sanity check that concept works
-  static_assert(check_mdspan_ctor_implicit<MDS, H, cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>>,
-                "");
+  static_assert(check_mdspan_ctor_implicit<MDS, H, cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>>);
   // check that the constructor from integral is explicit
   static_assert(!check_mdspan_ctor_implicit<MDS, H, Idxs...>);
 
@@ -130,22 +120,18 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
   // Sanity check that this layouts mapping is constructible from extents (via its move constructor)
   static_assert(
     cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                cuda::std::extents<int>>::value,
-    "");
+                                cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<true, ac>(handle, layout_wrapping_integral<8>(), acc);
   // Sanity check that this layouts mapping is not constructible from extents
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 cuda::std::extents<int>>::value,
-    "");
+                                 cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 

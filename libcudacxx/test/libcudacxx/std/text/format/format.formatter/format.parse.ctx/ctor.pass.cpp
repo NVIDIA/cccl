@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // constexpr explicit
@@ -22,7 +25,7 @@
 #include "literal.h"
 
 template <class CharT>
-TEST_FUNC constexpr void test()
+TEST_HOST_DEVICE_FUNC constexpr void test()
 {
   // Validate the constructor is explicit.
   static_assert(
@@ -53,7 +56,7 @@ TEST_FUNC constexpr void test()
   }
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test<char>();
 #if _CCCL_HAS_CHAR8_T()

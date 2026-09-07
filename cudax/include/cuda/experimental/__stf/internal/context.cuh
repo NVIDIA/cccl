@@ -16,6 +16,9 @@
 #pragma once
 
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/variant>
 
 #include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
@@ -56,18 +59,32 @@ namespace cuda::experimental::stf
  * @overload
  */
 template <typename... Ts, typename F>
-decltype(auto) operator->*(::std::variant<Ts...>& v, F&& f)
+decltype(auto) operator->*(::cuda::std::variant<Ts...>& v, F&& f)
 {
-  return ::std::visit(::std::forward<F>(f), v);
+  // Hand-rolled dispatch rather than cuda::std::visit: visit is host-device, and returning the
+  // callable's result through its frames drags implicitly-generated move constructors into
+  // device code, where their std::string members cannot go (nvcc #20011 on CTK 12.0/13.0).
+  // This function is host-only, so everything stays on the host.
+  static_assert(sizeof...(Ts) == 2, "this dispatch is written for the binary payload variants");
+  if (v.index() == 0)
+  {
+    return ::cuda::std::forward<F>(f)(::cuda::std::get<0>(v));
+  }
+  return ::cuda::std::forward<F>(f)(::cuda::std::get<1>(v));
 }
 
 /**
  * @overload
  */
 template <typename... Ts, typename F>
-decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
+decltype(auto) operator->*(const ::cuda::std::variant<Ts...>& v, F&& f)
 {
-  return ::std::visit(::std::forward<F>(f), v);
+  static_assert(sizeof...(Ts) == 2, "this dispatch is written for the binary payload variants");
+  if (v.index() == 0)
+  {
+    return ::cuda::std::forward<F>(f)(::cuda::std::get<0>(v));
+  }
+  return ::cuda::std::forward<F>(f)(::cuda::std::get<1>(v));
 }
 #endif // !_CCCL_DOXYGEN_INVOKED
 
@@ -137,7 +154,7 @@ private:
     void operator->*(Fun&& f)
     {
       payload->*[&](auto& self) {
-        self->*::std::forward<Fun>(f);
+        self->*::cuda::std::forward<Fun>(f);
       };
     }
 
@@ -154,7 +171,7 @@ private:
     auto& add_deps(Args&&... args)
     {
       payload->*[&](auto& self) {
-        self.add_deps(::std::forward<Args>(args)...);
+        self.add_deps(::cuda::std::forward<Args>(args)...);
       };
       return *this;
     }
@@ -163,7 +180,7 @@ private:
     auto& add_kernel_desc(Args&&... args)
     {
       payload->*[&](auto& self) {
-        self.add_kernel_desc(::std::forward<Args>(args)...);
+        self.add_kernel_desc(::cuda::std::forward<Args>(args)...);
       };
       return *this;
     }
@@ -193,7 +210,7 @@ private:
     }
 
   private:
-    ::std::variant<T1, T2> payload;
+    ::cuda::std::variant<T1, T2> payload;
   };
 
 public:
@@ -285,7 +302,7 @@ public:
     unified_task& add_deps(Args&&... args)
     {
       payload->*[&](auto& self) {
-        self.add_deps(::std::forward<Args>(args)...);
+        self.add_deps(::cuda::std::forward<Args>(args)...);
       };
       return *this;
     }
@@ -321,6 +338,70 @@ public:
       };
     }
 
+    /** Return the task's child CUDA graph for explicit node insertion. Only
+     * valid for tasks running in a graph context that have NOT enabled stream
+     * capture; aborts for stream-context tasks. Mutually exclusive with the
+     * capture path (get_stream()): use one mechanism or the other. */
+    cudaGraph_t get_graph()
+    {
+      return payload->*[&](auto& self) -> cudaGraph_t {
+        using task_t = ::cuda::std::decay_t<decltype(self)>;
+        if constexpr (::cuda::std::is_same_v<task_t, graph_task<Deps...>>)
+        {
+          return self.get_graph();
+        }
+        else
+        {
+          _CCCL_VERIFY(false, "get_graph() is only valid for tasks in a graph context");
+          return nullptr;
+        }
+      };
+    }
+
+    /** When the task's exec place is a grid (size > 1), get the stream for the place at \p place_index
+     * (linear index). Returns nullptr for graph_task (no per-place streams), for non-grid exec places, or
+     * when \p place_index is out of range. */
+    cudaStream_t get_stream(size_t place_index) const
+    {
+      return payload->*[&](auto& self) -> cudaStream_t {
+        if constexpr (::cuda::std::is_same_v<stream_task<Deps...>, ::cuda::std::decay_t<decltype(self)>>)
+        {
+          // Per-place streams only exist for grid exec places. stream_task::get_stream(size_t) indexes the
+          // stream grid without bounds checking, so guard the linear index here before forwarding.
+          const exec_place& e = self.get_exec_place();
+          if (e.size() <= 1 || place_index >= e.size())
+          {
+            return nullptr;
+          }
+          return self.get_stream(place_index);
+        }
+        else
+        {
+          (void) place_index;
+          return nullptr;
+        }
+      };
+    }
+
+    /** When the task's exec place is a grid (size > 1), write its shape to \p out_dims and return true; else return
+     * false. */
+    bool get_grid_dims(dim4* out_dims) const
+    {
+      if (out_dims == nullptr)
+      {
+        return false;
+      }
+      return payload->*[&](auto& self) -> bool {
+        const exec_place& e = self.get_exec_place();
+        if (e.size() <= 1)
+        {
+          return false;
+        }
+        *out_dims = e.get_dims();
+        return true;
+      };
+    }
+
     // Get the underlying task base class - both stream_task and graph_task inherit from task. This is convenient when
     // we do not need the "typed" task, for example when using the "low-level" add_deps method.
     ::cuda::experimental::stf::task& get_base_task()
@@ -338,7 +419,7 @@ public:
     }
 
   private:
-    ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
+    ::cuda::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };
 
   /**
@@ -408,7 +489,7 @@ public:
    */
   ::std::string to_string() const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.to_string();
     };
@@ -426,7 +507,7 @@ public:
 
   void set_graph_cache_policy(::std::function<bool()> policy)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[&](auto& self) {
       self.set_graph_cache_policy(mv(policy));
     };
@@ -434,7 +515,7 @@ public:
 
   auto get_graph_cache_policy() const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.get_graph_cache_policy();
     };
@@ -442,7 +523,7 @@ public:
 
   executable_graph_cache_stat* graph_get_cache_stat()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.graph_get_cache_stat();
     };
@@ -450,7 +531,7 @@ public:
 
   cudaGraph_t graph() const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.graph();
     };
@@ -458,7 +539,7 @@ public:
 
   size_t stage() const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.stage();
     };
@@ -469,7 +550,7 @@ public:
    */
   size_t task_count() const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.task_count();
     };
@@ -486,7 +567,7 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... othersizes)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.template logical_data<T>(elements, othersizes...);
     };
@@ -503,25 +584,25 @@ public:
   template <typename P0, typename... Ps>
   auto logical_data(P0&& p0, Ps&&... ps)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    using T0 = ::std::remove_reference_t<P0>;
-    if constexpr (::std::is_integral_v<T0>)
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
+    using T0 = ::cuda::std::remove_reference_t<P0>;
+    if constexpr (::cuda::std::is_integral_v<T0>)
     {
       // Assume we create an array with the given length, so forward to the previous function.
-      return logical_data<T0>(size_t(p0), ::std::forward<Ps>(ps)...);
+      return logical_data<T0>(size_t(p0), ::cuda::std::forward<Ps>(ps)...);
     }
     else
     {
       // Forward all parameters to the homonym function in the context.
       return payload->*[&](auto& self) {
-        return self.logical_data(::std::forward<P0>(p0), ::std::forward<Ps>(ps)...);
+        return self.logical_data(::cuda::std::forward<P0>(p0), ::cuda::std::forward<Ps>(ps)...);
       };
     }
   }
 
   auto token()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.token();
     };
@@ -563,7 +644,7 @@ public:
   auto logical_data(T* p, size_t n, data_place dplace = data_place::host())
   {
     _CCCL_ASSERT(!dplace.is_invalid(), "");
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.logical_data(make_slice(p, n), mv(dplace));
     };
@@ -572,10 +653,10 @@ public:
   template <typename... Deps>
   unified_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     // Workaround: For some obscure reason `mv(deps)...` fails to compile
     return payload->*[&](auto& self) {
-      return unified_task<Deps...>(self.task(mv(e_place), ::std::move(deps)...));
+      return unified_task<Deps...>(self.task(mv(e_place), ::cuda::std::move(deps)...));
     };
   }
 
@@ -592,16 +673,16 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    if constexpr (::std::is_integral_v<S>)
+    if constexpr (::cuda::std::is_integral_v<S>)
     {
       return parallel_for(mv(e_place), box(shape), mv(deps)...);
     }
     else
     {
-      EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
+      EXPECT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized.");
       using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, exec_place_t, S, null_partition, Deps...>,
                                      reserved::parallel_for_scope<graph_ctx, exec_place_t, S, null_partition, Deps...>>;
       return payload->*[&](auto& self) {
@@ -614,10 +695,10 @@ public:
             typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
-    EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
+    EXPECT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, exec_place_t, S, partitioner_t, Deps...>,
                                    reserved::parallel_for_scope<graph_ctx, exec_place_t, S, partitioner_t, Deps...>>;
     return payload->*[&](auto& self) {
@@ -635,7 +716,7 @@ public:
   template <typename... Deps>
   auto host_launch(task_dep<Deps>... deps)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     using result_t = unified_scope<reserved::host_launch_scope<stream_ctx, false, Deps...>,
                                    reserved::host_launch_scope<graph_ctx, false, Deps...>>;
     return payload->*[&](auto& self) {
@@ -646,7 +727,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel(task_dep<Deps>... deps)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
@@ -658,7 +739,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel(exec_place e_place, task_dep<Deps>... deps)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
@@ -670,7 +751,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel_chain(task_dep<Deps>... deps)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
@@ -682,7 +763,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel_chain(exec_place e_place, task_dep<Deps>... deps)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
@@ -742,7 +823,7 @@ public:
 
   cudaStream_t fence()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.fence();
     };
@@ -750,7 +831,7 @@ public:
 
   void finalize()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[](auto& self) {
       self.finalize();
     };
@@ -759,7 +840,7 @@ public:
   //! Add a resource to be managed by this context
   void add_resource(::std::shared_ptr<ctx_resource> resource)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[&resource](auto& self) {
       self.add_resource(mv(resource));
     };
@@ -770,7 +851,7 @@ public:
   //! for replayable graphs, call once the graph will no longer be used.
   void release_resources(cudaStream_t stream)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[stream](auto& self) {
       self.release_resources(stream);
     };
@@ -780,14 +861,14 @@ public:
   //! \p other will have no resources after this call.
   void import_resources_from(context& other)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     import_resources(other.export_resources());
   }
 
 private:
   ctx_resource_set export_resources()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[](auto& self) {
       return self.export_resources();
     };
@@ -795,7 +876,7 @@ private:
 
   void import_resources(ctx_resource_set&& other)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[&other](auto& self) {
       self.import_resources(mv(other));
     };
@@ -804,7 +885,7 @@ private:
 public:
   void submit()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[](auto& self) {
       self.submit();
     };
@@ -812,7 +893,7 @@ public:
 
   void set_allocator(block_allocator_untyped custom_allocator)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[&](auto& self) {
       self.set_allocator(mv(custom_allocator));
     };
@@ -820,7 +901,7 @@ public:
 
   void attach_allocator(block_allocator_untyped custom_allocator)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[&](auto& self) {
       self.attach_allocator(mv(custom_allocator));
     };
@@ -835,7 +916,7 @@ public:
 
   void change_stage()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[](auto& self) {
       self.change_stage();
     };
@@ -843,16 +924,19 @@ public:
 
   ::std::shared_ptr<reserved::per_ctx_dot> get_dot()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[](auto& self) {
       return self.get_dot();
     };
   }
 
+  // Forwards to the active backend. For a token (logical_data<void_interface>)
+  // the backend wait() returns void and only blocks on the token's
+  // dependencies, so `auto` deduces void here as well.
   template <typename T>
   auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&ldata](auto& self) {
       return self.wait(ldata);
     };
@@ -861,7 +945,7 @@ public:
   template <typename parent_ctx_t>
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
     payload->*[&](auto& self) {
       self.set_parent_ctx(parent_ctx.get_dot());
@@ -870,7 +954,7 @@ public:
 
   void enable_logical_data_stats()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     payload->*[&](auto& self) {
       self.enable_logical_data_stats();
     };
@@ -881,7 +965,7 @@ public:
    */
   auto dot_section(::std::string symbol) const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.dot_section(mv(symbol));
     };
@@ -891,7 +975,7 @@ public:
    * may specialize code to deal with the specific constraints of CUDA graphs. */
   bool is_graph_ctx() const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[&](auto& self) {
       return self.is_graph_ctx();
     };
@@ -900,10 +984,10 @@ public:
   async_resources_handle& async_resources() const
   {
     // if (payload.index() == 0) {
-    //     return ::std::get<0>(payload).async_resources();
+    //     return ::cuda::std::get<0>(payload).async_resources();
     // }
     // EXPECT(payload.index() == 1, "Uninitialized context.");
-    // return ::std::get<1>(payload).async_resources();
+    // return ::cuda::std::get<1>(payload).async_resources();
     return payload->*[&](auto& self) -> async_resources_handle& {
       return self.async_resources();
     };
@@ -955,7 +1039,7 @@ public:
   graph_ctx to_graph_ctx() const
   {
     // Check if payload holds graph_ctx (index == 1)
-    if (auto ctx = ::std::get_if<graph_ctx>(&payload))
+    if (auto ctx = ::cuda::std::get_if<graph_ctx>(&payload))
     {
       return *ctx;
     }
@@ -974,7 +1058,7 @@ public:
    */
   cudaStream_t pick_stream()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
     return payload->*[](auto& self) {
       return self.pick_stream();
     };
@@ -987,26 +1071,22 @@ public:
    */
   backend_ctx_untyped& get_backend()
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [](auto& ctx) -> backend_ctx_untyped& {
-        return static_cast<backend_ctx_untyped&>(ctx);
-      },
-      payload);
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
+    return payload->*[](auto& ctx) -> backend_ctx_untyped& {
+      return static_cast<backend_ctx_untyped&>(ctx);
+    };
   }
 
   const backend_ctx_untyped& get_backend() const
   {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return ::std::visit(
-      [](const auto& ctx) -> const backend_ctx_untyped& {
-        return static_cast<const backend_ctx_untyped&>(ctx);
-      },
-      payload);
+    _CCCL_ASSERT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized");
+    return payload->*[](const auto& ctx) -> const backend_ctx_untyped& {
+      return static_cast<const backend_ctx_untyped&>(ctx);
+    };
   }
 
 public:
-  ::std::variant<stream_ctx, graph_ctx> payload;
+  ::cuda::std::variant<stream_ctx, graph_ctx> payload;
 };
 
 #ifdef UNITTESTED_FILE
@@ -1070,31 +1150,36 @@ UNITTEST("context is_graph_ctx")
   ctx2.finalize();
 };
 
+namespace reserved
+{
+//! Test-only resource that records, via the flag it is given, that the context released it.
+//! Shared by the context-resource unit tests below. Kept out of the enclosing namespace since
+//! it exists only for those tests.
+struct dummy_released_resource : ctx_resource
+{
+  bool* released_ = nullptr;
+  explicit dummy_released_resource(bool* released)
+      : released_(released)
+  {}
+  bool can_release_in_callback() const noexcept override
+  {
+    return true;
+  }
+  void release_in_callback() noexcept override
+  {
+    if (released_)
+    {
+      *released_ = true;
+    }
+  }
+};
+} // end namespace reserved
+
 UNITTEST("context resources released on finalize")
 {
-  // Dummy resource that sets a flag when released (callback path)
-  struct dummy_released_resource : ctx_resource
-  {
-    bool* released_ = nullptr;
-    explicit dummy_released_resource(bool* released)
-        : released_(released)
-    {}
-    bool can_release_in_callback() const override
-    {
-      return true;
-    }
-    void release_in_callback() override
-    {
-      if (released_)
-      {
-        *released_ = true;
-      }
-    }
-  };
-
   bool released = false;
   context ctx;
-  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  ctx.add_resource(::std::make_shared<reserved::dummy_released_resource>(&released));
   // This is a blocking call, resources should have been released when it returns
   ctx.finalize();
   EXPECT(released);
@@ -1102,63 +1187,26 @@ UNITTEST("context resources released on finalize")
 
 UNITTEST("context resources released on finalize non blocking")
 {
-  struct dummy_released_resource : ctx_resource
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
   {
-    bool* released_ = nullptr;
-    explicit dummy_released_resource(bool* released)
-        : released_(released)
-    {}
-    bool can_release_in_callback() const override
-    {
-      return true;
-    }
-    void release_in_callback() override
-    {
-      if (released_)
-      {
-        *released_ = true;
-      }
-    }
+    cuda_safe_call(cudaStreamDestroy(stream));
   };
-
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
 
   bool released = false;
   context ctx(stream, async_resources_handle());
-  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  ctx.add_resource(::std::make_shared<reserved::dummy_released_resource>(&released));
   ctx.finalize(); // non-blocking: context was created with user stream
   EXPECT(!released); // not yet, callback not run
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try<cudaStreamSynchronize>(stream);
   EXPECT(released);
-
-  cuda_safe_call(cudaStreamDestroy(stream));
 };
 
 UNITTEST("context import_resources_from")
 {
-  struct dummy_released_resource : ctx_resource
-  {
-    bool* released_ = nullptr;
-    explicit dummy_released_resource(bool* released)
-        : released_(released)
-    {}
-    bool can_release_in_callback() const override
-    {
-      return true;
-    }
-    void release_in_callback() override
-    {
-      if (released_)
-      {
-        *released_ = true;
-      }
-    }
-  };
-
   bool released = false;
   context child_ctx;
-  child_ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  child_ctx.add_resource(::std::make_shared<reserved::dummy_released_resource>(&released));
   context parent_ctx;
   parent_ctx.import_resources_from(child_ctx);
   // This is a blocking call, resources should have been released when it returns
@@ -1182,8 +1230,11 @@ UNITTEST("context graph and stage")
 
 UNITTEST("context with arguments")
 {
-  cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  const cudaStream_t stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call(cudaStreamDestroy(stream));
+  };
 
   async_resources_handle h;
 
@@ -1198,8 +1249,6 @@ UNITTEST("context with arguments")
 
   context ctx4 = graph_ctx(stream, h);
   ctx4.finalize();
-
-  cuda_safe_call(cudaStreamDestroy(stream));
 };
 
 #  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
@@ -1564,7 +1613,7 @@ UNITTEST("context task")
 
   ctx.task(la.read(), lb.write())->*[](auto s, auto a, auto b) {
     // no-op
-    cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s);
+    cuda_safe_call(cudaMemcpyAsync(&b(0), &a(0), sizeof(int), cudaMemcpyDeviceToDevice, s));
   };
 
   ctx.finalize();
@@ -1630,7 +1679,7 @@ UNITTEST("logical data slice const")
   slice<const double> cA = make_slice((const double*) &A[0], 128);
   auto lA                = ctx.logical_data(cA);
   ctx.task(lA.read())->*[](cudaStream_t, auto A) {
-    static_assert(::std::is_same_v<decltype(A), slice<const double>>);
+    static_assert(::cuda::std::is_same_v<decltype(A), slice<const double>>);
   };
   ctx.finalize();
 };
@@ -1687,7 +1736,7 @@ UNITTEST("make_tuple_indexwise")
       return int(i);
     }
   });
-  static_assert(::std::is_same_v<decltype(t1), ::std::tuple<int, int>>);
+  static_assert(::cuda::std::is_same_v<decltype(t1), ::std::tuple<int, int>>);
   EXPECT(t1 == ::std::tuple(0, 1));
 
   auto t2 = make_tuple_indexwise<3>([&](auto i) {
@@ -1700,14 +1749,13 @@ UNITTEST("make_tuple_indexwise")
       return int(i);
     }
   });
-  static_assert(::std::is_same_v<decltype(t2), ::std::tuple<int, int>>);
+  static_assert(::cuda::std::is_same_v<decltype(t2), ::std::tuple<int, int>>);
   EXPECT(t2 == ::std::tuple(0, 2));
 };
 
 UNITTEST("cuda stream place")
 {
-  cudaStream_t user_stream;
-  cuda_safe_call(cudaStreamCreate(&user_stream));
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
 
   context ctx;
 
@@ -1726,16 +1774,14 @@ UNITTEST("cuda stream place")
 
 UNITTEST("cuda stream place multi-gpu")
 {
-  cudaStream_t user_stream;
-
   // Create a CUDA stream in a different device (if available)
-  int ndevices = cuda_try<cudaGetDeviceCount>();
+  const int ndevices = cuda_try<cudaGetDeviceCount>();
   // use the last device
-  int target_dev_id = ndevices - 1;
+  const int target_dev_id = ndevices - 1;
 
-  cuda_safe_call(cudaSetDevice(target_dev_id));
-  cuda_safe_call(cudaStreamCreate(&user_stream));
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try<cudaSetDevice>(target_dev_id);
+  const cudaStream_t user_stream = cuda_try<cudaStreamCreate>();
+  cuda_try<cudaSetDevice>(0);
 
   context ctx;
 
@@ -1802,6 +1848,20 @@ UNITTEST("token vector")
   ctx.finalize();
 };
 
+// Blocking wait on a token returns void and only synchronizes the host
+UNITTEST("wait on token")
+{
+  context ctx;
+
+  auto tok = ctx.token();
+  ctx.task(tok.write())->*[](cudaStream_t) {};
+
+  static_assert(::cuda::std::is_void_v<decltype(ctx.wait(tok))>, "wait(token) must return void");
+  ctx.wait(tok);
+
+  ctx.finalize();
+};
+
 UNITTEST("get_stream")
 {
   context ctx;
@@ -1826,8 +1886,7 @@ UNITTEST("get_stream graph")
   cudaStream_t s = t.get_stream();
   // We are not capturing so there is no stream associated
   EXPECT(s == nullptr);
-  cudaGraphNode_t n;
-  cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+  ::std::ignore = cuda_try<cudaGraphAddEmptyNode>(t.get_graph(), nullptr, 0);
   t.end();
 
   auto t2 = ctx.task(token.rw());

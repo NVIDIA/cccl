@@ -28,36 +28,36 @@ class Deleter
 {
   int state_;
 
-  TEST_FUNC Deleter(const Deleter&);
-  TEST_FUNC Deleter& operator=(const Deleter&);
+  TEST_HOST_DEVICE_FUNC Deleter(const Deleter&);
+  TEST_HOST_DEVICE_FUNC Deleter& operator=(const Deleter&);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter(Deleter&& r)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter(Deleter&& r)
       : state_(r.state_)
   {
     r.state_ = 0;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter& operator=(Deleter&& r)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter& operator=(Deleter&& r)
   {
     state_   = r.state_;
     r.state_ = 0;
     return *this;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit Deleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit Deleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~Deleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~Deleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX23
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23
   Deleter(Deleter<U>&& d, typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0)
       : state_(d.state())
   {
@@ -66,19 +66,20 @@ public:
 
 private:
   template <class U>
-  TEST_FUNC Deleter(const Deleter<U>& d, typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0);
+  TEST_HOST_DEVICE_FUNC
+  Deleter(const Deleter<U>& d, typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete p;
   }
@@ -89,51 +90,51 @@ class Deleter<T[]>
 {
   int state_;
 
-  TEST_FUNC Deleter(const Deleter&);
-  TEST_FUNC Deleter& operator=(const Deleter&);
+  TEST_HOST_DEVICE_FUNC Deleter(const Deleter&);
+  TEST_HOST_DEVICE_FUNC Deleter& operator=(const Deleter&);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter(Deleter&& r)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter(Deleter&& r)
       : state_(r.state_)
   {
     r.state_ = 0;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter& operator=(Deleter&& r)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter& operator=(Deleter&& r)
   {
     state_   = r.state_;
     r.state_ = 0;
     return *this;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 Deleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit Deleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit Deleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~Deleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~Deleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete[] p;
   }
 };
 
 template <class T>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void swap(Deleter<T>& x, Deleter<T>& y)
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void swap(Deleter<T>& x, Deleter<T>& y)
 {
   Deleter<T> t(cuda::std::move(x));
   x = cuda::std::move(y);
@@ -146,33 +147,33 @@ class CDeleter
   int state_;
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit CDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit CDeleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~CDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~CDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CDeleter(const CDeleter<U>& d)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CDeleter(const CDeleter<U>& d)
       : state_(d.state())
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete p;
   }
@@ -184,40 +185,40 @@ class CDeleter<T[]>
   int state_;
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit CDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit CDeleter(int s)
       : state_(s)
   {}
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CDeleter(const CDeleter<U>& d)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CDeleter(const CDeleter<U>& d)
       : state_(d.state())
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~CDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~CDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete[] p;
   }
 };
 
 template <class T>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void swap(CDeleter<T>& x, CDeleter<T>& y)
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void swap(CDeleter<T>& x, CDeleter<T>& y)
 {
   CDeleter<T> t(cuda::std::move(x));
   x = cuda::std::move(y);
@@ -229,32 +230,32 @@ template <class T>
 class NCDeleter
 {
   int state_;
-  TEST_FUNC NCDeleter(NCDeleter const&);
-  TEST_FUNC NCDeleter& operator=(NCDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCDeleter(NCDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCDeleter& operator=(NCDeleter const&);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 NCDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 NCDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit NCDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit NCDeleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~NCDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~NCDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete p;
   }
@@ -264,32 +265,32 @@ template <class T>
 class NCDeleter<T[]>
 {
   int state_;
-  TEST_FUNC NCDeleter(NCDeleter const&);
-  TEST_FUNC NCDeleter& operator=(NCDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCDeleter(NCDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCDeleter& operator=(NCDeleter const&);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 NCDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 NCDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit NCDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit NCDeleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~NCDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~NCDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete[] p;
   }
@@ -300,32 +301,32 @@ template <class T>
 class NCConstDeleter
 {
   int state_;
-  TEST_FUNC NCConstDeleter(NCConstDeleter const&);
-  TEST_FUNC NCConstDeleter& operator=(NCConstDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCConstDeleter(NCConstDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCConstDeleter& operator=(NCConstDeleter const&);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConstDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 NCConstDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit NCConstDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit NCConstDeleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~NCConstDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~NCConstDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p) const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p) const
   {
     delete p;
   }
@@ -335,32 +336,32 @@ template <class T>
 class NCConstDeleter<T[]>
 {
   int state_;
-  TEST_FUNC NCConstDeleter(NCConstDeleter const&);
-  TEST_FUNC NCConstDeleter& operator=(NCConstDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCConstDeleter(NCConstDeleter const&);
+  TEST_HOST_DEVICE_FUNC NCConstDeleter& operator=(NCConstDeleter const&);
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConstDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 NCConstDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit NCConstDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit NCConstDeleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~NCConstDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~NCConstDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p) const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p) const
   {
     delete[] p;
   }
@@ -373,37 +374,37 @@ class CopyDeleter
   int state_;
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit CopyDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit CopyDeleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~CopyDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~CopyDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter(CopyDeleter const& other)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter(CopyDeleter const& other)
       : state_(other.state_)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter& operator=(CopyDeleter const& other)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter& operator=(CopyDeleter const& other)
   {
     state_ = other.state_;
     return *this;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete p;
   }
@@ -415,37 +416,37 @@ class CopyDeleter<T[]>
   int state_;
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter()
       : state_(0)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit CopyDeleter(int s)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit CopyDeleter(int s)
       : state_(s)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 ~CopyDeleter()
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 ~CopyDeleter()
   {
     assert(state_ >= 0);
     state_ = -1;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter(CopyDeleter const& other)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter(CopyDeleter const& other)
       : state_(other.state_)
   {}
-  TEST_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter& operator=(CopyDeleter const& other)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 CopyDeleter& operator=(CopyDeleter const& other)
   {
     state_ = other.state_;
     return *this;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete[] p;
   }
@@ -462,48 +463,48 @@ class test_deleter : public test_deleter_base
   int state_;
 
 public:
-  TEST_FUNC test_deleter()
+  TEST_HOST_DEVICE_FUNC test_deleter()
       : state_(0)
   {
     ++test_deleter_base_count;
   }
-  TEST_FUNC explicit test_deleter(int s)
+  TEST_HOST_DEVICE_FUNC explicit test_deleter(int s)
       : state_(s)
   {
     ++test_deleter_base_count;
   }
-  TEST_FUNC test_deleter(const test_deleter& d)
+  TEST_HOST_DEVICE_FUNC test_deleter(const test_deleter& d)
       : state_(d.state_)
   {
     ++test_deleter_base_count;
   }
-  TEST_FUNC ~test_deleter()
+  TEST_HOST_DEVICE_FUNC ~test_deleter()
   {
     assert(state_ >= 0);
     --test_deleter_base_count;
     state_ = -1;
   }
 
-  TEST_FUNC int state() const
+  TEST_HOST_DEVICE_FUNC int state() const
   {
     return state_;
   }
-  TEST_FUNC void set_state(int i)
+  TEST_HOST_DEVICE_FUNC void set_state(int i)
   {
     state_ = i;
   }
 
-  TEST_FUNC void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC void operator()(T* p)
   {
     assert(state_ >= 0);
     ++test_deleter_base_count;
     delete p;
   }
-  TEST_FUNC test_deleter* operator&() const = delete;
+  TEST_HOST_DEVICE_FUNC test_deleter* operator&() const = delete;
 };
 
 template <class T>
-TEST_FUNC void swap(test_deleter<T>& x, test_deleter<T>& y)
+TEST_HOST_DEVICE_FUNC void swap(test_deleter<T>& x, test_deleter<T>& y)
 {
   test_deleter<T> t(cuda::std::move(x));
   x = cuda::std::move(y);
@@ -513,8 +514,8 @@ TEST_FUNC void swap(test_deleter<T>& x, test_deleter<T>& y)
 template <class T, cuda::std::size_t ID = 0>
 class PointerDeleter
 {
-  TEST_FUNC PointerDeleter(const PointerDeleter&);
-  TEST_FUNC PointerDeleter& operator=(const PointerDeleter&);
+  TEST_HOST_DEVICE_FUNC PointerDeleter(const PointerDeleter&);
+  TEST_HOST_DEVICE_FUNC PointerDeleter& operator=(const PointerDeleter&);
 
 public:
   using pointer = min_pointer<T, cuda::std::integral_constant<cuda::std::size_t, ID>>;
@@ -522,14 +523,14 @@ public:
   TEST_CONSTEXPR_CXX23 PointerDeleter()                            = default;
   TEST_CONSTEXPR_CXX23 PointerDeleter(PointerDeleter&&)            = default;
   TEST_CONSTEXPR_CXX23 PointerDeleter& operator=(PointerDeleter&&) = default;
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit PointerDeleter(int) {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit PointerDeleter(int) {}
 
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX23
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23
   PointerDeleter(PointerDeleter<U, ID>&&, typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0)
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(pointer p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(pointer p)
   {
     if (p)
     {
@@ -539,15 +540,15 @@ public:
 
 private:
   template <class U>
-  TEST_FUNC PointerDeleter(const PointerDeleter<U, ID>&,
-                           typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0);
+  TEST_HOST_DEVICE_FUNC PointerDeleter(const PointerDeleter<U, ID>&,
+                                       typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0);
 };
 
 template <class T, cuda::std::size_t ID>
 class PointerDeleter<T[], ID>
 {
-  TEST_FUNC PointerDeleter(const PointerDeleter&);
-  TEST_FUNC PointerDeleter& operator=(const PointerDeleter&);
+  TEST_HOST_DEVICE_FUNC PointerDeleter(const PointerDeleter&);
+  TEST_HOST_DEVICE_FUNC PointerDeleter& operator=(const PointerDeleter&);
 
 public:
   using pointer = min_pointer<T, cuda::std::integral_constant<cuda::std::size_t, ID>>;
@@ -555,14 +556,14 @@ public:
   TEST_CONSTEXPR_CXX23 PointerDeleter()                            = default;
   TEST_CONSTEXPR_CXX23 PointerDeleter(PointerDeleter&&)            = default;
   TEST_CONSTEXPR_CXX23 PointerDeleter& operator=(PointerDeleter&&) = default;
-  TEST_FUNC TEST_CONSTEXPR_CXX23 explicit PointerDeleter(int) {}
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 explicit PointerDeleter(int) {}
 
   template <class U>
-  TEST_FUNC TEST_CONSTEXPR_CXX23
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23
   PointerDeleter(PointerDeleter<U, ID>&&, typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0)
   {}
 
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(pointer p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(pointer p)
   {
     if (p)
     {
@@ -572,8 +573,8 @@ public:
 
 private:
   template <class U>
-  TEST_FUNC PointerDeleter(const PointerDeleter<U, ID>&,
-                           typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0);
+  TEST_HOST_DEVICE_FUNC PointerDeleter(const PointerDeleter<U, ID>&,
+                                       typename cuda::std::enable_if<!cuda::std::is_same<U, T>::value>::type* = 0);
 };
 
 template <class T>
@@ -582,11 +583,11 @@ class DefaultCtorDeleter
   int state_;
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete p;
   }
@@ -598,11 +599,11 @@ class DefaultCtorDeleter<T[]>
   int state_;
 
 public:
-  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
+  TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void operator()(T* p)
   {
     delete[] p;
   }

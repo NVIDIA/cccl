@@ -5,10 +5,13 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 //  ... test case crashes clang.
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -82,7 +85,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC void do_test()
+TEST_HOST_DEVICE_FUNC void do_test()
 {
   using X = typename cuda::std::remove_pointer<T>::type;
   Selector<A, constructor_initializer> sel;
@@ -133,7 +136,7 @@ TEST_FUNC void do_test()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC void do_test_std()
+TEST_HOST_DEVICE_FUNC void do_test_std()
 {
   Selector<A, constructor_initializer> sel;
   A& obj = *sel.construct(nullptr);
@@ -146,14 +149,14 @@ TEST_FUNC void do_test_std()
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   do_test<A, T, Selector>();
   do_test<volatile A, T, Selector>();
 }
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC void test_std()
+TEST_HOST_DEVICE_FUNC void test_std()
 {
   do_test_std<A, T, Selector>();
   do_test_std<volatile A, T, Selector>();

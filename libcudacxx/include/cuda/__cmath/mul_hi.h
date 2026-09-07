@@ -67,6 +67,7 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
 {
   using ::cuda::std::int64_t;
   using ::cuda::std::is_signed_v;
+#if !_CCCL_TILE_COMPILATION() // nvbug6085239 error: calling a __device__ function from a __tile__ function
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     if constexpr (sizeof(_Tp) == sizeof(int))
@@ -91,21 +92,22 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
         [[maybe_unused]] const auto __lhs1 = static_cast<long long>(__lhs);
         [[maybe_unused]] const auto __rhs1 = static_cast<long long>(__rhs);
         NV_IF_TARGET(NV_IS_DEVICE, (return ::__mul64hi(__lhs1, __rhs1);));
-#if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
         NV_IF_TARGET(NV_IS_HOST, (return ::__mulh(__lhs1, __rhs1);));
-#endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
       }
       else // is_unsigned_v<_Tp>
       {
         [[maybe_unused]] const auto __lhs1 = static_cast<unsigned long long>(__lhs);
         [[maybe_unused]] const auto __rhs1 = static_cast<unsigned long long>(__rhs);
         NV_IF_TARGET(NV_IS_DEVICE, (return ::__umul64hi(__lhs1, __rhs1);));
-#if _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(MSVC)
         NV_IF_TARGET(NV_IS_HOST, (return ::__umulh(__lhs1, __rhs1);));
-#endif // _CCCL_COMPILER(MSVC)
+#  endif // _CCCL_COMPILER(MSVC)
       }
     }
   }
+#endif // !_CCCL_TILE_COMPILATION()
   if constexpr (sizeof(_Tp) < sizeof(int64_t) || (sizeof(_Tp) == sizeof(int64_t) && _CCCL_HAS_INT128()))
   {
     constexpr auto __bits = ::cuda::std::__num_bits_v<_Tp>;

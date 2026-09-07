@@ -1,82 +1,76 @@
 #include <thrust/execution_policy.h>
-#include <thrust/functional.h>
 #include <thrust/merge.h>
-#include <thrust/sort.h>
+
+#include <cuda/buffer>
+#include <cuda/cccl_runtime_test_helper.cuh>
+#include <cuda/launch>
+#include <cuda/stream>
 
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy,
-          typename Iterator1,
-          typename Iterator2,
-          typename Iterator3,
-          typename Iterator4,
-          typename Iterator5,
-          typename Iterator6,
-          typename Iterator7>
-__global__ void merge_by_key_kernel(
-  ExecutionPolicy exec,
-  Iterator1 keys_first1,
-  Iterator1 keys_last1,
-  Iterator2 keys_first2,
-  Iterator2 keys_last2,
-  Iterator3 values_first1,
-  Iterator4 values_first2,
-  Iterator5 keys_result,
-  Iterator6 values_result,
-  Iterator7 result)
+struct merge_by_key_kernel
 {
-  *result = thrust::merge_by_key(
-    exec, keys_first1, keys_last1, keys_first2, keys_last2, values_first1, values_first2, keys_result, values_result);
-}
+  template <typename ExecutionPolicy,
+            typename Keys1,
+            typename Keys2,
+            typename Values1,
+            typename Values2,
+            typename KeysOutput,
+            typename ValuesOutput>
+  __device__ void operator()(
+    ExecutionPolicy exec,
+    Keys1 keys1,
+    Keys2 keys2,
+    Values1 values1,
+    Values2 values2,
+    KeysOutput keys_result,
+    ValuesOutput values_result) const
+  {
+    auto end = thrust::merge_by_key(
+      exec,
+      keys1.begin(),
+      keys1.end(),
+      keys2.begin(),
+      keys2.end(),
+      values1.begin(),
+      values2.begin(),
+      keys_result.begin(),
+      values_result.begin());
+    TEST_ASSERT_DEVICE(end.first == keys_result.end());
+    TEST_ASSERT_DEVICE(end.second == values_result.end());
+  }
+};
 
 template <typename ExecutionPolicy>
 void TestMergeByKeyDevice(ExecutionPolicy exec)
 {
-  // clang-format off
-  thrust::device_vector<int> a_key(3), a_val(3), b_key(4), b_val(4);
-  a_key[0] = 0;  a_key[1] = 2; a_key[2] = 4;
-  a_val[0] = 13; a_val[1] = 7; a_val[2] = 42;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  b_key[0] = 0 ; b_key[1] = 3;  b_key[2] = 3; b_key[3] = 4;
-  b_val[0] = 42; b_val[1] = 42; b_val[2] = 7; b_val[3] = 13;
+  auto a_key = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
+  auto a_val = cuda::make_device_buffer<int>(stream, device, {13, 7, 42});
+  auto b_key = cuda::make_device_buffer<int>(stream, device, {0, 3, 3, 4});
+  auto b_val = cuda::make_device_buffer<int>(stream, device, {42, 42, 7, 13});
 
-  thrust::device_vector<int> ref_key(7), ref_val(7);
-  ref_key[0] = 0; ref_val[0] = 13;
-  ref_key[1] = 0; ref_val[1] = 42;
-  ref_key[2] = 2; ref_val[2] = 7;
-  ref_key[3] = 3; ref_val[3] = 42;
-  ref_key[4] = 3; ref_val[4] = 7;
-  ref_key[5] = 4; ref_val[5] = 42;
-  ref_key[6] = 4; ref_val[6] = 13;
-  // clang-format on
+  auto result_key = cuda::make_device_buffer<int>(stream, device, 7, cuda::no_init);
+  auto result_val = cuda::make_device_buffer<int>(stream, device, 7, cuda::no_init);
 
-  thrust::device_vector<int> result_key(7), result_val(7);
-
-  using Iterator = typename thrust::device_vector<int>::iterator;
-
-  thrust::device_vector<cuda::std::pair<Iterator, Iterator>> result_ends(1);
-
-  merge_by_key_kernel<<<1, 1>>>(
+  cuda::launch(
+    stream,
+    test_runtime::single_thread_config(),
+    merge_by_key_kernel{},
     exec,
-    a_key.begin(),
-    a_key.end(),
-    b_key.begin(),
-    b_key.end(),
-    a_val.begin(),
-    b_val.begin(),
-    result_key.begin(),
-    result_val.begin(),
-    result_ends.begin());
-  cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+    a_key,
+    b_key,
+    a_val,
+    b_val,
+    result_key,
+    result_val);
+  stream.sync();
 
-  cuda::std::pair<Iterator, Iterator> ends = result_ends[0];
-
-  ASSERT_EQUAL_QUIET(result_key.end(), ends.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), ends.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
+  test_runtime::assert_equal(stream, result_key, {0, 0, 2, 3, 3, 4, 4});
+  test_runtime::assert_equal(stream, result_val, {13, 42, 7, 42, 7, 42, 13});
 }
 
 void TestMergeByKeyDeviceSeq()
@@ -94,34 +88,19 @@ DECLARE_UNITTEST(TestMergeByKeyDeviceDevice);
 
 void TestMergeByKeyCudaStreams()
 {
-  using Vector   = thrust::device_vector<int>;
-  using Iterator = Vector::iterator;
+  const auto device = test_runtime::current_test_device();
+  cuda::stream stream{device};
 
-  // clang-format off
-  Vector a_key(3), a_val(3), b_key(4), b_val(4);
-  a_key[0] = 0;  a_key[1] = 2; a_key[2] = 4;
-  a_val[0] = 13; a_val[1] = 7; a_val[2] = 42;
+  auto a_key = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
+  auto a_val = cuda::make_device_buffer<int>(stream, device, {13, 7, 42});
+  auto b_key = cuda::make_device_buffer<int>(stream, device, {0, 3, 3, 4});
+  auto b_val = cuda::make_device_buffer<int>(stream, device, {42, 42, 7, 13});
 
-  b_key[0] = 0 ; b_key[1] = 3;  b_key[2] = 3; b_key[3] = 4;
-  b_val[0] = 42; b_val[1] = 42; b_val[2] = 7; b_val[3] = 13;
+  auto result_key = cuda::make_device_buffer<int>(stream, device, 7, cuda::no_init);
+  auto result_val = cuda::make_device_buffer<int>(stream, device, 7, cuda::no_init);
 
-  Vector ref_key(7), ref_val(7);
-  ref_key[0] = 0; ref_val[0] = 13;
-  ref_key[1] = 0; ref_val[1] = 42;
-  ref_key[2] = 2; ref_val[2] = 7;
-  ref_key[3] = 3; ref_val[3] = 42;
-  ref_key[4] = 3; ref_val[4] = 7;
-  ref_key[5] = 4; ref_val[5] = 42;
-  ref_key[6] = 4; ref_val[6] = 13;
-  // clang-format on
-
-  Vector result_key(7), result_val(7);
-
-  cudaStream_t s;
-  cudaStreamCreate(&s);
-
-  cuda::std::pair<Iterator, Iterator> ends = thrust::merge_by_key(
-    thrust::cuda::par.on(s),
+  const auto end = thrust::merge_by_key(
+    thrust::cuda::par.on(stream.get()),
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -130,14 +109,11 @@ void TestMergeByKeyCudaStreams()
     b_val.begin(),
     result_key.begin(),
     result_val.begin());
+  stream.sync();
 
-  cudaStreamSynchronize(s);
-
-  ASSERT_EQUAL_QUIET(result_key.end(), ends.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), ends.second);
-  ASSERT_EQUAL(ref_key, result_key);
-  ASSERT_EQUAL(ref_val, result_val);
-
-  cudaStreamDestroy(s);
+  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
+  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  test_runtime::assert_equal(stream, result_key, {0, 0, 2, 3, 3, 4, 4});
+  test_runtime::assert_equal(stream, result_val, {13, 42, 7, 42, 7, 42, 13});
 }
 DECLARE_UNITTEST(TestMergeByKeyCudaStreams);

@@ -55,10 +55,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
@@ -75,9 +71,9 @@ public:
   template <bool _Const>
   class __sentinel
   {
-    using _Base _CCCL_NODEBUG_ALIAS = __maybe_const<_Const, _View>;
+    using _Base _CCCL_NODEBUG = __maybe_const<_Const, _View>;
     template <bool _OtherConst>
-    using _Iter _CCCL_NODEBUG_ALIAS                  = counted_iterator<iterator_t<__maybe_const<_OtherConst, _View>>>;
+    using _Iter _CCCL_NODEBUG                        = counted_iterator<iterator_t<__maybe_const<_OtherConst, _View>>>;
     _CCCL_NO_UNIQUE_ADDRESS sentinel_t<_Base> __end_ = sentinel_t<_Base>();
 
     template <bool>
@@ -281,7 +277,7 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE take_view(_Range&&, range_difference_t<_Range>)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_view(_Range&&, range_difference_t<_Range>)
   -> take_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _Tp>
@@ -322,24 +318,24 @@ struct __passthrough_type;
 template <class _Tp, size_t _Extent>
 struct __passthrough_type<span<_Tp, _Extent>>
 {
-  using type _CCCL_NODEBUG_ALIAS = span<_Tp>;
+  using type _CCCL_NODEBUG = span<_Tp>;
 };
 
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>>
 {
-  using type = _CCCL_NODEBUG_ALIAS basic_string_view<_CharT, _Traits>;
+  using type = _CCCL_NODEBUG basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
 struct __passthrough_type<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>,
                           void_t<typename ::cuda::std::ranges::subrange<_Iter>>>
 {
-  using type = _CCCL_NODEBUG_ALIAS ::cuda::std::ranges::subrange<_Iter>;
+  using type = _CCCL_NODEBUG ::cuda::std::ranges::subrange<_Iter>;
 };
 
 template <class _Tp>
-using __passthrough_type_t _CCCL_NODEBUG_ALIAS = typename __passthrough_type<_Tp>::type;
+using __passthrough_type_t _CCCL_NODEBUG = typename __passthrough_type<_Tp>::type;
 
 template <class _Range, class _Np>
 _CCCL_CONCEPT __use_empty = _CCCL_REQUIRES_EXPR((_Range, _Np))(
@@ -373,8 +369,8 @@ struct __fn
   // [range.take.overview]: the `empty_view` case.
   _CCCL_TEMPLATE(class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>)
   _CCCL_REQUIRES(__use_empty<_Range, _Np>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&&) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Range>(__range)))) -> _RawRange
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&&) noexcept(
+    noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Range>(__range)))) -> _RawRange
   {
     return _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Range>(__range));
   }
@@ -383,12 +379,12 @@ struct __fn
   _CCCL_TEMPLATE(
     class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(__use_passthrough<_Range, _Np>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __rng, _Np&& __n) const
-    noexcept(noexcept(__passthrough_type_t<_RawRange>(
-      ::cuda::std::ranges::begin(__rng),
-      ::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
-      -> __passthrough_type_t<_RawRange>
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Range&& __rng, _Np&& __n) noexcept(noexcept(__passthrough_type_t<_RawRange>(
+    ::cuda::std::ranges::begin(__rng),
+    ::cuda::std::ranges::begin(__rng)
+      + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
+    -> __passthrough_type_t<_RawRange>
   {
     return __passthrough_type_t<_RawRange>(
       ::cuda::std::ranges::begin(__rng),
@@ -401,12 +397,14 @@ struct __fn
     class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND sized_range<_RawRange>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const noexcept(noexcept(views::repeat(
-    ::cuda::std::forward_like<_Range>(*__range.__value_),
-    ::cuda::std::min<_Dist>(ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))) -> _RawRange
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(
+    views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
+                  ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
+    -> _RawRange
   {
-    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
-                         ::cuda::std::min<_Dist>(ranges::distance(__range), ::cuda::std::forward<_Np>(__n)));
+    return views::repeat(
+      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)));
   }
 
   // [range.take.overview]: the `repeat_view` "otherwise" case.
@@ -414,9 +412,9 @@ struct __fn
     class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND(!sized_range<_RawRange>))
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const
-    noexcept(noexcept(views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n))))
-      -> repeat_view<range_value_t<_RawRange>, _Dist>
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(
+    noexcept(views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n))))
+    -> repeat_view<range_value_t<_RawRange>, _Dist>
   {
     return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n));
   }
@@ -425,12 +423,12 @@ struct __fn
   _CCCL_TEMPLATE(
     class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>, class _Dist = range_difference_t<_Range>)
   _CCCL_REQUIRES(__use_iota<_Range, _Np>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __rng, _Np&& __n) const
-    noexcept(noexcept(::cuda::std::ranges::iota_view(
-      *::cuda::std::ranges::begin(__rng),
-      *::cuda::std::ranges::begin(__rng)
-        + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
-      -> iota_view<range_value_t<_RawRange>, _Dist>
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Range&& __rng, _Np&& __n) noexcept(noexcept(::cuda::std::ranges::iota_view(
+    *::cuda::std::ranges::begin(__rng),
+    *::cuda::std::ranges::begin(__rng)
+      + ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__rng), ::cuda::std::forward<_Np>(__n)))))
+    -> iota_view<range_value_t<_RawRange>, _Dist>
   {
     return ::cuda::std::ranges::iota_view(
       *::cuda::std::ranges::begin(__rng),
@@ -441,21 +439,22 @@ struct __fn
   // [range.take.overview]: the "otherwise" case.
   _CCCL_TEMPLATE(class _Range, class _Np)
   _CCCL_REQUIRES(__use_generic<_Range, _Np>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const
-    noexcept(noexcept(take_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Np>(__n))))
-      -> decltype(take_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Np>(__n)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(
+    noexcept(take_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Np>(__n))))
+    -> decltype(take_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Np>(__n)))
   {
     return take_view(::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Np>(__n));
   }
 
   _CCCL_TEMPLATE(class _Np)
   _CCCL_REQUIRES(constructible_from<decay_t<_Np>, _Np>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Np&& __n) const
-    noexcept(is_nothrow_constructible_v<decay_t<_Np>, _Np>)
+  [[nodiscard]] _CCCL_API constexpr auto
+  _CCCL_STATIC_CALL_OPERATOR(_Np&& __n) noexcept(is_nothrow_constructible_v<decay_t<_Np>, _Np>)
   {
-    return __pipeable(::cuda::std::__bind_back(*this, ::cuda::std::forward<_Np>(__n)));
+    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Np>(__n)));
   }
 };
+
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
@@ -464,8 +463,6 @@ _CCCL_GLOBAL_CONSTANT auto take = __take::__fn{};
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

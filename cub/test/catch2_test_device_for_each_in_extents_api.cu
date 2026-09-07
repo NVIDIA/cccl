@@ -24,7 +24,7 @@
 #  include <cstdlib>
 #  include <iostream>
 
-#  include <c2h/catch2_test_helper.h>
+#  include "cub_test_macros.h"
 
 // example-begin for-each-in-extents-op
 struct linear_store_3D
@@ -41,7 +41,7 @@ struct linear_store_3D
 // example-end for-each-in-extents-op
 
 // clang-format off
-C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
+CUB_TEST("Device ForEachInExtents", "[ForEachInExtents][device]", CUB_SMALL)
 {
   // example-begin for-each-in-extents-example
   using                            data_t = cuda::std::array<int, 3>;

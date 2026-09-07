@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -15,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename T>
-TEST_FUNC void test_impl()
+TEST_HOST_DEVICE_FUNC void test_impl()
 {
   if constexpr (alignof(T) <= 2)
   {
@@ -34,7 +37,7 @@ TEST_FUNC void test_impl()
 }
 
 template <typename T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_impl<T*>();
   test_impl<const T*>();
@@ -42,7 +45,7 @@ TEST_FUNC void test()
   test_impl<const volatile T*>();
 }
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   test<char>();
   test<short>();

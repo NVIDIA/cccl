@@ -47,7 +47,9 @@ d_in2.set(h_in2)
 
 d_out = cp.empty_like(d_in1)
 
-cuda.compute.binary_transform(d_in1, d_in2, d_out, add_points, num_items)
+cuda.compute.binary_transform(
+    d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=add_points, num_items=num_items
+)
 
 result = d_out.get()
 

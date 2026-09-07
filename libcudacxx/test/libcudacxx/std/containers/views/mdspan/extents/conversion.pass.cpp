@@ -87,35 +87,27 @@ TEST_FUNC constexpr void test_no_implicit_conversion()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // Sanity check that one static to dynamic conversion works
   static_assert(
-    cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent>, cuda::std::extents<int, 5>>::value,
-    "");
+    cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent>, cuda::std::extents<int, 5>>::value);
   static_assert(
-    cuda::std::is_convertible<cuda::std::extents<int, 5>, cuda::std::extents<int, cuda::std::dynamic_extent>>::value,
-    "");
+    cuda::std::is_convertible<cuda::std::extents<int, 5>, cuda::std::extents<int, cuda::std::dynamic_extent>>::value);
 
   // Check that dynamic to static conversion only works explicitly only
   static_assert(
-    cuda::std::is_constructible<cuda::std::extents<int, 5>, cuda::std::extents<int, cuda::std::dynamic_extent>>::value,
-    "");
+    cuda::std::is_constructible<cuda::std::extents<int, 5>, cuda::std::extents<int, cuda::std::dynamic_extent>>::value);
   static_assert(
-    !cuda::std::is_convertible<cuda::std::extents<int, cuda::std::dynamic_extent>, cuda::std::extents<int, 5>>::value,
-    "");
+    !cuda::std::is_convertible<cuda::std::extents<int, cuda::std::dynamic_extent>, cuda::std::extents<int, 5>>::value);
 
   // Sanity check that one static to dynamic conversion works
   static_assert(cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent, 7>,
-                                            cuda::std::extents<int, 5, 7>>::value,
-                "");
+                                            cuda::std::extents<int, 5, 7>>::value);
   static_assert(cuda::std::is_convertible<cuda::std::extents<int, 5, 7>,
-                                          cuda::std::extents<int, cuda::std::dynamic_extent, 7>>::value,
-                "");
+                                          cuda::std::extents<int, cuda::std::dynamic_extent, 7>>::value);
 
   // Check that dynamic to static conversion only works explicitly only
   static_assert(cuda::std::is_constructible<cuda::std::extents<int, 5, 7>,
-                                            cuda::std::extents<int, cuda::std::dynamic_extent, 7>>::value,
-                "");
+                                            cuda::std::extents<int, cuda::std::dynamic_extent, 7>>::value);
   static_assert(!cuda::std::is_convertible<cuda::std::extents<int, cuda::std::dynamic_extent, 7>,
-                                           cuda::std::extents<int, 5, 7>>::value,
-                "");
+                                           cuda::std::extents<int, 5, 7>>::value);
 
   // Sanity check that smaller index_type to larger index_type conversion works
   static_assert(cuda::std::is_constructible<cuda::std::extents<size_t, 5>, cuda::std::extents<int, 5>>::value);
@@ -129,32 +121,26 @@ TEST_FUNC constexpr void test_no_implicit_conversion()
 TEST_FUNC constexpr void test_rank_mismatch()
 {
   static_assert(
-    !cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent>, cuda::std::extents<int>>::value,
-    "");
+    !cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent>, cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<cuda::std::extents<int>,
-                                 cuda::std::extents<int, cuda::std::dynamic_extent, cuda::std::dynamic_extent>>::value,
-    "");
+                                 cuda::std::extents<int, cuda::std::dynamic_extent, cuda::std::dynamic_extent>>::value);
   static_assert(
     !cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent>,
-                                 cuda::std::extents<int, cuda::std::dynamic_extent, cuda::std::dynamic_extent>>::value,
-    "");
+                                 cuda::std::extents<int, cuda::std::dynamic_extent, cuda::std::dynamic_extent>>::value);
   static_assert(
     !cuda::std::is_constructible<
       cuda::std::extents<int, cuda::std::dynamic_extent, cuda::std::dynamic_extent, cuda::std::dynamic_extent>,
-      cuda::std::extents<int, cuda::std::dynamic_extent, cuda::std::dynamic_extent>>::value,
-    "");
+      cuda::std::extents<int, cuda::std::dynamic_extent, cuda::std::dynamic_extent>>::value);
 }
 
 TEST_FUNC constexpr void test_static_extent_mismatch()
 {
   static_assert(!cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent, 5>,
-                                             cuda::std::extents<int, cuda::std::dynamic_extent, 4>>::value,
-                "");
+                                             cuda::std::extents<int, cuda::std::dynamic_extent, 4>>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::extents<int, 5>, cuda::std::extents<int, 4>>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::extents<int, 5, cuda::std::dynamic_extent>,
-                                             cuda::std::extents<int, 4, cuda::std::dynamic_extent>>::value,
-                "");
+                                             cuda::std::extents<int, 4, cuda::std::dynamic_extent>>::value);
 }
 
 TEST_FUNC constexpr bool test()

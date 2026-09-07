@@ -57,7 +57,7 @@ _CCCL_CONCEPT __has_query_get_stream = _CCCL_REQUIRES_EXPR((_Env), const _Env& _
 //! @brief `get_stream` is a customization point object that queries a type `T` for an associated stream
 struct get_stream_t
 {
-  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(::cudaStream_t __stream) const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref _CCCL_STATIC_CALL_OPERATOR(::cudaStream_t __stream) noexcept
   {
     return ::cuda::stream_ref{__stream};
   }
@@ -65,8 +65,8 @@ struct get_stream_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__convertible_to_stream_ref<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
-    noexcept(noexcept(static_cast<::cuda::stream_ref>(__t)))
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref
+  _CCCL_STATIC_CALL_OPERATOR(const _Tp& __t) noexcept(noexcept(static_cast<::cuda::stream_ref>(__t)))
   {
     return static_cast<::cuda::stream_ref>(__t);
   }
@@ -74,7 +74,8 @@ struct get_stream_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_stream<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Tp& __t) const noexcept(noexcept(__t.stream()))
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref
+  _CCCL_STATIC_CALL_OPERATOR(const _Tp& __t) noexcept(noexcept(__t.stream()))
   {
     return __t.stream();
   }
@@ -82,8 +83,8 @@ struct get_stream_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_stream<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
-    noexcept(noexcept(__t.get_stream()))
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref
+  _CCCL_STATIC_CALL_OPERATOR(const _Tp& __t) noexcept(noexcept(__t.get_stream()))
   {
     return __t.get_stream();
   }
@@ -91,10 +92,10 @@ struct get_stream_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_stream<_Env>)
-  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref _CCCL_STATIC_CALL_OPERATOR(const _Env& __env) noexcept
   {
-    static_assert(noexcept(__env.query(*this)));
-    return __env.query(*this);
+    static_assert(noexcept(__env.query(get_stream_t{})));
+    return __env.query(get_stream_t{});
   }
 
   [[nodiscard]] _CCCL_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 // <memory>
 
 // unique_ptr
@@ -24,19 +27,19 @@
 template <int ID = 0>
 struct GenericDeleter
 {
-  TEST_FUNC void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const {}
 };
 
 template <int ID = 0>
 struct GenericConvertingDeleter
 {
   template <int OID>
-  TEST_FUNC GenericConvertingDeleter(GenericConvertingDeleter<OID>)
+  TEST_HOST_DEVICE_FUNC GenericConvertingDeleter(GenericConvertingDeleter<OID>)
   {}
-  TEST_FUNC void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const {}
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   { // Disallow copying
     using U1 = cuda::std::unique_ptr<A[], GenericConvertingDeleter<0>>;
@@ -81,7 +84,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_sfinae();
 

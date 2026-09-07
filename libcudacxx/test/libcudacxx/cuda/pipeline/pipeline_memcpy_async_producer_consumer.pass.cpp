@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 #include <cuda/pipeline>
 
 #include <cooperative_groups.h>
@@ -126,14 +129,14 @@ TEST_DEVICE_FUNC __noinline__ void test_fully_specialized()
 }
 
 template <class T, template <typename, typename> class PipelineSelector, cuda::thread_scope PipelineScope>
-TEST_FUNC __noinline__ void test_select_stages()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_select_stages()
 {
   test_fully_specialized<T, PipelineSelector, PipelineScope, 1>();
   test_fully_specialized<T, PipelineSelector, PipelineScope, 8>();
 }
 
 template <class T, template <typename, typename> class PipelineSelector>
-TEST_FUNC __noinline__ void test_select_scope()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_select_scope()
 {
   test_select_stages<T, PipelineSelector, cuda::thread_scope_block>();
   test_select_stages<T, PipelineSelector, cuda::thread_scope_device>();
@@ -141,7 +144,7 @@ TEST_FUNC __noinline__ void test_select_scope()
 }
 
 template <class T>
-TEST_FUNC __noinline__ void test_select_pipeline()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_select_pipeline()
 {
   test_select_scope<T, shared_memory_selector>();
   test_select_scope<T, global_memory_selector>();

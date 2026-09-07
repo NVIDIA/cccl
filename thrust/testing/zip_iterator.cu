@@ -4,6 +4,7 @@
 #include <thrust/sequence.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <unittest/unittest.h>
@@ -15,27 +16,112 @@ void TestZipIteratorTraits()
 {
   using base_it = thrust::host_vector<int>::iterator;
 
-  using it        = thrust::zip_iterator<cuda::std::tuple<base_it, base_it>>;
-  using traits    = cuda::std::iterator_traits<it>;
-  using reference = thrust::detail::tuple_of_iterator_references<int&, int&>;
+  {
+    using it        = thrust::zip_iterator<cuda::std::tuple<base_it, base_it>>;
+    using traits    = cuda::std::iterator_traits<it>;
+    using reference = thrust::detail::tuple_of_iterator_references<int&, int&>;
 
-  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
-  static_assert(cuda::std::is_same_v<traits::value_type, cuda::std::tuple<int, int>>);
-  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+    static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<traits::value_type, cuda::std::tuple<int, int>>);
+    static_assert(cuda::std::is_same_v<traits::pointer, void>);
 
-  static_assert(cuda::std::is_same_v<traits::reference, reference>);
-  static_assert(cuda::std::is_same_v<traits::iterator_category, ::cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<traits::reference, reference>);
+    static_assert(cuda::std::is_same_v<traits::iterator_category, ::cuda::std::random_access_iterator_tag>);
 
-  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+    static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
 
-  static_assert(cuda::std::__has_random_access_traversal<it>);
+    static_assert(cuda::std::__has_random_access_traversal<it>);
 
-  static_assert(!cuda::std::output_iterator<it, int>);
-  static_assert(cuda::std::input_iterator<it>);
-  static_assert(cuda::std::forward_iterator<it>);
-  static_assert(cuda::std::bidirectional_iterator<it>);
-  static_assert(cuda::std::random_access_iterator<it>);
-  static_assert(!cuda::std::contiguous_iterator<it>);
+    static_assert(!cuda::std::output_iterator<it, int>);
+    static_assert(cuda::std::input_iterator<it>);
+    static_assert(cuda::std::forward_iterator<it>);
+    static_assert(cuda::std::bidirectional_iterator<it>);
+    static_assert(cuda::std::random_access_iterator<it>);
+    static_assert(!cuda::std::contiguous_iterator<it>);
+  }
+
+  { // working with proxy iterator cuda::discard_iterator
+    using it         = thrust::zip_iterator<cuda::std::tuple<base_it, cuda::discard_iterator>>;
+    using traits     = cuda::std::iterator_traits<it>;
+    using value_type = cuda::std::tuple<int, cuda::discard_iterator::__discard_proxy>;
+    using reference  = thrust::detail::tuple_of_iterator_references<int&, cuda::discard_iterator::__discard_proxy>;
+
+    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+
+    static_assert(!cuda::std::output_iterator<it, int>);
+    static_assert(cuda::std::input_iterator<it>);
+    static_assert(cuda::std::forward_iterator<it>);
+    static_assert(cuda::std::bidirectional_iterator<it>);
+    static_assert(cuda::std::random_access_iterator<it>);
+    static_assert(!cuda::std::contiguous_iterator<it>);
+  }
+
+  { // working with proxy iterator cuda::tabulate_output_iterator
+    using it =
+      thrust::zip_iterator<cuda::std::tuple<base_it, cuda::tabulate_output_iterator<cuda::std::plus<>, short>>>;
+    using traits     = cuda::std::iterator_traits<it>;
+    using value_type = cuda::std::tuple<int, cuda::__tabulate_proxy<cuda::std::plus<>, short>>;
+    using reference =
+      thrust::detail::tuple_of_iterator_references<int&, cuda::__tabulate_proxy<cuda::std::plus<>, short>>;
+
+    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+
+    static_assert(!cuda::std::output_iterator<it, int>);
+    static_assert(cuda::std::input_iterator<it>);
+    static_assert(cuda::std::forward_iterator<it>);
+    static_assert(cuda::std::bidirectional_iterator<it>);
+    static_assert(cuda::std::random_access_iterator<it>);
+    static_assert(!cuda::std::contiguous_iterator<it>);
+  }
+
+  { // working with proxy iterator cuda::transform_output_iterator
+    using it =
+      thrust::zip_iterator<cuda::std::tuple<base_it, cuda::transform_output_iterator<cuda::std::plus<>, short*>>>;
+    using traits     = cuda::std::iterator_traits<it>;
+    using value_type = cuda::std::tuple<int, cuda::__transform_output_proxy<cuda::std::plus<>, short*>>;
+    using reference =
+      thrust::detail::tuple_of_iterator_references<int&, cuda::__transform_output_proxy<cuda::std::plus<>, short*>>;
+
+    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+
+    static_assert(!cuda::std::output_iterator<it, int>);
+    static_assert(cuda::std::input_iterator<it>);
+    static_assert(cuda::std::forward_iterator<it>);
+    static_assert(cuda::std::bidirectional_iterator<it>);
+    static_assert(cuda::std::random_access_iterator<it>);
+    static_assert(!cuda::std::contiguous_iterator<it>);
+  }
+
+  { // working with proxy iterator cuda::transform_input_output_iterator
+    using it = thrust::zip_iterator<
+      cuda::std::tuple<base_it, cuda::transform_input_output_iterator<cuda::std::negate<>, cuda::std::plus<>, short*>>>;
+    using traits     = cuda::std::iterator_traits<it>;
+    using value_type = cuda::std::tuple<int, int>;
+    using reference  = thrust::detail::tuple_of_iterator_references<
+      int&,
+      cuda::__transform_input_output_proxy<cuda::std::negate<>, cuda::std::plus<>, short*>>;
+
+    static_assert(cuda::std::is_same_v<typename traits::iterator_category, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename traits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<typename traits::value_type, value_type>);
+    static_assert(cuda::std::is_same_v<typename traits::reference, reference>);
+
+    static_assert(!cuda::std::output_iterator<it, int>);
+    static_assert(cuda::std::input_iterator<it>);
+    static_assert(cuda::std::forward_iterator<it>);
+    static_assert(cuda::std::bidirectional_iterator<it>);
+    static_assert(cuda::std::random_access_iterator<it>);
+    static_assert(!cuda::std::contiguous_iterator<it>);
+  }
 }
 DECLARE_UNITTEST(TestZipIteratorTraits);
 
@@ -68,8 +154,7 @@ struct TestZipIteratorConstructionFromIterators
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorConstructionFromIterators, type_list<int>>
-  TestZipIteratorConstructionFromIteratorsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorConstructionFromIterators, type_list<int>);
 
 template <typename T>
 struct TestZipIteratorManipulation
@@ -157,7 +242,7 @@ struct TestZipIteratorManipulation
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorManipulation, type_list<int>> TestZipIteratorManipulationInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorManipulation, type_list<int>);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<cuda::std::tuple<int*, int*>>>::value);
 
 template <typename T>
@@ -204,7 +289,7 @@ struct TestZipIteratorReference
     ASSERT_EQUAL(cuda::std::get<1>(ref2), cuda::std::get<1>(test2));
   } // end operator()()
 };
-SimpleUnitTest<TestZipIteratorReference, NumericTypes> TestZipIteratorReferenceInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorReference, NumericTypes);
 
 template <typename Vector>
 void TestZipIteratorCopy()
@@ -284,7 +369,7 @@ struct TestZipIteratorTransform
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestZipIteratorTransform, ThirtyTwoBitTypes> TestZipIteratorTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorTransform, ThirtyTwoBitTypes);
 
 void TestZipIteratorCopyAoSToSoA()
 {
@@ -466,3 +551,27 @@ void TestZipIteratorNestedCopy()
   }
 }
 DECLARE_UNITTEST(TestZipIteratorNestedCopy);
+
+// See https://github.com/NVIDIA/cccl/issues/9773
+void TestZipIteratorComparison()
+{
+  using T = int;
+
+  thrust::device_vector<T> a{5, 4, 3, 2, 1, 0};
+  thrust::device_vector<T> b{1, 2, 3, 4, 5, 6};
+
+  {
+    static_assert(
+      cuda::std::is_convertible_v<thrust::detail::tuple_of_iterator_references<int&, int&>, cuda::std::tuple<int, int>>);
+    auto iter = thrust::make_zip_iterator(a.data(), b.data());
+    auto pos  = thrust::find(iter, iter + 6, cuda::std::tuple{4, 2});
+    ASSERT_EQUAL_QUIET(pos, iter + 1);
+  }
+
+  {
+    auto iter = thrust::make_zip_iterator(a.begin(), b.begin());
+    auto pos  = thrust::find(iter, iter + 6, cuda::std::tuple{4, 2});
+    ASSERT_EQUAL_QUIET(pos, iter + 1);
+  }
+}
+DECLARE_UNITTEST(TestZipIteratorComparison);

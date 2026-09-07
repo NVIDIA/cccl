@@ -55,9 +55,9 @@
 #endif // _CCCL_COMPILER(NVHPC, <, 26, 1)
 
 // On ARM64, using the builtin with 128-bit ints result in `undefined reference to __muloti4` with nvc++ and clang < 20.
-#if _CCCL_ARCH(ARM64) && (_CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(CLANG, <, 20))
+#if _CCCL_HOST_ARCH(ARM64) && (_CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(CLANG, <, 20))
 #  undef _CCCL_BUILTIN_MUL_OVERFLOW
-#endif // _CCCL_ARCH(ARM64) && (_CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(CLANG, <, 20))
+#endif // _CCCL_HOST_ARCH(ARM64) && (_CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(CLANG, <, 20))
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -103,9 +103,11 @@ template <class _Result, class _Lhs, class _Rhs>
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API overflow_result<_Tp> __mul_overflow_host(_Tp __lhs, _Tp __rhs) noexcept
 {
+  // MSVC x86_64 intrinsic branches intentionally collapse to the same generic implementation elsewhere.
+  // NOLINTBEGIN(bugprone-branch-clone)
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
     {
       ::cuda::std::int16_t __result;
@@ -131,14 +133,14 @@ template <class _Tp>
       return {__result, __overflow};
     }
     else
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_HOST_ARCH(X86_64)
     {
       return ::cuda::__mul_overflow_generic<_Tp>(__lhs, __rhs);
     }
   }
   else // ^^^ signed types ^^^ / vvv unsigned types vvv
   {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_HOST_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint8_t))
     {
       ::cuda::std::uint16_t __result;
@@ -167,11 +169,12 @@ template <class _Tp>
       return {__lo, __overflow};
     }
     else
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_HOST_ARCH(X86_64)
     {
       return ::cuda::__mul_overflow_generic<_Tp>(__lhs, __rhs);
     }
   } // ^^^ unsigned types ^^^
+  // NOLINTEND(bugprone-branch-clone)
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 

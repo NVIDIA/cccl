@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// error: a non-__tile__ variable cannot be used in tile code
 
 // constexpr reverse_iterator<iterator_t<V>> end();
 // constexpr auto end() const requires common_range<const V>;

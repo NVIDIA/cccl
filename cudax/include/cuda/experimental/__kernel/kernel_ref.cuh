@@ -25,8 +25,8 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/string_view>
 
@@ -51,7 +51,7 @@ class kernel_ref
 template <class... _Args>
 class kernel_ref<void(_Args...)>
 {
-  static_assert((true && ... && ::cuda::std::is_trivially_copyable_v<_Args>),
+  static_assert((true && ... && ::cuda::is_trivially_copyable_v<_Args>),
                 "All kernel_ref argument types must be trivially copyable.");
 
 public:
@@ -78,10 +78,11 @@ public:
   //! @throws cuda_error if the kernel cannot be obtained from the entry function address
   kernel_ref(void (*__entry_func_address)(_Args...))
   {
-    _CCCL_TRY_CUDA_API(::cudaGetKernel,
-                       "Failed to get kernel from entry function address",
-                       (cudaKernel_t*) &__kernel_,
-                       (const void*) __entry_func_address);
+    _CCCL_TRY_RUNTIME_API(
+      ::cudaGetKernel,
+      "Failed to get kernel from entry function address",
+      (cudaKernel_t*) &__kernel_,
+      (const void*) __entry_func_address);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
 

@@ -5,4 +5,4 @@ API Reference
    :maxdepth: 1
 
    compute_api
-   coop_api
+   stf_api

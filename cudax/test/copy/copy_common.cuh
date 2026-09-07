@@ -44,8 +44,8 @@ thrust::host_vector<T> make_iota(int n)
 template <typename SrcLayout, typename DstLayout, typename T, typename... Ints>
 void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>& expected, Ints... shape)
 {
-  constexpr size_t Rank = sizeof...(Ints);
-  using extents_t       = cuda::std::dextents<int, Rank>;
+  [[maybe_unused]] constexpr size_t Rank = sizeof...(Ints); // msvc warns, only used in nttp
+  using extents_t                        = cuda::std::dextents<int, Rank>;
   extents_t ext(static_cast<int>(shape)...);
   typename SrcLayout::template mapping<extents_t> src_mapping(ext);
   typename DstLayout::template mapping<extents_t> dst_mapping(ext);
@@ -60,7 +60,7 @@ void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>
   stream.sync();
 
   thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 }
 
 template <typename Layout, typename T, typename... Ints>
@@ -102,7 +102,7 @@ void test_copy_strided(
   stream.sync();
 
   thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ void test_copy_stride_relaxed(
   stream.sync();
 
   thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
+  REQUIRE(result == expected);
 }
 
 template <typename T, size_t Rank>

@@ -36,7 +36,7 @@ TEST_FUNC void test()
   static_assert(cuda::std::variant_size_v<volatile V> == E);
   static_assert(cuda::std::variant_size_v<const volatile V> == E);
   static_assert(
-    cuda::std::is_base_of<cuda::std::integral_constant<cuda::std::size_t, E>, cuda::std::variant_size<V>>::value, "");
+    cuda::std::is_base_of<cuda::std::integral_constant<cuda::std::size_t, E>, cuda::std::variant_size<V>>::value);
 };
 
 int main(int, char**)

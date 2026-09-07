@@ -25,49 +25,106 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan_by_key
+//! The lookback tuning policy for all ByKey algorithms in @ref DeviceScan.
+struct ScanByKeyLookbackPolicy
 {
-struct scan_by_key_policy
-{
-  int block_threads;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockStoreAlgorithm store_algorithm;
-  BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
+  BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
+  LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
 
-  _CCCL_API constexpr friend bool operator==(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const ScanByKeyLookbackPolicy& lhs, const ScanByKeyLookbackPolicy& rhs) noexcept
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.delay_constructor == rhs.delay_constructor;
+        && lhs.lookback_delay == rhs.lookback_delay;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ScanByKeyLookbackPolicy& lhs, const ScanByKeyLookbackPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const scan_by_key_policy& p)
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyLookbackPolicy& p)
   {
     return os
-        << "scan_by_key_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .delay_constructor = " << p.delay_constructor << " }";
+        << "ScanByKeyLookbackPolicy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
+
+//! The algorithm used by the @ref cub::ScanByKeyPolicy "ScanByKeyPolicy".
+enum class ScanByKeyAlgorithm
+{
+  lookback
+};
+
+#if _CCCL_HOSTED()
+namespace detail
+{
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(ScanByKeyAlgorithm algo) noexcept
+{
+  switch (algo)
+  {
+    case ScanByKeyAlgorithm::lookback:
+      return "ScanByKeyAlgorithm::lookback";
+  }
+  return "<unknown ScanByKeyAlgorithm>";
+}
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, ScanByKeyAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for all ByKey algorithms in @ref DeviceScan.
+struct ScanByKeyPolicy
+{
+  ScanByKeyAlgorithm algorithm; //!< The scan-by-key algorithm to use
+  ScanByKeyLookbackPolicy lookback; //!< The policy for the scan-by-key algorithm based on decoupled-lookback. Only used
+                                    //!< when @p algorithm is @lookback.
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
+  {
+    return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator!=(const ScanByKeyPolicy& lhs, const ScanByKeyPolicy& rhs) noexcept
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const ScanByKeyPolicy& p)
+  {
+    return os << "ScanByKeyPolicy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+namespace detail::scan_by_key
+{
 enum class primitive_accum
 {
   no,
@@ -931,20 +988,20 @@ struct policy_hub
   static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max) (sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  struct Policy500 : detail::chained_policy<500, Policy500, Policy500>
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
       max_input_bytes <= 8 ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<128,
-                           items_per_thread,
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_CA,
-                           BLOCK_SCAN_WARP_SCANS,
-                           BLOCK_STORE_WARP_TRANSPOSE,
-                           default_reduce_by_key_delay_constructor_t<AccumT, int>>;
+      agent_scan_by_key_policy<128,
+                               items_per_thread,
+                               BLOCK_LOAD_WARP_TRANSPOSE,
+                               LOAD_CA,
+                               BLOCK_SCAN_WARP_SCANS,
+                               BLOCK_STORE_WARP_TRANSPOSE,
+                               default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
   template <CacheLoadModifier LoadModifier, typename DelayConstructurValueT>
@@ -955,13 +1012,13 @@ struct policy_hub
       max_input_bytes <= 8 ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<256,
-                           items_per_thread,
-                           BLOCK_LOAD_WARP_TRANSPOSE,
-                           LoadModifier,
-                           BLOCK_SCAN_WARP_SCANS,
-                           BLOCK_STORE_WARP_TRANSPOSE,
-                           default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
+      agent_scan_by_key_policy<256,
+                               items_per_thread,
+                               BLOCK_LOAD_WARP_TRANSPOSE,
+                               LoadModifier,
+                               BLOCK_SCAN_WARP_SCANS,
+                               BLOCK_STORE_WARP_TRANSPOSE,
+                               default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
   };
 
   // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy520
@@ -969,25 +1026,25 @@ struct policy_hub
 
   struct Policy520
       : DefaultPolicy520
-      , ChainedPolicy<520, Policy520, Policy500>
+      , detail::chained_policy<520, Policy520, Policy500>
   {};
 
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> AgentScanByKeyPolicy<Tuning::threads,
-                            Tuning::items,
-                            Tuning::load_algorithm,
-                            LOAD_DEFAULT,
-                            BLOCK_SCAN_WARP_SCANS,
-                            Tuning::store_algorithm,
-                            typename Tuning::delay_constructor>;
+    -> agent_scan_by_key_policy<Tuning::threads,
+                                Tuning::items,
+                                Tuning::load_algorithm,
+                                LOAD_DEFAULT,
+                                BLOCK_SCAN_WARP_SCANS,
+                                Tuning::store_algorithm,
+                                typename Tuning::delay_constructor>;
 
   template <typename Tuning>
   // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
   static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT, ValueT>::ScanByKeyPolicyT;
 
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
+  struct Policy800 : detail::chained_policy<800, Policy800, Policy520>
   {
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
@@ -997,26 +1054,26 @@ struct policy_hub
 
   struct Policy860
       : DefaultPolicy860
-      , ChainedPolicy<860, Policy860, Policy800>
+      , detail::chained_policy<860, Policy860, Policy800>
   {};
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  struct Policy900 : detail::chained_policy<900, Policy900, Policy860>
   {
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  struct Policy1000 : detail::chained_policy<1000, Policy1000, Policy900>
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
     static auto select_agent_policy100(int)
-      -> AgentScanByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              Tuning::load_modifier,
-                              BLOCK_SCAN_WARP_SCANS,
-                              Tuning::store_algorithm,
-                              typename Tuning::delay_constructor>;
+      -> agent_scan_by_key_policy<Tuning::threads,
+                                  Tuning::items,
+                                  Tuning::load_algorithm,
+                                  Tuning::load_modifier,
+                                  BLOCK_SCAN_WARP_SCANS,
+                                  Tuning::store_algorithm,
+                                  typename Tuning::delay_constructor>;
 
     template <typename Tuning>
     // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
@@ -1031,49 +1088,33 @@ struct policy_hub
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename ActivePolicyT>
-_CCCL_API constexpr auto convert_policy() -> scan_by_key_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> ScanByKeyPolicy
 {
   using policy_t = typename ActivePolicyT::ScanByKeyPolicyT;
-  return {policy_t::BLOCK_THREADS,
-          policy_t::ITEMS_PER_THREAD,
-          policy_t::LOAD_ALGORITHM,
-          policy_t::LOAD_MODIFIER,
-          policy_t::STORE_ALGORITHM,
-          policy_t::SCAN_ALGORITHM,
-          delay_constructor_policy_from_type<typename policy_t::detail::delay_constructor_t>};
+  return {ScanByKeyAlgorithm::lookback,
+          {policy_t::BLOCK_THREADS,
+           policy_t::ITEMS_PER_THREAD,
+           policy_t::LOAD_ALGORITHM,
+           policy_t::LOAD_MODIFIER,
+           policy_t::STORE_ALGORITHM,
+           policy_t::SCAN_ALGORITHM,
+           lookback_delay_policy_from_type<typename policy_t::detail::delay_constructor_t>}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-private:
-  struct extract_policy_dispatch_t
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> ScanByKeyPolicy
   {
-    scan_by_key_policy& policy;
-
-    template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
-    {
-      policy = convert_policy<ActivePolicyT>();
-      return cudaSuccess;
-    }
-  };
-
-public:
-  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
-  {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      ({
-                        const int ptx_version = static_cast<int>(::cuda::compute_capability{arch});
-                        scan_by_key_policy policy{};
-                        extract_policy_dispatch_t dispatch{policy};
-                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-                        return policy;
-                      }),
-                      ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept scan_by_key_policy_selector = detail::policy_selector<T, ScanByKeyPolicy>;
+#endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
 {
@@ -1082,32 +1123,117 @@ struct policy_selector
   int accum_size;
   bool value_is_primitive;
   bool value_is_trivially_copyable;
+  bool accum_is_primitive;
+  bool accum_is_trivially_copyable;
   type_t key_type;
   type_t value_type;
   type_t accum_type;
   op_kind_t operation_t;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> ScanByKeyLookbackPolicy
   {
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
-    const bool primitive_accum =
-      accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128;
+    const bool accum_is_primitive_or_trivially_copyable = accum_is_primitive || accum_is_trivially_copyable;
     const bool primitive_value = value_is_primitive && value_type != type_t::int128 && value_type != type_t::uint128;
     const bool primitive_op    = operation_t != op_kind_t::other;
     const int max_input_bytes  = (::cuda::std::max) (key_size, accum_size);
     const int combined_input_bytes = key_size + accum_size;
 
-    const auto default_items =
-      max_input_bytes <= 8
-        ? 9
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
+    auto default_policy =
+      [&](CacheLoadModifier load_modifier,
+          int delay_ctor_key_size,
+          bool delay_ctor_key_is_primitive_or_trivially_copyable) -> ScanByKeyLookbackPolicy {
+      const auto items_per_thread =
+        max_input_bytes <= 8
+          ? 9
+          : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
+      return {256,
+              items_per_thread,
+              BLOCK_LOAD_WARP_TRANSPOSE,
+              load_modifier,
+              BLOCK_STORE_WARP_TRANSPOSE,
+              BLOCK_SCAN_WARP_SCANS,
+              default_reduce_by_key_delay_constructor_policy(
+                delay_ctor_key_size, sizeof(int), delay_ctor_key_is_primitive_or_trivially_copyable, true)};
+    };
 
-    const auto policy500_items =
-      max_input_bytes <= 8
-        ? 6
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
-
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      // tunings from cub/benchmarks/bench/scan/exclusive/by_key.cu. int32 and int64 keys were tuned with value sizes
+      // 1/2/4/8/16 each; the combinations without an entry below (key size 4 with value sizes 1/16, key size 8 with
+      // value sizes 2/4/16) showed no improvement during verification benchmarks. Keys of size 1, 2, and 16 bytes
+      // were not tuned. Untuned shapes fall through to the sm100 tunings below.
+      if (primitive_op && primitive_value)
+      {
+        switch (key_size)
+        {
+          case 4:
+            switch (value_size)
+            {
+              case 2:
+                // ipt_20.tpb_224.ns_460.dcid_0.l2w_1195.trp_1.ld_0  1.307715  1.206044  1.337792  1.636066
+                return {224,
+                        20,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<no_delay_constructor_t<1195>>};
+              case 4:
+                // ipt_20.tpb_288.ns_552.dcid_7.l2w_595.trp_1.ld_1  1.229061  1.108666  1.244334  1.371951
+                return {288,
+                        20,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<exponential_backon_constructor_t<552, 595>>};
+              case 8:
+                // ipt_19.tpb_128.ns_104.dcid_1.l2w_985.trp_1.ld_1  1.228535  1.098424  1.255085  1.476489
+                return {128,
+                        19,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<fixed_delay_constructor_t<104, 985>>};
+              default:
+                break;
+            }
+            break;
+          case 8:
+            switch (value_size)
+            {
+              case 1:
+                // ipt_13.tpb_320.ns_16.dcid_2.l2w_520.trp_1.ld_0  1.137893  1.009494  1.124837  1.226726
+                return {320,
+                        13,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<exponential_backoff_constructor_t<16, 520>>};
+              case 8:
+                // ipt_17.tpb_160.ns_92.dcid_5.l2w_515.trp_1.ld_1  1.133580  1.023188  1.150020  1.300613
+                return {160,
+                        17,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
+                        lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<92, 515>>};
+              default:
+                break;
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    }
+    if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (primitive_op && primitive_value)
       {
@@ -1124,7 +1250,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<no_delay_constructor_t<745>>};
+                        lookback_delay_policy_from_type<no_delay_constructor_t<745>>};
               case 2:
                 // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
                 return {288,
@@ -1133,7 +1259,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<fixed_delay_constructor_t<388, 570>>};
+                        lookback_delay_policy_from_type<fixed_delay_constructor_t<388, 570>>};
               case 4:
                 // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
                 return {224,
@@ -1142,7 +1268,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1028, 910>>};
+                        lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<1028, 910>>};
               case 8:
                 // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
                 return {192,
@@ -1151,7 +1277,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<fixed_delay_constructor_t<432, 1035>>};
+                        lookback_delay_policy_from_type<fixed_delay_constructor_t<432, 1035>>};
               default:
                 break;
             }
@@ -1167,7 +1293,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<no_delay_constructor_t<1900>>};
+                        lookback_delay_policy_from_type<no_delay_constructor_t<1900>>};
               case 2:
                 // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
                 return {160,
@@ -1176,7 +1302,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backon_constructor_t<1736, 170>>};
+                        lookback_delay_policy_from_type<exponential_backon_constructor_t<1736, 170>>};
               case 4:
                 // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
                 return {160,
@@ -1185,7 +1311,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<fixed_delay_constructor_t<336, 805>>};
+                        lookback_delay_policy_from_type<fixed_delay_constructor_t<336, 805>>};
               case 8:
                 return {224,
                         13,
@@ -1193,7 +1319,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backoff_constructor_t<348, 735>>};
+                        lookback_delay_policy_from_type<exponential_backoff_constructor_t<348, 735>>};
               default:
                 break;
             }
@@ -1210,7 +1336,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backon_constructor_t<1436, 155>>};
+                        lookback_delay_policy_from_type<exponential_backon_constructor_t<1436, 155>>};
               case 2:
                 // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
                 return {288,
@@ -1219,7 +1345,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backon_constructor_t<620, 925>>};
+                        lookback_delay_policy_from_type<exponential_backon_constructor_t<620, 925>>};
               case 4:
                 // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
                 return {224,
@@ -1228,7 +1354,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1856, 280>>};
+                        lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<1856, 280>>};
               case 8:
                 // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
                 return {224,
@@ -1237,7 +1363,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backoff_constructor_t<464, 860>>};
+                        lookback_delay_policy_from_type<exponential_backoff_constructor_t<464, 860>>};
               default:
                 break;
             }
@@ -1253,7 +1379,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<no_delay_constructor_t<532>>};
+                        lookback_delay_policy_from_type<no_delay_constructor_t<532>>};
               case 2:
                 // todo(gonidlelis): Significant regression. Search more workloads.
                 // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.ld_0 1.064413  0.866667  1.045946  1.116803
@@ -1263,7 +1389,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backon_constructor_t<988, 335>>};
+                        lookback_delay_policy_from_type<exponential_backon_constructor_t<988, 335>>};
               case 4:
                 // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
                 return {160,
@@ -1272,7 +1398,7 @@ struct policy_selector
                         LOAD_CA,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1032, 505>>};
+                        lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<1032, 505>>};
               case 8:
                 // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
                 return {256,
@@ -1281,7 +1407,7 @@ struct policy_selector
                         LOAD_DEFAULT,
                         BLOCK_STORE_WARP_TRANSPOSE,
                         BLOCK_SCAN_WARP_SCANS,
-                        delay_constructor_policy_from_type<no_delay_constructor_t<1232>>};
+                        lookback_delay_policy_from_type<no_delay_constructor_t<1232>>};
               default:
                 break;
             }
@@ -1292,7 +1418,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (cc >= ::cuda::compute_capability{9, 0})
     {
       if (primitive_op)
       {
@@ -1310,7 +1436,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_DIRECT,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<650>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<650>>};
                 case 2:
                   return {256,
                           16,
@@ -1318,7 +1444,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<124, 995>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<124, 995>>};
                 case 4:
                   return {128,
                           15,
@@ -1326,7 +1452,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<488, 545>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<488, 545>>};
                 case 8:
                   return {224,
                           10,
@@ -1334,7 +1460,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<488, 1070>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<488, 1070>>};
                 default:
                   break;
               }
@@ -1349,7 +1475,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_DIRECT,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<136, 785>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<136, 785>>};
                 case 2:
                   return {128,
                           20,
@@ -1357,7 +1483,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<445>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<445>>};
                 case 4:
                   return {128,
                           22,
@@ -1365,7 +1491,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<312, 865>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<312, 865>>};
                 case 8:
                   return {224,
                           10,
@@ -1373,7 +1499,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<352, 1170>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<352, 1170>>};
                 default:
                   break;
               }
@@ -1388,7 +1514,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_DIRECT,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<850>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<850>>};
                 case 2:
                   return {256,
                           14,
@@ -1396,7 +1522,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<128, 965>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<128, 965>>};
                 case 4:
                   return {288,
                           14,
@@ -1404,7 +1530,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<700, 1005>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<700, 1005>>};
                 case 8:
                   return {224,
                           14,
@@ -1412,7 +1538,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<556, 1195>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<556, 1195>>};
                 default:
                   break;
               }
@@ -1427,7 +1553,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_DIRECT,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<504, 1010>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<504, 1010>>};
                 case 2:
                   return {224,
                           10,
@@ -1435,7 +1561,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<420, 970>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<420, 970>>};
                 case 4:
                   return {192,
                           10,
@@ -1443,7 +1569,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<500, 1125>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<500, 1125>>};
                 case 8:
                   return {224,
                           11,
@@ -1451,7 +1577,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<600, 930>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<600, 930>>};
                 default:
                   break;
               }
@@ -1475,7 +1601,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<936, 1105>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<936, 1105>>};
                 default:
                   break;
               }
@@ -1490,7 +1616,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<504, 1190>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<504, 1190>>};
                 default:
                   break;
               }
@@ -1505,7 +1631,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<512, 1030>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<512, 1030>>};
                 default:
                   break;
               }
@@ -1520,7 +1646,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 1085>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<364, 1085>>};
                 default:
                   break;
               }
@@ -1531,9 +1657,9 @@ struct policy_selector
         }
 #endif
 
-        if (key_size == 16 && primitive_accum)
+        if (key_size == 16 && accum_is_primitive)
         {
-          switch (accum_size)
+          switch (value_size)
           {
             case 1:
               return {192,
@@ -1542,7 +1668,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<fixed_delay_constructor_t<500, 975>>};
+                      lookback_delay_policy_from_type<fixed_delay_constructor_t<500, 975>>};
             case 2:
               return {224,
                       10,
@@ -1550,7 +1676,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<fixed_delay_constructor_t<164, 1075>>};
+                      lookback_delay_policy_from_type<fixed_delay_constructor_t<164, 1075>>};
             case 4:
               return {256,
                       9,
@@ -1558,7 +1684,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<fixed_delay_constructor_t<268, 1120>>};
+                      lookback_delay_policy_from_type<fixed_delay_constructor_t<268, 1120>>};
             case 8:
               return {192,
                       9,
@@ -1566,7 +1692,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<fixed_delay_constructor_t<320, 1200>>};
+                      lookback_delay_policy_from_type<fixed_delay_constructor_t<320, 1200>>};
             default:
               break;
           }
@@ -1583,7 +1709,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 1050>>};
+                      lookback_delay_policy_from_type<fixed_delay_constructor_t<364, 1050>>};
             default:
               break;
           }
@@ -1591,28 +1717,15 @@ struct policy_selector
 #endif
       }
 
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_DEFAULT, value_size, value_is_primitive_or_trivially_copyable);
     }
 
-    if (arch >= ::cuda::arch_id::sm_86) // && arch < ::cuda::arch_id::sm_90
+    if (cc >= ::cuda::compute_capability{8, 6})
     {
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_CA,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
+      return default_policy(LOAD_CA, accum_size, accum_is_primitive_or_trivially_copyable);
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (cc >= ::cuda::compute_capability{8, 0})
     {
       if (primitive_op)
       {
@@ -1630,7 +1743,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_DIRECT,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<795>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<795>>};
                 case 2:
                   return {288,
                           12,
@@ -1638,7 +1751,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<825>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<825>>};
                 case 4:
                   return {256,
                           15,
@@ -1646,7 +1759,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<640>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<640>>};
                 case 8:
                   return {192,
                           10,
@@ -1654,7 +1767,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<124, 1040>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<124, 1040>>};
                 default:
                   break;
               }
@@ -1669,7 +1782,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_DIRECT,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1070>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1070>>};
                 case 2:
                   return {320,
                           14,
@@ -1677,7 +1790,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<625>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<625>>};
                 case 4:
                   return {256,
                           15,
@@ -1685,7 +1798,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1055>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1055>>};
                 case 8:
                   return {160,
                           17,
@@ -1693,7 +1806,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<160, 695>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<160, 695>>};
                 default:
                   break;
               }
@@ -1708,7 +1821,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_DIRECT,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1130>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1130>>};
                 case 2:
                   return {256,
                           12,
@@ -1716,7 +1829,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1130>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1130>>};
                 case 4:
                   return {256,
                           15,
@@ -1724,7 +1837,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1140>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1140>>};
                 case 8:
                   return {256,
                           9,
@@ -1732,7 +1845,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<888, 635>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<888, 635>>};
                 default:
                   break;
               }
@@ -1747,7 +1860,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1120>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1120>>};
                 case 2:
                   return {256,
                           10,
@@ -1755,7 +1868,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1115>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1115>>};
                 case 4:
                   return {224,
                           13,
@@ -1763,7 +1876,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<24, 1060>>};
+                          lookback_delay_policy_from_type<fixed_delay_constructor_t<24, 1060>>};
                 case 8:
                   return {224,
                           10,
@@ -1771,7 +1884,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1160>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1160>>};
                 default:
                   break;
               }
@@ -1795,7 +1908,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1095>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1095>>};
                 default:
                   break;
               }
@@ -1810,7 +1923,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1105>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1105>>};
                 default:
                   break;
               }
@@ -1825,7 +1938,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1100>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<1100>>};
                 default:
                   break;
               }
@@ -1840,7 +1953,7 @@ struct policy_selector
                           LOAD_DEFAULT,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<220>>};
+                          lookback_delay_policy_from_type<no_delay_constructor_t<220>>};
                 default:
                   break;
               }
@@ -1851,9 +1964,9 @@ struct policy_selector
         }
 #endif
 
-        if (key_size == 16 && primitive_accum)
+        if (key_size == 16 && accum_is_primitive)
         {
-          switch (accum_size)
+          switch (value_size)
           {
             case 1:
               return {192,
@@ -1862,7 +1975,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<fixed_delay_constructor_t<144, 1120>>};
+                      lookback_delay_policy_from_type<fixed_delay_constructor_t<144, 1120>>};
             case 2:
               return {192,
                       7,
@@ -1870,7 +1983,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 780>>};
+                      lookback_delay_policy_from_type<fixed_delay_constructor_t<364, 780>>};
             case 4:
               return {256,
                       7,
@@ -1878,7 +1991,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<no_delay_constructor_t<1170>>};
+                      lookback_delay_policy_from_type<no_delay_constructor_t<1170>>};
             case 8:
               return {128,
                       15,
@@ -1886,7 +1999,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<no_delay_constructor_t<1030>>};
+                      lookback_delay_policy_from_type<no_delay_constructor_t<1030>>};
             default:
               break;
           }
@@ -1903,7 +2016,7 @@ struct policy_selector
                       LOAD_DEFAULT,
                       BLOCK_STORE_WARP_TRANSPOSE,
                       BLOCK_SCAN_WARP_SCANS,
-                      delay_constructor_policy_from_type<no_delay_constructor_t<1160>>};
+                      lookback_delay_policy_from_type<no_delay_constructor_t<1160>>};
             default:
               break;
           }
@@ -1911,54 +2024,59 @@ struct policy_selector
 #endif
       }
 
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
+      return default_policy(LOAD_DEFAULT, value_size, value_is_primitive_or_trivially_copyable);
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (cc >= ::cuda::compute_capability{5, 2})
     {
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_CA,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              BLOCK_SCAN_WARP_SCANS,
-              default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
+      return default_policy(LOAD_CA, accum_size, accum_is_primitive_or_trivially_copyable);
     }
 
+    // SM50
+    const auto items_per_thread =
+      max_input_bytes <= 8
+        ? 6
+        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
     return {128,
-            policy500_items,
+            items_per_thread,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_CA,
             BLOCK_STORE_WARP_TRANSPOSE,
             BLOCK_SCAN_WARP_SCANS,
-            default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
+            default_reduce_by_key_delay_constructor_policy(
+              accum_size, sizeof(int), accum_is_primitive_or_trivially_copyable, true)};
+  }
+
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
+  {
+    return ScanByKeyPolicy{ScanByKeyAlgorithm::lookback, get_lookback_policy(cc)};
   }
 };
 
 template <typename KeyT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
   {
     return policy_selector{
       static_cast<int>(sizeof(KeyT)),
       static_cast<int>(sizeof(ValueT)),
       static_cast<int>(sizeof(AccumT)),
       is_primitive<ValueT>::value,
-      ::cuda::std::is_trivially_copyable_v<ValueT>,
+      ::cuda::is_trivially_copyable_v<ValueT>,
+      is_primitive<AccumT>::value,
+      ::cuda::is_trivially_copyable_v<AccumT>,
       classify_type<KeyT>,
       classify_type<ValueT>,
       classify_type<AccumT>,
-      classify_op<ScanOpT>}(arch);
+      classify_op<ScanOpT>}(cc);
   }
 };
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(scan_by_key_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::scan_by_key
 
 CUB_NAMESPACE_END

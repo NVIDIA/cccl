@@ -32,7 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
 #  ifndef FP_NAN
 #    define FP_NAN 0
 #  endif // ! FP_NAN
@@ -48,7 +48,7 @@
 #  ifndef FP_NORMAL
 #    define FP_NORMAL 4
 #  endif // ! FP_NORMAL
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_FREESTANDING()
 
 #ifndef FP_ILOGB0
 #  define FP_ILOGB0 (-INT_MAX - 1)
@@ -79,7 +79,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __fpclassify_impl(_Tp __x) noexcept
 {
-  static_assert(numeric_limits<_Tp>::has_denorm, "The type must have denorm support");
+  static_assert(__fp_has_denorm_v<__fp_format_of_v<_Tp>>, "The type must have denorm support");
 
   if constexpr (numeric_limits<_Tp>::has_quiet_NaN || numeric_limits<_Tp>::has_signaling_NaN)
   {
@@ -95,7 +95,8 @@ template <class _Tp>
       return FP_INFINITE;
     }
   }
-  if constexpr (is_floating_point_v<_Tp>)
+  // comparison based classification keeps this path constexpr for types whose storage would need bit_cast
+  if constexpr (is_floating_point_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
   {
     if (__x > -numeric_limits<_Tp>::min() && __x < numeric_limits<_Tp>::min())
     {
@@ -186,7 +187,7 @@ template <class _Tp>
 #if _CCCL_HAS_NVFP8_E8M0()
 [[nodiscard]] _CCCL_API constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
 {
-  return ((__x.__x & __fp_exp_mask_of_v<__nv_fp8_e8m0>) == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
+  return (__x.__x == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
@@ -210,6 +211,13 @@ template <class _Tp>
   return ::cuda::std::__fpclassify_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+
+#if _CCCL_HAS_FLOAT128()
+[[nodiscard]] _CCCL_API constexpr int fpclassify(__float128 __x) noexcept
+{
+  return ::cuda::std::__fpclassify_impl(__x);
+}
+#endif // _CCCL_HAS_FLOAT128()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)

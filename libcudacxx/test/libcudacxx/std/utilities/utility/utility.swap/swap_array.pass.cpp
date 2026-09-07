@@ -104,6 +104,7 @@ int main(int, char**)
     assert(j[1] == 2);
     assert(j[2] == 3);
   }
+#if !_CCCL_TILE_COMPILATION() // dynamic memory allocation with non-placement ::operator new is unsupported in tile code
   {
     cuda::std::unique_ptr<int> i[3];
     for (int k = 0; k < 3; ++k)
@@ -123,6 +124,7 @@ int main(int, char**)
     assert(*j[1] == 2);
     assert(*j[2] == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   {
     using CA = CopyOnly[42];
     using MA = NoexceptMoveOnly[42];

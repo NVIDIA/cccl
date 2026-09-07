@@ -1,0 +1,55 @@
+=============== event.ref begin ===============
+cuda::event_ref = {
+  handle = <address>
+}
+=============== event.ref end ===============
+=============== event.owning begin ===============
+cuda::event = {
+  handle = <address>
+}
+=============== event.owning end ===============
+=============== event.timed begin ===============
+cuda::timed_event = {
+  handle = <address>
+}
+=============== event.timed end ===============
+=============== event.alias begin ===============
+cuda::event_ref = {
+  handle = <address>
+}
+=============== event.alias end ===============
+=============== event.null_ref begin ===============
+cuda::event_ref = {
+  handle = 0x0
+}
+=============== event.null_ref end ===============
+=============== event.no_init begin ===============
+cuda::event = {
+  handle = 0x0
+}
+=============== event.no_init end ===============
+=============== event.timed_no_init begin ===============
+cuda::timed_event = {
+  handle = 0x0
+}
+=============== event.timed_no_init end ===============
+=============== event.nested begin ===============
+cuda::std::array<cuda::event_ref, 2> = {
+  [0] = cuda::event_ref = {
+    handle = <address>
+  },
+  [1] = cuda::event_ref = {
+    handle = 0x0
+  }
+}
+=============== event.nested end ===============
+=============== event.update.before begin ===============
+cuda::event_ref = {
+  handle = 0x0
+}
+=============== event.update.before end ===============
+=============== event.update.after begin ===============
+cuda::event_ref = {
+  handle = <address>
+}
+=============== event.update.after end ===============

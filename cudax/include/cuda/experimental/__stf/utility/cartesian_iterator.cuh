@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -40,7 +41,7 @@ public:
     bool is_end() const { return end_reached; }
 
     CartesianProduct& operator++() {
-        increment_helper(::std::index_sequence_for<Iterators...> {});
+        increment_helper(::cuda::std::index_sequence_for<Iterators...> {});
         end_reached = (current == ends);
         return *this;
     }
@@ -53,7 +54,7 @@ public:
 
 private:
     template <::std::size_t... Is>
-    void increment_helper(::std::index_sequence<Is...>) {
+    void increment_helper(::cuda::std::index_sequence<Is...>) {
         (((::std::get<Is>(current) != ::std::get<Is>(ends) &&
                   ++diagonal > ::std::distance(::std::get<Is>(begins), ::std::get<Is>(current)))
                          ? (++::std::get<Is>(current), 0)

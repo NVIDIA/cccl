@@ -34,7 +34,7 @@ public:
       : first(first)
       , last(last)
   {}
-  __host__ __device__ ~range_view() {}
+  ~range_view() = default;
 
   __host__ __device__ difference_type size() const
   {

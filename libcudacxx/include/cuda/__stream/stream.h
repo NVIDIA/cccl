@@ -24,10 +24,12 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__device/logical_device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
+#  include <cuda/std/__fwd/hash.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -51,6 +53,35 @@ struct stream : stream_ref
     __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
   }
 
+#  if _CCCL_CTK_AT_LEAST(12, 5)
+  // The whole _CCCL_UNREACHABLE() thing was added for MSVC, yet now it complains the
+  // _CCCL_UNREACHABLE() is in fact not reachable. Incredible.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
+  _CCCL_HOST_API explicit stream(__logical_device_ref __device, int __priority = default_priority)
+      : stream_ref{[&] {
+        switch (__device.kind())
+        {
+          case __logical_device_ref::kinds::device: {
+            const auto _ = __ensure_current_context{__device};
+
+            return ::cuda::__driver::__streamCreateWithPriority(::CU_STREAM_NON_BLOCKING, __priority);
+          }
+          case __logical_device_ref::kinds::green_context:
+            // We do not need __ensure_current_context here, the driver explicitly states it
+            // ignores any context that is current for this call.
+            return ::cuda::__driver::__greenCtxStreamCreate(
+              __device.green_context(), ::CU_STREAM_NON_BLOCKING, __priority);
+        }
+        _CCCL_UNREACHABLE();
+        return ::CUstream{};
+      }()}
+  {}
+
+  _CCCL_DIAG_POP
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
+
   //! @brief Construct a new `stream` object into the moved-from state.
   //!
   //! @post `stream()` returns an invalid stream handle
@@ -72,14 +103,13 @@ struct stream : stream_ref
 
   //! Destroy the `stream` object
   //!
-  //! @note If the stream fails to be destroyed, the error is silently ignored.
+  //! @note If the stream fails to be destroyed, the error is silently ignored or an assertion is triggered when
+  //! enabled.
   _CCCL_HOST_API ~stream()
   {
     if (__stream != ::cuda::__invalid_stream())
     {
-      // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
-      // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = ::cuda::__driver::__streamDestroyNoThrow(__stream);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamDestroyNoThrow, "Failed to destroy stream", __stream);
     }
   }
 
@@ -137,6 +167,16 @@ private:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <>
+struct hash<::cuda::stream> : hash<::cuda::stream_ref>
+{};
+
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
 
 #  include <cuda/std/__cccl/epilogue.h>
 

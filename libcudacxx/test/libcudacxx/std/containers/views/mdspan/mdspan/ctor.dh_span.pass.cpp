@@ -47,34 +47,24 @@ TEST_FUNC constexpr auto array_from_extents(const Extents& exts, cuda::std::inde
 }
 
 template <class MDS>
-TEST_FUNC void check_implicit_construction(MDS);
+TEST_FUNC cuda::std::true_type check_implicit_construction(MDS);
 
 template <class MDS, class Exts>
-TEST_FUNC constexpr bool check_implicit_construction_impl(...)
-{
-  return false;
-}
-template <class MDS, class Exts>
-TEST_FUNC constexpr auto check_implicit_construction_impl(int)
-  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<typename MDS::data_handle_type>(),
-                                                cuda::std::declval<const Exts&>()}),
-              true)
-{
-  return true;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(...) -> cuda::std::false_type;
 
 template <class MDS, class Exts>
-_CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Exts>(0);
+TEST_FUNC constexpr auto check_implicit_construction_impl(int) -> decltype(check_implicit_construction<MDS>(
+  {cuda::std::declval<typename MDS::data_handle_type>(), cuda::std::declval<const Exts&>()}));
+
+template <class MDS, class Exts>
+_CCCL_CONCEPT check_mdspan_ctor_implicit = decltype(check_implicit_construction_impl<MDS, Exts>(0))::value;
 
 template <class H, class M, class A, size_t N>
 TEST_FUNC constexpr void
 test_mdspan_ctor_span(const H& handle, const M& map, const A&, cuda::std::span<const typename M::index_type, N> exts)
 {
   using MDS = cuda::std::mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   MDS m(handle, exts);
   test_move_counter<MDS, H>();
 
@@ -132,7 +122,7 @@ TEST_FUNC constexpr void test_mdspan_ctor(const H& handle, const M& map, const A
   static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
   static_assert(ac == cuda::std::is_default_constructible<A>::value);
   static_assert(
-    !cuda::std::is_constructible<MDS, const H&, cuda::std::span<typename MDS::index_type, MDS::rank()>>::value, "");
+    !cuda::std::is_constructible<MDS, const H&, cuda::std::span<typename MDS::index_type, MDS::rank()>>::value);
 }
 
 template <bool mec, bool ac, class H, class L, class A>
@@ -157,22 +147,18 @@ TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
   // Sanity check that this layouts mapping is constructible from extents (via its move constructor)
   static_assert(
     cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                cuda::std::extents<int>>::value,
-    "");
+                                cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<true, ac>(handle, layout_wrapping_integral<8>(), acc);
   // Sanity check that this layouts mapping is not constructible from extents
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 cuda::std::extents<int>>::value,
-    "");
+                                 cuda::std::extents<int>>::value);
   static_assert(
     !cuda::std::is_constructible<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>::value,
-    "");
+                                 const cuda::std::extents<int>&>::value);
   mixin_extents<false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 
@@ -186,7 +172,7 @@ TEST_FUNC constexpr void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is not default constructible except for const double, where it is not noexcept
   static_assert(
-    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value, "");
+    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value);
   mixin_layout<cuda::std::is_same<T, const double>::value>(
     typename checked_accessor<T>::data_handle_type(elements.data()), checked_accessor<T>(1024));
 }
@@ -201,7 +187,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is not default constructible except for const double, where it is not noexcept
   static_assert(
-    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value, "");
+    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value);
   mixin_layout<cuda::std::is_same<T, const double>::value>(
     typename checked_accessor<T>::data_handle_type(elements.get_ptr()), checked_accessor<T>(1024));
 }

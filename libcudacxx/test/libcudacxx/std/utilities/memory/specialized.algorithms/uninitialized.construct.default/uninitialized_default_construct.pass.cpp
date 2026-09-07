@@ -97,6 +97,7 @@ void test_ctor_throws()
 
 TEST_FUNC void test_counted()
 {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("Counted_count") cannot be used in tile code
   using It                                        = forward_iterator<Counted*>;
   const int N                                     = 5;
   alignas(Counted) char pool[sizeof(Counted) * N] = {};
@@ -109,6 +110,7 @@ TEST_FUNC void test_counted()
   assert(Counted_constructed == 5);
   cuda::std::__destroy(p, p + N);
   assert(Counted_count == 0);
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 int main(int, char**)

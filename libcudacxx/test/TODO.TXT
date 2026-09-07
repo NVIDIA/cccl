@@ -27,19 +27,19 @@ Filesystem Tasks
     * INCOMPLETE - US 34: Are there attributes of a file that are not an aspect of the file system?
     * INCOMPLETE - US 35: What synchronization is required to avoid a file system race?
     * INCOMPLETE - US 36: Symbolic links themselves are attached to a directory via (hard) links
-    * INCOMPLETE - US 37: The term “redundant current directory (dot) elements” is not defined
+    * INCOMPLETE - US 37: The term "redundant current directory (dot) elements" is not defined
     * INCOMPLETE - US 38: Duplicates §17.3.16
     * INCOMPLETE - US 39: Remove note: Dot and dot-dot are not directories
     * INCOMPLETE - US 40: Not all directories have a parent.
-    * INCOMPLETE - US 41: The term “parent directory” for a (non-directory) file is unusual
+    * INCOMPLETE - US 41: The term "parent directory" for a (non-directory) file is unusual
     * INCOMPLETE - US 42: Pathname resolution does not always resolve a symlink
     * INCOMPLETE - US 43: Concerns about encoded character types
     * INCOMPLETE - US 44: Definition of path in terms of a string requires leaky abstraction
     * INCOMPLETE - US 45: Generic format portability compromised by unspecified root-name
     * INCOMPLETE - US 46: filename can be empty so productions for relative-path are redundant
-    * INCOMPLETE - US 47: “.” and “..” already match the name production
+    * INCOMPLETE - US 47: "." and ".." already match the name production
     * INCOMPLETE - US 48: Multiple separators are often meaningful in a root-name
-    * INCOMPLETE - US 49: What does “method of conversion method” mean?
+    * INCOMPLETE - US 49: What does "method of conversion method" mean?
     * INCOMPLETE - US 50: 27.10.8.1 ¶ 1.4 largely redundant with ¶ 1.3
     * INCOMPLETE - US 51: Failing to add / when appending empty string prevents useful apps
     * INCOMPLETE - US 52: remove_filename() postcondition is not by itself a definition
@@ -55,7 +55,7 @@ Filesystem Tasks
     * INCOMPLETE - US 62: It is important that stem()+extension()==filename()
     * INCOMPLETE - US 63: lexically_normal() inconsistently treats trailing "/" but not "/.." as directory
     * INCOMPLETE - US 73, CA 2: root-name is effectively implementation defined
-    * INCOMPLETE - US 74, CA 3: The term “pathname” is ambiguous in some contexts
+    * INCOMPLETE - US 74, CA 3: The term "pathname" is ambiguous in some contexts
     * INCOMPLETE - US 75, CA 4: Extra flag in path constructors is needed
     * INCOMPLETE - US 76, CA 5: root-name definition is over-specified.
     * INCOMPLETE - US 77, CA 6: operator/ and other appends not useful if arg has root-name

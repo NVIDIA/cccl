@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_histogram.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -32,8 +33,6 @@
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/proclaim_return_type.h>
@@ -192,31 +191,38 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
   {
     return error;
   }
 
-  const histogram_policy active_policy = policy_selector(arch_id);
+  const HistogramPolicy active_policy = policy_selector(cc);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << active_policy;
-                _CubLog("Dispatching DeviceHistogram to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << active_policy;
+                 _CubLog("Dispatching DeviceHistogram to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceHistogram", cc, active_policy);
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
   auto sweep_kernel      = [&] {
     if constexpr (IsDeviceInit)
     {
       return kernel_source.template HistogramSweepKernelDeviceInit<
-             PolicySelector,
-             PRIVATIZED_SMEM_BINS,
-             FirstLevelArrayT,
-             SecondLevelArrayT,
-             IsEven,
-             IsByteSample>();
+        PolicySelector,
+        PRIVATIZED_SMEM_BINS,
+        FirstLevelArrayT,
+        SecondLevelArrayT,
+        IsEven,
+        IsByteSample>();
     }
     else
     {
@@ -227,7 +233,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const int block_threads     = active_policy.block_threads;
+  const int threads_per_block = active_policy.threads_per_block;
   const int pixels_per_thread = active_policy.pixels_per_thread;
 
   // Get SM count
@@ -240,7 +246,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   // Get SM occupancy for sweep_kernel
   int histogram_sweep_sm_occupancy;
   if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, block_threads)))
+        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, threads_per_block)))
   {
     return error;
   }
@@ -257,7 +263,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
-  int pixels_per_tile = block_threads * pixels_per_thread;
+  int pixels_per_tile = threads_per_block * pixels_per_thread;
   int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
   int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
   int blocks_per_col =
@@ -316,21 +322,30 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  constexpr int histogram_init_block_threads = 256;
+  constexpr int histogram_init_threads_per_block = 256;
   int histogram_init_grid_dims =
-    (max_num_output_bins + histogram_init_block_threads - 1) / histogram_init_block_threads;
+    (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
-// Log DeviceHistogramInitKernel configuration
+  // Log DeviceHistogramInitKernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
           histogram_init_grid_dims,
-          histogram_init_block_threads,
+          histogram_init_threads_per_block,
           (long long) stream);
+#else // CUB_DEBUG_LOG
+  log("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
+      histogram_init_grid_dims,
+      histogram_init_threads_per_block,
+      (long long) stream);
 #endif // CUB_DEBUG_LOG
 
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
-        launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream, true)
+        launcher_factory(histogram_init_grid_dims,
+                         histogram_init_threads_per_block,
+                         0,
+                         stream,
+                         /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
   {
     return error;
@@ -342,21 +357,32 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-// Log histogram_sweep_kernel configuration
+  // Log histogram_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
           "per thread, %d SM occupancy\n",
           sweep_grid_dims.x,
           sweep_grid_dims.y,
           sweep_grid_dims.z,
-          block_threads,
+          threads_per_block,
           (long long) stream,
           pixels_per_thread,
           histogram_sweep_sm_occupancy);
+#else // CUB_DEBUG_LOG
+  log("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
+      "per thread, %d SM occupancy\n",
+      sweep_grid_dims.x,
+      sweep_grid_dims.y,
+      sweep_grid_dims.z,
+      threads_per_block,
+      (long long) stream,
+      pixels_per_thread,
+      histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
-        launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
+        launcher_factory(
+          sweep_grid_dims, threads_per_block, 0, stream, /* dependent_launch */ cc >= ::cuda::compute_capability{9, 0})
           .doit(sweep_kernel,
                 d_samples,
                 num_output_bins_wrapper,
@@ -461,7 +487,7 @@ template <
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
   typename LowerLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
   typename UpperLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device_init(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
@@ -508,29 +534,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
     constexpr int PRIVATIZED_SMEM_BINS = 0;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS,
-            PRIVATIZED_SMEM_BINS,
-            true, // IsDeviceInit
-            true, // IsEven
-            false // IsByteSample
-            >(d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_output_levels,
-              num_output_levels,
-              upper_level,
-              lower_level,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
+          (detail::histogram::dispatch<NUM_CHANNELS,
+                                       NUM_ACTIVE_CHANNELS,
+                                       PRIVATIZED_SMEM_BINS,
+                                       /* IsDeviceInit = */ true,
+                                       /* IsEven = */ true,
+                                       /* IsByteSample = */ false>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            upper_level,
+            lower_level,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            policy_selector,
+            kernel_source,
+            launcher_factory))))
     {
       return error;
     }
@@ -541,29 +566,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
     constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::max_privatized_smem_bins;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS,
-            PRIVATIZED_SMEM_BINS,
-            true, // IsDeviceInit
-            true, // IsEven
-            false // IsByteSample
-            >(d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_output_levels,
-              num_output_levels,
-              upper_level,
-              lower_level,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
+          (detail::histogram::dispatch<NUM_CHANNELS,
+                                       NUM_ACTIVE_CHANNELS,
+                                       PRIVATIZED_SMEM_BINS,
+                                       /* IsDeviceInit = */ true,
+                                       /* IsEven = */ true,
+                                       /* IsByteSample = */ false>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            upper_level,
+            lower_level,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            policy_selector,
+            kernel_source,
+            launcher_factory))))
     {
       return error;
     }
@@ -635,7 +659,7 @@ template <
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
   typename LowerLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
   typename UpperLevelArrayT      = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device_init(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
@@ -682,29 +706,28 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
   constexpr int PRIVATIZED_SMEM_BINS = 256;
 
   if (const auto error = CubDebug(
-        (detail::histogram::dispatch<
-          NUM_CHANNELS,
-          NUM_ACTIVE_CHANNELS,
-          PRIVATIZED_SMEM_BINS,
-          true, // IsDeviceInit
-          true, // IsEven
-          true // IsByteSample
-          >(d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_privatized_levels,
-            num_output_levels,
-            upper_level,
-            lower_level,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            policy_selector,
-            kernel_source,
-            launcher_factory))))
+        (detail::histogram::dispatch<NUM_CHANNELS,
+                                     NUM_ACTIVE_CHANNELS,
+                                     PRIVATIZED_SMEM_BINS,
+                                     /* IsDeviceInit = */ true,
+                                     /* IsEven = */ true,
+                                     /* IsByteSample = */ true>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_samples,
+          d_output_histograms,
+          num_privatized_levels,
+          num_output_levels,
+          upper_level,
+          lower_level,
+          max_num_output_bins,
+          num_row_pixels,
+          num_rows,
+          row_stride_samples,
+          stream,
+          policy_selector,
+          kernel_source,
+          launcher_factory))))
   {
     return error;
   }
@@ -714,33 +737,33 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_pdl_trigger(int)
-  -> decltype(ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(int)
+  -> decltype(ActivePolicy::init_kernel_pdl_trigger_max_bins)
 {
-  return ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count;
+  return ActivePolicy::init_kernel_pdl_trigger_max_bins;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_pdl_trigger(long)
+_CCCL_HOST_DEVICE_API constexpr auto convert_pdl_trigger(long)
 {
   return 0;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> histogram_policy
+_CCCL_HOST_DEVICE_API constexpr auto convert_policy() -> HistogramPolicy
 {
   using ap = typename ActivePolicy::AgentHistogramPolicyT;
-  return histogram_policy{
+  return HistogramPolicy{
     ap::BLOCK_THREADS,
     ap::PIXELS_PER_THREAD,
+    ap::VEC_SIZE,
     ap::LOAD_ALGORITHM,
     ap::LOAD_MODIFIER,
     ap::IS_RLE_COMPRESS,
     ap::MEM_PREFERENCE,
     ap::IS_WORK_STEALING,
-    ap::VEC_SIZE,
     convert_pdl_trigger<ActivePolicy>(0)};
 }
 
@@ -751,10 +774,10 @@ struct policy_selector_from_max_policy
 private:
   struct extract_policy_dispatch_t
   {
-    histogram_policy& policy;
+    HistogramPolicy& policy;
 
     template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
+    _CCCL_HOST_DEVICE_API constexpr cudaError_t Invoke()
     {
       policy = convert_policy<ActivePolicyT>();
       return cudaSuccess;
@@ -762,26 +785,16 @@ private:
   };
 
 public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch_id) const -> histogram_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        const int ptx_version = static_cast<int>(arch_id) * 10;
-                        histogram_policy policy{};
+                        HistogramPolicy policy{};
                         extract_policy_dispatch_t dispatch{policy};
-                        MaxPolicy::Invoke(ptx_version, dispatch);
+                        _CCCL_VERIFY(MaxPolicy::Invoke(cc.get() * 10, dispatch) == cudaSuccess, "");
                         return policy;
                       }),
                       ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
-  }
-};
-
-template <typename PolicyHub>
-struct policy_selector_from_hub
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id) const -> histogram_policy
-  {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 
@@ -798,7 +811,7 @@ template <
   typename KernelSource =
     DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
@@ -844,29 +857,28 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
     constexpr int PRIVATIZED_SMEM_BINS = 256;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS,
-            PRIVATIZED_SMEM_BINS,
-            false, // IsDeviceInit
-            false, // IsEven (unused for host-init)
-            false // IsByteSample (unused for host-init)
-            >(d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_privatized_levels,
-              num_output_levels,
-              output_decode_op,
-              privatized_decode_op,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              policy_selector,
-              kernel_source,
-              launcher_factory))))
+          (detail::histogram::dispatch<NUM_CHANNELS,
+                                       NUM_ACTIVE_CHANNELS,
+                                       PRIVATIZED_SMEM_BINS,
+                                       /* IsDeviceInit = */ false,
+                                       /* IsEven = (unused for host-init) */ false,
+                                       /* IsByteSample = (unused for host-init) */ false>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_privatized_levels,
+            num_output_levels,
+            output_decode_op,
+            privatized_decode_op,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            policy_selector,
+            kernel_source,
+            launcher_factory))))
     {
       return error;
     }
@@ -902,29 +914,28 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
       constexpr int PRIVATIZED_SMEM_BINS = 0;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<
-              NUM_CHANNELS,
-              NUM_ACTIVE_CHANNELS,
-              PRIVATIZED_SMEM_BINS,
-              false, // IsDeviceInit
-              false, // IsEven (unused for host-init)
-              false // IsByteSample (unused for host-init)
-              >(d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                num_output_levels,
-                num_output_levels,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                policy_selector,
-                kernel_source,
-                launcher_factory))))
+            (detail::histogram::dispatch<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         PRIVATIZED_SMEM_BINS,
+                                         /* IsDeviceInit = */ false,
+                                         /* IsEven = (unused for host-init) */ false,
+                                         /* IsByteSample = (unused for host-init) */ false>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              num_output_levels,
+              output_decode_op,
+              privatized_decode_op,
+              max_num_output_bins,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
       {
         return error;
       }
@@ -935,29 +946,28 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
       constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<
-              NUM_CHANNELS,
-              NUM_ACTIVE_CHANNELS,
-              PRIVATIZED_SMEM_BINS,
-              false, // IsDeviceInit
-              false, // IsEven (unused for host-init)
-              false // IsByteSample (unused for host-init)
-              >(d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                num_output_levels,
-                num_output_levels,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                policy_selector,
-                kernel_source,
-                launcher_factory))))
+            (detail::histogram::dispatch<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         PRIVATIZED_SMEM_BINS,
+                                         /* IsDeviceInit = */ false,
+                                         /* IsEven = (unused for host-init) */ false,
+                                         /* IsByteSample = (unused for host-init) */ false>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              num_output_levels,
+              output_decode_op,
+              privatized_decode_op,
+              max_num_output_bins,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
       {
         return error;
       }
@@ -980,7 +990,7 @@ template <
   typename KernelSource =
     DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
@@ -1040,7 +1050,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
     constexpr int PRIVATIZED_SMEM_BINS = 256;
 
     if (const auto error = CubDebug(
-          (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+          (detail::histogram::dispatch<NUM_CHANNELS,
+                                       NUM_ACTIVE_CHANNELS,
+                                       PRIVATIZED_SMEM_BINS,
+                                       /* IsDeviceInit = */ false,
+                                       /* IsEven = */ false,
+                                       /* IsByteSample = */ false>(
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
@@ -1103,7 +1118,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
       constexpr int PRIVATIZED_SMEM_BINS = 0;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+            (detail::histogram::dispatch<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         PRIVATIZED_SMEM_BINS,
+                                         /* IsDeviceInit = */ false,
+                                         /* IsEven = */ false,
+                                         /* IsByteSample = */ false>(
               d_temp_storage,
               temp_storage_bytes,
               d_samples,
@@ -1129,7 +1149,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
       constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
 
       if (const auto error = CubDebug(
-            (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+            (detail::histogram::dispatch<NUM_CHANNELS,
+                                         NUM_ACTIVE_CHANNELS,
+                                         PRIVATIZED_SMEM_BINS,
+                                         /* IsDeviceInit = */ false,
+                                         /* IsEven = */ false,
+                                         /* IsByteSample = */ false>(
               d_temp_storage,
               temp_storage_bytes,
               d_samples,
@@ -1160,9 +1185,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
  * Dispatch
  ******************************************************************************/
 
-// TODO(bgruber): deprecate once we make the tuning API public and remove in CCCL 4.0
+// TODO(bgruber): remove in CCCL 4.0
 /**
  * Utility class for dispatching the appropriately-tuned kernels for DeviceHistogram
+ *
+ * Deprecated [Since 3.5]
  *
  * @tparam NUM_CHANNELS
  *   Number of channels interleaved in the input data (may be greater than the number of channels
@@ -1199,7 +1226,7 @@ template <
   typename KernelSource = detail::histogram::
     DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct DispatchHistogram
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
   static_assert(NUM_ACTIVE_CHANNELS <= NUM_CHANNELS,

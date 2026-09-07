@@ -293,7 +293,7 @@ struct TestScanWithOperator
     ASSERT_EQUAL(d_output, h_output);
   }
 };
-VariableUnitTest<TestScanWithOperator, SignedIntegralTypes> TestScanWithOperatorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanWithOperator, SignedIntegralTypes);
 
 template <typename T>
 struct TestScanWithOperatorToDiscardIterator
@@ -303,7 +303,7 @@ struct TestScanWithOperatorToDiscardIterator
     thrust::host_vector<T> h_input   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_input = h_input;
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     thrust::discard_iterator<> h_result =
       thrust::inclusive_scan(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), cuda::maximum<T>{});
@@ -324,9 +324,8 @@ struct TestScanWithOperatorToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestScanWithOperatorToDiscardIterator,
-                 unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestScanWithOperatorToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanWithOperatorToDiscardIterator,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
 
 template <typename T>
 struct TestScan
@@ -365,7 +364,7 @@ struct TestScan
     ASSERT_EQUAL(d_output, h_output);
   }
 };
-VariableUnitTest<TestScan, IntegralTypes> TestScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScan, IntegralTypes);
 
 template <typename T>
 struct TestScanToDiscardIterator
@@ -381,7 +380,7 @@ struct TestScanToDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::inclusive_scan(d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -394,8 +393,8 @@ struct TestScanToDiscardIterator
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestScanToDiscardIterator, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestScanToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanToDiscardIterator,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);
 
 void TestScanMixedTypes()
 {
@@ -470,8 +469,6 @@ void TestScanWithLargeTypes()
 #if !defined(__QNX__)
   _TestScanWithLargeTypes<int, 8>();
   _TestScanWithLargeTypes<int, 64>();
-#else
-  KNOWN_FAILURE;
 #endif
 }
 DECLARE_UNITTEST(TestScanWithLargeTypes);
@@ -567,6 +564,9 @@ struct only_set_when_expected_it
     return *this;
   }
 
+  // Write-only test proxy: assignment records that the expected value was written.
+  // There is no meaningful object to return.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_DEVICE void operator=(long long value) const
   {
     if (value == expected)
@@ -796,31 +796,38 @@ struct checking_identity
 
   _CCCL_HOST_DEVICE unsigned operator()([[maybe_unused]] unsigned a, [[maybe_unused]] unsigned b) const
   {
-    // only the SM100 tuning will pick the warpspeed implementation currently, so only verify on that architecture.
-    // < SM100 and SM120 will use the old scan implementation for this scan operator, which passes invalid data.
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_100,
-      ({
-        _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
-        _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
-      }),
-      NV_PROVIDES_SM_120,
-      ());
-
+    _CCCL_ASSERT(a == sentinel, "Unexpected value in scan operator. Reading invalid data?");
+    _CCCL_ASSERT(b == sentinel, "Unexpected value in scan operator. Reading invalid data?");
     return sentinel;
   }
 };
 
 void TestInclusiveScanForInvalidValues()
 {
-  const thrust::device_vector<unsigned> input(10'000, checking_identity::sentinel);
-  thrust::device_vector<unsigned> output(10'000, thrust::no_init);
+  using value_t = unsigned;
 
-  thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
-  ASSERT_EQUAL(input, output);
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  // for the CUDA backend, only the lookahead implementation does not call the scan operator on out-of-bounds data
+  cuda::compute_capability cc;
+  ASSERT_EQUAL(cub::detail::ptx_compute_cap(cc), cudaSuccess);
+  using policy_selector_t = cub::detail::scan::
+    policy_selector_from_types<const value_t*, value_t*, value_t, unsigned long long, checking_identity>;
+  if (policy_selector_t{}(cc).algorithm == cub::ScanAlgorithm::lookahead)
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  {
+    for (int n : {1, 100, 10'000})
+    {
+      const thrust::device_vector<value_t> input(n, checking_identity::sentinel);
+      thrust::device_vector<value_t> output(n, thrust::no_init);
 
-  thrust::exclusive_scan(input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
-  ASSERT_EQUAL(input, output);
+      thrust::inclusive_scan(input.begin(), input.end(), output.begin(), checking_identity{});
+      ASSERT_EQUAL(input, output);
+
+      thrust::exclusive_scan(
+        input.begin(), input.end(), output.begin(), checking_identity::sentinel, checking_identity{});
+      ASSERT_EQUAL(input, output);
+    }
+  }
 }
 DECLARE_UNITTEST(TestInclusiveScanForInvalidValues);
 

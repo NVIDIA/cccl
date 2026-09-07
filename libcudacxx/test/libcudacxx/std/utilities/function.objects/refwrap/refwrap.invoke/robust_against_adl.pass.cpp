@@ -7,6 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: indirect call is unsupported in tile code
+
+// UNSUPPORTED: enable-tile
+// BUGBUG: codegen error
+
 // <functional>
 
 // #include <cuda/std/functional>

@@ -19,6 +19,20 @@ At a glance, the runtime layer includes:
 - Runtime algorithms like ``copy_bytes`` and ``fill_bytes`` for basic data movement.
 - Legacy memory resources as synchronous compatibility fallbacks for older toolkits.
 
+Error handling
+--------------
+
+CCCL Runtime APIs use C++ exceptions for error handling. Operations such as creating runtime objects, allocating memory,
+querying device properties, or synchronizing work report failures by throwing exceptions. Users can write ordinary
+control flow without checking a status value after every runtime call, and catch exceptions at the boundary where an
+operation can be retried, reported, or allowed to fail.
+
+See :ref:`Exception Handling <libcudacxx-extended-api-exceptions>` for details on ``cuda::cuda_error``, including how
+to access the stored ``cudaError_t`` status.
+
+This is part of the CCCL Runtime API model. It differs from the CUDA Runtime API, where operations generally return
+``cudaError_t`` values that callers check against ``cudaSuccess``.
+
 See :ref:`CUDA Runtime interactions <cccl-runtime-cudart-interactions>` if you are interested in CUDA Runtime interop.
 
 Example: vector add with buffers, pools, and launch

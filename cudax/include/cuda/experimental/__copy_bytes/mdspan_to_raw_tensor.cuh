@@ -101,6 +101,10 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
         ++__r;
       }
     }
+    for (__rank_t __i = __r; __i < _MaxRank; ++__i)
+    {
+      __result.__extents[__i] = _ExtentT{1};
+    }
     __result.__rank = __r;
   }
   return __result;

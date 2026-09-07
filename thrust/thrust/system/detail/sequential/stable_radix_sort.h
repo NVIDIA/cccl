@@ -257,7 +257,7 @@ _CCCL_HOST_DEVICE void radix_sort(
 
     for (unsigned int j = 0; j < NumHistograms; j++)
     {
-      const auto BitShift = static_cast<EncodedType>(RadixBits * j);
+      const auto BitShift = static_cast<EncodedType>(RadixBits * j); // NOLINT(bugprone-misplaced-widening-cast)
       histograms[j][(x >> BitShift) & BitMask]++;
     }
   }
@@ -285,7 +285,7 @@ _CCCL_HOST_DEVICE void radix_sort(
   // shuffle keys and (optionally) values
   for (unsigned int i = 0; i < NumHistograms; i++)
   {
-    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i);
+    const EncodedType BitShift = static_cast<EncodedType>(RadixBits * i); // NOLINT(bugprone-misplaced-widening-cast)
 
     if (!skip_shuffle[i])
     {

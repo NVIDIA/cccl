@@ -73,7 +73,7 @@ using __cccl_tls_key = pthread_key_t;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC
 
-[[nodiscard]] _CCCL_API constexpr timespec __cccl_to_timespec(const ::cuda::std::chrono::nanoseconds& __ns)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr timespec __cccl_to_timespec(const ::cuda::std::chrono::nanoseconds& __ns)
 {
   constexpr auto __ts_sec_max = numeric_limits<time_t>::max();
 
@@ -95,39 +95,39 @@ using __cccl_tls_key = pthread_key_t;
 
 // Semaphore
 
-_CCCL_API inline bool __cccl_semaphore_init(__cccl_semaphore_t* __sem, int __init)
+_CCCL_HOST_DEVICE_API inline bool __cccl_semaphore_init(__cccl_semaphore_t* __sem, int __init)
 {
   return sem_init(__sem, 0, __init) == 0;
 }
 
-_CCCL_API inline bool __cccl_semaphore_destroy(__cccl_semaphore_t* __sem)
+_CCCL_HOST_DEVICE_API inline bool __cccl_semaphore_destroy(__cccl_semaphore_t* __sem)
 {
   return sem_destroy(__sem) == 0;
 }
 
-_CCCL_API inline bool __cccl_semaphore_post(__cccl_semaphore_t* __sem)
+_CCCL_HOST_DEVICE_API inline bool __cccl_semaphore_post(__cccl_semaphore_t* __sem)
 {
   return sem_post(__sem) == 0;
 }
 
-_CCCL_API inline bool __cccl_semaphore_wait(__cccl_semaphore_t* __sem)
+_CCCL_HOST_DEVICE_API inline bool __cccl_semaphore_wait(__cccl_semaphore_t* __sem)
 {
   return sem_wait(__sem) == 0;
 }
 
-_CCCL_API inline bool
+_CCCL_HOST_DEVICE_API inline bool
 __cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, ::cuda::std::chrono::nanoseconds const& __ns)
 {
   const auto __ts = __cccl_to_timespec(__ns);
   return sem_timedwait(__sem, &__ts) == 0;
 }
 
-_CCCL_API inline void __cccl_thread_yield()
+_CCCL_HOST_DEVICE_API inline void __cccl_thread_yield()
 {
   sched_yield();
 }
 
-_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
+_CCCL_HOST_DEVICE_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
 {
   auto __ts = __cccl_to_timespec(__ns);
   while (nanosleep(&__ts, &__ts) == -1 && errno == EINTR)

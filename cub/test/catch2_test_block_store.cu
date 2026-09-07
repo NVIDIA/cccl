@@ -6,7 +6,7 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx
@@ -136,8 +136,9 @@ struct params_t
   static constexpr cub::BlockStoreAlgorithm store_algorithm = c2h::get<3, TestType>::value;
 };
 
-C2H_TEST("Block store works with even block sizes",
+CUB_TEST("Block store works with even block sizes",
          "[store][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          even_threads_in_block,
@@ -159,8 +160,9 @@ C2H_TEST("Block store works with even block sizes",
   REQUIRE(d_input == d_output);
 }
 
-C2H_TEST("Block store works with even odd sizes",
+CUB_TEST("Block store works with even odd sizes",
          "[store][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          odd_threads_in_block,
@@ -184,8 +186,9 @@ C2H_TEST("Block store works with even odd sizes",
 
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
-C2H_TEST("Block store works with even vector types",
+CUB_TEST("Block store works with even vector types",
          "[store][block]",
+         CUB_SMALL,
          vec_types,
          items_per_thread,
          a_block_size,
@@ -208,7 +211,7 @@ C2H_TEST("Block store works with even vector types",
 }
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
 
-C2H_TEST("Block store works with custom types", "[store][block]", items_per_thread, store_algorithm)
+CUB_TEST("Block store works with custom types", "[store][block]", CUB_SMALL, items_per_thread, store_algorithm)
 {
   using type                                                = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread                            = c2h::get<0, TestType>::value;
@@ -229,7 +232,7 @@ C2H_TEST("Block store works with custom types", "[store][block]", items_per_thre
   REQUIRE(d_input == d_output);
 }
 
-C2H_TEST("Block store works with caching iterators", "[store][block]", items_per_thread, store_algorithm)
+CUB_TEST("Block store works with caching iterators", "[store][block]", CUB_SMALL, items_per_thread, store_algorithm)
 {
   using type                                                = int;
   constexpr int items_per_thread                            = c2h::get<0, TestType>::value;
@@ -251,7 +254,10 @@ C2H_TEST("Block store works with caching iterators", "[store][block]", items_per
 }
 
 #if IPT == 1
-C2H_TEST("Vectorized block store with different alignment cases", "[store][block]", c2h::enum_type_list<int, 1, 4, 7>)
+CUB_TEST("Vectorized block store with different alignment cases",
+         "[store][block]",
+         CUB_SMALL,
+         c2h::enum_type_list<int, 1, 4, 7>)
 {
   using type                     = int;
   constexpr int items_per_thread = c2h::get<0, TestType>::value;

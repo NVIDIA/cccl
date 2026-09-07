@@ -77,11 +77,38 @@ TEST_FUNC constexpr void test_log10()
 }
 
 template <class T>
+TEST_FUNC constexpr void test_ceil_log10()
+{
+  int i = 0;
+  for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 10; value *= 10)
+  {
+    assert(cuda::ceil_ilog10(value) == i);
+    assert(cuda::ceil_ilog10(static_cast<T>(value + 1)) == i + 1);
+    if (i >= 1)
+    {
+      assert(cuda::ceil_ilog10(static_cast<T>(value - 1)) == i);
+      assert(cuda::ceil_ilog10(value + value / 2) == i + 1);
+      assert(cuda::ceil_ilog10(value - value / 2) == i);
+      assert(cuda::ceil_ilog10(value - value / 2 - 1) == i);
+    }
+    i++;
+  }
+#if !TEST_COMPILER(MSVC)
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    constexpr auto max_v = cuda::std::numeric_limits<T>::max();
+    assert(cuda::ceil_ilog10(max_v) == static_cast<int>(cuda::std::ceil(cuda::std::log10(max_v))));
+  }
+#endif // !TEST_COMPILER(MSVC)
+}
+
+template <class T>
 TEST_FUNC constexpr void test()
 {
   test_log2<T>();
   test_ceil_log2<T>();
   test_log10<T>();
+  test_ceil_log10<T>();
 }
 
 TEST_FUNC constexpr bool test()

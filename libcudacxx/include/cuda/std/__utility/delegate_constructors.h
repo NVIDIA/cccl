@@ -33,16 +33,19 @@
 #if _CCCL_COMPILER(NVRTC, <, 12, 6)
 #  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                                       \
     using __base = __baseclass<__VA_ARGS__>;                                                                           \
+    _CCCL_EXEC_CHECK_DISABLE                                                                                           \
     _CCCL_TEMPLATE(class... _Args)                                                                                     \
     _CCCL_REQUIRES(::cuda::std::is_constructible_v<__base, _Args...>)                                                  \
     _CCCL_API constexpr __class(_Args&&... __args) noexcept(::cuda::std::is_nothrow_constructible_v<__base, _Args...>) \
         : __base(::cuda::std::forward<_Args>(__args)...)                                                               \
     {}                                                                                                                 \
+    _CCCL_EXEC_CHECK_DISABLE                                                                                           \
     _CCCL_HIDE_FROM_ABI constexpr __class() noexcept(::cuda::std::is_nothrow_default_constructible_v<__base>) = default;
 #else // ^^^ workaround ^^^ / vvv no workaround vvv
 #  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \
     using __base = __baseclass<__VA_ARGS__>;                     \
     using __base::__base;                                        \
+    _CCCL_EXEC_CHECK_DISABLE                                     \
     _CCCL_HIDE_FROM_ABI constexpr __class() noexcept(::cuda::std::is_nothrow_default_constructible_v<__base>) = default;
 #endif // ^^^ no workaround ^^^
 

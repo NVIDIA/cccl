@@ -35,8 +35,7 @@ struct CstrFromUnexpected
   TEST_FUNC CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
 };
 static_assert(
-  !cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>, cuda::std::unexpected<CstrFromUnexpected>>,
-  "");
+  !cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>, cuda::std::unexpected<CstrFromUnexpected>>);
 
 // is_same_v<remove_cvref_t<Err>, in_place_t>
 struct CstrFromInplace

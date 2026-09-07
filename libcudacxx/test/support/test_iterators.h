@@ -424,6 +424,51 @@ public:
 };
 static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>);
 
+template <class Base = int*>
+struct common_input_iterator
+{
+  Base it_;
+
+  using value_type       = int;
+  using difference_type  = cuda::std::intptr_t;
+  using iterator_concept = cuda::std::input_iterator_tag;
+
+  constexpr common_input_iterator() = default;
+  TEST_FUNC constexpr explicit common_input_iterator(Base it)
+      : it_(it)
+  {}
+
+  TEST_FUNC constexpr common_input_iterator& operator++()
+  {
+    ++it_;
+    return *this;
+  }
+  TEST_FUNC constexpr void operator++(int)
+  {
+    ++it_;
+  }
+
+  TEST_FUNC constexpr decltype(auto) operator*() const
+  {
+    return *it_;
+  }
+
+  TEST_FUNC friend constexpr bool operator==(common_input_iterator const& lhs, common_input_iterator const& rhs)
+  {
+    return lhs.it_ == rhs.it_;
+  }
+
+  TEST_FUNC friend constexpr bool operator!=(common_input_iterator const& lhs, common_input_iterator const& rhs)
+  {
+    return lhs.it_ != rhs.it_;
+  }
+
+  TEST_FUNC friend constexpr Base base(const common_input_iterator& i)
+  {
+    return i.it_;
+  }
+};
+
 template <class It>
 class cpp20_random_access_iterator
 {
@@ -866,6 +911,8 @@ struct ThrowingIterator
       , index_(rhs.index_)
   {}
 
+  // Irrelevant for testing code
+  // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
   TEST_FUNC constexpr ThrowingIterator& operator=(const ThrowingIterator& rhs)
   {
     if (action_ == TAAssignment && --index_ < 0)
@@ -983,13 +1030,7 @@ struct NonThrowingIterator
       , current_(rhs.current_)
   {}
 
-  TEST_FUNC NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept
-  {
-    begin_   = rhs.begin_;
-    end_     = rhs.end_;
-    current_ = rhs.current_;
-    return *this;
-  }
+  NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept = default;
 
   TEST_FUNC reference operator*() const noexcept
   {
@@ -1356,19 +1397,23 @@ public:
   TEST_FUNC constexpr explicit sentinel_wrapper(const It& it)
       : base_(base(it))
   {}
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator==(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ == base(i);
   }
 #if TEST_STD_VER < 2020
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator==(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ == base(i);
   }
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator!=(const sentinel_wrapper& s, const It& i)
   {
     return s.base_ != base(i);
   }
+  _CCCL_EXEC_CHECK_DISABLE
   TEST_FUNC friend constexpr bool operator!=(const It& i, const sentinel_wrapper& s)
   {
     return s.base_ != base(i);
@@ -1634,20 +1679,24 @@ struct Proxy
 
   Proxy(const Proxy&) = default;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class U)
   _CCCL_REQUIRES(cuda::std::constructible_from<T, U&&>)
   TEST_FUNC constexpr Proxy(U&& u)
       : data{cuda::std::forward<U>(u)}
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   // This constructor covers conversion from cvref of Proxy<U>, including non-const/const versions of copy/move
   // constructor
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class Other)
   _CCCL_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
                   && cuda::std::constructible_from<T, decltype(cuda::std::declval<Other>().getData())>) )
   TEST_FUNC constexpr Proxy(Other&& other)
       : data{cuda::std::forward<Other>(other).getData()}
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   _CCCL_TEMPLATE(class Other)
   _CCCL_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
@@ -1803,11 +1852,13 @@ struct ProxyIterator : ProxyIteratorBase<Base>
       : base_{cuda::std::move(base)}
   {}
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   _CCCL_TEMPLATE(class T)
   _CCCL_REQUIRES(cuda::std::constructible_from<Base, T&&>)
   TEST_FUNC constexpr ProxyIterator(T&& t)
       : base_{cuda::std::forward<T>(t)}
   {}
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   TEST_FUNC friend constexpr decltype(auto) base(const ProxyIterator& p)
   {
@@ -2029,7 +2080,7 @@ struct ProxyRange
 
 template <cuda::std::ranges::input_range R>
   requires cuda::std::ranges::viewable_range<R&&>
-ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES ProxyRange(R&&) -> ProxyRange<cuda::std::views::all_t<R&&>>;
 #endif // !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES)
 
 namespace types
@@ -2066,7 +2117,7 @@ public:
   using pointer           = int*;
   using reference         = int&;
 
-  TEST_FUNC constexpr advance_only_iterator() {}
+  constexpr advance_only_iterator() = default;
   TEST_FUNC constexpr advance_only_iterator(int* iter)
       : iter_(iter)
   {}

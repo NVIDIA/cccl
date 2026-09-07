@@ -57,21 +57,22 @@ TEST_FUNC void test_const_array(const T (&array)[Sz])
   assert(cuda::std::data(array) == &array[0]);
 }
 
-TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
-
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: calling a host device function in tile mode
   cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
+  test_container(v);
+  test_const_container(v);
+#endif // !_CCCL_TILE_COMPILATION()
+
   cuda::std::array<int, 1> a;
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-  test_container(v);
   test_container(a);
   test_container(il);
 
-  test_const_container(v);
   test_const_container(a);
   test_const_container(il);
 
@@ -79,6 +80,7 @@ int main(int, char**)
   test_container(sv);
   test_const_container(sv);
 
+  constexpr int arrA[]{1, 2, 3};
   test_const_array(arrA);
 
   return 0;

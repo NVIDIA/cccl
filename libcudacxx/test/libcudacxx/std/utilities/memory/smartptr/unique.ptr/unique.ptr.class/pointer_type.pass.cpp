@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 // <memory>
 
 // unique_ptr
@@ -40,7 +44,7 @@ struct D3
 #endif // !TEST_COMPILER(NVRTC)
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   {
@@ -65,7 +69,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 #endif // !TEST_COMPILER(NVRTC)
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

@@ -42,6 +42,7 @@ struct twice
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class T, class BOp, class UOp>
 TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, T init, BOp bOp, UOp uOp, T x)
 {
@@ -49,6 +50,7 @@ TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, T init, BOp bOp, UOp uO
   assert(cuda::std::transform_reduce(first1, last1, init, bOp, uOp) == x);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test()
 {
@@ -74,14 +76,15 @@ TEST_FUNC constexpr void test()
   test(Iter(ia), Iter(ia + sa), 4, cuda::std::plus<>(), twice(), 46);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Init>
 TEST_FUNC constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
   static_assert(
-    cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, Init{}, cuda::std::plus<>(), identity()))>::value,
-    "");
+    cuda::std::is_same<Init,
+                       decltype(cuda::std::transform_reduce(p, p, Init{}, cuda::std::plus<>(), identity()))>::value);
 }
 
 struct SumMoveOnly
@@ -109,6 +112,7 @@ TEST_FUNC constexpr void test_move_only_types()
          .get());
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   test_return_type<char, int>();
@@ -130,9 +134,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   //  Make sure the math is done using the correct type
   {

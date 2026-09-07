@@ -20,32 +20,32 @@ void recursive_check_device_setter(int id)
 {
   int cudart_id;
   cudax::__ensure_current_device setter(cuda::device_ref{id});
-  CUDAX_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
+  REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
   auto ctx = driver::__ctxGetCurrent();
-  CUDART(cudaGetDevice(&cudart_id));
-  CUDAX_REQUIRE(cudart_id == id);
+  REQUIRE_CUDART(cudaGetDevice(&cudart_id));
+  REQUIRE(cudart_id == id);
 
   if (id != 0)
   {
     recursive_check_device_setter(id - 1);
 
-    CUDAX_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
-    CUDAX_REQUIRE(ctx == driver::__ctxGetCurrent());
-    CUDART(cudaGetDevice(&cudart_id));
-    CUDAX_REQUIRE(cudart_id == id);
+    REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
+    REQUIRE(ctx == driver::__ctxGetCurrent());
+    REQUIRE_CUDART(cudaGetDevice(&cudart_id));
+    REQUIRE(cudart_id == id);
   }
 }
 
 C2H_TEST("ensure current device", "[device]")
 {
   test::empty_driver_stack();
-  // If possible use something different than CUDART default 0
+  // If possible use something different than REQUIRE_CUDART default 0
   int target_device = static_cast<int>(cuda::devices.size() - 1);
 
   SECTION("device setter")
   {
     recursive_check_device_setter(target_device);
 
-    CUDAX_REQUIRE(test::count_driver_stack() == 0);
+    REQUIRE(test::count_driver_stack() == 0);
   }
 }

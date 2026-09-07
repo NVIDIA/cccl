@@ -38,7 +38,7 @@ namespace cuda::experimental
 //! @return Absolute value of @p __value
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp __abs_integer(_Tp __value) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp __abs_integer(_Tp __value) noexcept
 {
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {

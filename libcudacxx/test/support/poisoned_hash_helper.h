@@ -206,7 +206,7 @@ void test_hash_disabled()
   static_assert(!std::is_move_assignable<Hash>::value);
 
   static_assert(
-    !std::is_function<typename std::remove_pointer<typename std::remove_reference<Hash>::type>::type>::value, "");
+    !std::is_function<typename std::remove_pointer<typename std::remove_reference<Hash>::type>::type>::value);
 
   // Hashable requirements
   static_assert(!can_hash<Hash(Key&)>());

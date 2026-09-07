@@ -39,6 +39,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 #include <cuda/__ptx/instructions/generated/fence_proxy_alias.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_async.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_async_generic_sync_restrict.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_fabric_fabric_alias.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_fabric_generic_alias.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_generic_fabric_alias.h>
 #include <cuda/__ptx/instructions/generated/fence_proxy_tensormap_generic.h>
 #include <cuda/__ptx/instructions/generated/fence_sync_restrict.h>
 

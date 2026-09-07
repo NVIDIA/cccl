@@ -74,18 +74,15 @@ TEST_FUNC constexpr void test_comparison_different_rank()
   static_assert(compare_layout_mappings(cuda::std::extents<T1, 1>(), cuda::std::extents<T2>()).does_not_match());
 
   static_assert(
-    compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, D, D>(5, 5)).does_not_match(), "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, 5, D>(5)).does_not_match(),
-                "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, 5, 1>()).does_not_match(),
-                "");
+    compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, D, D>(5, 5)).does_not_match());
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, 5, D>(5)).does_not_match());
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, 5, 1>()).does_not_match());
 
   static_assert(
-    compare_layout_mappings(cuda::std::extents<T1, D, D>(5, 5), cuda::std::extents<T2, D>(5)).does_not_match(), "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5, D>(5), cuda::std::extents<T2, D>(5)).does_not_match(),
-                "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5, 5>(), cuda::std::extents<T2, 5>()).does_not_match(),
-                "");
+    compare_layout_mappings(cuda::std::extents<T1, D, D>(5, 5), cuda::std::extents<T2, D>(5)).does_not_match());
+  static_assert(
+    compare_layout_mappings(cuda::std::extents<T1, 5, D>(5), cuda::std::extents<T2, D>(5)).does_not_match());
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5, 5>(), cuda::std::extents<T2, 5>()).does_not_match());
 }
 
 template <class T1, class T2>

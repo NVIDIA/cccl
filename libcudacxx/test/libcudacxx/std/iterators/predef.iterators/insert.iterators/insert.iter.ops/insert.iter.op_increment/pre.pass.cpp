@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
+
 // <cuda/std/iterator>
 
 // insert_iterator
@@ -20,7 +23,7 @@
 #include "test_macros.h"
 
 template <class C>
-TEST_FUNC void test(C c)
+TEST_HOST_DEVICE_FUNC void test(C c)
 {
   cuda::std::insert_iterator<C> i(c, c.end());
   cuda::std::insert_iterator<C>& r = ++i;

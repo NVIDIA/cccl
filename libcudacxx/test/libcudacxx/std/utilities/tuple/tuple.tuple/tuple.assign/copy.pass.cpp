@@ -107,5 +107,7 @@ int main(int, char**)
     static_assert(!cuda::std::is_copy_assignable<T>::value);
   }
 
+  static_assert(cuda::std::is_trivially_copy_assignable_v<cuda::std::tuple<>>);
+
   return 0;
 }

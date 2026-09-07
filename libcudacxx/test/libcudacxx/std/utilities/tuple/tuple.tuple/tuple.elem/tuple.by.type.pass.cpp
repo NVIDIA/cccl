@@ -52,6 +52,7 @@ int main(int, char**)
     assert(i2 == 2);
   }
 
+#if !_CCCL_TILE_COMPILATION() // dynamic memory allocation with non-placement ::operator new is unsupported in tile code
   {
     using upint = cuda::std::unique_ptr<int>;
     cuda::std::tuple<upint> t(upint(new int(4)));
@@ -67,6 +68,7 @@ int main(int, char**)
     assert(*p == 4);
     assert(cuda::std::get<upint>(t) != nullptr);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     int x = 42;
@@ -84,8 +86,7 @@ int main(int, char**)
     cuda::std::tuple<int&&, int const&&> const t(cuda::std::move(x), cuda::std::move(y));
     static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<int&&>(cuda::std::move(t)))>::value);
     static_assert(noexcept(cuda::std::get<int&&>(cuda::std::move(t))));
-    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(t)))>::value,
-                  "");
+    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(t)))>::value);
     static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(t))));
   }
   {

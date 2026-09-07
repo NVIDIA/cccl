@@ -24,7 +24,17 @@ TEST_FUNC constexpr bool test()
   }
 
   {
+    cuda::counting_iterator<int, int> iter;
+    assert(*iter == 0);
+  }
+
+  {
     cuda::counting_iterator<Int42<DefaultTo42>> iter;
+    assert((*iter).value_ == 42);
+  }
+
+  {
+    cuda::counting_iterator<Int42<DefaultTo42>, short> iter;
     assert((*iter).value_ == 42);
   }
 

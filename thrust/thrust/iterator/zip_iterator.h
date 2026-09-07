@@ -31,6 +31,7 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/zip_common.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -58,18 +59,11 @@ struct make_zip_iterator_base
 template <typename... Its>
 struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 {
-  // We need this to make proxy iterators work because those have a void reference type
-  template <class Iter>
-  using zip_iterator_reference_t =
-    ::cuda::std::conditional_t<::cuda::std::is_same_v<it_reference_t<Iter>, void>,
-                               decltype(*::cuda::std::declval<Iter>()),
-                               it_reference_t<Iter>>;
-
   // reference type is the type of the tuple obtained from the iterator's reference types.
-  using reference = tuple_of_iterator_references<zip_iterator_reference_t<Its>...>;
+  using reference = tuple_of_iterator_references<::cuda::__zip_maybe_proxy_reference_t<Its>...>;
 
   // Boost's Value type is the same as reference type. using value_type = reference;
-  using value_type = ::cuda::std::tuple<it_value_t<Its>...>;
+  using value_type = ::cuda::std::tuple<::cuda::__zip_maybe_proxy_value_type_t<Its>...>;
 
   // Difference type is the first iterator's difference type
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
@@ -306,7 +300,7 @@ private:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class... Iterators>
-_CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
@@ -338,21 +332,3 @@ inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
-
-// libcu++ iterator traits fail for complex zip_iterators in C++17, see e.g.: https://godbolt.org/z/7jb4qG3bb
-// The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
-// language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
-#if _CCCL_STD_VER < 2020
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-template <typename IteratorTuple>
-struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
-{
-  using It                = THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>;
-  using value_type        = typename It::value_type;
-  using reference         = typename It::reference;
-  using pointer           = void;
-  using iterator_category = typename It::iterator_category;
-  using difference_type   = typename It::difference_type;
-};
-_CCCL_END_NAMESPACE_CUDA_STD
-#endif // _CCCL_STD_VER < 2020

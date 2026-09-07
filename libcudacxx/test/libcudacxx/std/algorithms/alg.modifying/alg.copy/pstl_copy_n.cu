@@ -29,29 +29,84 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 1000;
 
-C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
+template <class Policy, class T>
+void test_copy_n(const Policy& policy,
+                 const c2h::device_vector<T>& input,
+                 c2h::device_vector<T>& output,
+                 const c2h::device_vector<int>& converting)
 {
-  thrust::device_vector<int> output(size, thrust::no_init);
-  thrust::device_vector<int> input(size, thrust::no_init);
-  thrust::sequence(input.begin(), input.end(), 0);
+  { // empty should not access anything
+    const auto res = cuda::std::copy_n(policy, static_cast<int*>(nullptr), 0, static_cast<int*>(nullptr));
+    CHECK(res == nullptr);
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  { // With contiguous iterator
+    const auto res = cuda::std::copy_n(policy, input.begin(), size, output.begin());
+    CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), input.begin()));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  const T* raw_pointer = thrust::raw_pointer_cast(input.data());
+  { // With non-contiguous input iterator
+    const auto res = cuda::std::copy_n(policy, random_access_iterator{raw_pointer}, size, output.begin());
+    CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), input.begin()));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  T* raw_out_pointer = thrust::raw_pointer_cast(output.data());
+  { // With non-contiguous output iterator
+    const auto res = cuda::std::copy_n(policy, input.begin(), size, random_access_iterator{raw_out_pointer});
+    CHECK(res == random_access_iterator{raw_out_pointer + size});
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), input.begin()));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  { // All non-contiguous iterators
+    const auto res =
+      cuda::std::copy_n(policy, random_access_iterator{raw_pointer}, size, random_access_iterator{raw_out_pointer});
+    CHECK(res == random_access_iterator{raw_out_pointer + size});
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), input.begin()));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  { // From a converting contiguous sequence
+    const auto res = cuda::std::copy_n(policy, converting.begin(), size, output.begin());
+    CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), input.begin()));
+  }
+
+  cuda::std::fill(policy, output.begin(), output.end(), static_cast<T>(-1));
+  const int* raw_converting_pointer = thrust::raw_pointer_cast(converting.data());
+  { // From a converting random access sequence
+    const auto res = cuda::std::copy_n(policy, random_access_iterator{raw_converting_pointer}, size, output.begin());
+    CHECK(res == output.end());
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), input.begin()));
+  }
+}
+
+C2H_TEST("cuda::std::copy_n", "[parallel algorithm]", all_types)
+{
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> output(size, thrust::no_init);
+  c2h::device_vector<T> input(size, thrust::no_init);
+  c2h::device_vector<int> converting(size, thrust::no_init);
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  thrust::sequence(converting.begin(), converting.end(), 0);
 
   SECTION("with default stream")
   {
     const auto policy = cuda::execution::gpu;
 
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With non-contiguous iterator
-      cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
-
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With contiguous iterator
-      cuda::std::copy_n(policy, input.begin(), size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
+    test_copy_n(policy, input, output, converting);
   }
 
   SECTION("with provided stream")
@@ -59,17 +114,7 @@ C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
 
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With non-contiguous iterator
-      cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
-
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With contiguous iterator
-      cuda::std::copy_n(policy, input.begin(), size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
+    test_copy_n(policy, input, output, converting);
   }
 
   SECTION("with provided memory_resource")
@@ -77,17 +122,7 @@ C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource);
 
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With non-contiguous iterator
-      cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
-
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With contiguous iterator
-      cuda::std::copy_n(policy, input.begin(), size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
+    test_copy_n(policy, input, output, converting);
   }
 
   SECTION("with provided stream and memory_resource")
@@ -97,16 +132,6 @@ C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
 
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With non-contiguous iterator
-      cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
-
-    cuda::std::fill(policy, output.begin(), output.end(), -1);
-    { // With contiguous iterator
-      cuda::std::copy_n(policy, input.begin(), size, output.begin());
-      CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
-    }
+    test_copy_n(policy, input, output, converting);
   }
 }

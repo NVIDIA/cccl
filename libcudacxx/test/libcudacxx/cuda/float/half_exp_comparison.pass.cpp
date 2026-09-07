@@ -16,7 +16,7 @@
 
 struct func
 {
-  TEST_FUNC __half operator()(cuda::std::size_t i) const
+  TEST_HOST_DEVICE_FUNC __half operator()(cuda::std::size_t i) const
   {
     auto raw = __half_raw();
     raw.x    = (unsigned short) i;

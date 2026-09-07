@@ -16,7 +16,7 @@ static stream_ctx ctx;
 
 /*
  * DATA BLOCKS
- *   | GHOSTS | DATA | GHOSTS |
+ *   | GHOSTS | DATA | GHOSTS |
  */
 template <typename T>
 class data_block

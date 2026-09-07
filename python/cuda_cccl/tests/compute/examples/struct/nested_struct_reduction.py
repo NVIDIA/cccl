@@ -57,7 +57,9 @@ d_output = cp.empty(1, dtype=Particle.dtype)
 h_init = Particle(0, Point(0, 0))
 
 # Perform the reduction
-cuda.compute.reduce_into(d_input, d_output, sum_particles, num_items, h_init)
+cuda.compute.reduce_into(
+    d_in=d_input, d_out=d_output, num_items=num_items, op=sum_particles, h_init=h_init
+)
 
 # Verify the result
 result = d_output.get()[0]

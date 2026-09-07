@@ -65,8 +65,7 @@ template <class T, class... Args>
 TEST_FUNC void test()
 {
   static_assert(cuda::std::constructible_from<T, Args...>
-                  == (cuda::std::destructible<T> && cuda::std::is_constructible_v<T, Args...>),
-                "");
+                == (cuda::std::destructible<T> && cuda::std::is_constructible_v<T, Args...>) );
 }
 
 TEST_FUNC void test()

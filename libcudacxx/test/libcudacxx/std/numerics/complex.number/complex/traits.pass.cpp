@@ -28,27 +28,31 @@ TEST_FUNC void test()
   using C = cuda::std::complex<T>;
 
   static_assert(cuda::std::is_default_constructible_v<C>);
-  static_assert(!cuda::std::is_trivially_default_constructible_v<C>);
+  static_assert(!cuda::std::is_trivially_default_constructible_v<C> || _CCCL_TILE_COMPILATION());
   static_assert(cuda::std::is_nothrow_default_constructible_v<C>);
 
   static_assert(cuda::std::is_copy_constructible_v<C>);
-  static_assert(cuda::std::is_trivially_copy_constructible_v<C> == cuda::std::is_floating_point_v<T>);
+  static_assert(
+    cuda::std::is_trivially_copy_constructible_v<C> == cuda::std::is_floating_point_v<T> || _CCCL_TILE_COMPILATION());
   static_assert(cuda::std::is_nothrow_copy_constructible_v<C>);
 
   static_assert(cuda::std::is_move_constructible_v<C>);
-  static_assert(cuda::std::is_trivially_move_constructible_v<C> == cuda::std::is_floating_point_v<T>);
+  static_assert(
+    cuda::std::is_trivially_move_constructible_v<C> == cuda::std::is_floating_point_v<T> || _CCCL_TILE_COMPILATION());
   static_assert(cuda::std::is_nothrow_move_constructible_v<C>);
 
   static_assert(cuda::std::is_copy_assignable_v<C>);
-  static_assert(cuda::std::is_trivially_copy_assignable_v<C> == cuda::std::is_floating_point_v<T>);
+  static_assert(
+    cuda::std::is_trivially_copy_assignable_v<C> == cuda::std::is_floating_point_v<T> || _CCCL_TILE_COMPILATION());
   static_assert(cuda::std::is_nothrow_copy_assignable_v<C>);
 
   static_assert(cuda::std::is_move_assignable_v<C>);
-  static_assert(cuda::std::is_trivially_move_assignable_v<C> == cuda::std::is_floating_point_v<T>);
+  static_assert(
+    cuda::std::is_trivially_move_assignable_v<C> == cuda::std::is_floating_point_v<T> || _CCCL_TILE_COMPILATION());
   static_assert(cuda::std::is_nothrow_move_assignable_v<C>);
 
   static_assert(cuda::std::is_trivially_destructible_v<C>);
-  static_assert(cuda::std::is_trivially_copyable_v<C> == cuda::std::is_floating_point_v<T>);
+  static_assert(cuda::std::is_trivially_copyable_v<C> == cuda::std::is_floating_point_v<T> || _CCCL_TILE_COMPILATION());
 }
 
 int main(int, char**)

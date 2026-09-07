@@ -50,17 +50,12 @@ struct transform_op_t
   }
 };
 
-template <typename T, typename OffsetT>
-static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T>
+static void grayscale(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   using pixel_t = rgb_t<T>;
   const auto n  = state.get_int64("Elements{io}");
-  if (sizeof(OffsetT) == 4 && n > std::numeric_limits<OffsetT>::max())
-  {
-    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
-    return;
-  }
 
   // Generate random RGB data by creating separate R, G, B vectors and combining them
   thrust::device_vector<T> r_data = generate(n);
@@ -82,7 +77,7 @@ try
   state.add_global_memory_reads<pixel_t>(n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, cuda::std::tuple{input.begin()}, output.begin(), static_cast<OffsetT>(n), transform_op_t<T>{});
+  bench_transform(state, cuda::std::tuple{input.begin()}, output.begin(), n, transform_op_t<T>{});
 }
 catch (const std::bad_alloc&)
 {
@@ -95,7 +90,7 @@ using value_types = nvbench::type_list<TUNE_T>;
 using value_types = nvbench::type_list<float, double>;
 #endif
 
-NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types, offset_types))
+NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types))
   .set_name("grayscale")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

@@ -14,9 +14,11 @@
 #include <cuda/std/functional>
 #include <cuda/stream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-min-keys-non-deterministic-unsorted
   const int k = 4;
@@ -59,7 +61,9 @@ C2H_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
   REQUIRE(output == expected);
 }
 
-C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-max-keys-non-deterministic-unsorted
   const int k = 4;
@@ -102,7 +106,9 @@ C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
   REQUIRE(output == expected);
 }
 
-C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-min-pairs-non-deterministic-unsorted
   const int k     = 4;
@@ -152,7 +158,9 @@ C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted results", "[device][device_transform]")
+CUB_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted results",
+         "[device][device_transform]",
+         CUB_SMALL)
 {
   // example-begin topk-max-pairs-non-deterministic-unsorted
   const int k     = 4;
@@ -226,27 +234,27 @@ struct decomposer_t
 };
 // example-end topk-custom-type
 
-static __host__ std::ostream& operator<<(std::ostream& os, const custom_t& self)
+__host__ std::ostream& operator<<(std::ostream& os, const custom_t& self)
 {
   return os << "{ " << self.f << ", " << self.lli << " }";
 }
 
-static __host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
+__host__ __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
 {
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }
 
-static __host__ __device__ bool operator<(const custom_t& lhs, const custom_t& rhs)
+__host__ __device__ bool operator<(const custom_t& lhs, const custom_t& rhs)
 {
   return lhs.lli == rhs.lli ? lhs.f < rhs.f : lhs.lli < rhs.lli;
 }
 
-static __host__ __device__ bool operator>(const custom_t& lhs, const custom_t& rhs)
+__host__ __device__ bool operator>(const custom_t& lhs, const custom_t& rhs)
 {
   return rhs < lhs;
 }
 
-C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
+CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", CUB_SMALL)
 {
   SECTION("MaxKeys")
   {

@@ -115,7 +115,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   struct __optional_with_a_destructor : ::cuda::std::optional<_Tp>
   {
     using ::cuda::std::optional<_Tp>::optional;
-    ~__optional_with_a_destructor() {}
+    // Use of explicit destructor is intentional. Without it, the argument may have a trivial
+    // destructor and hence would be performed by the callee.
+    ~__optional_with_a_destructor() {} // NOLINT(modernize-use-equals-default)
 
     template <class _Fn>
     _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp& __emplace_from_fn(_Fn&& __fn)
@@ -189,7 +191,7 @@ _CCCL_GLOBAL_CONSTANT auto launch_transform = __tfx::__launch_transform_t{};
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
 template <typename _Arg>
-using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
+using transformed_device_argument_t _CCCL_NODEBUG =
   __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__launch_transform_t, ::cuda::stream_ref, _Arg>>;
 #  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
 _CCCL_END_NAMESPACE_CUDA

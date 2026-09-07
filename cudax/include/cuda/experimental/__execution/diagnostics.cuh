@@ -86,17 +86,17 @@ struct _ERROR : __merror_base
   // The following aliases are to simplify error propagation
   // in the completion signatures meta-programming.
   template <class...>
-  using __call _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __call _CCCL_NODEBUG = _ERROR;
 
-  using __partitioned _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __partitioned _CCCL_NODEBUG = _ERROR;
 
   template <template <class...> class, template <class...> class>
-  using __value_types _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __value_types _CCCL_NODEBUG = _ERROR;
 
   template <template <class...> class>
-  using __error_types _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __error_types _CCCL_NODEBUG = _ERROR;
 
-  using __sends_stopped _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __sends_stopped _CCCL_NODEBUG = _ERROR;
 
   // The following operator overloads also simplify error propagation.
   _CCCL_HOST_DEVICE auto operator+() -> _ERROR;
@@ -132,7 +132,7 @@ inline constexpr bool __type_contains_error =
 #endif
 
 template <class... _Ts>
-using __type_find_error _CCCL_NODEBUG_ALIAS = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
+using __type_find_error _CCCL_NODEBUG = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
 
 template <class... _What>
 struct __not_a_sender
@@ -140,7 +140,7 @@ struct __not_a_sender
   using sender_concept = sender_t;
 
   template <class...>
-  _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return execution::invalid_completion_signature<_What...>();
   }
@@ -151,17 +151,17 @@ struct __not_a_scheduler
 {
   using scheduler_concept = scheduler_t;
 
-  _CCCL_API auto schedule() noexcept
+  _CCCL_HOST_DEVICE_API auto schedule() noexcept
   {
     return __not_a_sender<_What...>{};
   }
 
-  _CCCL_API constexpr bool operator==(__not_a_scheduler) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr bool operator==(__not_a_scheduler) const noexcept
   {
     return true;
   }
 
-  _CCCL_API constexpr bool operator!=(__not_a_scheduler) const noexcept
+  _CCCL_HOST_DEVICE_API constexpr bool operator!=(__not_a_scheduler) const noexcept
   {
     return false;
   }

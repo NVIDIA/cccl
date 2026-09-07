@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 // Remove after bump to version 4
 #include <cuda/barrier>
 
@@ -26,12 +29,12 @@ TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 using nvcuda::experimental::pipeline;
 
-TEST_FUNC bool operator==(int2 a, int2 b)
+TEST_HOST_DEVICE_FUNC bool operator==(int2 a, int2 b)
 {
   return a.x == b.x && a.y == b.y;
 }
 
-TEST_FUNC bool operator==(int4 a, int4 b)
+TEST_HOST_DEVICE_FUNC bool operator==(int4 a, int4 b)
 {
   return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 }

@@ -46,6 +46,7 @@ public:
   {}
 
   // invoke
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _ArgTypes>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 invoke_result_t<type, _ArgTypes...> operator()(_ArgTypes&&... __args) const
   {

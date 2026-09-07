@@ -141,8 +141,7 @@ TEST_FUNC void test_bullet_three_one_imp()
   static_assert((cuda::std::is_same<typename cuda::std::common_type<T, U>::type, Expect>::value));
   static_assert((cuda::std::is_same<typename cuda::std::common_type<U, T>::type, Expect>::value));
   static_assert((cuda::std::is_same<typename cuda::std::common_type<T, U>::type,
-                                    typename cuda::std::common_type<DT, DU>::type>::value),
-                "");
+                                    typename cuda::std::common_type<DT, DU>::type>::value));
 }
 
 // (4.3)
@@ -174,15 +173,13 @@ TEST_FUNC void test_bullet_three_one()
     using T1     = const void;
     using Expect = void;
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value));
-    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
-                  "");
+    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value));
   }
   {
     using T1     = int const[];
     using Expect = int const*;
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value));
-    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
-                  "");
+    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value));
   }
 }
 
@@ -229,8 +226,7 @@ TEST_FUNC void test_bullet_three_three()
     using T1     = void;
     using Expect = void;
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value));
-    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
-                  "");
+    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value));
   }
 }
 
@@ -252,19 +248,15 @@ TEST_FUNC void test_bullet_three_four()
 #if TEST_STD_VER >= 2020
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<int, bad_reference_wrapper<int>>, int>);
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double>, double>);
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<const bad_reference_wrapper<double>, double>, double>,
-                "");
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<volatile bad_reference_wrapper<double>, double>, double>,
-                "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<const bad_reference_wrapper<double>, double>, double>);
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<volatile bad_reference_wrapper<double>, double>, double>);
   static_assert(
-    cuda::std::is_same_v<cuda::std::common_type_t<const volatile bad_reference_wrapper<double>, double>, double>, "");
+    cuda::std::is_same_v<cuda::std::common_type_t<const volatile bad_reference_wrapper<double>, double>, double>);
 
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, const double>, double>,
-                "");
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, volatile double>, double>,
-                "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, const double>, double>);
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, volatile double>, double>);
   static_assert(
-    cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, const volatile double>, double>, "");
+    cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, const volatile double>, double>);
 
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>&, double>, double>);
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double&>, double>);
@@ -370,8 +362,7 @@ int main(int, char**)
   static_assert((cuda::std::is_same<cuda::std::common_type<const int, const int>::type, int>::value));
 
   // Test that we're really variadic in C++11
-  static_assert(cuda::std::is_same<cuda::std::common_type<int, int, int, int, int, int, int, int>::type, int>::value,
-                "");
+  static_assert(cuda::std::is_same<cuda::std::common_type<int, int, int, int, int, int, int, int>::type, int>::value);
 
 #if 0 // TEST_STD_VER > 2020 Not Implemented
     // P2321

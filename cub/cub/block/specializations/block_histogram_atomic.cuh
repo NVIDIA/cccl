@@ -53,7 +53,7 @@ struct BlockHistogramAtomic
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
-      atomicAdd(histogram + items[i], 1);
+      atomicAdd_block(histogram + items[i], 1);
     }
   }
 };

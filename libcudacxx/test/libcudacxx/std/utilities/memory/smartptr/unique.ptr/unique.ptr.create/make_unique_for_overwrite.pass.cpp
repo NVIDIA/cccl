@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 // template<class T>
 //   constexpr unique_ptr<T> make_unique_for_overwrite(); // T is not array
 //
@@ -21,13 +24,21 @@
 #include <cuda/std/concepts>
 // #include <cuda/std/cstring>
 #include <cuda/std/__memory_>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
 
+template <class T, class Void, class... Args>
+inline constexpr bool HasMakeUniqueForOverwriteImpl = false;
 template <class T, class... Args>
-_CCCL_CONCEPT HasMakeUniqueForOverwrite = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
-  (cuda::std::make_unique_for_overwrite<T>(cuda::std::forward<Args>(args)...)));
+inline constexpr bool HasMakeUniqueForOverwriteImpl<
+  T,
+  cuda::std::void_t<decltype(cuda::std::make_unique_for_overwrite<T>(cuda::std::declval<Args>()...))>,
+  Args...> = true;
+
+template <class T, class... Args>
+inline constexpr bool HasMakeUniqueForOverwrite = HasMakeUniqueForOverwriteImpl<T, void, Args...>;
 
 struct Foo
 {
@@ -64,12 +75,12 @@ static_assert(!HasMakeUniqueForOverwrite<Foo[2], int, int>);
 struct WithDefaultConstructor
 {
   int i;
-  TEST_FUNC constexpr WithDefaultConstructor()
+  TEST_HOST_DEVICE_FUNC constexpr WithDefaultConstructor()
       : i(5)
   {}
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   // single int
   {
@@ -117,21 +128,21 @@ TEST_GLOBAL_VARIABLE bool WithCustomNew_customNewArrCalled = false;
 
 struct WithCustomNew
 {
-  TEST_FUNC static void* operator new(cuda::std::size_t n)
+  TEST_HOST_DEVICE_FUNC static void* operator new(cuda::std::size_t n)
   {
     WithCustomNew_customNewCalled = true;
     return ::operator new(n);
     ;
   }
 
-  TEST_FUNC static void* operator new[](cuda::std::size_t n)
+  TEST_HOST_DEVICE_FUNC static void* operator new[](cuda::std::size_t n)
   {
     WithCustomNew_customNewArrCalled = true;
     return ::operator new[](n);
   }
 };
 
-TEST_FUNC void testCustomNew()
+TEST_HOST_DEVICE_FUNC void testCustomNew()
 {
   // single with custom operator new
   {

@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/determinism.h>
+#include <cuda/execution.determinism.h>
 
 #include "test_macros.h"
 

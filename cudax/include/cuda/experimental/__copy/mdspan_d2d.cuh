@@ -33,6 +33,7 @@
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -43,11 +44,10 @@
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
-#  include <cuda/std/__type_traits/remove_cvref.h>
 
 #  include <cuda/experimental/__copy/copy_contiguous.cuh>
 #  include <cuda/experimental/__copy/copy_optimized.cuh>
+#  include <cuda/experimental/__copy/copy_shared_memory.cuh>
 #  include <cuda/experimental/__copy/dispatch_by_vector.cuh>
 #  include <cuda/experimental/__copy/tensor_copy_utils.cuh>
 #  include <cuda/experimental/__copy/vector_access.cuh>
@@ -124,7 +124,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     && ::cuda::std::is_convertible_v<_AccessorPolicyOut, __default_accessor_out>;
   constexpr bool __are_byte_copyable =
     ::cuda::std::is_same_v<::cuda::std::remove_cv_t<_TpIn>, ::cuda::std::remove_cv_t<_TpOut>>
-    && ::cuda::std::is_trivially_copyable_v<_TpIn> //
+    && ::cuda::is_trivially_copyable_v<_TpIn> //
     && __have_default_accessors;
 
   if (__tensor_size == 1 && __are_byte_copyable)
@@ -186,7 +186,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       if (static_cast<::cuda::std::size_t>(__tile_size) == __tensor_size)
       {
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           CUB_NS_QUALIFIER::DeviceTransform::Transform,
           "cub::DeviceTransform::Transform failed",
           __src_simplified.__data,
@@ -228,11 +228,26 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         return;
       }
     }
-    // (4) transpose case, TODO: next PR
-    // if (cudax::__use_shared_mem_kernel(__src_normalized, __dst_normalized))
-    //{
-    //  cudax::copy_shared_mem(__src_normalized, __dst_normalized, __stream);
-    //}
+    // (4) transpose case (rank capped to avoid excessive register pressure in the kernel)
+    if constexpr (__max_rank >= 2 && __max_rank <= cudax::__max_shared_mem_kernel_rank)
+    {
+      if (__src_simplified.__rank == 2) // Optimize when the actual rank is 2
+      {
+        const auto __src_rank2 = cudax::__narrow_raw_tensor_rank<2>(__src_simplified);
+        const auto __dst_rank2 = cudax::__narrow_raw_tensor_rank<2>(__dst_simplified);
+        if (cudax::__use_shared_mem_kernel(__src_rank2, __dst_rank2))
+        {
+          cudax::__launch_copy_shared_mem_kernel(__src_rank2, __dst_rank2, __stream, __src.accessor(), __dst.accessor());
+          return;
+        }
+      }
+      if (cudax::__use_shared_mem_kernel(__src_simplified, __dst_simplified))
+      {
+        cudax::__launch_copy_shared_mem_kernel(
+          __src_simplified, __dst_simplified, __stream, __src.accessor(), __dst.accessor());
+        return;
+      }
+    }
     // (5) generic case (fallback)
     cudax::__copy_optimized(
       __src_normalized,

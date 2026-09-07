@@ -243,7 +243,7 @@ public:
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
              ,
-             ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>* = 0
+             ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 
@@ -255,6 +255,8 @@ public:
 
   /*! \post <tt>*this == make_error_code(e)</tt>.
    */
+  // The enable_if_t below is error_code& after substitution, as the MSVC branch spells out.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   template <typename ErrorCodeEnum>
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
@@ -263,6 +265,7 @@ public:
   error_code&
 #endif // !_CCCL_COMPILER(MSVC)
   operator=(ErrorCodeEnum e);
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! \post <tt>value() == 0</tt> and <tt>category() == system_category()</tt>.
    */
@@ -314,12 +317,12 @@ inline error_code make_error_code(errc::errc_t e);
  */
 inline bool operator<(const error_code& lhs, const error_code& rhs);
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 /*! Effects: <tt>os << ec.category().name() << ':' << ec.value()</tt>.
  */
 template <typename charT, typename traits>
 std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const error_code& ec);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 // [19.5.3] class error_condition
 
@@ -356,7 +359,7 @@ public:
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
                   ,
-                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value>* = 0
+                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 
@@ -376,6 +379,9 @@ public:
    *  \note This operator shall not participate in overload resolution unless
    *        <tt>is_error_condition_enum<ErrorConditionEnum>::value</tt> is <tt>true</tt>.
    */
+  // The enable_if_t below is error_condition& after substitution, as the MSVC branch
+  // spells out.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   template <typename ErrorConditionEnum>
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
@@ -384,6 +390,7 @@ public:
   error_condition&
 #endif // !_CCCL_COMPILER(MSVC)
   operator=(ErrorConditionEnum e);
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Clears this \p error_code object.
    *  \post <tt>value == 0</tt>

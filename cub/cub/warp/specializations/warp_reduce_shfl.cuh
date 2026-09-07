@@ -23,16 +23,13 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_redux.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -41,43 +38,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename T, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T reduce_op_sync(T input, const uint32_t mask, ReductionOp)
-{
-  static_assert(::cuda::std::is_integral_v<T>, "T must be an integral type");
-  static_assert(sizeof(T) <= sizeof(unsigned), "T must be less than or equal to unsigned");
-  using promoted_t = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
-  if constexpr (is_cuda_maximum_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_max_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_min_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_add_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_and_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_or_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
-  {
-    return static_cast<T>(__reduce_xor_sync(mask, static_cast<promoted_t>(input)));
-  }
-  else
-  {
-    _CCCL_UNREACHABLE();
-    return T{};
-  }
-}
-
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -484,7 +444,7 @@ struct WarpReduceShfl
   /**
    * @brief Reduction
    *
-   * @tparam ALL_LANES_VALID
+   * @tparam AllValidLanes
    *   Whether all lanes in each warp are contributing a valid fold of items
    *
    * @param[in] input
@@ -496,21 +456,28 @@ struct WarpReduceShfl
    * @param[in] reduction_op
    *   Binary reduction operator
    */
-  template <bool ALL_LANES_VALID, typename ReductionOp>
+  template <bool AllValidLanes, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    if constexpr (ALL_LANES_VALID && ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
-                  && (is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
-                      || is_cuda_std_bitwise_v<ReductionOp, T>) )
+    constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
+    const int last_lane         = (AllValidLanes) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
+    T reduce_value              = input;
+
+    if constexpr (IS_ARCH_WARP && (AllValidLanes || has_identity) && is_warp_redux_op_supported<ReductionOp, T>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (return reduce_op_sync(input, member_mask, reduction_op);))
+      if constexpr (!AllValidLanes)
+      {
+        reduce_value = lane_id <= last_lane ? input : ::cuda::identity_element<ReductionOp, T>();
+      }
+      if (const auto output = cub::detail::warp_redux(reduce_value, member_mask, reduction_op))
+      {
+        return *output;
+      }
     }
-    T output = input;
     // Template-iterate reduction steps
-    const int last_lane = (ALL_LANES_VALID) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
-    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
-    return output;
+    ReduceStep(reduce_value, reduction_op, last_lane, constant_v<0>);
+    return reduce_value;
   }
 
   /**

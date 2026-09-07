@@ -180,7 +180,7 @@ struct serial_reduce_by_key_body
     const size_type interval_idx = r.begin();
 
     const size_type offset_to_first = interval_size * interval_idx;
-    const size_type offset_to_last  = ::cuda::std::min(n, offset_to_first + interval_size);
+    const size_type offset_to_last  = (::cuda::std::min) (n, offset_to_first + interval_size);
 
     Iterator1 my_keys_first    = keys_first + offset_to_first;
     Iterator1 my_keys_last     = keys_first + offset_to_last;

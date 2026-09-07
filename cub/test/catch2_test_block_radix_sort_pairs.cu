@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "catch2_test_block_radix_sort.cuh"
-#include <c2h/catch2_test_helper.h> // _CCCL_HAS_NVFP8()
+#include "cub_test_macros.h" // _CCCL_HAS_NVFP8()
 
 // %PARAM% TEST_MEMOIZE mem 0:1
 // %PARAM% TEST_ALGORITHM alg 0:1
@@ -78,8 +78,9 @@ bool binary_equal(
   return thrust::equal(c2h::device_policy, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
 }
 
-C2H_TEST("Block radix sort can sort pairs",
+CUB_TEST("Block radix sort can sort pairs",
          "[radix][sort][block]",
+         CUB_SMALL,
          key_types,
          no_value_types,
          items_per_thread,
@@ -130,8 +131,9 @@ C2H_TEST("Block radix sort can sort pairs",
   REQUIRE(binary_equal(d_output_values, h_reference.second, d_input_values));
 }
 
-C2H_TEST("Block radix sort can sort pairs in descending order",
+CUB_TEST("Block radix sort can sort pairs in descending order",
          "[radix][sort][block]",
+         CUB_SMALL,
          key_types,
          no_value_types,
          items_per_thread,
@@ -182,8 +184,9 @@ C2H_TEST("Block radix sort can sort pairs in descending order",
   REQUIRE(binary_equal(d_output_values, h_reference.second, d_input_values));
 }
 
-C2H_TEST("Block radix sort can sort mixed pairs",
+CUB_TEST("Block radix sort can sort mixed pairs",
          "[radix][sort][block]",
+         CUB_SMALL,
          key_types,
          value_types,
          items_per_thread,
@@ -234,8 +237,9 @@ C2H_TEST("Block radix sort can sort mixed pairs",
   REQUIRE(d_output_values == h_reference.second);
 }
 
-C2H_TEST("Block radix sort can sort mixed pairs in descending order",
+CUB_TEST("Block radix sort can sort mixed pairs in descending order",
          "[radix][sort][block]",
+         CUB_SMALL,
          key_types,
          value_types,
          items_per_thread,

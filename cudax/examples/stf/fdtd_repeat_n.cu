@@ -19,6 +19,7 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <algorithm>
 #include <iostream>
 
 #include <stdlib.h>
@@ -78,7 +79,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   const double MU      = 1.256e-6; // Permeability of free space
 
   // CFL condition DT <= min(DX, DY, DZ) * sqrt(epsilon_max * mu_max)
-  double DT = 0.25 * min(min(DX, DY), DZ) * sqrt(EPSILON * MU);
+  double DT = 0.25 * std::min(std::min(DX, DY), DZ) * sqrt(EPSILON * MU);
 
   // Initialize E fields
   ctx.parallel_for(data_shape, lEx.write(), lEy.write(), lEz.write())

@@ -44,12 +44,12 @@ struct scalar_to_vec_t<VectorT, ::cuda::std::void_t<decltype(VectorT::x)>>
   }
 };
 
-template <int LogicalWarpThreads, int ItemsPerThread, int BlockThreads, typename IteratorT>
+template <int LogicalWarpThreads, int ItemsPerThread, int ThreadsPerBlock, typename IteratorT>
 void fill_striped(IteratorT it)
 {
   using T = cub::detail::it_value_t<IteratorT>;
 
-  constexpr int warps_in_block = BlockThreads / LogicalWarpThreads;
+  constexpr int warps_in_block = ThreadsPerBlock / LogicalWarpThreads;
   constexpr int items_per_warp = LogicalWarpThreads * ItemsPerThread;
   scalar_to_vec_t<T> convert;
 

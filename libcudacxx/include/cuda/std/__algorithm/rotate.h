@@ -238,7 +238,7 @@ _CCCL_API constexpr pair<_Iterator, _Iterator> __rotate(_Iterator __first, _Iter
     return _Ret(::cuda::std::move(__first), ::cuda::std::move(__last_iter));
   }
 
-  using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_Iterator>;
+  using _IterCategory = __iterator_traits_category_or_concept_t<_Iterator>;
   auto __result       = ::cuda::std::__rotate_impl<_AlgPolicy>(
     ::cuda::std::move(__first), ::cuda::std::move(__middle), __last_iter, _IterCategory());
 

@@ -34,7 +34,7 @@ namespace cuda_cub::detail
 class cuda_error_category : public error_category
 {
 public:
-  inline cuda_error_category() {}
+  inline cuda_error_category() = default;
 
   inline const char* name() const override
   {

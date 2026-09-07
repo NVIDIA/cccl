@@ -89,7 +89,7 @@ template <class _Ap, class _Bp, class = void>
 struct __common_ref;
 
 template <class _Xp, class _Yp>
-using __common_ref_t _CCCL_NODEBUG_ALIAS = typename __common_ref<_Xp, _Yp>::__type;
+using __common_ref_t _CCCL_NODEBUG = typename __common_ref<_Xp, _Yp>::__type;
 
 template <class _Xp, class _Yp>
 using __cv_cond_res = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>;
@@ -162,7 +162,7 @@ template <class...>
 struct common_reference;
 
 template <class... _Types>
-using common_reference_t _CCCL_NODEBUG_ALIAS = typename common_reference<_Types...>::type;
+using common_reference_t _CCCL_NODEBUG = typename common_reference<_Types...>::type;
 
 template <class, class, class = void>
 inline constexpr bool __has_common_reference = false;
@@ -209,12 +209,12 @@ struct __common_reference_sub_bullet1<
 
 // sub-bullet 2 - Otherwise, if basic_common_reference<remove_cvref_t<T1>, remove_cvref_t<T2>, XREF(T1), XREF(T2)>::type
 // is well-formed, then the member typedef `type` denotes that type.
-template <class, class, template <class> class, template <class> class>
+template <class, class, template <class> class, template <class> class, class = void>
 struct basic_common_reference
 {};
 
 template <class _Tp, class _Up>
-using __basic_common_reference_t _CCCL_NODEBUG_ALIAS =
+using __basic_common_reference_t _CCCL_NODEBUG =
   typename basic_common_reference<remove_cvref_t<_Tp>,
                                   remove_cvref_t<_Up>,
                                   __xref<_Tp>::template __call,

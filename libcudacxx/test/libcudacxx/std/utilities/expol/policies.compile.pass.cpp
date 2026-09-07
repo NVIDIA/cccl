@@ -18,11 +18,15 @@
 // inline constexpr unsequenced_policy unseq = implementation-defined; // since C++20
 
 // UNSUPPORTED: libcpp-has-no-incomplete-pstl
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
 
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wattributes")
 
 template <class T, class Policy>
 inline constexpr bool is_same_v = cuda::std::is_same_v<cuda::std::remove_cvref_t<T>, Policy>;

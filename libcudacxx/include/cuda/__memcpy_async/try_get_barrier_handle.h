@@ -36,13 +36,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
 template <thread_scope _Sco, typename _CompF>
-_CCCL_API inline ::cuda::std::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>&)
+_CCCL_HOST_DEVICE_API inline ::cuda::std::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>&)
 {
   return nullptr;
 }
 
 template <>
-_CCCL_API inline ::cuda::std::uint64_t*
+_CCCL_HOST_DEVICE_API inline ::cuda::std::uint64_t*
 __try_get_barrier_handle<::cuda::thread_scope_block, ::cuda::std::__empty_completion>(
   [[maybe_unused]] barrier<thread_scope_block>& __barrier)
 {

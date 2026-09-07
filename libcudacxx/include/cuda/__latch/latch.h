@@ -32,7 +32,7 @@ template <thread_scope _Sco>
 class latch : public ::cuda::std::__latch_base<_Sco>
 {
 public:
-  _CCCL_API constexpr latch(::cuda::std::ptrdiff_t __count)
+  _CCCL_HOST_DEVICE_API constexpr latch(::cuda::std::ptrdiff_t __count)
       : ::cuda::std::__latch_base<_Sco>(__count)
   {}
 };

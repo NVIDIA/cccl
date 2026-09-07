@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// UNSUPPORTED: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // template<class I>
 // unspecified iter_swap;
 
@@ -69,18 +73,18 @@ TEST_FUNC void ensureVoidCast(NodiscardIterSwap& a, NodiscardIterSwap& b)
 struct HasRangesSwap
 {
   int& value_;
-  TEST_FUNC constexpr explicit HasRangesSwap(int& value)
+  TEST_HOST_DEVICE_FUNC constexpr explicit HasRangesSwap(int& value)
       : value_(value)
   {
     assert(value == 0);
   }
 
-  TEST_FUNC friend constexpr void swap(HasRangesSwap& a, HasRangesSwap& b)
+  TEST_HOST_DEVICE_FUNC friend constexpr void swap(HasRangesSwap& a, HasRangesSwap& b)
   {
     a.value_ = 1;
     b.value_ = 1;
   }
-  TEST_FUNC friend constexpr void swap(HasRangesSwap& a, int& b)
+  TEST_HOST_DEVICE_FUNC friend constexpr void swap(HasRangesSwap& a, int& b)
   {
     a.value_ = 2;
     b        = 2;
@@ -92,11 +96,11 @@ struct HasRangesSwapWrapper
   using value_type = HasRangesSwap;
 
   HasRangesSwap& value_;
-  TEST_FUNC constexpr explicit HasRangesSwapWrapper(HasRangesSwap& value)
+  TEST_HOST_DEVICE_FUNC constexpr explicit HasRangesSwapWrapper(HasRangesSwap& value)
       : value_(value)
   {}
 
-  TEST_FUNC constexpr HasRangesSwap& operator*() const
+  TEST_HOST_DEVICE_FUNC constexpr HasRangesSwap& operator*() const
   {
     return value_;
   }
@@ -112,7 +116,7 @@ struct B;
 struct A
 {
   bool value = false;
-  TEST_FUNC constexpr A& operator=(const B&)
+  TEST_HOST_DEVICE_FUNC constexpr A& operator=(const B&)
   {
     value = true;
     return *this;
@@ -122,7 +126,7 @@ struct A
 struct B
 {
   bool value = false;
-  TEST_FUNC constexpr B& operator=(const A&)
+  TEST_HOST_DEVICE_FUNC constexpr B& operator=(const A&)
   {
     value = true;
     return *this;
@@ -141,7 +145,7 @@ struct MoveOnly1
   MoveOnly1(const MoveOnly1&)            = delete;
   MoveOnly1& operator=(const MoveOnly1&) = delete;
 
-  TEST_FUNC constexpr MoveOnly1& operator=(MoveOnly2&&)
+  TEST_HOST_DEVICE_FUNC constexpr MoveOnly1& operator=(MoveOnly2&&)
   {
     value = true;
     return *this;
@@ -158,14 +162,14 @@ struct MoveOnly2
   MoveOnly2(const MoveOnly2&)            = delete;
   MoveOnly2& operator=(const MoveOnly2&) = delete;
 
-  TEST_FUNC constexpr MoveOnly2& operator=(MoveOnly1&&)
+  TEST_HOST_DEVICE_FUNC constexpr MoveOnly2& operator=(MoveOnly1&&)
   {
     value = true;
     return *this;
   };
 };
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   {
     int value1 = 0;
@@ -204,8 +208,7 @@ TEST_FUNC constexpr bool test()
     cuda::std::ranges::iter_swap(&g, &h);
     assert(g.value && h.value);
   }
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
+#if TEST_CUDA_COMPILER(CLANG) // NVCC has issues here, where it generates different results for different versions
   {
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
@@ -218,8 +221,7 @@ TEST_FUNC constexpr bool test()
       assert(arr[0].moves() == 1 && arr[1].moves() == 2);
     }
   }
-#  endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
-#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // TEST_CUDA_COMPILER(CLANG)
   {
     int buff[2] = {1, 2};
     cuda::std::ranges::iter_swap(buff + 0, buff + 1);

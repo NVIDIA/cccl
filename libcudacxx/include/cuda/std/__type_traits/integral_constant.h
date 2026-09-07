@@ -34,7 +34,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
   {
     return value;
   }
-  _CCCL_API constexpr value_type operator()() const noexcept
+  _CCCL_API constexpr value_type _CCCL_STATIC_CALL_OPERATOR() noexcept
   {
     return value;
   }

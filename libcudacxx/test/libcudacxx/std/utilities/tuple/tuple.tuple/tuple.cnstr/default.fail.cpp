@@ -6,10 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Before GCC 6, aggregate initialization kicks in.
-// See https://stackoverflow.com/q/41799015/627587.
-// UNSUPPORTED: gcc-5
-
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;

@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 #define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 #include <cuda/mdspan>
 #include <cuda/std/type_traits>
@@ -28,14 +29,18 @@ TEST_FUNC void test_submdspan(int* ptr)
   unused(submd);
 }
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("managed_array") cannot be used in tile code
 _CCCL_DEVICE __managed__ int managed_array[] = {1, 2, 3, 4};
+#endif // !_CCCL_TILE_COMPILATION()
 
 TEST_FUNC void test_submdspan()
 {
   int array[] = {1, 2, 3, 4};
   test_submdspan<cuda::host_mdspan<int, cuda::std::dims<1>>>(array);
   test_submdspan<cuda::device_mdspan<int, cuda::std::dims<1>>>(array);
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("managed_array") cannot be used in tile code
   test_submdspan<cuda::managed_mdspan<int, cuda::std::dims<1>>>(managed_array);
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 int main(int, char**)

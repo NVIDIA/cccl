@@ -9,8 +9,8 @@
 #include <cuda/std/limits>
 
 #include "catch2_test_warp_scan_partial_helper.cuh"
+#include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/catch2_test_helper.h>
 
 using invalid_types        = c2h::type_list<segment>;
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 2>;
@@ -58,7 +58,8 @@ struct merge_aggregate_op_t
         thread_data, thread_data, merge_segments_op{error_flag_ptr}, valid_items, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LogicalWarpThreads == m_target_thread_id)
     {
@@ -112,7 +113,8 @@ struct merge_init_value_aggregate_op_t
         thread_data, thread_data, initial_value, merge_segments_op{error_flag_ptr}, valid_items, warp_aggregate);
     }
 
-    const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
+    const int tid =
+      cub::RowMajorTid(static_cast<int>(blockDim.x), static_cast<int>(blockDim.y), static_cast<int>(blockDim.z));
 
     if (tid % LogicalWarpThreads == m_target_thread_id)
     {
@@ -147,8 +149,12 @@ struct merge_init_value_scan_op_t
   }
 };
 
-C2H_TEST(
-  "Partial warp scan does not apply op to invalid elements", "[scan][warp]", invalid_types, logical_warp_threads, modes)
+CUB_TEST("Partial warp scan does not apply op to invalid elements",
+         "[scan][warp]",
+         CUB_SMALL,
+         invalid_types,
+         logical_warp_threads,
+         modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -168,7 +174,7 @@ C2H_TEST(
     tuple_to_segment_op{});
   for (size_t i = 0; i < params::tile_size; i += params::logical_warp_threads)
   {
-    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + i);
+    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + static_cast<std::ptrdiff_t>(i));
   }
 
   c2h::device_vector<bool> error_flag(1);
@@ -196,8 +202,9 @@ C2H_TEST(
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Partial warp scan does not apply op to invalid elements and returns valid warp aggregate",
+CUB_TEST("Partial warp scan does not apply op to invalid elements and returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          invalid_types,
          logical_warp_threads,
          modes)
@@ -221,7 +228,7 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and returns va
     tuple_to_segment_op{});
   for (size_t i = 0; i < params::tile_size; i += params::logical_warp_threads)
   {
-    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + i);
+    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + static_cast<std::ptrdiff_t>(i));
   }
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::logical_warp_threads - 1)));
@@ -260,8 +267,9 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and returns va
   }
 }
 
-C2H_TEST("Partial warp scan does not apply op to invalid elements and works with initial value",
+CUB_TEST("Partial warp scan does not apply op to invalid elements and works with initial value",
          "[scan][warp]",
+         CUB_SMALL,
          invalid_types,
          logical_warp_threads,
          modes)
@@ -284,7 +292,7 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and works with
     tuple_to_segment_op{});
   for (size_t i = 0; i < params::tile_size; i += params::logical_warp_threads)
   {
-    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + i);
+    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + static_cast<std::ptrdiff_t>(i));
   }
 
   const type initial_value = segment{0, 1};
@@ -305,8 +313,9 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and works with
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Partial warp scan with initial value does not apply op to invalid elements and returns valid warp aggregate",
+CUB_TEST("Partial warp scan with initial value does not apply op to invalid elements and returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          invalid_types,
          logical_warp_threads,
          modes)
@@ -330,7 +339,7 @@ C2H_TEST("Partial warp scan with initial value does not apply op to invalid elem
     tuple_to_segment_op{});
   for (size_t i = 0; i < params::tile_size; i += params::logical_warp_threads)
   {
-    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + i);
+    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + static_cast<std::ptrdiff_t>(i));
   }
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::logical_warp_threads - 1)));
@@ -360,7 +369,10 @@ C2H_TEST("Partial warp scan with initial value does not apply op to invalid elem
   }
 }
 
-C2H_TEST("Partial warp combination scan does not apply op to invalid elements", "[scan][warp]", logical_warp_threads)
+CUB_TEST("Partial warp combination scan does not apply op to invalid elements",
+         "[scan][warp]",
+         CUB_SMALL,
+         logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
@@ -383,7 +395,7 @@ C2H_TEST("Partial warp combination scan does not apply op to invalid elements", 
     tuple_to_segment_op{});
   for (size_t i = 0; i < tile_size; i += logical_warp_threads)
   {
-    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + i);
+    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + static_cast<std::ptrdiff_t>(i));
   }
 
   c2h::device_vector<bool> error_flag(1);
@@ -419,8 +431,9 @@ C2H_TEST("Partial warp combination scan does not apply op to invalid elements", 
   REQUIRE(h_exclusive_out == d_exclusive_out);
 }
 
-C2H_TEST("Partial warp combination custom scan does not apply op to invalid elements and works with initial value",
+CUB_TEST("Partial warp combination custom scan does not apply op to invalid elements and works with initial value",
          "[scan][warp]",
+         CUB_SMALL,
          logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();
@@ -444,7 +457,7 @@ C2H_TEST("Partial warp combination custom scan does not apply op to invalid elem
     tuple_to_segment_op{});
   for (size_t i = 0; i < tile_size; i += logical_warp_threads)
   {
-    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + i);
+    thrust::copy(in_it, in_it + bounded_valid_items, d_in.begin() + static_cast<std::ptrdiff_t>(i));
   }
 
   const type initial_value = segment{0, 1};

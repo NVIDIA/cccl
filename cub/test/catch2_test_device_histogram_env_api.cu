@@ -7,15 +7,16 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/stream>
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-even-env
   auto d_samples   = thrust::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
@@ -27,7 +28,6 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histog
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::HistogramEven(
     thrust::raw_pointer_cast(d_samples.data()),
@@ -36,7 +36,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histog
     lower_level,
     upper_level,
     num_samples,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::HistogramEven failed with status: " << error << '\n';
@@ -50,7 +50,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histog
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-even-2d-env
   // 2D region of interest: 2 rows, 3 samples per row, row stride includes 1 padding element
@@ -67,7 +67,6 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[h
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::HistogramEven(
     thrust::raw_pointer_cast(d_samples.data()),
@@ -78,7 +77,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[h
     num_row_samples,
     num_rows,
     row_stride_bytes,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::HistogramEven (2D) failed with status: " << error << '\n';
@@ -93,7 +92,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[h
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-range-env
   auto d_samples   = thrust::device_vector<float>{2.2f, 6.1f, 7.5f, 2.9f, 3.5f, 0.3f, 2.9f, 2.1f};
@@ -104,7 +103,6 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histo
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::HistogramRange(
     thrust::raw_pointer_cast(d_samples.data()),
@@ -112,7 +110,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histo
     num_levels,
     thrust::raw_pointer_cast(d_levels.data()),
     num_samples,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::HistogramRange failed with status: " << error << '\n';
@@ -126,7 +124,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histo
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin histogram-range-2d-env
   // 2D region of interest: 2 rows, 3 samples per row, row stride includes 1 padding element
@@ -142,7 +140,6 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::HistogramRange(
     thrust::raw_pointer_cast(d_samples.data()),
@@ -152,7 +149,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[
     num_row_samples,
     num_rows,
     row_stride_bytes,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::HistogramRange (2D) failed with status: " << error << '\n';
@@ -167,7 +164,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[
   REQUIRE(d_histogram == expected);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-even-1d-env
   // 4-channel RGBA pixels, histogram 3 active channels
@@ -196,10 +193,15 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_pixels, env);
+    thrust::raw_pointer_cast(d_samples.data()),
+    d_histogram,
+    num_levels,
+    lower_level,
+    upper_level,
+    num_pixels,
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::MultiHistogramEven failed with status: " << error << '\n';
@@ -220,7 +222,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
   REQUIRE(d_histogram_b == expected_b);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-even-2d-env
   // 4-channel RGBA pixels, histogram 3 active channels, 2D region
@@ -252,7 +254,6 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
     thrust::raw_pointer_cast(d_samples.data()),
@@ -263,7 +264,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
     num_row_pixels,
     num_rows,
     row_stride_bytes,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::MultiHistogramEven (2D) failed with status: " << error << '\n';
@@ -284,7 +285,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
   REQUIRE(d_histogram_b == expected_b);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-range-1d-env
   // 4-channel RGBA pixels, histogram 3 active channels
@@ -318,10 +319,9 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_pixels, env);
+    thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_pixels, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::MultiHistogramRange failed with status: " << error << '\n';
@@ -342,7 +342,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
   REQUIRE(d_histogram_b == expected_b);
 }
 
-C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)", "[histogram][env]")
+CUB_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)", "[histogram][env]", CUB_SMALL)
 {
   // example-begin multi-histogram-range-2d-env
   // 4-channel RGBA pixels, histogram 3 active channels, 2D region
@@ -381,7 +381,6 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceHistogram::MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
     thrust::raw_pointer_cast(d_samples.data()),
@@ -391,7 +390,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
     num_row_pixels,
     num_rows,
     row_stride_bytes,
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceHistogram::MultiHistogramRange (2D) failed with status: " << error << '\n';
@@ -411,3 +410,55 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
 }
+
+#if _CCCL_STD_VER >= 2020
+
+// example-begin histogram-even-policy-selector
+struct HistogramPolicySelector
+{
+  __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
+  {
+    return {.threads_per_block                = 128,
+            .pixels_per_thread                = cc > cuda::compute_capability{9, 0} ? 16 : 7,
+            .vec_size                         = 4,
+            .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
+            .load_modifier                    = cub::LOAD_LDG,
+            .rle_compress                     = false,
+            .mem_preference                   = cub::SMEM,
+            .use_work_stealing                = false,
+            .init_kernel_pdl_trigger_max_bins = 2048};
+  }
+};
+// example-end histogram-even-policy-selector
+
+CUB_TEST("cub::DeviceHistogram::HistogramEven accepts a custom policy selector", "[histogram][env]", CUB_SMALL)
+{
+  // example-begin histogram-even-tuning
+  auto d_samples   = thrust::device_vector<int>{0, 2, 1, 0, 3, 4, 2, 1};
+  int num_samples  = static_cast<int>(d_samples.size());
+  int num_levels   = 6;
+  int lower_level  = 0;
+  int upper_level  = 5;
+  auto d_histogram = thrust::device_vector<int>(num_levels - 1, 0);
+
+  const auto error = cub::DeviceHistogram::HistogramEven(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    lower_level,
+    upper_level,
+    num_samples,
+    cuda::execution::tune(HistogramPolicySelector{}));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceHistogram::HistogramEven failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{2, 2, 2, 1, 1};
+  // example-end histogram-even-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_histogram == expected);
+}
+
+#endif // _CCCL_STD_VER >= 2020

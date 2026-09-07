@@ -27,14 +27,17 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 if ($CPU_ONLY) {
-    $PRESET = "thrust-cpu"
     $artifactTag = "test_cpu"
+    $presets = @("thrust-cpu")
 } elseif ($GPU_ONLY) {
-    $PRESET = "thrust-gpu"
     $artifactTag = "test_gpu"
+    $presets = @("thrust-gpu")
 } else {
-    $PRESET = "thrust"
+    if ($env:GITHUB_ACTIONS) {
+        throw "Error: test_thrust.ps1 requires -cpu-only or -gpu-only in CI"
+    }
     $artifactTag = ""
+    $presets = @("thrust-cpu", "thrust-gpu")
 }
 
 if ($env:GITHUB_ACTIONS -and $artifactTag) {
@@ -50,7 +53,9 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
 
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-test_preset "Thrust ($PRESET)" "$PRESET"
+foreach ($preset in $presets) {
+    test_preset "Thrust ($preset)" $preset
+}
 
 If($CURRENT_PATH -ne "ci") {
     popd

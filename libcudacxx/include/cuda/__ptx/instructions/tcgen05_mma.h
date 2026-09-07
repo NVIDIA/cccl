@@ -33,6 +33,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #include <cuda/__ptx/instructions/generated/tcgen05_mma.h>
+#include <cuda/__ptx/instructions/generated/tcgen05_mma_sp.h>
 
 _CCCL_END_NAMESPACE_CUDA_PTX
 

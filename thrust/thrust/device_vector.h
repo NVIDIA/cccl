@@ -76,9 +76,8 @@ public:
 
   /*! The destructor erases the elements.
    */
-  //  Define an empty destructor to explicitly specify
-  //  its execution space qualifier, as a workaround for nvcc warning
-  ~device_vector() {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST ~device_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p device_vector with the given
    *  size.
@@ -313,6 +312,7 @@ public:
    *  \p x The first \p device_vector of interest.
    *  \p y The second \p device_vector of interest.
    */
+  // NOLINTNEXTLINE(bugprone-exception-escape)
   friend void swap(device_vector& a, device_vector& b) noexcept(noexcept(a.swap(b)))
   {
     a.swap(b);

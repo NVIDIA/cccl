@@ -37,4 +37,4 @@ struct TestSortVariableBits
     }
   }
 };
-VariableUnitTest<TestSortVariableBits, UnsignedIntegerTypes> TestSortVariableBitsInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortVariableBits, UnsignedIntegerTypes);

@@ -56,6 +56,16 @@
 #  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH()
 #endif // _CCCL_HAS_PDL()
 
+// Internal opt-out: when `_CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH` is defined, CCCL device algorithms do not launch
+// kernels with runtime (dynamic) thread-block cluster extents (in particular, CUB's DeviceBatchedTopK cluster backend
+// is disabled). Kernels with static cluster extents (`__cluster_dims__`) and the standalone `cuda::launch` cluster APIs
+// are unaffected.
+#ifdef _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#  define _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH() 0
+#else // _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+#  define _CCCL_HAS_DYNAMIC_CLUSTER_LAUNCH() 1
+#endif // _CCCL_DISABLE_DYNAMIC_CLUSTER_LAUNCH
+
 // Check whether the relocatable device code (RDC) is being generated.
 #if defined(__CUDACC_RDC__) || defined(__CLANG_RDC__) || defined(_NVHPC_RDC)
 #  define _CCCL_HAS_RDC() 1
@@ -108,6 +118,18 @@
 #else // ^^ has __block_size__ attribute ^^^ / vvv no __block_size__ attribute vvv
 #  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER)
 #endif // ^^^ no __block_size__ attribute ^^^
+
+// `_CCCL_LAUNCH_BOUNDS` plus the optional third `maxBlocksPerCluster` operand, which nvcc, nvrtc, and clang-cuda 18+
+// (clang gained `.maxclusterrank` in 18) accept on the SM90+ device pass but reject on host/pre-SM90 passes. So emit it
+// only there and fall back to the 2-argument form elsewhere -- those passes never launch clusters.
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG, >=, 18)) \
+  && _CCCL_PTX_ARCH() >= 900
+#  define _CCCL_LAUNCH_BOUNDS_CLUSTER(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER) \
+    _CCCL_LAUNCH_BOUNDS(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER)
+#else // ^^^ SM90+ device pass ^^^ / vvv host / pre-SM90 / non-CUDA pass vvv
+#  define _CCCL_LAUNCH_BOUNDS_CLUSTER(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM, _MAX_BLOCKS_PER_CLUSTER) \
+    _CCCL_LAUNCH_BOUNDS(_MAX_THREADS_PER_BLOCK, _MIN_BLOCKS_PER_SM)
+#endif // SM90+ CUDA device pass (nvcc / nvrtc / clang-cuda)
 
 #if _CCCL_HAS_CDP()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED

@@ -9,7 +9,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
-from .._cpp_compile import compile_cpp_to_ltoir
+from .._cpp_compile import compile_cpp_op_code
 from .._utils.protocols import get_size, is_device_array
 from ._base import IteratorBase
 from ._common import CUDA_PREAMBLE, ensure_iterator
@@ -64,13 +64,13 @@ class ReverseIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
+            ltoir=code,
+            extra_ltoirs=[child_op.code, *child_op.extra_code],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -91,13 +91,13 @@ class ReverseIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
+            ltoir=code,
+            extra_ltoirs=[child_op.code, *child_op.extra_code],
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -118,13 +118,13 @@ class ReverseIterator(IteratorBase):
             }}
         """).strip()
 
-        ltoir = compile_cpp_to_ltoir(source)
+        code = compile_cpp_op_code(source)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
-            ltoir=ltoir,
-            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
+            ltoir=code,
+            extra_ltoirs=[child_op.code, *child_op.extra_code],
         )
 
     @property

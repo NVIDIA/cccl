@@ -12,7 +12,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -63,7 +63,8 @@ type_pair<custom_t>
 
 using offsets = c2h::type_list<std::int32_t, std::uint32_t>;
 
-C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][device]", full_type_list, offsets)
+CUB_TEST(
+  "Device reduce works with all device interfaces", "[segmented][reduce][device]", CUB_SMALL, full_type_list, offsets)
 {
   using type_pair_t = typename c2h::get<0, TestType>;
   using input_t     = typename type_pair_t::input_t;
@@ -114,10 +115,16 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    auto d_out_it      = thrust::raw_pointer_cast(out_result.data());
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     device_segmented_reduce(
-      unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, d_offsets_it, d_offsets_it + 1, reduction_op, init_t{});
+      unwrap_it(d_in_it),
+      unwrap_it(d_out_it),
+      num_segments,
+      d_offsets_it,
+      d_offsets_it + 1,
+      reduction_op,
+      init_value_t{});
 
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -216,8 +223,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   }
 }
 
-C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
+CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
          "[segmented][reduce][device]",
+         CUB_SMALL,
          full_type_list)
 {
   using type_pair_t    = typename c2h::get<0, TestType>;
@@ -265,8 +273,8 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    using init_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    init_t init  = static_cast<init_t>(*unwrap_it(&default_constant));
+    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    init_value_t init  = static_cast<init_value_t>(*unwrap_it(&default_constant));
     device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init);
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -376,5 +384,91 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     c2h::host_vector<result_t> h_out_result(d_out_result);
     // Verify result
     REQUIRE(h_expected_result == h_out_result);
+  }
+}
+
+struct checking_reduce
+{
+  static constexpr auto sentinel = 42;
+
+  _CCCL_HOST_DEVICE_API auto operator()(int a, int b) const -> int
+  {
+    CHECK(a == sentinel);
+    CHECK(b == sentinel);
+    return sentinel;
+  }
+};
+
+struct faulting_reduce
+{
+  _CCCL_HOST_DEVICE_API auto operator()(int, int) const -> int
+  {
+    CHECK(false);
+    return 0;
+  }
+};
+
+CUB_TEST("Device segmented reduce works without initial value", "[segmented][reduce][device]", CUB_SMALL)
+{
+  SECTION("variable-size segments")
+  {
+    // segment 0: [0, 5), segment 1: [5, 5) (empty), segment 2: [5, 10)
+    c2h::device_vector<int> offsets{0, 5, 5, 10};
+    c2h::device_vector<int> input(10, checking_reduce::sentinel);
+    c2h::device_vector<int> output(3, -1);
+
+    auto d_offsets_it = thrust::raw_pointer_cast(offsets.data());
+    device_segmented_reduce(
+      thrust::raw_pointer_cast(input.data()),
+      thrust::raw_pointer_cast(output.data()),
+      3,
+      d_offsets_it,
+      d_offsets_it + 1,
+      checking_reduce{},
+      cub::detail::reduce::no_init);
+
+    CHECK(output[0] == checking_reduce::sentinel);
+    CHECK(output[1] == -1); // empty segment: output must be left untouched
+    CHECK(output[2] == checking_reduce::sentinel);
+  }
+
+  SECTION("all segments empty")
+  {
+    // both segments are [0, 0), so the reduction operator must never be invoked
+    c2h::device_vector<int> offsets{0, 0, 0};
+    c2h::device_vector<int> input(0);
+    c2h::device_vector<int> output(2, -1);
+
+    auto d_offsets_it = thrust::raw_pointer_cast(offsets.data());
+    device_segmented_reduce(
+      thrust::raw_pointer_cast(input.data()),
+      thrust::raw_pointer_cast(output.data()),
+      2,
+      d_offsets_it,
+      d_offsets_it + 1,
+      faulting_reduce{},
+      cub::detail::reduce::no_init);
+
+    CHECK(output[0] == -1);
+    CHECK(output[1] == -1);
+  }
+
+  SECTION("fixed-size segments")
+  {
+    c2h::device_vector<int> input(20, checking_reduce::sentinel);
+    c2h::device_vector<int> output(4, -1);
+
+    device_segmented_reduce(
+      thrust::raw_pointer_cast(input.data()),
+      thrust::raw_pointer_cast(output.data()),
+      4,
+      5,
+      checking_reduce{},
+      cub::detail::reduce::no_init);
+
+    for (int i = 0; i < 4; ++i)
+    {
+      CHECK(output[i] == checking_reduce::sentinel);
+    }
   }
 }

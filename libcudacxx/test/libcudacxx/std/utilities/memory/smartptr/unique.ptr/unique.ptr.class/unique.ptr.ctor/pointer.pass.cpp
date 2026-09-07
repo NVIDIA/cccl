@@ -7,6 +7,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
+// UNSUPPORTED: enable-tile
+// error: assertion failed
+
 // <memory>
 
 // unique_ptr
@@ -38,7 +45,7 @@
 // unique_ptr(pointer) ctor should only require default Deleter ctor
 
 template <bool IsArray>
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_pointer()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_pointer()
 {
   using ValueT           = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -100,7 +107,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_pointer()
   }
 }
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 void test_derived()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 void test_derived()
 {
   {
     B* p = new B;
@@ -137,17 +144,17 @@ TEST_FUNC TEST_CONSTEXPR_CXX23 void test_derived()
 
 struct NonDefaultDeleter
 {
-  TEST_FUNC NonDefaultDeleter() = delete;
-  TEST_FUNC void operator()(void*) const {}
+  TEST_HOST_DEVICE_FUNC NonDefaultDeleter() = delete;
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const {}
 };
 
 struct GenericDeleter
 {
-  TEST_FUNC void operator()(void*) const;
+  TEST_HOST_DEVICE_FUNC void operator()(void*) const;
 };
 
 template <class T>
-TEST_FUNC void TEST_CONSTEXPR_CXX23 test_sfinae()
+TEST_HOST_DEVICE_FUNC void TEST_CONSTEXPR_CXX23 test_sfinae()
 {
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
@@ -166,7 +173,7 @@ TEST_FUNC void TEST_CONSTEXPR_CXX23 test_sfinae()
   }
 }
 
-TEST_FUNC static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
+TEST_HOST_DEVICE_FUNC static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 {
   { // the constructor does not participate in overload resolution when
     // a base <-> derived conversion would occur.
@@ -199,7 +206,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
 })
 #endif // !_CCCL_CUDA_COMPILATION()
 
-TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_pointer</*IsArray*/ false>();

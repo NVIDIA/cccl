@@ -7,6 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error:calling a __host__ __device__ function in tile is not allowed
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // <cuda/std/utility>
 
 // _CCCL_TYPEID(<type>)

@@ -17,6 +17,41 @@
 
 #include "test_resource.cuh"
 
+struct default_constructible_resource
+{
+  default_constructible_resource()
+  {
+    ++constructed;
+  }
+
+  void* allocate_sync(size_t, size_t)
+  {
+    return this;
+  }
+
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
+
+  friend bool operator==(default_constructible_resource const&, default_constructible_resource const&) noexcept
+  {
+    return true;
+  }
+
+  friend bool operator!=(default_constructible_resource const&, default_constructible_resource const&) noexcept
+  {
+    return false;
+  }
+
+  static inline int constructed = 0;
+};
+
+C2H_CCCLRT_TEST("make_shared_resource default constructs resource", "[container][resource]")
+{
+  default_constructible_resource::constructed = 0;
+  auto resource                               = cuda::mr::make_shared_resource<default_constructible_resource>();
+  CHECK(default_constructible_resource::constructed == 1);
+  CHECK(resource.allocate_sync(1, 1) != nullptr);
+}
+
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource = TestType;

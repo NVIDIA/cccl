@@ -61,8 +61,7 @@ TEST_FUNC
 #if !TEST_COMPILER(GCC, <, 8)
 constexpr
 #endif // !TEST_COMPILER(GCC, <, 8)
-  bool
-  tests()
+  bool tests()
 {
   {
     using C = cuda::std::array<int, 5>;

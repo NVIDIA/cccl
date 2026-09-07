@@ -56,7 +56,7 @@ struct estimate_pi
     sum *= 4.0f;
 
     // divide by N
-    return sum / N;
+    return sum / static_cast<float>(N);
   }
 };
 
@@ -67,7 +67,7 @@ int main()
 
   float estimate = thrust::transform_reduce(
     thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi(), 0.0f, cuda::std::plus<float>());
-  estimate /= M;
+  estimate /= static_cast<float>(M);
 
   std::cout << std::setprecision(3);
   std::cout << "pi is approximately " << estimate << '\n';

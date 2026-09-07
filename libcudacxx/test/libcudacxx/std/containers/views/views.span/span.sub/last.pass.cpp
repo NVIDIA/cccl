@@ -54,11 +54,11 @@ TEST_FUNC void testRuntimeSpan(Span sp)
   assert(s1.size() == s2.size());
 }
 
-TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
-TEST_GLOBAL_VARIABLE int arr[]             = {5, 6, 7};
-
 int main(int, char**)
 {
+  constexpr int carr1[] = {1, 2, 3, 4};
+  int arr[]             = {5, 6, 7};
+
   {
     using Sp = cuda::std::span<const int>;
     static_assert(testConstexprSpan<Sp, 0>(Sp{}));

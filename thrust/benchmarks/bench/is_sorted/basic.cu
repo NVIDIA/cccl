@@ -16,7 +16,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   // set up input
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = ::cuda::std::clamp<std::size_t>(elements * common_prefix, 0ull, elements - 1);
+  const auto mismatch_point = static_cast<std::size_t>(
+    ::cuda::std::clamp(static_cast<double>(elements) * common_prefix, 0.0, static_cast<double>(elements - 1)));
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
   thrust::sequence(dinput.begin(), dinput.end(), T{0});
@@ -44,7 +45,8 @@ static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
   // set up input
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto common_prefix  = state.get_float64("MismatchAt");
-  const auto mismatch_point = ::cuda::std::clamp<std::size_t>(elements * common_prefix, 0ull, elements - 1);
+  const auto mismatch_point = static_cast<std::size_t>(
+    ::cuda::std::clamp(static_cast<double>(elements) * common_prefix, 0.0, static_cast<double>(elements - 1)));
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
   thrust::sequence(dinput.begin(), dinput.end(), T{0});
@@ -61,7 +63,7 @@ static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
     });
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
-  .set_name("base")
+NVBENCH_BENCH_TYPES(with_predicate, NVBENCH_TYPE_AXES(fundamental_types))
+  .set_name("with_predicate")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});

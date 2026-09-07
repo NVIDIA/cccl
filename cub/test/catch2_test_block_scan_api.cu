@@ -9,7 +9,7 @@
 
 #include <cuda/std/numeric>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 constexpr int num_items_per_thread = 2;
 constexpr int block_num_threads    = 64;
@@ -41,7 +41,7 @@ __global__ void InclusiveBlockScanKernel(int* output)
   output[threadIdx.x * 2 + 1] = thread_data[1];
 }
 
-C2H_TEST("Block array-based inclusive scan works with initial value", "[scan][block]")
+CUB_TEST("Block array-based inclusive scan works with initial value", "[scan][block]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(block_num_threads * num_items_per_thread);
 
@@ -95,7 +95,7 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
   output[threadIdx.x * 2 + 1] = thread_data[1];
 }
 
-C2H_TEST("Block array-based inclusive scan with block aggregate works with initial value", "[scan][block]")
+CUB_TEST("Block array-based inclusive scan with block aggregate works with initial value", "[scan][block]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(block_num_threads * num_items_per_thread);
 

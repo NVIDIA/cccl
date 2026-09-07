@@ -32,7 +32,7 @@ int main()
 
     const auto bulk_shape = 10;
     const auto bulk_fn    = [] __device__(const int index, int i) noexcept {
-      const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+      const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
       if (tid < bulk_shape)
       {
         printf("Hello from bulk task on device! index = %d, i = %d\n", index, i);
@@ -57,9 +57,9 @@ int main()
 
       // execute a host/device lambda on the CPU:
       | ex::then([] __host__ __device__(int i) noexcept -> int {
-          NV_IF_TARGET(NV_IS_HOST,
-                       (printf("Hello from lambda on host! i = %d\n", i);),
-                       (printf("OOPS! still on the device! i = %d\n", i);))
+          NV_IF_ELSE_TARGET(NV_IS_HOST,
+                            (printf("Hello from lambda on host! i = %d\n", i);),
+                            (printf("OOPS! still on the device! i = %d\n", i);))
           return i + 1;
         });
 

@@ -40,10 +40,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
-#  if _CCCL_ARCH(ARM64)
+#  if _CCCL_HOST_ARCH(ARM64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __dmb(0xB) // inner shared data memory barrier
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_MEMORY_BARRIER()
-#  elif _CCCL_ARCH(X86_64)
+#  elif _CCCL_HOST_ARCH(X86_64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __faststorefence()
 // x86/x64 hardware only emits memory barriers inside _Interlocked intrinsics
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_COMPILER_BARRIER()
@@ -63,7 +63,7 @@ inline int __stronger_order_msvc(int __a, int __b)
   return __xform[__a < __b ? __a : __b];
 }
 
-static inline void __atomic_signal_fence(int __memorder)
+inline void __atomic_signal_fence(int __memorder)
 {
   if (__memorder != __ATOMIC_RELAXED)
   {
@@ -71,7 +71,7 @@ static inline void __atomic_signal_fence(int __memorder)
   }
 }
 
-static inline void __atomic_thread_fence(int __memorder)
+inline void __atomic_thread_fence(int __memorder)
 {
   if (__memorder != __ATOMIC_RELAXED)
   {

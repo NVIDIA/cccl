@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__functional/address_stability.h>
 #  include <cuda/__iterator/counting_iterator.h>
@@ -70,7 +70,7 @@ struct __swap_ranges_iter_swap_fn
 struct __swap_ranges_transform_fn
 {
   template <class _Tp, class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(_Tp __lhs, _Up __rhs) const
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp __lhs, _Up __rhs)
   {
     using ::cuda::std::swap;
     swap(__lhs, __rhs);
@@ -153,6 +153,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_SWAP_RANGES_H

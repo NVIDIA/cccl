@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // template<class Context = format_context, class... Args>
@@ -30,7 +33,7 @@ static_assert(can_make_format_args<int&>);
 static_assert(!can_make_format_args<int>);
 static_assert(!can_make_format_args<int&&>);
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   auto i = 1;
   auto c = 'c';

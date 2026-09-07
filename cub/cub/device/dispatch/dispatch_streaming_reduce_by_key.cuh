@@ -14,13 +14,13 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/offset_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__functional/invoke.h>
@@ -32,24 +32,29 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce_by_key
 {
-template <
-  typename OverrideAccumT = use_default,
-  typename KeysInputIteratorT,
-  typename UniqueOutputIteratorT,
-  typename ValuesInputIteratorT,
-  typename AggregatesOutputIteratorT,
-  typename NumRunsOutputIteratorT,
-  typename EqualityOpT,
-  typename ReductionOpT,
-  typename OffsetT,
-  typename AccumT = ::cuda::std::conditional_t<
-    !::cuda::std::is_same_v<OverrideAccumT, use_default>,
-    OverrideAccumT,
-    ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>, it_value_t<ValuesInputIteratorT>>>,
-  typename PolicySelector =
-    policy_selector_from_types<ReductionOpT,
-                               AccumT,
-                               non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>>
+struct reduce_by_key_kernel_source
+{
+  template <typename PolicySelector, typename... KernelArgTs>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static constexpr auto reduce_by_key_kernel()
+  {
+    return &DeviceReduceByKeyKernel<PolicySelector, KernelArgTs...>;
+  }
+};
+
+template <typename KeysInputIteratorT,
+          typename UniqueOutputIteratorT,
+          typename ValuesInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename NumRunsOutputIteratorT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>>,
+          typename PolicySelector =
+            policy_selector_from_types<ReductionOpT,
+                                       AccumT,
+                                       non_void_value_t<UniqueOutputIteratorT, it_value_t<KeysInputIteratorT>>>,
+          typename KernelSource = reduce_by_key_kernel_source>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
@@ -65,23 +70,29 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   ReductionOpT reduction_op,
   OffsetT num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector = {})
+  PolicySelector policy_selector              = {},
+  [[maybe_unused]] KernelSource kernel_source = {})
 {
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(ptx_arch_id(arch_id)))
+  ::cuda::compute_capability cc{};
+  if (const auto error = CubDebug(ptx_compute_cap(cc)))
   {
     return error;
   }
 
-  const reduce_by_key_policy policy = policy_selector(arch_id);
+  const ReduceByKeyPolicy policy = policy_selector(cc);
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (::std::stringstream ss; ss << policy;
-                _CubLog("Dispatching streaming reduce by key to arch %d with tuning: %s\n",
-                        static_cast<int>(arch_id),
-                        ss.str().c_str());))
-#endif
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << policy;
+                 _CubLog("Dispatching streaming reduce by key to compute capability %d.%d with tuning: %s\n",
+                         cc.major_cap(),
+                         cc.minor_cap(),
+                         ss.str().c_str());
+               }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   using local_offset_t  = ::cuda::std::int32_t;
   using global_offset_t = OffsetT;
@@ -92,9 +103,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   using ScanTileStateT                                      = ReduceByKeyScanTileState<AccumT, local_offset_t>;
   [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
-  const int block_threads    = policy.block_threads;
-  const int items_per_thread = policy.items_per_thread;
-  const auto tile_size       = static_cast<global_offset_t>(block_threads * items_per_thread);
+  const int threads_per_block = policy.lookback.threads_per_block;
+  const int items_per_thread  = policy.lookback.items_per_thread;
+  const auto tile_size =
+    static_cast<global_offset_t>(threads_per_block) * static_cast<global_offset_t>(items_per_thread);
 
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
@@ -146,7 +158,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif
+#else // CUB_DEBUG_LOG
+    log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+#endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -170,11 +184,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
             num_current_tiles,
-            block_threads,
+            threads_per_block,
             (long long) stream,
             items_per_thread);
-#endif
-    auto reduce_by_key_kernel = DeviceReduceByKeyKernel<
+#else // CUB_DEBUG_LOG
+    log("Invoking reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
+        num_current_tiles,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread);
+#endif // CUB_DEBUG_LOG
+    auto reduce_by_key_kernel = KernelSource::template reduce_by_key_kernel<
       PolicySelector,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
@@ -186,7 +206,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       ReductionOpT,
       local_offset_t,
       AccumT,
-      streaming_context_t>;
+      streaming_context_t>();
 
     if constexpr (use_streaming_invocation)
     {
@@ -204,7 +224,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
         &tmp_num_uniques[buffer_selector],
         &tmp_num_uniques[buffer_selector ^ 0x01]};
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,
@@ -225,7 +245,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     else
     {
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,
                     d_keys_in + current_partition_offset,
                     d_unique_out,

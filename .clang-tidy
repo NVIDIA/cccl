@@ -26,9 +26,19 @@ Checks:
   - 'modernize-*'
   - '-modernize-use-integer-sign-comparison'
   - '-modernize-use-nodiscard'
-  - '-modernize-use-equals-default'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
+  - 'clang-diagnostic-*'
+  - 'bugprone-*'
+  - '-bugprone-crtp-constructor-accessibility'
+  - '-bugprone-argument-comment'
+  # This is just noise
+  - '-bugprone-signed-char-misuse'
+  - '-bugprone-multi-level-implicit-pointer-conversion'
+  - 'misc-*'
+  - '-misc-const-correctness'
+  - '-misc-use-anonymous-namespace'
+  - '-misc-use-internal-linkage'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -85,6 +95,23 @@ Checks:
   - '-bugprone-implicit-widening-of-multiplication-result'
   - '-misc-include-cleaner'
   - '-misc-header-include-cycle'
+  # Covered by -Wunused-parameter, which is the better tool here. clang-tidy analyzes a
+  # single target branch, so it reports parameters that are used only inside NV_IF_TARGET,
+  # NV_IF_ELSE_TARGET, or inline asm operands as unused. The compiler sees the branch it
+  # actually compiles and does not.
+  - '-misc-unused-parameters'
+  # This check fires whenever `const` is applied to a typedef that names a pointer type,
+  # claiming the author meant `const T*`. Every hit in CCCL is an opaque handle
+  # (cudaStream_t, ncclComm_t, stf_task_handle, ...) where a const *pointer* is exactly
+  # what was wanted: the handle is then passed to C APIs that take it non-const, so the
+  # suggested reading would not compile.
+  - '-misc-misplaced-const'
+  # This check flags any class with more than one non-pure-virtual base. CCCL relies on
+  # exactly that for the empty base optimization (__compressed_pair, __mdspan_ebco,
+  # __tuple_impl, counting_iterator, ...) and for CRTP policy mixins (custom_type_t). The
+  # _CCCL_DECLSPEC_EMPTY_BASES macro exists solely to make this pattern pack correctly on
+  # MSVC. Removing a base would add storage and break the ABI, so there is no fix to apply.
+  - '-misc-multiple-inheritance'
   - '-modernize-macro-to-enum'
   - '-cppcoreguidelines-macro-to-enum'
   - '-misc-no-recursion'
@@ -173,6 +200,25 @@ Checks:
   #
   # So better left disabled.
   - '-bugprone-macro-parentheses'
+
+  # TODO: Enable for clang-tidy-22
+  - '-modernize-avoid-c-style-cast'
+  - '-bugprone-signed-bitwise'
+  - '-bugprone-std-namespace-modification'
+  - '-clang-diagnostic-deprecated-attributes'
+  - '-bugprone-throwing-static-initialization'
+  - '-bugprone-unchecked-string-to-number-conversion'
+  - '-bugprone-invalid-enum-default-initialization'
+  - '-bugprone-derived-method-shadowing-base-method'
+  - '-bugprone-unsafe-to-allow-exceptions'
+  - '-bugprone-sizeof-expression'
+  - '-modernize-use-nullptr'
+  - '-bugprone-std-exception-baseclass'
+  - '-modernize-avoid-variadic-functions'
+  - '-modernize-type-traits'
+  - '-bugprone-random-generator-seed'
+  - '-bugprone-command-processor'
+
   # TODO: ironically enough, enable this someday
   - '-google-readability-todo'
   # Covered by modernize-avoid-c-style-cast, and also is buggier. It seems to fire on
@@ -182,9 +228,7 @@ Checks:
   - '-cppcoreguidelines-noexcept-move-operations'
   # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
-  # Covered by bugprone-narrowing-conversions
   - '-cppcoreguidelines-narrowing-conversions'
-  # Covered by misc-unconventional-assign-operator
   - '-cppcoreguidelines-c-copy-assignment-signature'
   # Covered by performance-noexcept-swap
   - '-cppcoreguidelines-noexcept-swap'
@@ -245,7 +289,6 @@ CheckOptions:
   readability-simplify-boolean-expr.ChainedConditionalReturn: 'true'
   readability-simplify-boolean-expr.ChainedConditionalAssignment: 'true'
   bugprone-dangling-handle.HandleClasses: '::cuda::std::span;::cuda::std::mdspan'
-  bugprone-misplaced-widening-cast.CheckImplicitCasts: 'true'
   bugprone-unused-return-value.AllowCastToVoid: 'true'
   readability-enum-initial-value.AllowExplicitZeroFirstInitialValue: 'false'
   readability-enum-initial-value.AllowExplicitSequentialInitialValues: 'false'
@@ -297,4 +340,5 @@ CheckOptions:
   bugprone-reserved-identifier.AllowedIdentifiers: '^_CCCL.*'
   performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
   performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
+  bugprone-exception-escape.CheckMain: false
 ...

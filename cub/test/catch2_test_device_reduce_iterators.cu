@@ -11,7 +11,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
@@ -39,7 +39,7 @@ void test_big_indices_helper(offset_t num_items)
   REQUIRE(result == num_items);
 }
 
-C2H_TEST("Device sum works for big indices", "[reduce][device]")
+CUB_TEST("Device sum works for big indices", "[reduce][device]", CUB_SMALL)
 {
   test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 30);
   test_big_indices_helper<std::size_t, std::uint32_t>(1ull << 31);
@@ -47,7 +47,7 @@ C2H_TEST("Device sum works for big indices", "[reduce][device]")
   test_big_indices_helper<std::size_t, std::uint64_t>(1ull << 33);
 }
 
-C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -71,26 +71,26 @@ C2H_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   init_default_constant(default_constant);
   auto in_it = cuda::constant_iterator(default_constant);
 
-  using op_t   = cuda::std::plus<>;
-  using init_t = output_t;
+  using op_t         = cuda::std::plus<>;
+  using init_value_t = output_t;
 
   // Binary reduction operator
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t            = cuda::std::__accumulator_t<op_t, item_t, init_t>;
+  using accum_t            = cuda::std::__accumulator_t<op_t, item_t, init_value_t>;
   output_t expected_result = compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
   // Run test
   c2h::device_vector<output_t> out_result(num_segments);
   auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-  device_reduce(in_it, d_out_it, num_items, reduction_op, init_t{});
+  device_reduce(in_it, d_out_it, num_items, reduction_op, init_value_t{});
 
   // Verify result
   REQUIRE(expected_result == out_result[0]);
 }
 
-C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce compiles with discard output iterator", "[reduce][device]", CUB_SMALL, iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -110,12 +110,12 @@ C2H_TEST("Device reduce compiles with discard output iterator", "[reduce][device
   init_default_constant(default_constant);
   auto in_it = cuda::constant_iterator(default_constant);
 
-  using op_t   = cuda::std::plus<>;
-  using init_t = output_t;
+  using op_t         = cuda::std::plus<>;
+  using init_value_t = output_t;
 
   // Binary reduction operator
   auto reduction_op = op_t{};
 
   // Run test
-  device_reduce(in_it, cuda::discard_iterator(), num_items, reduction_op, init_t{});
+  device_reduce(in_it, cuda::discard_iterator(), num_items, reduction_op, init_value_t{});
 }

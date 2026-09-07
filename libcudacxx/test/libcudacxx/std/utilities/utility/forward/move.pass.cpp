@@ -86,6 +86,7 @@ int main(int, char**)
     static_assert(cuda::std::is_same<decltype(cuda::std::move(get<const int&&>())), const int&&>::value);
     static_assert(noexcept(cuda::std::move(get<int const&&>())));
   }
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
   { // test copy and move semantics
     A a;
     const A ca = A();
@@ -109,6 +110,7 @@ int main(int, char**)
     assert(copy_ctor == 3);
     assert(move_ctor == 1);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // test on a move only type
     move_only mo;
     test(cuda::std::move(mo));

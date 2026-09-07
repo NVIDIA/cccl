@@ -190,9 +190,9 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis          = elapsed_millis / g_timing_iterations;
+  float avg_millis          = elapsed_millis / static_cast<float>(g_timing_iterations);
   float avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
-  float avg_clocks          = float(elapsed_clocks) / g_timing_iterations;
+  float avg_clocks          = float(elapsed_clocks) / static_cast<float>(g_timing_iterations);
   float avg_clocks_per_item = avg_clocks / TILE_SIZE;
 
   printf("\tAverage BlockReduce::Sum clocks: %.3f\n", avg_clocks);

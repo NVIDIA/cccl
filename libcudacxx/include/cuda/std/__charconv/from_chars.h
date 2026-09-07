@@ -22,6 +22,8 @@
 
 #include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/uabs.h>
+#include <cuda/__numeric/add_overflow.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/from_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -71,8 +73,9 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr from_chars_result
 __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, int __base) noexcept
 {
-  bool __overflow  = false;
-  const char* __it = __first;
+  const auto __unsigned_base = static_cast<_Tp>(__base);
+  bool __overflow            = false;
+  const char* __it           = __first;
   for (; __it != __last; ++__it)
   {
     const auto __digit = ::cuda::std::__from_chars_char_to_value(*__it, __base);
@@ -82,12 +85,17 @@ __from_chars_int_generic(const char* __first, const char* __last, _Tp& __value, 
     }
     if (!__overflow)
     {
-      const auto __new_value = static_cast<_Tp>(__value * _Tp(__base) + _Tp(__digit.__value_));
-      if (__new_value < __value)
+      const auto __unsigned_digit = static_cast<_Tp>(__digit.__value_);
+      const auto __product        = ::cuda::mul_overflow<_Tp>(__value, __unsigned_base);
+      const auto __sum            = ::cuda::add_overflow<_Tp>(__product.value, __unsigned_digit);
+      if (__product.overflow || __sum.overflow)
       {
         __overflow = true;
       }
-      __value = __new_value;
+      else
+      {
+        __value = __sum.value;
+      }
     }
   }
   return {__it, (__overflow) ? errc::result_out_of_range : ((__it == __first) ? errc::invalid_argument : errc{})};

@@ -10,12 +10,15 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/barrier>
 
 #include "cuda_space_selector.h"
 
 template <cuda::thread_scope Sco, template <typename, typename> class BarrierSelector>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   cuda::barrier<Sco> b(3);
 
@@ -27,7 +30,7 @@ TEST_FUNC void test()
 }
 
 template <cuda::thread_scope Sco>
-TEST_FUNC void test_select_barrier()
+TEST_HOST_DEVICE_FUNC void test_select_barrier()
 {
   test<Sco, local_memory_selector>();
   NV_IF_TARGET(NV_IS_DEVICE, (test<Sco, shared_memory_selector>(); test<Sco, global_memory_selector>();))

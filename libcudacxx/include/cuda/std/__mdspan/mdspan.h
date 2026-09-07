@@ -409,6 +409,7 @@ public:
     return mapping()(__indices[_Idxs]...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIndexType)
   _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
                    is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
@@ -418,6 +419,7 @@ public:
     return accessor().access(data_handle(), __op_bracket(__indices, make_index_sequence<rank()>()));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherIndexType)
   _CCCL_REQUIRES(is_convertible_v<const _OtherIndexType&, index_type> _CCCL_AND
                    is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
@@ -427,6 +429,7 @@ public:
   }
 
   //! Nonstandard extension to no break our users too hard
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Indices)
   _CCCL_REQUIRES(__mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
   [[nodiscard]] _CCCL_API constexpr reference operator()(_Indices... __indices) const
@@ -544,37 +547,41 @@ public:
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0) _CCCL_AND(is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
-_CCCL_HOST_DEVICE explicit mdspan(_ElementType*, _OtherIndexTypes...)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES explicit mdspan(_ElementType*, _OtherIndexTypes...)
   -> mdspan<_ElementType, extents<size_t, __maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(is_pointer_v<remove_reference_t<_Pointer>>)
-_CCCL_HOST_DEVICE mdspan(_Pointer&&) -> mdspan<remove_pointer_t<remove_reference_t<_Pointer>>, extents<size_t>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_Pointer&&)
+  -> mdspan<remove_pointer_t<remove_reference_t<_Pointer>>, extents<size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(is_array_v<_CArray> _CCCL_AND(rank_v<_CArray> == 1))
-_CCCL_HOST_DEVICE mdspan(_CArray&) -> mdspan<remove_all_extents_t<_CArray>, extents<size_t, extent_v<_CArray, 0>>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_CArray&)
+  -> mdspan<remove_all_extents_t<_CArray>, extents<size_t, extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const array<_OtherIndexType, _Size>&)
   -> mdspan<_ElementType, dextents<size_t, _Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, span<_OtherIndexType, _Size>) -> mdspan<_ElementType, dextents<size_t, _Size>>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, span<_OtherIndexType, _Size>)
+  -> mdspan<_ElementType, dextents<size_t, _Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
 template <class _ElementType, class _OtherIndexType, size_t... _ExtentsPack>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const extents<_OtherIndexType, _ExtentsPack...>&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const extents<_OtherIndexType, _ExtentsPack...>&)
   -> mdspan<_ElementType, extents<_OtherIndexType, _ExtentsPack...>>;
 
 template <class _ElementType, class _MappingType>
-_CCCL_HOST_DEVICE mdspan(_ElementType*, const _MappingType&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES mdspan(_ElementType*, const _MappingType&)
   -> mdspan<_ElementType, typename _MappingType::extents_type, typename _MappingType::layout_type>;
 
 template <class _MappingType, class _AccessorType>
-_CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES
+mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> mdspan<typename _AccessorType::element_type,
             typename _MappingType::extents_type,
             typename _MappingType::layout_type,

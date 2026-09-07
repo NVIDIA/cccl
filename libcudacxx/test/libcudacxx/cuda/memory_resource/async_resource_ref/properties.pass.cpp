@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
@@ -37,20 +41,16 @@ namespace resource_test
 // Ensure we have the right size
 static_assert(
   sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>)
-    == (2 * sizeof(void*)),
-  "");
+  == (2 * sizeof(void*)));
 static_assert(
   sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_without_value<int>>)
-    == (2 * sizeof(void*)),
-  "");
+  == (2 * sizeof(void*)));
 static_assert(
   sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_with_value<int>>)
-    == (2 * sizeof(void*)),
-  "");
+  == (2 * sizeof(void*)));
 static_assert(
   sizeof(cuda::mr::resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_without_value<int>>)
-    == (2 * sizeof(void*)),
-  "");
+  == (2 * sizeof(void*)));
 
 _CCCL_TEMPLATE(class Property, class Ref)
 _CCCL_REQUIRES((!cuda::property_with_value<Property>) ) //

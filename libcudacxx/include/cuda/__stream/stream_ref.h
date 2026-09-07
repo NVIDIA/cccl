@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,6 +32,7 @@
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__fwd/hash.h>
 #  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstddef>
 
@@ -218,16 +219,7 @@ public:
   //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
-    const auto __result = ::cuda::__driver::__streamQueryNoThrow(__stream);
-    switch (__result)
-    {
-      case ::cudaErrorNotReady:
-        return false;
-      case ::cudaSuccess:
-        return true;
-      default:
-        _CCCL_THROW(::cuda::cuda_error, __result, "Failed to query stream.");
-    }
+    return ::cuda::__driver::__streamQuery(__stream);
   }
 
   //! @brief Queries if all operations on the wrapped stream have completed.
@@ -295,13 +287,44 @@ public:
     __device = ::cuda::__driver::__streamGetDevice(__stream);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
     {
-      ::CUcontext __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
-      __ensure_current_context __setter(__stream_ctx);
+      const auto _ = __ensure_current_context{*this};
+
       __device = ::cuda::__driver::__ctxGetDevice();
     }
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
     return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
   }
+
+  // The whole _CCCL_UNREACHABLE() thing was added for MSVC, yet now it complains the
+  // _CCCL_UNREACHABLE() is in fact not reachable. Incredible.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
+  [[nodiscard]] _CCCL_HOST_API __logical_device_ref __logical_device() const
+  {
+#  if _CCCL_CTK_AT_LEAST(12, 5)
+    // NOLINTNEXTLINE(readability-magic-numbers, bugprone-argument-comment)
+    if (::cuda::__driver::__version_at_least(12, 5))
+    {
+      // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
+      // the stream, not the one you would get from cuCtxFromGreenCtx(green).
+      //
+      // So the outer context of the green context must be recovered separately to match what
+      // __logical_device_ref{device_ref, CUgreenCtx} would store.
+      switch (const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream); __ctx.__ctx_kind_)
+      {
+        case ::cuda::__driver::__ctx_from_stream::__kind::__green:
+          return {this->device(), __ctx.__ctx_green_};
+        case ::cuda::__driver::__ctx_from_stream::__kind::__device:
+          return {this->device(), __ctx.__ctx_device_};
+      }
+      _CCCL_UNREACHABLE();
+    }
+#  endif // ^^^ _CCCL_AT_LEAST(12, 5) ^^^
+    return {this->device(), this->__cu_context()};
+  }
+
+  _CCCL_DIAG_POP
 
   //! @brief Queries the \c stream_ref for itself. This makes \c stream_ref usable in places where we expect an
   //! environment with a \c get_stream_t query
@@ -309,6 +332,40 @@ public:
   {
     return *this;
   }
+
+protected:
+  // The whole _CCCL_UNREACHABLE() thing was added for MSVC, yet now it complains the
+  // _CCCL_UNREACHABLE() is in fact not reachable. Incredible.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
+#  ifndef _CCCL_DOXYGEN_INVOKED
+  [[nodiscard]] _CCCL_HOST_API ::CUcontext __cu_context() const
+  {
+    // cuStreamGetCtx() returns CUDA_ERROR_NOT_SUPPORTED for a stream that
+    // cuGreenCtxStreamCreate() made. cuStreamGetCtx_v2() supports such a stream, and always
+    // gives a usable device context.
+#    if _CCCL_CTK_AT_LEAST(12, 5)
+    // NOLINTNEXTLINE(readability-magic-numbers, bugprone-argument-comment)
+    if (::cuda::__driver::__version_at_least(12, 5))
+    {
+      // For a green-context stream, cuStreamGetCtx_v2() returns the primary/device context of
+      // the stream, not the one you would get from cuCtxFromGreenCtx(green).
+      switch (const auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream); __ctx.__ctx_kind_)
+      {
+        case ::cuda::__driver::__ctx_from_stream::__kind::__green:
+          return ::cuda::__driver::__ctxFromGreenCtx(__ctx.__ctx_green_);
+        case ::cuda::__driver::__ctx_from_stream::__kind::__device:
+          return __ctx.__ctx_device_;
+      }
+      _CCCL_UNREACHABLE();
+    }
+#    endif // ^^^ _CCCL_CTK_AT_LEAST(12, 5) ^^^
+    return ::cuda::__driver::__streamGetCtx(__stream);
+  }
+#  endif // !_CCCL_DOXYGEN_INVOKED
+
+  _CCCL_DIAG_POP
 };
 
 _CCCL_HOST_API inline void event_ref::record(stream_ref __stream) const
@@ -342,12 +399,40 @@ _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags 
 #  ifndef _CCCL_DOXYGEN_INVOKED
 _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
-  auto __ctx = __driver::__streamGetCtx(__stream.get());
-  ::cuda::__driver::__ctxPush(__ctx);
+  struct __access final : stream_ref
+  {
+    using stream_ref::__cu_context;
+  };
+
+  ::cuda::__driver::__ctxPush(__access{__stream}.__cu_context());
 }
 #  endif // !_CCCL_DOXYGEN_INVOKED
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <>
+struct hash<::cuda::stream_id>
+{
+  [[nodiscard]] _CCCL_HOST_API size_t _CCCL_STATIC_CALL_OPERATOR(::cuda::stream_id __id) noexcept
+  {
+    return ::std::hash<::cuda::std::underlying_type_t<::cuda::stream_id>>{}(::cuda::std::to_underlying(__id));
+  }
+};
+
+template <>
+struct hash<::cuda::stream_ref>
+{
+  [[nodiscard]] _CCCL_HOST_API size_t _CCCL_STATIC_CALL_OPERATOR(::cuda::stream_ref __stream)
+  {
+    return ::std::hash<::cuda::stream_id>{}(__stream.id());
+  }
+};
+
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
 
 #  include <cuda/std/__cccl/epilogue.h>
 

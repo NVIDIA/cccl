@@ -6,6 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // <cuda/std/functional>
 
 // template<Returnable R, class T, CopyConstructible... Args>
@@ -18,22 +22,22 @@
 
 struct A
 {
-  TEST_FUNC char test0()
+  TEST_HOST_DEVICE_FUNC char test0()
   {
     return 'a';
   }
-  TEST_FUNC char test1(int)
+  TEST_HOST_DEVICE_FUNC char test1(int)
   {
     return 'b';
   }
-  TEST_FUNC char test2(int, double)
+  TEST_HOST_DEVICE_FUNC char test2(int, double)
   {
     return 'c';
   }
 };
 
 template <class F>
-TEST_FUNC void test0(F f)
+TEST_HOST_DEVICE_FUNC void test0(F f)
 {
   {
     A a;
@@ -46,7 +50,7 @@ TEST_FUNC void test0(F f)
 }
 
 template <class F>
-TEST_FUNC void test1(F f)
+TEST_HOST_DEVICE_FUNC void test1(F f)
 {
   {
     A a;
@@ -59,7 +63,7 @@ TEST_FUNC void test1(F f)
 }
 
 template <class F>
-TEST_FUNC void test2(F f)
+TEST_HOST_DEVICE_FUNC void test2(F f)
 {
   {
     A a;

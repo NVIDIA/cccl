@@ -17,6 +17,7 @@
 _CCCL_DIAG_SUPPRESS_GCC("-Walloc-zero")
 
 #include <format>
+#include <optional>
 #include <regex>
 
 #include "scan_tile_state.h"

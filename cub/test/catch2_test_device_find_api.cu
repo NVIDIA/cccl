@@ -7,7 +7,7 @@
 
 #include <thrust/device_vector.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // example-begin find-if-predicate
 struct is_greater_than_t
@@ -20,7 +20,7 @@ struct is_greater_than_t
 };
 // example-end find-if-predicate
 
-C2H_TEST("cub::DeviceFind::FindIf works with int data elements", "[find][device]")
+CUB_TEST("cub::DeviceFind::FindIf works with int data elements", "[find][device]", CUB_SMALL)
 {
   // example-begin device-find-if
   constexpr int num_items         = 8;
@@ -47,7 +47,7 @@ C2H_TEST("cub::DeviceFind::FindIf works with int data elements", "[find][device]
   REQUIRE(d_out[0] == expected);
 }
 
-C2H_TEST("cub::DeviceFind::LowerBound works with int data elements", "[find][device]")
+CUB_TEST("cub::DeviceFind::LowerBound works with int data elements", "[find][device]", CUB_SMALL)
 {
   // example-begin device-lower-bound
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};
@@ -83,7 +83,7 @@ C2H_TEST("cub::DeviceFind::LowerBound works with int data elements", "[find][dev
   REQUIRE(d_output == expected);
 }
 
-C2H_TEST("cub::DeviceFind::UpperBound works with int data elements", "[find][device]")
+CUB_TEST("cub::DeviceFind::UpperBound works with int data elements", "[find][device]", CUB_SMALL)
 {
   // example-begin device-upper-bound
   thrust::device_vector<int> d_range  = {0, 2, 4, 6, 8};
@@ -117,4 +117,47 @@ C2H_TEST("cub::DeviceFind::UpperBound works with int data elements", "[find][dev
   // example-end device-upper-bound
 
   REQUIRE(d_output == expected);
+}
+
+// Guard: the legacy memory-size query call with all defaults (no explicit stream)
+// must resolve unambiguously to the legacy temp-storage overload when the env
+// passthrough overload is also visible. If the env overload's SFINAE is too loose,
+// this becomes "ambiguous overload" or silently dispatches to env.
+
+CUB_TEST("DeviceFind::FindIf legacy size-query is unambiguous", "[find][device]", CUB_SMALL)
+{
+  int* d_in    = nullptr;
+  int* d_out   = nullptr;
+  size_t bytes = 0;
+  int n        = 0;
+
+  REQUIRE(cudaSuccess == cub::DeviceFind::FindIf(nullptr, bytes, d_in, d_out, is_greater_than_t{0}, n));
+}
+
+CUB_TEST("DeviceFind::LowerBound legacy size-query is unambiguous", "[find][device]", CUB_SMALL)
+{
+  int* d_range  = nullptr;
+  int* d_values = nullptr;
+  int* d_output = nullptr;
+  size_t bytes  = 0;
+  int range_n   = 0;
+  int values_n  = 0;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceFind::LowerBound(nullptr, bytes, d_range, range_n, d_values, values_n, d_output, cuda::std::less{}));
+}
+
+CUB_TEST("DeviceFind::UpperBound legacy size-query is unambiguous", "[find][device]", CUB_SMALL)
+{
+  int* d_range  = nullptr;
+  int* d_values = nullptr;
+  int* d_output = nullptr;
+  size_t bytes  = 0;
+  int range_n   = 0;
+  int values_n  = 0;
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceFind::UpperBound(nullptr, bytes, d_range, range_n, d_values, values_n, d_output, cuda::std::less{}));
 }

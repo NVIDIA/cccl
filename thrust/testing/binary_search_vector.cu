@@ -281,7 +281,7 @@ struct TestVectorLowerBound
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorLowerBound, SignedIntegralTypes> TestVectorLowerBoundInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBound, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBound
@@ -305,7 +305,7 @@ struct TestVectorUpperBound
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorUpperBound, SignedIntegralTypes> TestVectorUpperBoundInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBound, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearch
@@ -329,7 +329,7 @@ struct TestVectorBinarySearch
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorBinarySearch, SignedIntegralTypes> TestVectorBinarySearchInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearch, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorLowerBoundDiscardIterator
@@ -348,13 +348,13 @@ struct TestVectorLowerBoundDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::lower_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestVectorLowerBoundDiscardIterator, SignedIntegralTypes> TestVectorLowerBoundDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBoundDiscardIterator, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBoundDiscardIterator
@@ -373,13 +373,13 @@ struct TestVectorUpperBoundDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::upper_bound(d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestVectorUpperBoundDiscardIterator, SignedIntegralTypes> TestVectorUpperBoundDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBoundDiscardIterator, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearchDiscardIterator
@@ -398,11 +398,10 @@ struct TestVectorBinarySearchDiscardIterator
     thrust::discard_iterator<> d_result = thrust::binary_search(
       d_vec.begin(), d_vec.end(), d_input.begin(), d_input.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(2 * n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(2 * n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestVectorBinarySearchDiscardIterator, SignedIntegralTypes>
-  TestVectorBinarySearchDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDiscardIterator, SignedIntegralTypes);

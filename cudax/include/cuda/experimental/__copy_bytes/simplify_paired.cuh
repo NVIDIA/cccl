@@ -38,21 +38,21 @@ namespace cuda::experimental
 //!
 //! This helps to get a single logic for __tile_iterator_linearized
 //!
-//! @param[in] __input Raw tensor whose modes are reversed
+//! @param[in] __tensor Raw tensor whose modes are reversed
 //! @return New raw tensor with extents and strides in reversed mode order
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
-__reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) noexcept
+__reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
   using __rank_t       = typename __raw_tensor_t::__rank_t;
-  __raw_tensor_t __result{__input.__data, __input.__rank, {}, {}};
-  _CCCL_ASSERT(__input.__rank > 0, "cudax::reverse_modes: input tensor must have rank > 0");
-  for (__rank_t __i = 0; __i < __input.__rank; ++__i)
+  __raw_tensor_t __result{__tensor.__data, __tensor.__rank, {}, {}};
+  _CCCL_ASSERT(__tensor.__rank > 0, "cudax::reverse_modes: input tensor must have rank > 0");
+  for (__rank_t __i = 0; __i < __tensor.__rank; ++__i)
   {
-    const auto __j          = __input.__rank - 1 - __i;
-    __result.__extents[__i] = __input.__extents[__j];
-    __result.__strides[__i] = __input.__strides[__j];
+    const auto __j          = __tensor.__rank - 1 - __i;
+    __result.__extents[__i] = __tensor.__extents[__j];
+    __result.__strides[__i] = __tensor.__strides[__j];
   }
   return __result;
 }
@@ -61,7 +61,7 @@ __reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) 
 struct __mode_compare_paired
 {
   template <typename _ExtentT, typename _SrcStrideT, typename _DstStrideT>
-  [[nodiscard]] _CCCL_API bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   operator()(const ::cuda::std::tuple<_ExtentT, _SrcStrideT, _DstStrideT>& __lhs,
              const ::cuda::std::tuple<_ExtentT, _SrcStrideT, _DstStrideT>& __rhs) const noexcept
   {
@@ -195,6 +195,10 @@ _CCCL_HOST_API void __coalesce_paired(__raw_tensor<_ExtentT, _SrcStrideT, _TpSrc
     __src.__strides[__out_r] = __src.__strides[__i];
     __dst.__strides[__out_r] = __dst.__strides[__i];
     ++__out_r;
+  }
+  for (__rank_t __i = __out_r; __i < _MaxRank; ++__i)
+  {
+    __src.__extents[__i] = _ExtentT{1};
   }
   __src.__rank    = __out_r;
   __dst.__rank    = __out_r;

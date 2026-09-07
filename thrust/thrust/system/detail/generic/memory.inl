@@ -15,8 +15,8 @@
 
 #include <thrust/detail/malloc_and_free_fwd.h>
 #include <thrust/detail/static_assert.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/is_void.h>
 
 THRUST_NAMESPACE_BEGIN

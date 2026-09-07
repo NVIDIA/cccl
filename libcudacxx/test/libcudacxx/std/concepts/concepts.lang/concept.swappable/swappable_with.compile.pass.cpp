@@ -166,26 +166,21 @@ static_assert(check_swappable_with_including_lvalue_ref_to_volatile<int S::*, in
 static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int, int S::*>());
 static_assert(check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)(), int (S::*)()>());
 static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int, int (S::*)()>());
-static_assert(check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() noexcept, int (S::*)() noexcept>(),
-              "");
+static_assert(check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() noexcept, int (S::*)() noexcept>());
 #if TEST_STD_VER > 2017
 static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() noexcept, int (S::*)()>());
 #endif // TEST_STD_VER > 2017
 static_assert(check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const, int (S::*)() const>());
 static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const, int (S::*)()>());
 static_assert(
-  check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const noexcept, int (S::*)() const noexcept>(),
-  "");
+  check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const noexcept, int (S::*)() const noexcept>());
 #if TEST_STD_VER > 2017
-static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const, int (S::*)() const noexcept>(),
-              "");
+static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const, int (S::*)() const noexcept>());
 #endif // TEST_STD_VER > 2017
-static_assert(check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() volatile, int (S::*)() volatile>(),
-              "");
+static_assert(check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() volatile, int (S::*)() volatile>());
 static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() volatile, int (S::*)()>());
 static_assert(
-  check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const volatile, int (S::*)() const volatile>(),
-  "");
+  check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const volatile, int (S::*)() const volatile>());
 static_assert(!check_swappable_with_including_lvalue_ref_to_volatile<int (S::*)() const volatile, int (S::*)()>());
 
 #if TEST_STD_VER > 2017
@@ -417,8 +412,7 @@ struct swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable
   TEST_FUNC operator s1 volatile&&() volatile&&;
 };
 static_assert(!swappable<swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&&>);
-static_assert(!swappable_with<swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&&, s1 volatile&&>,
-              "");
+static_assert(!swappable_with<swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&&, s1 volatile&&>);
 
 struct swappable_with_rvalue_ref_to_cv_s1_but_not_swappable
 {
@@ -438,7 +432,7 @@ struct swappable_with_rvalue_ref_to_cv_s1_but_not_swappable
 };
 static_assert(!swappable<swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&>);
 static_assert(
-  !swappable_with<swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&, s1 const volatile&&>, "");
+  !swappable_with<swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&, s1 const volatile&&>);
 
 struct s3
 {
@@ -510,7 +504,7 @@ struct swappable_with_rvalue_ref_to_cv_s3
 };
 #if !TEST_COMPILER(MSVC)
 static_assert(
-  cuda::std::common_reference_with<swappable_with_rvalue_ref_to_cv_s3 const volatile&&, s3 const volatile&&>, "");
+  cuda::std::common_reference_with<swappable_with_rvalue_ref_to_cv_s3 const volatile&&, s3 const volatile&&>);
 static_assert(swappable_with<swappable_with_rvalue_ref_to_cv_s3 const volatile&&, s3 const volatile&&>);
 #endif
 

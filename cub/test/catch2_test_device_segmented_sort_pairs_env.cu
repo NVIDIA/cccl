@@ -9,8 +9,10 @@ struct stream_registry_factory_t;
 
 #include <cub/device/device_segmented_sort.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -23,13 +25,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortPairsDescending, sort_pairs
 
 // %PARAM% TEST_LAUNCH lid 0:1
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("DeviceSegmentedSort::StableSortPairs works with default environment", "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::StableSortPairs works with default environment",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -55,8 +59,9 @@ TEST_CASE("DeviceSegmentedSort::StableSortPairs works with default environment",
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::StableSortPairsDescending works with default environment",
-          "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::StableSortPairsDescending works with default environment",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -82,7 +87,9 @@ TEST_CASE("DeviceSegmentedSort::StableSortPairsDescending works with default env
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::SortPairs nonstable works with default environment", "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairs nonstable works with default environment",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -108,8 +115,9 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable works with default environme
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable works with default environment",
-          "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable works with default environment",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -135,8 +143,9 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable works with default
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer works with default environment",
-          "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer works with default environment",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -166,8 +175,9 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer works with defa
   REQUIRE(result_values == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer works with default environment",
-          "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer works with default environment",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -199,7 +209,9 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer works
 
 #endif
 
-TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream", "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -246,7 +258,9 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream", "[segme
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream", "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -293,7 +307,9 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream
   REQUIRE(values_out == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom stream", "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom stream",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -341,8 +357,9 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom str
   REQUIRE(result_values == expected_values);
 }
 
-TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses custom stream",
-          "[segmented_sort][pairs][device]")
+CUB_TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses custom stream",
+              "[segmented_sort][pairs][device]",
+              CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -391,7 +408,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses 
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::StableSortPairs uses environment", "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::StableSortPairs uses environment", "[segmented_sort][pairs][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -433,7 +450,7 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairs uses environment", "[segmented_so
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::StableSortPairsDescending uses environment", "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::StableSortPairsDescending uses environment", "[segmented_sort][pairs][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -475,7 +492,9 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairsDescending uses environment", "[se
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::StableSortPairs DoubleBuffer uses environment", "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::StableSortPairs DoubleBuffer uses environment",
+         "[segmented_sort][pairs][device]",
+         CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -519,8 +538,9 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairs DoubleBuffer uses environment", "
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer uses environment",
-         "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer uses environment",
+         "[segmented_sort][pairs][device]",
+         CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -564,7 +584,7 @@ C2H_TEST("DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer uses envir
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairs nonstable uses environment", "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::SortPairs nonstable uses environment", "[segmented_sort][pairs][device]", CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -606,7 +626,9 @@ C2H_TEST("DeviceSegmentedSort::SortPairs nonstable uses environment", "[segmente
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairsDescending nonstable uses environment", "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::SortPairsDescending nonstable uses environment",
+         "[segmented_sort][pairs][device]",
+         CUB_SMALL)
 {
   auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out   = c2h::device_vector<int>(7);
@@ -648,7 +670,9 @@ C2H_TEST("DeviceSegmentedSort::SortPairsDescending nonstable uses environment", 
   REQUIRE(values_out == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses environment", "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses environment",
+         "[segmented_sort][pairs][device]",
+         CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -691,8 +715,9 @@ C2H_TEST("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses environment
   REQUIRE(result_values == expected_values);
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses environment",
-         "[segmented_sort][pairs][device]")
+CUB_TEST("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses environment",
+         "[segmented_sort][pairs][device]",
+         CUB_SMALL)
 {
   auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1   = c2h::device_vector<int>(7);
@@ -735,3 +760,158 @@ C2H_TEST("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses e
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
 }
+
+template <int BlockThreads>
+struct segmented_sort_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedSortPolicy
+  {
+    return cub::SegmentedSortPolicy{
+      cub::SegmentedSortRadixSortPolicy{
+        BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::RADIX_RANK_BASIC, cub::BLOCK_SCAN_WARP_SCANS, 4},
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        BlockThreads, 32, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      cub::SegmentedSortSubWarpMergeSortPolicy{
+        BlockThreads, 4, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT},
+      1000000};
+  }
+};
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+#if TEST_LAUNCH != 1
+
+CUB_TEST("DeviceSegmentedSort::SortPairs can be tuned", "[segmented_sort][pairs][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto values_in                           = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out                          = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  sort_pairs(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST(
+  "DeviceSegmentedSort::SortPairsDescending can be tuned", "[segmented_sort][pairs][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto values_in                           = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out                          = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  sort_pairs_descending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+  c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceSegmentedSort::StableSortPairs can be tuned", "[segmented_sort][pairs][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto values_in                           = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out                          = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  stable_sort_pairs(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceSegmentedSort::StableSortPairsDescending can be tuned",
+         "[segmented_sort][pairs][device]",
+         CUB_SMALL,
+         block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  auto keys_in                             = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out                            = c2h::device_vector<int>(7);
+  auto values_in                           = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out                          = c2h::device_vector<int>(7);
+  auto begin_offsets                       = c2h::device_vector<int>{0};
+  c2h::device_vector<unsigned int> d_block_size(1);
+
+  block_size_extracting_constant_iterator end_offsets(7, thrust::raw_pointer_cast(d_block_size.data()));
+
+  auto env = cuda::execution::tune(segmented_sort_tuning<target_block_size>{});
+
+  stable_sort_pairs_descending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    1,
+    thrust::raw_pointer_cast(begin_offsets.data()),
+    end_offsets,
+    env);
+
+  c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+  c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+#endif // TEST_LAUNCH != 1

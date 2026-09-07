@@ -20,10 +20,13 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-constexpr TEST_FUNC int plusOne(const int v) noexcept
+struct plusOne
 {
-  return v + 1;
-}
+  TEST_FUNC constexpr int operator()(const int v) const noexcept
+  {
+    return v + 1;
+  }
+};
 
 template <class InIter, class OutIter>
 constexpr TEST_FUNC void test()
@@ -34,7 +37,7 @@ constexpr TEST_FUNC void test()
     constexpr int expected[N] = {2, 4, 7, 8};
     int ib[N + 1]             = {0, 0, 0, 0, 0};
 
-    OutIter r = cuda::std::transform(InIter(ia), InIter(ia + N), OutIter(ib), plusOne);
+    OutIter r = cuda::std::transform(InIter(ia), InIter(ia + N), OutIter(ib), plusOne{});
     assert(base(r) == ib + N);
     for (int i = 0; i < N; ++i)
     {

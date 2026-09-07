@@ -65,6 +65,7 @@ struct __variant
   }
 
   // Terminal function call with all indexes determined
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Visitor, class... _Vs, size_t... _ProcessedIndices>
   [[nodiscard]] _CCCL_API static constexpr decltype(auto) __visit_impl(
     index_sequence<_ProcessedIndices...>, integer_sequence<size_t>, const size_t, _Visitor&& __visitor, _Vs&&... __vs)
@@ -169,6 +170,7 @@ struct __variant
   template <class _Visitor>
   struct __value_visitor
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Alts>
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Alts&&... __alts) const
     {
@@ -182,6 +184,7 @@ struct __variant
   template <class _Rp, class _Visitor>
   struct __value_visitor_return_type
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Alts>
     [[nodiscard]] _CCCL_API constexpr _Rp operator()(_Alts&&... __alts) const
     {
@@ -195,6 +198,7 @@ struct __variant
   template <class _Visitor>
   struct __value_visitor_return_type<void, _Visitor>
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Alts>
     _CCCL_API constexpr void operator()(_Alts&&... __alts) const
     {

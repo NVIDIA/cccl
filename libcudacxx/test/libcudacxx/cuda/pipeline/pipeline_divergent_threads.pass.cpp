@@ -11,6 +11,9 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: nvrtc
 
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
+
 #include <cuda/pipeline>
 #include <cuda/std/type_traits>
 

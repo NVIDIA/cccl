@@ -57,6 +57,7 @@ midpoint(_Tp __a, _Tp __b) noexcept
 }
 
 _CCCL_EXEC_CHECK_DISABLE
+// NOLINTNEXTLINE(bugprone-sizeof-expression)
 template <class _Tp, enable_if_t<is_object_v<_Tp> && !is_void_v<_Tp> && (sizeof(_Tp) > 0), int> = 0>
 [[nodiscard]] _CCCL_API constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {

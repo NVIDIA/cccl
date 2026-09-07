@@ -35,16 +35,18 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
-template <int BlockThreads, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
-struct AgentRadixSortHistogramPolicy
+namespace detail
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
+//! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
+template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+struct agent_radix_sort_histogram_policy
+{
+  static constexpr int BLOCK_THREADS    = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   // need to discard sizeof(ComputeType) in case it's void
   template <typename ComputeType = ComputeT>
-  _CCCL_API static constexpr int num_parts_helper()
+  _CCCL_HOST_DEVICE_API static constexpr int num_parts_helper()
   {
     if constexpr (::cuda::std::is_void_v<ComputeT>)
     {
@@ -66,34 +68,23 @@ struct AgentRadixSortHistogramPolicy
   static constexpr int RADIX_BITS = RadixBits;
 };
 
-template <int BlockThreads, int RadixBits>
-struct AgentRadixSortExclusiveSumPolicy
+template <int ThreadsPerBlock, int RadixBits>
+struct agent_radix_sort_exclusive_sum_policy
 {
-  static constexpr int BLOCK_THREADS = BlockThreads;
+  static constexpr int BLOCK_THREADS = ThreadsPerBlock;
   static constexpr int RADIX_BITS    = RadixBits;
 };
+} // namespace detail
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortExclusiveSumAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (RADIX_BITS, RadixBits, int) )
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
+using AgentRadixSortHistogramPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
+  detail::agent_radix_sort_histogram_policy<ThreadsPerBlock, ItemsPerThread, NOMINAL_4B_NUM_PARTS, ComputeT, RadixBits>;
 
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortHistogramAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (NUM_PARTS, NumParts, int),
-  (RADIX_BITS, RadixBits, int) )
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock, int RadixBits>
+using AgentRadixSortExclusiveSumPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceRadixSort") =
+  detail::agent_radix_sort_exclusive_sum_policy<ThreadsPerBlock, RadixBits>;
 
 namespace detail::radix_sort
 {
@@ -149,7 +140,7 @@ struct AgentRadixSortHistogram
   int begin_bit, end_bit;
 
   // number of sorting passes
-  int num_passes;
+  int num_passes; // NOLINT(modernize-use-default-member-init)
 
   DecomposerT decomposer;
 
@@ -175,7 +166,7 @@ struct AgentRadixSortHistogram
   {
     // Initialize bins to 0.
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -235,7 +226,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
+    for (int bin = static_cast<int>(threadIdx.x); bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
@@ -256,6 +247,7 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     // Within a portion, avoid overflowing (u)int32 counters.
     // Between portions, accumulate results in global memory.
     constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
@@ -264,12 +256,12 @@ struct AgentRadixSortHistogram
     {
       // Reset the counters.
       Init();
-      __syncthreads();
 
       // Process the tiles.
       OffsetT portion_offset = portion * MAX_PORTION_SIZE;
       OffsetT portion_size   = ::cuda::std::min(MAX_PORTION_SIZE, num_items - portion_offset);
-      for (OffsetT offset = blockIdx.x * TILE_ITEMS; offset < portion_size; offset += TILE_ITEMS * gridDim.x)
+      for (OffsetT offset = static_cast<OffsetT>(blockIdx.x) * TILE_ITEMS; offset < portion_size;
+           offset += OffsetT{TILE_ITEMS} * gridDim.x)
       {
         OffsetT tile_offset = portion_offset + offset;
         bit_ordered_type keys[ITEMS_PER_THREAD];
@@ -279,6 +271,8 @@ struct AgentRadixSortHistogram
       __syncthreads();
 
       // Accumulate the result in global memory.
+      // Wait for global histogram init
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
       AccumulateGlobalHistograms();
       __syncthreads();
     }

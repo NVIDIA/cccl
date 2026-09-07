@@ -25,8 +25,11 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__utility/cmp.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/mapping/mapping_result.cuh>
+#include <cuda/experimental/__group/queries.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -49,99 +52,22 @@ _CCCL_DEVICE constexpr non_exhaustive_t non_exhaustive;
 //   `__group_mapping_result` concept
 
 // todo(dabayer): do we want to add stride parameter?
-template <::cuda::std::size_t _Np, bool _IsExhaustive>
+template <::cuda::std::size_t _UnitCount, bool _IsExhaustive>
 class group_by
 {
-  static_assert(_Np != 0, "_Np must not be zero");
-  static_assert(::cuda::std::in_range<unsigned>(_Np), "_Np must be within uint32_t range");
+  static_assert(_UnitCount != 0, "_UnitCount must not be zero");
+  static_assert(::cuda::std::in_range<::cuda::std::uint32_t>(_UnitCount), "_UnitCount must be within uint32_t range");
 
 public:
-  template <::cuda::std::size_t _NGroups>
-  struct __mapping_result
-  {
-    unsigned __group_count_;
-    unsigned __group_rank_;
-    unsigned __rank_;
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid(unsigned __group_count) noexcept
-    {
-      return {__group_count, 0xffff'ffffu, 0xffff'ffffu};
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
-    {
-      return _NGroups;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
-    {
-      return __group_count_;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
-    {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
-      }
-      return __group_rank_;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
-    {
-      return _Np;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
-    {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting count of thread that is not part of the group is UB");
-      }
-      return static_cast<unsigned>(_Np);
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
-    {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting rank of thread that is not part of the group is UB");
-      }
-      return __rank_;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
-    {
-      if constexpr (_IsExhaustive)
-      {
-        return true;
-      }
-      else
-      {
-        return __rank_ != 0xffff'ffffu;
-      }
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-    {
-      return _IsExhaustive;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
-    {
-      return true;
-    }
-  };
-
   _CCCL_HIDE_FROM_ABI explicit group_by() = default;
 
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES((!_IsExhaustive))
-  _CCCL_DEVICE_API constexpr group_by(non_exhaustive_t) noexcept {}
+  _CCCL_DEVICE_API constexpr group_by(const non_exhaustive_t&) noexcept {}
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
   {
-    return _Np;
+    return _UnitCount;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
@@ -149,147 +75,96 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_API constexpr unsigned count() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
   {
-    return static_cast<unsigned>(_Np);
+    return static_cast<::cuda::std::uint32_t>(_UnitCount);
   }
 
-  template <class _Unit, class _Level, class _Hierarchy>
-  [[nodiscard]] _CCCL_DEVICE_API auto map(const _Unit& __unit, const _Level&, _Hierarchy __hier) const noexcept
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
+  [[nodiscard]] _CCCL_DEVICE_API auto
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
-    constexpr auto __static_nunits = _Unit::static_count(_Level{}, __hier);
+    constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
+    constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
+    constexpr auto __static_curr_ngroups =
+      (__static_prev_nunits != ::cuda::std::dynamic_extent)
+        ? __static_prev_nunits / _UnitCount
+        : ::cuda::std::dynamic_extent;
     constexpr auto __static_ngroups =
-      (__static_nunits != ::cuda::std::dynamic_extent) ? __static_nunits / _Np : ::cuda::std::dynamic_extent;
+      (__static_prev_ngroups != ::cuda::std::dynamic_extent && __static_curr_ngroups != ::cuda::std::dynamic_extent)
+        ? (__static_prev_ngroups * __static_curr_ngroups)
+        : ::cuda::std::dynamic_extent;
 
-    const auto __nunits    = _Unit::template count_as<unsigned>(_Level{}, __hier);
-    const auto __unit_rank = _Unit::template rank_as<unsigned>(_Level{}, __hier);
+    using _MappingResult =
+      __mapping_result<__static_ngroups,
+                       _UnitCount,
+                       _PrevMappingResult::is_always_exhaustive() && _IsExhaustive,
+                       _PrevMappingResult::is_always_contiguous()>;
 
-    __mapping_result<__static_ngroups> __ret{};
-    __ret.__group_count_ = __nunits / count();
-    __ret.__group_rank_  = __unit_rank / count();
-    __ret.__rank_        = __unit_rank % count();
+    if (!__prev_mapping_result.is_valid())
+    {
+      return _MappingResult::invalid();
+    }
+
+    const auto __prev_nunits     = __prev_mapping_result.unit_count();
+    const auto __prev_unit_rank  = __prev_mapping_result.unit_rank();
+    const auto __curr_ngroups    = __prev_nunits / unit_count();
+    const auto __curr_group_rank = __prev_unit_rank / unit_count();
+    const auto __ngroups         = __prev_mapping_result.group_count() * __curr_ngroups;
 
     // If the mapping is exhaustive, check the preconditions, otherwise return invalid mapping for the remainder.
     if constexpr (_IsExhaustive)
     {
-      if constexpr (__static_nunits != ::cuda::std::dynamic_extent)
+      if constexpr (__static_prev_nunits != ::cuda::std::dynamic_extent)
       {
-        static_assert(__static_nunits % _Np == 0, "group_by mapping _IsExhaustive precondition violation");
+        static_assert(__static_prev_nunits % _UnitCount == 0, "group_by mapping _IsExhaustive precondition violation");
       }
       else
       {
-        _CCCL_ASSERT(__nunits % count() == 0, "group_by mapping _IsExhaustive precondition violation");
+        _CCCL_ASSERT(__prev_nunits % unit_count() == 0, "group_by mapping _IsExhaustive precondition violation");
       }
     }
-    else if (__nunits % count() != 0)
+    else if (__prev_nunits % unit_count() != 0)
     {
-      if (__ret.__group_rank_ >= __ret.__group_count_)
+      if (__curr_group_rank >= __curr_ngroups)
       {
-        return __mapping_result<__static_ngroups>::__invalid(__ret.__group_count_);
+        return _MappingResult::invalid_with_group_count(__ngroups);
       }
     }
-    return __ret;
+
+    const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank;
+    const auto __n          = unit_count();
+    const auto __rank       = __prev_unit_rank % __n;
+    const auto __lane_mask =
+      (::cuda::std::is_same_v<_Unit, thread_level>)
+        ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+            __prev_mapping_result.lane_mask(), __n, __rank)
+        : __prev_mapping_result.lane_mask();
+    return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
   }
 };
 
 template <bool _IsExhaustive>
 class group_by<::cuda::std::dynamic_extent, _IsExhaustive>
 {
-  unsigned __n_;
+  ::cuda::std::uint32_t __count_;
 
 public:
-  struct __mapping_result
+  _CCCL_DEVICE_API explicit constexpr group_by(::cuda::std::uint32_t __count) noexcept
+      : __count_{__count}
   {
-    unsigned __group_count_;
-    unsigned __group_rank_;
-    unsigned __count_;
-    unsigned __rank_;
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid(unsigned __group_count) noexcept
-    {
-      return {__group_count, 0xffff'ffffu, 0xffff'ffffu, 0xffff'ffffu};
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
-    {
-      return ::cuda::std::dynamic_extent;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
-    {
-      return __group_count_;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
-    {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
-      }
-      return __group_rank_;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
-    {
-      return ::cuda::std::dynamic_extent;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
-    {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
-      }
-      return __count_;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
-    {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting rank of thread that is not part of the group is UB");
-      }
-      return __rank_;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
-    {
-      if constexpr (_IsExhaustive)
-      {
-        return true;
-      }
-      else
-      {
-        return __rank_ != 0xffff'ffffu;
-      }
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
-    {
-      return _IsExhaustive;
-    }
-
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
-    {
-      return true;
-    }
-  };
-
-  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __n) noexcept
-      : __n_{__n}
-  {
-    _CCCL_ASSERT(__n_ > 0, "__n cannot be 0");
+    _CCCL_ASSERT(__count > 0, "__count cannot be 0");
   }
 
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES((!_IsExhaustive2))
-  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __n, non_exhaustive_t) noexcept
-      : __n_{__n}
+  _CCCL_DEVICE_API explicit constexpr group_by(::cuda::std::uint32_t __count, const non_exhaustive_t&) noexcept
+      : __count_{__count}
   {
-    _CCCL_ASSERT(__n_ > 0, "__n cannot be 0");
+    _CCCL_ASSERT(__count > 0, "__count cannot be 0");
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_unit_count() noexcept
   {
     return ::cuda::std::dynamic_extent;
   }
@@ -299,62 +174,61 @@ public:
     return _IsExhaustive;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::uint32_t unit_count() const noexcept
   {
-    return __n_;
+    return __count_;
   }
 
-  template <class _Unit, class _Level, class _Hierarchy>
+  template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit& __unit, const _Level& __level, const _Hierarchy& __hier) const noexcept
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
-    const auto __nunits    = __unit.template count_as<unsigned>(__level, __hier);
-    const auto __unit_rank = __unit.template rank_as<unsigned>(__level, __hier);
+    using _MappingResult =
+      __mapping_result<::cuda::std::dynamic_extent,
+                       ::cuda::std::dynamic_extent,
+                       _PrevMappingResult::is_always_exhaustive() && _IsExhaustive,
+                       _PrevMappingResult::is_always_contiguous()>;
 
-    __mapping_result __ret{};
-    __ret.__group_count_ = __nunits / __n_;
-    __ret.__group_rank_  = __unit_rank / __n_;
-    __ret.__count_       = __n_;
-    __ret.__rank_        = __unit_rank % __n_;
+    if (!__prev_mapping_result.is_valid())
+    {
+      return _MappingResult::invalid();
+    }
+
+    const auto __prev_nunits     = __prev_mapping_result.unit_count();
+    const auto __prev_unit_rank  = __prev_mapping_result.unit_rank();
+    const auto __curr_ngroups    = __prev_nunits / __count_;
+    const auto __curr_group_rank = __prev_unit_rank / __count_;
+    const auto __ngroups         = __prev_mapping_result.group_count() * __curr_ngroups;
 
     // If the mapping is exhaustive, check the preconditions, otherwise remove the last partial group.
     if constexpr (_IsExhaustive)
     {
-      _CCCL_ASSERT(__nunits % __n_ == 0, "group_by mapping _IsExhaustive precondition violation");
+      _CCCL_ASSERT(__prev_nunits % __count_ == 0, "group_by mapping _IsExhaustive precondition violation");
     }
-    else if (__nunits % __n_ != 0)
+    else if (__prev_nunits % __count_ != 0)
     {
-      if (__ret.__group_rank_ >= __ret.__group_count_)
+      if (__curr_group_rank >= __curr_ngroups)
       {
-        return __mapping_result::__invalid(__ret.__group_count_);
+        return _MappingResult::invalid_with_group_count(__ngroups);
       }
     }
-    return __ret;
+
+    const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __curr_group_rank;
+    const auto __n          = __count_;
+    const auto __rank       = __prev_unit_rank % __count_;
+    const auto __lane_mask =
+      (::cuda::std::is_same_v<_Unit, thread_level>)
+        ? ::cuda::experimental::__make_lane_mask_for_n<_PrevMappingResult::is_always_contiguous()>(
+            __prev_mapping_result.lane_mask(), __n, __rank)
+        : __prev_mapping_result.lane_mask();
+    return _MappingResult{__ngroups, __group_rank, __n, __rank, __lane_mask};
   }
 };
 
-_CCCL_DEVICE group_by(unsigned) -> group_by<::cuda::std::dynamic_extent>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(::cuda::std::uint32_t) -> group_by<::cuda::std::dynamic_extent>;
 
-_CCCL_DEVICE group_by(unsigned, non_exhaustive_t) -> group_by<::cuda::std::dynamic_extent, false>;
-
-template <class _Mapping, class _Unit, class _Level, class _Hierarchy>
-using __group_mapping_result_t =
-  decltype(::cuda::std::declval<_Mapping>().map(_Unit{}, _Level{}, ::cuda::std::declval<_Hierarchy>()));
-
-template <class _MappingResult>
-_CCCL_DEVICE_API void __check_mapping_result(const _MappingResult& __mapping_result) noexcept
-{
-  // Don't check the mapping result if it's not valid. We can skip this check if mapping result is always exhaustive.
-  if constexpr (!_MappingResult::is_always_exhaustive())
-  {
-    if (!__mapping_result.is_valid())
-    {
-      return;
-    }
-  }
-  _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
-  _CCCL_ASSERT(__mapping_result.rank() < __mapping_result.count(), "invalid rank");
-}
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group_by(::cuda::std::uint32_t, const non_exhaustive_t&)
+  -> group_by<::cuda::std::dynamic_extent, false>;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

@@ -47,8 +47,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(complex64, "C64", "complex64");
 
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMin, "ArgMin", "cub::ArgMin");
-NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMax, "ArgMax", "cub::ArgMax");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_min, "arg_min", "cub::detail::arg_min");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::detail::arg_max, "arg_max", "cub::detail::arg_max");
 
 template <typename T, T I>
 struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
@@ -90,7 +90,7 @@ using integral_types    = nvbench::type_list<TUNE_T>;
 using fundamental_types = nvbench::type_list<TUNE_T>;
 using all_types         = nvbench::type_list<TUNE_T>;
 #else
-// keep those lists in sync with the documentation in tuning.rst
+// keep those lists in sync with the documentation in tuning_infra.rst
 using integral_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
 
 using fundamental_types =
@@ -176,7 +176,7 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
     case bit_entropy::_0_201:
       return 0.201;
     case bit_entropy::_0_000:
-      return 0.0;
+      [[fallthrough]];
     default:
       return 0.0;
   }
@@ -257,8 +257,6 @@ void gen_power_law_segment_offsets_host(seed_t seed, cuda::std::span<T> segment_
 template <typename T>
 void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segment_offsets, std::size_t elements);
 
-namespace
-{
 struct generator_base_t
 {
   seed_t m_seed{};
@@ -440,7 +438,6 @@ struct gen_t
   gen_uniform_t uniform{};
   gen_power_law_t power_law{};
 };
-} // namespace
 } // namespace detail
 
 inline detail::gen_t generate;
@@ -514,6 +511,20 @@ struct max_t
     less_t less{};
     return less(lhs, rhs) ? rhs : lhs;
   }
+
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __half operator()(__half lhs, __half rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
+
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+  __host__ __device__ __nv_bfloat16 operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const
+  {
+    return static_cast<float>(lhs) < static_cast<float>(rhs) ? rhs : lhs;
+  }
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 };
 
 template <class T>
@@ -533,8 +544,6 @@ struct proclaims_copyable_arguments<less_then_t<T>> : ::cuda::std::true_type
 {};
 _CCCL_END_NAMESPACE_CUDA
 
-namespace
-{
 struct caching_allocator_t
 {
   using value_type = char;
@@ -547,6 +556,15 @@ struct caching_allocator_t
 
   char* allocate(std::ptrdiff_t num_bytes)
   {
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+    if (first_async_stream != ::cuda::invalid_stream)
+    {
+      // there was already an async allocate
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously and synchronously at the "
+                               "same time");
+    }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
     value_type* result{};
     auto free_block = free_blocks.find(num_bytes);
 
@@ -564,8 +582,17 @@ struct caching_allocator_t
     return result;
   }
 
-  void deallocate(char* ptr, size_t)
+  void deallocate(char* ptr, size_t, [[maybe_unused]] bool check_stream = true)
   {
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+    if (check_stream && first_async_stream != ::cuda::invalid_stream)
+    {
+      // there was already an async allocate
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously and synchronously at the "
+                               "same time");
+    }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
     auto iter = allocated_blocks.find(ptr);
     if (iter == allocated_blocks.end())
     {
@@ -580,7 +607,7 @@ struct caching_allocator_t
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   void* allocate_sync(size_t num_bytes, size_t)
   {
-    return allocate(num_bytes);
+    return allocate(static_cast<std::ptrdiff_t>(num_bytes));
   }
 
   void deallocate_sync(void* ptr, size_t num_bytes, size_t)
@@ -590,8 +617,17 @@ struct caching_allocator_t
 
   void* allocate(::cuda::stream_ref __stream, size_t num_bytes, size_t)
   {
+    if (first_async_stream == ::cuda::invalid_stream)
+    {
+      first_async_stream = __stream;
+    }
+    else if (first_async_stream != __stream)
+    {
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously from multiple streams");
+    }
+
     value_type* result{};
-    auto free_block = free_blocks.find(num_bytes);
+    auto free_block = free_blocks.find(static_cast<std::ptrdiff_t>(num_bytes));
 
     if (free_block != free_blocks.end())
     {
@@ -615,8 +651,14 @@ struct caching_allocator_t
 
   void deallocate(::cuda::stream_ref __stream, void* ptr, size_t num_bytes, size_t)
   {
-    __stream.sync();
-    deallocate(static_cast<char*>(ptr), num_bytes);
+    if (first_async_stream != __stream)
+    {
+      throw std::runtime_error("caching_allocator_t is not intended to be used asynchronously from multiple streams");
+    }
+
+    // there is no need to sync the stream here and we can just insert the allocation into the free list, because the
+    // next allocation can only be done from the same stream again.
+    deallocate(static_cast<char*>(ptr), num_bytes, false);
   }
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
@@ -626,6 +668,10 @@ private:
 
   free_blocks_type free_blocks;
   allocated_blocks_type allocated_blocks;
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  ::cuda::stream_ref first_async_stream{::cuda::invalid_stream}; // just to detect wrong usage patterns
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
   void free_all()
   {
@@ -680,33 +726,33 @@ private:
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-auto policy(caching_allocator_t& alloc)
+inline auto policy(caching_allocator_t& alloc)
 {
   return thrust::cuda::par(alloc);
 }
-auto cuda_policy(caching_allocator_t& alloc)
+inline auto cuda_policy(caching_allocator_t& alloc)
 {
   return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc);
 }
 #else
-auto policy(caching_allocator_t&)
+inline auto policy(caching_allocator_t&)
 {
   return thrust::device;
 }
 #endif
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
+inline auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
   return thrust::cuda::par(alloc).on(launch.get_stream());
 }
-auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
+inline auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
   return cuda::execution::gpu.with(cuda::mr::get_memory_resource, alloc)
     .with(cuda::get_stream, launch.get_stream().get_stream());
 }
 #else
-auto policy(caching_allocator_t&, nvbench::launch&)
+inline auto policy(caching_allocator_t&, nvbench::launch&)
 {
   return thrust::device;
 }
@@ -723,4 +769,3 @@ auto cub_bench_env(caching_allocator_t& alloc, nvbench::launch& launch, MoreEnvs
     envs...};
 }
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-} // namespace

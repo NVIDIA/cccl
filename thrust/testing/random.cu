@@ -1,5 +1,8 @@
 #include <thrust/generate.h>
 #include <thrust/random.h>
+#include <thrust/random/detail/urng_traits.h>
+
+#include <cuda/std/random>
 
 #include <sstream>
 
@@ -413,21 +416,12 @@ void TestRanlux48BaseEqual()
 }
 DECLARE_UNITTEST(TestRanlux48BaseEqual);
 
-#if defined(__INTEL_COMPILER) && 1800 >= __INTEL_COMPILER
-void TestRanlux48BaseUnequal()
-{
-  // ICPC has a known failure with this test.
-  // See nvbug 200414000.
-  KNOWN_FAILURE;
-}
-#else
 void TestRanlux48BaseUnequal()
 {
   using Engine = thrust::random::ranlux48_base;
 
   TestEngineUnequal<Engine>();
 }
-#endif
 DECLARE_UNITTEST(TestRanlux48BaseUnequal);
 
 void TestMinstdRandValidation()
@@ -695,28 +689,33 @@ void ValidateDistributionCharacteristic()
   // only do this if they have the same result_type
   if (::cuda::std::is_same<typename Distribution::result_type, typename Engine::result_type>::value)
   {
+    using engine_traits = thrust::random::detail::urng_traits<Engine>;
+
     // test Distribution with same range as engine
 
     // test host
-    thrust::generate(h.begin(), h.end(), Validator(Distribution(Engine::min, Engine::max)));
+    thrust::generate(h.begin(), h.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution(Engine::min, Engine::max)));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution((engine_traits::min) (), (engine_traits::max) ())));
 
     ASSERT_EQUAL(true, d[0]);
 
     // test Distribution with smaller range than engine
 
     // test host
-    typename Distribution::result_type engine_range = Engine::max - Engine::min;
-    thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
+    typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
+    typename Distribution::result_type smaller_min  = engine_range / 3;
+    typename Distribution::result_type smaller_max  = engine_range - smaller_min;
+
+    thrust::generate(h.begin(), h.end(), Validator(Distribution(smaller_min, smaller_max)));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution(smaller_min, smaller_max)));
 
     ASSERT_EQUAL(true, d[0]);
   }
@@ -841,3 +840,23 @@ void TestNormalDistributionSaveRestore()
   TestDistributionSaveRestore<double_dist>();
 }
 DECLARE_UNITTEST(TestNormalDistributionSaveRestore);
+
+template <typename Distribution, typename Engine>
+void ValidateDistributionWithEngine()
+{
+  ValidateDistributionCharacteristic<Distribution, ValidateDistributionMin<Distribution, Engine>>();
+  ValidateDistributionCharacteristic<Distribution, ValidateDistributionMax<Distribution, Engine>>();
+}
+
+void TestDistributionsWithCudaStdPhilox()
+{
+  using engine      = cuda::std::philox4x32;
+  using uint_dist   = thrust::random::uniform_int_distribution<typename engine::result_type>;
+  using float_dist  = thrust::random::uniform_real_distribution<float>;
+  using double_dist = thrust::random::normal_distribution<double>;
+
+  ValidateDistributionWithEngine<uint_dist, engine>();
+  ValidateDistributionWithEngine<float_dist, engine>();
+  ValidateDistributionWithEngine<double_dist, engine>();
+}
+DECLARE_UNITTEST(TestDistributionsWithCudaStdPhilox);

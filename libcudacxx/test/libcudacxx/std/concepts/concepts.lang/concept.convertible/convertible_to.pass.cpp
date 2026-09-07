@@ -440,7 +440,7 @@ int main(int, char**)
   // Ensure that CannotInstantiate is not instantiated by convertible_to when it is not needed.
   // For example CannotInstantiate is instantiated as a part of ADL lookup for arguments of type CannotInstantiate*.
   // static_assert(
-  //    convertible_to<CannotInstantiate<int>*, CannotInstantiate<int>*>, "");
+  //    convertible_to<CannotInstantiate<int>*, CannotInstantiate<int>*>);
 
   // Test for PR13592
   static_assert(!convertible_to<abstract, abstract>);

@@ -6,6 +6,10 @@
  * Test evaluation for caching allocator of device memory
  ******************************************************************************/
 
+// TODO: remove this test in CCCL 4.0
+// This test intentionally exercises the deprecated caching allocator.
+#define CCCL_IGNORE_DEPRECATED_API
+
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
@@ -16,7 +20,10 @@
 
 #include <cstdio>
 
+#include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
 using namespace cub;
 
@@ -445,8 +452,8 @@ int main(int argc, char** argv)
   printf("\t CUB CachingDeviceAllocator allocation CPU speedup: %.2f (avg cudaMalloc %.4f ms vs. avg DeviceAllocate "
          "%.4f ms)\n",
          cuda_malloc_elapsed_millis / cub_calloc_elapsed_millis,
-         cuda_malloc_elapsed_millis / timing_iterations,
-         cub_calloc_elapsed_millis / timing_iterations);
+         cuda_malloc_elapsed_millis / static_cast<float>(timing_iterations),
+         cub_calloc_elapsed_millis / static_cast<float>(timing_iterations));
 
   // GPU performance comparisons.  Allocate and free a 1MB block 2000 times
   GpuTimer gpu_timer;
@@ -489,8 +496,8 @@ int main(int argc, char** argv)
   printf("\t CUB CachingDeviceAllocator allocation GPU speedup: %.2f (avg cudaMalloc %.4f ms vs. avg DeviceAllocate "
          "%.4f ms)\n",
          cuda_malloc_elapsed_millis / cub_calloc_elapsed_millis,
-         cuda_malloc_elapsed_millis / timing_iterations,
-         cub_calloc_elapsed_millis / timing_iterations);
+         cuda_malloc_elapsed_millis / static_cast<float>(timing_iterations),
+         cub_calloc_elapsed_millis / static_cast<float>(timing_iterations));
 
   printf("Success\n");
 

@@ -21,8 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/__type_traits/is_vector_type.h>
+#include <cuda/__type_traits/scalar_type.h>
+#include <cuda/__type_traits/vector_size.h>
 #include <cuda/__type_traits/vector_type.h>
 #include <cuda/std/type_traits>
 

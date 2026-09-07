@@ -114,15 +114,15 @@ void sync_all()
 struct async_tester_fence
 {
   template <typename T>
-  TEST_FUNC static void initialize(T&)
+  TEST_HOST_DEVICE_FUNC static void initialize(T&)
   {}
 
   template <typename T>
-  TEST_FUNC static void validate(T&)
+  TEST_HOST_DEVICE_FUNC static void validate(T&)
   {}
 
   template <typename T>
-  TEST_FUNC static void perform(T&)
+  TEST_HOST_DEVICE_FUNC static void perform(T&)
   {}
 };
 
@@ -130,23 +130,23 @@ template <typename... Testers>
 using tester_list = type_list<Testers...>;
 
 template <typename Tester, typename T>
-TEST_FUNC void initialize(T& object)
+TEST_HOST_DEVICE_FUNC void initialize(T& object)
 {
   Tester::initialize(object);
 }
 
 template <typename Tester, typename T>
-TEST_FUNC auto validate_impl(T& object) -> decltype(Tester::validate(object), void())
+TEST_HOST_DEVICE_FUNC auto validate_impl(T& object) -> decltype(Tester::validate(object), void())
 {
   Tester::validate(object);
 }
 
 template <typename, typename... Ts>
-TEST_FUNC void validate_impl(Ts&&...)
+TEST_HOST_DEVICE_FUNC void validate_impl(Ts&&...)
 {}
 
 template <typename Tester, typename T>
-TEST_FUNC void validate(T& object)
+TEST_HOST_DEVICE_FUNC void validate(T& object)
 {
   validate_impl<Tester>(object);
 }
@@ -459,7 +459,7 @@ struct manual_object
 
   union data
   {
-    TEST_FUNC constexpr data() noexcept
+    TEST_HOST_DEVICE_FUNC constexpr data() noexcept
         : dummy(){};
     char dummy = {};
     T object;
@@ -572,11 +572,11 @@ bool check_managed_memory_support(bool is_async)
 struct dummy_tester
 {
   template <typename... Ts>
-  TEST_FUNC static void initialize(Ts&&...)
+  TEST_HOST_DEVICE_FUNC static void initialize(Ts&&...)
   {}
 
   template <typename... Ts>
-  TEST_FUNC static void validate(Ts&&...)
+  TEST_HOST_DEVICE_FUNC static void validate(Ts&&...)
   {}
 };
 
@@ -655,7 +655,7 @@ struct performer_adapter<Performer, performer_side::initialize>
   static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
-  TEST_FUNC static void initialize(T& t)
+  TEST_HOST_DEVICE_FUNC static void initialize(T& t)
   {
     Performer::perform(t);
   }
@@ -670,11 +670,11 @@ struct performer_adapter<Performer, performer_side::validate>
   static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
-  TEST_FUNC static void initialize(T&)
+  TEST_HOST_DEVICE_FUNC static void initialize(T&)
   {}
 
   template <typename T>
-  TEST_FUNC static void validate(T& t)
+  TEST_HOST_DEVICE_FUNC static void validate(T& t)
   {
     Performer::perform(t);
   }

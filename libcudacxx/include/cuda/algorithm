@@ -23,6 +23,7 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__algorithm/fill.h>
+#include <cuda/__algorithm/sample.h>
 #include <cuda/std/algorithm>
 
 #endif // _CUDA_ALGORITHM

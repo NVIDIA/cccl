@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: pre-sm-80
 
@@ -85,7 +86,7 @@ __global__ void test_range_kernel(void* ptr, uint64_t property, uint32_t primary
   {
     printf("  primary_size = %u, total_size = %u\n", primary_size, total_size);
     printf("  primary = %u, secondary = %u\n", (int) to_enum<Primary>(), (int) to_enum<Secondary>());
-    printf("  0x%llX vs 0x%llX\n", policy, static_cast<uint64_t>(property));
+    printf("  0x%llX vs 0x%llX\n", static_cast<unsigned long long>(policy), static_cast<unsigned long long>(property));
   }
   assert(static_cast<uint64_t>(property) == policy);
 }

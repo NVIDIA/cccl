@@ -27,6 +27,7 @@
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -37,7 +38,6 @@
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
 
 #  include <cuda/experimental/__copy_bytes/memcpy_batch_tiles.cuh>
@@ -74,7 +74,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   namespace cudax = ::cuda::experimental;
   static_assert(::cuda::std::is_same_v<::cuda::std::remove_cv_t<_TpIn>, ::cuda::std::remove_cv_t<_TpOut>>,
                 "cudax::copy_bytes: TpIn and TpOut must be the same type");
-  static_assert(::cuda::std::is_trivially_copyable_v<_TpIn>, "TpIn must be trivially copyable");
+  static_assert(::cuda::is_trivially_copyable_v<_TpIn>, "TpIn must be trivially copyable");
   static_assert(!::cuda::std::is_const_v<_TpOut>, "TpOut must not be const");
   static_assert(::cuda::__is_cuda_mdspan_layout_v<_LayoutPolicyIn>,
                 "cudax::copy_bytes: LayoutPolicyIn must be a predefined layout policy");

@@ -73,8 +73,7 @@ int main(int, char**)
 
   constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
   static_assert(testConstexpr<year_month_weekday_last, months>(
-                  year_month_weekday_last{year{1234}, month{1}, weekday_last{Tuesday}}),
-                "");
+    year_month_weekday_last{year{1234}, month{1}, weekday_last{Tuesday}}));
 
   for (unsigned i = 0; i <= 10; ++i)
   {

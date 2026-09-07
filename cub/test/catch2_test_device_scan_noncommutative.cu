@@ -3,7 +3,7 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <catch2_test_device_scan.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
@@ -47,7 +47,7 @@ struct bicyclic_monoid_op
 };
 }; // namespace impl
 
-C2H_TEST("Device inclusive scan works with non-commutative operator", "[scan][device]")
+CUB_TEST("Device inclusive scan works with non-commutative operator", "[scan][device]", CUB_SMALL)
 {
   using pair_t = cuda::std::pair<unsigned, unsigned>;
   using op_t   = impl::bicyclic_monoid_op<unsigned>;

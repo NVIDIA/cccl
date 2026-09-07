@@ -64,7 +64,7 @@ namespace detail
 class generic_error_category : public error_category
 {
 public:
-  inline generic_error_category() {}
+  inline generic_error_category() = default;
 
   inline const char* name() const override
   {
@@ -88,7 +88,7 @@ public:
 class system_error_category : public error_category
 {
 public:
-  inline system_error_category() {}
+  inline system_error_category() = default;
 
   inline const char* name() const override
   {

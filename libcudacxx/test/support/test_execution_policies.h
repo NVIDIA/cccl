@@ -17,17 +17,18 @@
 
 #include "test_macros.h"
 
-#define EXECUTION_POLICY_SFINAE_TEST(FUNCTION)                                                                          \
-  template <class, class...>                                                                                            \
-  struct sfinae_test_##FUNCTION##_impl : cuda::std::false_type                                                          \
-  {};                                                                                                                   \
-                                                                                                                        \
-  template <class... Args>                                                                                              \
-  struct sfinae_test_##FUNCTION##_impl<cuda::std::void_t<decltype(cuda::std::FUNCTION(cuda::std::declval<Args>()...))>, \
-                                       Args...> : cuda::std::true_type                                                  \
-  {};                                                                                                                   \
-                                                                                                                        \
-  template <class... Args>                                                                                              \
+#define EXECUTION_POLICY_SFINAE_TEST(FUNCTION)                                                      \
+  template <class, class...>                                                                        \
+  struct sfinae_test_##FUNCTION##_impl : cuda::std::false_type                                      \
+  {};                                                                                               \
+                                                                                                    \
+  template <class... Args>                                                                          \
+  struct sfinae_test_##FUNCTION##                                                                   \
+    _impl<cuda::std::void_t<decltype(cuda::std::FUNCTION(cuda::std::declval<Args>()...))>, Args...> \
+      : cuda::std::true_type                                                                        \
+  {};                                                                                               \
+                                                                                                    \
+  template <class... Args>                                                                          \
   inline constexpr bool sfinae_test_##FUNCTION = sfinae_test_##FUNCTION##_impl<void, Args...>::value;
 
 _CCCL_EXEC_CHECK_DISABLE

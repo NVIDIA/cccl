@@ -171,19 +171,25 @@ struct ForwardingCallObject
   template <class... Args>
   TEST_FUNC static void set_call(CallType type)
   {
+#if !_CCCL_TILE_COMPILATION() // Pointer types are not supported in tile mode
     assert(last_call_type() == CT_None);
     assert(last_call_args() == nullptr);
     last_call_type() = type;
     last_call_args() = cuda::std::addressof(makeArgumentID<Args...>());
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
   template <class... Args>
   TEST_FUNC static bool check_call(CallType type)
   {
+#if _CCCL_TILE_COMPILATION() // Pointer types are not supported in tile mode
+    return true;
+#else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
     bool result      = last_call_type() == type && last_call_args() && *last_call_args() == makeArgumentID<Args...>();
     last_call_type() = CT_None;
     last_call_args() = nullptr;
     return result;
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
   // To check explicit return type for visit<R>
@@ -192,8 +198,10 @@ struct ForwardingCallObject
     return 0;
   }
 
+#if !_CCCL_TILE_COMPILATION() // Pointer types are not supported in tile mode
   STATIC_MEMBER_VAR(last_call_type, CallType)
   STATIC_MEMBER_VAR(last_call_args, const TypeID*)
+#endif // !_CCCL_TILE_COMPILATION()
 };
 
 struct ReturnFirst

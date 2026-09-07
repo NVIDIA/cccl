@@ -19,12 +19,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import ALL_TYPES as _ALL_TYPES
 from utils import as_cupy_stream, generate_data_with_entropy
 
-import cuda.bench as bench
 from cuda.compute import Determinism, OpKind, make_reduce_into
 
 TYPE_MAP = {k: _ALL_TYPES[k] for k in ("I32", "I64", "F32", "F64")}
@@ -43,14 +43,21 @@ def bench_reduce_nondeterministic(state: bench.State):
     h_init = np.zeros(1, dtype=dtype)
 
     reducer = make_reduce_into(
-        d_in,
-        d_out,
-        OpKind.PLUS,
-        h_init,
+        d_in=d_in,
+        d_out=d_out,
+        op=OpKind.PLUS,
+        h_init=h_init,
         determinism=Determinism.NOT_GUARANTEED,
     )
 
-    temp_storage_bytes = reducer(None, d_in, d_out, OpKind.PLUS, num_items, h_init)
+    temp_storage_bytes = reducer(
+        temp_storage=None,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
@@ -60,13 +67,13 @@ def bench_reduce_nondeterministic(state: bench.State):
 
     def launcher(launch: bench.Launch):
         reducer(
-            temp_storage,
-            d_in,
-            d_out,
-            OpKind.PLUS,
-            num_items,
-            h_init,
-            launch.get_stream(),
+            temp_storage=temp_storage,
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=OpKind.PLUS,
+            h_init=h_init,
+            stream=launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

@@ -146,7 +146,7 @@ search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const
     __convert_to_integral(__count),
     __value_,
     __pred,
-    typename iterator_traits<_ForwardIterator>::iterator_category());
+    __iterator_traits_category_or_concept_t<_ForwardIterator>());
 }
 
 template <class _ForwardIterator, class _Size, class _Tp>

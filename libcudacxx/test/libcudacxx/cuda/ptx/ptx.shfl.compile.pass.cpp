@@ -7,6 +7,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: clang && !nvcc
 
@@ -17,7 +21,7 @@
 
 #include "test_macros.h"
 
-TEST_FUNC void test_shfl_full_mask()
+TEST_HOST_DEVICE_FUNC void test_shfl_full_mask()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned FullMask = 0xFFFFFFFF;
@@ -51,7 +55,7 @@ TEST_FUNC void test_shfl_full_mask()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-TEST_FUNC void test_shfl_full_mask_no_pred()
+TEST_HOST_DEVICE_FUNC void test_shfl_full_mask_no_pred()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned FullMask = 0xFFFFFFFF;
@@ -84,7 +88,7 @@ TEST_FUNC void test_shfl_full_mask_no_pred()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-TEST_FUNC void test_shfl_partial_mask()
+TEST_HOST_DEVICE_FUNC void test_shfl_partial_mask()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned PartialMask = 0b1111;
@@ -98,7 +102,7 @@ TEST_FUNC void test_shfl_partial_mask()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-TEST_FUNC void test_shfl_partial_warp()
+TEST_HOST_DEVICE_FUNC void test_shfl_partial_warp()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   constexpr unsigned FullMask = 0xFFFFFFFF;
@@ -142,7 +146,7 @@ TEST_FUNC void test_shfl_partial_warp()
 #endif // __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
 }
 
-TEST_FUNC void test_shfl_divergence()
+TEST_HOST_DEVICE_FUNC void test_shfl_divergence()
 {
 #if __cccl_ptx_isa >= 600 && _CCCL_DEVICE_COMPILATION()
   if (threadIdx.x == 0)

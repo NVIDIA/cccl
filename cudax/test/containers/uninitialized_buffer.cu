@@ -35,7 +35,7 @@ struct do_not_construct
 {
   do_not_construct()
   {
-    CUDAX_CHECK(false);
+    CHECK(false);
   }
 };
 
@@ -70,14 +70,14 @@ constexpr int get_property(const cuda::device_memory_pool_ref&, my_property)
 __global__ void kernel(::cuda::std::span<int> data)
 {
   // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
+  CHECK(data.size() == 1024);
   data[0] = 42;
 }
 
 __global__ void const_kernel(::cuda::std::span<const int> data)
 {
   // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
+  CHECK(data.size() == 1024);
 }
 
 C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
@@ -94,20 +94,20 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value);
     {
       uninitialized_buffer from_count{resource, 42};
-      CUDAX_CHECK(from_count.data() != nullptr);
-      CUDAX_CHECK(from_count.size() == 42);
+      CHECK(from_count.data() != nullptr);
+      CHECK(from_count.size() == 42);
     }
     {
       uninitialized_buffer input{resource, 42};
       const TestType* ptr = input.data();
 
       uninitialized_buffer from_rvalue{cuda::std::move(input)};
-      CUDAX_CHECK(from_rvalue.data() == ptr);
-      CUDAX_CHECK(from_rvalue.size() == 42);
+      CHECK(from_rvalue.data() == ptr);
+      CHECK(from_rvalue.size() == 42);
 
       // Ensure that we properly reset the input buffer
-      CUDAX_CHECK(input.data() == nullptr);
-      CUDAX_CHECK(input.size() == 0);
+      CHECK(input.data() == nullptr);
+      CHECK(input.size() == 0);
     }
   }
 
@@ -117,12 +117,12 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     const TestType* ptr = input.data();
 
     uninitialized_buffer from_rvalue{cuda::std::move(input)};
-    CUDAX_CHECK(from_rvalue.data() == ptr);
-    CUDAX_CHECK(from_rvalue.size() == 42);
+    CHECK(from_rvalue.data() == ptr);
+    CHECK(from_rvalue.size() == 42);
 
     // Ensure that we properly reset the input buffer
-    CUDAX_CHECK(input.data() == nullptr);
-    CUDAX_CHECK(input.size() == 0);
+    CHECK(input.data() == nullptr);
+    CHECK(input.size() == 0);
   }
 
   SECTION("assignment")
@@ -136,15 +136,15 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
       const auto* old_input_ptr = input.data();
 
       buf = cuda::std::move(input);
-      CUDAX_CHECK(buf.data() != old_ptr);
-      CUDAX_CHECK(buf.data() == old_input_ptr);
-      CUDAX_CHECK(buf.size() == 42);
-      CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
-      CUDAX_CHECK(buf.memory_resource() == other_resource);
+      CHECK(buf.data() != old_ptr);
+      CHECK(buf.data() == old_input_ptr);
+      CHECK(buf.size() == 42);
+      CHECK(buf.size_bytes() == 42 * sizeof(TestType));
+      CHECK(buf.memory_resource() == other_resource);
 
-      CUDAX_CHECK(input.data() == nullptr);
-      CUDAX_CHECK(input.size() == 0);
-      CUDAX_CHECK(input.size_bytes() == 0);
+      CHECK(input.data() == nullptr);
+      CHECK(input.size() == 0);
+      CHECK(input.size_bytes() == 0);
     }
 
     { // Ensure self move assignment does not do anything
@@ -152,9 +152,9 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
       const auto* old_ptr = buf.data();
 
       buf = cuda::std::move(buf);
-      CUDAX_CHECK(buf.data() == old_ptr);
-      CUDAX_CHECK(buf.size() == 1337);
-      CUDAX_CHECK(buf.size_bytes() == 1337 * sizeof(TestType));
+      CHECK(buf.data() == old_ptr);
+      CHECK(buf.size() == 1337);
+      CHECK(buf.size_bytes() == 1337 * sizeof(TestType));
     }
   }
 
@@ -164,21 +164,21 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value);
     static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value);
     static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value);
-    CUDAX_CHECK(buf.data() != nullptr);
-    CUDAX_CHECK(buf.size() == 42);
-    CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
-    CUDAX_CHECK(buf.begin() == buf.data());
-    CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
-    CUDAX_CHECK(buf.memory_resource() == resource);
+    CHECK(buf.data() != nullptr);
+    CHECK(buf.size() == 42);
+    CHECK(buf.size_bytes() == 42 * sizeof(TestType));
+    CHECK(buf.begin() == buf.data());
+    CHECK(buf.end() == buf.begin() + buf.size());
+    CHECK(buf.memory_resource() == resource);
 
     static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value);
     static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value);
     static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).data()), TestType const*>::value);
-    CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
-    CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
-    CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
-    CUDAX_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
-    CUDAX_CHECK(cuda::std::as_const(buf).memory_resource() == resource);
+    CHECK(cuda::std::as_const(buf).data() != nullptr);
+    CHECK(cuda::std::as_const(buf).size() == 42);
+    CHECK(cuda::std::as_const(buf).begin() == buf.data());
+    CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
+    CHECK(cuda::std::as_const(buf).memory_resource() == resource);
   }
 
   SECTION("properties")
@@ -194,8 +194,8 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
   {
     uninitialized_buffer buf{resource, 42};
     const cuda::std::span<TestType> as_span{buf};
-    CUDAX_CHECK(as_span.data() == buf.data());
-    CUDAX_CHECK(as_span.size() == 42);
+    CHECK(as_span.data() == buf.data());
+    CHECK(as_span.size() == 42);
   }
 
   SECTION("Actually use memory")
@@ -205,7 +205,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
       uninitialized_buffer buf{resource, 42};
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
       const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
-      CUDAX_CHECK(res == TestType{84});
+      CHECK(res == TestType{84});
     }
   }
 
@@ -217,11 +217,11 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
 
     {
       const uninitialized_buffer old_buf = buf.__replace_allocation(1337);
-      CUDAX_CHECK(buf.data() != old_ptr);
-      CUDAX_CHECK(buf.size() == 1337);
+      CHECK(buf.data() != old_ptr);
+      CHECK(buf.size() == 1337);
 
-      CUDAX_CHECK(old_buf.data() == old_ptr);
-      CUDAX_CHECK(old_buf.size() == old_size);
+      CHECK(old_buf.data() == old_ptr);
+      CHECK(old_buf.size() == old_size);
     }
   }
 
@@ -229,12 +229,12 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
   {
     uninitialized_buffer buf{resource, 42};
     buf.destroy();
-    CUDAX_CHECK(buf.data() == nullptr);
-    CUDAX_CHECK(buf.size() == 0);
+    CHECK(buf.data() == nullptr);
+    CHECK(buf.size() == 0);
 
     buf = uninitialized_buffer{resource, 42};
-    CUDAX_CHECK(buf.data() != nullptr);
-    CUDAX_CHECK(buf.size() == 42);
+    CHECK(buf.data() != nullptr);
+    CHECK(buf.size() == 42);
   }
 }
 

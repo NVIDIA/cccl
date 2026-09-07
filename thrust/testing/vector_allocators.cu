@@ -15,7 +15,7 @@ public:
       : state(i)
   {}
 
-  ~stateful_allocator() {}
+  _CCCL_HOST ~stateful_allocator() {} // NOLINT(modernize-use-equals-default)
 
   stateful_allocator(const stateful_allocator& other)
       : BaseAlloc(other)
@@ -29,7 +29,7 @@ public:
   }
 
   stateful_allocator(stateful_allocator&& other) noexcept
-      : BaseAlloc(std::move(other))
+      : BaseAlloc(static_cast<BaseAlloc&&>(other))
       , state(other.state)
   {
     other.state = 0;

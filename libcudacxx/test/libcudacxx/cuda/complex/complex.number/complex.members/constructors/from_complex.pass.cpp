@@ -19,9 +19,9 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <complex>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include "test_macros.h"
 
@@ -75,13 +75,13 @@ TEST_FUNC void test_types()
   test_cccl_types<T, U>();
   static_assert(test_cccl_types<T, U>());
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   // std::complex is not required to support other than standard floating-point types
   if constexpr (cuda::std::__is_std_fp_v<T>)
   {
     NV_IF_TARGET(NV_IS_HOST, (test_constructor_from_complex<T>(std::complex<U>{U(1), U(2)});))
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 }
 
 template <class T>

@@ -11,6 +11,9 @@
 // ADDITIONAL_COMPILE_FLAGS: --extended-lambda
 // UNSUPPORTED: nvrtc
 
+// UNSUPPORTED: force-tile
+// error: indirect call is unsupported in tile code
+
 #include <cuda/devices>
 #include <cuda/launch>
 #include <cuda/stream>

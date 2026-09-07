@@ -342,7 +342,7 @@ struct only_set_when_expected
 void TestForEachWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<unsigned long long> begin(0);
-  thrust::counting_iterator<unsigned long long> end = begin + (1ull << magnitude);
+  thrust::counting_iterator<unsigned long long> end = begin + static_cast<std::ptrdiff_t>(1ull << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);

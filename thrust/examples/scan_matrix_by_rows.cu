@@ -16,7 +16,8 @@ __host__ void scan_matrix_by_rows0(thrust::device_vector<int>& u, int n, int m)
   // could launch one big kernel for the entire matrix.
   for (int i = 0; i < n; ++i)
   {
-    thrust::inclusive_scan(u.begin() + m * i, u.begin() + m * (i + 1), u.begin() + m * i);
+    thrust::inclusive_scan(
+      u.begin() + m * i, u.begin() + m * (i + 1), u.begin() + m * i); // NOLINT(bugprone-misplaced-widening-cast)
   }
 }
 
@@ -53,7 +54,8 @@ __host__ void scan_matrix_by_rows1(thrust::device_vector<int>& u, int n, int m)
 
   // Finally, we use our `thrust::transform_iterator` as the key sequence to
   // `thrust::inclusive_scan_by_key`.
-  thrust::inclusive_scan_by_key(t_first, t_first + n * m, u.begin(), u.begin());
+  thrust::inclusive_scan_by_key(
+    t_first, t_first + n * m, u.begin(), u.begin()); // NOLINT(bugprone-misplaced-widening-cast)
 }
 
 int main()

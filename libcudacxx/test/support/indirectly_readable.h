@@ -46,4 +46,11 @@ struct IndirectlyReadable
   TEST_FUNC T2<Token>& operator*() const;
 };
 
+template <class Token>
+struct IndirectlyReadable2
+{
+  using value_type = T1<Token>;
+  TEST_FUNC T2<Token>& operator*() const;
+};
+
 #endif // LIBCXX_TEST_SUPPORT_INDIRECTLY_READABLE_H

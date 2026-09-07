@@ -71,7 +71,7 @@ get_temporary_buffer(my_old_temporary_allocation_system, std::ptrdiff_t)
 template <typename Pointer>
 void return_temporary_buffer(my_old_temporary_allocation_system, Pointer p)
 {
-  using RP = typename thrust::detail::pointer_traits<Pointer>::raw_pointer;
+  using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(4217));
 }
 } // namespace my_old_namespace
@@ -101,7 +101,7 @@ void return_temporary_buffer(my_new_temporary_allocation_system, Pointer)
 template <typename Pointer>
 void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std::ptrdiff_t n)
 {
-  using RP = typename thrust::detail::pointer_traits<Pointer>::raw_pointer;
+  using RP = typename cuda::std::pointer_traits<Pointer>::raw_pointer;
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(1742));
   ASSERT_EQUAL(n, 413);
 }
@@ -224,7 +224,7 @@ void free(my_memory_system& system, Pointer)
 
 void TestFreeDispatchExplicit()
 {
-  thrust::pointer<my_memory_system, void> ptr;
+  thrust::pointer<my_memory_system, void> ptr{};
 
   my_memory_system sys(0);
   thrust::free(sys, ptr);
@@ -271,26 +271,24 @@ DECLARE_UNITTEST(TestGetTemporaryBufferDispatchExplicit);
 
 void TestGetTemporaryBufferDispatchImplicit()
 {
+  // skip cpp system, since the scalar backend currently elides user tags
   if (are_same(thrust::device_system_tag(), thrust::system::cpp::tag()))
   {
-    // XXX cpp uses the internal scalar backend, which currently elides user tags
-    KNOWN_FAILURE;
+    return;
   }
-  else
-  {
-    thrust::device_vector<int> vec(9001);
 
-    thrust::sequence(vec.begin(), vec.end());
-    thrust::reverse(vec.begin(), vec.end());
+  thrust::device_vector<int> vec(9001);
 
-    // call something we know will invoke get_temporary_buffer
-    my_memory_system sys(0);
+  thrust::sequence(vec.begin(), vec.end());
+  thrust::reverse(vec.begin(), vec.end());
 
-    thrust::sort(sys, vec.begin(), vec.end());
+  // call something we know will invoke get_temporary_buffer
+  my_memory_system sys(0);
 
-    ASSERT_EQUAL(true, thrust::is_sorted(vec.begin(), vec.end()));
-    ASSERT_EQUAL(true, sys.is_valid());
-  }
+  thrust::sort(sys, vec.begin(), vec.end());
+
+  ASSERT_EQUAL(true, thrust::is_sorted(vec.begin(), vec.end()));
+  ASSERT_EQUAL(true, sys.is_valid());
 }
 DECLARE_UNITTEST(TestGetTemporaryBufferDispatchImplicit);
 

@@ -89,8 +89,11 @@ struct __optional_destruct_base<_Tp, false>
   __storage __storage_;
   bool __engaged_;
 
+  // The held value may throw an exception, but the standard explicitly defines the destructor
+  // for optional "normally", i.e. without `noexcept(false)`. We take this to mean that the
+  // optional should call then call `std::terminate()` in the case of thrown exceptions.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base() // NOLINT(bugprone-exception-escape)
   {
     if (__engaged_)
     {
@@ -106,7 +109,7 @@ struct __optional_destruct_base<_Tp, false>
   template <class... _Args>
   _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<value_type, _Args...>)
-      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __storage_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
@@ -165,7 +168,7 @@ struct __optional_destruct_base<_Tp, true>
   template <class... _Args>
   _CCCL_API constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args) noexcept(
     is_nothrow_constructible_v<value_type, _Args...>)
-      : __storage_(in_place, ::cuda::std::forward<_Args>(__args)...)
+      : __storage_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 

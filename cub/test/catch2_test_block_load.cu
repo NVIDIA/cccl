@@ -6,7 +6,7 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
 static __device__ int get_output_idx(int item)
@@ -122,8 +122,9 @@ struct params_t
   static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<3, TestType>::value;
 };
 
-C2H_TEST("Block load works with even block sizes",
+CUB_TEST("Block load works with even block sizes",
          "[load][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          even_threads_in_block,
@@ -139,8 +140,9 @@ C2H_TEST("Block load works with even block sizes",
     d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load works with even odd sizes",
+CUB_TEST("Block load works with even odd sizes",
          "[load][block]",
+         CUB_SMALL,
          types,
          items_per_thread,
          odd_threads_in_block,
@@ -157,8 +159,13 @@ C2H_TEST("Block load works with even odd sizes",
 
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
-C2H_TEST(
-  "Block load works with even vector types", "[load][block]", vec_types, items_per_thread, a_block_size, load_algorithm)
+CUB_TEST("Block load works with even vector types",
+         "[load][block]",
+         CUB_SMALL,
+         vec_types,
+         items_per_thread,
+         a_block_size,
+         load_algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -170,7 +177,7 @@ C2H_TEST(
 }
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
 
-C2H_TEST("Block load works with custom types", "[load][block]", items_per_thread, load_algorithm)
+CUB_TEST("Block load works with custom types", "[load][block]", CUB_SMALL, items_per_thread, load_algorithm)
 {
   using type                                              = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
@@ -183,7 +190,7 @@ C2H_TEST("Block load works with custom types", "[load][block]", items_per_thread
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, thrust::raw_pointer_cast(d_input.data()));
 }
 
-C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_thread, load_algorithm)
+CUB_TEST("Block load works with caching iterators", "[load][block]", CUB_SMALL, items_per_thread, load_algorithm)
 {
   using type                                              = int;
   constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
@@ -199,8 +206,9 @@ C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_t
 }
 
 #if IPT == 1
-C2H_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
+CUB_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
          "[load][block]",
+         CUB_SMALL,
          c2h::type_list<const int*, int*>)
 {
   using type           = int;

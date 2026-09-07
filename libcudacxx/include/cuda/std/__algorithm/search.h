@@ -159,8 +159,8 @@ search(_ForwardIterator1 __first1,
            __first2,
            __last2,
            __pred,
-           typename iterator_traits<_ForwardIterator1>::iterator_category(),
-           typename iterator_traits<_ForwardIterator2>::iterator_category())
+           __iterator_traits_category_or_concept_t<_ForwardIterator1>(),
+           __iterator_traits_category_or_concept_t<_ForwardIterator2>())
     .first;
 }
 

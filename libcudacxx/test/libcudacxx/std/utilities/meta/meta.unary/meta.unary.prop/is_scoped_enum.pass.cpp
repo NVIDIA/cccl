@@ -136,12 +136,15 @@ int main(int, char**)
   test_negative<void (TestMembers::*)()>();
 
   test_negative<decltype(func1)>();
-  test_negative<decltype(&func1)>();
   test_negative<decltype(func2)>();
-  test_negative<decltype(&func2)>();
   test_negative<decltype(TestMembers::static_method)>();
+
+#if !_CCCL_TILE_COMPILATION() // error: taking address of a function is unsupported in tile code
+  test_negative<decltype(&func1)>();
+  test_negative<decltype(&func2)>();
   test_negative<decltype(&TestMembers::static_method)>();
   test_negative<decltype(&TestMembers::method)>();
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

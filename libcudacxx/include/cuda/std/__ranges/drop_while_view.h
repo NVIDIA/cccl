@@ -84,7 +84,7 @@ public:
 
   _CCCL_API constexpr explicit drop_while_view(_View __base, _Pred __pred)
       : __base_{::cuda::std::move(__base)}
-      , __pred_{::cuda::std::in_place, ::cuda::std::move(__pred)}
+      , __pred_{in_place_t{}, ::cuda::std::move(__pred)}
 
   {}
 
@@ -136,32 +136,32 @@ template <class _View, class _Pred>
 inline constexpr bool enable_borrowed_range<drop_while_view<_View, _Pred>> = enable_borrowed_range<_View>;
 
 template <class _Range, class _Pred>
-_CCCL_HOST_DEVICE drop_while_view(_Range&&, _Pred) -> drop_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES drop_while_view(_Range&&, _Pred)
+  -> drop_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__drop_while)
 
+_CCCL_BEGIN_NAMESPACE_CPO(__drop_while)
 struct __fn
 {
   template <class _Range, class _Pred>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Pred&& __pred) const
-    noexcept(noexcept(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)}))
-      -> decltype(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)})
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Pred&& __pred) noexcept(
+    noexcept(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)}))
+    -> decltype(drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)})
   {
     return drop_while_view{::cuda::std::forward<_Range>(__range), ::cuda::std::forward<_Pred>(__pred)};
   }
 
   _CCCL_TEMPLATE(class _Pred)
   _CCCL_REQUIRES(::cuda::std::constructible_from<::cuda::std::decay_t<_Pred>, _Pred>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Pred&& __pred) const
-    noexcept(::cuda::std::is_nothrow_constructible_v<::cuda::std::decay_t<_Pred>, _Pred>)
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Pred&& __pred) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<::cuda::std::decay_t<_Pred>, _Pred>)
   {
-    return ::cuda::std::ranges::__pipeable{::cuda::std::__bind_back(*this, ::cuda::std::forward<_Pred>(__pred))};
+    return ::cuda::std::ranges::__pipeable{::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Pred>(__pred))};
   }
 };
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

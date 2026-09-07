@@ -67,15 +67,13 @@ class constant_logical_data
         return it->second;
       }
 
-      // We need to populate the cache
+      // Fetch the value and wait for it to be available *before* publishing it to
+      // the cache, so a failed synchronization never leaves a partially-fetched
+      // entry behind (and no rollback guard is needed).
+      auto value = frozen_ld.get(where, stream);
+      cuda_try<cudaStreamSynchronize>(stream);
 
-      // Insert the new value and get the iterator to the newly inserted item
-      it = cached.emplace(where, frozen_ld.get(where, stream)).first;
-
-      // Wait for the cache entry to be available
-      cuda_safe_call(cudaStreamSynchronize(stream));
-
-      return it->second;
+      return cached.emplace(where, mv(value)).first->second;
     }
 
   private:

@@ -26,40 +26,40 @@ d_output_vals = cp.empty_like(d_input_vals)
 
 # Create the segmented sort object.
 sorter = cuda.compute.make_segmented_sort(
-    d_input_keys,
-    d_output_keys,
-    d_input_vals,
-    d_output_vals,
-    cp.asarray(start_offsets),
-    cp.asarray(end_offsets),
-    cuda.compute.SortOrder.ASCENDING,
+    d_in_keys=d_input_keys,
+    d_out_keys=d_output_keys,
+    d_in_values=d_input_vals,
+    d_out_values=d_output_vals,
+    start_offsets_in=cp.asarray(start_offsets),
+    end_offsets_in=cp.asarray(end_offsets),
+    order=cuda.compute.SortOrder.ASCENDING,
 )
 
 # Get the temporary storage size.
 temp_storage_size = sorter(
-    None,
-    d_input_keys,
-    d_output_keys,
-    d_input_vals,
-    d_output_vals,
-    h_input_keys.size,
-    start_offsets.size,
-    cp.asarray(start_offsets),
-    cp.asarray(end_offsets),
+    temp_storage=None,
+    d_in_keys=d_input_keys,
+    d_out_keys=d_output_keys,
+    d_in_values=d_input_vals,
+    d_out_values=d_output_vals,
+    num_items=h_input_keys.size,
+    num_segments=start_offsets.size,
+    start_offsets_in=cp.asarray(start_offsets),
+    end_offsets_in=cp.asarray(end_offsets),
 )
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the segmented sort.
 sorter(
-    d_temp_storage,
-    d_input_keys,
-    d_output_keys,
-    d_input_vals,
-    d_output_vals,
-    h_input_keys.size,
-    start_offsets.size,
-    cp.asarray(start_offsets),
-    cp.asarray(end_offsets),
+    temp_storage=d_temp_storage,
+    d_in_keys=d_input_keys,
+    d_out_keys=d_output_keys,
+    d_in_values=d_input_vals,
+    d_out_values=d_output_vals,
+    num_items=h_input_keys.size,
+    num_segments=start_offsets.size,
+    start_offsets_in=cp.asarray(start_offsets),
+    end_offsets_in=cp.asarray(end_offsets),
 )
 
 # Verify the result.

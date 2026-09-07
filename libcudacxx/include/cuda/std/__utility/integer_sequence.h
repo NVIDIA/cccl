@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,8 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -35,22 +38,22 @@ template <class _IdxType, _IdxType... _Values>
 struct __integer_sequence
 {
   template <template <class _OIdxType, _OIdxType...> class _ToIndexSeq, class _ToIndexType>
-  using __convert _CCCL_NODEBUG_ALIAS = _ToIndexSeq<_ToIndexType, _Values...>;
+  using __convert _CCCL_NODEBUG = _ToIndexSeq<_ToIndexType, _Values...>;
 
   template <size_t _Sp>
-  using __to_tuple_indices _CCCL_NODEBUG_ALIAS = __tuple_indices<(_Values + _Sp)...>;
+  using __to_tuple_indices _CCCL_NODEBUG = __tuple_indices<(_Values + _Sp)...>;
 };
 
 #if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
 
 template <size_t _Ep, size_t _Sp>
-using __make_indices_imp _CCCL_NODEBUG_ALIAS =
+using __make_indices_imp _CCCL_NODEBUG =
   typename _CCCL_BUILTIN_MAKE_INTEGER_SEQ(__integer_sequence, size_t, _Ep - _Sp)::template __to_tuple_indices<_Sp>;
 
 #elif defined(_CCCL_BUILTIN_INTEGER_PACK)
 
 template <size_t _Ep, size_t _Sp>
-using __make_indices_imp _CCCL_NODEBUG_ALIAS =
+using __make_indices_imp _CCCL_NODEBUG =
   typename __integer_sequence<size_t, _CCCL_BUILTIN_INTEGER_PACK(_Ep - _Sp)...>::template __to_tuple_indices<_Sp>;
 
 #else // ^^^ _CCCL_BUILTIN_INTEGER_PACK ^^^ / vvv !_CCCL_BUILTIN_INTEGER_PACK vvv
@@ -62,7 +65,7 @@ struct __repeat;
 template <typename _Tp, _Tp... _Np, size_t... _Extra>
 struct __repeat<__integer_sequence<_Tp, _Np...>, _Extra...>
 {
-  using type _CCCL_NODEBUG_ALIAS = __integer_sequence<
+  using type _CCCL_NODEBUG = __integer_sequence<
     _Tp,
     _Np...,
     sizeof...(_Np) + _Np...,
@@ -183,8 +186,7 @@ struct __parity<7>
 } // namespace __detail
 
 template <size_t _Ep, size_t _Sp>
-using __make_indices_imp _CCCL_NODEBUG_ALIAS =
-  typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
+using __make_indices_imp _CCCL_NODEBUG = typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
 
 #endif // !_CCCL_BUILTIN_INTEGER_PACK
 
@@ -205,17 +207,17 @@ using index_sequence = integer_sequence<size_t, _Ip...>;
 #if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(integer_sequence, _Tp, _Ep);
+using __make_integer_sequence _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(integer_sequence, _Tp, _Ep);
 
 #elif defined(_CCCL_BUILTIN_INTEGER_PACK)
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _CCCL_NODEBUG_ALIAS = integer_sequence<_Tp, __integer_pack(_Ep)...>;
+using __make_integer_sequence _CCCL_NODEBUG = integer_sequence<_Tp, __integer_pack(_Ep)...>;
 
 #else // ^^^ _CCCL_BUILTIN_INTEGER_PACK ^^^ / vvv !_CCCL_BUILTIN_INTEGER_PACK vvv
 
 template <typename _Tp, _Tp _Np>
-using __make_integer_sequence_unchecked _CCCL_NODEBUG_ALIAS =
+using __make_integer_sequence_unchecked _CCCL_NODEBUG =
   typename __detail::__make<_Np>::type::template __convert<integer_sequence, _Tp>;
 
 template <class _Tp, _Tp _Ep>
@@ -225,11 +227,11 @@ struct __make_integer_sequence_checked
   static_assert(0 <= _Ep, "std::make_integer_sequence must have a non-negative sequence length");
   // Workaround GCC bug by preventing bad installations when 0 <= _Ep
   // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68929
-  using type _CCCL_NODEBUG_ALIAS = __make_integer_sequence_unchecked<_Tp, 0 <= _Ep ? _Ep : 0>;
+  using type _CCCL_NODEBUG = __make_integer_sequence_unchecked<_Tp, 0 <= _Ep ? _Ep : 0>;
 };
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _CCCL_NODEBUG_ALIAS = typename __make_integer_sequence_checked<_Tp, _Ep>::type;
+using __make_integer_sequence _CCCL_NODEBUG = typename __make_integer_sequence_checked<_Tp, _Ep>::type;
 
 #endif // !_CCCL_BUILTIN_INTEGER_PACK
 
@@ -242,7 +244,63 @@ using make_index_sequence = make_integer_sequence<size_t, _Np>;
 template <class... _Tp>
 using index_sequence_for = make_index_sequence<sizeof...(_Tp)>;
 
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::integer_sequence
+
+template <class _Tp, _Tp... _Indices>
+struct tuple_size<integer_sequence<_Tp, _Indices...>> : integral_constant<size_t, sizeof...(_Indices)>
+{};
+
+template <size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices),
+                "Index out of bounds in cuda::std::tuple_element<> (cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+template <size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, const integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices),
+                "Index out of bounds in cuda::std::tuple_element<> (const cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+template <size_t _Ip, class _Tp, _Tp... _Indices>
+[[nodiscard]] _CCCL_API constexpr _Tp get(integer_sequence<_Tp, _Indices...>) noexcept
+{
+  static_assert(_Ip < sizeof...(_Indices), "Index out of bounds in cuda::std::get<> (cuda::std::integer_sequence)");
+  constexpr _Tp __indices[]{_Indices...};
+  return __indices[_Ip];
+}
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+// tuple protocol for cuda::std::integer_sequence
+
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Tp, _Tp... _Indices>
+struct tuple_size<::cuda::std::integer_sequence<_Tp, _Indices...>>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, sizeof...(_Indices)>
+{};
+
+template <::cuda::std::size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, ::cuda::std::integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices), "Index out of bounds in std::tuple_element<> (cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+template <::cuda::std::size_t _Ip, class _Tp, _Tp... _Indices>
+struct tuple_element<_Ip, const ::cuda::std::integer_sequence<_Tp, _Indices...>>
+{
+  static_assert(_Ip < sizeof...(_Indices),
+                "Index out of bounds in std::tuple_element<> (const cuda::std::integer_sequence)");
+  using type = _Tp;
+};
+
+_CCCL_END_NAMESPACE_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 

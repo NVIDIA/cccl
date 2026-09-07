@@ -138,8 +138,7 @@ struct basic_common_reference<NotConstructibleFromRefIn::ReferenceType, NotConst
 } // namespace cuda::std
 
 static_assert(
-  cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>,
-  "");
+  cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>);
 
 struct AssignableFromAnything
 {
@@ -190,7 +189,7 @@ struct basic_common_reference<NotAssignableFromRefIn::ReferenceType, NotAssignab
 } // namespace cuda::std
 
 static_assert(
-  cuda::std::common_reference_with<NotAssignableFromRefIn::ValueType&, NotAssignableFromRefIn::ReferenceType&>, "");
+  cuda::std::common_reference_with<NotAssignableFromRefIn::ValueType&, NotAssignableFromRefIn::ReferenceType&>);
 
 // A type that can't be assigned from its own reference isn't `indirectly_movable_storable`, even when assigning it
 // to a type that can be assigned from anything.

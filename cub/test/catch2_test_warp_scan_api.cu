@@ -12,7 +12,7 @@
 #include <cuda/std/__numeric/inclusive_scan.h>
 #include <cuda/std/__numeric/iota.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 constexpr int num_warps = 4;
 
@@ -40,9 +40,9 @@ __global__ void InclusiveWarpScanKernel(int* output)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = threadIdx.x / 32;
+  int warp_id       = static_cast<int>(threadIdx.x / 32);
   int initial_value = 3;
-  int thread_data   = threadIdx.x % 32 + warp_id;
+  int thread_data   = static_cast<int>(threadIdx.x % 32) + warp_id;
 
   // warp #0 input: {0, 1, 2, 3, ..., 31}
   // warp #1 input: {1, 2, 3, 4, ..., 32}
@@ -61,7 +61,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
 }
 // example-end inclusive-warp-scan-init-value
 
-C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
 
@@ -73,7 +73,7 @@ C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][war
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start = expected.begin() + i * 32;
+    auto start = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end   = start + 32;
 
     cuda::std::iota(start, end, i); // initialize host input for every warp
@@ -92,7 +92,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = threadIdx.x / 32;
+  int warp_id       = static_cast<int>(threadIdx.x / 32);
   int initial_value = 3; // for each warp
   int thread_data   = 1;
   int warp_aggregate;
@@ -116,7 +116,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
 }
 // example-end inclusive-warp-scan-init-value-aggregate
 
-C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);
@@ -131,7 +131,7 @@ C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start   = expected.begin() + i * 32;
+    auto start   = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end     = start + 32;
     int init_val = 3;
 
@@ -139,8 +139,8 @@ C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "
 
     cuda::std::inclusive_scan(start, end, start, sum_op{}, init_val);
 
-    expected_aggr.push_back(expected[i * 32 + 31] - init_val); // warp aggregate does not take
-                                                               // initial value into account
+    expected_aggr.push_back(expected[i * 32 + 31] - init_val); // NOLINT(bugprone-misplaced-widening-cast) warp
+                                                               // aggregate does not take initial value into account
   }
 
   REQUIRE(expected == d_out);
@@ -153,8 +153,8 @@ struct custom_max_op
   __host__ __device__ int operator()(int i, int j)
   {
     // Values above 31 are invalid
-    assert(cuda::std::abs(i) < 32);
-    assert(cuda::std::abs(j) < 32);
+    REQUIRE(cuda::std::abs(i) < 32);
+    REQUIRE(cuda::std::abs(j) < 32);
     return cuda::std::max(i, j);
   }
 };
@@ -166,10 +166,10 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id = threadIdx.x / 32;
+  int warp_id = static_cast<int>(threadIdx.x / 32);
 
   int initial_value = 3;
-  int thread_data   = threadIdx.x % 32 + warp_id;
+  int thread_data   = static_cast<int>(threadIdx.x % 32) + warp_id;
   if (threadIdx.x % 2 == 1)
   {
     thread_data = -thread_data;
@@ -194,7 +194,7 @@ __global__ void InclusiveWarpScanPartialKernel(int* output)
 }
 // example-end inclusive-warp-scan-init-value-partial
 
-C2H_TEST("Warp array-based partial inclusive scan works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based partial inclusive scan works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
 
@@ -206,7 +206,7 @@ C2H_TEST("Warp array-based partial inclusive scan works with initial value", "[s
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32;
+    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end        = start + 32;
     int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
 
@@ -231,8 +231,8 @@ struct custom_sum_op
   __host__ __device__ int operator()(int i, int j)
   {
     // Values above 31 are invalid
-    assert(cuda::std::abs(i) < 32);
-    assert(cuda::std::abs(j) < 32);
+    REQUIRE(cuda::std::abs(i) < 32);
+    REQUIRE(cuda::std::abs(j) < 32);
     return i + j;
   }
 };
@@ -244,8 +244,8 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
   // Allocate WarpScan shared memory for 4 warps
   __shared__ typename warp_scan_t::TempStorage temp_storage[num_warps];
 
-  int warp_id       = threadIdx.x / 32;
-  int lane_id       = threadIdx.x % 32;
+  int warp_id       = static_cast<int>(threadIdx.x / 32);
+  int lane_id       = static_cast<int>(threadIdx.x % 32);
   int initial_value = 3; // for each warp
   int thread_data   = (lane_id < num_warps - 1 - warp_id) ? 0 : 1;
   int valid_items   = 40 - warp_id * 16;
@@ -270,7 +270,7 @@ __global__ void InclusiveWarpScanPartialKernelAggr(int* output, int* d_warp_aggr
 }
 // example-end inclusive-warp-scan-init-value-aggregate-partial
 
-C2H_TEST("Warp array-based partial inclusive scan aggregate works with initial value", "[scan][warp]")
+CUB_TEST("Warp array-based partial inclusive scan aggregate works with initial value", "[scan][warp]", CUB_SMALL)
 {
   c2h::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);
@@ -285,7 +285,7 @@ C2H_TEST("Warp array-based partial inclusive scan aggregate works with initial v
 
   for (int i = 0; i < num_warps; ++i)
   {
-    auto start      = expected.begin() + i * 32;
+    auto start      = expected.begin() + i * 32; // NOLINT(bugprone-misplaced-widening-cast)
     auto end        = start + 32;
     int valid_items = cuda::std::clamp(40 - i * 16, 0, 32);
     int init_val    = 3;

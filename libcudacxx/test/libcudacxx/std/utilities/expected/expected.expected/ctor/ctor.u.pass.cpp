@@ -39,8 +39,7 @@ struct FromJustInplace
   TEST_FUNC FromJustInplace(cuda::std::in_place_t);
 };
 static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t>);
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t const&>,
-              "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t const&>);
 
 // is_same_v<expected, remove_cvref_t<U>>
 // Note that result is true because it is covered by the constructors that take expected

@@ -19,12 +19,15 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <thrust/random/detail/urng_traits.h>
 #include <thrust/random/uniform_real_distribution.h>
 
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace random::detail
@@ -39,16 +42,17 @@ protected:
   _CCCL_HOST_DEVICE RealType sample(UniformRandomNumberGenerator& urng, const RealType mean, const RealType stddev)
   {
     using uint_type                = typename UniformRandomNumberGenerator::result_type;
-    constexpr uint_type urng_range = UniformRandomNumberGenerator::max - UniformRandomNumberGenerator::min;
+    using traits                   = thrust::random::detail::urng_traits<UniformRandomNumberGenerator>;
+    constexpr uint_type urng_range = (traits::max) () - (traits::min) ();
 
     // Constants for conversion
     constexpr RealType S1 = static_cast<RealType>(1. / static_cast<double>(urng_range));
     constexpr RealType S2 = S1 / 2;
 
-    RealType S3 = static_cast<RealType>(-1.4142135623730950488016887242097); // -sqrt(2)
+    auto S3 = -::cuda::std::__numbers<RealType>::__sqrt2();
 
     // Get the integer value
-    uint_type u = urng() - UniformRandomNumberGenerator::min;
+    uint_type u = urng() - (traits::min) ();
 
     // Ensure the conversion to float will give a value in the range [0,0.5)
     if (u > (urng_range / 2))
@@ -104,7 +108,7 @@ protected:
       m_valid = false;
     }
 
-    const RealType pi = RealType(3.14159265358979323846);
+    constexpr auto pi = ::cuda::std::__numbers<RealType>::__pi();
 
     RealType result = m_cached_rho * (m_valid ? cos(RealType(2) * pi * m_r1) : sin(RealType(2) * pi * m_r1));
 

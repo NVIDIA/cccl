@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
+
 // <cuda/std/complex>
 
 // template<class T>
@@ -19,7 +22,7 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   T lhs(-8.5);
   cuda::std::complex<T> rhs(1.5, 2.5);

@@ -5,9 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -28,12 +31,12 @@ struct UserType
 {
   int i;
 
-  TEST_FUNC UserType() noexcept {}
-  TEST_FUNC constexpr explicit UserType(int d) noexcept
+  TEST_HOST_DEVICE_FUNC UserType() noexcept {}
+  TEST_HOST_DEVICE_FUNC constexpr explicit UserType(int d) noexcept
       : i(d)
   {}
 
-  TEST_FUNC friend bool operator==(const UserType& x, const UserType& y)
+  TEST_HOST_DEVICE_FUNC friend bool operator==(const UserType& x, const UserType& y)
   {
     return x.i == y.i;
   }
@@ -42,7 +45,7 @@ struct UserType
 template <class Tp, template <typename, typename> class, cuda::thread_scope Scope>
 struct TestFunc
 {
-  TEST_FUNC void operator()() const
+  TEST_HOST_DEVICE_FUNC void operator()() const
   {
     using Atomic = cuda::atomic<Tp, Scope>;
     static_assert(cuda::std::is_literal_type<Atomic>::value);

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// blows up the tile compiler
+
 #include <cuda/numeric>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>

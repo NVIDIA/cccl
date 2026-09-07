@@ -53,7 +53,7 @@ struct schedule_from_t
   struct __sndr_t;
 
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(_Sndr __sndr) const noexcept
   {
     return __sndr_t<_Sndr>{{}, {}, _CCCL_MOVE(__sndr)};
   }
@@ -65,24 +65,25 @@ struct schedule_from_t::__sndr_t
   using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
-  _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return get_child_completion_signatures<_Self, _Sndr, _Env...>();
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> connect_result_t<_Sndr, _Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto connect(_Rcvr __rcvr) && -> connect_result_t<_Sndr, _Rcvr>
   {
     return execution::connect(_CCCL_MOVE(__sndr_), _CCCL_MOVE(__rcvr));
   }
 
   template <class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> connect_result_t<const _Sndr&, _Rcvr>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  connect(_Rcvr __rcvr) const& -> connect_result_t<const _Sndr&, _Rcvr>
   {
     return execution::connect(__sndr_, _CCCL_MOVE(__rcvr));
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
     return __fwd_env(execution::get_env(__sndr_));
   }

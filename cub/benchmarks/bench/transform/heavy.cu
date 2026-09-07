@@ -59,9 +59,8 @@ template <typename Heaviness>
 static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
 try
 {
-  using value_t  = std::uint32_t;
-  using offset_t = int64_t;
-  const auto n   = state.get_int64("Elements{io}");
+  using value_t = std::uint32_t;
+  const auto n  = state.get_int64("Elements{io}");
 
   thrust::device_vector<value_t> in = generate(n);
   thrust::device_vector<value_t> out(n);
@@ -70,8 +69,7 @@ try
   state.add_global_memory_reads<value_t>(n);
   state.add_global_memory_writes<value_t>(n);
 
-  bench_transform(
-    state, ::cuda::std::tuple{in.begin()}, out.begin(), cuda::narrow<offset_t>(n), heavy_functor<Heaviness::value>{});
+  bench_transform(state, cuda::std::tuple{in.begin()}, out.begin(), n, heavy_functor<Heaviness::value>{});
 }
 catch (const std::bad_alloc&)
 {

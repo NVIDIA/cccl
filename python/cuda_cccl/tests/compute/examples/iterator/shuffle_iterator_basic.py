@@ -25,7 +25,9 @@ shuffle_it = ShuffleIterator(num_items, seed=42)
 perm_it = PermutationIterator(d_input, shuffle_it)
 
 # Use unary_transform to write values into d_output
-cuda.compute.unary_transform(perm_it, d_output, lambda x: x, num_items)
+cuda.compute.unary_transform(
+    d_in=perm_it, d_out=d_output, op=lambda x: x, num_items=num_items
+)
 
 # Verify it is a valid permutation of the input data:
 cp.testing.assert_array_equal(cp.sort(d_output), d_input)

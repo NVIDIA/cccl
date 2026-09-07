@@ -25,32 +25,47 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 1000;
 
-template <class Policy>
-void test_fill(const Policy& policy, thrust::device_vector<int>& output)
+template <class Policy, class T>
+void test_fill(const Policy& policy, c2h::device_vector<T>& output)
 {
+  const T val = static_cast<T>(42);
+
   { // empty should not access anything
-    const int val = 42;
-    cuda::std::fill(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), val);
+    cuda::std::fill(policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), val);
   }
 
-  { // same type
-    const int val = 42;
+  { // contiguous input
     cuda::std::fill(policy, output.begin(), output.end(), val);
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{val}));
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{val}));
+  }
+
+  T* raw_pointer = thrust::raw_pointer_cast(output.data());
+  { // sorted random access range{ // random access input
+    cuda::std::fill(policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, val);
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{val}));
   }
 
   { // convertible type
-    const short val = 1337;
-    cuda::std::fill(policy, output.begin(), output.end(), val);
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{val}));
+    cuda::std::fill(policy, output.begin(), output.end(), 42);
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{val}));
+  }
+
+  { // random access input, convertible type
+    cuda::std::fill(policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, 42);
+    CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::constant_iterator{val}));
   }
 }
 
-C2H_TEST("cuda::std::fill", "[parallel algorithm]")
+C2H_TEST("cuda::std::fill", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> output(size, thrust::no_init);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> output(size, thrust::no_init);
 
   SECTION("with default stream")
   {

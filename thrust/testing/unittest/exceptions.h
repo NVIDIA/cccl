@@ -12,7 +12,7 @@ class UnitTestException
 public:
   std::string message;
 
-  UnitTestException() {}
+  UnitTestException() = default;
   UnitTestException(std::string msg)
       : message(std::move(msg))
   {}
@@ -35,7 +35,7 @@ public:
 class UnitTestError : public UnitTestException
 {
 public:
-  UnitTestError() {}
+  UnitTestError() = default;
   UnitTestError(const std::string& msg)
       : UnitTestException(msg)
   {}
@@ -44,7 +44,7 @@ public:
 class UnitTestFailure : public UnitTestException
 {
 public:
-  UnitTestFailure() {}
+  UnitTestFailure() = default;
   UnitTestFailure(const std::string& msg)
       : UnitTestException(msg)
   {}
@@ -53,7 +53,7 @@ public:
 class UnitTestKnownFailure : public UnitTestException
 {
 public:
-  UnitTestKnownFailure() {}
+  UnitTestKnownFailure() = default;
   UnitTestKnownFailure(const std::string& msg)
       : UnitTestException(msg)
   {}

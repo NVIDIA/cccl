@@ -164,7 +164,7 @@ constexpr void test_for_non_eager_instantiation()
   // non-immediate context.
   static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*>::value);
   static_assert(
-    !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value, "");
+    !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value);
 }
 
 constexpr bool test()

@@ -10,6 +10,13 @@
 
 #include <cub/config.cuh>
 
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+#  if _CCCL_COMPILER(NVRTC)
+#    error \
+      "Including <cub/device/device_select.cuh> is not supported when compiling with NVRTC. Include block-, warp-, or thread-level primitives instead (e.g. <cub/block/block_reduce.cuh>). You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+#  endif // _CCCL_COMPILER(NVRTC)
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -35,30 +42,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::unique_by_key_tuning
-{
-// TODO(bgruber): drop this after rewriting to the new tuning API
-struct get_tuning_query_t
-{};
-
-// TODO(bgruber): drop this after rewriting to the new tuning API
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-// TODO(bgruber): drop this after rewriting to the new tuning API
-struct default_tuning : tuning<default_tuning>
-{
-  template <class KeyT, class ValueT>
-  using fn = unique_by_key::policy_hub<KeyT, ValueT>;
-};
-} // namespace detail::unique_by_key_tuning
-
 //! @rst
 //! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
 //! residing within device-accessible memory. It is similar to DevicePartition, except that non-selected items are
@@ -80,98 +63,44 @@ struct default_tuning : tuning<default_tuning>
 //!
 //! @linear_performance{select-flagged, select-if, and select-unique}
 //!
+//! Tuning
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! All non-ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a custom
+//! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::SelectPolicy`, as shown in the
+//! example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin select-if-policy-selector
+//!      :end-before: example-end select-if-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin select-if-tuning
+//!      :end-before: example-end select-if-tuning
+//!
+//! All *ByKey algorithms in DeviceSelect that accept an environment can be tuned by passing a
+//! custom :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::UniqueByKeyPolicy`, as shown
+//! in the example below:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin unique-by-key-policy-selector
+//!      :end-before: example-end unique-by-key-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin unique-by-key-tuning
+//!      :end-before: example-end unique-by-key-tuning
+//!
 //! @endrst
 struct DeviceSelect
 {
-private:
-  template <typename TuningEnvT,
-            SelectImpl SelectionMode,
-            typename InputIteratorT,
-            typename FlagIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOpT,
-            typename EqualityOpT,
-            typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t select_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    FlagIteratorT d_flags,
-    OutputIteratorT d_out,
-    NumSelectedIteratorT d_num_selected_out,
-    OffsetT num_items,
-    SelectOpT select_op,
-    EqualityOpT equality_op,
-    cudaStream_t stream)
-  {
-    using default_policy_selector =
-      detail::select::policy_selector_from_types<InputIteratorT, FlagIteratorT, OutputIteratorT, OffsetT, SelectionMode>;
-    using policy_selector =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::select::select_if_policy, default_policy_selector>;
-    return detail::select::dispatch<SelectionMode>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_flags,
-      d_out,
-      d_num_selected_out,
-      select_op,
-      equality_op,
-      num_items,
-      stream,
-      policy_selector{});
-  }
-
-  template <typename TuningEnvT,
-            typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename EqualityOpT,
-            typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t unique_by_key_impl(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
-    EqualityOpT equality_op,
-    OffsetT num_items,
-    cudaStream_t stream)
-  {
-    using select_tuning_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT,
-                                                  detail::unique_by_key_tuning::get_tuning_query_t,
-                                                  detail::unique_by_key_tuning::default_tuning>;
-
-    using policy_t = typename select_tuning_t::template fn<detail::it_value_t<KeyInputIteratorT>,
-                                                           detail::it_value_t<ValueInputIteratorT>>;
-
-    return DispatchUniqueByKey<
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyOutputIteratorT,
-      ValueOutputIteratorT,
-      NumSelectedIteratorT,
-      EqualityOpT,
-      OffsetT,
-      policy_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_keys_in,
-                          d_values_in,
-                          d_keys_out,
-                          d_values_out,
-                          d_num_selected_out,
-                          equality_op,
-                          num_items,
-                          stream);
-  }
-
-public:
   //! @rst
   //! Uses the ``d_flags`` sequence to selectively copy the corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
@@ -235,9 +164,11 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -257,14 +188,13 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIteratorT,
             typename FlagIterator,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<NumSelectedIteratorT>, int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
@@ -274,25 +204,27 @@ public:
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
-    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using SelectOp   = NullType; // Selection op (not used)
-    using EqualityOp = NullType; // Equality operator (not used)
-
-    return detail::select::dispatch<SelectImpl::Select>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_flags,
-      d_out,
-      d_num_selected_out,
-      SelectOp{},
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          d_flags,
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -339,9 +271,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -362,43 +291,38 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename FlagIterator,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                               && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-                             int> = 0>
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
-    EnvT env = {})
+    ::cuda::std::int64_t num_items,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::Select>(
-        storage,
-        bytes,
-        d_in,
-        d_flags,
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        NullType{},
-        stream);
-    });
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          d_flags,
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -442,9 +366,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -465,32 +386,37 @@ public:
   template <typename IteratorT,
             typename FlagIterator,
             typename NumSelectedIteratorT,
-            typename NumItemsT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>
-                                       && !::cuda::std::is_same_v<FlagIterator, size_t&>,
-                                     int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
-    IteratorT d_data, FlagIterator d_flags, NumSelectedIteratorT d_num_selected_out, NumItemsT num_items, EnvT env = {})
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Flagged(IteratorT d_data,
+          FlagIterator d_flags,
+          NumSelectedIteratorT d_num_selected_out,
+          ::cuda::std::int64_t num_items,
+          const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
-        storage,
-        bytes,
-        d_data,
-        d_flags,
-        d_data,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        NullType{},
-        stream);
-    });
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      FlagIterator,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          d_flags,
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -537,9 +463,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -561,41 +484,39 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
-                             int> = 0>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_unary_predicate<SelectOp, InputIteratorT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     NumItemsT num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
-     EnvT env = {})
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
-    using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::Select>(
-        storage,
-        bytes,
-        d_in,
-        static_cast<NullType*>(nullptr),
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        NullType{},
-        stream);
-    });
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -637,9 +558,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -660,31 +578,38 @@ public:
   template <typename IteratorT,
             typename NumSelectedIteratorT,
             typename SelectOp,
-            typename NumItemsT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>,
-                                     int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_unary_predicate<SelectOp, IteratorT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(IteratorT d_data, NumSelectedIteratorT d_num_selected_out, NumItemsT num_items, SelectOp select_op, EnvT env = {})
+  If(IteratorT d_data,
+     NumSelectedIteratorT d_num_selected_out,
+     ::cuda::std::int64_t num_items,
+     SelectOp select_op,
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
-        storage,
-        bytes,
-        d_data,
-        static_cast<NullType*>(nullptr),
-        d_data,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        NullType{},
-        stream);
-    });
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -746,9 +671,11 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -765,11 +692,12 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_data`)
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename FlagIterator,
+            typename NumSelectedIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -777,25 +705,31 @@ public:
     FlagIterator d_flags,
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
-    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using SelectOp   = NullType; // Selection op (not used)
-    using EqualityOp = NullType; // Equality operator (not used)
-
-    return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_data,
-      d_flags,
-      d_data,
-      d_num_selected_out,
-      SelectOp{},
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      FlagIterator,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          d_flags,
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -875,9 +809,11 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -898,11 +834,14 @@ public:
   //! @param[in] select_op
   //!   Unary selection operator
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_unary_predicate<SelectOp, InputIteratorT>, int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      size_t& temp_storage_bytes,
@@ -911,24 +850,27 @@ public:
      NumSelectedIteratorT d_num_selected_out,
      ::cuda::std::int64_t num_items,
      SelectOp select_op,
-     cudaStream_t stream = nullptr)
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using EqualityOp = NullType; // Equality operator (not used)
-
-    return detail::select::dispatch<SelectImpl::Select, InputIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      static_cast<NullType*>(nullptr),
-      d_out,
-      d_num_selected_out,
-      select_op,
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1002,9 +944,11 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1021,11 +965,13 @@ public:
   //! @param[in] select_op
   //!   Unary selection operator
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename IteratorT, typename NumSelectedIteratorT, typename SelectOp>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_unary_predicate<SelectOp, IteratorT>, int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      size_t& temp_storage_bytes,
@@ -1033,24 +979,31 @@ public:
      NumSelectedIteratorT d_num_selected_out,
      ::cuda::std::int64_t num_items,
      SelectOp select_op,
-     cudaStream_t stream = nullptr)
+     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using EqualityOp = NullType; // Equality operator (not used)
-
-    return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_data,
-      static_cast<NullType*>(nullptr),
-      d_data,
-      d_num_selected_out,
-      select_op,
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1103,9 +1056,11 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1129,15 +1084,14 @@ public:
   //! @param[in] select_op
   //!   Unary selection operator
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIteratorT,
             typename FlagIterator,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
-            typename SelectOp>
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1147,24 +1101,27 @@ public:
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
     SelectOp select_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
-    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using EqualityOp = NullType; // Equality operator (not used)
-
-    return detail::select::dispatch<SelectImpl::Select>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_flags,
-      d_out,
-      d_num_selected_out,
-      select_op,
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          d_flags,
+          d_out,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1213,9 +1170,11 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1235,11 +1194,13 @@ public:
   //! @param[in] select_op
   //!   Unary selection operator
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT, typename SelectOp>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename FlagIterator,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1248,24 +1209,31 @@ public:
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
     SelectOp select_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
-    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using EqualityOp = NullType; // Equality operator (not used)
-
-    return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_data,
-      d_flags,
-      d_data,
-      d_num_selected_out,
-      select_op,
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      FlagIterator,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          d_flags,
+          d_data,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1318,9 +1286,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -1345,43 +1310,41 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename InputIteratorT,
-    typename FlagIterator,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
-                             int> = 0>
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_unary_predicate<SelectOp, FlagIterator>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     InputIteratorT d_in,
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     SelectOp select_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
 
-    using offset_t = ::cuda::std::int64_t;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::Select>(
-        storage,
-        bytes,
-        d_in,
-        d_flags,
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        NullType{},
-        stream);
-    });
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, FlagIterator, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          d_flags,
+          d_out,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1430,9 +1393,6 @@ public:
   //! @tparam SelectOp
   //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -1453,40 +1413,43 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename IteratorT,
-    typename FlagIterator,
-    typename NumSelectedIteratorT,
-    typename SelectOp,
-    typename NumItemsT,
-    typename EnvT = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
+  template <typename IteratorT,
+            typename FlagIterator,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_unary_predicate<SelectOp, FlagIterator>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     IteratorT d_data,
     FlagIterator d_flags,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     SelectOp select_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::SelectPotentiallyInPlace>(
-        storage,
-        bytes,
-        d_data,
-        d_flags,
-        d_data,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        NullType{},
-        stream);
-    });
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      FlagIterator,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          d_flags,
+          d_data,
+          d_num_selected_out,
+          select_op,
+          NullType{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1531,9 +1494,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EnvT
   //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
   //!
@@ -1556,36 +1516,34 @@ public:
     typename InputIteratorT,
     typename OutputIteratorT,
     typename NumSelectedIteratorT,
-    typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                               && !::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>,
-                             int> = 0>
+    typename EnvT = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Unique(InputIteratorT d_in,
          OutputIteratorT d_out,
          NumSelectedIteratorT d_num_selected_out,
-         NumItemsT num_items,
-         EnvT env = {})
+         ::cuda::std::int64_t num_items,
+         const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using offset_t = ::cuda::std::int64_t;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::Select>(
-        storage,
-        bytes,
-        d_in,
-        static_cast<NullType*>(nullptr),
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        ::cuda::std::equal_to<>{},
-        stream);
-    });
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          ::cuda::std::equal_to<>{},
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1629,9 +1587,6 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @tparam EqualityOpT
   //!   **[inferred]** Type of equality_op
   //!
@@ -1655,45 +1610,218 @@ public:
   //!   Binary equality operator
   //!
   //! @param[in] env
-  //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename OutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename NumItemsT,
-    typename EqualityOpT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                               && ::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
-                             int> = 0>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename EqualityOpT,
+            typename EnvT                 = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
+                                     int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     EqualityOpT equality_op,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using offset_t = ::cuda::std::int64_t;
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          equality_op,
+          num_items,
+          stream,
+          policy_selector);
+      });
+  }
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return select_impl<tuning_t, SelectImpl::Select>(
-        storage,
-        bytes,
-        d_in,
-        static_cast<NullType*>(nullptr),
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        equality_op,
-        stream);
-    });
+  //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //!
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector
+  //! using environment-based API:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-env
+  //!     :end-before: example-end select-unique-inplace-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, IteratorT, IteratorT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    IteratorT d_data, NumSelectedIteratorT d_num_selected_out, ::cuda::std::int64_t num_items, const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
+
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          ::cuda::std::equal_to<>{},
+          num_items,
+          stream,
+          policy_selector);
+      });
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The user-provided equality operator, ``equality_op``, is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //!
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector
+  //! using a custom equality operator:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop-env
+  //!     :end-before: example-end select-unique-inplace-eqop-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Type of equality_op
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary equality operator
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename EqualityOpT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, IteratorT, IteratorT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Unique(IteratorT d_data,
+         NumSelectedIteratorT d_num_selected_out,
+         ::cuda::std::int64_t num_items,
+         EqualityOpT equality_op,
+         const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
+
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          equality_op,
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -1728,8 +1856,6 @@ public:
   //!     :dedent:
   //!     :start-after: example-begin select-uniquebykey-env
   //!     :end-before: example-end select-uniquebykey-env
-  //!
-  //! @endrst
   //!
   //! @tparam KeyInputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
@@ -1785,11 +1911,11 @@ public:
     typename ValueOutputIteratorT,
     typename NumSelectedIteratorT,
     typename NumItemsT,
-    typename EqualityOpT          = ::cuda::std::equal_to<>,
-    typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<KeyInputIteratorT, void*>
-                               && !::cuda::std::is_convertible_v<EqualityOpT, cudaStream_t>,
-                             int> = 0>
+    typename EqualityOpT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+                             int>                                        = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     KeyInputIteratorT d_keys_in,
     ValueInputIteratorT d_values_in,
@@ -1797,27 +1923,131 @@ public:
     ValueOutputIteratorT d_values_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    EqualityOpT equality_op = {},
-    EnvT env                = {})
+    EqualityOpT equality_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::UniqueByKey");
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return unique_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_keys_out,
-        d_values_out,
-        d_num_selected_out,
-        equality_op,
-        static_cast<offset_t>(num_items),
-        stream);
-    });
+    using default_policy_selector =
+      detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
+                                                        detail::it_value_t<ValueInputIteratorT>>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::unique_by_key::dispatch(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_keys_out,
+          d_values_out,
+          d_num_selected_out,
+          equality_op,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
+  //! equal-valued keys, only the first key and its value from each run is selectively copied
+  //! to ``d_keys_out`` and ``d_values_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted into ``d_keys_out`` and ``d_values_out`` and maintain
+  //!   their original relative ordering.
+  //! - In-place operations are not supported. There must be no overlap between
+  //!   any of the provided ranges.
+  //!
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
+  //! using environment-based API and default key equality:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-uniquebykey-default-eq-env
+  //!     :end-before: example-end select-uniquebykey-default-eq-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam ValueInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
+  //!
+  //! @tparam KeyOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected keys @iterator
+  //!
+  //! @tparam ValueOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected values @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input sequence of keys
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the input sequence of values
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the output sequence of selected keys
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the output sequence of selected values
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the total number of items selected (i.e., length of `d_keys_out` or `d_values_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_keys_in` or `d_values_in`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
+      0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
+    KeyInputIteratorT d_keys_in,
+    ValueInputIteratorT d_values_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueOutputIteratorT d_values_out,
+    NumSelectedIteratorT d_num_selected_out,
+    NumItemsT num_items,
+    const EnvT& env = {})
+  {
+    return UniqueByKey(
+      d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected_out, num_items, ::cuda::std::equal_to<>{}, env);
   }
 
   //! @rst
@@ -1883,9 +2113,11 @@ public:
   //! @tparam EqualityOpT
   //!   **[inferred]** Type of equality_op
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1906,14 +2138,13 @@ public:
   //! @param[in] equality_op
   //!   Binary predicate to determine equality
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename EqualityOpT,
+            typename EnvT                 = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
                                      int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
@@ -1924,24 +2155,27 @@ public:
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
     EqualityOpT equality_op,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using OffsetT   = ::cuda::std::int64_t;
-    using SelectOpT = NullType; // Selection op (not used)
-
-    return detail::select::dispatch<SelectImpl::Select>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      static_cast<NullType*>(nullptr),
-      d_out,
-      d_num_selected_out,
-      SelectOpT{},
-      equality_op,
-      static_cast<OffsetT>(num_items),
-      stream);
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          equality_op,
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -2004,9 +2238,11 @@ public:
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2024,11 +2260,14 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_in`)
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>, int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -2036,25 +2275,217 @@ public:
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using OffsetT    = ::cuda::std::int64_t;
-    using SelectOp   = NullType; // Selection op (not used)
-    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, NullType*, OutputIteratorT, ::cuda::std::int64_t, SelectImpl::Select>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::Select>(
+          storage,
+          bytes,
+          d_in,
+          static_cast<NullType*>(nullptr),
+          d_out,
+          d_num_selected_out,
+          NullType{},
+          ::cuda::std::equal_to<>{},
+          num_items,
+          stream,
+          policy_selector);
+      });
+  }
 
-    return detail::select::dispatch<SelectImpl::Select>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      static_cast<NullType*>(nullptr),
-      d_out,
-      d_num_selected_out,
-      SelectOp{},
-      EqualityOp{},
-      static_cast<OffsetT>(num_items),
-      stream);
+  //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace
+  //!     :end-before: example-end select-unique-inplace
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, IteratorT, IteratorT>, int> = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    NumSelectedIteratorT d_num_selected_out,
+    ::cuda::std::int64_t num_items,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
+
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          ::cuda::std::equal_to<>{},
+          num_items,
+          stream,
+          policy_selector);
+      });
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_data`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively compacted in-place.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The user-provided equality operator, ``equality_op``, is used to determine whether keys are equivalent.
+  //! - Copies of the selected items are compacted in ``d_data`` and maintain their original relative ordering.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the in-place compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop-myequalityop
+  //!     :end-before: example-end select-unique-inplace-eqop-myequalityop
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-unique-inplace-eqop
+  //!     :end-before: example-end select-unique-inplace-eqop
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Type of equality_op
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_temp_storage
+  //!   @devicestorage
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary predicate to determine equality
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename IteratorT,
+            typename NumSelectedIteratorT,
+            typename EqualityOpT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, IteratorT, IteratorT>, int> = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    NumSelectedIteratorT d_num_selected_out,
+    ::cuda::std::int64_t num_items,
+    EqualityOpT equality_op,
+    const EnvT& env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
+
+    using default_policy_selector = detail::select::policy_selector_from_types<
+      IteratorT,
+      NullType*,
+      IteratorT,
+      ::cuda::std::int64_t,
+      SelectImpl::SelectPotentiallyInPlace>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
+          storage,
+          bytes,
+          d_data,
+          static_cast<NullType*>(nullptr),
+          d_data,
+          d_num_selected_out,
+          NullType{},
+          equality_op,
+          num_items,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -2143,9 +2574,11 @@ public:
   //! @tparam EqualityOpT
   //!   **[inferred]** Type of equality_op
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2171,54 +2604,54 @@ public:
   //! @param[in] equality_op
   //!   Binary predicate to determine equality
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT,
-            typename EqualityOpT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static //
-    ::cuda::std::enable_if_t< //
-      !::cuda::std::is_convertible_v<EqualityOpT, cudaStream_t>, //
-      cudaError_t>
-    UniqueByKey(
-      void* d_temp_storage,
-      size_t& temp_storage_bytes,
-      KeyInputIteratorT d_keys_in,
-      ValueInputIteratorT d_values_in,
-      KeyOutputIteratorT d_keys_out,
-      ValueOutputIteratorT d_values_out,
-      NumSelectedIteratorT d_num_selected_out,
-      NumItemsT num_items,
-      EqualityOpT equality_op,
-      cudaStream_t stream = nullptr)
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EqualityOpT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+                             int>                                        = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyInputIteratorT d_keys_in,
+    ValueInputIteratorT d_values_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueOutputIteratorT d_values_out,
+    NumSelectedIteratorT d_num_selected_out,
+    NumItemsT num_items,
+    EqualityOpT equality_op,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::UniqueByKey");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchUniqueByKey<
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyOutputIteratorT,
-      ValueOutputIteratorT,
-      NumSelectedIteratorT,
-      EqualityOpT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_values_in,
-                         d_keys_out,
-                         d_values_out,
-                         d_num_selected_out,
-                         equality_op,
-                         static_cast<OffsetT>(num_items),
-                         stream);
+    using default_policy_selector =
+      detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
+                                                        detail::it_value_t<ValueInputIteratorT>>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::unique_by_key::dispatch(
+          storage,
+          bytes,
+          d_keys_in,
+          d_values_in,
+          d_keys_out,
+          d_values_out,
+          d_num_selected_out,
+          equality_op,
+          static_cast<offset_t>(num_items),
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -2304,9 +2737,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
   //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!   @devicestorage
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -2329,17 +2764,20 @@ public:
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of `d_keys_in` or `d_values_in`)
   //!
-  //! @param[in] stream
-  //!   @rst
-  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename ValueInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t UniqueByKey(
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <
+    typename KeyInputIteratorT,
+    typename ValueInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename NumItemsT,
+    typename EnvT                                                        = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
+      0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputIteratorT d_keys_in,
@@ -2348,7 +2786,7 @@ public:
     ValueOutputIteratorT d_values_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     return UniqueByKey(
       d_temp_storage,
@@ -2360,7 +2798,7 @@ public:
       d_num_selected_out,
       num_items,
       ::cuda::std::equal_to<>{},
-      stream);
+      env);
   }
 };
 

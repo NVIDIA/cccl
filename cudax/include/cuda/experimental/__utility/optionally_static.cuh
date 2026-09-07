@@ -151,8 +151,8 @@ public:
 private:
   struct __nonesuch
   {};
-  using __state_t                           = ::cuda::std::conditional_t<is_static, __nonesuch, type>;
-  [[no_unique_address]] __state_t __payload = __state_t();
+  using __state_t                             = ::cuda::std::conditional_t<is_static, __nonesuch, type>;
+  _CCCL_NO_UNIQUE_ADDRESS __state_t __payload = __state_t();
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED

@@ -12,7 +12,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <catch2/generators/catch_generators.hpp>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
@@ -79,7 +79,7 @@ struct custom_sum_op
   }
 };
 
-C2H_TEST("Device reduce works with a very large number of segments", "[reduce][device]")
+CUB_TEST("Device reduce works with a very large number of segments", "[reduce][device]", CUB_SMALL)
 {
   using offset_t        = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
@@ -284,7 +284,7 @@ void test_fixed_size_segmented_reduce(
   }
 }
 
-C2H_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]")
+CUB_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]", CUB_SMALL)
 {
   using segment_index_t = cuda::std::int64_t;
   using offset_t        = segment_index_t;

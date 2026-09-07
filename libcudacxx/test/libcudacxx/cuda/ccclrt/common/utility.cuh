@@ -45,14 +45,12 @@ TEST_DEVICE_FUNC inline void ccclrt_require_impl(
   }
 }
 
-namespace
-{
 namespace test
 {
 template <typename T1, typename T2>
 T1& assign(T1& t1, T2&& t2)
 {
-  t1 = std::forward<T2>(t2);
+  t1 = ::cuda::std::forward<T2>(t2);
   return t1;
 }
 
@@ -65,7 +63,7 @@ public:
   explicit _malloc_pinned(std::size_t size)
   {
     cuda::__ensure_current_context guard(cuda::device_ref{0});
-    _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
+    _CCCL_TRY_RUNTIME_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()
@@ -188,5 +186,4 @@ void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
   assert(cudaGetLastError() == cudaSuccess);
 }
 } // namespace test
-} // namespace
 #endif // __COMMON_UTILITY_H__

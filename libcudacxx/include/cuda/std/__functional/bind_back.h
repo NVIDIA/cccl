@@ -48,7 +48,7 @@ struct __bind_back_op<_NBound, index_sequence<_Ip...>>
   // clang-format off
   template <class _Fn, class _BoundArgs, class... _Args>
   _CCCL_API constexpr auto
-  operator()(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args) const
+  _CCCL_STATIC_CALL_OPERATOR(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args)
   noexcept(noexcept(::cuda::std::invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)..., ::cuda::std::get<_Ip>(::cuda::std::forward<_BoundArgs>(__bound_args))...)))
   -> decltype(      ::cuda::std::invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)..., ::cuda::std::get<_Ip>(::cuda::std::forward<_BoundArgs>(__bound_args))...))
   { return          ::cuda::std::invoke(::cuda::std::forward<_Fn>(__f), ::cuda::std::forward<_Args>(__args)..., ::cuda::std::get<_Ip>(::cuda::std::forward<_BoundArgs>(__bound_args))...); }

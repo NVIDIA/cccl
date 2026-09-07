@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/mul_hi.h>
-#include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__bit/rotr.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -43,47 +43,49 @@ private:
   ::cuda::std::uint64_t __lo_;
 
 public:
-  _CCCL_API constexpr __pcg_uint128_fallback() noexcept
+  _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback() noexcept
       : __hi_{0}
       , __lo_{0}
   {}
 
-  _CCCL_API constexpr __pcg_uint128_fallback(::cuda::std::uint64_t __val) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback(::cuda::std::uint64_t __val) noexcept
       : __hi_{0}
       , __lo_{__val}
   {}
 
-  _CCCL_API constexpr __pcg_uint128_fallback(::cuda::std::uint64_t __hi, ::cuda::std::uint64_t __lo) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback(::cuda::std::uint64_t __hi, ::cuda::std::uint64_t __lo) noexcept
       : __hi_{__hi}
       , __lo_{__lo}
   {}
 
-  [[nodiscard]] _CCCL_API constexpr explicit operator ::cuda::std::uint64_t() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr explicit operator ::cuda::std::uint64_t() const noexcept
   {
     return __lo_;
   }
 
-  [[nodiscard]] _CCCL_API constexpr explicit operator ::cuda::std::uint8_t() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr explicit operator ::cuda::std::uint8_t() const noexcept
   {
     return static_cast<::cuda::std::uint8_t>(__lo_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint64_t __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback
+  operator|(::cuda::std::uint64_t __rhs) const noexcept
   {
     return __pcg_uint128_fallback(__hi_, __lo_ | __rhs);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator^(__pcg_uint128_fallback __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback
+  operator^(__pcg_uint128_fallback __rhs) const noexcept
   {
     return __pcg_uint128_fallback(__hi_ ^ __rhs.__hi_, __lo_ ^ __rhs.__lo_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr int operator&(int __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int operator&(int __rhs) const noexcept
   {
     return __lo_ & static_cast<::cuda::std::uint64_t>(__rhs);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator<<(int __shift) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback operator<<(int __shift) const noexcept
   {
     _CCCL_ASSERT(__shift >= 0 && __shift < 128, "shift value out of range");
     if (__shift == 0)
@@ -101,7 +103,7 @@ public:
     return __pcg_uint128_fallback((__hi_ << __shift) | (__lo_ >> (64 - __shift)), __lo_ << __shift);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator>>(int __shift) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback operator>>(int __shift) const noexcept
   {
     _CCCL_ASSERT(__shift >= 0 && __shift < 128, "shift value out of range");
     if (__shift == 0)
@@ -119,7 +121,8 @@ public:
     return __pcg_uint128_fallback(__hi_ >> __shift, (__lo_ >> __shift) | (__hi_ << (64 - __shift)));
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator+(__pcg_uint128_fallback __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback
+  operator+(__pcg_uint128_fallback __rhs) const noexcept
   {
     // TODO: optimize with PTX add.cc
     ::cuda::std::uint64_t __new_lo = __lo_ + __rhs.__lo_;
@@ -127,31 +130,33 @@ public:
     return __pcg_uint128_fallback(__hi_ + __rhs.__hi_ + __carry, __new_lo);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator*(__pcg_uint128_fallback __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback
+  operator*(__pcg_uint128_fallback __rhs) const noexcept
   {
     __pcg_uint128_fallback __c(::cuda::mul_hi(__lo_, __rhs.__lo_), __lo_ * __rhs.__lo_);
     __c.__hi_ += __hi_ * __rhs.__lo_ + __lo_ * __rhs.__hi_;
     return __c;
   }
 
-  _CCCL_API constexpr __pcg_uint128_fallback& operator*=(__pcg_uint128_fallback __rhs) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __pcg_uint128_fallback& operator*=(__pcg_uint128_fallback __rhs) noexcept
   {
     return *this = *this * __rhs;
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool operator>(int __x) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool operator>(int __x) const noexcept
   {
     return __hi_ != 0 || __lo_ > static_cast<::cuda::std::uint64_t>(__x);
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
   {
     return __lhs.__hi_ == __rhs.__hi_ && __lhs.__lo_ == __rhs.__lo_;
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API constexpr friend bool
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE_API constexpr friend bool
   operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -190,14 +195,15 @@ private:
   static constexpr __pcg64_uint128_t __multiplier = (static_cast<__pcg64_uint128_t>(_AHi) << 64) | _ALo;
   static constexpr __pcg64_uint128_t __increment  = (static_cast<__pcg64_uint128_t>(_CHi) << 64) | _CLo;
 
-  [[nodiscard]] _CCCL_API static constexpr result_type __output_transform(__pcg64_uint128_t __internal) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type
+  __output_transform(__pcg64_uint128_t __internal) noexcept
   {
     const int __rot = static_cast<__bitcount_t>(__internal >> 122);
     __internal      = __internal ^ (__internal >> 64);
     return ::cuda::std::rotr(result_type(__internal), __rot);
   }
 
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::pair<__pcg64_uint128_t, __pcg64_uint128_t>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::pair<__pcg64_uint128_t, __pcg64_uint128_t>
   __power_mod(__pcg64_uint128_t __delta) noexcept
   {
     __pcg64_uint128_t __acc_mult = 1;
@@ -224,25 +230,25 @@ public:
 
   //! @brief Returns the smallest value the engine can produce.
   //! @return Always 0 for pcg64_engine.
-  [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type min() noexcept
   {
     return 0;
   }
   //! @brief Returns the largest value the engine can produce.
   //! @return The maximum representable `result_type`.
-  [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr result_type max() noexcept
   {
     return ::cuda::std::numeric_limits<result_type>::max();
   }
 
   // constructors and seeding functions
   //! @brief Default-constructs the engine using `default_seed`.
-  _CCCL_API constexpr pcg64_engine() noexcept
+  _CCCL_HOST_DEVICE_API constexpr pcg64_engine() noexcept
       : pcg64_engine(default_seed)
   {}
   //! @brief Constructs the engine and seeds it with `__seed`.
   //! @param __seed The seed value used to initialize the engine state.
-  _CCCL_API constexpr explicit pcg64_engine(result_type __seed) noexcept
+  _CCCL_HOST_DEVICE_API constexpr explicit pcg64_engine(result_type __seed) noexcept
   {
     seed(__seed);
   }
@@ -252,13 +258,13 @@ public:
   //! @param __seq The seed sequence used to initialize the internal state.
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
-  _CCCL_API constexpr explicit pcg64_engine(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr explicit pcg64_engine(_Sseq& __seq)
   {
     seed(__seq);
   }
   //! @brief Seed the engine with an integer seed.
   //! @param __seed The seed value; defaults to `default_seed`.
-  _CCCL_API constexpr void seed(result_type __seed = default_seed) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void seed(result_type __seed = default_seed) noexcept
   {
     __x_ = (__pcg64_uint128_t(__seed) + __increment) * __multiplier + __increment;
   }
@@ -268,7 +274,7 @@ public:
   //! @param __seq A SeedSequence-like object providing 128 bits of entropy.
   _CCCL_TEMPLATE(class _Sseq)
   _CCCL_REQUIRES(::cuda::std::__is_seed_sequence<_Sseq, pcg64_engine>)
-  _CCCL_API constexpr void seed(_Sseq& __seq)
+  _CCCL_HOST_DEVICE_API constexpr void seed(_Sseq& __seq)
   {
     ::cuda::std::array<::cuda::std::uint32_t, 4> data = {};
     __seq.generate(data.begin(), data.end());
@@ -284,7 +290,7 @@ public:
   //! Advances the internal LCG state and applies the PCG output
   //! permutation to produce a 64-bit result.
   //! @return A 64-bit pseudo-random value.
-  _CCCL_API constexpr result_type operator()() noexcept
+  _CCCL_HOST_DEVICE_API constexpr result_type operator()() noexcept
   {
     __x_ = __x_ * __multiplier + __increment;
     return __output_transform(__x_);
@@ -292,7 +298,7 @@ public:
 
   //! @brief Advance the engine state by `__z` steps, discarding outputs.
   //! @param __z Number of values to discard.
-  _CCCL_API constexpr void discard(unsigned long long __z) noexcept
+  _CCCL_HOST_DEVICE_API constexpr void discard(unsigned long long __z) noexcept
   {
     const auto [__mult, __plus] = __power_mod(__z);
     __x_                        = __x_ * __mult + __plus;
@@ -300,23 +306,25 @@ public:
 
   //! @brief Equality comparison for two engines.
   //! @return True if both engines have identical internal state.
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator==(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return __x.__x_ == __y.__x_;
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison for two engines.
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
+  operator!=(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
   template <typename _CharT, typename _Traits>
-  _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
+  _CCCL_HOST_DEVICE_API friend ::std::basic_ostream<_CharT, _Traits>&
   operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const pcg64_engine& __e)
   {
     using ostream_type = ::std::basic_ostream<_CharT, _Traits>;
@@ -343,7 +351,7 @@ public:
   }
 
   template <typename _CharT, typename _Traits>
-  _CCCL_API friend ::std::basic_istream<_CharT, _Traits>&
+  _CCCL_HOST_DEVICE_API friend ::std::basic_istream<_CharT, _Traits>&
   operator>>(::std::basic_istream<_CharT, _Traits>& __is, pcg64_engine& __e)
   {
     using istream_type = ::std::basic_istream<_CharT, _Traits>;
@@ -364,7 +372,7 @@ public:
 
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 //! @class pcg64

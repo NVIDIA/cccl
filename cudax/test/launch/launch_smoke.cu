@@ -28,8 +28,8 @@ __managed__ bool kernel_run_proof = false;
 
 void check_kernel_run(cudaStream_t stream)
 {
-  CUDART(cudaStreamSynchronize(stream));
-  CUDAX_CHECK(kernel_run_proof);
+  REQUIRE_CUDART(cudaStreamSynchronize(stream));
+  CHECK(kernel_run_proof);
   kernel_run_proof = false;
 }
 
@@ -37,7 +37,7 @@ struct kernel_run_proof_check
 {
   __device__ void operator()()
   {
-    CUDAX_CHECK(kernel_run_proof);
+    CHECK(kernel_run_proof);
     kernel_run_proof = false;
   }
 };
@@ -62,7 +62,7 @@ struct functor_taking_config
   __device__ void operator()(Config config, int grid_size)
   {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == BlockSize);
-    CUDAX_REQUIRE(cuda::block.count(cuda::grid, config) == grid_size);
+    REQUIRE(cuda::block.count(cuda::grid, config) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -96,7 +96,7 @@ struct dynamic_smem_single
   {
     decltype(auto) dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
-    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
+    REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -110,8 +110,8 @@ struct dynamic_smem_span
     auto dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
-    CUDAX_REQUIRE(dynamic_smem.size() == size);
-    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
+    REQUIRE(dynamic_smem.size() == size);
+    REQUIRE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -131,7 +131,7 @@ struct launch_transform_to_int_convertible
     {
       // Check that the constructor runs before the kernel is launched
       // Disabled for now because we don't handle it with graphs
-      // CUDAX_CHECK_FALSE(kernel_run_proof);
+      // CHECK_FALSE(kernel_run_proof);
     }
 
     // Immovable to ensure that launch_transform doesn't copy the returned
@@ -142,8 +142,8 @@ struct launch_transform_to_int_convertible
     {
       // Check that the destructor runs after the kernel is launched
       // Disabled for now because we don't handle it with graphs
-      // CUDART(cudaStreamSynchronize(stream_));
-      // CUDAX_CHECK(kernel_run_proof);
+      // REQUIRE_CUDART(cudaStreamSynchronize(stream_));
+      // CHECK(kernel_run_proof);
     }
 
     // This is the value that will be passed to the kernel
@@ -168,7 +168,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
   // Use raw stream to make sure it can be implicitly converted on call to launch
   cudaStream_t stream;
 
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
   // Spell out all overloads to make sure they compile, include a check for implicit conversions
   {
     const int grid_size      = 4;
@@ -303,12 +303,12 @@ C2H_TEST("Launch smoke stream", "[launch]")
   // Use raw stream to make sure it can be implicitly converted on call to launch
   cudaStream_t stream;
 
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
 
   launch_smoke_test(stream);
 
-  CUDART(cudaStreamSynchronize(stream));
-  CUDART(cudaStreamDestroy(stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream));
+  REQUIRE_CUDART(cudaStreamDestroy(stream));
 }
 
 C2H_TEST("Launch smoke path builder", "[launch]")
@@ -321,9 +321,9 @@ C2H_TEST("Launch smoke path builder", "[launch]")
 
   // In CUDA 12.0 we don't test kernel_ref launches, so the node count is lower
 #  if _CCCL_CTK_BELOW(12, 1)
-  CUDAX_REQUIRE(g.node_count() == 48);
+  REQUIRE(g.node_count() == 48);
 #  else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
-  CUDAX_REQUIRE(g.node_count() == 64);
+  REQUIRE(g.node_count() == 64);
 #  endif // _CCCL_CTK_BELOW(12, 1)
 
   auto exec = g.instantiate();
@@ -361,7 +361,7 @@ void test_default_config()
 
   auto verify_lambda = [] __device__(auto config) {
     static_assert(cuda::gpu_thread.count(cuda::block, config) == 256);
-    CUDAX_REQUIRE(cuda::block.count(cuda::grid, config) == 4);
+    REQUIRE(cuda::block.count(cuda::grid, config) == 4);
     cooperative_groups::this_grid().sync();
   };
 

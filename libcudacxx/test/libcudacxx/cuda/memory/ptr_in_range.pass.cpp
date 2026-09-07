@@ -40,6 +40,7 @@ TEST_FUNC void test_variants()
   assert(!cuda::ptr_in_range(firstA, firstB, lastB));
   assert(!cuda::ptr_in_range(lastA, firstB, lastB));
 
+#if !_CCCL_TILE_COMPILATION()
   T* arrayC = new T[6]{};
   T* firstC = arrayC + 1;
   T* lastC  = arrayC + 5;
@@ -49,6 +50,7 @@ TEST_FUNC void test_variants()
   assert(!cuda::ptr_in_range(firstA, firstC, lastC));
   assert(!cuda::ptr_in_range(lastA, firstC, lastC));
   delete[] arrayC;
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 template <typename T>

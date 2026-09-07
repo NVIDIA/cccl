@@ -49,7 +49,7 @@ TEST_FUNC void test()
   static_assert((cuda::std::is_same<typename Alloc::difference_type, cuda::std::ptrdiff_t>::value));
   static_assert((cuda::std::is_same<typename Alloc::value_type, T>::value));
   static_assert(
-    (cuda::std::is_same<typename Alloc::propagate_on_container_move_assignment, cuda::std::true_type>::value), "");
+    (cuda::std::is_same<typename Alloc::propagate_on_container_move_assignment, cuda::std::true_type>::value));
   static_assert((cuda::std::is_same<typename Alloc::is_always_equal, cuda::std::true_type>::value));
 
 #if TEST_STD_VER <= 2017

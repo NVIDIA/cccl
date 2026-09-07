@@ -14,8 +14,8 @@
 // template <class T, class ...Args>
 // constexpr T* construct_at(T* location, Args&& ...args);
 
-// #include <cuda/std/memory>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/memory>
 
 #include "test_iterators.h"
@@ -219,32 +219,29 @@ TEST_FUNC constexpr bool test()
 }
 
 template <class... Args, class = decltype(cuda::std::construct_at(cuda::std::declval<Args>()...))>
-TEST_FUNC constexpr bool can_construct_at(Args&&...)
-{
-  return true;
-}
+TEST_FUNC constexpr auto can_construct_at_impl(Args&&...) -> cuda::std::true_type;
 
 template <class... Args>
-TEST_FUNC constexpr bool can_construct_at(...)
-{
-  return false;
-}
+TEST_FUNC constexpr auto can_construct_at_impl(...) -> cuda::std::false_type;
+
+template <class... Args>
+inline constexpr bool can_construct_at = decltype(can_construct_at_impl(cuda::std::declval<Args>()...))::value;
 
 // Check that SFINAE works.
-static_assert(can_construct_at((int*) nullptr, 42));
-static_assert(can_construct_at((Foo*) nullptr, 1, '2', 3.0));
-static_assert(!can_construct_at((Foo*) nullptr, 1, '2'));
-static_assert(!can_construct_at((Foo*) nullptr, 1, '2', 3.0, 4));
-static_assert(!can_construct_at(nullptr, 1, '2', 3.0));
-static_assert(!can_construct_at((int*) nullptr, 1, '2', 3.0));
+static_assert(can_construct_at<int*, int>);
+static_assert(can_construct_at<Foo*, int, char, double>);
+static_assert(!can_construct_at<Foo*, int, char>);
+static_assert(!can_construct_at<Foo*, int, char, double, int>);
+static_assert(!can_construct_at<void*, int, char, double>);
+static_assert(!can_construct_at<int*, int, char, double>);
 #if 0 // We do not support ranges yet
-static_assert(!can_construct_at(contiguous_iterator<Foo*>(), 1, '2', 3.0));
+static_assert(!can_construct_at<contiguous_iterator<Foo*>, int, char, double>);
 #endif
 // Can't construct function pointers.
 
 #if !TEST_COMPILER(MSVC) // nvbug 4075886
-static_assert(!can_construct_at((int (*)()) nullptr));
-static_assert(!can_construct_at((int (*)()) nullptr, nullptr));
+static_assert(!can_construct_at<int (*)()>);
+static_assert(!can_construct_at<int (*)(), cuda::std::nullptr_t>);
 #endif // TEST_COMPILER(MSVC)
 
 int main(int, char**)

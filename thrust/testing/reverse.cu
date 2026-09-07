@@ -55,14 +55,6 @@ DECLARE_UNITTEST(TestReverseDispatchImplicit);
 template <typename Vector>
 void TestReverseCopySimple()
 {
-#if _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 10)
-
-  if (typeid(Vector) == typeid(thrust::host_vector<custom_numeric>))
-  {
-    KNOWN_FAILURE // WAR NVBug 2481122
-  }
-#endif // _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 10)
-
   using Iterator = typename Vector::iterator;
 
   Vector input{1, 2, 3, 4, 5};
@@ -127,7 +119,7 @@ struct TestReverse
     ASSERT_EQUAL(h_data, d_data);
   }
 };
-VariableUnitTest<TestReverse, ReverseTypes> TestReverseInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverse, ReverseTypes);
 
 template <typename T>
 struct TestReverseCopy
@@ -146,7 +138,7 @@ struct TestReverseCopy
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestReverseCopy, ReverseTypes> TestReverseCopyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopy, ReverseTypes);
 
 template <typename T>
 struct TestReverseCopyToDiscardIterator
@@ -162,10 +154,25 @@ struct TestReverseCopyToDiscardIterator
     thrust::discard_iterator<> d_result =
       thrust::reverse_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> reference(n);
+    thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestReverseCopyToDiscardIterator, ReverseTypes> TestReverseCopyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReverseCopyToDiscardIterator, ReverseTypes);
+
+void TestReverseZippedHost()
+{
+  thrust::host_vector<int> a{1, 2, 3, 4};
+  thrust::host_vector<int> b{10, 20, 30, 40};
+  auto zip = thrust::zip_iterator{a.begin(), b.begin()};
+  thrust::reverse(zip, zip + 4);
+
+  const thrust::host_vector<int> expected_a{4, 3, 2, 1};
+  const thrust::host_vector<int> expected_b{40, 30, 20, 10};
+
+  ASSERT_EQUAL(a, expected_a);
+  ASSERT_EQUAL(b, expected_b);
+}
+DECLARE_UNITTEST(TestReverseZippedHost);

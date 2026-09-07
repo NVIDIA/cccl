@@ -31,13 +31,13 @@ TEST_FUNC constexpr bool doAssign(T lhs, T rhs)
 struct A
 {};
 
-TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
-TEST_GLOBAL_VARIABLE constexpr int carr2[] = {3, 4, 5};
-TEST_GLOBAL_VARIABLE constexpr int carr3[] = {7, 8};
-TEST_GLOBAL_VARIABLE int arr[]             = {5, 6, 7, 9};
-
 int main(int, char**)
 {
+  static constexpr int carr1[] = {1, 2, 3, 4};
+  static constexpr int carr2[] = {3, 4, 5};
+  static constexpr int carr3[] = {7, 8};
+  int arr[]                    = {5, 6, 7, 9};
+
   //  constexpr dynamically sized assignment
   {
     //  On systems where 'ptrdiff_t' is a synonym for 'int',

@@ -1,0 +1,78 @@
+=============== atomic.integer begin ===============
+(cuda::std::atomic<int>) <address> (value = -7)
+=============== atomic.integer end ===============
+=============== atomic.boolean begin ===============
+(cuda::std::atomic<bool>) <address> (value = true)
+=============== atomic.boolean end ===============
+=============== atomic.small_object begin ===============
+(cuda::std::atomic<small_payload>) <address>: {
+  value = (first = true, second = false)
+}
+=============== atomic.small_object end ===============
+=============== atomic.floating_point begin ===============
+(cuda::std::atomic<double>) <address> (value = -3.5)
+=============== atomic.floating_point end ===============
+=============== atomic.pointer begin ===============
+(cuda::std::atomic<int *>) <address>: {
+  value = <address>
+}
+=============== atomic.pointer end ===============
+=============== atomic.locked begin ===============
+(cuda::std::atomic<payload>) <address>: {
+  value = (first = 13, second = -5, third = 88)
+}
+=============== atomic.locked end ===============
+=============== atomic.alias begin ===============
+(cuda::std::atomic<long long>) <address> (value = -31)
+=============== atomic.alias end ===============
+=============== atomic.nested begin ===============
+(const cuda::std::array<cuda::std::atomic<int>, 2> &) <address>: {
+  [0] = (value = 17)
+  [1] = (value = -64)
+}
+=============== atomic.nested end ===============
+=============== atomic.reference begin ===============
+(cuda::std::atomic_ref<int>) <address> ptr=<address>: {
+  value = 52
+}
+=============== atomic.reference end ===============
+=============== atomic.locked_reference begin ===============
+(cuda::std::atomic_ref<payload>) <address> ptr=<address>: {
+  value = (first = 6, second = -91, third = 3)
+}
+=============== atomic.locked_reference end ===============
+=============== atomic.cuda_integer begin ===============
+(cuda::atomic<int, cuda::thread_scope_system>) <address> (value = 41)
+=============== atomic.cuda_integer end ===============
+=============== atomic.cuda_reference begin ===============
+(cuda::atomic_ref<int, cuda::thread_scope_system>) <address> ptr=<address>: {
+  value = -26
+}
+=============== atomic.cuda_reference end ===============
+=============== atomic.cuda_device_integer begin ===============
+(cuda::atomic<int, cuda::thread_scope_device>) <address> (value = 29)
+=============== atomic.cuda_device_integer end ===============
+=============== atomic.cuda_block_reference begin ===============
+(cuda::atomic_ref<int, cuda::thread_scope_block>) <address> ptr=<address>: {
+  value = -38
+}
+=============== atomic.cuda_block_reference end ===============
+=============== atomic.cuda_thread_integer begin ===============
+(cuda::atomic<int, cuda::thread_scope_thread>) <address> (value = 17)
+=============== atomic.cuda_thread_integer end ===============
+=============== atomic.update.before begin ===============
+(cuda::std::atomic<int>) <address> (value = 85)
+=============== atomic.update.before end ===============
+=============== atomic.update.after begin ===============
+(cuda::std::atomic<int>) <address> (value = 99)
+=============== atomic.update.after end ===============
+=============== atomic.reference_update.before begin ===============
+(cuda::std::atomic_ref<int>) <address> ptr=<address>: {
+  value = -12
+}
+=============== atomic.reference_update.before end ===============
+=============== atomic.reference_update.after begin ===============
+(cuda::std::atomic_ref<int>) <address> ptr=<address>: {
+  value = 73
+}
+=============== atomic.reference_update.after end ===============

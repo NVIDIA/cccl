@@ -25,6 +25,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class T, class Op>
 TEST_FUNC constexpr void test(Iter1 first, Iter1 last, Op op, T init, const T* rFirst, const T* rLast)
 {
@@ -45,6 +46,7 @@ TEST_FUNC constexpr void test(Iter1 first, Iter1 last, Op op, T init, const T* r
   assert(cuda::std::equal(out, end, rFirst, rLast));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter>
 TEST_FUNC constexpr void test()
 {
@@ -68,6 +70,7 @@ TEST_FUNC constexpr cuda::std::size_t triangle(size_t n)
 }
 
 //  Basic sanity
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr void basic_tests()
 {
   {
@@ -128,6 +131,7 @@ TEST_FUNC constexpr void basic_tests()
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 TEST_FUNC constexpr bool test()
 {
   basic_tests();
@@ -143,9 +147,9 @@ TEST_FUNC constexpr bool test()
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   return true;
 }

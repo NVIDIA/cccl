@@ -25,6 +25,7 @@
 
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
@@ -40,9 +41,10 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
-class legacy_managed_memory_resource
+class legacy_managed_memory_resource : public memory_resource_base<legacy_managed_memory_resource>
 {
 private:
+  // cudaMemAttach values are macros, so we cannot :: them.
   unsigned int __flags_ = cudaMemAttachGlobal;
 
   static constexpr unsigned int __available_flags = cudaMemAttachGlobal | cudaMemAttachHost;
@@ -54,7 +56,7 @@ public:
   //! for the resource. This association has the effect of initializing that device and the memory being implicitly
   //! freed if the device is reset.
   _CCCL_HOST_API constexpr legacy_managed_memory_resource(
-    const unsigned int __flags = cudaMemAttachGlobal, device_ref __device = {0}) noexcept
+    const unsigned int __flags = cudaMemAttachGlobal, ::cuda::device_ref __device = {0}) noexcept
       : __flags_(__flags & __available_flags)
       , __device_(__device)
   {
@@ -93,9 +95,9 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to legacy_managed_memory_resource::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(::cuda::__driver::__freeNoThrow,
-                          "legacy_managed_memory_resource::deallocate_sync failed",
-                          reinterpret_cast<::CUdeviceptr>(__ptr));
+    _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__freeNoThrow,
+                            "legacy_managed_memory_resource::deallocate_sync failed",
+                            reinterpret_cast<::CUdeviceptr>(__ptr));
   }
 
   //! @brief Equality comparison with another \c managed_memory_resource.
@@ -125,7 +127,7 @@ public:
   {}
 
   //! @brief Checks whether the passed in alignment is valid
-  _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
     return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
         && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
@@ -134,7 +136,7 @@ public:
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
 
 private:
-  device_ref __device_{0};
+  ::cuda::device_ref __device_{0};
 };
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::device_accessible>);
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::host_accessible>);

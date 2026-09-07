@@ -186,35 +186,28 @@ TEST_FUNC constexpr void mixin_layout(const FromH& handle, const FromA& acc)
   // different layout policies, but constructible and convertible
   static_assert(
     cuda::std::is_constructible<cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>,
-                                const cuda::std::layout_right::mapping<cuda::std::dextents<int, 1>>&>::value,
-    "");
+                                const cuda::std::layout_right::mapping<cuda::std::dextents<int, 1>>&>::value);
   static_assert(cuda::std::is_convertible<const cuda::std::layout_right::mapping<cuda::std::dextents<int, 1>>&,
-                                          cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>::value,
-                "");
+                                          cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>::value);
   // different layout policies, not constructible
   static_assert(
     !cuda::std::is_constructible<cuda::std::layout_left::mapping<cuda::std::dextents<int, 2>>,
-                                 const cuda::std::layout_right::mapping<cuda::std::dextents<int, 2>>&>::value,
-    "");
+                                 const cuda::std::layout_right::mapping<cuda::std::dextents<int, 2>>&>::value);
   // different layout policies, constructible and not convertible
   static_assert(
     cuda::std::is_constructible<cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>,
-                                const cuda::std::layout_right::mapping<cuda::std::dextents<size_t, 1>>&>::value,
-    "");
+                                const cuda::std::layout_right::mapping<cuda::std::dextents<size_t, 1>>&>::value);
   static_assert(!cuda::std::is_convertible<const cuda::std::layout_right::mapping<cuda::std::dextents<size_t, 1>>&,
-                                           cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>::value,
-                "");
+                                           cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>::value);
 
   mixin_extents<cuda::std::layout_left, ToA>(handle, cuda::std::layout_right(), acc);
   mixin_extents<layout_wrapping_integral<4>, ToA>(handle, layout_wrapping_integral<4>(), acc);
   // different layout policies, constructible and not convertible
   static_assert(
     !cuda::std::is_constructible<layout_wrapping_integral<8>::mapping<cuda::std::dextents<unsigned, 2>>,
-                                 const layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>&>::value,
-    "");
+                                 const layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>&>::value);
   static_assert(cuda::std::is_constructible<layout_wrapping_integral<8>::mapping<cuda::std::dextents<unsigned, 2>>,
-                                            layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>>::value,
-                "");
+                                            layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>>::value);
   mixin_extents<layout_wrapping_integral<8>, ToA>(handle, layout_wrapping_integral<8>(), acc);
 }
 
@@ -259,20 +252,16 @@ TEST_FUNC constexpr bool test(FromA from_acc)
   static_assert(cuda::std::is_constructible<ToA, FromA>::value == constructible_nonconst_acc);
   static_assert(
     cuda::std::is_constructible<typename ToA::data_handle_type, const typename FromA::data_handle_type&>::value
-      == constructible_constref_handle,
-    "");
+    == constructible_constref_handle);
   static_assert(cuda::std::is_constructible<typename ToA::data_handle_type, typename FromA::data_handle_type>::value
-                  == constructible_nonconst_handle,
-                "");
+                == constructible_nonconst_handle);
   static_assert(cuda::std::is_convertible<const FromA&, ToA>::value == convertible_constref_acc);
   static_assert(cuda::std::is_convertible<FromA, ToA>::value == convertible_nonconst_acc);
   static_assert(
     cuda::std::is_convertible<const typename FromA::data_handle_type&, typename ToA::data_handle_type>::value
-      == convertible_constref_handle,
-    "");
+    == convertible_constref_handle);
   static_assert(cuda::std::is_convertible<typename FromA::data_handle_type, typename ToA::data_handle_type>::value
-                  == convertible_nonconst_handle,
-                "");
+                == convertible_nonconst_handle);
 
   test_impl<ToA>(from_acc);
   return true;
@@ -335,17 +324,14 @@ int main(int, char**)
 #if TEST_STD_VER >= 2020
 
   // Ran into trouble with doing it all in one static_assert: exceeding step limit for consteval
-  static_assert(test<t, t, t, t, t, t, t, t, cuda::std::default_accessor<float>>(cuda::std::default_accessor<float>()),
-                "");
+  static_assert(test<t, t, t, t, t, t, t, t, cuda::std::default_accessor<float>>(cuda::std::default_accessor<float>()));
   static_assert(
-    test<t, t, t, t, t, t, t, t, cuda::std::default_accessor<const float>>(cuda::std::default_accessor<float>()), "");
+    test<t, t, t, t, t, t, t, t, cuda::std::default_accessor<const float>>(cuda::std::default_accessor<float>()));
 #  if TEST_STD_VER >= 2020
   static_assert(test<t, t, t, t, t, t, t, t, cuda::std::default_accessor<MinimalElementType>>(
-                  cuda::std::default_accessor<MinimalElementType>()),
-                "");
+    cuda::std::default_accessor<MinimalElementType>()));
   static_assert(test<t, t, t, t, t, t, t, t, cuda::std::default_accessor<const MinimalElementType>>(
-                  cuda::std::default_accessor<MinimalElementType>()),
-                "");
+    cuda::std::default_accessor<MinimalElementType>()));
 #  endif // TEST_STD_VER >= 2020
   static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<int>>(checked_accessor<int>(1024)));
   static_assert(test<t, o, t, o, t, t, t, t, checked_accessor<const int>>(checked_accessor<int>(1024)));
@@ -354,29 +340,27 @@ int main(int, char**)
   static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<double>>(checked_accessor<double>(1024)));
 #  if TEST_STD_VER >= 2020
   static_assert(
-    test<t, t, t, t, t, t, t, t, checked_accessor<MinimalElementType>>(checked_accessor<MinimalElementType>(1024)), "");
+    test<t, t, t, t, t, t, t, t, checked_accessor<MinimalElementType>>(checked_accessor<MinimalElementType>(1024)));
   static_assert(test<t, o, t, o, t, t, t, t, checked_accessor<const MinimalElementType>>(
-                  checked_accessor<MinimalElementType>(1024)),
-                "");
+    checked_accessor<MinimalElementType>(1024)));
 #  endif // TEST_STD_VER >= 2020
-  static_assert(test<t, o, t, o, t, t, t, t, conv_test_accessor_c<int, t, t, t, t>>(conv_test_accessor_nc<int, t, t>()),
-                "");
-  static_assert(test<t, o, t, t, t, t, t, t, conv_test_accessor_c<int, t, t, o, o>>(conv_test_accessor_nc<int, t, o>()),
-                "");
-  static_assert(test<t, t, t, o, t, t, t, t, conv_test_accessor_c<int, o, t, t, t>>(conv_test_accessor_nc<int, t, t>()),
-                "");
-  static_assert(test<t, t, t, t, t, t, t, t, conv_test_accessor_c<int, o, o, o, o>>(conv_test_accessor_nc<int, t, o>()),
-                "");
-  static_assert(test<o, o, o, o, o, o, o, o, cuda::std::default_accessor<float>>(cuda::std::default_accessor<int>()),
-                "");
+  static_assert(
+    test<t, o, t, o, t, t, t, t, conv_test_accessor_c<int, t, t, t, t>>(conv_test_accessor_nc<int, t, t>()));
+  static_assert(
+    test<t, o, t, t, t, t, t, t, conv_test_accessor_c<int, t, t, o, o>>(conv_test_accessor_nc<int, t, o>()));
+  static_assert(
+    test<t, t, t, o, t, t, t, t, conv_test_accessor_c<int, o, t, t, t>>(conv_test_accessor_nc<int, t, t>()));
+  static_assert(
+    test<t, t, t, t, t, t, t, t, conv_test_accessor_c<int, o, o, o, o>>(conv_test_accessor_nc<int, t, o>()));
+  static_assert(test<o, o, o, o, o, o, o, o, cuda::std::default_accessor<float>>(cuda::std::default_accessor<int>()));
   static_assert(test<o, o, o, o, o, o, o, o, checked_accessor<const double>>(checked_accessor<double>(1024)));
   static_assert(test<o, o, t, t, t, t, t, t, checked_accessor<const float>>(checked_accessor<float>(1024)));
-  static_assert(test<o, o, o, o, t, t, t, t, conv_test_accessor_c<int, o, o, t, t>>(conv_test_accessor_nc<int, o, o>()),
-                "");
-  static_assert(test<o, o, t, o, t, t, t, t, conv_test_accessor_c<int, o, t, o, o>>(conv_test_accessor_nc<int, o, t>()),
-                "");
-  static_assert(test<o, o, t, t, t, t, t, t, conv_test_accessor_c<int, o, o, t, t>>(conv_test_accessor_nc<int, o, t>()),
-                "");
+  static_assert(
+    test<o, o, o, o, t, t, t, t, conv_test_accessor_c<int, o, o, t, t>>(conv_test_accessor_nc<int, o, o>()));
+  static_assert(
+    test<o, o, t, o, t, t, t, t, conv_test_accessor_c<int, o, t, o, o>>(conv_test_accessor_nc<int, o, t>()));
+  static_assert(
+    test<o, o, t, t, t, t, t, t, conv_test_accessor_c<int, o, o, t, t>>(conv_test_accessor_nc<int, o, t>()));
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

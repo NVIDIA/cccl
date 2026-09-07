@@ -15,6 +15,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/ranges>
+#include <cuda/std/string_view>
 #include <cuda/std/utility>
 
 #include "test_iterators.h"
@@ -433,6 +434,72 @@ TEST_FUNC constexpr bool testSubscript()
 
 #if TEST_STD_VER > 2017
 template <class T>
+concept AtInvocable = requires(T const& obj, size_t n) { obj.at(n); };
+#else
+template <class T, class = void>
+constexpr bool AtInvocable = false;
+template <class T>
+constexpr bool
+  AtInvocable<T, cuda::std::void_t<decltype(cuda::std::declval<T const&>().at(cuda::std::declval<size_t>()))>> = true;
+#endif
+
+#if _CCCL_HOST_COMPILATION()
+template <class Fn>
+void test_throws_out_of_range([[maybe_unused]] Fn&& fn)
+{
+#  if TEST_HAS_EXCEPTIONS()
+  try
+  {
+    fn();
+    assert(false);
+  }
+  catch (const std::out_of_range& e)
+  {
+    assert(cuda::std::string_view{e.what()} == "cuda::std::ranges::view_interface::at: out of bounds access");
+  }
+  catch (...)
+  {
+    assert(false);
+  }
+#  endif // TEST_HAS_EXCEPTIONS()
+}
+#endif // _CCCL_HOST_COMPILATION()
+
+TEST_FUNC constexpr bool testAt()
+{
+  static_assert(!AtInvocable<ForwardRange>);
+  static_assert(AtInvocable<RARange>);
+
+  RARange randomAccess{};
+  assert(randomAccess.at(2) == 2);
+  assert(static_cast<const RARange&>(randomAccess).at(2) == 2);
+  randomAccess.at(2) = 3;
+  assert(randomAccess.at(2) == 3);
+
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   test_throws_out_of_range([&]() {
+                     return randomAccess.at(-1);
+                   });
+                   test_throws_out_of_range([&]() {
+                     return randomAccess.at(8);
+                   });
+
+                   test_throws_out_of_range([&]() {
+                     return static_cast<const RARange&>(randomAccess).at(-1);
+                   });
+                   test_throws_out_of_range([&]() {
+                     return static_cast<const RARange&>(randomAccess).at(8);
+                   });
+                 }))
+  }
+
+  return true;
+}
+
+#if TEST_STD_VER > 2017
+template <class T>
 concept FrontInvocable = requires(T const& obj) { obj.front(); };
 
 template <class T>
@@ -497,6 +564,9 @@ int main(int, char**)
 
   testSubscript();
   static_assert(testSubscript());
+
+  testAt();
+  static_assert(testAt());
 
   testFrontBack();
   static_assert(testFrontBack());

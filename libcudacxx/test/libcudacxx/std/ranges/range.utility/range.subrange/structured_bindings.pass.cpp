@@ -12,6 +12,11 @@
 // class cuda::std::ranges::subrange;
 
 #include <cuda/std/cassert>
+
+// NVHPC complains about the deprecated longlong4 types even if they are not used at all
+_CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity_with_custom_message)
+_CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity)
+
 #include <cuda/std/ranges>
 #include <cuda/std/utility>
 

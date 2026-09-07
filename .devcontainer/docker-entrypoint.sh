@@ -8,14 +8,16 @@
 : "${NEW_UID:=}";
 : "${NEW_GID:=}";
 
-eval "$(sed -n "s/${REMOTE_USER}:[^:]*:\([^:]*\):\([^:]*\):[^:]*:\([^:]*\).*/OLD_UID=\1;OLD_GID=\2;HOME_FOLDER=\3/p" /etc/passwd)";
-eval "$(sed -n "s/\([^:]*\):[^:]*:${NEW_UID}:.*/EXISTING_USER=\1/p" /etc/passwd)";
-eval "$(sed -n "s/\([^:]*\):[^:]*:${NEW_GID}:.*/EXISTING_GROUP=\1/p" /etc/group)";
+OLD_UID="$(sed -n "s/${REMOTE_USER}:[^:]*:\([^:]*\):\([^:]*\):[^:]*:\([^:]*\).*/\1/p" /etc/passwd)";
+OLD_GID="$(sed -n "s/${REMOTE_USER}:[^:]*:\([^:]*\):\([^:]*\):[^:]*:\([^:]*\).*/\2/p" /etc/passwd)";
+HOME_FOLDER="$(sed -n "s/${REMOTE_USER}:[^:]*:\([^:]*\):\([^:]*\):[^:]*:\([^:]*\).*/\3/p" /etc/passwd)";
+EXISTING_USER="$(sed -n "s/\([^:]*\):[^:]*:${NEW_UID}:.*/\1/p" /etc/passwd)";
+EXISTING_GROUP="$(sed -n "s/\([^:]*\):[^:]*:${NEW_GID}:.*/\1/p" /etc/group)";
 
-if [ -z "$OLD_UID" ]; then
+if [[ -z "$OLD_UID" ]]; then
     echo "Remote user not found in /etc/passwd ($REMOTE_USER).";
     exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
-elif [ "$OLD_UID" = "$NEW_UID" ] && [ "$OLD_GID" = "$NEW_GID" ]; then
+elif [[ "$OLD_UID" = "$NEW_UID" ]] && [[ "$OLD_GID" = "$NEW_GID" ]]; then
     echo "UIDs and GIDs are the same ($NEW_UID:$NEW_GID).";
     # Even when IDs match, ensure we execute as the non-root REMOTE_USER so
     # gh and sccache use the mapped HOME (/home/coder) where ~/.aws is bind-mounted.
@@ -27,17 +29,17 @@ elif [ "$OLD_UID" = "$NEW_UID" ] && [ "$OLD_GID" = "$NEW_GID" ]; then
     export XDG_STATE_HOME="$HOME_FOLDER/.local/state";
     export PYTHONHISTFILE="$HOME_FOLDER/.local/state/.python_history";
     exec su -p "$REMOTE_USER" -- "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
-elif [ "$OLD_UID" != "$NEW_UID" ] && [ -n "$EXISTING_USER" ]; then
+elif [[ "$OLD_UID" != "$NEW_UID" ]] && [[ -n "$EXISTING_USER" ]]; then
     echo "User with UID exists ($EXISTING_USER=$NEW_UID).";
     exec "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 else
-    if [ "$OLD_GID" != "$NEW_GID" ] && [ -n "$EXISTING_GROUP" ]; then
+    if [[ "$OLD_GID" != "$NEW_GID" ]] && [[ -n "$EXISTING_GROUP" ]]; then
         echo "Group with GID exists ($EXISTING_GROUP=$NEW_GID).";
         NEW_GID="$OLD_GID";
     fi
     echo "Updating UID:GID from $OLD_UID:$OLD_GID to $NEW_UID:$NEW_GID.";
     sed -i -e "s/\(${REMOTE_USER}:[^:]*:\)[^:]*:[^:]*/\1${NEW_UID}:${NEW_GID}/" /etc/passwd;
-    if [ "$OLD_GID" != "$NEW_GID" ]; then
+    if [[ "$OLD_GID" != "$NEW_GID" ]]; then
         sed -i -e "s/\([^:]*:[^:]*:\)${OLD_GID}:/\1${NEW_GID}:/" /etc/group;
     fi
 
@@ -56,20 +58,6 @@ else
     export XDG_CONFIG_HOME="$HOME_FOLDER/.config";
     export XDG_STATE_HOME="$HOME_FOLDER/.local/state";
     export PYTHONHISTFILE="$HOME_FOLDER/.local/state/.python_history";
-
-    if command -V module 2>&1 | grep -q function; then
-        # "deactivate" lmod so it will be reactivated as the non-root user
-        export LMOD_CMD=
-        export LMOD_DEFAULT_MODULEPATH=
-        export LMOD_DIR=
-        export LMOD_PKG=
-        export LOADEDMODULES=
-        export MANPATH=
-        export MODULEPATH_ROOT=
-        export MODULEPATH=
-        export MODULESHOME=
-        export -fn module
-    fi
 
     exec su -p "$REMOTE_USER" -- "$(pwd)/.devcontainer/cccl-entrypoint.sh" "$@";
 fi

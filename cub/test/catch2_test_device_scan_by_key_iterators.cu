@@ -12,7 +12,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -67,7 +67,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", full_type_list)
+CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using key_t    = typename params::type_pair_t::key_t;
@@ -173,8 +173,9 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
-    using init_t = value_t;
-    device_exclusive_scan_by_key(d_keys_it, values_in_it, out_values.begin(), scan_op, init_t{}, num_items, eq_op_t{});
+    using init_value_t = value_t;
+    device_exclusive_scan_by_key(
+      d_keys_it, values_in_it, out_values.begin(), scan_op, init_value_t{}, num_items, eq_op_t{});
 
     // Verify result
     REQUIRE(expected_result == out_values);

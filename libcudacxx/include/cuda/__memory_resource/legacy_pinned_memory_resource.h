@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
@@ -41,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.9 and above, use
 //! `cuda::pinned_memory_resource` instead, which is the long-term replacement.
-class legacy_pinned_memory_resource
+class legacy_pinned_memory_resource : public memory_resource_base<legacy_pinned_memory_resource>
 {
 public:
   //! @brief Construct a new legacy_pinned_memory_resource.
@@ -84,7 +85,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to legacy_pinned_memory_resource::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeHostNoThrow, "legacy_pinned_memory_resource::deallocate_sync failed", __ptr);
   }
 

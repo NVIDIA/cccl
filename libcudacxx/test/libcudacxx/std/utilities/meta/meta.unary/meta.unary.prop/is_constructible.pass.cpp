@@ -284,7 +284,7 @@ int main(int, char**)
 #if TEST_CUDA_COMPILER(CLANG)
   test_is_constructible<const int&, ExplicitTo<int>>();
   static_assert(
-    clang_disallows_valid_static_cast_bug != cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int>>::value, "");
+    clang_disallows_valid_static_cast_bug != cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int>>::value);
   static_assert(cuda::std::is_constructible<int&&, ExplicitTo<int>>::value);
 #elif TEST_COMPILER(MSVC) && TEST_CUDA_COMPILER(NVCC)
   // FIXME NVCC and MSVC disagree about the validity of these tests, and give

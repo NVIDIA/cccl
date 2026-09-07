@@ -49,6 +49,19 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
     except (AttributeError, TypeError):
         pass
 
+    # Framework-specific dtypes NumPy can't interpret: PyTorch's bfloat16.
+    # Its __cuda_array_interface__ reports an opaque "<V2" typestr (CAI has no
+    # bfloat16 spelling), which would silently demote the array to a storage
+    # type; map it to the ml_dtypes bfloat16 dtype instead.
+    if str(getattr(arr, "dtype", None)) == "torch.bfloat16":
+        from ..types import bfloat16
+
+        if bfloat16.dtype is None:
+            raise TypeError(
+                "bfloat16 arrays require the ml_dtypes package to be installed"
+            )
+        return bfloat16.dtype
+
     # Fall back to __cuda_array_interface__ for DeviceArrayLike
     cai = arr.__cuda_array_interface__  # type: ignore
     typestr = cai["typestr"]

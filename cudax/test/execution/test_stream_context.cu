@@ -38,7 +38,7 @@ struct _say_hello
 {
   __device__ int operator()() const
   {
-    CUDAX_CHECK(_is_on_device());
+    CHECK(_is_on_device());
     printf("Hello from lambda on device!\n");
     return value;
   }
@@ -50,7 +50,7 @@ struct _say_hello
 template <class Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT unknown_sender : Sndr
 {
-  _CCCL_API explicit unknown_sender(Sndr sndr) noexcept
+  _CCCL_HOST_DEVICE_API explicit unknown_sender(Sndr sndr) noexcept
       : Sndr(cuda::std::move(sndr))
   {}
 };
@@ -80,16 +80,16 @@ void stream_context_test2()
     ex::schedule(sch) // begin work on the GPU
     | ex::then(_say_hello{42}) // enqueue a function object on the GPU
     | ex::then([] __device__(int i) noexcept -> int { // enqueue a lambda on the GPU
-        CUDAX_CHECK(_is_on_device());
+        CHECK(_is_on_device());
         printf("Hello again from lambda on device! i = %d\n", i);
         return i + 1;
       })
     | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
     | ex::then([] __host__ __device__(int i) -> int { // run a lambda on the CPU
-        CUDAX_CHECK(!_is_on_device());
-        NV_IF_TARGET(NV_IS_HOST,
-                     (printf("Hello from lambda on host! i = %d\n", i);),
-                     (printf("OOPS! still on the device! i = %d\n", i);))
+        CHECK(!_is_on_device());
+        NV_IF_ELSE_TARGET(NV_IS_HOST,
+                          (printf("Hello from lambda on host! i = %d\n", i);),
+                          (printf("OOPS! still on the device! i = %d\n", i);))
         return i;
       });
 
@@ -110,16 +110,16 @@ void stream_ref_as_scheduler()
     ex::schedule(sch) // begin work on the GPU
     | ex::then(_say_hello{42}) // enqueue a function object on the GPU
     | ex::then([] __device__(int i) noexcept -> int { // enqueue a lambda on the GPU
-        CUDAX_CHECK(_is_on_device());
+        CHECK(_is_on_device());
         printf("Hello again from lambda on device! i = %d\n", i);
         return i + 1;
       })
     | ex::continues_on(tctx.get_scheduler()) // continue work on the CPU
     | ex::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
-        CUDAX_CHECK(!_is_on_device());
-        NV_IF_TARGET(NV_IS_HOST,
-                     (printf("Hello from lambda on host! i = %d\n", i);),
-                     (printf("OOPS! still on the device! i = %d\n", i);))
+        CHECK(!_is_on_device());
+        NV_IF_ELSE_TARGET(NV_IS_HOST,
+                          (printf("Hello from lambda on host! i = %d\n", i);),
+                          (printf("OOPS! still on the device! i = %d\n", i);))
         return i;
       });
 
@@ -151,8 +151,8 @@ void bulk_on_stream_scheduler()
     // enqueue a bulk kernel on the GPU
     | ex::bulk(ex::par_unseq, 10, [] __host__ __device__(int i, cuda::std::span<int> data) -> void {
         printf("Hello from bulk kernel on device! i = %d\n", i);
-        CUDAX_CHECK(_is_on_device());
-        CUDAX_CHECK(static_cast<::cuda::std::size_t>(i) < data.size());
+        CHECK(_is_on_device());
+        CHECK(static_cast<::cuda::std::size_t>(i) < data.size());
         data[i] += 2;
       });
 
