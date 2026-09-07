@@ -19,14 +19,15 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
+#include "block_size_extracting_helpers.h"
 #include "catch2_test_device_select_common.cuh"
-#include "catch2_test_env_launch_helper.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, device_select_if);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Flagged, device_select_flagged);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::FlaggedIf, device_select_flagged_if);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Unique, device_select_unique);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::UniqueByKey, device_select_unique_by_key);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::If, device_select_if);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::Flagged, device_select_flagged);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::FlaggedIf, device_select_flagged_if);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::Unique, device_select_unique);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSelect::UniqueByKey, device_select_unique_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

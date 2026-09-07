@@ -17,20 +17,23 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramEven, histogram_even);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceHistogram::HistogramRange, histogram_range);
 
-DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
-                            multi_histogram_even,
-                            ESCAPE_LIST(int Channels, int ActiveChannels),
-                            ESCAPE_LIST(Channels, ActiveChannels));
+DECLARE_TMPL_LAUNCH_WRAPPER_ENV(
+  cub::DeviceHistogram::MultiHistogramEven,
+  multi_histogram_even,
+  ESCAPE_LIST(int Channels, int ActiveChannels),
+  ESCAPE_LIST(Channels, ActiveChannels));
 
-DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramRange,
-                            multi_histogram_range,
-                            ESCAPE_LIST(int Channels, int ActiveChannels),
-                            ESCAPE_LIST(Channels, ActiveChannels));
+DECLARE_TMPL_LAUNCH_WRAPPER_ENV(
+  cub::DeviceHistogram::MultiHistogramRange,
+  multi_histogram_range,
+  ESCAPE_LIST(int Channels, int ActiveChannels),
+  ESCAPE_LIST(Channels, ActiveChannels));
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
