@@ -16,6 +16,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
@@ -59,6 +61,7 @@ struct custom_sum_op
     return lhs + rhs;
   }
 };
+} // namespace
 
 CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", CUB_SMALL, offset_types)
 {

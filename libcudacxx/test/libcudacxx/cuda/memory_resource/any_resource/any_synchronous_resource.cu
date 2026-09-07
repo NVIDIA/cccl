@@ -21,6 +21,8 @@ static_assert(cuda::has_property<cuda::mr::any_synchronous_resource<cuda::mr::ho
 static_assert(!cuda::has_property<cuda::mr::any_synchronous_resource<cuda::mr::host_accessible, get_data>,
                                   ::cuda::mr::device_accessible>);
 
+namespace
+{
 struct unused_property
 {};
 
@@ -433,3 +435,4 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "Empty property set", "[container][resou
     mr.deallocate_sync(this, this->bytes(0), this->align(0));
   }
 }
+} // namespace

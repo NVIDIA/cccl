@@ -25,6 +25,8 @@
 // %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_KEY_BITS key_bits 8:16:32:64
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
 
@@ -65,6 +67,7 @@ using fp_key_types         = c2h::type_list<double>;
 
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
+} // namespace
 
 CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
          "[keys][segmented][radix][sort][device]",

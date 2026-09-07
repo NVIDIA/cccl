@@ -9,6 +9,8 @@
 // Scalar Functions //
 //////////////////////
 
+namespace
+{
 template <class Vector>
 void TestScalarLowerBoundDescendingSimple()
 {
@@ -119,3 +121,4 @@ void TestScalarEqualRangeDescendingSimple()
                      thrust::equal_range(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()).second);
 }
 DECLARE_VECTOR_UNITTEST(TestScalarEqualRangeDescendingSimple);
+} // namespace

@@ -16,6 +16,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 struct square_ref_op
 {
   __device__ void operator()(int& i)
@@ -46,6 +48,7 @@ struct odd_count_op
     }
   }
 };
+} // namespace
 
 // -----------------------------------------------------------------------
 // Bulk
@@ -149,6 +152,8 @@ CUB_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]", CUB_SMAL
   REQUIRE(count == expected_count);
 }
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct for_each_tuning
 {
@@ -173,6 +178,7 @@ struct block_size_extracting_op
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+} // namespace
 
 CUB_TEST("DeviceFor::Bulk can be tuned", "[for][device]", CUB_SMALL, block_sizes)
 {

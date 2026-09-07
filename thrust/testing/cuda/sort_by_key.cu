@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct my_less
 {
@@ -126,3 +128,4 @@ void TestSortByKeyCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestSortByKeyCudaStreams);
+} // namespace

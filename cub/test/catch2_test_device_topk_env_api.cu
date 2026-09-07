@@ -23,6 +23,9 @@
 
 #include "cub_test_macros.h"
 
+// Only the const decomposer overload is exercised, so internal linkage makes nvcc report
+// the other as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // Simple user-defined key type for the decomposer-based examples.
 struct topk_custom_t
 {
@@ -41,6 +44,7 @@ struct topk_custom_decomposer_t
     return {key.rank};
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {

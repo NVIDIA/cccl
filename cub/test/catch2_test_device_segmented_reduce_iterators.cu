@@ -14,6 +14,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 
@@ -23,6 +25,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::int64_t>>;
 using offsets            = c2h::type_list<std::int32_t, std::uint32_t>;
+} // namespace
 
 CUB_TEST("Device segmented reduce works with fancy input iterators",
          "[reduce][device]",

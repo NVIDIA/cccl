@@ -229,6 +229,8 @@ void TestTransformScanDeviceDevice()
 DECLARE_UNITTEST(TestTransformScanDeviceDevice);
 #endif
 
+namespace
+{
 void TestTransformScanCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -374,3 +376,4 @@ void TestTransformScanConstAccumulator()
   ASSERT_EQUAL(output, reference);
 }
 DECLARE_UNITTEST(TestTransformScanConstAccumulator);
+} // namespace

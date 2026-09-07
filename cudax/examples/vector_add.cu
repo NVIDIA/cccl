@@ -50,6 +50,8 @@ namespace cudax = cuda::experimental;
 using cudax::in;
 using cudax::out;
 
+namespace
+{
 /**
  * CUDA Kernel Device code
  *
@@ -65,6 +67,7 @@ __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B
     C[i] = A[i] + B[i] + 0.0f;
   }
 }
+} // namespace
 
 /**
  * Host main routine

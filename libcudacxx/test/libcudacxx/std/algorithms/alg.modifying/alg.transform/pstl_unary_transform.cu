@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T = int>
 struct minus_five
 {
@@ -74,6 +76,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), cuda::counting_iterator{37}));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::transform", "[parallel algorithm]")
 {

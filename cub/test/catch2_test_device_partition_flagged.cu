@@ -22,8 +22,10 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T, class FlagT>
-static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
+c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
 {
   struct selector
   {
@@ -88,6 +90,7 @@ using types =
 
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
+} // namespace
 
 CUB_TEST("DevicePartition::Flagged can run with empty input", "[device][partition_flagged]", CUB_SMALL, types)
 {
@@ -361,6 +364,9 @@ CUB_TEST("DevicePartition::Flagged works with pointers", "[device][partition_fla
   REQUIRE(reference == out);
 }
 
+// CUB kernels carry hidden visibility, which nvcc rejects on an entity with internal
+// linkage. Types used as kernel template arguments must keep external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct convertible_to_bool
 {
   int val_;
@@ -383,6 +389,7 @@ struct convertible_to_bool
     return lhs == rhs.val_;
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DevicePartition::Flagged works with flags that are convertible to bool",
          "[device][partition_flagged]",
@@ -435,6 +442,9 @@ CUB_TEST("DevicePartition::Flagged works with flags that alias input", "[device]
   REQUIRE(reference == out);
 }
 
+// CUB kernels carry hidden visibility, which nvcc rejects on an entity with internal
+// linkage. Types used as kernel template arguments must keep external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class T>
 struct convertible_from_T
 {
@@ -462,6 +472,7 @@ struct convertible_from_T
     return os << value.val_;
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DevicePartition::Flagged works with different output type", "[device][partition_flagged]", CUB_SMALL)
 {

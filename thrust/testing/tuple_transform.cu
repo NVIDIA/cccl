@@ -6,6 +6,8 @@
 
 using namespace unittest;
 
+namespace
+{
 struct MakeTupleFunctor
 {
   template <typename T1, typename T2>
@@ -55,3 +57,4 @@ struct TestTupleTransform
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleTransform, SignedIntegralTypes);
+} // namespace

@@ -10,6 +10,8 @@
 // Vector Functions //
 //////////////////////
 
+namespace
+{
 // convert xxx_vector<T1> to xxx_vector<T2>
 template <class ExampleVector, typename NewType>
 struct vector_like
@@ -182,3 +184,4 @@ struct TestVectorBinarySearchDescending
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDescending, SignedIntegralTypes);
+} // namespace

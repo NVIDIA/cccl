@@ -15,6 +15,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin find-if-predicate
 struct is_greater_than_t
 {
@@ -25,6 +27,7 @@ struct is_greater_than_t
   }
 };
 // example-end find-if-predicate
+} // namespace
 
 CUB_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]", CUB_SMALL)
 {
@@ -115,6 +118,8 @@ CUB_TEST("cub::DeviceFind::UpperBound accepts env with stream", "[find][env]", C
 
 #if _CCCL_STD_VER >= 2020
 
+namespace
+{
 // example-begin find-if-policy-selector
 struct FindPolicySelector
 {
@@ -127,6 +132,7 @@ struct FindPolicySelector
   }
 };
 // example-end find-if-policy-selector
+} // namespace
 
 CUB_TEST("cub::DeviceFind::FindIf accepts a custom policy selector", "[find][env]", CUB_SMALL)
 {

@@ -34,6 +34,8 @@
 
 #include "../../policy_selector.h"
 
+namespace
+{
 namespace impl
 {
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
@@ -82,10 +84,10 @@ struct repack_pair
     return {v1, v2};
   };
 };
-}; // namespace impl
+} // namespace impl
 
 template <typename T, typename OffsetT>
-static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   static_assert(cuda::std::is_integral_v<T> && cuda::std::is_unsigned_v<T>, "Unsigned integral type should be used");
   using pair_t                   = cuda::std::pair<T, T>;
@@ -151,3 +153,4 @@ NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(uint_types, offset_types))
   .set_name("app-bicyclic-monoid")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+} // namespace

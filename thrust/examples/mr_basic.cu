@@ -7,6 +7,8 @@
 
 #include <cassert>
 
+namespace
+{
 template <typename Vec>
 void do_stuff_with_vector(typename Vec::allocator_type alloc)
 {
@@ -23,6 +25,7 @@ void do_stuff_with_vector(typename Vec::allocator_type alloc)
   v1.resize(2);
   assert(v1.size() == 2);
 }
+} // namespace
 
 int main()
 {

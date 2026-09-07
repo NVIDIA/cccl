@@ -24,6 +24,8 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 void TestCopyFromConstIterator()
 {
   using T = int;
@@ -405,8 +407,6 @@ void TestCopyIfStencil(const size_t n)
 }
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfStencil);
 
-namespace
-{
 struct object_with_non_trivial_ctor
 {
   // This struct will only properly assign if its `magic` member is
@@ -450,7 +450,6 @@ struct always_true
     return true;
   }
 };
-} // namespace
 
 void TestCopyIfNonTrivial()
 {
@@ -776,5 +775,6 @@ void TestCopyWithBigIndexes()
   TestCopyWithBigIndexesHelper(33);
 }
 DECLARE_UNITTEST(TestCopyWithBigIndexes);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 #endif

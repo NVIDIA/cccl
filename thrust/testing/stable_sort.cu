@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename RandomAccessIterator>
 void stable_sort(my_system& system, RandomAccessIterator, RandomAccessIterator)
 {
@@ -135,3 +137,4 @@ void TestStableSortWithIndirection()
   ASSERT_EQUAL(data, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortWithIndirection);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

@@ -133,6 +133,8 @@ void TestScatterIfDeviceDevice()
 DECLARE_UNITTEST(TestScatterIfDeviceDevice);
 #endif
 
+namespace
+{
 void TestScatterCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -176,3 +178,4 @@ void TestScatterIfCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestScatterIfCudaStreams);
+} // namespace

@@ -35,6 +35,8 @@
 
 inline constexpr int size = 10000;
 
+namespace
+{
 template <class T>
 struct is_42
 {
@@ -128,6 +130,7 @@ void test_remove_copy_if(const Policy& policy,
     CHECK(cuda::std::distance(output.begin(), res) == size - 1);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::remove_copy_if", "[parallel algorithm]", all_types)
 {

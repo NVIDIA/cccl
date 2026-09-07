@@ -34,6 +34,8 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+namespace
+{
 bool g_verbose = false; // Whether to display input/output to console
 
 //---------------------------------------------------------------------
@@ -95,6 +97,7 @@ void Initialize(float* h_keys, int* h_values, float* h_reference_keys, int* h_re
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
+} // namespace
 
 /**
  * Main

@@ -27,6 +27,8 @@ inline constexpr int num_seeds = 3;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NumItems, typename In, typename Out, typename ReduceOperator>
 __global__ void thread_reduce_partial_kernel(In d_in, Out d_out, ReduceOperator reduce_operator, int valid_items)
 {
@@ -114,6 +116,7 @@ using items_per_thread_list = c2h::enum_type_list<int, 1, 3, max_size - 1, max_s
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
+} // namespace
 
 CUB_TEST("ThreadReduce Integral Type Tests",
          "[reduce][thread]",

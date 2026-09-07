@@ -34,6 +34,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct plus_one
 {
@@ -80,6 +82,7 @@ void test_transform_reduce(const Policy policy, Iter input1)
     CHECK(res == expected);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel algorithm]")
 {

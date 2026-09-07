@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct my_policy_hub
 {
@@ -27,6 +29,7 @@ struct my_policy_hub
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]", CUB_SMALL)
 {

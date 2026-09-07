@@ -30,6 +30,9 @@
 
 CUB_TEST_MEMORY_CLASS(CUB_SMALL);
 
+// Never called: it only proves the API compiles. Internal linkage makes nvcc report it as
+// unreferenced.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 cudaError_t compile_only_fn(void* tmp_storage, cuda::std::size_t tmp_storage_size, int* in, int* out, int nitems)
 {
   return cub::DeviceReduce::Sum(tmp_storage, tmp_storage_size, in, out, nitems);

@@ -10,6 +10,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int LocigalWarpSize, typename VectorT, typename ByteOffsetT>
 __global__ void test_vectorized_copy_kernel(const void* d_in, void* d_out, ByteOffsetT copy_size)
 {
@@ -17,6 +19,7 @@ __global__ void test_vectorized_copy_kernel(const void* d_in, void* d_out, ByteO
 }
 
 using vector_type_list = c2h::type_list<uint32_t, uint4>;
+} // namespace
 
 CUB_TEST("The vectorized copy used by DeviceMemcpy works", "[memcpy]", CUB_SMALL, vector_type_list)
 {

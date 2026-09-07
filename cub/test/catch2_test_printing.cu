@@ -6,6 +6,8 @@
 #include "cub_test_macros.h"
 #include "test_util.h"
 
+namespace
+{
 template <typename T>
 std::string print(T val)
 {
@@ -37,3 +39,4 @@ CUB_TEST_CASE("Test utils can print KeyValuePair", "[test][utils]", CUB_SMALL)
 {
   REQUIRE(print(cub::KeyValuePair<int, int>{42, -42}) == "(42,-42)");
 }
+} // namespace

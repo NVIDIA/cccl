@@ -14,6 +14,8 @@
 
 namespace ex = cudax::execution;
 
+namespace
+{
 __host__ __device__ bool _on_device() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, //
@@ -95,9 +97,8 @@ void test_continues_on_updates_env()
   auto [result] = ex::sync_wait(std::move(sndr)).value();
   CHECK(result == 42);
 }
+} // namespace
 
-namespace
-{
 C2H_TEST("simple on(sch, sndr) thread test", "[on]")
 {
   simple_start_on_thread_test();
@@ -122,4 +123,3 @@ C2H_TEST("test that on(sndr, sch, closure) updates the env for closure", "[on][s
 {
   test_continues_on_updates_env();
 }
-} // namespace

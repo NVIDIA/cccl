@@ -28,6 +28,8 @@
 using buffer_t = cuda::__resizable_buffer<int, cuda::mr::device_accessible>;
 using base_t   = cuda::buffer<int, cuda::mr::device_accessible>;
 
+namespace
+{
 template <cuda::std::size_t _Size>
 void check_prefix(const buffer_t& buf, const cuda::std::array<int, _Size>& expected)
 {
@@ -215,3 +217,4 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
     check_prefix(other, cuda::std::array<int, 4>{1, 42, 1337, 0});
   }
 }
+} // namespace

@@ -9,6 +9,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 // example-begin find-if-predicate
 struct is_greater_than_t
 {
@@ -19,6 +21,7 @@ struct is_greater_than_t
   }
 };
 // example-end find-if-predicate
+} // namespace
 
 CUB_TEST("cub::DeviceFind::FindIf works with int data elements", "[find][device]", CUB_SMALL)
 {

@@ -26,10 +26,13 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Transform, transform_many);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformStableArgumentAddresses, transform_many_stable);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Generate, generate);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::Fill, fill);
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform BabelStream add",
          "[device][transform]",
@@ -101,6 +104,8 @@ CUB_TEST("DeviceTransform::Transform with multiple inputs works for large number
   check_result_helper.check_all_results_correct();
 }
 
+namespace
+{
 struct times_seven
 {
   template <typename T>
@@ -109,6 +114,7 @@ struct times_seven
     return static_cast<T>(v * 7);
   }
 };
+} // namespace
 
 // Exercises the 32-bit byte-offset overflow regime in transform_kernel_ublkcp (NVIDIA/cccl#8800).
 // num_items = 2^30 +/- a few thread blocks: combined with sizeof(type) = 4, byte product
@@ -144,6 +150,8 @@ catch (const std::bad_alloc&)
   SUCCEED("allocation failure is not a test failure");
 }
 
+namespace
+{
 template <int Alignment>
 struct overaligned_addable_and_equal_comparable_policy
 {
@@ -225,6 +233,7 @@ struct uncommon_plus
     return a + b;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform uncommon types", "[device][transform]", CUB_SMALL, uncommon_types)
 {
@@ -248,6 +257,8 @@ CUB_TEST("DeviceTransform::Transform uncommon types", "[device][transform]", CUB
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
 }
 
+namespace
+{
 struct non_default_constructible
 {
   int data;
@@ -270,6 +281,7 @@ static_assert(!cuda::std::is_trivially_default_constructible_v<non_default_const
 static_assert(!cuda::std::is_default_constructible_v<non_default_constructible>);
 static_assert(cuda::std::is_trivially_copyable_v<non_default_constructible>); // as required by the standard
 static_assert(::cuda::is_trivially_copyable_v<non_default_constructible>); // CUB uses this check internally
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform non-default constructible types", "[device][transform]", CUB_SMALL)
 {
@@ -285,6 +297,8 @@ CUB_TEST("DeviceTransform::Transform non-default constructible types", "[device]
   REQUIRE(c2h::host_vector<type>(result) == reference_h);
 }
 
+namespace
+{
 template <typename T>
 struct nstream_kernel
 {
@@ -295,6 +309,7 @@ struct nstream_kernel
     return ai + bi + scalar * ci;
   }
 };
+} // namespace
 
 // overwrites one input stream
 CUB_TEST("DeviceTransform::Transform BabelStream nstream",
@@ -326,6 +341,8 @@ CUB_TEST("DeviceTransform::Transform BabelStream nstream",
   REQUIRE(a_h == a);
 }
 
+namespace
+{
 struct sum_five
 {
   __host__ __device__ auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
@@ -335,6 +352,7 @@ struct sum_five
          + static_cast<double>(e);
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform add five streams", "[device][transform]", CUB_SMALL)
 {
@@ -367,6 +385,8 @@ CUB_TEST("DeviceTransform::Transform add five streams", "[device][transform]", C
   REQUIRE(reference_h == result);
 }
 
+namespace
+{
 struct give_me_five
 {
   __device__ auto operator()() const -> int
@@ -374,6 +394,7 @@ struct give_me_five
     return 5;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Generate", "[device][transform]", CUB_SMALL)
 {
@@ -442,6 +463,8 @@ CUB_TEST("DeviceTransform::Transform fancy output iterator type with void value 
   REQUIRE(result == c2h::device_vector<type>(num_items, 3));
 }
 
+namespace
+{
 struct plus_mul_neg
 {
   template <typename T>
@@ -450,6 +473,7 @@ struct plus_mul_neg
     return cuda::std::tuple{a + b, a * b, -a};
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][transform]", CUB_SMALL)
 {
@@ -480,6 +504,8 @@ CUB_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][tra
   CHECK(thrust::equal(a, a + num_items, result_c.begin()));
 }
 
+namespace
+{
 struct plus_needs_stable_address
 {
   int* a;
@@ -491,6 +517,7 @@ struct plus_needs_stable_address
     return v + b[i];
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform address stability", "[device][transform]", CUB_SMALL)
 {
@@ -516,6 +543,8 @@ CUB_TEST("DeviceTransform::Transform address stability", "[device][transform]", 
   REQUIRE(reference_h == result);
 }
 
+namespace
+{
 // Non-trivially-copyable/relocatable type which cannot be copied using std::memcpy or cudaMemcpy
 struct non_trivial
 {
@@ -551,6 +580,7 @@ struct non_trivial
 };
 static_assert(!cuda::std::is_trivially_copyable_v<non_trivial>); // as required by the standard
 static_assert(!::cuda::is_trivially_copyable_v<non_trivial>); // CUB uses this check internally
+} // namespace
 
 // Note(bgruber): I gave up on writing a test that checks whether the copy ctor/assignment operator is actually called
 // (e.g. by tracking/counting invocations of those), since C++ allows (but not guarantees) elision of these operations.
@@ -669,6 +699,8 @@ CUB_TEST("DeviceTransform::Transform vectorized output bug", "[device][transform
 }
 
 // See discussion on: https://github.com/NVIDIA/cccl/pull/4815
+namespace
+{
 struct A
 {
   int value;
@@ -688,10 +720,13 @@ struct C
     return a.value == b.value;
   }
 
+  // Only runs when Catch2 reports a failure. nvcc ignores [[maybe_unused]] entirely.
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   friend auto operator<<(std::ostream& os, C c) -> std::ostream&
   {
     return os << "C{" << c.value << "}";
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 };
 
 struct AtoB
@@ -709,6 +744,7 @@ struct BtoC
     return C{-b.value};
   }
 };
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform function/output_iter return type not convertible", "[device][transform]", CUB_SMALL)
 {
@@ -725,7 +761,20 @@ CUB_TEST("DeviceTransform::Transform function/output_iter return type not conver
   CHECK(output == reference);
 }
 
-__global__ void unrelated_kernel()
+// We can't wrap this in an anon namespace because clang-tidy then errors with:
+//
+// /cub/test/catch2_test_device_transform.cu:739:25: error: variable
+// '(anonymous namespace)::dsmem' has internal linkage but is not defined
+// [clang-diagnostic-undefined-internal,-warnings-as-errors]
+//
+//   739 |   extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
+//       |                         ^
+// /home/coder/cccl/cub/test/catch2_test_device_transform.cu:741:17: note: used here
+//   741 |   asm("" : "+r"(dsmem[0]));
+//       |                 ^
+//
+// Which is obviously a bug. So instead go with middle ground and make it static
+static __global__ void unrelated_kernel() // NOLINT(misc-use-anonymous-namespace)
 {
   __shared__ int ssmem; // 4 bytes
   extern __shared__ int dsmem[]; // aligned to 16 by default, so 12 bytes padding needed
@@ -744,6 +793,8 @@ CUB_TEST("DeviceTransform::Transform does not effect unrelated kernel's static S
 
 #if TEST_LAUNCH == 0
 
+namespace
+{
 template <int ThreadsPerBlock, int ItemsPerPthread, typename T>
 __global__ void fill_pdl_kernel(T* data, size_t n, T value)
 {
@@ -780,6 +831,7 @@ void fill_pdl(T* data, size_t n, T value)
     blocks, threads_per_block, /* smem */ 0, /*stream*/ nullptr, /* pdl */ true)
     .doit(fill_pdl_kernel<threads_per_block, items_per_thread, T>, data, n, value);
 }
+} // namespace
 
 CUB_TEST("DeviceTransform::Transform PDL overlap check", "[device][transform]", CUB_SMALL)
 {

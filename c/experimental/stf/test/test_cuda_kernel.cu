@@ -15,6 +15,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 __global__ void axpy(int cnt, double a, const double* x, double* y)
 {
   int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -35,6 +37,7 @@ double Y0(int i)
 {
   return cos((double) i);
 }
+} // namespace
 
 C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 {

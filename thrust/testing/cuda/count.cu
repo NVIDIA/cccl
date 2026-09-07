@@ -87,6 +87,8 @@ void TestCountIfDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestCountIfDeviceDevice);
 #endif
 
+namespace
+{
 void TestCountCudaStreams()
 {
   thrust::device_vector<int> data{1, 1, 0, 0, 1};
@@ -101,3 +103,4 @@ void TestCountCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestCountCudaStreams);
+} // namespace

@@ -65,6 +65,9 @@ C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_tran
   REQUIRE(reference_h == result_h);
 }
 
+// nvcc names add_kernel in the generated cudafe1.stub.c, which cannot refer to an anonymous
+// namespace. So this kernel argument type needs external linkage.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct add_kernel
 {
   template <typename T>

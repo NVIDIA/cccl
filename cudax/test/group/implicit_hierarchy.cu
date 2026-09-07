@@ -18,10 +18,14 @@
 
 #include "group_testing.cuh"
 
+// nvcc names Is1D_t and TestKernel in the generated cudafe1.stub.c, which cannot refer to an
+// anonymous namespace. So these kernel argument types need external linkage.
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <bool V>
 struct Is1D_t : cuda::std::bool_constant<V>
 {};
 
+// NOLINTNEXTLINE(misc-use-anonymous-namespace,misc-use-internal-linkage)
 struct TestKernel
 {
   template <bool Is1D>

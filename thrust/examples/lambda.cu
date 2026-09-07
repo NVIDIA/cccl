@@ -21,6 +21,8 @@
 // allows us to use "_1" instead of "thrust::placeholders::_1"
 using namespace thrust::placeholders;
 
+namespace
+{
 // implementing SAXPY with a functor is cumbersome and verbose
 struct saxpy_functor
 {
@@ -35,6 +37,7 @@ struct saxpy_functor
     return a * x + y;
   }
 };
+} // namespace
 
 int main()
 {

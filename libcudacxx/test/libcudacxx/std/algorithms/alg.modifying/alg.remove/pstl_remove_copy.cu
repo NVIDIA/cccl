@@ -35,6 +35,8 @@
 
 inline constexpr int size = 10000;
 
+// Not in an anonymous namespace: these are found only by ADL, so nvcc reports them as
+// unreferenced (#177-D) there, and -Xcudafe=--promote_warnings makes that an error.
 [[nodiscard]] TEST_FUNC constexpr bool operator==(const nontrivial_type& lhs, const int& rhs)
 {
   return lhs.value_ == rhs;
@@ -45,6 +47,8 @@ inline constexpr int size = 10000;
   return lhs == rhs.value_;
 }
 
+namespace
+{
 template <class Policy, class T>
 void test_remove_copy(const Policy& policy,
                       const c2h::device_vector<T>& input,
@@ -126,6 +130,7 @@ void test_remove_copy(const Policy& policy,
     CHECK(cuda::std::distance(output.begin(), res) == size - 1);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::remove_copy", "[parallel algorithm]", all_types)
 {

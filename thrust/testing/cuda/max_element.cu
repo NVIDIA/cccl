@@ -69,6 +69,8 @@ void TestMaxElementDeviceNoSync()
 DECLARE_UNITTEST(TestMaxElementDeviceNoSync);
 #endif
 
+namespace
+{
 template <typename ExecutionPolicy>
 void TestMaxElementCudaStreams(ExecutionPolicy policy)
 {
@@ -129,3 +131,4 @@ void TestMaxElementDevicePointer()
   ASSERT_EQUAL(thrust::max_element(thrust::device, raw_ptr, raw_ptr + n, ::cuda::std::greater<T>()) - raw_ptr, 2);
 }
 DECLARE_UNITTEST(TestMaxElementDevicePointer);
+} // namespace

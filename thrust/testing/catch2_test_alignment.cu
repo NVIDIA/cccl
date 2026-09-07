@@ -2,6 +2,8 @@
 
 #include "catch2_test_helper.h"
 
+namespace
+{
 struct alignof_mock_0
 {
   char a;
@@ -53,6 +55,7 @@ struct alignof_mock_6
   char c1;
   // sizeof(int) - 2 * sizeof(char) bytes of padding
 }; // size: 2 * sizeof(int) == alignment: sizeof(int)
+} // namespace
 
 TEST_CASE("alignof_mocks_sizes", "[alignment]")
 {

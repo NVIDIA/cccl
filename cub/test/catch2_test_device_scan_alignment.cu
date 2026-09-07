@@ -23,10 +23,13 @@
 
 // %PARAM% TEST_LAUNCH lid 0
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
 // We cover types of various sizes smaller than 16 byte
 using value_types = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t>;
+} // namespace
 
 CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_SMALL, value_types)
 {

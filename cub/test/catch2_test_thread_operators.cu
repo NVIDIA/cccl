@@ -6,6 +6,9 @@
 #include "cub_test_macros.h"
 #include "test_util.h"
 
+// Only the instantiations the CUSTOM_TYPE_FACTORY macro marks convertible use every
+// member, so internal linkage makes nvcc report the rest as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <class T>
 T Make(int val)
 {
@@ -58,6 +61,7 @@ public:
   }
 
 CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("InequalityWrapper", "[thread_operator]", CUB_SMALL)
 {

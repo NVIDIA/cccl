@@ -33,6 +33,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 struct sum_of_int
 {
   TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
@@ -138,6 +140,7 @@ void test_inclusive_scan(
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), expected));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::inclusive_scan(Iter1, Iter1, Iter2, Op, Init)", "[parallel algorithm]")
 {

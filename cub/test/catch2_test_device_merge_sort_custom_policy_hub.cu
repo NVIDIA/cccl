@@ -20,7 +20,7 @@
 using namespace cub;
 
 template <typename KeyIteratorT>
-struct my_policy_hub
+struct my_policy_hub // NOLINT(misc-use-internal-linkage)
 {
   using KeyT = cub::detail::it_value_t<KeyIteratorT>;
 

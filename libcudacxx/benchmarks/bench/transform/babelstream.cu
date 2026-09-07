@@ -30,12 +30,14 @@ constexpr auto startC      = 3; // BabelStream: 0.1
 constexpr auto startScalar = 4; // BabelStream: 0.4
 
 using element_types = nvbench::type_list<std::int8_t, std::int16_t, float, double, __int128>;
+namespace
+{
 // Different benchmarks use a different number of buffers. H200/B200 can fit 2^31 elements for all benchmarks and types.
 // Upstream BabelStream uses 2^25. Allocation failure just skips the benchmark
 auto array_size_powers = std::vector<std::int64_t>{25, 31};
 
 template <typename T>
-static void mul(nvbench::state& state, nvbench::type_list<T>)
+void mul(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
   thrust::device_vector<T> b(n, startB);
@@ -63,7 +65,7 @@ NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements", array_size_powers);
 
 template <typename T>
-static void add(nvbench::state& state, nvbench::type_list<T>)
+void add(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
   thrust::device_vector<T> a(n, startA);
@@ -89,7 +91,7 @@ NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements", array_size_powers);
 
 template <typename T>
-static void triad(nvbench::state& state, nvbench::type_list<T>)
+void triad(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
   thrust::device_vector<T> a(n, startA);
@@ -123,7 +125,7 @@ NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
   .add_int64_power_of_two_axis("Elements", array_size_powers);
 
 template <typename T>
-static void nstream(nvbench::state& state, nvbench::type_list<T>)
+void nstream(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto n = static_cast<std::size_t>(state.get_int64("Elements"));
   thrust::device_vector<T> a(n, startA);
@@ -154,3 +156,4 @@ NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
   .set_name("nstream")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", array_size_powers);
+} // namespace

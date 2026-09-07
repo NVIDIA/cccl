@@ -38,6 +38,8 @@
 inline constexpr int size1 = 1000;
 inline constexpr int size2 = 500;
 
+namespace
+{
 template <class Policy>
 void test_merge(const Policy& policy,
                 const thrust::device_vector<int>& in1,
@@ -112,6 +114,7 @@ void test_merge(const Policy& policy,
     CHECK(cuda::std::equal(policy, mid, out.end(), cuda::strided_iterator{cuda::counting_iterator{2 * size2}, 2}));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::merge", "[parallel algorithm]")
 {

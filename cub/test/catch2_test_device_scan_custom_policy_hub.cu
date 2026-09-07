@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct my_policy_hub
 {
@@ -29,6 +31,7 @@ struct my_policy_hub
       AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]", CUB_SMALL)
 {

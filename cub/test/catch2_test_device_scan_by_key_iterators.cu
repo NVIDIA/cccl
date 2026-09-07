@@ -16,6 +16,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
@@ -66,6 +68,7 @@ enum class gen_data_t : int
   /// Constant value as input data
   GEN_TYPE_CONST
 };
+} // namespace
 
 CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", CUB_SMALL, full_type_list)
 {

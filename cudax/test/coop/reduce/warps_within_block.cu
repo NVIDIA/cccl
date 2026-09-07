@@ -34,6 +34,8 @@ constexpr int warp_size       = 32;
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -164,6 +166,7 @@ constexpr int num_seeds = 10;
  **********************************************************************************************************************/
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '_Tp', possible loss of data
+} // namespace
 
 C2H_TEST("reduce/warps_within_block Integral Type Tests",
          "[reduce][warps_within_block]",

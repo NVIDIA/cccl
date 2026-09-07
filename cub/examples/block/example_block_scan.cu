@@ -28,6 +28,9 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
+// The documentation kernels below are never launched; they only exist to be extracted into
+// the docs. Internal linkage makes nvcc report them as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 /// Verbose output
 bool g_verbose = false;
 
@@ -1202,6 +1205,7 @@ void TestDocumentationExamples()
   delete[] h_data;
   cudaFree(d_data);
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 /**
  * Main

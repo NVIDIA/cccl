@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct TestPairManipulation
 {
@@ -334,3 +336,4 @@ void TestPairCTAD()
   ASSERT_EQUAL(b, b2);
 }
 DECLARE_UNITTEST(TestPairCTAD);
+} // namespace

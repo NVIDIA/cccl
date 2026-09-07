@@ -40,6 +40,8 @@ void TestUninitializedCopyDeviceDevice()
 DECLARE_UNITTEST(TestUninitializedCopyDeviceDevice);
 #endif
 
+namespace
+{
 void TestUninitializedCopyCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -115,3 +117,4 @@ void TestUninitializedCopyNCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestUninitializedCopyNCudaStreams);
+} // namespace

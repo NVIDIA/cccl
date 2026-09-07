@@ -35,6 +35,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T>
 struct is_not_42
 {
@@ -125,6 +127,7 @@ void test_copy_if(const Policy& policy,
     CHECK(cuda::std::equal(policy, mid_out, output.end(), mid_in));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::copy_if", "[parallel algorithm]", all_types)
 {

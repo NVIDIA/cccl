@@ -31,6 +31,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_is_sorted(const Policy& policy, c2h::device_vector<T>& input)
 {
@@ -65,6 +67,7 @@ void test_is_sorted(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(!res);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::is_sorted(iter, iter)", "[parallel algorithm]", all_types)
 {

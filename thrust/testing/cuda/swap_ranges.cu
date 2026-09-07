@@ -41,6 +41,8 @@ void TestSwapRangesDeviceDevice()
 DECLARE_UNITTEST(TestSwapRangesDeviceDevice);
 #endif
 
+namespace
+{
 void TestSwapRangesCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
@@ -62,3 +64,4 @@ void TestSwapRangesCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestSwapRangesCudaStreams);
+} // namespace

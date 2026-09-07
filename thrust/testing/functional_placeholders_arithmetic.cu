@@ -57,6 +57,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '
     std::allocator,                                                                                             \
     TestFunctionalPlaceholders##name##Host);
 
+namespace
+{
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Plus, +, ::cuda::std::plus, ThirtyTwoBitTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Minus, -, ::cuda::std::minus, ThirtyTwoBitTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(Multiplies, *, ::cuda::std::multiplies, ThirtyTwoBitTypes);
@@ -95,3 +97,4 @@ UNARY_FUNCTIONAL_PLACEHOLDERS_TEST(UnaryPlus, +, unary_plus_reference);
 UNARY_FUNCTIONAL_PLACEHOLDERS_TEST(Negate, -, ::cuda::std::negate);
 
 _CCCL_DIAG_POP
+} // namespace

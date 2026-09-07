@@ -10,6 +10,9 @@
 #include "cub_test_macros.h"
 #include <c2h/fill_striped.h>
 
+// Only some test parameterizations read every params_t member, so internal linkage makes
+// nvcc report the rest as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
           int LOGICAL_WARP_THREADS,
           int ITEMS_PER_THREAD,
@@ -216,6 +219,7 @@ struct params_t
   static constexpr int tile_size                    = logical_warp_threads * items_per_thread;
   static constexpr int total_item_count             = total_warps * tile_size;
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("Warp load guarded range works with pointer",
          "[load][warp]",

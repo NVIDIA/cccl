@@ -19,6 +19,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename InputIteratorT>
 struct my_policy_hub
 {
@@ -35,6 +37,7 @@ struct my_policy_hub
                                     BLOCK_STORE_WARP_TRANSPOSE>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][adjacent_difference]", CUB_SMALL)
 {

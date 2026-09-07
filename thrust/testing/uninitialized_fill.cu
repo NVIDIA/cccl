@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator, typename T>
 void uninitialized_fill(my_system& system, ForwardIterator, ForwardIterator, const T&)
 {
@@ -227,3 +229,4 @@ struct TestUninitializedFillNNonPOD
   }
 };
 DECLARE_UNITTEST(TestUninitializedFillNNonPOD);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

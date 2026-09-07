@@ -8,6 +8,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename Engine>
 struct ValidateEngine
 {
@@ -869,3 +871,4 @@ void TestDistributionsWithCudaStdPhilox()
   ValidateDistributionWithEngine<double_dist, engine>();
 }
 DECLARE_UNITTEST(TestDistributionsWithCudaStdPhilox);
+} // namespace

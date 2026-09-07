@@ -12,6 +12,8 @@
 #  include <cuda_tile.h>
 #endif
 
+namespace
+{
 struct rgb_to_y
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -24,6 +26,7 @@ struct rgb_to_y
     return w_r * r + w_g * g + w_b * b;
   }
 };
+} // namespace
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 CUB_NAMESPACE_BEGIN
@@ -46,8 +49,10 @@ using value_types = nvbench::type_list<TUNE_T>;
 using value_types = nvbench::type_list<nvbench::float32_t, nvbench::float64_t>;
 #endif
 
+namespace
+{
 template <typename T>
-static void grayscale(nvbench::state& state, nvbench::type_list<T>)
+void grayscale(nvbench::state& state, nvbench::type_list<T>)
 try
 {
   const auto n = state.get_int64("Elements{io}");
@@ -71,3 +76,4 @@ NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types))
   .set_name("tile_grayscale")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+} // namespace

@@ -7,6 +7,8 @@
 
 #include <nvbench_helper.cuh>
 
+namespace
+{
 template <class InT, class OutT>
 struct fib_t
 {
@@ -35,7 +37,7 @@ struct fib_t
 };
 
 template <typename T>
-static void fib(nvbench::state& state, nvbench::type_list<T>)
+void fib(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -60,3 +62,4 @@ NVBENCH_BENCH_TYPES(fib, NVBENCH_TYPE_AXES(types))
   .set_name("fib")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+} // namespace

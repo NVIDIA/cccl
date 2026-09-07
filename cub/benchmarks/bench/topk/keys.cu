@@ -42,6 +42,8 @@ struct policy_selector_t
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename KeyT, typename OffsetT, typename OutOffsetT>
 void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffsetT>)
 {
@@ -110,3 +112,4 @@ NVBENCH_BENCH_TYPES(topk_keys, NVBENCH_TYPE_AXES(fundamental_types, offset_types
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("SelectedElements", nvbench::range(3, 23, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.201", "0.000"});
+} // namespace

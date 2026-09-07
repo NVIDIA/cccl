@@ -24,6 +24,8 @@ namespace cg = cooperative_groups;
 
 using size_t3 = cuda::vector_type_t<cuda::std::size_t, 3>;
 
+namespace
+{
 struct basic_test_single_dim
 {
   static constexpr int block_size = 256;
@@ -73,8 +75,6 @@ struct basic_test_single_dim
 
 struct basic_test_multi_dim
 {
-  static constexpr int block_size = 256;
-
   template <typename DynDims>
   TEST_FUNC void operator()(const DynDims& dims) const
   {
@@ -150,6 +150,7 @@ struct basic_test_mixed
     // Currently bugged in std::extents
   }
 };
+} // namespace
 
 C2H_TEST("Basic", "[hierarchy]")
 {
@@ -158,6 +159,8 @@ C2H_TEST("Basic", "[hierarchy]")
   basic_test_mixed().run();
 }
 
+namespace
+{
 struct basic_test_cluster
 {
   template <typename DynDims>
@@ -205,6 +208,7 @@ struct basic_test_cluster
     }
   }
 };
+} // namespace
 
 C2H_TEST("Cluster dims", "[hierarchy]")
 {
@@ -282,6 +286,8 @@ C2H_TEST("Replace level", "[hierarchy]")
 #endif // !_CCCL_COMPILER(GCC, <, 9)
 }
 
+namespace
+{
 template <typename Hierarchy>
 __global__ void kernel(Hierarchy hierarchy)
 {
@@ -317,6 +323,7 @@ __global__ void kernel(Hierarchy hierarchy)
   CCCLRT_REQUIRE_DEVICE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block, hierarchy));
   CCCLRT_REQUIRE_DEVICE(grid.thread_rank() == cuda::gpu_thread.rank(cuda::grid, hierarchy));
 }
+} // namespace
 
 C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
 {
@@ -341,6 +348,8 @@ C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
     hierarchies);
 }
 
+namespace
+{
 template <typename Hierarchy>
 __global__ void rank_kernel_optimized(Hierarchy hierarchy, unsigned int* out)
 {
@@ -361,6 +370,7 @@ __global__ void rank_kernel_cg(Hierarchy hierarchy, unsigned int* out)
   auto thread_id = cg::thread_block::thread_rank();
   out[thread_id] = thread_id;
 }
+} // namespace
 
 // Testcase mostly for generated code comparison
 C2H_TEST("On device rank calculation", "[hierarchy]")
@@ -378,6 +388,8 @@ C2H_TEST("On device rank calculation", "[hierarchy]")
   CUDART(cudaFree(ptr));
 }
 
+namespace
+{
 template <typename Hierarchy>
 __global__ void examples_kernel(Hierarchy hierarchy)
 {
@@ -424,6 +436,7 @@ __global__ void examples_kernel(Hierarchy hierarchy)
     auto thread_index_in_grid = cuda::gpu_thread.index(cuda::grid);
   }
 }
+} // namespace
 
 // Test examples from the inline rst documentation
 C2H_TEST("Examples", "[hierarchy]")

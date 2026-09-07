@@ -32,6 +32,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_unique_copy(const Policy& policy,
                       [[maybe_unused]] thrust::device_vector<int>& input,
@@ -86,6 +88,7 @@ void test_unique_copy(const Policy& policy,
     CHECK(output[0] == 42);
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::unique_copy", "[parallel algorithm]")
 {

@@ -21,8 +21,10 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T, class FlagT>
-static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
+c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
 {
   struct selector
   {
@@ -84,6 +86,7 @@ using types =
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
+} // namespace
 
 CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flagged]", CUB_SMALL, types)
 {
@@ -301,6 +304,8 @@ CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment"
 #endif // TEST_LAUNCH == 0
 
 #if TEST_LAUNCH == 0
+namespace
+{
 template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
 struct flagged_prefetch_policy_selector
 {
@@ -317,6 +322,7 @@ using prefetch_policies =
 
 using selection_policies =
   c2h::enum_type_list<cub::SelectImpl, cub::SelectImpl::Select, cub::SelectImpl::SelectPotentiallyInPlace>;
+} // namespace
 
 CUB_TEST("DeviceSelect::Flagged works with explicit prefetch policies",
          "[device][select_flagged][prefetch]",
@@ -424,6 +430,8 @@ CUB_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]"
   REQUIRE(reference == out);
 }
 
+namespace
+{
 struct convertible_to_bool
 {
   int val_;
@@ -446,6 +454,7 @@ struct convertible_to_bool
     return lhs == rhs.val_;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", "[device][select_flagged]", CUB_SMALL)
 {
@@ -543,6 +552,8 @@ CUB_TEST("DeviceSelect::Flagged works in place with flags that alias input", "[d
   REQUIRE(reference == flags);
 }
 
+namespace
+{
 template <class T>
 struct convertible_from_T
 {
@@ -562,6 +573,7 @@ struct convertible_from_T
     return val_;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][select_flagged]", CUB_SMALL)
 {

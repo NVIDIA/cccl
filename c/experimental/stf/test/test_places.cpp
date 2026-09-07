@@ -18,9 +18,11 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/experimental/stf/stf.h>
 
+namespace
+{
 // Blocked partition along first dimension: maps data coordinates to grid position.
 // Used to exercise composite data place with a grid of execution places.
-static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
+void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 {
   uint64_t extent    = data_dims.x;
   uint64_t nplaces   = grid_dims.x;
@@ -40,6 +42,7 @@ static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 d
   result->z = 0;
   result->t = 0;
 }
+} // namespace
 
 C2H_TEST("exec place from an externally-owned CUDA context", "[task][places][cuda_context]")
 {

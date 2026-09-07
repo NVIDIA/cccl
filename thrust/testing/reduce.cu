@@ -8,6 +8,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 struct plus_mod_10
 {
@@ -199,3 +201,4 @@ void TestReduceWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestReduceWithBigIndexes);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

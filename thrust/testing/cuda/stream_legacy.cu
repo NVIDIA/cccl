@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 void verify_stream()
 {
   auto exec   = thrust::device;
@@ -20,3 +22,4 @@ void TestLegacyDefaultStream()
   t.join();
 }
 DECLARE_UNITTEST(TestLegacyDefaultStream);
+} // namespace

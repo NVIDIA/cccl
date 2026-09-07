@@ -35,6 +35,8 @@ inline constexpr int num_items_per_thread = 4;
  * Kernel
  **********************************************************************************************************************/
 
+namespace
+{
 template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename T, typename Output, typename ReductionOp>
 __device__ void warp_reduce_function(T& thread_data, Output* output, ReductionOp reduction_op, int num_items = 0)
 {
@@ -238,6 +240,7 @@ std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned 
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
+} // namespace
 
 CUB_TEST("WarpReduce::Sum, full_type_list",
          "[reduce][warp][predefined_op][full]",

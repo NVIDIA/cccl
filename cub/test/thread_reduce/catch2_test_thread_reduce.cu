@@ -25,6 +25,8 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__ d_out, ReduceOperator reduce_operator)
 {
@@ -262,6 +264,7 @@ constexpr int num_seeds = 10;
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
+} // namespace
 
 CUB_TEST(
   "ThreadReduce Integral Type Tests", "[reduce][thread]", CUB_SMALL, integral_type_list, cub_operator_integral_list)

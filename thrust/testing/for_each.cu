@@ -12,6 +12,8 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename T>
 class mark_present_for_each
 {
@@ -366,3 +368,4 @@ void TestForEachWithBigIndexes()
   TestForEachWithBigIndexesHelper(33);
 }
 DECLARE_UNITTEST(TestForEachWithBigIndexes);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

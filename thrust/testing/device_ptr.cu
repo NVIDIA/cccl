@@ -12,6 +12,8 @@ static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 #endif // __cpp_lib_concepts
 static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 
+namespace
+{
 void TestDevicePointerManipulation()
 {
   thrust::device_vector<int> data(5);
@@ -259,6 +261,10 @@ DECLARE_VECTOR_UNITTEST(TestToAddress);
 // cuda::std::allocator_traits to correctly compute void_pointer when an
 // allocator uses device_ptr as its pointer type (e.g. rmm::mr::thrust_allocator).
 // See GitHub issue #8485.
+} // namespace
+
+// Declared outside the anonymous namespace: nvcc reports these never-defined members as
+// unreferenced (#177-D) inside one, and -Xcudafe=--promote_warnings makes that an error.
 struct device_char_allocator
 {
   using value_type = char;
@@ -267,6 +273,8 @@ struct device_char_allocator
   void deallocate(pointer p, std::size_t);
 };
 
+namespace
+{
 // pointer_traits::rebind should produce a pointer type, not a rebind struct.
 static_assert(
   cuda::std::is_same_v<cuda::std::pointer_traits<thrust::device_ptr<char>>::rebind<void>, thrust::device_ptr<void>>,
@@ -280,3 +288,4 @@ static_assert(
 static_assert(
   cuda::std::is_same_v<cuda::std::allocator_traits<device_char_allocator>::void_pointer, thrust::device_ptr<void>>,
   "allocator_traits::void_pointer should be device_ptr<void> for device_ptr-based allocators");
+} // namespace

@@ -17,7 +17,10 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceMemcpy::Batched, memcpy_batched);
+} // namespace
 
 CUB_TEST("DeviceMemcpy::Batched works", "[memcpy]", CUB_SMALL)
 try

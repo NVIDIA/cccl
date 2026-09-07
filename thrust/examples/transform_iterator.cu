@@ -9,6 +9,8 @@
 #include <iostream>
 #include <string>
 
+namespace
+{
 // this functor clamps a value to the range [lo, hi]
 template <typename T>
 struct clamp
@@ -55,6 +57,7 @@ void print_range(const std::string& name, Iterator first, Iterator last)
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
   std::cout << "\n";
 }
+} // namespace
 
 int main()
 {

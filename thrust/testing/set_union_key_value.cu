@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename U>
 void TestSetUnionKeyValue(size_t n)
 {
@@ -85,3 +87,4 @@ void TestSetUnionKeyValueDescending(size_t n)
   ASSERT_EQUAL_QUIET(h_result, d_result);
 }
 DECLARE_VARIABLE_UNITTEST(TestSetUnionKeyValueDescending);
+} // namespace

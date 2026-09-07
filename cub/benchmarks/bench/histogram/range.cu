@@ -16,8 +16,10 @@
 // %RANGE% TUNE_LOAD_ALGORITHM_ID laid 0:2:1
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
 
+namespace
+{
 template <typename SampleT, typename CounterT, typename OffsetT>
-static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
+void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
 {
   const auto entropy   = str_to_entropy(state.get_string("Entropy"));
   const auto elements  = state.get_int64("Elements{io}");
@@ -81,3 +83,4 @@ NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_o
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_axis("Bins", {32, 128, 2048, 2097152})
   .add_string_axis("Entropy", {"0.201", "1.000"});
+} // namespace

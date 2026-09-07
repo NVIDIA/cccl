@@ -31,6 +31,8 @@ using namespace cub;
 // This kernel does very bad things that violate the CUDA programming model, but
 // is okay for the tests here. Do not use this pattern in production code.
 
+namespace
+{
 // Once launched, this kernel will block the stream until `flag` updates to non-zero.
 __global__ void block_stream(const volatile cuda::std::int32_t* flag)
 {
@@ -75,6 +77,7 @@ private:
 //---------------------------------------------------------------------
 // Main
 //---------------------------------------------------------------------
+} // namespace
 
 /**
  * Main

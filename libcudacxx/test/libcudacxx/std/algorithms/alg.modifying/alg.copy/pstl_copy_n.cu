@@ -35,6 +35,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class Policy, class T>
 void test_copy_n(const Policy& policy,
                  const c2h::device_vector<T>& input,
@@ -92,6 +94,7 @@ void test_copy_n(const Policy& policy,
     CHECK(cuda::std::equal(policy, output.begin(), output.end(), input.begin()));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::copy_n", "[parallel algorithm]", all_types)
 {

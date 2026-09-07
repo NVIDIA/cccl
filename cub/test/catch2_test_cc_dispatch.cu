@@ -9,6 +9,8 @@
 
 using cuda::compute_capability;
 
+namespace
+{
 struct a_policy
 {
   int value;
@@ -59,6 +61,7 @@ struct closure_all
     return cudaSuccess;
   }
 };
+} // namespace
 
 CUB_TEST("dispatch_compute_cap prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST",
          "[util][dispatch]",
@@ -66,10 +69,23 @@ CUB_TEST("dispatch_compute_cap prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_I
 {
   for (const auto cc : cuda::__target_compute_capabilities())
   {
+    // This exists for 2 reasons:
+    //
+    // 1. Mark policy_selector_all::operator() as used
+    // 2. Mark a_polocy::operator==() as used
+    // 3. Mark a_polocy::operator!=() as used
+    //
+    // Those member functions are required to make the concept checks below pass but nvcc
+    // doesn't always see that.
+    REQUIRE(policy_selector_all{}(cc) == policy_selector_all{}(cc));
+    REQUIRE(!(policy_selector_all{}(cc) != policy_selector_all{}(cc)));
+
     CHECK(cub::detail::dispatch_compute_cap(policy_selector_all{}, cc, closure_all{cc.get()}) == cudaSuccess);
   }
 }
 
+namespace
+{
 template <int NumPolicies>
 struct check_policy_closure
 {
@@ -116,6 +132,7 @@ struct policy_selector_minimal
     return a_policy{60};
   }
 };
+} // namespace
 
 CUB_TEST("dispatch_compute_cap invokes correct policy", "[util][dispatch]", CUB_SMALL)
 {
@@ -130,9 +147,15 @@ CUB_TEST("dispatch_compute_cap invokes correct policy", "[util][dispatch]", CUB_
 }
 
 #if _CCCL_HAS_CONCEPTS()
+namespace
+{
 // not comparable
 struct bad_policy
 {};
+
+// Only inspected by the policy_selector concept below, which never emits a call.
+// nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 
 struct policy_selector_not_regular
 {
@@ -141,6 +164,9 @@ struct policy_selector_not_regular
     return bad_policy{};
   }
 };
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+} // namespace
 
 CUB_TEST("policy_selector concept", "[util][dispatch]", CUB_SMALL)
 {

@@ -5,6 +5,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int ThreadsInBlock, int ItemsPerThread, class T, class ActionT>
 __global__ void block_adj_diff_kernel(T* data, ActionT action, bool in_place)
 {
@@ -216,6 +218,7 @@ struct params_t
   static constexpr int tile_size        = items_per_thread * threads_in_block;
   static constexpr bool read_left       = c2h::get<3, TestType>::value;
 };
+} // namespace
 
 CUB_TEST("Block adjacent difference works with full tiles",
          "[adjacent difference][block]",

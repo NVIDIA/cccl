@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T, typename VectorT>
 void TestComplexAlignment()
 {
@@ -22,3 +24,4 @@ DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<long, long
 DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<__half, __half2>), TestComplexHalfAlignment);
 DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<float, float2>), TestComplexFloatAlignment);
 DECLARE_UNITTEST_WITH_NAME(THRUST_PP_EXPAND_ARGS(TestComplexAlignment<double, double2>), TestComplexDoubleAlignment);
+} // namespace

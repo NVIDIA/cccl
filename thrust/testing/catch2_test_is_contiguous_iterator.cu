@@ -25,6 +25,8 @@
 
 #include "catch2_test_helper.h"
 
+namespace
+{
 template <typename Iterator, bool Expected>
 void check_is_contiguous()
 {
@@ -34,6 +36,7 @@ void check_is_contiguous()
     STATIC_REQUIRE(cuda::std::__can_to_address<Iterator> == Expected);
   }
 }
+} // namespace
 
 TEST_CASE("is_contiguous_iterator extra", "[iterators]")
 {

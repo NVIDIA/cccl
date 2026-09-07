@@ -12,6 +12,8 @@
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 
+namespace
+{
 using BuildResultT = cccl_device_transform_build_result_t;
 
 struct transform_cleanup
@@ -95,6 +97,7 @@ void binary_transform(
   AlgorithmExecute<BuildResultT, transform_build, transform_cleanup, binary_transform_run, BuildCache, KeyT>(
     cache, lookup_key, input1, input2, output, num_items, op);
 }
+} // namespace
 
 C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
 {

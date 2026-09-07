@@ -20,11 +20,14 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Copy, device_copy_mdspan);
 
 using dims_1d_t = cuda::std::dims<1, int>;
 using dims_2d_t = cuda::std::dims<2, int>;
 using dims_4d_t = cuda::std::dims<4, int>;
+} // namespace
 
 CUB_TEST("DeviceCopy::Copy: empty mdspan", "[copy][mdspan]", CUB_SMALL)
 {
@@ -168,14 +171,6 @@ CUB_TEST("DeviceCopy::Copy: 2D, 4D mdspan with compatible layouts", "[copy][mdsp
   device_copy_mdspan(d_mdspan_in2, d_mdspan_out2);
   REQUIRE(d_input == d_output);
 }
-
-struct is_42
-{
-  __host__ __device__ bool operator()(int x) const
-  {
-    return x == 42;
-  }
-};
 
 CUB_TEST("DeviceCopy::Copy: 2D strided mdspan", "[copy][mdspan]", CUB_SMALL)
 {

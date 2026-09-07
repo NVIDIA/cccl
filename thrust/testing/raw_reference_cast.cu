@@ -10,6 +10,8 @@
 template <>
 inline constexpr bool thrust::detail::is_proxy_reference_v<std::vector<bool>::reference> = true;
 
+namespace
+{
 void TestRawReferenceCast()
 {
   using ::cuda::std::is_same_v;
@@ -58,3 +60,4 @@ void TestRawReferenceCast()
   }
 }
 DECLARE_UNITTEST(TestRawReferenceCast);
+} // namespace

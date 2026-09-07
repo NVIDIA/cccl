@@ -31,6 +31,8 @@ using BuildResultT = cccl_device_segmented_sort_build_result_t;
 
 using SizeT = ptrdiff_t;
 
+namespace
+{
 struct segmented_sort_cleanup
 {
   CUresult operator()(BuildResultT* build_data) const noexcept
@@ -195,6 +197,8 @@ void segmented_sort(
 // ==============
 
 struct SegmentedSort_KeysOnly_Fixture_Tag;
+} // namespace
+
 C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", test_params_tuple)
 {
   using T     = c2h::get<0, TestType>;

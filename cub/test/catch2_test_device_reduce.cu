@@ -20,6 +20,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
@@ -94,6 +96,7 @@ struct abs_less_t
     return cuda::uabs(a) < cuda::uabs(b);
   }
 };
+} // namespace
 
 CUB_TEST("Device reduce handles vectorized 16-bit input", "[reduce][device]", CUB_SMALL)
 {
@@ -528,6 +531,8 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", C
 }
 
 #if TEST_TYPES == 0
+namespace
+{
 // this type stands in for lambda functions, which are also not copy-assignable before C++17
 struct non_copy_assignable_plus
 {
@@ -548,12 +553,16 @@ struct non_copy_assignable_less
   non_copy_assignable_less(const non_copy_assignable_less&)            = default;
   non_copy_assignable_less& operator=(const non_copy_assignable_less&) = delete;
 
+  // nvcc thinks this isn't used on host passes
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   template <typename T>
   _CCCL_HOST_DEVICE_API auto operator()(const T& a, const T& b) const -> bool
   {
     return a < b;
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 };
+} // namespace
 
 CUB_TEST("Device reduce works with a non copy assignable reduction operator", "[reduce][device]", CUB_SMALL)
 {
@@ -582,6 +591,8 @@ CUB_TEST("Device reduce works with a non copy assignable reduction operator", "[
   }
 }
 
+namespace
+{
 struct checking_reduce
 {
   static constexpr auto sentinel = 42;
@@ -602,6 +613,7 @@ struct faulting_reduce
     return 0;
   }
 };
+} // namespace
 
 CUB_TEST("Device reduce works without initial value", "[reduce][device]", CUB_SMALL)
 {

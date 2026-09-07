@@ -17,6 +17,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <class KeyT, class ValueT>
 struct my_policy_hub
 {
@@ -32,6 +34,7 @@ struct my_policy_hub
                              cub::detail::default_delay_constructor_t<int>>;
   };
 };
+} // namespace
 
 CUB_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_key][device]", CUB_SMALL)
 {

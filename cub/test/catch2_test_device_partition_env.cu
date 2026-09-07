@@ -20,8 +20,11 @@ struct stream_registry_factory_t;
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, device_partition_if);
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::Flagged, device_partition_flagged);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

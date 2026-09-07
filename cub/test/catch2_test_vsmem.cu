@@ -12,6 +12,9 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+// Only the instantiations that take the vsmem path read every agent member, so internal
+// linkage makes nvcc report the rest as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 //----------------------------------------------------------------------------
 // Helper section
 //----------------------------------------------------------------------------
@@ -380,6 +383,7 @@ DECLARE_LAUNCH_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 using type_list = c2h::type_list<large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", CUB_SMALL, type_list)
 {

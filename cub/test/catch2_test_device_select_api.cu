@@ -13,6 +13,7 @@
 
 #include "cub_test_macros.h"
 
+// NOLINTBEGIN(misc-use-internal-linkage)
 // example-begin segmented-select-iseven
 struct is_even_t
 {
@@ -22,6 +23,7 @@ struct is_even_t
   }
 };
 // example-end segmented-select-iseven
+// NOLINTEND(misc-use-internal-linkage)
 
 CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]", CUB_SMALL)
 {
@@ -134,6 +136,7 @@ CUB_TEST("cub::DeviceSelect::Unique in-place works with int data elements", "[se
   REQUIRE(d_data == expected);
 }
 
+// NOLINTBEGIN(misc-use-internal-linkage)
 // example-begin select-unique-inplace-eqop-myequalityop
 struct my_equality_op
 {
@@ -143,6 +146,7 @@ struct my_equality_op
   }
 };
 // example-end select-unique-inplace-eqop-myequalityop
+// NOLINTEND(misc-use-internal-linkage)
 
 CUB_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int data elements",
          "[select][device]",
@@ -186,8 +190,7 @@ CUB_TEST("cub::DeviceSelect::Unique in-place with equality_op works with int dat
 // (no explicit stream, all defaults left implicit), even though the env
 // overloads are also in scope. If env-overload SFINAE drifts, these become
 // "ambiguous overload" compile errors.
-
-struct select_always_true_t
+struct select_always_true_t // NOLINT(misc-use-internal-linkage)
 {
   __host__ __device__ bool operator()(int) const
   {

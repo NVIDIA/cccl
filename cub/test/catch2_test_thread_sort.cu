@@ -11,6 +11,8 @@
 #include "cub/thread/thread_sort.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 struct CustomLess
 {
   template <typename DataType>
@@ -49,6 +51,7 @@ __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values
 
 using value_types           = c2h::type_list<std::uint32_t, std::uint64_t>;
 using items_per_thread_list = c2h::enum_type_list<int, 2, 3, 4, 5, 7, 8, 9, 11>;
+} // namespace
 
 CUB_TEST("Test", "[thread_sort]", CUB_SMALL, value_types, items_per_thread_list)
 {

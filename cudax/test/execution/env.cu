@@ -20,6 +20,12 @@
 namespace cudax = cuda::experimental;
 using env_t     = cudax::env_t<cuda::mr::device_accessible>;
 
+namespace
+{
+// These satisfy the resource and property concepts, which inspect the declarations
+// without emitting calls. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 struct test_resource
 {
   void* allocate_sync(size_t, size_t)
@@ -45,6 +51,9 @@ struct test_resource
 
   friend void get_property(const test_resource&, cuda::mr::device_accessible) noexcept {}
 };
+
+_CCCL_END_NV_DIAG_SUPPRESS()
+} // namespace
 
 C2H_TEST("env_t is queryable for all properties we want", "[execution][env]")
 {

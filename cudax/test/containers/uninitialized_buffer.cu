@@ -31,6 +31,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wself-move")
 #endif // _CCCL_COMPILER(GCC, >=, 13)
 _CCCL_DIAG_SUPPRESS_CLANG("-Wself-move")
 
+namespace
+{
 struct do_not_construct
 {
   do_not_construct()
@@ -39,24 +41,14 @@ struct do_not_construct
   }
 };
 
-struct non_trivial
-{
-  int val_      = 0;
-  non_trivial() = default;
-  __host__ __device__ constexpr non_trivial(const int val) noexcept
-      : val_(val)
-  {}
-
-  __host__ __device__ constexpr friend bool operator==(const non_trivial& lhs, const non_trivial& rhs)
-  {
-    return lhs.val_ == rhs.val_;
-  }
-};
-
 struct my_property
 {
   using value_type = int;
 };
+// Only inspected by cuda::has_property, which never emits a call.
+// nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 constexpr int get_property(
   const cuda::experimental::uninitialized_buffer<int, cuda::mr::device_accessible, my_property>&, my_property)
 {
@@ -66,6 +58,8 @@ constexpr int get_property(const cuda::device_memory_pool_ref&, my_property)
 {
   return 42;
 }
+
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 __global__ void kernel(::cuda::std::span<int> data)
 {
@@ -79,6 +73,7 @@ __global__ void const_kernel(::cuda::std::span<const int> data)
   // Touch the memory to be sure it's accessible
   CHECK(data.size() == 1024);
 }
+} // namespace
 
 C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
@@ -267,6 +262,8 @@ C2H_TEST("uninitialized_buffer is usable with cudax::launch", "[container]")
 
 // A test resource that keeps track of the number of resources are
 // currently alive.
+namespace
+{
 struct test_device_memory_pool_ref : cuda::device_memory_pool_ref
 {
   static int count;
@@ -290,6 +287,7 @@ struct test_device_memory_pool_ref : cuda::device_memory_pool_ref
 };
 
 int test_device_memory_pool_ref::count = 0;
+} // namespace
 
 C2H_TEST("uninitialized_buffer's memory resource does not dangle", "[container]")
 {

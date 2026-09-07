@@ -18,6 +18,8 @@
 
 using namespace cub;
 
+namespace
+{
 template <typename LengthT, typename KeyT>
 struct my_policy_hub
 {
@@ -33,6 +35,7 @@ struct my_policy_hub
                      cub::detail::default_reduce_by_key_delay_constructor_t<int, int>>;
   };
 };
+} // namespace
 
 CUB_TEST("DeviceRleDispatch::Dispatch: custom policy hub", "[device][run_length_encode]", CUB_SMALL)
 {

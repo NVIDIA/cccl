@@ -11,7 +11,10 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceTransform::TransformIf, transform_if);
+} // namespace
 
 CUB_TEST("DeviceTransform::TransformIf conditional BabelStream add",
          "[device][transform_if]",

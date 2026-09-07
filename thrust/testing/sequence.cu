@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename ForwardIterator>
 void sequence(my_system& system, ForwardIterator, ForwardIterator)
 {
@@ -156,3 +158,4 @@ void TestSequenceNoSizeTConversion()
   }
 }
 DECLARE_UNITTEST(TestSequenceNoSizeTConversion);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

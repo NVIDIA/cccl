@@ -38,6 +38,8 @@ CUB_TEST("Tests non_void_value_t", "[util][type]", CUB_SMALL)
                                       cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>);
 }
 
+namespace
+{
 CUB_DEFINE_DETECT_NESTED_TYPE(cat_detect, cat);
 
 struct HasCat
@@ -48,6 +50,7 @@ struct HasDog
 {
   using dog = int;
 };
+} // namespace
 
 CUB_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]", CUB_SMALL)
 {
@@ -55,11 +58,14 @@ CUB_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]", CUB_SMALL)
   STATIC_REQUIRE(!cat_detect<HasDog>::value);
 }
 
+namespace
+{
 // Lots of libraries (like pytorch or tensorflow) bring their own half types and customize cub::Traits for them.
 struct CustomHalf
 {
   int16_t payload;
 };
+} // namespace
 
 CUB_TEST("Test CustomHalf", "[util][type]", CUB_SMALL)
 {

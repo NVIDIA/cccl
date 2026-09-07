@@ -7,6 +7,12 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
+// The members below are only used from __device__ code, so the host pass sees them
+// as unreferenced. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
+
 struct device_only_iterator
 {
   using iterator_category = cuda::std::random_access_iterator_tag;
@@ -80,6 +86,8 @@ private:
   pointer m_ptr;
 };
 
+_CCCL_END_NV_DIAG_SUPPRESS()
+
 _CCCL_HOST_DEVICE void TestOffsetIteratorBoth(thrust::offset_iterator<device_only_iterator> iter)
 {
   assert(iter.offset() == 0);
@@ -123,3 +131,4 @@ void TestOffsetIteratorWithDeviceOnlyIterator()
   TestOffsetIteratorDevice<<<1, 1>>>(iter);
 }
 DECLARE_UNITTEST(TestOffsetIteratorWithDeviceOnlyIterator);
+} // namespace

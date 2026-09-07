@@ -9,6 +9,8 @@ using namespace unittest;
 using UnsignedIntegerTypes =
   unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t, unittest::uint64_t>;
 
+namespace
+{
 template <typename T>
 struct TestSortVariableBits
 {
@@ -38,3 +40,4 @@ struct TestSortVariableBits
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortVariableBits, UnsignedIntegerTypes);
+} // namespace

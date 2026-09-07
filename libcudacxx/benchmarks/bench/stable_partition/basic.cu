@@ -17,8 +17,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   using select_op_t = less_then_t<T>;
 
@@ -46,3 +48,4 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
+} // namespace

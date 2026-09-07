@@ -10,6 +10,8 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 template <class T>
 __global__ void cub_api_example_x2_0_kernel(const T* d_in, T* d_out, int num_items)
 {
@@ -107,6 +109,7 @@ struct cub_api_example_t
 
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
+} // namespace
 
 CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB_SMALL)
 {
@@ -138,6 +141,8 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB
   }
 }
 
+namespace
+{
 struct custom_x2_0_invocable
 {
   template <class T>
@@ -167,6 +172,7 @@ struct custom_x0_5_invocable
     return cub_api_example_t::x0_5(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 };
+} // namespace
 
 CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]", CUB_SMALL)
 {

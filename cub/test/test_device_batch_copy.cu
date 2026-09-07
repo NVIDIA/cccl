@@ -28,6 +28,9 @@
 
 CUB_TEST_MEMORY_CLASS(CUB_LARGE);
 
+// TestDataGenToString is only called under DEBUG_CHECKED_ALLOC_FAILURE, so internal
+// linkage makes nvcc report it as unreferenced in normal builds.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 /**
  * @brief Host-side random data generation
  */
@@ -333,6 +336,7 @@ void nontrivial_constructor_test()
     }
   }
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 int main(int argc, char** argv)
 {

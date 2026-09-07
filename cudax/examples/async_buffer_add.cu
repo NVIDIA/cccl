@@ -31,6 +31,8 @@ namespace cudax = cuda::experimental;
 
 constexpr int numElements = 50000;
 
+namespace
+{
 struct generator
 {
   thrust::default_random_engine gen{};
@@ -46,6 +48,7 @@ struct generator
     return dist(gen);
   }
 };
+} // namespace
 
 int main()
 {

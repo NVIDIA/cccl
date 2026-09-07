@@ -38,6 +38,8 @@
 
 #include "../../policy_selector.h"
 
+namespace
+{
 namespace impl
 {
 /*
@@ -94,10 +96,10 @@ template <typename T>
 
   return check;
 }
-}; // namespace impl
+} // namespace impl
 
 template <typename FloatingPointT, typename OffsetT>
-static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPointT, OffsetT>)
+void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPointT, OffsetT>)
 {
   static_assert(cuda::std::is_floating_point_v<FloatingPointT>);
 
@@ -168,3 +170,4 @@ NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(fp_types, offset_types))
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_float64_axis("Mu{io}", {1e-4f});
+} // namespace

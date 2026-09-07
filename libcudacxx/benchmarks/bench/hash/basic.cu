@@ -21,6 +21,8 @@
 // repeat hash computation n times
 static constexpr auto n_repeats = 100;
 
+namespace
+{
 template <cuda::std::int32_t Words>
 struct large_key
 {
@@ -135,3 +137,4 @@ NVBENCH_BENCH_TYPES(
   .set_name("hash_function_eval")
   .set_type_axes_names({"Hash", "Key"})
   .add_int64_power_of_two_axis("NumInputs", nvbench::range(18, 26, 4));
+} // namespace

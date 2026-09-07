@@ -3,6 +3,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct greater_div_10
 {
@@ -52,3 +54,4 @@ void TestStableSortByKeyWithLargeValues()
   _TestStableSortByKeyWithLargeValues<16>();
 }
 DECLARE_UNITTEST(TestStableSortByKeyWithLargeValues);
+} // namespace

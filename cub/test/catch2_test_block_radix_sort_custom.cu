@@ -39,7 +39,7 @@ struct decomposer_t
 };
 // example-end custom-type
 
-__global__ void sort_keys()
+static __global__ void sort_keys() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys each
@@ -86,7 +86,7 @@ __global__ void sort_keys()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
-__global__ void sort_keys_bits()
+static __global__ void sort_keys_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 1 key each
@@ -136,7 +136,7 @@ __global__ void sort_keys_bits()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
 }
 
-__global__ void sort_keys_descending()
+static __global__ void sort_keys_descending() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys-descending
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys each
@@ -183,7 +183,7 @@ __global__ void sort_keys_descending()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
-__global__ void sort_keys_descending_bits()
+static __global__ void sort_keys_descending_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys-descending-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 1 key each
@@ -233,7 +233,7 @@ __global__ void sort_keys_descending_bits()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
 }
 
-__global__ void sort_pairs()
+static __global__ void sort_pairs() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys and values each
@@ -292,7 +292,7 @@ __global__ void sort_pairs()
   REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
-__global__ void sort_pairs_bits()
+static __global__ void sort_pairs_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys and values each
@@ -352,7 +352,7 @@ __global__ void sort_pairs_bits()
   REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
 }
 
-__global__ void sort_pairs_descending()
+static __global__ void sort_pairs_descending() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs-descending
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys and values each
@@ -411,7 +411,7 @@ __global__ void sort_pairs_descending()
   REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
-__global__ void sort_pairs_descending_bits()
+static __global__ void sort_pairs_descending_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs-descending-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys and values each
@@ -471,7 +471,7 @@ __global__ void sort_pairs_descending_bits()
   REQUIRE_DEVICE(thread_values[threadIdx.x][0] == expected_values[threadIdx.x][0]);
 }
 
-__global__ void sort_keys_blocked_to_striped()
+static __global__ void sort_keys_blocked_to_striped() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys-striped
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys each
@@ -518,7 +518,7 @@ __global__ void sort_keys_blocked_to_striped()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
-__global__ void sort_keys_blocked_to_striped_bits()
+static __global__ void sort_keys_blocked_to_striped_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys-striped-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 2 keys each
@@ -573,7 +573,7 @@ __global__ void sort_keys_blocked_to_striped_bits()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
 }
 
-__global__ void sort_pairs_blocked_to_striped()
+static __global__ void sort_pairs_blocked_to_striped() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs-striped
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys and values each
@@ -633,7 +633,7 @@ __global__ void sort_pairs_blocked_to_striped()
   REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
-__global__ void sort_pairs_blocked_to_striped_bits()
+static __global__ void sort_pairs_blocked_to_striped_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs-striped-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 2 keys and values each
@@ -700,7 +700,7 @@ __global__ void sort_pairs_blocked_to_striped_bits()
   REQUIRE_DEVICE(thread_values[threadIdx.x][1] == expected_values[threadIdx.x][1]);
 }
 
-__global__ void sort_keys_descending_blocked_to_striped()
+static __global__ void sort_keys_descending_blocked_to_striped() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys-striped-descending
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys each
@@ -747,7 +747,7 @@ __global__ void sort_keys_descending_blocked_to_striped()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
 }
 
-__global__ void sort_keys_descending_blocked_to_striped_bits()
+static __global__ void sort_keys_descending_blocked_to_striped_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin keys-striped-descending-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 2 keys each
@@ -807,7 +807,7 @@ __global__ void sort_keys_descending_blocked_to_striped_bits()
   REQUIRE_DEVICE(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
 }
 
-__global__ void sort_pairs_descending_blocked_to_striped()
+static __global__ void sort_pairs_descending_blocked_to_striped() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs-striped-descending
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 3 keys and values each
@@ -867,7 +867,7 @@ __global__ void sort_pairs_descending_blocked_to_striped()
   REQUIRE_DEVICE(thread_values[threadIdx.x][2] == expected_values[threadIdx.x][2]);
 }
 
-__global__ void sort_pairs_descending_blocked_to_striped_bits()
+static __global__ void sort_pairs_descending_blocked_to_striped_bits() // NOLINT(misc-use-anonymous-namespace)
 {
   // example-begin pairs-striped-descending-bits
   // Specialize `cub::BlockRadixSort` for a 1D block of 2 threads owning 2 keys and values each

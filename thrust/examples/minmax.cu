@@ -9,6 +9,8 @@
 
 // compute minimum and maximum values in a single reduction
 
+namespace
+{
 // minmax_pair stores the minimum and maximum
 // values that have been encountered so far
 template <typename T>
@@ -48,6 +50,7 @@ struct minmax_binary_op
     return result;
   }
 };
+} // namespace
 
 int main()
 {

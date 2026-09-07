@@ -17,6 +17,8 @@
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeft, adjacent_difference_subtract_left);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeftCopy, adjacent_difference_subtract_left_copy);
 
@@ -31,6 +33,7 @@ using all_types =
                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::subtractable_t>>;
 
 using types = c2h::type_list<std::uint8_t, std::int32_t>;
+} // namespace
 
 CUB_TEST(
   "DeviceAdjacentDifference::SubtractLeft can run with empty input", "[device][adjacent_difference]", CUB_SMALL, types)
@@ -345,6 +348,8 @@ CUB_TEST(
   REQUIRE(reference == out);
 }
 
+namespace
+{
 template <class T>
 struct cust_diff
 {
@@ -359,6 +364,7 @@ struct cust_diff
     return ulonglong2{lhs.x - rhs.x, lhs.y - rhs.y};
   }
 };
+} // namespace
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with custom difference",
          "[device][adjacent_difference]",
@@ -401,6 +407,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with custom differenc
   REQUIRE(reference == out);
 }
 
+namespace
+{
 template <class T>
 struct convertible_from_T
 {
@@ -420,6 +428,7 @@ struct convertible_from_T
     return val_;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with a different output type",
          "[device][adjacent_difference]",
@@ -442,6 +451,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with a different outp
   REQUIRE(reference == out);
 }
 
+namespace
+{
 struct check_difference
 {
   int* d_error;
@@ -457,6 +468,7 @@ struct check_difference
     return result;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes",
          "[device][adjacent_difference][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
@@ -471,6 +483,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes",
   REQUIRE(h_error == 0);
 }
 
+namespace
+{
 struct invocation_counter
 {
   __host__ explicit invocation_counter(unsigned long long* addr)
@@ -488,6 +502,7 @@ struct invocation_counter
 private:
   unsigned long long* counts_;
 };
+} // namespace
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy uses right number of invocations",
          "[device][adjacent_difference]",

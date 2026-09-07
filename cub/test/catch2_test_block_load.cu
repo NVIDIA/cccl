@@ -8,8 +8,10 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
-static __device__ int get_output_idx(int item)
+__device__ int get_output_idx(int item)
 {
   if (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
   {
@@ -121,6 +123,7 @@ struct params_t
   static constexpr int tile_size                          = items_per_thread * threads_in_block;
   static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<3, TestType>::value;
 };
+} // namespace
 
 CUB_TEST("Block load works with even block sizes",
          "[load][block]",

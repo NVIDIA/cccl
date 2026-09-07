@@ -91,7 +91,6 @@ void check_topk(const c2h::host_vector<KeyT>& h_in, cuda::std::span<const KeyT> 
   CAPTURE(bit_repr(h_top), bit_repr(h_ref_vec));
   REQUIRE(h_top == h_ref_vec);
 }
-} // namespace
 
 using select_direction_max = c2h::type_list<cuda::std::false_type, cuda::std::true_type>;
 using fp_key_types         = c2h::type_list<float, double>;
@@ -105,6 +104,7 @@ struct block_shape
 
 using block_shapes_full_tile =
   c2h::type_list<block_shape<64, 8>, block_shape<256, 2>, block_shape<32, 16>, block_shape<128, 4>>;
+} // namespace
 
 CUB_TEST(
   "block_topk preserves keys across FP edge cases", "[block][topk]", CUB_SMALL, fp_key_types, select_direction_max)

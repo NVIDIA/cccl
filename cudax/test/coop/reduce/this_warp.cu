@@ -30,6 +30,8 @@
  * Thread Reduce Wrapper Kernels
  **********************************************************************************************************************/
 
+namespace
+{
 template <bool Broadcasted>
 struct ReduceKernel
 {
@@ -148,6 +150,7 @@ constexpr int num_seeds = 10;
  **********************************************************************************************************************/
 
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '_Tp', possible loss of data
+} // namespace
 
 C2H_TEST("reduce/this_warp Integral Type Tests", "[reduce][this_warp]", integral_type_list, operator_integral_list)
 {

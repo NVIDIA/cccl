@@ -26,6 +26,8 @@
 #include "helper.h"
 #include "types.h"
 
+namespace
+{
 // Checks if the offsetting resource wrapper correctly got passed the alignment by the buffer constructor.
 template <typename T>
 bool check_offseted_pointer(const T* ptr)
@@ -771,3 +773,4 @@ C2H_CCCLRT_TEST("cuda::make_managed_buffer", "[container][buffer]")
   stream.sync();
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+} // namespace

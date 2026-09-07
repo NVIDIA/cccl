@@ -11,6 +11,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct TestTransformOutputIteratorReduceByKey
 {
@@ -47,3 +49,4 @@ struct TestTransformOutputIteratorReduceByKey
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTransformOutputIteratorReduceByKey, SignedIntegralTypes);
+} // namespace

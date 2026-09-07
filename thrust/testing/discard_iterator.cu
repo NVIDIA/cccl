@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 // ensure that we properly support thrust::discard_iterator from cuda::std
 void TestDiscardIteratorTraits()
 {
@@ -131,3 +133,4 @@ void TestZippedDiscardIterator()
   ASSERT_EQUAL(10, cuda::std::get<1>(z_iter_first.get_iterator_tuple()) - thrust::make_discard_iterator());
 }
 DECLARE_UNITTEST(TestZippedDiscardIterator);
+} // namespace

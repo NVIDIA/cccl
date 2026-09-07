@@ -18,6 +18,8 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -67,6 +69,7 @@ struct run_index_to_offset_op
     return OffsetT{1} + OffsetT{3} * run_index;
   }
 };
+} // namespace
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]", CUB_SMALL)
 {
@@ -156,6 +159,8 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal", "[device]
   REQUIRE(out_num_runs.front() == 1);
 }
 
+namespace
+{
 template <class T, class Index>
 bool validate_results(
   const c2h::device_vector<T>& in,
@@ -205,6 +210,7 @@ bool validate_results(
   }
   return true;
 }
+} // namespace
 
 CUB_TEST(
   "DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device][run_length_encode]", CUB_SMALL, all_types)
@@ -248,6 +254,8 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
   REQUIRE(validate_results(in, out_offsets, out_lengths, out_num_runs, num_items));
 }
 
+namespace
+{
 // Guard against #293
 template <bool TimeSlicing>
 struct device_rle_policy_selector
@@ -297,6 +305,7 @@ DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<true>, run_le
 DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>, run_length_encode_293_false);
 
 using time_slicing = c2h::type_list<std::true_type, std::false_type>;
+} // namespace
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
          "[device][run_length_encode]",

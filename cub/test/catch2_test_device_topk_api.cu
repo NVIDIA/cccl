@@ -210,6 +210,9 @@ CUB_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
   REQUIRE(values_out == expected_values);
 }
 
+// operator<< only runs when Catch2 reports a failure, so internal linkage makes nvcc
+// report it as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // example-begin topk-custom-type
 struct custom_t
 {
@@ -253,6 +256,7 @@ __host__ __device__ bool operator>(const custom_t& lhs, const custom_t& rhs)
 {
   return rhs < lhs;
 }
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]", CUB_SMALL)
 {

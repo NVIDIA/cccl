@@ -7,6 +7,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <std::uint32_t NumItems,
           std::uint32_t MaxItemValue,
           cub::detail::batch_memcpy::prefer_power_of_two_bits_option PreferPowerOfTwoBits>
@@ -49,6 +51,7 @@ using test_combinations =
                  test_spec<8, 1024>,
                  test_spec<32, 1>,
                  test_spec<32, 256>>;
+} // namespace
 
 CUB_TEST(
   "The bit_packed_counter used by DeviceMemcpy works", "[memcpy]", CUB_SMALL, test_combinations, use_power_of_two_bits)

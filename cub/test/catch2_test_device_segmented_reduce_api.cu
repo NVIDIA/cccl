@@ -17,6 +17,9 @@
 #include "cub_test_macros.h"
 #include "thrust/detail/raw_pointer_cast.h"
 
+// Only one is_equal overload is exercised, so internal linkage makes nvcc report the other
+// as unreferenced.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 // example-begin segmented-reduce-custommin
 struct CustomMin
 {
@@ -41,6 +44,7 @@ struct is_equal
     return !(lhs != rhs);
   }
 };
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)
 
 CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[segmented_reduce][device]", CUB_SMALL)
 {

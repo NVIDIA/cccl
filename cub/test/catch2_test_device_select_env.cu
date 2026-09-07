@@ -22,11 +22,14 @@ struct stream_registry_factory_t;
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, device_select_if);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Flagged, device_select_flagged);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::FlaggedIf, device_select_flagged_if);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Unique, device_select_unique);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::UniqueByKey, device_select_unique_by_key);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -1086,6 +1089,8 @@ CUB_TEST_CASE("Device select unique_by_key uses custom stream", "[select][device
 
 #if TEST_LAUNCH != 1
 
+namespace
+{
 struct less_than_5_t
 {
   __host__ __device__ bool operator()(int val) const
@@ -1130,6 +1135,7 @@ struct unique_by_key_tuning
             cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450}};
   }
 };
+} // namespace
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

@@ -6,6 +6,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
 set_difference(my_system& system, InputIterator1, InputIterator1, InputIterator2, InputIterator2, OutputIterator result)
@@ -200,3 +202,4 @@ void TestSetDifferenceWithBigIndexes()
 DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 
 #endif
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

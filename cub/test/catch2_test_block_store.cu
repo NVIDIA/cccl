@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx
 {
@@ -135,6 +137,7 @@ struct params_t
   static constexpr int tile_size                            = items_per_thread * threads_in_block;
   static constexpr cub::BlockStoreAlgorithm store_algorithm = c2h::get<3, TestType>::value;
 };
+} // namespace
 
 CUB_TEST("Block store works with even block sizes",
          "[store][block]",

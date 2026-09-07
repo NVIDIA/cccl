@@ -14,6 +14,8 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
+namespace
+{
 // ensure that we properly support thrust::permutation_iterator from cuda::std
 void TestPermutationIteratorTraits()
 {
@@ -283,3 +285,4 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIte
   }
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorWithCountingIterator);
+} // namespace

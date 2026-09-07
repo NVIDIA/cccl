@@ -39,6 +39,8 @@
 //
 // The possibilities are endless! :)
 
+namespace
+{
 struct arbitrary_functor1
 {
   template <typename Tuple>
@@ -57,6 +59,7 @@ struct arbitrary_functor2
     d = a + b * c;
   }
 };
+} // namespace
 
 int main()
 {

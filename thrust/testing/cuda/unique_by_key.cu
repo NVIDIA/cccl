@@ -4,6 +4,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename T>
 struct is_equal_div_10_unique
 {
@@ -395,3 +397,4 @@ void TestUniqueCopyByKeyCudaStreamsNoSync()
   TestUniqueCopyByKeyCudaStreams(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestUniqueCopyByKeyCudaStreamsNoSync);
+} // namespace

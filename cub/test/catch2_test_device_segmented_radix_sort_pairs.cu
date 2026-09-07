@@ -21,11 +21,14 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending);
 
 using custom_value_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
+} // namespace
 
 // Index types used for OffsetsT testing
 CUB_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",

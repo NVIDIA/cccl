@@ -17,6 +17,8 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_reduce_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_reduce_min);
@@ -25,6 +27,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_redu
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -38,6 +41,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 namespace stdexec = cuda::std::execution;
 using cuda::execution::determinism::__determinism_t;
 
+namespace
+{
 template <int ThreadsPerBlock>
 struct reduce_tuning
 {
@@ -52,6 +57,9 @@ struct reduce_tuning
 struct unrelated_policy
 {};
 
+// The operator only exists so the tuning satisfies the policy selector concept; it is
+// never called. nvcc ignores [[maybe_unused]] entirely.
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
 struct unrelated_tuning
 {
   // should never be called
@@ -60,6 +68,7 @@ struct unrelated_tuning
     throw 1337;
   }
 };
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
@@ -69,6 +78,8 @@ using block_size_check_plus_t = block_size_extracting_op<cuda::std::plus<>>;
 // Launcher helper always passes an environment.
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
+} // namespace
+
 #if TEST_LAUNCH == 0
 CUB_TEST_CASE("Device reduce works with default environment", "[reduce][device]", CUB_SMALL)
 {
@@ -278,6 +289,8 @@ CUB_TEST("Device ArgMax can be tuned", "[reduce][device]", CUB_SMALL, block_size
 
 #endif // TEST_LAUNCH != 1
 
+namespace
+{
 template <int BlockThreads>
 struct reduce_by_key_tuning
 {
@@ -290,10 +303,14 @@ struct reduce_by_key_tuning
 
 using reduce_by_key_block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+} // namespace
 
 #if TEST_LAUNCH != 1
 
+namespace
+{
 using block_size_extracting_minimum_t = block_size_extracting_op<cuda::minimum<int>>;
+} // namespace
 
 CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduce_by_key_block_sizes)
 {
@@ -330,10 +347,13 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
 
 #endif // TEST_LAUNCH != 1
 
+namespace
+{
 using requirements =
   c2h::type_list<cuda::execution::determinism::gpu_to_gpu_t,
                  cuda::execution::determinism::run_to_run_t,
                  cuda::execution::determinism::not_guaranteed_t>;
+} // namespace
 
 CUB_TEST("Device reduce uses environment", "[reduce][device]", CUB_SMALL, requirements)
 {

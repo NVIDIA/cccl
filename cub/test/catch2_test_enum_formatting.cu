@@ -12,6 +12,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 struct OStreamOperatorTester
 {
   template <class T>
@@ -194,6 +196,7 @@ void do_test(const Tester& tester)
     tester(cub::WarpStoreAlgorithm(100), "<unknown WarpStoreAlgorithm>");
   }
 }
+} // namespace
 
 CUB_TEST("Enum formatting", "", CUB_SMALL)
 {

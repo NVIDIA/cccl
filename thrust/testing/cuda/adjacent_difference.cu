@@ -73,6 +73,8 @@ void TestAdjacentDifferenceDeviceDevice(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestAdjacentDifferenceDeviceDevice);
 #endif
 
+namespace
+{
 void TestAdjacentDifferenceCudaStreams()
 {
   cudaStream_t s;
@@ -160,3 +162,4 @@ void TestAdjacentDifferenceWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);
+} // namespace

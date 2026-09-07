@@ -19,6 +19,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
@@ -34,6 +36,7 @@ using custom_t =
                      c2h::lexicographical_greater_comparable_t>;
 
 using iterator_type_list = c2h::type_list<type_pair<std::int8_t>, type_pair<custom_t>, type_pair<uchar3>>;
+} // namespace
 
 CUB_TEST("Device scan works with iterators", "[scan][device]", CUB_SMALL, iterator_type_list)
 {
@@ -193,6 +196,8 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", CUB_SMALL, iterat
   }
 }
 
+namespace
+{
 class custom_input_t
 {
   char m_val{};
@@ -245,11 +250,13 @@ public:
     }
   }
 
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(177)
   __host__ __device__ custom_accumulator_t operator+(const custom_input_t& in) const
   {
     const int multiplier = this->is_valid();
     return {(m_val + in.get()) * multiplier};
   }
+  _CCCL_END_NV_DIAG_SUPPRESS()
 
   __host__ __device__ custom_accumulator_t operator+(const custom_accumulator_t& in) const
   {
@@ -295,6 +302,7 @@ struct index_to_custom_output_op
     return custom_output_t{d_ok_count, index};
   }
 };
+} // namespace
 
 CUB_TEST("Device scan works complex accumulator types", "[scan][device]", CUB_SMALL)
 {

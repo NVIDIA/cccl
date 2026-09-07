@@ -7,6 +7,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <class T>
 struct value_t
 {
@@ -72,6 +74,7 @@ void test()
   STATIC_REQUIRE(!cub::detail::for_each::has_unique_value_overload<T, overload_value_t<T>>::value);
   STATIC_REQUIRE(!cub::detail::for_each::has_unique_value_overload<T, tpl_value_t>::value);
 }
+} // namespace
 
 CUB_TEST("Device for utils correctly detect value overloads", "[for][device]", CUB_SMALL)
 {

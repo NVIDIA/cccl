@@ -18,10 +18,13 @@ struct stream_registry_factory_t;
 
 #include "catch2_test_env_launch_helper.h"
 
+namespace
+{
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeftCopy, device_adjacent_difference_subtract_left_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeft, device_adjacent_difference_subtract_left);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRightCopy, device_adjacent_difference_subtract_right_copy);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRight, device_adjacent_difference_subtract_right);
+} // namespace
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -159,6 +162,8 @@ CUB_TEST("Device adjacent difference subtract right uses environment", "[adjacen
 
 #if TEST_LAUNCH != 1
 
+namespace
+{
 struct block_size_extracting_minus_t
 {
   unsigned int* d_block_size;
@@ -181,6 +186,7 @@ struct adj_diff_tuning
     return {ThreadsPerBlock, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_STORE_DIRECT};
   }
 };
+} // namespace
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;

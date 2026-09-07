@@ -32,6 +32,8 @@ static_assert(diff_type_is<__uint128_t, ptrdiff_t>);
 static_assert(diff_type_is<float, ptrdiff_t>);
 static_assert(diff_type_is<double, ptrdiff_t>);
 
+// nvcc reports these members as unreferenced (#177-D) inside an anonymous namespace, and
+// -Xcudafe=--promote_warnings makes that an error. The type is only used in a static_assert.
 struct custom_int
 {
   _CCCL_HOST_DEVICE custom_int(int) {}
@@ -39,6 +41,8 @@ struct custom_int
 };
 static_assert(diff_type_is<custom_int, ptrdiff_t>);
 
+namespace
+{
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
@@ -359,3 +363,4 @@ void TestCountingIteratorFloatDistanceTo()
   ASSERT_EQUAL(iter2 - iter1, 5);
 }
 DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);
+} // namespace

@@ -7,8 +7,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <class KeyT, class ValueT>
-static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
+void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -45,3 +47,4 @@ NVBENCH_BENCH_TYPES(scan, NVBENCH_TYPE_AXES(key_types, value_types))
   .set_name("base")
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+} // namespace

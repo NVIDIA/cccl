@@ -69,6 +69,8 @@ C2H_CCCLRT_TEST("From native handle", "[stream]")
   CUDART(cudaStreamDestroy(handle));
 }
 
+namespace
+{
 template <typename StreamType>
 void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 {
@@ -120,6 +122,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
     });
   }
 }
+} // namespace
 
 C2H_CCCLRT_TEST("Can add dependency into a stream", "[stream]")
 {

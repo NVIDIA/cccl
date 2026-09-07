@@ -39,6 +39,8 @@
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
 
+namespace
+{
 struct is_minus_zero
 {
   __device__ bool operator()(float x) const
@@ -186,6 +188,7 @@ using det_tie_combos =
                          cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
                  det_tie<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
                          cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+} // namespace
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
@@ -362,9 +365,12 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys clamp k larger than the segment size"
   REQUIRE(expected_keys == keys_out_buffer);
 }
 
+namespace
+{
 // Segment-size types narrower than the internal `offset_t`: a signed type narrows a too-large index to a negative one
 // (indexing before the segment); an unsigned one wraps to a small in-range index (duplicate racing stores).
 using narrow_seg_size_list = c2h::type_list<cuda::std::int8_t, cuda::std::uint8_t>;
+} // namespace
 
 // Regression for a narrow segment-size type. A block launches 512 threads -- past an 8-bit type's range -- so any path
 // that narrows an index to `segment_size_val_t` before its bound check would go out of bounds. We sweep `segment_size`
@@ -558,6 +564,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys work with a deferred (device-resident
 }
 #endif // TEST_TYPES == 2
 
+namespace
+{
 #if TEST_TYPES == 1
 template <typename KeyT>
 struct cast_to_key_op
@@ -648,7 +656,10 @@ auto make_cluster_tune_env(Selector selector)
                              cuda::execution::output_ordering::unsorted),
     cuda::execution::tune(selector)};
 }
+#endif // TEST_TYPES == 1 && TEST_LAUNCH == 0
+} // namespace
 
+#if TEST_TYPES == 1 && TEST_LAUNCH == 0
 // A small multi-CTA segment that stays *fully resident* across a forced 2-CTA cluster: `single_block_max_seg_size = 0`
 // disables the single-CTA fast path so even this tiny segment fans out, and cap 2 pins the width. This exercises the
 // real cross-CTA prefix scan (`prime_placement_counters` / remote `red.add`), the cluster barriers, and the DSMEM
@@ -766,6 +777,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys handle the maximum number of segments
 }
 #  endif // disabled maximum-batch (INT_MAX segments) launch-geometry test
 
+namespace
+{
 // Cluster-width cap (`cluster_cap_list`) plus a resident-slot cap force a tiny segment to overflow and stream: cap 1
 // streams inside one CTA (barrier-free), cap 2 across a fixed 2-CTA cluster (cross-CTA scan while streaming). The
 // resident capacity is `slots * max_chunk_items` (host-known), so 4 slots x 128 floats = 512 resident floats and the
@@ -779,6 +792,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys handle the maximum number of segments
 // which additionally reach the reverse first wave. Verified against a sorted reference.
 using cluster_cap_list = c2h::enum_type_list<int, 1, 2>;
 using stage_list       = c2h::enum_type_list<int, 2, 4, 8>;
+} // namespace
 
 CUB_TEST("DeviceBatchedTopK::{Min,Max}Keys stream a tiny oversize segment across the pipeline-stage schedule",
          "[keys][segmented][topk][device][cluster]",

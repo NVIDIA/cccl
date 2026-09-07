@@ -35,6 +35,8 @@
 
 inline constexpr int size = 1000;
 
+namespace
+{
 template <class T = int>
 struct is_power_of_2
 {
@@ -88,6 +90,7 @@ void test_replace_if(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(cuda::std::none_of(policy, input.begin(), input.end(), is_power_of_2<T>{}));
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::replace_if", "[parallel algorithm]", all_types)
 {

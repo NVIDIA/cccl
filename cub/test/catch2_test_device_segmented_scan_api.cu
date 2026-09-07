@@ -21,6 +21,8 @@
 #include "catch2_test_device_scan.cuh"
 #include "cub_test_macros.h"
 
+namespace
+{
 void check_execution_status(cudaError_t status, const std::string& algo_name)
 {
   if (status != cudaSuccess)
@@ -28,6 +30,7 @@ void check_execution_status(cudaError_t status, const std::string& algo_name)
     std::cerr << algo_name << " failed with status: " << status << "\n";
   }
 }
+} // namespace
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets works",
          "[segmented][exclusive_sum][two_offsets]",

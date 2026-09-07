@@ -37,6 +37,8 @@ struct bench_policy_selector
 };
 #endif // !TUNE_BASE
 
+namespace
+{
 template <typename T, typename InPlace>
 void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
 {
@@ -115,3 +117,4 @@ NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, is_in_place))
   .set_type_axes_names({"T{ct}", "InPlace{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});
+} // namespace

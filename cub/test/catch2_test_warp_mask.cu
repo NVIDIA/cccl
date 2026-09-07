@@ -8,6 +8,8 @@
 
 #include "cub_test_macros.h"
 
+namespace
+{
 template <int logical_warp_threads>
 struct total_warps_t
 {
@@ -29,6 +31,7 @@ bool is_lane_involved(unsigned int member_mask, unsigned int lane)
 
 using logical_warp_threads      = c2h::iota<1, 32>;
 using power_of_two_warp_threads = c2h::enum_type_list<int, 1, 2, 4, 8, 16, 32>;
+} // namespace
 
 CUB_TEST("Warp mask ignores lanes before current logical warp", "[mask][warp]", CUB_SMALL, power_of_two_warp_threads)
 {

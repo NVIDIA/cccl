@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+// my_tag/my_system overloads are ADL customization points; they need external linkage.
+// NOLINTBEGIN(misc-use-anonymous-namespace,misc-use-internal-linkage)
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
 OutputType
 transform_reduce(my_system& system, InputIterator, InputIterator, UnaryFunction, OutputType init, BinaryFunction)
@@ -102,3 +104,4 @@ void TestTransformReduceCountingIterator()
   ASSERT_EQUAL(result, -6);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformReduceCountingIterator);
+// NOLINTEND(misc-use-anonymous-namespace,misc-use-internal-linkage)

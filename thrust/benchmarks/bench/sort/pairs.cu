@@ -6,8 +6,10 @@
 
 #include "nvbench_helper.cuh"
 
+namespace
+{
 template <class KeyT, class ValueT>
-static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
+void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
@@ -43,3 +45,4 @@ NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(key_types, value_types))
   .set_type_axes_names({"KeyT{ct}", "ValueT{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.201"});
+} // namespace

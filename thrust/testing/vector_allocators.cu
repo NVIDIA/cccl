@@ -5,6 +5,8 @@
 
 #include <unittest/unittest.h>
 
+namespace
+{
 template <typename BaseAlloc, bool PropagateOnSwap>
 class stateful_allocator : public BaseAlloc
 {
@@ -86,7 +88,7 @@ public:
     return state != rhs.state;
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const stateful_allocator& alloc)
+  [[maybe_unused]] friend std::ostream& operator<<(std::ostream& os, const stateful_allocator& alloc)
   {
     os << "stateful_alloc(" << alloc.state << ")";
     return os;
@@ -272,3 +274,4 @@ void TestVectorAllocatorPropagateOnSwapDevice()
   TestVectorAllocatorPropagateOnSwap<device_vector_nsp>();
 }
 DECLARE_UNITTEST(TestVectorAllocatorPropagateOnSwapDevice);
+} // namespace

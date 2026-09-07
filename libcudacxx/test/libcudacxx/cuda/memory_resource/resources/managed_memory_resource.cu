@@ -25,6 +25,8 @@
 #  define TEST_TYPES cuda::mr::legacy_managed_memory_resource
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
+namespace
+{
 template <typename Resource>
 void resource_static_asserts()
 {
@@ -58,7 +60,7 @@ Resource get_resource()
   }
 }
 
-static void ensure_managed_ptr(void* ptr)
+void ensure_managed_ptr(void* ptr)
 {
   CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
@@ -232,3 +234,4 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
 #if _CCCL_CTK_AT_LEAST(13, 0)
 // async deallocate_sync test removed in this suite; covered elsewhere
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+} // namespace

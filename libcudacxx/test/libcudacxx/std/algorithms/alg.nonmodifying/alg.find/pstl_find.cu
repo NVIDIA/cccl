@@ -23,6 +23,8 @@
 
 inline constexpr size_t size = 1000;
 
+namespace
+{
 template <class Policy>
 void test_find(const Policy& policy)
 {
@@ -45,6 +47,7 @@ void test_find(const Policy& policy)
     CHECK(res == cuda::counting_iterator{expected});
   }
 }
+} // namespace
 
 C2H_TEST("cuda::std::find", "[parallel algorithm]")
 {

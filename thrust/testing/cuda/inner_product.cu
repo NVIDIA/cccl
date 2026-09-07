@@ -50,6 +50,8 @@ void TestInnerProductDeviceDevice()
 DECLARE_UNITTEST(TestInnerProductDeviceDevice);
 #endif
 
+namespace
+{
 void TestInnerProductCudaStreams()
 {
   thrust::device_vector<int> v1 = {1, -2, 3};
@@ -65,3 +67,4 @@ void TestInnerProductCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestInnerProductCudaStreams);
+} // namespace
