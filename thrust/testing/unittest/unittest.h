@@ -886,7 +886,12 @@ template <template <typename> typename TestFunc,
           typename... Ts>
 void invoke_vector_unittest(L<Ts...>)
 {
+#if _CCCL_COMPILER(MSVC, <=, 19, 50)
+  // MSVC crashes with a C1001 internal compiler error on the fold-expression below, so expand into an initializer list
+  [[maybe_unused]] int dummy[] = {0, (TestFunc<Vector<Ts, Alloc<Ts>>>{}(0), 0)...}; // leading 0 in case Ts is empty
+#else // _CCCL_COMPILER(MSVC, ==, 19, 50)
   (..., TestFunc<Vector<Ts, Alloc<Ts>>>{}(0));
+#endif // _CCCL_COMPILER(MSVC, ==, 19, 50)
 }
 } // namespace unittest::detail
 
