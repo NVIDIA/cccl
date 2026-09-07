@@ -41,9 +41,6 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   set(test_target ${config_prefix}.test.${test_name})
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 
-  # Related target names:
-  set(config_framework_target ${config_prefix}.test.framework)
-
   cccl_add_executable(${test_target} SOURCES "${real_test_src}" ADD_CTEST)
   target_link_libraries(
     ${test_target}
