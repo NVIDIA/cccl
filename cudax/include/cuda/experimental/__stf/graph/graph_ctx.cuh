@@ -623,7 +623,7 @@ private:
     auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
       if (*pGraphExec)
       {
-        cudaGraphExecDestroy(*pGraphExec);
+        cuda_safe_call(cudaGraphExecDestroy(*pGraphExec));
       }
       delete pGraphExec;
     };
@@ -642,10 +642,14 @@ private:
     // deleter replaces the default `delete`, so it has to free the cell itself. And the handle
     // is value-initialized so it stays null if cudaGraphCreate throws, since destroying an
     // indeterminate handle is undefined behaviour rather than a no-op.
+    //
+    // cuda_safe_call, not a bare call: a failed destroy would otherwise be dropped silently and
+    // leave a sticky error to surface at some later, unrelated CUDA call. It aborts rather than
+    // throws, which is what a shared_ptr deleter needs.
     auto cudaGraphDeleter = [](cudaGraph_t* pGraph) {
       if (*pGraph)
       {
-        cudaGraphDestroy(*pGraph);
+        cuda_safe_call(cudaGraphDestroy(*pGraph));
       }
       delete pGraph;
     };
