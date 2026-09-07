@@ -88,6 +88,8 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, ::cuda::std::size_t _N
 
   const auto __warp_rank_in_block = __group.rank(block);
   const auto __result = _WarpReduce{__scratch.__warp_reduce_[__warp_rank_in_block]}.Reduce(__thread_data, __red_fn);
+  // CUB requires a collective barrier before its temporary storage is reused.
+  __group.sync_aligned();
   if constexpr (_Broadcasted)
   {
     return ::cuda::device::warp_shuffle_idx(__result, 0).data;
@@ -121,6 +123,9 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
   __shared__ _Scratch __scratch;
 
   const auto __result = _BlockReduce{__scratch.__block_reduce_}.Reduce(__thread_data, __red_fn);
+  // Finish every CUB access before changing the active union member or
+  // starting a consecutive reduction.
+  __group.sync_aligned();
   if constexpr (_Broadcasted)
   {
     if (gpu_thread.is_root_rank(__group))
@@ -128,7 +133,9 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
       __scratch.__bcast_ = __result;
     }
     __group.sync_aligned();
-    return __scratch.__bcast_;
+    const auto __broadcast_result = __scratch.__bcast_;
+    __group.sync_aligned();
+    return __broadcast_result;
   }
   else
   {
@@ -213,6 +220,15 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
                      // Wait until all threads are done reading the result.
                      __group.sync_aligned();
                    }
+                   else
+                   {
+                     // This function-local scratch can next be reused only by
+                     // another invocation, whose leading cluster barrier orders
+                     // all other blocks. Keep the root block together until its
+                     // root warp is done; revisit this when scratch is supplied
+                     // by the caller.
+                     this_block{__group.hierarchy()}.sync_aligned();
+                   }
                  }))
 
     if constexpr (_Broadcasted)
@@ -287,6 +303,9 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
   }
   else
   {
+    // The root block must finish reading the grid partials before another
+    // reduction can overwrite them.
+    __group.sync_aligned();
     return __result;
   }
 }
@@ -331,9 +350,24 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
 [[nodiscard]] _CCCL_DEVICE_API auto
 __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__thread_data)[_Np], _RedFn __red_fn)
 {
+  using _MappingResult = typename _Group::__mapping_result_type;
+
   constexpr auto __nwarps_in_group = warp.static_count(__group);
   static_assert(__nwarps_in_group != ::cuda::std::dynamic_extent,
                 "cuda::coop::reduce requires the group to have statically known size");
+  static_assert(_MappingResult::is_always_contiguous(),
+                "cuda::coop::reduce requires contiguous warp mappings within a block");
+  this_block __block{__group.hierarchy()};
+  constexpr auto __static_nwarps_in_block = warp.static_count(__block);
+  // Nested virtual groups report group ranks and counts relative to their
+  // parent group, so size the scratch from the physical block. Static block
+  // extents keep this allocation tight. A fully dynamic block reserves one
+  // slot for every physical group that could exist under CUDA's architectural
+  // limit of 32 warps.
+  constexpr auto __max_nwarps_in_block =
+    (__static_nwarps_in_block != ::cuda::std::dynamic_extent) ? __static_nwarps_in_block : ::cuda::std::size_t{32};
+  constexpr auto __ngroups =
+    (__nwarps_in_group < __max_nwarps_in_block) ? (__max_nwarps_in_block / __nwarps_in_group) : ::cuda::std::size_t{1};
 
   using _WarpReduce = ::cub::WarpReduce<_Tp>;
   struct _AdditionalScratch
@@ -347,15 +381,25 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
     typename _WarpReduce::TempStorage __warp_reduce_[__nwarps_in_group];
     _AdditionalScratch __additional_;
   };
-  __shared__ _Scratch __scratch;
+  __shared__ _Scratch __scratch[__ngroups];
 
-  const auto __partial = _WarpReduce{__scratch.__warp_reduce_[warp.rank(__group)]}.Reduce(__thread_data, __red_fn);
+  // Derive a block-global identity from the first physical warp in this
+  // contiguous group. Parent-local group ranks are not unique for nested
+  // virtual groups under sibling mapped groups.
+  const auto& __mapping_result = __group.__mapping_result();
+  const auto __first_warp      = __mapping_result.is_valid() ? warp.rank(__block) - __mapping_result.unit_rank() : 0u;
+  const auto __scratch_index   = __first_warp / __nwarps_in_group;
+  _CCCL_ASSERT(__scratch_index < __ngroups, "mapped group scratch index is out of bounds");
+  auto& __group_scratch = __scratch[__scratch_index];
+
+  const auto __partial =
+    _WarpReduce{__group_scratch.__warp_reduce_[warp.rank(__group)]}.Reduce(__thread_data, __red_fn);
   __group.sync_aligned();
 
   this_warp __warp{__group.hierarchy()};
   if (gpu_thread.is_root_rank(__warp))
   {
-    __scratch.__additional_.__partials_[warp.rank(__group)] = __partial;
+    __group_scratch.__additional_.__partials_[warp.rank(__group)] = __partial;
   }
   __group.sync_aligned();
 
@@ -363,19 +407,26 @@ __reduce_impl(::cuda::std::bool_constant<_Broadcasted>, _Group __group, _Tp (&__
   if (warp.is_root_rank(__group))
   {
     const auto __value = (gpu_thread.rank(__warp) < __nwarps_in_group)
-                         ? __scratch.__additional_.__partials_[gpu_thread.rank(__warp)]
+                         ? __group_scratch.__additional_.__partials_[gpu_thread.rank(__warp)]
                          : ::cuda::identity_element<_RedFn, _Tp>();
-    __result           = _WarpReduce{__scratch.__warp_reduce_[0]}.Reduce(__value, __red_fn);
+    __result           = _WarpReduce{__group_scratch.__warp_reduce_[0]}.Reduce(__value, __red_fn);
   }
+  // CUB requires a collective barrier before its temporary storage is reused.
+  // This also keeps every member from starting a consecutive reduction while
+  // the root warp is still consuming this group's scratch.
+  __group.sync_aligned();
 
   if constexpr (_Broadcasted)
   {
     if (gpu_thread.is_root_rank(__group))
     {
-      __scratch.__additional_.__bcast_ = __result;
+      __group_scratch.__additional_.__bcast_ = __result;
     }
     __group.sync_aligned();
-    return __scratch.__additional_.__bcast_;
+    const auto __broadcast_result = __group_scratch.__additional_.__bcast_;
+    // Finish every read before a consecutive reduction overwrites the union.
+    __group.sync_aligned();
+    return __broadcast_result;
   }
   else
   {
