@@ -1,0 +1,2 @@
+python/cuda_coop/cuda/coop/numba_mlir/__init__.pyi
+python/cuda_coop/cuda/coop/numba_mlir/py.typed

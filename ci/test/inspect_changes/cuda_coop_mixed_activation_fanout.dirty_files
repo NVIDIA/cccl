@@ -1,0 +1,2 @@
+python/cuda_coop/tests/integration/compiler/test_mixed_backend_activation.py
+python/cuda_coop/tests/support/fixtures/mixed_backend_kernels.py

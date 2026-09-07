@@ -1,0 +1,2 @@
+FULL_BUILD=cudax cuda_coop_contracts cuda_coop_numba_mlir cuda_coop_cutlass tidy
+LITE_BUILD=cccl_c_stf python packaging
