@@ -38,6 +38,7 @@
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
+#include <memory>
 #include <mutex>
 
 namespace cuda::experimental::stf
@@ -637,11 +638,19 @@ private:
   // Creates a new CUDA graph and wrap it into a shared_ptr
   static ::std::shared_ptr<cudaGraph_t> shared_cuda_graph()
   {
+    // Same two precautions as cudaGraphExecDeleter above, for the same reasons. A custom
+    // deleter replaces the default `delete`, so it has to free the cell itself. And the handle
+    // is value-initialized so it stays null if cudaGraphCreate throws, since destroying an
+    // indeterminate handle is undefined behaviour rather than a no-op.
     auto cudaGraphDeleter = [](cudaGraph_t* pGraph) {
-      cudaGraphDestroy(*pGraph);
+      if (*pGraph)
+      {
+        cudaGraphDestroy(*pGraph);
+      }
+      delete pGraph;
     };
 
-    ::std::shared_ptr<cudaGraph_t> res(new cudaGraph_t, cudaGraphDeleter);
+    ::std::shared_ptr<cudaGraph_t> res(new cudaGraph_t{}, cudaGraphDeleter);
 
     cuda_try(cudaGraphCreate(res.get(), 0));
 
@@ -651,14 +660,11 @@ private:
   // Wrap an existing CUDA graph into a shared_ptr, the destruction of the graph is let to the application
   static ::std::shared_ptr<cudaGraph_t> wrap_cuda_graph(cudaGraph_t g)
   {
-    // Allocate memory for a new cudaGraph_t and copy the existing graph to it
-    cudaGraph_t* pGraph = new cudaGraph_t;
-    *pGraph             = g;
-
-    // There is no custom deleter : only the pointer itself will be destroyed
-    ::std::shared_ptr<cudaGraph_t> res(pGraph);
-
-    return res;
+    // No custom deleter: the graph's lifetime belongs to the application, so only the cell
+    // holding the handle is freed. make_shared keeps that allocation exception-safe -- a raw
+    // `new` followed by a throwing shared_ptr construction would leak it -- and folds the
+    // control block into the same allocation.
+    return ::std::make_shared<cudaGraph_t>(g);
   }
 
   cudaStream_t submit_one_stage(cudaGraph_t g, size_t stage)
