@@ -563,14 +563,19 @@ struct segmented_scan_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
-    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
-      static_cast<int>(BlockThreads),
-      1,
-      cub::BLOCK_LOAD_DIRECT,
-      cub::LOAD_DEFAULT,
-      cub::BLOCK_STORE_DIRECT,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      512}};
+    constexpr auto threads_per_block = static_cast<int>(BlockThreads);
+    return cub::SegmentedScanPolicy{
+      cub::SegmentedScanBlockPolicy{
+        threads_per_block,
+        1,
+        cub::BLOCK_LOAD_DIRECT,
+        cub::LOAD_DEFAULT,
+        cub::BLOCK_STORE_DIRECT,
+        cub::BLOCK_SCAN_WARP_SCANS,
+        512},
+      cub::SegmentedScanWarpPolicy{
+        threads_per_block, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT, 64},
+      cub::SegmentedScanThreadPolicy{threads_per_block, 1, cub::LOAD_DEFAULT}};
   }
 };
 
@@ -690,7 +695,10 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
     cub::BLOCK_STORE_WARP_TRANSPOSE,
     cub::BLOCK_SCAN_WARP_SCANS,
     512};
-  constexpr auto p1 = cub::SegmentedScanPolicy{block1};
+  constexpr auto warp1 =
+    cub::SegmentedScanWarpPolicy{128, 7, cub::WARP_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::WARP_STORE_TRANSPOSE, 64};
+  constexpr auto thread1 = cub::SegmentedScanThreadPolicy{128, 5, cub::LOAD_DEFAULT};
+  constexpr auto p1      = cub::SegmentedScanPolicy{block1, warp1, thread1};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -702,7 +710,16 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
     .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
     .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS,
     .max_segments      = 512};
-  constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2};
+  constexpr auto warp2 = cub::SegmentedScanWarpPolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 7,
+    .load_algorithm    = cub::WARP_LOAD_TRANSPOSE,
+    .load_modifier     = cub::LOAD_DEFAULT,
+    .store_algorithm   = cub::WARP_STORE_TRANSPOSE,
+    .max_segments      = 64};
+  constexpr auto thread2 =
+    cub::SegmentedScanThreadPolicy{.threads_per_block = 128, .items_per_thread = 5, .load_modifier = cub::LOAD_DEFAULT};
+  constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2, .warp = warp2, .thread = thread2};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto block2 = block1;
   constexpr auto p2     = p1;
@@ -720,15 +737,26 @@ CUB_TEST("Test SegmentedScanPolicy properties", "[segmented_scan][device]", CUB_
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(block1)
+
+  const auto block1_str = to_string(block1);
+  REQUIRE(block1_str
           == "SegmentedScanBlockPolicy { .threads_per_block = 128, .items_per_thread = 9"
              ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
              ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
              ", .max_segments_per_block = 512 }");
-  REQUIRE(to_string(p1)
-          == "SegmentedScanPolicy { .block = SegmentedScanBlockPolicy { .threads_per_block = 128"
-             ", .items_per_thread = 9, .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE"
-             ", .load_modifier = LOAD_DEFAULT, .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE"
-             ", .scan_algorithm = BLOCK_SCAN_WARP_SCANS, .max_segments_per_block = 512 } }");
+  const auto warp1_str = to_string(warp1);
+  REQUIRE(warp1_str
+          == "SegmentedScanWarpPolicy { .threads_per_block = 128, .items_per_thread = 7"
+             ", .load_algorithm = WARP_LOAD_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
+             ", .store_algorithm = WARP_STORE_TRANSPOSE, .max_segments_per_warp = 64 }");
+  const auto thread1_str = to_string(thread1);
+  REQUIRE(thread1_str
+          == "SegmentedScanThreadPolicy { .threads_per_block = 128, .items_per_thread = 5"
+             ", .load_modifier = LOAD_DEFAULT }");
+
+  std::stringstream expected;
+  expected << "SegmentedScanPolicy { .block = " << block1_str << ", .warp = " << warp1_str
+           << ", .thread = " << thread1_str << " }";
+  REQUIRE(to_string(p1) == expected.str());
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
