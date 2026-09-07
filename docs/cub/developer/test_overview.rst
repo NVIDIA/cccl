@@ -206,7 +206,7 @@ Our CI runs CUB tests in parallel to increase throughput and cut down CI time.
 To help with scheduling, we classify all tests into two categories: small and large.
 Small tests may run concurrently with others, while large tests require exclusive access to the GPU.
 When unsure about which class to apply, contributors should choose ``CUB_LARGE``.
-Each test declaration using ``CUB_TEST`` must use the ``CUB_SMALL`` or ``CUB_LARGE`` tag1,
+Each test declaration using ``CUB_TEST`` must use the ``CUB_SMALL`` or ``CUB_LARGE`` tag,
 which adds a matching ``[small-mem]`` or ``[large-mem]`` tag.
 
 Multidimensional Configuration Spaces

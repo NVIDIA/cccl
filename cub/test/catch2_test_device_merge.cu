@@ -251,7 +251,7 @@ CUB_TEST("DeviceMerge::MergePairs key types", "[merge][device]", CUB_SMALL, type
 }
 
 // TODO(bgruber): fine tune the type sizes again to hit the fallback and the vsmem policies
-// CUB_TEST("DeviceMerge::MergePairs large key types", "[merge][device]", large_types)
+// CUB_TEST("DeviceMerge::MergePairs large key types", "[merge][device]", CUB_LARGE, large_types)
 // {
 //   using key_t    = c2h::get<0, TestType>;
 //   using value_t  = int;
