@@ -90,7 +90,7 @@ Say there's no need to cover many types with your test.
 
 We introduce test cases with the ``CUB_TEST`` macro in (0).
 This macro always takes two string arguments - a free-form test name and
-one or more tags, followed by the memory use classification.
+one or more tags, followed by the memory use classification (more on that later).
 sThen, in (1), we allocate device memory using ``c2h::device_vector``.
 ``c2h::device_vector`` and ``c2h::host_vector`` behave similarly to their Thrust counterparts,
 but are modified to provide more stable behavior in some testing edge cases.
