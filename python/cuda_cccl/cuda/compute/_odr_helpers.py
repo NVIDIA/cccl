@@ -6,37 +6,38 @@
 ODR (One Definition Rule) Helpers for CCCL Python Interop.
 
 This module provides utilities to create wrapper functions for
-device functions that are defined in Python and JIT compiled by Numba.
+device functions that are defined in Python and JIT compiled by numba-cuda-mlir.
 
 On the C++ side, these functions are declared as `extern "C"` functions with
-void* parameters - the arguments types can not be known at C++ compile time.
+void* parameters - the argument types can not be known at C++ compile time.
 
 Thus, the helpers in this module generate wrapper device functions that accept
-void* arguments (matching C++ declarations), cast them to the correct
-typed arguments, load/store values as needed, and call the original
-function with properly typed arguments.
+void* arguments (matching C++ declarations), reinterpret them as the correct
+typed pointers, load/store values as needed, and call the original function
+with properly typed arguments.
 
 Example flow:
     User provides: def add(x: int32, y: int32) -> int32
     Wrapper signature: void(void*, void*, void*)  # x_ptr, y_ptr, result_ptr
     C++ sees: extern "C" void wrapped_add(void*, void*, void*);
+
+Unlike the previous numba-cuda implementation, the wrappers here are *ordinary
+Python device functions* compiled with ``abi="c"`` rather than hand-written
+LLVM-IR codegen (``@intrinsic``).  A ``void*`` argument is expressed as a typed
+``CPointer`` parameter (ABI-identical to ``void*``); loads/stores become
+``ptr[0]`` indexing.  numba-cuda-mlir inlines the user operator into the
+wrapper, so the generated code is equivalent to the old codegen without any
+low-level builder work.
 """
 
 from __future__ import annotations
 
-import enum
 import itertools
-import textwrap
 import threading
-from typing import TYPE_CHECKING
 
-from numba import types
-from numba.core.extending import intrinsic
-
+from . import _mlir
+from ._mlir import as_numpy_dtype, cuda, types
 from ._utils import sanitize_identifier
-
-if TYPE_CHECKING:
-    from numba.core.typing import Signature
 
 # Global counter to generate unique symbol names even when the same function
 # is used multiple times (e.g., as both selectors in `three_way_partition`).
@@ -46,325 +47,233 @@ _wrapper_name_lock = threading.Lock()
 __all__ = [
     "create_op_void_ptr_wrapper",
     "create_stateful_op_void_ptr_wrapper",
-    "create_advance_void_ptr_wrapper",
-    "create_input_dereference_void_ptr_wrapper",
-    "create_output_dereference_void_ptr_wrapper",
 ]
 
 
-class _ArgMode(enum.Enum):
-    """How a void* argument should be handled in wrapper codegen."""
-
-    LOAD = "load"  # Cast to typed pointer, load value
-    PTR = "ptr"  # Cast to typed pointer, pass pointer directly
-    STORE = "store"  # Cast to typed pointer, store return value here
-    # Unpack packed data pointers into array structs
-    STATE = "state"
-
-
-class _ArgSpec:
-    """Specification for a wrapper argument."""
-
-    __slots__ = ("numba_type", "mode")
-
-    def __init__(self, numba_type, mode: _ArgMode):
-        self.numba_type = numba_type
-        self.mode = mode
-
-
-def _build_numba_array_struct(context, builder, array_type, data_ptr, info):
-    """Build a numba array struct from a data pointer and array info.
-
-    Args:
-        context: Numba codegen context
-        builder: LLVM IR builder
-        array_type: Numba Array type for the array
-        data_ptr: LLVM value for the data pointer
-        info: Dict with 'shape', 'itemsize', 'strides' for the array
-
-    Returns:
-        LLVM value representing the array struct
-    """
-    import llvmlite.ir as ir
-    from numba.cuda.np.arrayobj import make_array, populate_array
-
-    out_ary = make_array(array_type)(context, builder)
-
-    populate_array(
-        out_ary,
-        data=data_ptr,
-        shape=[ir.Constant(ir.IntType(64), info["shape"])],
-        strides=[ir.Constant(ir.IntType(64), info["strides"])],
-        itemsize=info["itemsize"],
-        meminfo=None,
-    )
-
-    return out_ary._getvalue()
-
-
-def _unpack_state_arrays(context, builder, packed_ptr, type_info_pairs):
-    """Unpack packed data pointers into numba array structs.
-
-    Args:
-        context: Numba codegen context
-        builder: LLVM IR builder
-        packed_ptr: void* pointing to an array of data pointers
-        type_info_pairs: List of (array_type, info) tuples
-
-    Returns:
-        List of LLVM values representing the unpacked array structs
-    """
-    import llvmlite.ir as ir
-
-    # Cast void* to pointer-to-pointer (array of pointers)
-    ptr_type = ir.IntType(64).as_pointer()
-    base_ptr = builder.bitcast(packed_ptr, ptr_type.as_pointer())
-
-    result = []
-    for j, (array_type, info) in enumerate(type_info_pairs):
-        # Load j-th pointer from the array and cast to correct type
-        elem_ptr = builder.gep(base_ptr, [ir.Constant(ir.IntType(32), j)])
-        dtype_llvm = context.get_value_type(array_type.dtype)
-        typed_ptr_ptr = builder.bitcast(elem_ptr, dtype_llvm.as_pointer().as_pointer())
-        data_ptr = builder.load(typed_ptr_ptr)
-
-        # Build array struct from pointer
-        array_val = _build_numba_array_struct(
-            context, builder, array_type, data_ptr, info
-        )
-        result.append(array_val)
-
-    return result
-
-
-def _codegen_void_ptr_wrapper(
-    context, builder, args, arg_specs, func_device, inner_sig
-):
-    """Generate LLVM IR for a void* wrapper function.
-
-    This is the codegen implementation shared by all void* wrappers.
-    It processes each argument according to its _ArgSpec mode, calls
-    the inner function, and stores the result if needed.
-
-    Args:
-        context: Numba codegen context
-        builder: LLVM IR builder
-        args: LLVM values for the void* arguments
-        arg_specs: List of _ArgSpec describing each argument
-        func_device: The device function to call
-        inner_sig: Numba signature for the inner function
-
-    Returns:
-        LLVM dummy value (for void return)
-    """
-
-    input_vals = []
-    state_array_vals = []
-    ret_ptr = None
-
-    for i, (arg, spec) in enumerate(zip(args, arg_specs)):
-        match spec.mode:
-            case _ArgMode.LOAD:
-                # Cast void* to typed pointer and load value
-                llvm_type = context.get_value_type(spec.numba_type)
-                typed_ptr = builder.bitcast(arg, llvm_type.as_pointer())
-                val = builder.load(typed_ptr)
-                input_vals.append(val)
-            case _ArgMode.PTR:
-                # Cast void* to typed pointer, pass pointer directly
-                llvm_type = context.get_value_type(spec.numba_type.dtype)
-                typed_ptr = builder.bitcast(arg, llvm_type.as_pointer())
-                input_vals.append(typed_ptr)
-            case _ArgMode.STORE:
-                # Cast void* to typed pointer for storing result
-                llvm_type = context.get_value_type(spec.numba_type)
-                ret_ptr = builder.bitcast(arg, llvm_type.as_pointer())
-            case _ArgMode.STATE:
-                # Cast void* to a packed array of pointers and unpack them
-                array_vals = _unpack_state_arrays(
-                    context, builder, arg, spec.numba_type
-                )
-                state_array_vals.extend(array_vals)
-            case _:
-                raise ValueError(f"Invalid arg mode: {spec.mode}")
-
-    # Prepend state arrays at the beginning (inner_sig expects state args first)
-    input_vals = state_array_vals + input_vals
-
-    # Call the inner function
-    cres = context.compile_subroutine(builder, func_device, inner_sig, caching=False)
-    result = context.call_internal(builder, cres.fndesc, inner_sig, input_vals)
-
-    # Store result if needed
-    if ret_ptr is not None:
-        builder.store(result, ret_ptr)
-
-    return context.get_dummy_value()
-
-
-def _create_void_ptr_wrapper(
-    func, name: str, arg_specs: list[_ArgSpec], inner_sig: "Signature"
-):
-    """
-    Given a function and a list of _ArgSpec, create a wrapper function
-    that takes all void* arguments, bitcasts them to the
-    appropriate typed pointers, and calls the inner function with
-    the typed arguments. Each void* argument is handled according
-    to its _ArgSpec.
-
-    Args:
-        func: The function to wrap (will be compiled as device function)
-        name: Base name for the wrapper function
-        arg_specs: List of _ArgSpec describing each void* argument
-        inner_sig: Numba signature for the inner function call
-
-    Returns:
-        Tuple of (wrapper_func, wrapper_sig)
-    """
-    from numba.cuda import jit as cuda_jit
-
-    # Wrap function as device function
-    func_device = cuda_jit(device=True)(func)
-
-    # Generate argument names and signature
-    arg_names = [f"arg_{i}" for i in range(len(arg_specs))]
-    arg_str = ", ".join(arg_names)
-    void_sig = types.void(*(types.voidptr for _ in arg_specs))
-
-    # Create unique wrapper name using global counter
+def _make_wrapper_name(name: str) -> str:
+    """Build a unique, valid C identifier for a generated wrapper."""
     sanitized_name = sanitize_identifier(name)
     if not sanitized_name.isidentifier():
         raise ValueError(
             f"Function name '{name}' cannot be sanitized into a valid identifier"
         )
-
-    for arg_name in arg_names:
-        if not arg_name.isidentifier():
-            raise ValueError(
-                f"Invalid argument name '{arg_name}' - must be a valid identifier"
-            )
     with _wrapper_name_lock:
         unique_suffix = next(_wrapper_name_counter)
-    wrapper_name = f"wrapped_{sanitized_name}_{unique_suffix}"
-
-    # We need exec() here because Numba's @intrinsic decorator requires:
-    # 1. A function with a specific signature visible at parse time
-    # 2. The number of arguments must match the wrapper signature
-    # The actual codegen logic is in _codegen_void_ptr_wrapper - this just
-    # creates the minimal intrinsic shell that delegates to it.
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, {arg_str}):
-        def codegen(context, builder, impl_sig, args):
-            return codegen_helper(context, builder, args, arg_specs, func_device, inner_sig)
-        return void_sig, codegen
-
-    def {wrapper_name}({arg_str}):
-        return impl({arg_str})
-    """)
-
-    local_dict = {
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-        "arg_specs": arg_specs,
-        "func_device": func_device,
-        "inner_sig": inner_sig,
-        "codegen_helper": _codegen_void_ptr_wrapper,
-    }
-    exec(wrapper_src, {}, local_dict)
-
-    wrapper_func = local_dict[wrapper_name]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
+    return f"wrapped_{sanitized_name}_{unique_suffix}"
 
 
-def create_op_void_ptr_wrapper(op, sig: "Signature"):
-    """Creates a wrapper function for user-defined operators like unary or binary operators.
-
-    The wrapper takes N+1 arguments where N is the number of input arguments to `op`, the last
-    argument is a pointer to the result.
-    """
-    arg_specs = [_ArgSpec(t, _ArgMode.LOAD) for t in sig.args]
-    arg_specs.append(_ArgSpec(sig.return_type, _ArgMode.STORE))
-    return _create_void_ptr_wrapper(op, op.__name__, arg_specs, sig)
-
-
-def create_stateful_op_void_ptr_wrapper(
-    op, sig: "Signature", state_array_types, state_info
+def _build_wrapper(
+    wrapper_name: str, params: list[str], body_stmts, op_device, extra_namespace=None
 ):
-    """Creates a wrapper function for a stateful operator with void* arguments.
+    """exec a generated wrapper source and return the resulting function.
 
-    The wrapper takes N+2 void* arguments:
-    - states_ptr: pointer to packed array of data pointers for state arrays
-    - N input args: one for each regular input argument
-    - result: pointer where result is stored
-
-    Args:
-        op: The user's callable operator
-        sig: The signature of the operator (state_array1, state_array2, ..., regular_arg1, regular_arg2, ...) -> return_type
-        state_array_types: List/tuple of numba Array types for the state parameters
-        state_info: List/tuple of dicts with 'shape', 'itemsize', 'strides' for each state array
-
-    Returns:
-        Tuple of (wrapper_func, wrapper_sig)
+    ``params`` are the wrapper's parameter names and ``body_stmts`` is a list of
+    (unindented) statement lines for its body.  ``op_device`` is injected as
+    ``_op`` so the body can call the compiled user operator; ``extra_namespace``
+    injects any other globals the body references.
     """
-    num_states = len(state_array_types)
-
-    # Build arg_specs: states_ptr + regular inputs + result
-    # The packed state arrays spec goes first, then regular LOAD args, then STORE for result
-    # numba_type is a list of (array_type, info) tuples
-    type_info_pairs = list(zip(state_array_types, state_info))
-    arg_specs = [_ArgSpec(type_info_pairs, _ArgMode.STATE)]
-    for i in range(num_states, len(sig.args)):
-        arg_specs.append(_ArgSpec(sig.args[i], _ArgMode.LOAD))
-    arg_specs.append(_ArgSpec(sig.return_type, _ArgMode.STORE))
-
-    return _create_void_ptr_wrapper(op, op.__name__, arg_specs, sig)
+    indented_body = "\n".join(f"    {stmt}" for stmt in body_stmts)
+    src = f"def {wrapper_name}({', '.join(params)}):\n{indented_body}\n"
+    namespace: dict = {"_op": op_device}
+    if extra_namespace:
+        namespace.update(extra_namespace)
+    exec(src, namespace)
+    return namespace[wrapper_name]
 
 
-def create_advance_void_ptr_wrapper(advance_fn, state_ptr_type):
-    """Creates a wrapper function for iterator advance method.
+def _convert_to_declared_type(value, dtype):
+    """Convert ``value`` to ``dtype`` inside a generated wrapper.
 
-    The wrapper takes 2 void* arguments:
-    - state pointer
-    - offset pointer (points to uint64 value)
+    Storing through a typed pointer lets the backend choose the conversion, and
+    it selects an unsigned widening for a signed value and a signed conversion
+    for an unsigned one.  A wrapper therefore converts the operator's result
+    itself, so the value reaching the store already has the declared type.
+
+    Only callable from compiled device code; the lowering below defines it.
     """
-    arg_specs = [
-        _ArgSpec(state_ptr_type, _ArgMode.PTR),
-        _ArgSpec(types.uint64, _ArgMode.LOAD),  # uint64 is the offset type
-    ]
-    inner_sig = types.void(state_ptr_type, types.uint64)
-    return _create_void_ptr_wrapper(
-        advance_fn, advance_fn.__name__, arg_specs, inner_sig
+    raise NotImplementedError(
+        "_convert_to_declared_type is only callable from compiled device code"
     )
 
 
-def create_input_dereference_void_ptr_wrapper(deref_fn, state_ptr_type, value_type):
-    """Creates a wrapper function for input iterator dereference method.
+class _ConvertToDeclaredTypeTemplate(_mlir.AbstractTemplate):
+    key = _convert_to_declared_type
 
-    The wrapper takes 2 void* arguments:
-    - state pointer
-    - result pointer (function writes result here)
+    def generic(self, args, kws):
+        if kws or len(args) != 2:
+            return None
+        instance_type = getattr(args[1], "instance_type", None)
+        if instance_type is None:
+            return None
+        return _mlir.signature(instance_type, *args)
+
+
+def _lower_convert_to_declared_type(builder, target, args, kwargs):
+    from ._jit import _is_signed
+
+    value_var, _dtype_var = args
+    source_type = builder.get_numba_type(value_var.name)
+    target_type = builder.get_numba_type(target.name)
+    builder.store_var(
+        target,
+        _mlir.convert_number(
+            builder.load_var(value_var),
+            builder.get_mlir_type(target_type),
+            from_signed=_is_signed(source_type),
+            to_signed=_is_signed(target_type),
+        ),
+    )
+
+
+_mlir.typing_registry.register_global(
+    _convert_to_declared_type, types.Function(_ConvertToDeclaredTypeTemplate)
+)
+_mlir.lowering_registry.lower(_convert_to_declared_type, types.Any, types.NumberClass)(
+    _lower_convert_to_declared_type
+)
+
+
+def _is_gpu_struct_type(numba_type):
+    """True if ``numba_type`` is a registered gpu_struct type (see _jit)."""
+    return hasattr(numba_type, "_field_spec") and hasattr(numba_type, "python_type")
+
+
+def _result_store_body(loads: str, return_type):
+    """Build the wrapper body that computes the op result and stores it.
+
+    A struct result is rebuilt field by field through the declared struct's
+    constructor, which converts each field to its declared type.  The operator
+    may return that struct, a struct with a narrower field layout, or a tuple of
+    the field values (a scan operator feeding a zip output iterator returns a
+    tuple), and storing any of those directly would need a conversion the
+    pointer store does not perform.  Returns ``(body_stmts, extra_namespace)``.
     """
-    arg_specs = [
-        _ArgSpec(state_ptr_type, _ArgMode.PTR),
-        _ArgSpec(types.CPointer(value_type), _ArgMode.PTR),
-    ]
-    inner_sig = types.void(state_ptr_type, types.CPointer(value_type))
-    return _create_void_ptr_wrapper(deref_fn, deref_fn.__name__, arg_specs, inner_sig)
+    if _is_gpu_struct_type(return_type):
+        num_fields = len(return_type._field_spec)
+        fields = ", ".join(f"_r[{i}]" for i in range(num_fields))
+        stmts = [f"_r = _op({loads})", f"result[0] = _ResultStruct({fields})"]
+        return stmts, {"_ResultStruct": return_type.python_type}
+    if isinstance(return_type, types.Number):
+        return [f"result[0] = _convert(_op({loads}), _result_dtype)"], {
+            "_convert": _convert_to_declared_type,
+            "_result_dtype": as_numpy_dtype(return_type).type,
+        }
+    return [f"result[0] = _op({loads})"], {}
 
 
-def create_output_dereference_void_ptr_wrapper(deref_fn, state_ptr_type, value_type):
-    """Creates a wrapper function for output iterator dereference method.
+def create_op_void_ptr_wrapper(op, sig):
+    """Create a wrapper for a stateless user operator (unary, binary, ...).
 
-    The wrapper takes 2 void* arguments:
-    - state pointer
-    - value pointer (value to write)
+    The wrapper takes ``N + 1`` ``void*`` arguments where ``N`` is the number of
+    inputs to ``op``; the trailing argument is a pointer to the result storage.
+
+    Returns ``(wrapper_func, wrapper_sig)``.
     """
-    arg_specs = [
-        _ArgSpec(state_ptr_type, _ArgMode.PTR),
-        _ArgSpec(value_type, _ArgMode.LOAD),
-    ]
-    inner_sig = types.void(state_ptr_type, value_type)
-    return _create_void_ptr_wrapper(deref_fn, deref_fn.__name__, arg_specs, inner_sig)
+    op_device = cuda.jit(device=True)(op)
+
+    arg_types = list(sig.args)
+    return_type = sig.return_type
+
+    wrapper_name = _make_wrapper_name(op.__name__)
+    arg_names = [f"arg_{i}" for i in range(len(arg_types))]
+
+    # result[0] = _op(arg_0[0], arg_1[0], ...)
+    loads = ", ".join(f"{name}[0]" for name in arg_names)
+    body, extra_namespace = _result_store_body(loads, return_type)
+
+    wrapper_func = _build_wrapper(
+        wrapper_name, arg_names + ["result"], body, op_device, extra_namespace
+    )
+
+    wrapper_sig = types.void(
+        *(types.CPointer(t) for t in arg_types),
+        types.CPointer(return_type),
+    )
+    return wrapper_func, wrapper_sig
+
+
+def create_stateful_op_void_ptr_wrapper(op, sig, state_dtypes, state_shapes):
+    """Create a wrapper for a stateful operator.
+
+    A stateful operator captures one or more device arrays as state.  The
+    transformed ``op`` takes those state arrays first, followed by the regular
+    inputs (see ``_jit._compile_stateful_op``).  On the C++ side the state is a
+    single ``void*`` pointing to a packed array of the state data pointers.
+
+    The wrapper takes ``2 + K`` ``void*`` arguments:
+    - ``states``: pointer to the packed array of state data pointers,
+    - ``K`` regular inputs (one per non-state argument of ``op``),
+    - ``result``: pointer to the result storage.
+
+    Each packed pointer is a raw ``T*``.  The wrapper rebuilds it into a real
+    device ``Array`` with ``cuda.carray(ptr, shape)`` before handing it to the
+    operator, so the operator can use array operations on its captured state --
+    indexing (``state[i]``), ``len``, ``.shape`` and ``cuda.atomic.*`` all
+    require a shaped ``Array`` and do not work on a bare pointer.  ``state_shapes``
+    gives the (compile-time constant) shape of each state array; a distinct shape
+    produces a distinct wrapper, so the state shape must be part of the op cache
+    key (see ``_jit._JitOpState.get_cache_key``).
+
+    ``state_dtypes`` is the list of numba-cuda-mlir scalar types of the state
+    arrays.  They need not agree: the packed pointers are read through a
+    ``CPointer(voidptr)`` view (untyped addresses) and each one is given its
+    element type at the point of use, by passing an explicit ``dtype`` to
+    ``carray``.  This matters because a segmented reduction inherently mixes a
+    payload dtype with int64 offsets, so requiring a uniform dtype would rule
+    that pattern out.
+
+    Returns ``(wrapper_func, wrapper_sig)``.
+    """
+    num_states = len(state_dtypes)
+    if num_states == 0:
+        raise ValueError("stateful op wrapper requires at least one state array")
+    if len(state_shapes) != num_states:
+        raise ValueError("state_shapes and state_dtypes must have the same length")
+
+    # The shapes are interpolated into the generated source, so they must repr
+    # as plain literals; a numpy integer would render as ``np.int64(8)`` and
+    # reference a name the wrapper's namespace does not define.
+    state_shapes = [tuple(int(dim) for dim in shape) for shape in state_shapes]
+
+    op_device = cuda.jit(device=True)(op)
+
+    # sig.args == (state_0, ..., state_{num_states-1}, input_0, ..., input_{K-1})
+    input_types = list(sig.args)[num_states:]
+    return_type = sig.return_type
+
+    wrapper_name = _make_wrapper_name(op.__name__)
+    input_names = [f"arg_{i}" for i in range(len(input_types))]
+
+    # Rebuild the j-th packed pointer into a shaped device Array via carray so the
+    # operator can use array operations on it.  The pointer is an untyped address,
+    # so carray is told the element type explicitly; ``_state_dt{j}`` is injected
+    # into the wrapper namespace below.
+    state_args = ", ".join(
+        f"cuda.carray(states[{j}], {tuple(state_shapes[j])!r}, _state_dt{j})"
+        for j in range(num_states)
+    )
+    input_args = ", ".join(f"{name}[0]" for name in input_names)
+    call_args = ", ".join(a for a in (state_args, input_args) if a)
+    body, extra_namespace = _result_store_body(call_args, return_type)
+    # carray is called through ``cuda`` inside the generated device function,
+    # and each state's element type is passed to it explicitly.
+    extra_namespace = {
+        **extra_namespace,
+        "cuda": cuda,
+        **{f"_state_dt{j}": as_numpy_dtype(state_dtypes[j]) for j in range(num_states)},
+    }
+
+    wrapper_func = _build_wrapper(
+        wrapper_name,
+        ["states", *input_names, "result"],
+        body,
+        op_device,
+        extra_namespace,
+    )
+
+    wrapper_sig = types.void(
+        types.CPointer(types.voidptr),
+        *(types.CPointer(t) for t in input_types),
+        types.CPointer(return_type),
+    )
+    return wrapper_func, wrapper_sig

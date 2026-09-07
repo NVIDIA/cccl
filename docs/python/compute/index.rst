@@ -134,17 +134,25 @@ Features and Restrictions
 +++++++++++++++++++++++++
 
 User-defined operations are just-in-time (JIT) compiled into device code using
-`Numba CUDA <https://nvidia.github.io/numba-cuda/>`_, so they inherit many
-of the same features and restrictions as Numba CUDA functions:
+`numba-cuda-mlir <https://nvidia.github.io/numba-cuda-mlir/>`_, which follows
+Numba CUDA's programming model, so they inherit many of the same features and
+restrictions as Numba CUDA functions:
 
 * `Python features <https://nvidia.github.io/numba-cuda/user/cudapysupported.html>`_
   and `atomic operations <https://nvidia.github.io/numba-cuda/user/intrinsics.html>`_
   supported by Numba CUDA are also supported within user-defined operators.
-* Nested functions must be decorated with ``@numba.cuda.jit``.
+* Nested functions must be decorated with ``@numba_cuda_mlir.cuda.jit``.
 * Variables captured in closures or globals follow
   `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
   scalars and host arrays are captured by value (as constants),
   while device arrays are captured by reference.
+* A :func:`gpu_struct <cuda.compute.gpu_struct>` value must be indexed with a
+  compile-time constant, so ``value[0]`` is allowed but ``value[i]`` for a loop
+  variable ``i`` is not. Fields may have different types, so the type of
+  ``value[i]`` would not be known while compiling. Access the fields by name, or
+  index them individually.
+* A multi-dimensional device array captured as operator state must be
+  C-contiguous.
 
 
 .. _cuda.compute.iterators:

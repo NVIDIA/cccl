@@ -73,16 +73,18 @@ CUDA C++. The same technique later applies to user-provided reduction
 operators.
 
 We can compile such a Python function to PTX using
-`Numba-CUDA <https://nvidia.github.io/numba-cuda/>`_ as follows:
+`numba-cuda-mlir <https://nvidia.github.io/numba-cuda-mlir/>`_ as follows:
 
 .. code-block:: python
 
-    import numba.cuda
+    import numba_cuda_mlir
 
     def op(value):
         return 2 * value
 
-    ptx, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32))
+    ptx, _ = numba_cuda_mlir.cuda.compile(
+        op, sig=numba_cuda_mlir.types.int32(numba_cuda_mlir.types.int32)
+    )
 
 That'd give us the following PTX code:
 
@@ -145,12 +147,14 @@ Our Python code is now:
 .. code-block:: python
 
     import ctypes
-    import numba.cuda
+    import numba_cuda_mlir
 
     def op(value):
         return 2 * value
 
-    ptx, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32))
+    ptx, _ = numba_cuda_mlir.cuda.compile(
+        op, sig=numba_cuda_mlir.types.int32(numba_cuda_mlir.types.int32)
+    )
 
     bindings = ctypes.CDLL('./build/libkernel.so')
     bindings.launcher.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
@@ -270,7 +274,11 @@ change:
 
 .. code-block:: python
 
-    ltoir, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32), output="ltoir")
+    ltoir, _ = numba_cuda_mlir.cuda.compile(
+        op,
+        sig=numba_cuda_mlir.types.int32(numba_cuda_mlir.types.int32),
+        output="ltoir",
+    )
 
 On the C++ side, we make the same switch from PTX to LTO-IR:
 
@@ -343,18 +351,22 @@ matching storage type on the C++ side:
 .. code-block:: python
 
         import ctypes
-        import numba
-        import numba.cuda
+        import numba_cuda_mlir
         import numpy as np
 
-        def op(value):
-            return numba.int32(value[0].real + value[0].imag)
+        types = numba_cuda_mlir.types
 
-        value_type = numba.complex128
-        context = numba.cuda.descriptor.cuda_target.target_context
-        size = context.get_value_type(value_type).get_abi_size(context.target_data)
-        alignment = context.get_value_type(value_type).get_abi_alignment(context.target_data)
-        ltoir, _ = numba.cuda.compile(op, sig=numba.int32(numba.types.CPointer(value_type)), output='ltoir')
+        def op(value):
+            return types.int32(value[0].real + value[0].imag)
+
+        value_type = types.complex128
+        # The storage size and alignment the C++ side has to match are the
+        # NumPy dtype's.
+        size = np.dtype(np.complex128).itemsize
+        alignment = np.dtype(np.complex128).alignment
+        ltoir, _ = numba_cuda_mlir.cuda.compile(
+            op, sig=types.int32(types.CPointer(value_type)), output="ltoir"
+        )
 
         value = np.array([1 + 2j], dtype=np.complex128)
         type_erased_value_ptr = value.ctypes.data_as(ctypes.c_void_p)

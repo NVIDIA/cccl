@@ -605,7 +605,7 @@ cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
 def _make_hashable(value):
-    # duck-type check for numba.cuda.CUDADispatcher:
+    # duck-type check for a JIT backend's dispatcher:
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
     elif is_device_array(value):

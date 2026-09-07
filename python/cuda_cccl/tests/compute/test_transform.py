@@ -430,7 +430,7 @@ def test_binary_transform_struct_type_with_annotations():
 
 def test_unary_transform_stateful_counting():
     """Test unary_transform with state that counts even numbers."""
-    from numba import cuda as numba_cuda
+    from numba_cuda_mlir import cuda as numba_cuda
 
     h_in = np.arange(100, dtype=np.int32)
     d_in = DeviceArray.from_numpy(h_in)
@@ -534,6 +534,136 @@ def test_unary_transform_stateful_multiple_arrays():
     result = d_out.copy_to_host()
     expected = (h_in + 10) * 3
     np.testing.assert_array_equal(result, expected)
+
+
+def test_unary_transform_stateful_mixed_dtype_arrays():
+    """Stateful transform capturing state arrays of *differing* dtypes.
+
+    The packed state pointers are read as untyped addresses and given their
+    element type at the point of use, so the captured arrays need not agree on
+    dtype.  This matters for segmented reductions, which inherently mix a
+    payload dtype with int64 offsets.
+    """
+    num_items = 8
+    h_in = np.arange(num_items, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.float64))
+
+    # Three captured arrays, three different dtypes.
+    scale = DeviceArray.from_numpy(np.array([2.5], dtype=np.float64))
+    offset = DeviceArray.from_numpy(np.array([7], dtype=np.int64))
+    flag = DeviceArray.from_numpy(np.array([1], dtype=np.int8))
+
+    def transform_with_mixed_state(x):
+        return (x + offset[0]) * scale[0] * flag[0]
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=transform_with_mixed_state, num_items=num_items
+    )
+    result = d_out.copy_to_host()
+    expected = (h_in.astype(np.float64) + 7) * 2.5 * 1
+    np.testing.assert_allclose(result, expected)
+
+    # Distinct dtype combinations must not collide in the op cache: re-run with
+    # the same shapes but a different dtype mix and check the result changes.
+    scale = DeviceArray.from_numpy(np.array([2.5], dtype=np.float32))
+    offset = DeviceArray.from_numpy(np.array([7], dtype=np.int32))
+    flag = DeviceArray.from_numpy(np.array([2], dtype=np.int8))
+
+    def transform_with_other_mixed_state(x):
+        return (x + offset[0]) * scale[0] * flag[0]
+
+    d_out.copy_from_host(np.zeros_like(expected))
+    cuda.compute.unary_transform(
+        d_in=d_in,
+        d_out=d_out,
+        op=transform_with_other_mixed_state,
+        num_items=num_items,
+    )
+    result = d_out.copy_to_host()
+    expected = (h_in.astype(np.float64) + 7) * np.float32(2.5) * 2
+    np.testing.assert_allclose(result, expected, rtol=1e-6)
+
+
+def test_unary_transform_with_device_local_array():
+    """An operator may allocate a device-local array.
+
+    Local arrays are how the heavy transform benchmark emulates register
+    pressure; they require a numpy dtype rather than a numba type object.
+    """
+    cuda_lang = pytest.importorskip("numba_cuda_mlir.cuda")
+
+    size = 4
+
+    def heavy(data):
+        reg = cuda_lang.local.array(shape=size, dtype=np.uint32)
+        reg[0] = data
+        for i in range(1, size):
+            x = reg[i - 1]
+            reg[i] = x * x + 1
+        out = data - data
+        for i in range(size):
+            out += reg[i]
+        return out
+
+    h_in = np.arange(1, 6, dtype=np.uint32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.uint32))
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=heavy, num_items=h_in.size)
+
+    expected = []
+    for value in h_in:
+        reg = [int(value)]
+        for _ in range(1, size):
+            reg.append((reg[-1] * reg[-1] + 1) % 2**32)
+        expected.append(sum(reg) % 2**32)
+
+    np.testing.assert_array_equal(
+        d_out.copy_to_host(), np.array(expected, dtype=np.uint32)
+    )
+
+
+def test_unary_transform_stateful_state_must_be_c_contiguous():
+    """A Fortran-ordered multi-dimensional state array is rejected.
+
+    The generated wrapper rebuilds captured state with carray, which addresses
+    it in C order, so Fortran-ordered state would be read with the wrong
+    strides and silently produce wrong results.
+    """
+    state = DeviceArray.from_numpy(
+        np.asfortranarray(np.arange(6, dtype=np.int32).reshape(3, 2))
+    )
+
+    def add_state(x):
+        return x + state[0, 0]
+
+    h_in = np.arange(4, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    with pytest.raises(ValueError, match="C-contiguous"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=add_state, num_items=h_in.size
+        )
+
+
+def test_unary_transform_stateful_two_dimensional_state():
+    """A C-contiguous two-dimensional state array is indexed correctly."""
+    state = DeviceArray.from_numpy(np.arange(6, dtype=np.int32).reshape(3, 2))
+
+    def add_state(x):
+        return x + state[1, 1]
+
+    h_in = np.arange(4, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=add_state, num_items=h_in.size
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in + 3)
 
 
 def test_unary_transform_stateful_closure_factory():
@@ -737,3 +867,70 @@ def test_serialize_deserialize_binary_transform_round_trip():
     loaded(d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=OpKind.PLUS, num_items=h_in1.size)
 
     np.testing.assert_array_equal(d_out.copy_to_host(), h_in1 + h_in2)
+
+
+# (input dtype, output dtype, input values) whose store depends on knowing the
+# signedness of the operator's result, of the output, or of both.
+RESULT_SIGNEDNESS_CASES = [
+    (np.int32, np.int64, [-1, -2, 7, -2147483648]),
+    (np.uint32, np.float64, [3000000000, 7]),
+    (np.uint8, np.float64, [200, 7]),
+    (np.int32, np.float64, [-1, -5]),
+    (np.float64, np.uint32, [3000000000.0, 7.0]),
+    (np.float64, np.int32, [-3.0, 2.0]),
+    (np.uint32, np.uint64, [3000000000, 7]),
+]
+
+
+@pytest.mark.parametrize("in_dtype,out_dtype,values", RESULT_SIGNEDNESS_CASES)
+def test_unary_transform_result_conversion_preserves_value(in_dtype, out_dtype, values):
+    """An operator result stored into an output of another type keeps its value.
+
+    The result is converted to the output's type before the store, so widening a
+    negative value does not zero-extend it and an unsigned value does not become
+    negative on its way to a float.
+    """
+
+    def identity(x):
+        return x
+
+    h_in = np.array(values, dtype=in_dtype)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(out_dtype))
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=identity, num_items=h_in.size
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in.astype(out_dtype))
+
+
+def test_unary_transform_stateful_fortran_state_rejected_after_c_state():
+    """Fortran-ordered state is rejected even once a matching C-ordered one ran.
+
+    The compiled wrapper is cached under a key that describes the state's dtype
+    and shape but not its layout, so a Fortran-ordered array of an
+    already-compiled shape reaches the cached wrapper. That wrapper addresses
+    the data in C order, so accepting it would silently read the wrong element.
+    """
+
+    def make_op(state):
+        def add_state(x):
+            return x + state[0, 1]
+
+        return add_state
+
+    h_in = np.zeros(3, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    c_state = DeviceArray.empty((2, 3), np.dtype(np.int32), order="C")
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=make_op(c_state), num_items=h_in.size
+    )
+
+    f_state = DeviceArray.empty((2, 3), np.dtype(np.int32), order="F")
+    with pytest.raises(ValueError, match="C-contiguous"):
+        cuda.compute.unary_transform(
+            d_in=d_in, d_out=d_out, op=make_op(f_state), num_items=h_in.size
+        )
