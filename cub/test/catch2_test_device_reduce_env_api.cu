@@ -602,15 +602,15 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed determinism requ
 
 CUB_TEST("cub::DeviceReduce::ReduceByKey accepts run_to_run for floating-point addition", "[reduce][env]", CUB_SMALL)
 {
-  const auto keys_in   = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  const auto values_in = thrust::device_vector<double>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto keys_in         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in       = thrust::device_vector<double>{0, 7, 1, 6, 2, 5, 3, 4};
   auto unique_keys_out = thrust::device_vector<int>(5);
   auto aggregates_out  = thrust::device_vector<double>(5);
   auto num_runs_out    = thrust::device_vector<int>(1);
 
-  const auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  const auto error = cub::DeviceReduce::ReduceByKey(
+  auto error = cub::DeviceReduce::ReduceByKey(
     keys_in.begin(),
     unique_keys_out.begin(),
     values_in.begin(),
@@ -624,8 +624,8 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts run_to_run for floating-point a
     std::cerr << "cub::DeviceReduce::ReduceByKey failed with status: " << error << '\n';
   }
 
-  const thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  const thrust::device_vector<double> expected_aggregates{0, 8, 6, 10, 4};
+  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  thrust::device_vector<double> expected_aggregates{0, 8, 6, 10, 4};
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_runs_out[0] == 5);
@@ -639,15 +639,15 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed for floating-poi
          "[reduce][env]",
          CUB_SMALL)
 {
-  const auto keys_in   = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  const auto values_in = thrust::device_vector<double>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto keys_in         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in       = thrust::device_vector<double>{0, 7, 1, 6, 2, 5, 3, 4};
   auto unique_keys_out = thrust::device_vector<int>(5);
   auto aggregates_out  = thrust::device_vector<double>(5);
   auto num_runs_out    = thrust::device_vector<int>(1);
 
-  const auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+  auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  const auto error = cub::DeviceReduce::ReduceByKey(
+  auto error = cub::DeviceReduce::ReduceByKey(
     keys_in.begin(),
     unique_keys_out.begin(),
     values_in.begin(),
@@ -661,8 +661,8 @@ CUB_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed for floating-poi
     std::cerr << "cub::DeviceReduce::ReduceByKey failed with status: " << error << '\n';
   }
 
-  const thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
-  const thrust::device_vector<double> expected_aggregates{0, 7, 6, 30, 4};
+  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  thrust::device_vector<double> expected_aggregates{0, 7, 6, 30, 4};
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_runs_out[0] == 5);

@@ -386,9 +386,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Invoke(ScanInitKernelT init_kernel, ReduceByKeyKernelT reduce_by_key_kernel)
   {
-    // Preserve the deprecated dispatcher's original reduction ordering.
     using vsmem_helper_t = detail::reduce_by_key::vsmem_helper_t<
-      /* StableReductionOrder */ false,
+      false,
       typename ActivePolicyT::ReduceByKeyPolicyT,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
@@ -569,7 +568,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
         OffsetT,
         AccumT,
         streaming_context_t,
-        /* StableReductionOrder */ false>); // Match the legacy virtual-memory agent's ordering.
+        false>);
   }
 
   /**

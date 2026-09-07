@@ -154,9 +154,9 @@ inline constexpr bool is_non_deterministic_v =
 //! ====================================
 //!
 //! ``cub::DeviceReduce`` supports all three :ref:`determinism guarantees <cccl-determinism>`; the
-//! default is ``run_to_run``. ``ReduceByKey`` has separate type/operator constraints, documented with its
-//! :cpp:func:`environment overload <cub::DeviceReduce::ReduceByKey>`. The implementation details below apply to the
-//! other reductions; ``ReduceByKey`` does not use RFA or atomic accumulation.
+//! default is ``run_to_run``. ``ReduceByKey`` has separate type/operator constraints, documented on its
+//! environment overload below. The implementation details below apply to the other reductions;
+//! ``ReduceByKey`` does not use RFA or atomic accumulation.
 //!
 //! - ``run_to_run`` (the default) is reproducible because, for a given GPU, every launch with the same input,
 //!   build, and launch configuration selects the *same* tuning policy and therefore performs the *same* fixed
