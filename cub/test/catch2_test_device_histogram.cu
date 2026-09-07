@@ -521,20 +521,21 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
   }
 }
 
-using types =
-  c2h::type_list<std::int8_t,
-                 std::uint8_t,
-                 std::int16_t,
-                 std::uint16_t,
-                 std::int32_t,
-                 std::uint32_t,
-                 std::int64_t,
-                 std::uint64_t,
+using types = c2h::type_list<
+  std::int8_t,
+  char,
+  std::uint8_t,
+  std::int16_t,
+  std::uint16_t,
+  std::int32_t,
+  std::uint32_t,
+  std::int64_t,
+  std::uint64_t,
 #if TEST_HALF_T()
-                 half_t,
+  half_t,
 #endif // TEST_HALF_T()
-                 float,
-                 double>;
+  float,
+  double>;
 
 CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMALL, types)
 {
@@ -852,4 +853,53 @@ CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogra
     upper_level,
     static_cast<int>(d_samples.size()));
   CHECK(h_histogram_ref == d_histogram);
+}
+
+// Regression tests for NVIDIA/cccl#10975: the even-bin arithmetic computed sample - min_level and
+// max_level - min_level in the narrow common type before widening, so level ranges wider than the
+// common type wrapped around (silently misbinning) or overflowed signed types (spuriously rejected).
+CUB_TEST("DeviceHistogram::HistogramEven level range wider than int16", "[histogram_even][device]", CUB_SMALL)
+{
+  // Full int16 range with 100 equal bins: expected bins are 0, 50, and 99.
+  constexpr int num_bins        = 100;
+  constexpr int16_t h_samples[] = {cs::numeric_limits<int16_t>::min(), 0, cs::numeric_limits<int16_t>::max() - 1};
+  auto d_samples                = c2h::device_vector<int16_t>(cs::begin(h_samples), cs::end(h_samples));
+  auto d_histogram              = c2h::device_vector<int>(num_bins);
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    cs::numeric_limits<int16_t>::min(),
+    cs::numeric_limits<int16_t>::max(),
+    static_cast<int>(d_samples.size()));
+  c2h::host_vector<int> h_histogram = d_histogram;
+  CHECK(h_histogram[0] == 1);
+  CHECK(h_histogram[num_bins / 2] == 1);
+  CHECK(h_histogram[num_bins - 1] == 1);
+}
+
+CUB_TEST("DeviceHistogram::HistogramEven wide int32 level range is not spuriously rejected",
+         "[histogram_even][device]",
+         CUB_SMALL)
+{
+  // A [-1.5e9, 1.5e9) range with 100 bins is well within the documented uint64 overflow bound,
+  // but used to wrap the level subtraction in int32 and return cudaErrorInvalidValue.
+  constexpr int num_bins    = 100;
+  constexpr int lower_level = -1500000000;
+  constexpr int upper_level = 1500000000;
+  // 1400000000 lies 29/30 of the way through the range, so it lands in bin 96.
+  constexpr int h_samples[] = {lower_level, 0, 1400000000};
+  auto d_samples            = c2h::device_vector<int>(cs::begin(h_samples), cs::end(h_samples));
+  auto d_histogram          = c2h::device_vector<int>(num_bins);
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    lower_level,
+    upper_level,
+    static_cast<int>(d_samples.size()));
+  c2h::host_vector<int> h_histogram = d_histogram;
+  CHECK(h_histogram[0] == 1);
+  CHECK(h_histogram[num_bins / 2] == 1);
+  CHECK(h_histogram[96] == 1);
 }

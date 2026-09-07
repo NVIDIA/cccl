@@ -42,6 +42,7 @@
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
@@ -146,8 +147,14 @@ struct DeviceHistogramKernelSource
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
       using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
-      return static_cast<IntArithmeticT>(upper_level[channel] - lower_level[channel])
-           > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+      // The unary plus promotes plain char to int, which cuda::std::cmp_greater requires
+      if (::cuda::std::cmp_greater(num_bins, +::cuda::std::numeric_limits<CommonT>::max()))
+      {
+        return true;
+      }
+      const IntArithmeticT range =
+        static_cast<IntArithmeticT>(upper_level[channel]) - static_cast<IntArithmeticT>(lower_level[channel]);
+      return range > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
     }
     else
     {
@@ -1029,7 +1036,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
       num_privatized_levels[channel] = 257;
 
       int num_levels = num_output_levels[channel];
-      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
+      if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
         {
@@ -1095,7 +1102,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
       int num_levels = num_output_levels[channel];
-      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
+      if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
         {

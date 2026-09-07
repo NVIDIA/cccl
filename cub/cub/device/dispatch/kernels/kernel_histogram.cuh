@@ -123,8 +123,8 @@ struct Transforms
       // rounding errors (see NVIDIA/cub#489).
       struct FractionT
       {
-        CommonT bins;
-        CommonT range;
+        IntArithmeticT bins;
+        IntArithmeticT range;
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
@@ -149,8 +149,8 @@ struct Transforms
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
       ScaleT result;
-      result.fraction.bins  = static_cast<T>(num_levels - 1);
-      result.fraction.range = static_cast<T>(max_level - min_level);
+      result.fraction.bins  = static_cast<IntArithmeticT>(num_levels - 1);
+      result.fraction.range = static_cast<IntArithmeticT>(max_level) - static_cast<IntArithmeticT>(min_level);
       return result;
     }
 
@@ -227,7 +227,8 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */) const
     {
-      return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
+      return static_cast<int>(((sample - min_level) * static_cast<CommonT>(scale.fraction.bins))
+                              / static_cast<CommonT>(scale.fraction.range));
     }
 
     //! @brief Bin computation for integral types of up to 64-bit types
@@ -235,8 +236,8 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
       return static_cast<int>(
-        (static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins))
-        / static_cast<IntArithmeticT>(scale.fraction.range));
+        ((static_cast<IntArithmeticT>(sample) - static_cast<IntArithmeticT>(min_level)) * scale.fraction.bins)
+        / scale.fraction.range);
     }
 
     template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
