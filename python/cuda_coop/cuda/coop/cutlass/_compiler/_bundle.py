@@ -23,7 +23,12 @@ from cutlass.base_dsl.common import DSLRuntimeError
 
 from cuda.coop._headers import HeaderResolutionError, resolve_include_paths
 
-from . import _cache, _clang, _nvrtc
+# NVRTC imports PCH before cache so their fork-reset hooks retain the original
+# registration order.
+# isort: off
+from . import _nvrtc, _cache, _clang
+
+# isort: on
 from ._bundle_contract import (
     RESOLUTION_ROUTE_CLANG,
     RESOLUTION_ROUTE_DISK,
@@ -251,6 +256,7 @@ def _compile_bundle_source(
             else _unknown_compiler_process_token()
         )
     else:
+        nvrtc_version_tuple = None
         nvrtc_version = None
         clangxx, clang_version, cache_compiler_version = (
             _clang_support.resolve_clang_compiler(which)
@@ -349,6 +355,11 @@ def _compile_bundle_source(
                 include_dirs=include_dirs,
                 prepared_probes=prepared_probes,
                 nvrtc_version=nvrtc_version,
+                nvrtc_version_tuple=nvrtc_version_tuple,
+                bundle_arch=bundle_arch,
+                bundle_sm_arch=bundle_sm_arch,
+                header_identity=include_identity.digest,
+                phase_timings_ns=phase_timings_ns,
                 scope=scope,
             )
             route = RESOLUTION_ROUTE_NVRTC

@@ -73,9 +73,11 @@ CUTLASS traces qualified calls and registers immutable provider requests in a
 per-trace session. Finalization renders all requested providers in canonical
 order, resolves an exact cache hit when possible, otherwise compiles one bundle,
 materializes deferred scratch storage, and attaches the resulting linkable
-artifact to the kernel. Renderer kinds, source bytes, generated symbols, bundle
-identities, and cache schemas must not change merely because Python modules
-move.
+artifact to the kernel.
+
+A JIT path must preload NVRTC before querying its version or constructing PCH
+state. Renderer kinds, source bytes, generated symbols, bundle identities, and
+cache schemas must not change merely because Python modules move.
 
 ### Numba-CUDA-MLIR
 
