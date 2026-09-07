@@ -82,6 +82,7 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -600,6 +601,12 @@ public:
    *
    * Shared by the VMM and stream-ordered allocation paths, so both agree on
    * which memory this place refers to.
+   *
+   * The localized location stores both ordinals in `unsigned char` fields, so
+   * this narrows the view's `int` ordinals (well-defined, modulo 256). Callers
+   * must reject a view that `!__ordinals_fit_localized()` BEFORE using a
+   * localized location: after narrowing, domain 256 is indistinguishable from
+   * domain 0 and the driver would silently place memory in the wrong domain.
    */
   [[nodiscard]] _CCCL_HOST_API CUmemLocation __pool_location() const noexcept
   {
@@ -619,6 +626,20 @@ public:
   }
 
   /**
+   * @brief Whether both ordinals are representable in the localized
+   * `CUmemLocation` fields (non-negative and at most `UCHAR_MAX`).
+   *
+   * This is a representability check only, not an existence check: whether
+   * the domain actually exists on the device is left to the driver, per the
+   * addressing model at the top of this file.
+   */
+  [[nodiscard]] _CCCL_HOST_API bool __ordinals_fit_localized() const noexcept
+  {
+    constexpr int max_id = static_cast<int>(::cuda::std::numeric_limits<unsigned char>::max());
+    return view_.devid >= 0 && view_.devid <= max_id && view_.domain_id >= 0 && view_.domain_id <= max_id;
+  }
+
+  /**
    * @brief Create physical memory localized to this domain (VMM API).
    *
    * Uses `CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN` so the backing store is
@@ -630,6 +651,12 @@ public:
     CUmemAllocationProp prop = {};
     prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
     prop.location            = __pool_location();
+    if (prop.location.type == CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN && !__ordinals_fit_localized())
+    {
+      // The ordinals wrapped when narrowed; the driver cannot tell. Keep this
+      // method's CUresult contract rather than throwing.
+      return CUDA_ERROR_INVALID_VALUE;
+    }
     return cuMemCreate(handle, size, &prop, 0);
   }
 
@@ -661,6 +688,16 @@ public:
     // does not depend on the current device. This also keeps allocate()
     // symmetric with deallocate(), which never switched.
     const CUmemLocation location = __pool_location();
+    if (location.type == CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN)
+    {
+      // Same wrap guard as mem_create(); this path reports through exceptions.
+      EXPECT(__ordinals_fit_localized(),
+             "Locality domain ordinals (dev=",
+             view_.devid,
+             ", id=",
+             view_.domain_id,
+             ") are not representable in a localized memory location");
+    }
     const CUmemoryPool pool =
       (location.type == CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN)
         ? ::cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED)
