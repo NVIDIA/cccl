@@ -330,7 +330,7 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   const int privatized_smem_bins =
     num_output_levels_val - 1 > cub::detail::histogram::max_privatized_smem_bins ? 0 : 256;
 
-  const bool is_byte_sample = d_samples.value_type.size == 1;
+  const bool is_byte_sample = d_samples.value_type.size == 1 && d_samples.value_type.type != CCCL_INT8;
 
   std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
   std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
@@ -626,8 +626,9 @@ CUresult cccl_device_histogram_even(
   int64_t row_stride_samples,
   CUstream stream)
 {
-  auto histogram_impl = d_samples.value_type.size == 1 ? cccl_device_histogram_even_impl<::cuda::std::true_type>
-                                                       : cccl_device_histogram_even_impl<::cuda::std::false_type>;
+  const bool is_byte_sample = d_samples.value_type.size == 1 && d_samples.value_type.type != CCCL_INT8;
+  auto histogram_impl       = is_byte_sample ? cccl_device_histogram_even_impl<::cuda::std::true_type>
+                                             : cccl_device_histogram_even_impl<::cuda::std::false_type>;
 
   return histogram_impl(
     build,
