@@ -75,12 +75,11 @@ struct localized_stats
   size_t nblocks     = 0; //!< number of placement blocks
   size_t nallocs     = 0; //!< physical allocations after merging same-owner runs
 
-  //! Placement-evidence counters. Units depend on how owners were computed:
-  //! sampled tier -- probes drawn / probes agreeing with the chosen owner;
-  //! analytic tiers (exact runs, census majority) -- total bytes / bytes
-  //! placed on their true owner (closed form, so accuracy() is exact).
-  size_t total_samples    = 0;
-  size_t matching_samples = 0;
+  //! Fraction of bytes local to their owner once ownership is quantized to
+  //! placement blocks. Closed-form (exact) when the owners come from the
+  //! analytic tiers of a structured partition; a sampled estimate when they
+  //! come from the majority vote over probes.
+  double accuracy = 1.0;
 
   //! Bytes backed by each place, keyed by data_place::to_string()
   ::std::unordered_map<::std::string, size_t> bytes_per_place;
@@ -88,14 +87,6 @@ struct localized_stats
   //! Bytes owned by each grid position, keyed by the position's linear index
   //! (dim4::get_index of the pos4; friendlier than strings across FFI)
   ::std::unordered_map<size_t, size_t> bytes_per_grid_index;
-
-  //! Fraction of bytes local to their owner once ownership is quantized to
-  //! placement blocks: exact on the analytic tiers, a sampled estimate on
-  //! the fallback tier (see total_samples).
-  double accuracy() const
-  {
-    return total_samples == 0 ? 1.0 : static_cast<double>(matching_samples) / static_cast<double>(total_samples);
-  }
 };
 
 /**
@@ -136,7 +127,7 @@ inline size_t default_placement_block_size()
  * @param elemsize Size of one element in bytes (must be at least 1)
  * @param total_elems Total number of elements (probes are clipped to it)
  * @param probes Number of samples per block
- * @param stats Accumulates total/matching sample counts
+ * @param stats Receives the sampled accuracy (fraction of probes agreeing with the chosen owner)
  */
 template <typename OwnerFn>
 ::std::vector<pos4> compute_block_owners(
@@ -163,6 +154,9 @@ template <typename OwnerFn>
 
   ::std::vector<pos4> owners;
   owners.reserve(nblocks);
+
+  size_t total_samples    = 0;
+  size_t matching_samples = 0;
 
   ::std::vector<pos4> sampled_pos(probes);
   for (size_t i = 0; i < nblocks; i++)
@@ -194,11 +188,14 @@ template <typename OwnerFn>
       }
     }
 
-    stats.total_samples += probes;
-    stats.matching_samples += max_cnt;
+    total_samples += probes;
+    matching_samples += max_cnt;
 
     owners.push_back(max_pos);
   }
+
+  stats.accuracy =
+    total_samples == 0 ? 1.0 : static_cast<double>(matching_samples) / static_cast<double>(total_samples);
 
   return owners;
 }
@@ -592,14 +589,7 @@ private:
               pct);
     }
 
-    if (stats.total_samples > 0)
-    {
-      fprintf(stderr,
-              "\nPlacement accuracy: %.1f%% (%zu/%zu samples matched chosen position)\n",
-              100.0 * stats.accuracy(),
-              stats.matching_samples,
-              stats.total_samples);
-    }
+    fprintf(stderr, "\nPlacement accuracy: %.1f%% of bytes local to their owner\n", 100.0 * stats.accuracy);
 
     fprintf(stderr, "\nAllocation map (%zu allocations):\n", meta.size());
     fprintf(stderr, "  %-6s  %-12s  %-12s  %-10s  %s\n", "Index", "Offset", "Size", "Blocks", "Place");

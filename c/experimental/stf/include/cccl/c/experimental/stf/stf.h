@@ -477,8 +477,6 @@ typedef struct stf_cute_partition_opaque_t* stf_cute_partition_handle;
 
 //! \brief Statistics describing how a localized allocation (or a dry-run
 //! evaluation of one) distributes a tensor over data places.
-//! The estimated fraction of block-local bytes ("accuracy") is
-//! matching_samples / total_samples.
 typedef struct stf_placement_stats
 {
   uint64_t total_bytes; //!< requested payload size in bytes
@@ -486,8 +484,10 @@ typedef struct stf_placement_stats
   uint64_t block_size; //!< placement granularity in bytes
   uint64_t nblocks; //!< number of placement blocks
   uint64_t nallocs; //!< physical allocations after merging same-owner runs
-  uint64_t total_samples; //!< probes drawn by the block-owner sampler
-  uint64_t matching_samples; //!< probes agreeing with the chosen block owner
+  //! Fraction of bytes local to their owner once ownership is quantized to
+  //! placement blocks: exact for a structured partition resolved analytically,
+  //! a sampled estimate (\c probes per block) for an opaque mapper
+  double accuracy;
 } stf_placement_stats;
 
 //! \brief Per-dimension distribution policy (see stf_partition_dim_spec).

@@ -24,7 +24,7 @@
  *                     to them crosses the interconnect, every iteration
  *
  * evaluate_localized_placement() scores a candidate mapping without
- * allocating a byte: `accuracy()` is the fraction of bytes local to their
+ * allocating a byte: `accuracy` is the fraction of bytes local to their
  * owner (byte-exact for the structured partitions used here), and `nallocs`
  * the physical mapping fragmentation. Four candidates score one 256 MiB
  * row-major matrix (dim4 dimension 0 is the contiguous axis):
@@ -59,7 +59,7 @@ constexpr size_t PAGE = 2 * MiB;
 
 localized_stats report(const char* name, const exec_place& grid, const localized_stats& s)
 {
-  printf("  %-36s accuracy=%5.3f  nallocs=%5zu  MiB/position=[", name, s.accuracy(), s.nallocs);
+  printf("  %-36s accuracy=%5.3f  nallocs=%5zu  MiB/position=[", name, s.accuracy, s.nallocs);
   const size_t grid_size = grid.get_dims().size();
   for (size_t i = 0; i < grid_size; i++)
   {
@@ -125,14 +125,14 @@ int main()
   // (EXPECT throws with the offending values in release builds too).
   const size_t total = ROWS * COLS * sizeof(float);
   // Mixed pages misplace half the bytes, whatever owner each page gets:
-  EXPECT(::std::fabs(s1.accuracy() - 0.5) < 1e-12);
+  EXPECT(::std::fabs(s1.accuracy - 0.5) < 1e-12);
   // Two contiguous page-aligned runs, one per owner:
-  EXPECT(s2.accuracy() == 1.0);
+  EXPECT(s2.accuracy == 1.0);
   EXPECT(s2.nallocs == 2);
   // 2-D distribution over a flat layout still mixes every page:
-  EXPECT(::std::fabs(s3.accuracy() - 0.5) < 1e-12);
+  EXPECT(::std::fabs(s3.accuracy - 0.5) < 1e-12);
   // Whole-tile runs are page-exact under any distribution of the tiles:
-  EXPECT(s4.accuracy() == 1.0);
+  EXPECT(s4.accuracy == 1.0);
   // Every candidate scored the same matrix:
   EXPECT(s1.total_bytes == total);
   EXPECT(s2.total_bytes == total);

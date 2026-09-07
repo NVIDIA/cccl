@@ -213,8 +213,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         uint64_t block_size
         uint64_t nblocks
         uint64_t nallocs
-        uint64_t total_samples
-        uint64_t matching_samples
+        double accuracy
 
     ctypedef struct stf_partition_dim_spec:
         int policy
@@ -2286,24 +2285,18 @@ class placement_stats:
     evaluation of one) distributes a tensor over data places."""
 
     def __init__(self, total_bytes, vm_bytes, block_size, nblocks, nallocs,
-                 total_samples, matching_samples, bytes_per_grid_index):
+                 accuracy, bytes_per_grid_index):
         self.total_bytes = total_bytes
         self.vm_bytes = vm_bytes
         self.block_size = block_size
         self.nblocks = nblocks
         self.nallocs = nallocs
-        self.total_samples = total_samples
-        self.matching_samples = matching_samples
+        #: fraction of bytes local to their owner once ownership is quantized
+        #: to placement blocks (exact for a cute_partition, a sampled estimate
+        #: for a callable mapper)
+        self.accuracy = accuracy
         #: bytes owned by each grid position (list indexed by linear grid index)
         self.bytes_per_grid_index = bytes_per_grid_index
-
-    @property
-    def accuracy(self):
-        """Estimated fraction of bytes local to their owner once ownership is
-        quantized to blocks."""
-        if self.total_samples == 0:
-            return 1.0
-        return self.matching_samples / self.total_samples
 
     def __repr__(self):
         return (f"placement_stats(total_bytes={self.total_bytes}, nblocks={self.nblocks}, "
@@ -2387,8 +2380,7 @@ def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, b
             c_stats.block_size,
             c_stats.nblocks,
             c_stats.nallocs,
-            c_stats.total_samples,
-            c_stats.matching_samples,
+            c_stats.accuracy,
             [per_pos[i] for i in range(grid_size)])
     finally:
         free(per_pos)

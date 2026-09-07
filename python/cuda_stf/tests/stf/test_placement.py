@@ -313,7 +313,6 @@ def test_placement_evaluate_misaligned_majority():
     # only the bounds are asserted — and the upper bound must be inclusive: a
     # mapping under which every probe of the straddled block lands on the
     # majority side legitimately reports accuracy == 1.0.
-    assert s.total_samples == 200
     assert 0.75 <= s.accuracy <= 1.0
 
 

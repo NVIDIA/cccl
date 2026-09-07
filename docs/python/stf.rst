@@ -380,7 +380,7 @@ with a ``cute_partition``, which carries its own extents.
 
 ``accuracy`` is byte-exact for a ``cute_partition``: structured partitions
 resolve through the same analytic (or census) tiers the allocation path uses,
-whose statistics count bytes. A Python or native *callable* mapper is opaque,
+which count bytes in closed form. A Python or native *callable* mapper is opaque,
 so its blocks are scored by a sampled majority vote instead (``probes``
 samples per block) and ``accuracy`` is then an estimate whose resolution is
 bounded by the probe count -- as is a structured layout too dense for the

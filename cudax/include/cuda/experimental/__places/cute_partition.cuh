@@ -1704,8 +1704,7 @@ inline auto make_partition_placement_provider(
     // layout algebra, no per-block work at all.
     if (auto runs = partition.try_block_runs(block_size_bytes, elemsize, budget))
     {
-      stats.total_samples    = total_size * elemsize;
-      stats.matching_samples = stats.total_samples; // exact: zero misplacement
+      stats.accuracy = 1.0; // exact: zero misplacement
       return mv(*runs);
     }
     // Census tier: straddling blocks resolved by exact byte majority with a
@@ -1713,8 +1712,8 @@ inline auto make_partition_placement_provider(
     size_t misplaced = 0;
     if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
     {
-      stats.total_samples    = total_size * elemsize;
-      stats.matching_samples = stats.total_samples - misplaced;
+      const size_t total_bytes = total_size * elemsize;
+      stats.accuracy = total_bytes == 0 ? 1.0 : 1.0 - static_cast<double>(misplaced) / static_cast<double>(total_bytes);
       return owners_to_block_runs(mv(*owners));
     }
     // Sampled tier: opaque-density fallback (element-pitch interleavings).
@@ -1733,10 +1732,9 @@ inline auto make_partition_placement_provider(
  * See evaluate_localized_placement(); the tensor extents are the partition's
  * true extents. Placement follows the same tiered decision procedure as the
  * allocation path (make_partition_placement_provider): the analytic and
- * census tiers produce byte-exact statistics (`total_samples` and
- * `matching_samples` then hold byte counts), and only layouts denser than
- * the placement blocks fall back to the sampled majority vote, where the
- * counters hold probe counts. `probes` only affects that fallback.
+ * census tiers yield an exact `accuracy`, and only layouts denser than the
+ * placement blocks fall back to the sampled majority vote, where `accuracy`
+ * is an estimate. `probes` only affects that fallback.
  */
 template <typename Partition>
 [[nodiscard]] localized_stats evaluate_localized_placement(

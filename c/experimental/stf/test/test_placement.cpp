@@ -55,9 +55,9 @@ C2H_TEST("placement evaluation with a native mapper", "[places][placement]")
   REQUIRE(stats.block_size == 2 * MiB);
   REQUIRE(stats.nblocks == 2);
   // Block-aligned blocked split over two positions: one allocation each and
-  // every probe agrees with the block majority
+  // every byte local to its owner
   REQUIRE(stats.nallocs == 2);
-  REQUIRE(stats.matching_samples == stats.total_samples);
+  REQUIRE(stats.accuracy == 1.0);
   REQUIRE(bytes_per_pos[0] == 2 * MiB);
   REQUIRE(bytes_per_pos[1] == 2 * MiB);
 
@@ -156,14 +156,11 @@ C2H_TEST("partition evaluation matches the equivalent native mapper", "[places][
 
   REQUIRE(s_mapper.nblocks == s_part.nblocks);
   REQUIRE(s_mapper.nallocs == s_part.nallocs);
-  // The two paths agree on placement but count in different units: the native
-  // mapper is sampled (probe counts), while the structured partition resolves
-  // through the analytic tier (byte counts). Compare the unit-independent
-  // full-match property per path, and the byte-denominated outputs directly.
-  REQUIRE(s_mapper.total_samples > 0);
-  REQUIRE(s_mapper.matching_samples == s_mapper.total_samples);
-  REQUIRE(s_part.total_samples > 0);
-  REQUIRE(s_part.matching_samples == s_part.total_samples);
+  // The native mapper is sampled while the structured partition resolves
+  // through the analytic tier; on a block-aligned split both report full
+  // locality and the same byte distribution.
+  REQUIRE(s_mapper.accuracy == 1.0);
+  REQUIRE(s_part.accuracy == 1.0);
   REQUIRE(b_mapper[0] == b_part[0]);
   REQUIRE(b_mapper[1] == b_part[1]);
 

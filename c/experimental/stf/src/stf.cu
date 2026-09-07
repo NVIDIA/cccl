@@ -227,13 +227,12 @@ namespace
 int stf_fill_placement_outputs(
   const localized_stats& stats, const exec_place& grid, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
 {
-  out_stats->total_bytes      = stats.total_bytes;
-  out_stats->vm_bytes         = stats.vm_bytes;
-  out_stats->block_size       = stats.block_size;
-  out_stats->nblocks          = stats.nblocks;
-  out_stats->nallocs          = stats.nallocs;
-  out_stats->total_samples    = stats.total_samples;
-  out_stats->matching_samples = stats.matching_samples;
+  out_stats->total_bytes = stats.total_bytes;
+  out_stats->vm_bytes    = stats.vm_bytes;
+  out_stats->block_size  = stats.block_size;
+  out_stats->nblocks     = stats.nblocks;
+  out_stats->nallocs     = stats.nallocs;
+  out_stats->accuracy    = stats.accuracy;
 
   if (bytes_per_grid_index != nullptr)
   {
