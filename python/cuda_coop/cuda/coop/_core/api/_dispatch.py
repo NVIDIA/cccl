@@ -39,12 +39,21 @@ _GROUP_OPERATIONS = (
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
+    "radix_rank",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "run_length_decode",
     "scan",
     "shuffle",
     "store",
     "sum",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 )
 
 _BLOCK_AND_WARP_GROUPS = ("block", "warp", "threads_within_warp")
@@ -70,8 +79,17 @@ _PORTABLE_OPERATION_GROUPS = {
     "adjacent_difference": _BLOCK_ONLY,
     "discontinuity": _BLOCK_ONLY,
     "shuffle": _BLOCK_ONLY,
+    "merge_sort_keys": _BLOCK_AND_WARP_GROUPS,
+    "merge_sort_pairs": _BLOCK_AND_WARP_GROUPS,
+    "radix_sort_keys": _BLOCK_ONLY,
+    "radix_sort_pairs": _BLOCK_ONLY,
+    "radix_rank": _BLOCK_ONLY,
     "histogram": _BLOCK_ONLY,
     "run_length_decode": _BLOCK_ONLY,
+    "topk_max_keys": _BLOCK_ONLY,
+    "topk_max_pairs": _BLOCK_ONLY,
+    "topk_min_keys": _BLOCK_ONLY,
+    "topk_min_pairs": _BLOCK_ONLY,
 }
 _LOAD_STORE_ALGORITHMS = frozenset(
     {

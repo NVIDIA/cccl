@@ -34,6 +34,11 @@ from numba_cuda_mlir.numba_cuda.typing.typeof import typeof as _numba_typeof
 from numba_cuda_mlir.numbair_transforms import ir
 
 from cuda.coop._core import api as _portable_api
+from cuda.coop._core.block import (
+    block_radix_rank_bins_per_thread,
+    normalize_radix_order,
+    resolve_static_radix_end_bit,
+)
 
 from .. import _lowering  # noqa: F401 - registers factories
 from .._types import (
@@ -177,6 +182,7 @@ class _RewriteMatch:
     factory_kwargs: dict[str, object]
     factory_kw_value_vars: tuple[ir.Var, ...]
     loc: ir.Loc
+    runtime_arg_constant_replacements: tuple[tuple[int, object], ...] = ()
     physical_warp_tile_origin: bool = False
     preserve_root_store_payload: bool = False
     root_store_scalar: bool = False

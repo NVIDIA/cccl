@@ -17,6 +17,7 @@ from ._group_discontinuity import _DiscontinuityPlanning
 from ._group_exchange import _ExchangePlanning
 from ._group_histogram import _HistogramPlanning
 from ._group_load_store import _LoadStorePlanning
+from ._group_merge_sort import _MergeSortPlanning
 from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _GROUP_METHODS,
@@ -47,10 +48,12 @@ from ._group_planner_support import (
     resolve_thread_group,
     types,
 )
+from ._group_radix import _RadixPlanning
 from ._group_reduce import _ReducePlanning
 from ._group_run_length_decode import _RunLengthDecodePlanning
 from ._group_scan import _ScanPlanning
 from ._group_shuffle import _ShufflePlanning
+from ._group_topk import _TopKPlanning
 
 
 class _GroupCallPlanner(
@@ -61,6 +64,9 @@ class _GroupCallPlanner(
     _AdjacentDifferencePlanning,
     _DiscontinuityPlanning,
     _ShufflePlanning,
+    _MergeSortPlanning,
+    _RadixPlanning,
+    _TopKPlanning,
     _HistogramPlanning,
     _RunLengthDecodePlanning,
 ):
@@ -563,7 +569,24 @@ class _GroupCallPlanner(
                 thread_data_only=thread_data_only,
             )
 
-        return False
+        pair_arguments = {
+            "merge_sort_pairs": ("keys", "values"),
+            "radix_sort_pairs": ("keys", "values"),
+            "topk_max_pairs": ("keys", "values"),
+            "topk_min_pairs": ("keys", "values"),
+        }.get(operation)
+        if pair_arguments is None:
+            return False
+        if index < 0:
+            index += len(pair_arguments)
+        if not 0 <= index < len(pair_arguments):
+            return False
+        bound = self._bind(function, definition)
+        return self._is_array_value(
+            bound.arguments[pair_arguments[index]],
+            seen=seen,
+            thread_data_only=thread_data_only,
+        )
 
     def _is_array_value(
         self,
@@ -668,13 +691,18 @@ class _GroupCallPlanner(
             "exchange": "value",
             "histogram": "samples",
             "load": "output",
+            "radix_rank": "keys",
+            "radix_sort_keys": "keys",
             "scan": "value",
             "exclusive_sum": "value",
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "merge_sort_keys": "keys",
             "run_length_decode": "run_values",
             "shuffle": "value",
+            "topk_max_keys": "keys",
+            "topk_min_keys": "keys",
         }.get(operation)
         if array_result_argument is None:
             return False
@@ -876,7 +904,23 @@ class _GroupCallPlanner(
                 return None
             return self._array_extent(bound.arguments["value"], seen=set(seen))
 
-        return None
+        tuple_arguments = {
+            "merge_sort_pairs": ("keys", "values"),
+            "radix_sort_pairs": ("keys", "values"),
+            "topk_max_pairs": ("keys", "values"),
+            "topk_min_pairs": ("keys", "values"),
+        }.get(operation)
+        if tuple_arguments is None:
+            return None
+        if index < 0:
+            index += len(tuple_arguments)
+        if not 0 <= index < len(tuple_arguments):
+            return None
+        bound = self._bind(function, definition)
+        return self._array_extent(
+            bound.arguments[tuple_arguments[index]],
+            seen=set(seen),
+        )
 
     def _array_extent_definition(
         self, definition: Any, *, seen: set[str]
@@ -973,12 +1017,21 @@ class _GroupCallPlanner(
             "discontinuity": "value",
             "exchange": "value",
             "load": "output",
+            "radix_rank": "keys",
+            "radix_sort_keys": "keys",
+            "radix_sort_pairs": "keys",
             "scan": "value",
             "exclusive_sum": "value",
             "inclusive_sum": "value",
             "exclusive_scan": "value",
             "inclusive_scan": "value",
+            "merge_sort_keys": "keys",
+            "merge_sort_pairs": "keys",
             "shuffle": "value",
+            "topk_max_keys": "keys",
+            "topk_max_pairs": "keys",
+            "topk_min_keys": "keys",
+            "topk_min_pairs": "keys",
         }.get(operation)
         if shape_argument is None:
             return None
@@ -1245,6 +1298,8 @@ class _GroupCallPlanner(
         name = {
             "exchange": "warp_exchange",
             "load": "warp_load",
+            "merge_sort_keys": "warp_merge_sort_keys",
+            "merge_sort_pairs": "warp_merge_sort_pairs",
             "store": "warp_store",
             "sum": "warp_sum",
             "exclusive_sum": "warp_exclusive_sum",
@@ -1390,9 +1445,42 @@ class _GroupCallPlanner(
             replacement = self._lower_shuffle(
                 inst, group=group, bound=bound, is_common_root=is_common_root
             )
+        elif operation in {"merge_sort_keys", "merge_sort_pairs"}:
+            replacement = self._lower_merge_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation == "radix_rank":
+            replacement = self._lower_radix_rank(
+                inst, group=group, bound=bound, is_common_root=is_common_root
+            )
+        elif operation in {"radix_sort_keys", "radix_sort_pairs"}:
+            replacement = self._lower_radix_sort(
+                inst,
+                operation=operation,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
         elif operation == "histogram":
             replacement = self._lower_histogram(
                 inst,
+                group=group,
+                bound=bound,
+                is_common_root=is_common_root,
+            )
+        elif operation in {
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
+        }:
+            replacement = self._lower_topk(
+                inst,
+                operation=operation,
                 group=group,
                 bound=bound,
                 is_common_root=is_common_root,

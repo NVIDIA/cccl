@@ -54,4 +54,53 @@ if ($LASTEXITCODE -ne 0) {
     throw "cuda-coop wheel validation failed."
 }
 
+$SmokeEnv = Join-Path ([System.IO.Path]::GetTempPath()) (
+    "cuda-coop-smoke-" + [guid]::NewGuid().ToString("N")
+)
+try {
+    & $PythonExe -m venv $SmokeEnv
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create the cuda-coop wheel smoke-test environment."
+    }
+
+    $SmokePython = Join-Path $SmokeEnv "Scripts/python.exe"
+    & $SmokePython -m pip install --disable-pip-version-check $Wheels[0].FullName
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install the cuda-coop wheel."
+    }
+
+    $SmokeCommand = @'
+import sys
+from pathlib import Path
+
+import cuda
+import cuda.coop
+from cuda.coop._headers import resolve_include_paths
+
+paths = resolve_include_paths(
+    start=Path(sys.prefix),
+    required_headers=(
+        "cub/block/block_load.cuh",
+        "cuda/experimental/coop.cuh",
+        "cuda/std/cstdint",
+    ),
+)
+assert cuda.coop.__version__ != "0+unknown"
+assert getattr(cuda, "__file__", None) is None
+assert cuda.coop.this_block().kind == "block"
+assert paths.origin == "cuda-coop wheel header bundle"
+'@
+    $SmokeScript = Join-Path $SmokeEnv "validate_install.py"
+    Set-Content -LiteralPath $SmokeScript -Value $SmokeCommand -Encoding UTF8
+    & $SmokePython -I $SmokeScript
+    if ($LASTEXITCODE -ne 0) {
+        throw "Installed cuda-coop wheel smoke test failed."
+    }
+}
+finally {
+    if (Test-Path -LiteralPath $SmokeEnv) {
+        Remove-Item -LiteralPath $SmokeEnv -Recurse -Force
+    }
+}
+
 Write-Host "Built cuda-coop wheel: $($Wheels[0].FullName)"

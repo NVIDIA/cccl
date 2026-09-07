@@ -20,6 +20,28 @@ def _align_up(value: int, alignment: int) -> int:
     return value if remainder == 0 else (value + alignment - remainder)
 
 
+def _topk_cub_temp_storage_requirement(
+    *,
+    block_threads: int,
+    items_per_thread: int,
+    key_bytes: int,
+    value_bytes: int = 0,
+) -> tuple[int, int]:
+    tile_items = max(1, block_threads) * max(1, items_per_thread)
+    item_payload_bytes = max(1, key_bytes)
+    if value_bytes > 0:
+        item_payload_bytes += max(1, value_bytes)
+    exchange_bytes = 8 + tile_items * item_payload_bytes
+    staged_output_bytes = tile_items * max(1, key_bytes)
+    if value_bytes > 0:
+        staged_output_bytes += tile_items * max(1, value_bytes)
+    # CUB TopK uses a 256-bin histogram plus BlockScan scratch before the
+    # exchange phase. This is intentionally conservative because CuTe must
+    # allocate before NVRTC can tell us the exact C++ TempStorage size.
+    pass_bytes = 4096 + max(1, block_threads) * 16
+    return _align_up(max(exchange_bytes, pass_bytes) + staged_output_bytes, 16), 16
+
+
 @dataclass(frozen=True)
 class TempStorageSlice:
     byte_offset_in_bytes: int

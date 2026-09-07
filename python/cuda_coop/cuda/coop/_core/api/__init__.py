@@ -15,6 +15,12 @@ from .discontinuity import discontinuity  # noqa: F401
 from .exchange import exchange  # noqa: F401
 from .histogram import histogram  # noqa: F401
 from .load_store import load, store  # noqa: F401
+from .merge_sort import merge_sort_keys, merge_sort_pairs  # noqa: F401
+from .radix import (  # noqa: F401
+    radix_rank,
+    radix_sort_keys,
+    radix_sort_pairs,
+)
 from .reduce import reduce, sum  # noqa: F401
 from .run_length_decode import run_length_decode  # noqa: F401
 from .scan import (  # noqa: F401
@@ -36,6 +42,12 @@ from .thread_group import (
     this_grid,
     this_thread,
     this_warp,
+)
+from .topk import (  # noqa: F401
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
 )
 
 for _member_name in (

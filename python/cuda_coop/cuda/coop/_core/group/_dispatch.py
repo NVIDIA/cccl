@@ -40,6 +40,13 @@ from .load_store import (
     GroupLoadStoreSemantics,
     _plan_load_store,
 )
+from .merge_sort import GroupMergeSortSemantics, _plan_merge_sort
+from .radix import (
+    GroupRadixRankSemantics,
+    GroupRadixSortSemantics,
+    _plan_radix_rank,
+    _plan_radix_sort,
+)
 from .reduce import GroupReduceSemantics, _plan_reduce
 from .run_length_decode import (
     GroupRunLengthDecodeSemantics,
@@ -47,28 +54,37 @@ from .run_length_decode import (
 )
 from .scan import GroupScanSemantics, _plan_scan
 from .shuffle import GroupShuffleSemantics, _plan_shuffle
+from .topk import GroupTopKSemantics, _plan_topk
 
 GroupOperationSemantics = (
     GroupReduceSemantics
     | GroupScanSemantics
     | GroupAdjacentDifferenceSemantics
+    | GroupMergeSortSemantics
     | GroupDiscontinuitySemantics
     | GroupShuffleSemantics
     | GroupHistogramSemantics
     | GroupRunLengthDecodeSemantics
+    | GroupRadixSortSemantics
+    | GroupRadixRankSemantics
     | GroupExchangeSemantics
     | GroupLoadStoreSemantics
+    | GroupTopKSemantics
 )
 _GROUP_OPERATION_TYPES = (
     GroupReduceSemantics,
     GroupScanSemantics,
     GroupAdjacentDifferenceSemantics,
+    GroupMergeSortSemantics,
     GroupDiscontinuitySemantics,
     GroupShuffleSemantics,
     GroupHistogramSemantics,
     GroupRunLengthDecodeSemantics,
+    GroupRadixSortSemantics,
+    GroupRadixRankSemantics,
     GroupExchangeSemantics,
     GroupLoadStoreSemantics,
+    GroupTopKSemantics,
 )
 
 
@@ -79,6 +95,50 @@ def _is_group_operation(operation: object) -> bool:
 def _call_classifications(
     operation: GroupOperationSemantics,
 ) -> tuple[ParameterClassification, ...]:
+    if isinstance(operation, GroupTopKSemantics):
+        primitive = operation.primitive
+        classifications = [
+            ParameterClassification("keys", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        ]
+        if primitive.payload.value == "pairs":
+            classifications.append(
+                ParameterClassification(
+                    "values", ArgumentKind.RUNTIME, ParameterRole.INPUT
+                )
+            )
+        classifications.append(
+            ParameterClassification("k", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        )
+        for name, argument in (
+            ("num_valid", primitive.num_valid),
+            ("begin_bit", primitive.begin_bit),
+            ("end_bit", primitive.end_bit),
+        ):
+            if argument.argument_kind is None:
+                continue
+            classifications.append(
+                ParameterClassification(
+                    name,
+                    argument.argument_kind,
+                    (
+                        ParameterRole.CONSTANT
+                        if argument.kind is BindingKind.STATIC
+                        else ParameterRole.INPUT
+                    ),
+                )
+            )
+        classifications.extend(
+            (
+                ParameterClassification(
+                    "selection", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+                ParameterClassification(
+                    "payload", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+            )
+        )
+        return tuple(classifications)
+
     if isinstance(operation, GroupLoadStoreSemantics):
         classifications = [
             ParameterClassification(
@@ -136,6 +196,34 @@ def _call_classifications(
         )
         return tuple(classifications)
 
+    if isinstance(operation, GroupMergeSortSemantics):
+        primitive = operation.primitive
+        classifications = [
+            ParameterClassification("keys", ArgumentKind.RUNTIME, ParameterRole.INOUT)
+        ]
+        if primitive.has_values:
+            classifications.append(
+                ParameterClassification(
+                    "values", ArgumentKind.RUNTIME, ParameterRole.INOUT
+                )
+            )
+        compare = classify_parameter(primitive.compare_operator)
+        classifications.append(
+            ParameterClassification("compare_op", compare.kind, compare.role)
+        )
+        if primitive.has_partial_tile:
+            classifications.extend(
+                (
+                    ParameterClassification(
+                        "valid_items", ArgumentKind.RUNTIME, ParameterRole.INPUT
+                    ),
+                    ParameterClassification(
+                        "oob_default", ArgumentKind.RUNTIME, ParameterRole.INPUT
+                    ),
+                )
+            )
+        return tuple(classifications)
+
     if isinstance(operation, GroupRunLengthDecodeSemantics):
         primitive = operation.primitive
         classifications = [
@@ -171,6 +259,60 @@ def _call_classifications(
                 ParameterRole.OUTPUT,
             )
         )
+        return tuple(classifications)
+
+    if isinstance(operation, GroupRadixSortSemantics):
+        classifications = [
+            ParameterClassification("keys", ArgumentKind.RUNTIME, ParameterRole.INPUT)
+        ]
+        if operation.primitive.has_values:
+            classifications.append(
+                ParameterClassification(
+                    "values", ArgumentKind.RUNTIME, ParameterRole.INPUT
+                )
+            )
+        classifications.extend(
+            (
+                ParameterClassification(
+                    "begin_bit", ArgumentKind.RUNTIME, ParameterRole.INPUT
+                ),
+                ParameterClassification(
+                    "end_bit", ArgumentKind.RUNTIME, ParameterRole.INPUT
+                ),
+                ParameterClassification(
+                    "order", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+                ParameterClassification(
+                    "payload", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+                ParameterClassification(
+                    "output", ArgumentKind.STATIC, ParameterRole.CONSTANT
+                ),
+            )
+        )
+        return tuple(classifications)
+
+    if isinstance(operation, GroupRadixRankSemantics):
+        classifications = [
+            ParameterClassification("keys", ArgumentKind.RUNTIME, ParameterRole.INPUT),
+            ParameterClassification(
+                "begin_bit", ArgumentKind.STATIC, ParameterRole.CONSTANT
+            ),
+            ParameterClassification(
+                "end_bit", ArgumentKind.STATIC, ParameterRole.CONSTANT
+            ),
+            ParameterClassification(
+                "order", ArgumentKind.STATIC, ParameterRole.CONSTANT
+            ),
+        ]
+        if operation.primitive.has_exclusive_digit_prefix:
+            classifications.append(
+                ParameterClassification(
+                    "exclusive_digit_prefix",
+                    ArgumentKind.RUNTIME,
+                    ParameterRole.OUTPUT,
+                )
+            )
         return tuple(classifications)
 
     primary_argument = (
@@ -426,6 +568,8 @@ def plan_group_primitive(
         return _plan_scan(call, resolved, launch, operation)
     if isinstance(operation, GroupAdjacentDifferenceSemantics):
         return _plan_adjacent_difference(call, resolved, launch, operation)
+    if isinstance(operation, GroupMergeSortSemantics):
+        return _plan_merge_sort(call, resolved, launch, operation)
     if isinstance(operation, GroupDiscontinuitySemantics):
         return _plan_discontinuity(call, resolved, launch, operation)
     if isinstance(operation, GroupShuffleSemantics):
@@ -434,8 +578,14 @@ def plan_group_primitive(
         return _plan_histogram(call, resolved, launch, operation)
     if isinstance(operation, GroupRunLengthDecodeSemantics):
         return _plan_run_length_decode(call, resolved, launch, operation)
+    if isinstance(operation, GroupRadixSortSemantics):
+        return _plan_radix_sort(call, resolved, launch, operation)
+    if isinstance(operation, GroupRadixRankSemantics):
+        return _plan_radix_rank(call, resolved, launch, operation)
     if isinstance(operation, GroupExchangeSemantics):
         return _plan_exchange(call, resolved, launch, operation)
+    if isinstance(operation, GroupTopKSemantics):
+        return _plan_topk(call, resolved, launch, operation)
     return _plan_load_store(call, resolved, launch, operation)
 
 

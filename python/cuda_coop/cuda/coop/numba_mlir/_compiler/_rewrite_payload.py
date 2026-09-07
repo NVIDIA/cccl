@@ -21,11 +21,27 @@ from ._rewrite_support import (
 class PayloadInference:
     """Mutable context shared by the primitive-specific inference handlers."""
 
-    _COMMON_OPERATION_ALIASES: dict[str, str] = {}
-    _OPERATION_ALIASES: dict[str, str] = {}
+    _COMMON_OPERATION_ALIASES = {
+        "_common_radix_rank": "radix_rank",
+        "_common_radix_sort_keys": "radix_sort_keys",
+        "_common_radix_sort_pairs": "radix_sort_pairs",
+        "_common_topk_max_keys": "topk_max_keys",
+        "_common_topk_max_pairs": "topk_max_pairs",
+        "_common_topk_min_keys": "topk_min_keys",
+        "_common_topk_min_pairs": "topk_min_pairs",
+    }
+    _OPERATION_ALIASES = {
+        **_COMMON_OPERATION_ALIASES,
+        "_qualified_group_topk_max_keys": "topk_max_keys",
+        "_qualified_group_topk_max_pairs": "topk_max_pairs",
+        "_qualified_group_topk_min_keys": "topk_min_keys",
+        "_qualified_group_topk_min_pairs": "topk_min_pairs",
+    }
     _DTYPE_FACTORY_KWARGS = frozenset(
         {
             "dtype",
+            "keys",
+            "values",
             "item_dtype",
             "counter_dtype",
             "run_length_dtype",
@@ -145,7 +161,14 @@ class _PayloadRewrite:
         )
         operation = inference.op_name
 
-        if operation == "_group_histogram":
+        if operation in {
+            "topk_max_keys",
+            "topk_max_pairs",
+            "topk_min_keys",
+            "topk_min_pairs",
+        }:
+            self._infer_topk_payload(inference)
+        elif operation == "_group_histogram":
             self._infer_histogram_payload(inference)
         elif operation == "_group_run_length_decode":
             self._infer_run_length_decode_payload(inference)
@@ -173,8 +196,23 @@ class _PayloadRewrite:
             self._infer_discontinuity_payload(inference)
         elif operation in {"load", "store", "warp_load", "warp_store"}:
             self._infer_load_store_payload(inference)
+        elif operation in {
+            "radix_rank",
+            "radix_sort_keys",
+            "radix_sort_keys_descending",
+            "radix_sort_pairs",
+            "radix_sort_pairs_descending",
+        }:
+            self._infer_radix_payload(inference)
         elif operation in {"exchange", "warp_exchange"}:
             self._infer_exchange_payload(inference)
+        elif operation in {
+            "merge_sort_keys",
+            "merge_sort_pairs",
+            "warp_merge_sort_keys",
+            "warp_merge_sort_pairs",
+        }:
+            self._infer_merge_sort_payload(inference)
         elif operation == "shuffle":
             self._infer_shuffle_payload(inference)
 

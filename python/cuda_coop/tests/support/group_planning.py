@@ -24,7 +24,10 @@ from cuda.coop._core import (
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
     GroupLoweringTarget,
+    GroupMergeSortSemantics,
     GroupOperandKind,
+    GroupRadixRankSemantics,
+    GroupRadixSortSemantics,
     GroupReduceSemantics,
     GroupRunLengthDecodeSemantics,
     GroupScanMode,
@@ -37,6 +40,7 @@ from cuda.coop._core import (
     PreconditionEnforcement,
     ResultOwnership,
     ResultVisibility,
+    RuntimeValue,
     StatefulOperator,
     StorageOwnership,
     SynchronizationScope,
@@ -64,11 +68,16 @@ from cuda.coop._core.block import (
     make_block_exchange_semantics,
     make_block_exchange_spec,
     make_block_histogram_semantics,
+    make_block_merge_sort_semantics,
+    make_block_radix_rank_semantics,
+    make_block_radix_sort_semantics,
     make_block_reduce_semantics,
     make_block_run_length_decode_semantics,
     make_block_scan_spec,
     make_block_shuffle_semantics,
+    make_block_topk_spec,
 )
+from cuda.coop._core.group import GroupTopKSemantics
 from cuda.coop._core.warp import (
     make_warp_exchange_spec,
     make_warp_reduce_spec,
@@ -189,6 +198,67 @@ def _shuffle(**overrides):
     return semantics
 
 
+def _merge_sort(**overrides):
+    descending = overrides.pop("descending", False)
+    semantics = GroupMergeSortSemantics(
+        make_block_merge_sort_semantics(
+            key_dtype=overrides.pop("key_dtype", "int"),
+            value_dtype=overrides.pop("value_dtype", None),
+            items_per_thread=overrides.pop("items_per_thread", 2),
+            compare_operator=CxxOperator(
+                (
+                    "::cuda::std::greater<KeyT>"
+                    if descending
+                    else "::cuda::std::less<KeyT>"
+                ),
+                Dependency("KeyT"),
+                name="compare_op",
+            ),
+            valid_items=overrides.pop("valid_items", None),
+            oob_default=overrides.pop("oob_default", None),
+        )
+    )
+    assert not overrides
+    return semantics
+
+
+def _radix_sort(**overrides):
+    operand_kind = GroupOperandKind(overrides.pop("operand_kind", "array"))
+    primitive = make_block_radix_sort_semantics(
+        key_dtype=overrides.pop("key_dtype", "int"),
+        value_dtype=overrides.pop("value_dtype", None),
+        items_per_thread=overrides.pop("items_per_thread", 2),
+        descending=overrides.pop("descending", False),
+        begin_bit=RuntimeValue("begin_bit"),
+        end_bit=RuntimeValue("end_bit"),
+        key_bit_width=overrides.pop("key_bit_width", 32),
+        bit_policy="explicit",
+    )
+    assert not overrides
+    return GroupRadixSortSemantics(primitive, operand_kind=operand_kind)
+
+
+def _radix_rank(**overrides):
+    operand_kind = GroupOperandKind(overrides.pop("operand_kind", "array"))
+    primitive = make_block_radix_rank_semantics(
+        key_dtype=overrides.pop("key_dtype", "unsigned int"),
+        items_per_thread=overrides.pop("items_per_thread", 2),
+        begin_bit=overrides.pop("begin_bit", 0),
+        end_bit=overrides.pop("end_bit", 8),
+        key_bit_width=overrides.pop("key_bit_width", 32),
+        descending=overrides.pop("descending", False),
+        block_threads=overrides.pop("block_threads", 64),
+        exclusive_digit_prefix_items_per_thread=overrides.pop("prefix_items", None),
+    )
+    input_dtype = overrides.pop("input_dtype", "int")
+    assert not overrides
+    return GroupRadixRankSemantics(
+        primitive,
+        input_dtype=input_dtype,
+        operand_kind=operand_kind,
+    )
+
+
 def _scan(**overrides):
     cub_algorithm = overrides.pop("cub_algorithm", None)
     valid_items = overrides.pop("valid_items", ArgumentBinding.omitted())
@@ -266,6 +336,21 @@ def _run_length_decode(**overrides):
     )
     assert not overrides
     return GroupRunLengthDecodeSemantics(primitive)
+
+
+def _topk(**overrides):
+    primitive = make_block_topk_spec(
+        key_dtype=overrides.pop("key_dtype", "unsigned int"),
+        value_dtype=overrides.pop("value_dtype", None),
+        block_dim=overrides.pop("block_dim", (64, 1, 1)),
+        items_per_thread=overrides.pop("items_per_thread", 2),
+        selection=overrides.pop("selection", "max"),
+        num_valid=overrides.pop("num_valid", ArgumentBinding.runtime()),
+        begin_bit=overrides.pop("begin_bit", ArgumentBinding.runtime()),
+        end_bit=overrides.pop("end_bit", ArgumentBinding.runtime()),
+    )
+    assert not overrides
+    return GroupTopKSemantics(primitive)
 
 
 def _plan(group, operation, launch=(64, 1, 1)):
