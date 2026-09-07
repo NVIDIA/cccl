@@ -840,6 +840,329 @@ def test_transform_iterator():
     assert d_output.copy_to_host()[0] == expected_output
 
 
+def test_transform_iterator_stateful_op():
+    """Stateful transform op (captures a device array) as a reduce input iterator.
+
+    Regression test for gh-9627: a stateful op inside a TransformIterator used as
+    an algorithm input previously crashed with cudaErrorLaunchFailure because the
+    op's state was not threaded through to the device function.
+    """
+    num_items = 1000
+    h_src = np.arange(num_items, dtype=np.float32)
+    src = DeviceArray.from_numpy(h_src)
+
+    def gather_double(i) -> np.float32:
+        return src[i] * np.float32(2.0)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = np.sum(h_src * np.float32(2.0))
+    np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-3)
+
+
+def test_transform_iterator_stateful_op_alignment_padding():
+    """A stateful transform op follows an aligned int32 counting state."""
+    num_items = 257
+    h_src = np.arange(num_items, dtype=np.int64)
+    src = DeviceArray.from_numpy(h_src)
+
+    def gather_plus_one(i: np.int32) -> np.int64:
+        return src[i] + np.int64(1)
+
+    transform_it = TransformIterator(CountingIterator(np.int32(0)), gather_plus_one)
+    d_output = DeviceArray.empty(1, dtype=np.int64)
+    h_init = np.zeros(1, dtype=np.int64)
+    expected = np.sum(h_src + np.int64(1))
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    np.testing.assert_array_equal(d_output.copy_to_host(), np.asarray([expected]))
+
+
+def test_transform_iterator_stateful_op_advance():
+    """Advancing a stateful transform iterator preserves its captured state."""
+    num_items = 311
+    offset = 67
+    h_src = np.arange(num_items, dtype=np.float32)
+    src = DeviceArray.from_numpy(h_src)
+
+    def gather_double(i: np.int64) -> np.float32:
+        return src[i] * np.float32(2.0)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+    advanced_it = transform_it + offset
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+    expected = np.sum(h_src[offset:] * np.float32(2.0))
+
+    cuda.compute.reduce_into(
+        d_in=advanced_it,
+        d_out=d_output,
+        num_items=num_items - offset,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    np.testing.assert_allclose(
+        d_output.copy_to_host(), np.asarray([expected]), atol=1e-3
+    )
+
+
+def test_transform_iterator_stateful_op_refreshes_captured_array_pointer():
+    """A stateful transform iterator reads a captured array's current pointer."""
+
+    class RebindableDeviceArray:
+        def __init__(self, array):
+            self._array = array
+
+        @property
+        def dtype(self):
+            return self._array.dtype
+
+        def __len__(self):
+            return len(self._array)
+
+        @property
+        def __cuda_array_interface__(self):
+            return self._array.__cuda_array_interface__
+
+        def rebind(self, array):
+            self._array = array
+
+    num_items = 1000
+    src = RebindableDeviceArray(
+        DeviceArray.from_numpy(np.zeros(num_items, dtype=np.float32))
+    )
+
+    def gather(i) -> np.float32:
+        return src[i]
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather)
+    h_replacement = np.arange(num_items, dtype=np.float32)
+    src.rebind(DeviceArray.from_numpy(h_replacement))
+
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    np.testing.assert_allclose(
+        d_output.copy_to_host(), np.sum(h_replacement), atol=1e-3
+    )
+
+
+def test_transform_iterator_stateful_op_inferred_return_type():
+    """A stateful transform op without a return annotation infers its return type.
+
+    Regression test for gh-9627: get_return_type was not implemented for stateful
+    ops, so constructing such a TransformIterator raised NotImplementedError.
+    """
+    num_items = 1000
+    h_src = np.arange(num_items, dtype=np.float32)
+    src = DeviceArray.from_numpy(h_src)
+
+    def gather_double(i):  # no return annotation -> type is inferred
+        return src[i] * np.float32(2.0)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+    assert transform_it.value_type.dtype == np.float32
+
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = np.sum(h_src * np.float32(2.0))
+    np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-3)
+
+
+def test_transform_iterator_stateful_op_infers_struct_return_type():
+    """A stateful transform op infers an unannotated gpu_struct return type."""
+
+    @gpu_struct
+    class Pair:
+        first: np.int32
+        second: np.int32
+
+    num_items = 256
+    h_src = np.arange(num_items, dtype=np.int32)
+    src = DeviceArray.from_numpy(h_src)
+
+    def make_pair(i):
+        value = src[i]
+        return Pair(value, value * np.int32(2))
+
+    def sum_pairs(lhs, rhs):
+        return Pair(lhs.first + rhs.first, lhs.second + rhs.second)
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), make_pair)
+    d_output = DeviceArray.empty(1, dtype=Pair.dtype)
+    h_init = Pair(0, 0)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=sum_pairs,
+        h_init=h_init,
+    )
+
+    expected = np.zeros(1, dtype=Pair.dtype)
+    expected["first"] = np.sum(h_src, dtype=np.int32)
+    expected["second"] = np.sum(h_src * np.int32(2), dtype=np.int32)
+    np.testing.assert_equal(d_output.copy_to_host(), expected)
+
+
+def test_transform_iterator_stateful_op_multiple_arrays():
+    """A stateful transform op capturing more than one device array (gh-9627)."""
+    num_items = 500
+    h_a = np.arange(num_items, dtype=np.float32)
+    h_b = np.full(num_items, 3.0, dtype=np.float32)
+    a = DeviceArray.from_numpy(h_a)
+    b = DeviceArray.from_numpy(h_b)
+
+    def weighted(i) -> np.float32:
+        return a[i] * b[i]
+
+    transform_it = TransformIterator(CountingIterator(np.int64(0)), weighted)
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = np.sum(h_a * h_b)
+    np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-3)
+
+
+def test_transform_iterator_stateful_op_cache_reuse():
+    """Two stateful transform iterators with identical op bytecode but different
+    captured arrays must produce independent, correct results (gh-9627).
+
+    They share the same cached reducer, so the op state (the captured array
+    pointers) must travel with each iterator's state rather than being baked in.
+    """
+    num_items = 1000
+
+    def reduce_gather_double(src):
+        def gather_double(i) -> np.float32:
+            return src[i] * np.float32(2.0)
+
+        transform_it = TransformIterator(CountingIterator(np.int64(0)), gather_double)
+        d_output = DeviceArray.empty(1, dtype=np.float32)
+        h_init = np.zeros(1, dtype=np.float32)
+        cuda.compute.reduce_into(
+            d_in=transform_it,
+            d_out=d_output,
+            num_items=num_items,
+            op=OpKind.PLUS,
+            h_init=h_init,
+        )
+        return d_output
+
+    h_a = np.arange(num_items, dtype=np.float32)
+    h_b = np.full(num_items, 7.0, dtype=np.float32)
+
+    out_a = reduce_gather_double(DeviceArray.from_numpy(h_a))
+    out_b = reduce_gather_double(DeviceArray.from_numpy(h_b))
+
+    np.testing.assert_allclose(
+        out_a.copy_to_host(), np.sum(h_a * np.float32(2.0)), atol=1e-3
+    )
+    np.testing.assert_allclose(
+        out_b.copy_to_host(), np.sum(h_b * np.float32(2.0)), atol=1e-3
+    )
+
+
+def test_transform_iterator_stateful_op_nested():
+    """A stateful transform op nested under another transform iterator (gh-9627).
+
+    Exercises iterator-state composition: the inner (stateful) iterator's state,
+    including the op state, must sit at offset 0 of the outer iterator's state.
+    """
+    num_items = 400
+    bias = DeviceArray.from_numpy(np.full(num_items, 5.0, dtype=np.float32))
+
+    def add_bias(i) -> np.float32:  # stateful inner
+        return bias[i] + np.float32(i)
+
+    def double(x) -> np.float32:  # stateless outer
+        return x * np.float32(2.0)
+
+    transform_it = TransformIterator(
+        TransformIterator(CountingIterator(np.int64(0)), add_bias), double
+    )
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    cuda.compute.reduce_into(
+        d_in=transform_it,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = sum((5.0 + i) * 2.0 for i in range(num_items))
+    np.testing.assert_allclose(d_output.copy_to_host(), np.float32(expected), rtol=1e-5)
+
+
+def test_transform_output_iterator_stateful_op():
+    """A stateful transform op as a reduce output iterator (gh-9627)."""
+    num_items = 256
+    factor = DeviceArray.from_numpy(np.full(1, 10.0, dtype=np.float32))
+    h_input = np.arange(num_items, dtype=np.float32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype=np.float32)
+    h_init = np.zeros(1, dtype=np.float32)
+
+    def scale(x: np.float32) -> np.float32:
+        return x * factor[0]
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=TransformOutputIterator(d_output, scale),
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    expected = np.sum(h_input) * np.float32(10.0)
+    np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-2)
+
+
 def test_reduce_struct_type():
     @gpu_struct
     class Pixel:
