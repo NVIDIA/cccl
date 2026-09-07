@@ -17,6 +17,8 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 struct Base
 {};
 struct Derived : Base
