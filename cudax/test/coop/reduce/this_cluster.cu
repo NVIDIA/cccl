@@ -70,6 +70,37 @@ struct ReduceKernel
   }
 };
 
+template <bool Broadcasted>
+struct ConsecutiveReduceKernel
+{
+  template <class Config>
+  __device__ void operator()(Config config, int* d_out)
+  {
+    cudax::this_cluster cluster{config};
+    int thread_data[1] = {1};
+
+    if constexpr (Broadcasted)
+    {
+      const auto first = cudax::coop::reduce(cudax::broadcasted, cluster, thread_data, cuda::std::plus<>{});
+      thread_data[0] += 2;
+      const auto second = cudax::coop::reduce(cudax::broadcasted, cluster, thread_data, cuda::std::plus<>{});
+      d_out[cuda::gpu_thread.rank_as<int>(cluster)] = first + second;
+    }
+    else
+    {
+      const auto first = cudax::coop::reduce(cluster, thread_data, cuda::std::plus<>{});
+      thread_data[0] += 2;
+      const auto second = cudax::coop::reduce(cluster, thread_data, cuda::std::plus<>{});
+      REQUIRE(first.has_value() == cuda::gpu_thread.is_root_rank(cluster));
+      REQUIRE(second.has_value() == cuda::gpu_thread.is_root_rank(cluster));
+      if (first.has_value() && second.has_value())
+      {
+        *d_out = *first + *second;
+      }
+    }
+  }
+};
+
 /***********************************************************************************************************************
  * Type list definition
  **********************************************************************************************************************/
@@ -239,4 +270,29 @@ C2H_TEST("reduce/this_cluster Broadcasted", "[reduce][this_cluster]", integral_t
     verify_results(c2h::host_vector<value_t>(cluster_size_t::value * block_size, reference_result),
                    c2h::host_vector<value_t>(d_out));
   }
+}
+
+C2H_TEST("reduce/this_cluster handles consecutive reductions", "[reduce][this_cluster]")
+{
+  const auto device = cuda::devices[0];
+  if (cuda::device_attributes::compute_capability_major(device) < 9)
+  {
+    return;
+  }
+
+  constexpr int cluster_size = 2;
+  constexpr int group_size   = cluster_size * block_size;
+  constexpr int expected     = 4 * group_size;
+  cuda::stream stream{device};
+  const auto config =
+    cuda::make_config(cuda::grid_dims<1>(), cuda::cluster_dims<cluster_size>(), cuda::block_dims<block_size>());
+  c2h::device_vector<int> d_result(1);
+  c2h::device_vector<int> d_broadcast(group_size);
+
+  cuda::launch(stream, config, ConsecutiveReduceKernel<false>{}, thrust::raw_pointer_cast(d_result.data()));
+  cuda::launch(stream, config, ConsecutiveReduceKernel<true>{}, thrust::raw_pointer_cast(d_broadcast.data()));
+  stream.sync();
+
+  verify_results(expected, c2h::host_vector<int>(d_result)[0]);
+  verify_results(c2h::host_vector<int>(group_size, expected), c2h::host_vector<int>(d_broadcast));
 }
