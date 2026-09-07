@@ -4,6 +4,8 @@ set(
   sharded_reduce.cu
 )
 
+cccl_get_cudatoolkit()
+
 ## cudax_add_places_example
 #
 # Add a places example executable and register it with ctest.
@@ -34,18 +36,24 @@ foreach (source IN LISTS places_example_sources)
 endforeach()
 
 # Vendor tier: the cuRAND examples additionally link the toolkit's cuRAND
-# (random.cuh is opt-in and not part of the umbrella).
-foreach (source IN ITEMS sharded_pi.cu sharded_rejection_sampling.cu)
-  cudax_add_places_example(curand_example_target "${source}")
-  target_link_libraries(${curand_example_target} PRIVATE CUDA::curand)
-endforeach()
+# (random.cuh is opt-in and not part of the umbrella). Gated on the toolkit
+# component so a cuRAND-less install skips cleanly.
+if (TARGET CUDA::curand)
+  foreach (source IN ITEMS sharded_pi.cu sharded_rejection_sampling.cu)
+    cudax_add_places_example(curand_example_target "${source}")
+    target_link_libraries(${curand_example_target} PRIVATE CUDA::curand)
+  endforeach()
+endif()
 
 # Vendor tier: the cuSPARSE example additionally links the toolkit's cuSPARSE
-# (sparse.cuh is opt-in and not part of the umbrella).
-foreach (source IN ITEMS sharded_cg.cu)
-  cudax_add_places_example(cusparse_example_target "${source}")
-  target_link_libraries(
-    ${cusparse_example_target}
-    PRIVATE CUDA::cusparse CUDA::cuda_driver
-  )
-endforeach()
+# (sparse.cuh is opt-in and not part of the umbrella). Gated on the toolkit
+# component so a cuSPARSE-less install skips cleanly.
+if (TARGET CUDA::cusparse)
+  foreach (source IN ITEMS sharded_cg.cu)
+    cudax_add_places_example(cusparse_example_target "${source}")
+    target_link_libraries(
+      ${cusparse_example_target}
+      PRIVATE CUDA::cusparse CUDA::cuda_driver
+    )
+  endforeach()
+endif()
