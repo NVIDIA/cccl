@@ -1,5 +1,11 @@
 #include <thrust/detail/config.h>
 
+// gcc >= 11 emits bogus -Werror=stringop-overflow and -Werror=array-bounds diagnostics for the memmove that thrust uses
+// to copy small vectors of narrow types (e.g. host_vector<signed char>). This needs to be suppressed before any header
+// pulls in the memmove implementation, since gcc ties the diagnostic state to where that code is first parsed.
+_CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
+_CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
+
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/sequence.h>
 
@@ -10,11 +16,6 @@
 #include <vector>
 
 #include <unittest/unittest.h>
-
-// gcc >= 11 emits bogus -Werror=stringop-overflow and -Werror=array-bounds diagnostics for the memmove that thrust uses
-// to copy small vectors of narrow types (e.g. host_vector<signed char>).
-_CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
-_CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
 
 template <class Vector>
 void TestVectorZeroSize()
