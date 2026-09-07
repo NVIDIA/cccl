@@ -77,12 +77,12 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/span>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/span>
 
 #include <cstddef>
 #include <stdexcept>

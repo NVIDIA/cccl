@@ -18,10 +18,10 @@
  *        travels alongside when the kernel needs the logical index space.
  */
 
-#include <cuda/experimental/sharded.cuh>
-
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
+
+#include <cuda/experimental/sharded.cuh>
 
 #include <vector>
 

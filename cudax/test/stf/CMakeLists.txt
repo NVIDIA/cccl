@@ -259,8 +259,7 @@ cccl_get_cudatoolkit()
 # MonteCarloMultiGPU is the only STF test that uses cuRAND directly.
 if (NOT TARGET CUDA::curand)
   list(
-    REMOVE_ITEM
-    stf_test_mathlib_sources
+    REMOVE_ITEM stf_test_mathlib_sources
     cuda-samples/5_Domain_Specific/MonteCarloMultiGPU_cudastf/MonteCarloMultiGPU.cu
   )
 endif()

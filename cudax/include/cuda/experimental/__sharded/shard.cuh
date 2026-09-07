@@ -25,9 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__places/places.cuh>
-
 #include <cuda/std/span>
+
+#include <cuda/experimental/__places/places.cuh>
 
 #include <cuda_runtime.h>
 
