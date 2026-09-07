@@ -1073,11 +1073,19 @@ public:
   /**
    * @brief Destructor that restores the previous execution place (if not moved-from).
    */
+  //! \brief Restores the previous execution place. Never throws.
+  //!
+  //! Returning to the device we came from must always succeed; if it does not, continuing would
+  //! run every subsequent launch on the wrong device. deactivate() reaches cuda_try and can also
+  //! allocate, so report and abort rather than propagate out of a destructor.
   ~exec_place_scope()
   {
     if (place_.get_impl())
     {
-      place_.get_impl()->deactivate(prev_, idx_);
+      ON_THROW(abort)
+      {
+        place_.get_impl()->deactivate(prev_, idx_);
+      };
     }
   }
 
@@ -1101,7 +1109,11 @@ public:
     {
       if (place_.get_impl())
       {
-        place_.get_impl()->deactivate(prev_, idx_);
+        // This operator is noexcept, so a throwing deactivate() would terminate without a report.
+        ON_THROW(abort)
+        {
+          place_.get_impl()->deactivate(prev_, idx_);
+        };
       }
       place_       = mv(other.place_);
       idx_         = other.idx_;
@@ -1146,7 +1158,10 @@ public:
   {
     if (place_.get_impl())
     {
-      place_.get_impl()->deactivate(prev_, idx_);
+      ON_THROW(abort)
+      {
+        place_.get_impl()->deactivate(prev_, idx_);
+      };
       place_ = exec_place(); // Mark as inactive
     }
   }

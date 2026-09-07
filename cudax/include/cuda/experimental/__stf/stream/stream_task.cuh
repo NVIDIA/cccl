@@ -272,10 +272,20 @@ public:
     return *this;
   }
 
-  stream_task<>& end()
+  //! \brief Finish the task. Never throws.
+  //!
+  //! end() is called both on the normal path and from failure guards while an exception is
+  //! already propagating, so it absorbs its own errors rather than making every caller wrap it.
+  //! end_uncleared() and clear() can both throw (event creation, dependency release); a failure
+  //! is reported and execution resumes. Callers that need the error to propagate should call
+  //! end_uncleared() and clear() directly.
+  stream_task<>& end() noexcept
   {
-    end_uncleared();
-    clear();
+    ON_THROW(notify)
+    {
+      end_uncleared();
+      clear();
+    };
     return *this;
   }
 
@@ -336,7 +346,7 @@ public:
       clear();
     };
 
-    // And if they don't, just end the task.
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
     SCOPE(fail)
     {
       end();
@@ -593,7 +603,7 @@ public:
       clear();
     };
 
-    // And if they don't, just end the task.
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
     SCOPE(fail)
     {
       end();

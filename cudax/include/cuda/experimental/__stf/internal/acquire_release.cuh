@@ -339,7 +339,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
  * @warning The task must have completed all its work before calling this function.
  * Failure to follow the task's lifecycle correctly may lead to undefined behavior.
  */
-inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
+inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs) noexcept
 {
   // After release(), the task is over
   assert(get_task_phase() == task::phase::running);
@@ -347,65 +347,81 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
 
   auto& task_deps = pimpl->deps;
 
-  // We copy the list of prereqs into the task
-  merge_event_list(done_prereqs);
-
-  // Get the indices of logical data which were not skipped (redundant
-  // dependencies are merged).
-  for (auto& [ind, mode] : pimpl->unskipped_indexes)
+  // Everything from here to leaves.add() below updates shared dependency state, and every way
+  // it can fail is an allocation failure: event-list merges, the prereq containers, the dot
+  // tracing structures. Aborting on those is the standing ruling -- and it is also what keeps
+  // this function safe, since a throw partway through would leave the dependency graph half
+  // updated AND every logical-data mutex still locked (they are taken in acquire() and released
+  // in the loop below), which deadlocks the next task touching that data.
+  //
+  // catch_exactly rather than catch_only on purpose: std::bad_array_new_length derives from
+  // bad_alloc but means a size computation went wrong, not that memory ran out. It should not
+  // be quietly treated as memory pressure. Anything else we did not anticipate escapes into
+  // terminate rather than being silently absorbed here.
+  ON_THROW(catch_exactly<::std::bad_alloc>(abort))
   {
-    auto& e                = task_deps[ind];
-    logical_data_untyped d = e.get_data();
+    // We copy the list of prereqs into the task
+    merge_event_list(done_prereqs);
 
-    auto&& data_instance = d.get_data_instance(e.get_instance_id());
-
-    if (mode == access_mode::read)
+    // Get the indices of logical data which were not skipped (redundant
+    // dependencies are merged).
+    for (auto& [ind, mode] : pimpl->unskipped_indexes)
     {
-      // If we have a read-only task, we only need to make sure that write accesses waits for this task
-      data_instance.add_write_prereq(ctx, done_prereqs);
+      auto& e                = task_deps[ind];
+      logical_data_untyped d = e.get_data();
 
-      // A dep at a replicated place read one instance PER member place:
-      // protect the others the same way (writes elsewhere must wait)
-      const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
-      if (rel_dplace.instance_count() > 1)
+      auto&& data_instance = d.get_data_instance(e.get_instance_id());
+
+      if (mode == access_mode::read)
       {
-        ::std::vector<instance_id_t> protected_ids{e.get_instance_id()};
-        protected_ids.reserve(rel_dplace.instance_count());
-        for (size_t r = 1; r < rel_dplace.instance_count(); r++)
+        // If we have a read-only task, we only need to make sure that write accesses waits for this task
+        data_instance.add_write_prereq(ctx, done_prereqs);
+
+        // A dep at a replicated place read one instance PER member place:
+        // protect the others the same way (writes elsewhere must wait)
+        const data_place& rel_dplace = e.get_dplace().is_affine() ? get_affine_data_place() : e.get_dplace();
+        if (rel_dplace.instance_count() > 1)
         {
-          const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
-          if (::std::find(protected_ids.begin(), protected_ids.end(), im) == protected_ids.end())
+          ::std::vector<instance_id_t> protected_ids{e.get_instance_id()};
+          protected_ids.reserve(rel_dplace.instance_count());
+          for (size_t r = 1; r < rel_dplace.instance_count(); r++)
           {
-            protected_ids.push_back(im);
-            d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
+            const instance_id_t im = d.find_instance_id(rel_dplace.member(r));
+            if (::std::find(protected_ids.begin(), protected_ids.end(), im) == protected_ids.end())
+            {
+              protected_ids.push_back(im);
+              d.get_data_instance(im).add_write_prereq(ctx, done_prereqs);
+            }
           }
         }
       }
+      else
+      {
+        data_instance.set_read_prereq(done_prereqs);
+        data_instance.clear_write_prereq();
+      }
+
+      // Update last reader/writer tasks
+      reserved::enforce_stf_deps_after(ctx, d, *this, mode);
     }
-    else
+
+    // Automatically reset the context to its original configuration (device, SM affinity, ...)
+    pimpl->saved_place_ctx = exec_place_scope();
+
+    auto& dot = *ctx.get_dot();
+    if (dot.is_tracing())
     {
-      data_instance.set_read_prereq(done_prereqs);
-      data_instance.clear_write_prereq();
+      // These prereqs depend on the task identified by unique_id
+      auto& done_prereqs_ = get_done_prereqs();
+      done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), reserved::edge_type::prereqs);
     }
 
-    // Update last reader/writer tasks
-    reserved::enforce_stf_deps_after(ctx, d, *this, mode);
-  }
+    // This task becomes a new "leaf task" until another task depends on it
+    ctx.get_state().leaves.add(*this);
+  };
 
-  // Automatically reset the context to its original configuration (device, SM affinity, ...)
-  pimpl->saved_place_ctx = exec_place_scope();
-
-  auto& dot = *ctx.get_dot();
-  if (dot.is_tracing())
-  {
-    // These prereqs depend on the task identified by unique_id
-    auto& done_prereqs_ = get_done_prereqs();
-    done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), reserved::edge_type::prereqs);
-  }
-
-  // This task becomes a new "leaf task" until another task depends on it
-  ctx.get_state().leaves.add(*this);
-
+  // From here on nothing throws: the phase flip, the unlocks (shared_ptr copies plus a noexcept
+  // unlock) and the resets are all allocation-free.
   pimpl->phase = task::phase::finished;
 
   /* We unlock the mutex which were locked. We only locked each logical data
