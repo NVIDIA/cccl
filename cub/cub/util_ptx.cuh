@@ -148,6 +148,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsig
   constexpr bool is_pow_of_two = ::cuda::is_power_of_two(LOGICAL_WARP_THREADS);
   constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == detail::warp_threads;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LOGICAL_WARP_THREADS);
 
   if constexpr (is_pow_of_two && !is_arch_warp)
@@ -218,8 +219,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
+  const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
@@ -296,8 +297,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
+  const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
@@ -370,8 +371,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
+  const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);
@@ -427,7 +428,7 @@ struct warp_matcher_t<LABEL_BITS, warp_threads>
     for (int BIT = 0; BIT < LABEL_BITS; ++BIT)
     {
       unsigned int mask;
-      unsigned int current_bit = 1 << BIT;
+      const unsigned int current_bit = 1 << BIT;
       asm("{\n"
           "    .reg .pred p;\n"
           "    and.b32 %0, %1, %2;"
@@ -452,7 +453,7 @@ struct warp_matcher_t<LABEL_BITS, warp_threads>
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t num_bits)
 {
-  uint32_t ret{};
+  uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shl.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
   return ret;
 }
@@ -463,7 +464,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftLeft(uint32_t val, uint32_t nu
  */
 _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t num_bits)
 {
-  uint32_t ret{};
+  uint32_t ret{}; // NOLINT(misc-const-correctness)
   asm("shr.b32 %0, %1, %2;" : "=r"(ret) : "r"(val), "r"(num_bits));
   return ret;
 }

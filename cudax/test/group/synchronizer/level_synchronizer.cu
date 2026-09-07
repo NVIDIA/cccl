@@ -38,7 +38,7 @@ __device__ void test_level_synchronizer(const Level& level, Config config)
     using MappingResult        = cudax::__this_mapping_result<Level>;
     using SynchronizerInstance = typename Synchronizer::template __synchronizer_instance<Level>;
 
-    MappingResult mapping_result{};
+    const MappingResult mapping_result{};
 
     // Test default constructor.
     static_assert(cuda::std::is_nothrow_default_constructible_v<SynchronizerInstance>);

@@ -431,7 +431,7 @@ struct AgentReduceByKey
 
     for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
     {
-      KeyValuePairT pair                                = temp_storage.raw_exchange.Alias()[item];
+      const KeyValuePairT pair                          = temp_storage.raw_exchange.Alias()[item];
       d_unique_out[num_tile_segments_prefix + item]     = pair.key; // NOLINT(bugprone-misplaced-widening-cast)
       d_aggregates_out[num_tile_segments_prefix + item] = pair.value; // NOLINT(bugprone-misplaced-widening-cast)
     }
@@ -553,13 +553,13 @@ struct AgentReduceByKey
     if (IS_LAST_TILE)
     {
       // Use custom flag operator to additionally flag the first out-of-bounds item
-      GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
+      const GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
     else
     {
-      InequalityWrapper<EqualityOpT> flag_op(equality_op);
+      const InequalityWrapper<EqualityOpT> flag_op(equality_op);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
     }
@@ -732,7 +732,7 @@ struct AgentReduceByKey
     // block
 
     // Current tile index
-    int tile_idx = static_cast<int>(start_tile + blockIdx.x);
+    const int tile_idx = static_cast<int>(start_tile + blockIdx.x);
 
     // Global offset for the current tile
     OffsetT tile_offset = OffsetT(TILE_ITEMS) * tile_idx;

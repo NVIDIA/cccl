@@ -170,7 +170,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   AccumT thread_aggregate{};
   int count = 0;
 
-  int n_threads = active_grid_size * threads_per_block;
+  const int n_threads = active_grid_size * threads_per_block;
 
   if constexpr (sizeof(num_items_t) == 8)
   {

@@ -504,8 +504,8 @@ CUB_TEST("DeviceReduce::Reduce consumes a deferred count produced in another str
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-  cuda::stream producer{cuda::devices[current_device]};
-  cuda::stream consumer{cuda::devices[current_device]};
+  const cuda::stream producer{cuda::devices[current_device]};
+  const cuda::stream consumer{cuda::devices[current_device]};
 
   const auto d_input = cuda::counting_iterator<value_t>{value_t{0}};
   c2h::device_vector<value_t> selected_items(capacity, value_t{capacity + 1});

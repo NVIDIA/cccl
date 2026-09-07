@@ -332,7 +332,7 @@ THRUST_RUNTIME_FUNCTION inline size_t get_max_shared_memory_per_block()
 
 THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t num_blocks)
 {
-  size_t max_shmem_per_block = get_max_shared_memory_per_block();
+  const size_t max_shmem_per_block = get_max_shared_memory_per_block();
   if (shmem_per_block > max_shmem_per_block)
   {
     return shmem_per_block * num_blocks;

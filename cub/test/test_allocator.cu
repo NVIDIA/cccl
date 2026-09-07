@@ -385,7 +385,7 @@ int main(int argc, char** argv)
     //
 
     // Allocate 768 bytes on the next gpu
-    int next_gpu = (initial_gpu + 1) % num_gpus;
+    const int next_gpu = (initial_gpu + 1) % num_gpus;
     char* d_768B_2;
     CubDebugExit(allocator.DeviceAllocate(next_gpu, (void**) &d_768B_2, 768));
 
@@ -469,7 +469,7 @@ int main(int argc, char** argv)
     cub::detail::EmptyKernel<void><<<1, 32>>>();
   }
   gpu_timer.Stop();
-  float cuda_empty_elapsed_millis = gpu_timer.ElapsedMillis();
+  const float cuda_empty_elapsed_millis = gpu_timer.ElapsedMillis();
 
   // CUDA
   gpu_timer.Start();

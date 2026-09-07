@@ -241,7 +241,7 @@ bool verify_unique_indices(c2h::device_vector<ValueT>& values_out, cuda::std::in
   auto num_items   = sorted_values.size();
   auto counting_it = cuda::make_counting_iterator(cuda::std::int64_t{0});
   auto seg_ids     = cuda::make_transform_iterator(counting_it, fixed_stride_segment_id_op{k});
-  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), seg_ids};
+  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), seg_ids}; // NOLINT(misc-const-correctness)
   auto num_duplicates = thrust::count_if(counting_it, counting_it + (num_items - 1), flag_op);
 
   return num_duplicates == 0;
@@ -272,7 +272,7 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
                   segment_ids.begin());
   thrust::inclusive_scan(segment_ids.begin(), segment_ids.end(), segment_ids.begin());
 
-  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), segment_ids.cbegin()};
+  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), segment_ids.cbegin()}; // NOLINT(misc-const-correctness)
 
   auto num_duplicates = thrust::count_if(
     cuda::make_counting_iterator(cuda::std::size_t{0}), cuda::make_counting_iterator(num_items - 1), flag_op);
@@ -1023,12 +1023,12 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
     d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
 
   // Values still belong to their keys, and no source index is selected twice.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
-  c2h::host_vector<key_t> h_keys = keys_in_buffer;
+  const c2h::host_vector<key_t> h_keys = keys_in_buffer;
   const c2h::host_vector<val_t> ref =
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
@@ -1111,12 +1111,12 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through
     d_keys_in, d_keys_out, d_values_in, d_values_out, seg_sizes, k_param, cuda::args::immediate{num_segments}, env);
 
   // Values still belong to their keys, and no source index is selected twice.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
-  c2h::host_vector<key_t> h_keys = keys_in_buffer;
+  const c2h::host_vector<key_t> h_keys = keys_in_buffer;
   const c2h::host_vector<val_t> ref =
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
@@ -1204,12 +1204,12 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
     d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
 
   // Values still belong to their keys, and no source index is selected twice.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
-  c2h::host_vector<key_t> h_keys = keys_in_buffer;
+  const c2h::host_vector<key_t> h_keys = keys_in_buffer;
   const c2h::host_vector<val_t> ref =
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
@@ -1309,7 +1309,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
 
   // Materialize the (non-contiguous) key input for verification: same heavy-tie function of the global index.
   c2h::host_vector<key_t> h_keys(static_cast<cuda::std::size_t>(num_items));
-  heavy_tie_key_op<key_t> key_op{};
+  const heavy_tie_key_op<key_t> key_op{};
   for (segment_size_t idx = 0; idx < num_items; ++idx)
   {
     h_keys[static_cast<cuda::std::size_t>(idx)] = key_op(idx);
@@ -1447,7 +1447,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   }
 
   // Sanity: values still belong to their keys and no source index repeats within a segment.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_a, values_out_a) == true);
   REQUIRE(verify_unique_indices(values_out_a, num_segments, k) == true);
   // The second run uses config B (the streaming path under gpu_to_gpu); validate its pairing/uniqueness too so a
@@ -2011,7 +2011,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
   c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);
@@ -2130,7 +2130,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output. Input segments are fixed-size (strided); output segments are compacted (variable).
   c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
@@ -2248,7 +2248,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
   c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);

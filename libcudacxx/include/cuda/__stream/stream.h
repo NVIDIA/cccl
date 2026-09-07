@@ -49,7 +49,7 @@ struct stream : stream_ref
   _CCCL_HOST_API explicit stream(device_ref __dev, int __priority = default_priority)
       : stream_ref(::cuda::__invalid_stream())
   {
-    [[maybe_unused]] __ensure_current_context __ctx_setter(__dev);
+    const __ensure_current_context __ctx_setter(__dev);
     __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
   }
 

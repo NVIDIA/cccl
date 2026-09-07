@@ -339,9 +339,9 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -393,9 +393,9 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 

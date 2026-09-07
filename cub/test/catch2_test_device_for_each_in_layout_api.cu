@@ -45,7 +45,7 @@ CUB_TEST("Device ForEachInLayout", "[ForEachInLayout][device]", CUB_SMALL)
   using data_t             = cuda::std::array<int, 3>;
   using extents_type       = cuda::std::extents<int, 3, 2, 2>;
   using mapping_left_type  = cuda::std::layout_left::mapping<extents_type>;
-  extents_type                  extents{};
+  const extents_type                  extents{};
   thrust::device_vector<data_t> d_output(cub::detail::size(extents), thrust::no_init);
   thrust::host_vector<data_t>   h_output(cub::detail::size(extents), thrust::no_init);
   auto                          d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()),

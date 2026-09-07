@@ -32,6 +32,7 @@ __device__ void test_composite_mapping(const Mapping1& mapping1, const Mapping2&
 
   // Test construction from 2 mappings.
   {
+    // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
     cudax::composite_mapping mapping{mapping1, mapping2};
     static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     static_assert(cuda::std::is_nothrow_constructible_v<Mapping, Mapping1, Mapping2>

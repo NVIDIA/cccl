@@ -63,6 +63,7 @@ template <>
 template <class T, class RNG>
 void fill_random(std::vector<T>& local, cuda::std::size_t count, RNG& rng)
 {
+  // NOLINTNEXTLINE(misc-const-correctness)
   cuda::std::uniform_int_distribution<cuda::std::int64_t> dist{
     cuda::std::numeric_limits<cuda::std::int64_t>::lowest(), cuda::std::numeric_limits<cuda::std::int64_t>::max()};
 

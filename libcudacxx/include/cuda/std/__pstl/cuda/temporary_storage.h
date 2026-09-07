@@ -110,7 +110,7 @@ class __temporary_storage
   __get_storage(void* __ptr, const _Sizes... __elements_stored) noexcept
   {
     array<void*, 1 + sizeof...(_StoredTypes)> __storage{__ptr};
-    array<size_t, sizeof...(_StoredTypes)> __num_elements{static_cast<size_t>(__elements_stored)...};
+    const array<size_t, sizeof...(_StoredTypes)> __num_elements{static_cast<size_t>(__elements_stored)...};
     return __get_storage<0>(__storage, __num_elements);
   }
 

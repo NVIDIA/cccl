@@ -184,7 +184,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
     // tile_offset < num_items always, hence the line below works
-    bool full_tile = num_items - tile_offset >= TILE_ITEMS;
+    const bool full_tile = num_items - tile_offset >= TILE_ITEMS;
     if (full_tile)
     {
       LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_in + tile_offset, keys);
@@ -205,7 +205,7 @@ struct AgentRadixSortHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
-    int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
+    const int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
@@ -215,7 +215,7 @@ struct AgentRadixSortHistogram
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
       {
-        uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
+        const uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
         // Using cuda::atomic<> results in lower performance on GP100,
         // so atomicAdd() is used instead.
         atomicAdd(&s.bins[pass][bin][part], 1);
