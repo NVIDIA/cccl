@@ -329,15 +329,17 @@ public:
 
       if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
-        // Register ownership *before* the node references the args. The resource owns the
-        // wrapper outright, so a throw from cudaGraphAddHostNode leaves it owned by the
-        // context rather than freed, and there is no window in which a live graph node
-        // points at a freed payload. (Registering first was unsafe while the resource held
-        // a raw pointer, because both it and the unique_ptr would have owned the same
-        // object until release().)
+        // Register *before* the node references the args, so there is no window in which a
+        // live graph node points at a freed payload. The resource is non-owning until the
+        // release() below runs, so a throw from add_resource() leaves this unique_ptr as the
+        // owner and it frees correctly -- no node exists yet on that path.
         using wrapper_type = ::cuda::std::remove_reference_t<decltype(*resolved)>;
         auto* args         = resolved.get();
-        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(mv(resolved)));
+        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(args));
+        // Registration succeeded, so the context is the owner now. Release here rather than
+        // after the branch: if cudaGraphAddHostNode below throws, this unique_ptr must no
+        // longer own the payload, or it would free what the registered resource also frees.
+        resolved.release();
         cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
@@ -347,10 +349,9 @@ public:
         // For a stream the callback owns the args once the launch succeeds.
         cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, resolved.get());
       }
-      // The graph branch already moved ownership into the resource, leaving `resolved` empty,
-      // so this releases only on the stream path, where the callback is now the owner. The
-      // enqueues are asynchronous, so on a throw above the callback has not run and the
-      // unique_ptr is still the sole owner.
+      // No-op on the graph path (released above). On the stream path the callback owns the
+      // args once the launch succeeded; the enqueue is asynchronous, so on a throw above the
+      // callback has not run and this unique_ptr is still the sole owner.
       resolved.release();
     }
     else
@@ -400,15 +401,18 @@ public:
 
       if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
-        // Register ownership *before* the node references the args. The resource owns the
-        // wrapper outright, so a throw from cudaGraphAddHostNode leaves it owned by the
-        // context rather than freed, and there is no window in which a live graph node
-        // points at a freed payload. (Registering first was unsafe while the resource held
-        // a raw pointer, because both it and the unique_ptr would have owned the same
-        // object until release().)
+        // Register *before* the node references the args, so there is no window in which a
+        // live graph node points at a freed payload. The resource is non-owning until the
+        // release() below runs, so a throw from add_resource() leaves this unique_ptr as the
+        // owner and it frees correctly -- no node exists yet on that path.
         using wrapper_type = ::cuda::std::remove_reference_t<decltype(*wrapper)>;
         auto* args         = wrapper.get();
-        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(mv(wrapper)));
+        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(args));
+        // Registration succeeded, so the context is the owner now. Release here rather than
+        // after the branch: if cudaGraphAddHostNode below throws, this unique_ptr must no
+        // longer own the payload, or it would free what the registered resource also frees.
+        // No-op on the graph path (released above); owns the stream path until launch succeeded.
+        wrapper.release();
         cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);

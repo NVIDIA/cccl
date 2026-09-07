@@ -1142,9 +1142,9 @@ public:
     // For stream contexts, delete immediately in callback (better memory efficiency)
     if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
-      // The resource owns `args` from here on; `args` below is a non-owning view used to
-      // reference the tuple from the graph node.
-      ctx.add_resource(::std::make_shared<callback_args_resource<args_t>>(::std::unique_ptr<args_t>{args}));
+      // The context becomes responsible for `args` once add_resource() returns; `args` stays
+      // usable below as the pointer the graph node references.
+      ctx.add_resource(::std::make_shared<callback_args_resource<args_t>>(args));
     }
 
     // The function which the host callback will execute

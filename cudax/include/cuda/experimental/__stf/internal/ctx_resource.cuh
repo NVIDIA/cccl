@@ -181,10 +181,16 @@ namespace reserved
 //! it may be referenced by a graph node that is replayed more than once, so the callback itself
 //! must not free it. The context frees it once, when it releases its resources.
 //!
-//! The constructor takes a `unique_ptr` so the handoff is exception-safe: until the resource
-//! exists, the caller still owns the payload.
+//! Ownership transfer is two-phase, and both phases matter:
 //!
-//! It then stores a RAW pointer, and the destructor deliberately does not free. The payload must
+//!  1. The constructor takes a NON-OWNING pointer. The caller keeps its `unique_ptr` until
+//!     `ctx_resource_set::add()` has actually taken the resource, and only then releases it.
+//!     `add()` can throw from its `push_back`, and on that path no graph node exists yet, so the
+//!     caller is still the right owner and frees correctly.
+//!  2. After registration succeeds the context is responsible, and frees exactly once from the
+//!     stream-ordered release callback.
+//!
+//! The destructor deliberately does not free. The payload must
 //! outlive any asynchronous work referencing it, and only the stream-ordered release callback
 //! knows when that work has finished -- a destructor cannot. A context abandoned without
 //! `finalize()` therefore leaks the payload rather than freeing it out from under a graph node
@@ -195,8 +201,9 @@ template <typename Payload>
 class callback_args_resource : public ctx_resource
 {
 public:
-  explicit callback_args_resource(::std::unique_ptr<Payload> payload) noexcept
-      : payload_(payload.release())
+  //! Non-owning until the caller releases its own pointer; see the two-phase note above.
+  explicit callback_args_resource(Payload* payload) noexcept
+      : payload_(payload)
   {}
 
   bool can_release_in_callback() const noexcept override
