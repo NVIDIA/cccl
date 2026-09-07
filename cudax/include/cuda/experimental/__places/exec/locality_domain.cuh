@@ -513,10 +513,15 @@ public:
       {
         CUcontext primary_ctx = cuda_try<cuDevicePrimaryCtxRetain>(device);
         // Release on every exit path: a throwing resource query must not leak
-        // the retained primary-context reference.
+        // the retained primary-context reference. A failed release leaks that
+        // reference but leaves nothing unsafe to continue with, so report and
+        // carry on rather than abort a stack that is already unwinding.
         SCOPE(exit)
         {
-          cuda_try(cuDevicePrimaryCtxRelease(device));
+          ON_THROW(notify)
+          {
+            cuda_try(cuDevicePrimaryCtxRelease(device));
+          };
         };
         cuda_try(cuCtxGetDevResource(primary_ctx, &input, CU_DEV_RESOURCE_TYPE_SM));
       }
