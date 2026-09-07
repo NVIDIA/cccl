@@ -57,6 +57,10 @@ needs_gpu=false
 case "$stage" in
   contracts)
     ;;
+  numba-mlir)
+    needs_cuda_toolkit=true
+    needs_gpu=true
+    ;;
   cutlass-host)
     needs_cuda_toolkit=true
     ;;
@@ -105,6 +109,10 @@ case "$stage" in
   contracts)
     python -m pip install "${wheels[0]}[test]"
     ;;
+  numba-mlir)
+    python -m pip install \
+      "${wheels[0]}[test,numba-cuda-mlir-cu${cuda_major_version}]"
+    ;;
   cutlass-host | cutlass-gpu | cutlass-final-link)
     if [[ "$cuda_major_version" != "13" ]]; then
       echo "Error: CUTLASS stages currently require CUDA 13" >&2
@@ -149,6 +157,20 @@ fi
 case "$stage" in
   contracts)
     python -m pytest -v contracts/ packaging/
+    ;;
+  numba-mlir)
+    python - <<'PY'
+import importlib.metadata
+
+import numba_cuda_mlir.cuda as cuda
+
+if not cuda.is_available():
+    raise SystemExit("numba-cuda-mlir cannot access an NVIDIA GPU")
+print(f"numba-cuda-mlir={importlib.metadata.version('numba-cuda-mlir')}")
+PY
+    python -m pytest -v \
+      backends/numba_mlir/unit/ \
+      backends/numba_mlir/runtime/
     ;;
   cutlass-host)
     python - <<'PY'

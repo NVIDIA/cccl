@@ -6,7 +6,9 @@
 
 Importing ``cuda.coop`` probes an explicit allowlist of separately installed
 DSL integrations. Each probe verifies the compiler capabilities that its
-adapter needs before installing compiler-owned activation. Set
+adapter needs before installing compiler-owned activation: a trace context for
+CUTLASS or whole-function rewrites for Numba-CUDA-MLIR. One incompatible DSL
+does not prevent another compatible DSL from registering. Set
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` to a truthy value to skip every
 automatic probe and register backends explicitly instead.
 """
@@ -28,7 +30,7 @@ _WARNING_PREFIX = "cuda.coop automatic DSL registration:"
 
 # Keep this an explicit allowlist so installing an unrelated compiler package
 # cannot change the cuda.coop root import.
-_AUTO_DSL_CANDIDATES = ("cutlass",)
+_AUTO_DSL_CANDIDATES = ("cutlass", "numba_mlir")
 
 
 class CudaCoopAutoRegistrationWarning(UserWarning):
@@ -37,6 +39,14 @@ class CudaCoopAutoRegistrationWarning(UserWarning):
 
 class _BackendUnavailable(ImportError):
     """The optional backend's top-level runtime is genuinely absent."""
+
+
+class _IncompatibleBackend(ImportError):
+    """A detected backend is missing capabilities required by cuda.coop."""
+
+    def __init__(self, message: str, *, missing_capabilities: tuple[str, ...]):
+        super().__init__(message)
+        self.missing_capabilities = missing_capabilities
 
 
 @dataclass(frozen=True)
@@ -69,6 +79,23 @@ def _import_optional(module_name: str, *, top_level: str) -> ModuleType:
         raise
 
 
+def _require_callables(
+    modules: dict[str, object],
+    requirements: dict[str, tuple[str, ...]],
+) -> None:
+    missing = tuple(
+        f"{module_name}.{name}"
+        for module_name, names in requirements.items()
+        for name in names
+        if not callable(getattr(modules[module_name], name, None))
+    )
+    if missing:
+        raise _IncompatibleBackend(
+            "missing required callable features: " + ", ".join(missing),
+            missing_capabilities=missing,
+        )
+
+
 def _activate_cutlass() -> ModuleType:
     """Let the qualified CUTLASS adapter validate and register its hooks."""
 
@@ -79,6 +106,35 @@ def _activate_cutlass() -> ModuleType:
     return importlib.import_module("cuda.coop.cutlass")
 
 
+def _activate_numba_mlir() -> ModuleType:
+    """Preflight compiler APIs, then transactionally register coop rewrites."""
+
+    _import_optional("numba_cuda_mlir", top_level="numba_cuda_mlir")
+    importlib.import_module("numba_cuda_mlir.cuda")
+    extending = importlib.import_module("numba_cuda_mlir.extending")
+    rewrites = importlib.import_module("numba_cuda_mlir.numba_cuda.core.rewrites")
+    _require_callables(
+        {
+            "numba_cuda_mlir.extending": extending,
+            "numba_cuda_mlir.numba_cuda.core.rewrites": rewrites,
+        },
+        {
+            "numba_cuda_mlir.extending": (
+                "WholeFunctionPlanner",
+                "refresh_registries",
+                "register_planner",
+                "require_launch_config",
+                "set_required_dynamic_shared_memory",
+            ),
+            "numba_cuda_mlir.numba_cuda.core.rewrites": (
+                "Rewrite",
+                "register_rewrite",
+            ),
+        },
+    )
+    return importlib.import_module("cuda.coop.numba_mlir")
+
+
 _CANDIDATES = {
     "cutlass": _Candidate(
         display_name="CUTLASS",
@@ -86,6 +142,16 @@ _CANDIDATES = {
         distributions=("nvidia-cutlass-dsl",),
         install_hint="cuda-coop[cutlass]",
         activate=_activate_cutlass,
+    ),
+    "numba_mlir": _Candidate(
+        display_name="Numba-CUDA-MLIR",
+        runtime_module="numba_cuda_mlir",
+        distributions=("numba-cuda-mlir",),
+        install_hint=(
+            "cuda-coop[numba-cuda-mlir-cu12] for CUDA 12 or "
+            "cuda-coop[numba-cuda-mlir-cu13] for CUDA 13"
+        ),
+        activate=_activate_numba_mlir,
     ),
 }
 
