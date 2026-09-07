@@ -4,18 +4,22 @@
 
 """Resolve generated CUTLASS providers through the compiler lifecycle.
 
-This module owns phase telemetry and orchestration across target selection,
-cache, Clang, and NVRTC services. Those services own
+This module owns resolver ordering, phase telemetry, and orchestration across
+target selection, cache, Clang, NVRTC, and AOT services. Those services own
 their implementation details and artifact state.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib
 import os
 import shutil
 import time
 from collections.abc import Callable, Hashable, Iterable
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass
 from pathlib import Path
 
 from cutlass._mlir import ir
@@ -30,14 +34,20 @@ from . import _nvrtc, _cache, _clang
 
 # isort: on
 from ._bundle_contract import (
+    RESOLUTION_ROUTE_AOT_PACK,
     RESOLUTION_ROUTE_CLANG,
     RESOLUTION_ROUTE_DISK,
     RESOLUTION_ROUTE_MEMORY,
     RESOLUTION_ROUTE_NVRTC,
+    RESOLUTION_ROUTE_PRECOMPILED,
     BundleCompilation,
+    BundleResolution,
+    BundleResolutionRequest,
     BundleTelemetry,
     LayoutProbe,
+    StorageLayout,
     _prepare_layout_probes,
+    _validate_storage_layout,
     bundle_compiler_options,
     include_dirs_identity,
     make_bundle_cache_identity,
@@ -55,6 +65,15 @@ COMMON_CCCL_ROOT_ENV = "CUDA_COOP_CCCL_ROOT"
 LINK_LIBRARIES_ATTR = "link-libraries"
 
 
+@dataclass(frozen=True)
+class _BundlePrecompileResolver:
+    """One typed resolver registration and its exact resolution contract."""
+
+    callback: Callable[[BundleResolutionRequest], BundleResolution | None]
+    route: str
+    phase: str
+
+
 _ROUTE_COUNTS: dict[str, int] = {}
 _PHASE_COUNTS: dict[str, int] = {}
 _PHASE_TIMINGS_NS: dict[str, int] = {}
@@ -63,6 +82,80 @@ _UNKNOWN_COMPILER_PROCESS_NONCE = os.urandom(8).hex()
 
 def _unknown_compiler_process_token() -> str:
     return f"unknown-{os.getpid()}-{_UNKNOWN_COMPILER_PROCESS_NONCE}"
+
+
+_ACTIVE_PRECOMPILE_RESOLVERS: ContextVar[tuple[_BundlePrecompileResolver, ...]] = (
+    ContextVar(
+        "cuda_coop_cutlass_active_precompile_resolvers",
+        default=(),
+    )
+)
+_ACTIVE_POST_RESOLUTION_OBSERVERS: ContextVar[
+    tuple[Callable[[BundleResolution], None], ...]
+] = ContextVar(
+    "cuda_coop_cutlass_active_post_resolution_observers",
+    default=(),
+)
+
+
+def _bundle_precompile_resolver(
+    callback: Callable[[BundleResolutionRequest], BundleResolution | None],
+    *,
+    route: str = RESOLUTION_ROUTE_PRECOMPILED,
+    phase: str = "precompile_resolvers",
+) -> _BundlePrecompileResolver:
+    if not callable(callback):
+        raise TypeError("bundle precompile resolver must be callable")
+    if route not in {RESOLUTION_ROUTE_PRECOMPILED, RESOLUTION_ROUTE_AOT_PACK}:
+        raise ValueError(f"unsupported bundle precompile resolver route {route!r}")
+    if not isinstance(phase, str) or not phase:
+        raise ValueError("bundle precompile resolver phase must be a nonempty string")
+    return _BundlePrecompileResolver(
+        callback=callback,
+        route=route,
+        phase=phase,
+    )
+
+
+@contextmanager
+def activate_bundle_precompile_resolver(
+    resolver: (
+        _BundlePrecompileResolver
+        | Callable[[BundleResolutionRequest], BundleResolution | None]
+    ),
+):
+    """Push one context-local resolver, tried before enclosing resolvers."""
+
+    if isinstance(resolver, _BundlePrecompileResolver):
+        resolver = _bundle_precompile_resolver(
+            resolver.callback,
+            route=resolver.route,
+            phase=resolver.phase,
+        )
+    else:
+        resolver = _bundle_precompile_resolver(resolver)
+    resolvers = _ACTIVE_PRECOMPILE_RESOLVERS.get()
+    token = _ACTIVE_PRECOMPILE_RESOLVERS.set((*resolvers, resolver))
+    try:
+        yield
+    finally:
+        _ACTIVE_PRECOMPILE_RESOLVERS.reset(token)
+
+
+@contextmanager
+def activate_bundle_resolution_observer(
+    observer: Callable[[BundleResolution], None],
+):
+    """Push one context-local observer, invoked after enclosing observers."""
+
+    if not callable(observer):
+        raise TypeError("bundle resolution observer must be callable")
+    observers = _ACTIVE_POST_RESOLUTION_OBSERVERS.get()
+    token = _ACTIVE_POST_RESOLUTION_OBSERVERS.set((*observers, observer))
+    try:
+        yield
+    finally:
+        _ACTIVE_POST_RESOLUTION_OBSERVERS.reset(token)
 
 
 def append_link_library_attr(module: ir.Module, path: str) -> None:
@@ -158,8 +251,53 @@ def _finish_phase(
     phase_timings_ns[phase] = phase_timings_ns.get(phase, 0) + elapsed_ns
 
 
+def _validated_precompiled_bundle(
+    resolution: BundleResolution,
+    request: BundleResolutionRequest,
+    *,
+    route: str,
+) -> _cache_support._CachedBundle:
+    if not isinstance(resolution, BundleResolution):
+        raise TypeError(
+            "bundle precompile resolver must return BundleResolution or None"
+        )
+    if resolution.request != request:
+        raise ValueError("precompiled bundle resolution does not match its request")
+    if resolution.route != route:
+        raise ValueError("precompiled bundle resolution has an invalid route")
+    if not isinstance(resolution.path, str) or not resolution.path:
+        raise ValueError("precompiled bundle resolution requires a non-empty path")
+    if not os.path.isfile(resolution.path):
+        raise ValueError("precompiled bundle resolution path is not a file")
+    layout_expressions = request.identity.layout_expressions
+    if set(resolution.layouts_by_expression) != set(layout_expressions):
+        raise ValueError(
+            "precompiled bundle resolution has incompatible layout metadata"
+        )
+    layouts_by_expression = {}
+    for expression in layout_expressions:
+        layout = resolution.layouts_by_expression[expression]
+        if not isinstance(layout, StorageLayout):
+            raise TypeError(
+                "precompiled bundle layout metadata must contain StorageLayout values"
+            )
+        layouts_by_expression[expression] = _validate_storage_layout(
+            layout.size_in_bytes,
+            layout.alignment,
+            description=expression,
+        )
+    return _cache_support._CachedBundle(
+        path=resolution.path,
+        layouts_by_expression=layouts_by_expression,
+        producer_compiler=resolution.producer_compiler,
+        producer_compiler_version=resolution.producer_compiler_version,
+        producer_toolkit_version=resolution.producer_toolkit_version,
+    )
+
+
 def _finish_bundle_resolution(
     *,
+    request: BundleResolutionRequest,
     cached: _cache_support._CachedBundle,
     route: str,
     key_to_expression: dict[Hashable, str],
@@ -167,11 +305,23 @@ def _finish_bundle_resolution(
     resolution_started_ns: int,
 ) -> BundleCompilation:
     _finish_phase(phase_timings_ns, "total", resolution_started_ns)
+    resolution = BundleResolution(
+        request=request,
+        path=cached.path,
+        layouts_by_expression=dict(cached.layouts_by_expression),
+        route=route,
+        producer_compiler=cached.producer_compiler,
+        producer_compiler_version=cached.producer_compiler_version,
+        producer_toolkit_version=cached.producer_toolkit_version,
+        phase_timings_ns=dict(phase_timings_ns),
+    )
     with _cache_support._STATE_LOCK:
         _ROUTE_COUNTS[route] = _ROUTE_COUNTS.get(route, 0) + 1
         for phase, duration_ns in phase_timings_ns.items():
             _PHASE_COUNTS[phase] = _PHASE_COUNTS.get(phase, 0) + 1
             _PHASE_TIMINGS_NS[phase] = _PHASE_TIMINGS_NS.get(phase, 0) + duration_ns
+    for observer in _ACTIVE_POST_RESOLUTION_OBSERVERS.get():
+        observer(resolution)
     return _bundle_compilation(cached, key_to_expression)
 
 
@@ -185,6 +335,7 @@ def _compile_bundle_source(
     select_bundle_format: Callable[[], str],
     resolve_nvrtc_sm_arch: Callable[[], str],
     resolve_nvrtc_arch: Callable[[], str],
+    symbols: Iterable[str],
     which: Callable[[str], str | None] = shutil.which,
 ) -> BundleCompilation:
     resolution_started_ns = time.perf_counter_ns()
@@ -222,6 +373,48 @@ def _compile_bundle_source(
         compiler_options=compiler_options,
         layout_expressions=prepared_probes.expressions,
     )
+    bundle_symbols = tuple(sorted(set(symbols)))
+    request = BundleResolutionRequest(
+        identity=identity,
+        source=source,
+        symbols=bundle_symbols,
+    )
+
+    resolvers = _ACTIVE_PRECOMPILE_RESOLVERS.get()
+    if (
+        "CUDA_COOP_CUTLASS_AOT_PACK_PATH" in os.environ
+        or "CUDA_COOP_CUTLASS_AOT_MODE" in os.environ
+    ):
+        aot_pack = importlib.import_module("cuda.coop.cutlass._aot_pack")
+        environment_resolver = aot_pack._environment_precompile_resolver()
+        if environment_resolver is not None:
+            resolvers = (environment_resolver, *resolvers)
+    if resolvers:
+        for resolver in reversed(resolvers):
+            phase_started_ns = time.perf_counter_ns()
+            try:
+                resolution = resolver.callback(request)
+            finally:
+                _finish_phase(
+                    phase_timings_ns,
+                    resolver.phase,
+                    phase_started_ns,
+                )
+            if resolution is None:
+                continue
+            return _finish_bundle_resolution(
+                request=request,
+                cached=_validated_precompiled_bundle(
+                    resolution,
+                    request,
+                    route=resolver.route,
+                ),
+                route=resolver.route,
+                key_to_expression=prepared_probes.key_to_expression,
+                phase_timings_ns=phase_timings_ns,
+                resolution_started_ns=resolution_started_ns,
+            )
+
     phase_started_ns = time.perf_counter_ns()
     include_dirs = cccl_include_dirs(
         required_cccl_headers(source, registered_headers=registered_headers),
@@ -280,6 +473,7 @@ def _compile_bundle_source(
     if memory_hit:
         assert cached is not None
         return _finish_bundle_resolution(
+            request=request,
             cached=cached,
             route=RESOLUTION_ROUTE_MEMORY,
             key_to_expression=prepared_probes.key_to_expression,
@@ -306,6 +500,7 @@ def _compile_bundle_source(
         if memory_hit:
             assert cached is not None
             return _finish_bundle_resolution(
+                request=request,
                 cached=cached,
                 route=RESOLUTION_ROUTE_MEMORY,
                 key_to_expression=prepared_probes.key_to_expression,
@@ -325,6 +520,7 @@ def _compile_bundle_source(
         if cached is not None:
             _cache_support.store_memory_bundle(cache_identity.cache_key, cached)
             return _finish_bundle_resolution(
+                request=request,
                 cached=cached,
                 route=RESOLUTION_ROUTE_DISK,
                 key_to_expression=prepared_probes.key_to_expression,
@@ -367,6 +563,7 @@ def _compile_bundle_source(
         _cache_support.record_compilation()
     _finish_phase(phase_timings_ns, "compiler", phase_started_ns)
     return _finish_bundle_resolution(
+        request=request,
         cached=cached,
         route=route,
         key_to_expression=prepared_probes.key_to_expression,
@@ -384,6 +581,7 @@ def compile_bundle_source(
     select_bundle_format: Callable[[], str],
     resolve_nvrtc_sm_arch: Callable[[], str],
     resolve_nvrtc_arch: Callable[[], str],
+    symbols: Iterable[str] = (),
     which: Callable[[str], str | None] = shutil.which,
 ) -> str:
     """Compile a provider bundle and return its linkable artifact path."""
@@ -397,6 +595,7 @@ def compile_bundle_source(
         select_bundle_format=select_bundle_format,
         resolve_nvrtc_sm_arch=resolve_nvrtc_sm_arch,
         resolve_nvrtc_arch=resolve_nvrtc_arch,
+        symbols=symbols,
         which=which,
     ).path
 
@@ -411,6 +610,7 @@ def compile_bundle_source_with_layouts(
     select_bundle_format: Callable[[], str],
     resolve_nvrtc_sm_arch: Callable[[], str],
     resolve_nvrtc_arch: Callable[[], str],
+    symbols: Iterable[str] = (),
     which: Callable[[str], str | None] = shutil.which,
 ) -> BundleCompilation:
     """Compile one LTO-IR bundle and recover exact layouts from that program."""
@@ -424,6 +624,7 @@ def compile_bundle_source_with_layouts(
         select_bundle_format=select_bundle_format,
         resolve_nvrtc_sm_arch=resolve_nvrtc_sm_arch,
         resolve_nvrtc_arch=resolve_nvrtc_arch,
+        symbols=symbols,
         which=which,
     )
 

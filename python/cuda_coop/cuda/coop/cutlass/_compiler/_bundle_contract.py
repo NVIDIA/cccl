@@ -40,6 +40,10 @@ BUNDLE_METADATA_VERSION = 2
 
 LAYOUT_METADATA_VERSION = BUNDLE_METADATA_VERSION
 
+RESOLUTION_ROUTE_PRECOMPILED = "precompiled"
+
+RESOLUTION_ROUTE_AOT_PACK = "aot_pack"
+
 RESOLUTION_ROUTE_MEMORY = "memory"
 
 RESOLUTION_ROUTE_DISK = "disk"
@@ -115,6 +119,29 @@ class BundleCacheIdentity:
     @property
     def artifact_stem(self) -> str:
         return f"bundle_v{self.schema_version}_{self.contract_digest}"
+
+
+@dataclass(frozen=True)
+class BundleResolutionRequest:
+    """Canonical source and layout metadata presented to bundle resolvers."""
+
+    identity: BundleIdentity
+    source: str
+    symbols: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class BundleResolution:
+    """One resolved provider artifact and its exact layout metadata."""
+
+    request: BundleResolutionRequest
+    path: str
+    layouts_by_expression: Mapping[str, StorageLayout]
+    route: str
+    producer_compiler: str | None
+    producer_compiler_version: str | None
+    producer_toolkit_version: str | None
+    phase_timings_ns: Mapping[str, int]
 
 
 @dataclass(frozen=True)
