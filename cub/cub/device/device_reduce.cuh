@@ -154,9 +154,9 @@ inline constexpr bool is_non_deterministic_v =
 //! ====================================
 //!
 //! ``cub::DeviceReduce`` supports all three :ref:`determinism guarantees <cccl-determinism>`; the
-//! default is ``run_to_run``. ``ReduceByKey`` has separate type/operator constraints, documented in the
-//! :ref:`CUB determinism support matrix <cub-determinism>`. The implementation details below apply to the other
-//! reductions; ``ReduceByKey`` does not use RFA or atomic accumulation.
+//! default is ``run_to_run``. ``ReduceByKey`` has separate type/operator constraints, documented with its
+//! :cpp:func:`environment overload <cub::DeviceReduce::ReduceByKey>`. The implementation details below apply to the
+//! other reductions; ``ReduceByKey`` does not use RFA or atomic accumulation.
 //!
 //! - ``run_to_run`` (the default) is reproducible because, for a given GPU, every launch with the same input,
 //!   build, and launch configuration selects the *same* tuning policy and therefore performs the *same* fixed
@@ -2740,7 +2740,9 @@ public:
   //! - Requests "run-to-run" determinism by default. It is supported for integral types with known operators,
   //!   primitive types with min/max, and floating-point types with ``cuda::std::plus``.
   //! - Pass ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` in the environment to opt out.
+  //!   This removes the determinism requirement without changing the algorithm's other requirements.
   //! - "gpu-to-gpu" determinism is supported for integral types with known operators and primitive types with min/max.
+  //!   Floating-point addition is unsupported; ``ReduceByKey`` does not use RFA.
   //!   Other combinations under "run-to-run" or "gpu-to-gpu" are rejected at compile time.
   //! - Let ``out`` be any of
   //!   ``[d_unique_out, d_unique_out + *d_num_runs_out)``
@@ -2748,6 +2750,12 @@ public:
   //!   ``d_num_runs_out``. The ranges represented by ``out`` shall not overlap
   //!   ``[d_keys_in, d_keys_in + num_items)``,
   //!   ``[d_values_in, d_values_in + num_items)`` nor ``out`` in any way.
+  //!
+  //! These determinism constraints apply to this environment overload and its accumulator type. Known CUDA binary
+  //! operators are ``cuda::minimum``, ``cuda::maximum``, and ``cuda::std::plus``, ``multiplies``, ``bit_and``,
+  //! ``bit_or``, ``bit_xor``, ``logical_and``, and ``logical_or``. Primitive accumulators are the types recognized by
+  //! ``cub::Traits``; floating-point accumulators (including CUDA extended types) are recognized by
+  //! ``cuda::is_floating_point_v``. The operator must support the accumulator type.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
