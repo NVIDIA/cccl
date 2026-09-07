@@ -1,0 +1,131 @@
+.. _cccl-runtime-cudart-interactions:
+
+CUDA Runtime interactions
+=========================
+
+Some runtime objects have a non-owning ``_ref`` counterpart (for example, :cpp:struct:`cuda::stream` and
+:cpp:class:`cuda::stream_ref`). Prefer the
+owning type for lifetime management, and use the ``_ref`` type for code that would otherwise accept a C++ reference but
+needs to interoperate with existing CUDA Runtime code.
+
+CCCL runtime types that wrap CUDA Runtime handles support interoperating with CUDA Runtime handles via ``get()``,
+constructors that accept native handles, ``release()``, and ``from_native_handle`` helpers. This makes it straightforward
+to bridge between cccl-runtime APIs and existing CUDA Runtime code without losing ownership clarity.
+
+Use ``get()`` on both owning and non-owning types. Constructors from native handles are intended for ``_ref`` wrappers,
+while ``release()`` and ``from_native_handle`` are for owning objects that transfer or assume ownership.
+
+Example: handle interop patterns
+--------------------------------
+
+.. code:: cpp
+
+   #include <cuda/stream>
+
+   void use_handle_interop(cuda::device_ref device, cudaStream_t raw_stream) {
+     // _ref from native handle (non-owning).
+     cuda::stream_ref borrowed{raw_stream};
+
+     // Universal handle access.
+     assert(borrowed.get() == raw_stream);
+
+     // Owning from native handle (assumes ownership).
+     auto owned = cuda::stream::from_native_handle(raw_stream);
+
+     assert(owned.get() == raw_stream);
+
+     // Release ownership back to CUDA Runtime.
+     cudaStream_t released = owned.release();
+
+     assert(released == raw_stream);
+   }
+
+Error handling
+--------------
+
+CCCL Runtime APIs use C++ exceptions for error handling. Failures from runtime abstractions are reported by throwing an
+exception, so normal code can be written without manually checking and propagating a status code after each operation.
+
+This differs from the traditional CUDA Runtime API, where operations generally return ``cudaError_t`` values that the
+caller must check against ``cudaSuccess`` and propagate or handle. When using CUDA Runtime calls directly, continue to
+check their return values; when using CCCL Runtime wrappers, handle failures with normal C++ exception handling.
+
+At a CUDA Runtime-style boundary, catch ``cuda::cuda_error`` and return its stored status.
+
+.. code:: cpp
+
+   #include <cuda/stream>
+
+   cudaError_t use_stream(cuda::stream_ref stream) noexcept {
+     try {
+       // stream usage
+       stream.sync();
+       return cudaSuccess;
+     } catch (const cuda::cuda_error& err) {
+       return err.status();
+     }
+   }
+
+Device selection
+----------------
+
+The Runtime API emphasizes explicit device selection. Most entry points take a :cpp:class:`cuda::device_ref` or a
+device-bound resource (such as :cpp:struct:`cuda::stream`) rather than relying on implicit global state like
+``cudaSetDevice``. This
+makes device ownership and lifetime clearer, especially in multi-GPU code.
+
+The current device can still be set via the CUDA Runtime, but cccl-runtime APIs ignore that global state and require an
+explicit device argument. cccl-runtime also does not provide APIs that read or mutate the current device, by design.
+
+
+.. _cccl-runtime-cudart-default-stream:
+
+Default stream interop
+----------------------
+
+The CUDA default (NULL) stream is not exposed as a first-class runtime object because it is tied to implicit per-device
+state and encourages hidden dependencies. Instead, it can be wrapped into :cpp:class:`cuda::stream_ref` when needed for
+interop.
+
+.. note::
+
+   When wrapping the NULL stream, the current device must be set explicitly first. CUDA binds the NULL stream to the
+   active device, so the wrapper must be created after selecting the correct device.
+
+Example: wrapping the default stream
+------------------------------------
+
+.. code:: cpp
+
+   #include <cuda/stream>
+
+   void use_default_stream(int device_id) {
+     cudaSetDevice(device_id);
+
+     cuda::stream_ref default_stream{cudaStreamPerThread};
+     // Use default_stream with cccl-runtime APIs.
+   }
+
+The above applies to Driver API interop cases as well, where the current context must be managed by the user rather than
+the current device setting.
+
+
+.. _cccl-runtime-cudart-non-blocking-streams:
+
+Non-blocking stream creation
+----------------------------
+
+Constructing a new :cpp:struct:`cuda::stream` always creates a stream with CUDA Runtime non-blocking behavior. This is
+the behavior of CCCL Runtime-created streams; wrapping or taking ownership of an existing ``cudaStream_t`` preserves the
+behavior of that handle.
+
+In the CUDA Runtime API, the blocking/non-blocking stream creation flag controls synchronization with the CUDA default
+(NULL) stream. Because CCCL Runtime treats the default stream as an interop case rather than a first-class object,
+as described in :ref:`default stream interop <cccl-runtime-cudart-default-stream>`, :cpp:struct:`cuda::stream` does not
+expose a blocking/non-blocking construction option.
+
+New Runtime code should express ordering between explicit streams directly, for example by making one
+:cpp:class:`cuda::stream_ref` wait on another. Code that needs legacy CUDA Runtime implicit stream semantics should wrap
+the relevant CUDA Runtime stream handle in :cpp:class:`cuda::stream_ref` (or take ownership with
+``cuda::stream::from_native_handle``); operations submitted through the wrapper use the same native handle and preserve
+that handle's CUDA Runtime semantics, including any default-stream synchronization semantics.
