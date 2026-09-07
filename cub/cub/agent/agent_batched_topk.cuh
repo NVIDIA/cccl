@@ -17,6 +17,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/block_topk.cuh>
+#include <cub/detail/batched_topk_output_padding.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -99,6 +100,9 @@ struct agent_batched_topk_worker_per_segment
 
   // Check if we are dealing with keys-only or key-value pairs
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
+  static constexpr bool pad_output   = is_padded_output_segments_iterator_v<KeyOutputItItT>;
+  static_assert(is_keys_only || pad_output == is_padded_output_segments_iterator_v<ValueOutputItItT>,
+                "key and value output padding must be enabled together");
 
   // -------------------------------------------------------------------------
   // Primitive Types
@@ -184,6 +188,36 @@ struct agent_batched_topk_worker_per_segment
       , d_large_segments_tile_offsets(d_large_segments_tile_offsets)
   {}
 
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  fill_output_tail(int segment_id, ::cuda::std::uint64_t num_selected, ::cuda::std::uint64_t output_size)
+  {
+    if constexpr (pad_output)
+    {
+      if (num_selected >= output_size)
+      {
+        return;
+      }
+
+      auto block_keys_out = d_key_segments_out_it[segment_id];
+      if constexpr (is_keys_only)
+      {
+        for (::cuda::std::uint64_t idx = num_selected + threadIdx.x; idx < output_size; idx += blockDim.x)
+        {
+          block_keys_out[idx] = d_key_segments_out_it.padding_value;
+        }
+      }
+      else
+      {
+        auto block_vals_out = d_value_segments_out_it[segment_id];
+        for (::cuda::std::uint64_t idx = num_selected + threadIdx.x; idx < output_size; idx += blockDim.x)
+        {
+          block_keys_out[idx] = d_key_segments_out_it.padding_value;
+          block_vals_out[idx] = d_value_segments_out_it.padding_value;
+        }
+      }
+    }
+  }
+
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
@@ -217,16 +251,18 @@ struct agent_batched_topk_worker_per_segment
     }
     else
     {
-      // Process small segment. Clamp `k` (already floored to >= 0) to the segment size in a width holding both operands
-      // so a `k` type narrower than the segment size cannot wrap; the result fits the segment-size type.
+      // Process small segment. Keep the nonnegative requested k because selection clamps it to the segment size, while
+      // fixed-width padding ends at the requested k. Compare in a width holding both operands so a narrower k type
+      // cannot wrap; the selected count still fits the segment-size type.
+      const auto requested_k =
+        static_cast<::cuda::std::uint64_t>(params::__get_and_clamp_param_to_nonnegative(k_param, segment_id));
       const auto k = static_cast<decltype(segment_size)>(
-        (::cuda::std::min) (static_cast<::cuda::std::uint64_t>(
-                              params::__get_and_clamp_param_to_nonnegative(k_param, segment_id)),
-                            static_cast<::cuda::std::uint64_t>(segment_size)));
+        (::cuda::std::min) (requested_k, static_cast<::cuda::std::uint64_t>(segment_size)));
+
       // Nothing to select for an empty segment (including a negative size or a negative `k`, both clamped to 0) or a
-      // zero k: skip the block work, leaving its output untouched (also keeps the block primitive's `valid_items in
-      // [1, tile_items]` precondition). We must not `return` here -- the large-segment epilogue below is unconditional
-      // participation, so bailing out would drop this block from the retirement count and stall the epilogue scan.
+      // zero k: skip the selection work (also keeps the block primitive's `valid_items in [1, tile_items]`
+      // precondition). We must not `return` here -- the large-segment epilogue below is unconditional participation, so
+      // bailing out would drop this block from the retirement count and stall the epilogue scan.
       if (k != 0)
       {
         const auto direction = select_directions.get_param(segment_id);
@@ -330,6 +366,8 @@ struct agent_batched_topk_worker_per_segment
           block_store_vals_t(temp_storage.store_vals).Store(block_vals_out, thread_values, k);
         }
       } // if (k != 0)
+
+      fill_output_tail(segment_id, static_cast<::cuda::std::uint64_t>(k), requested_k);
     }
 
     // Epilogue: Scan queued large segment sizes (in tiles not elements) for load balancing search in the large segment
