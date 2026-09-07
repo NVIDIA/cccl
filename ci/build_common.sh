@@ -331,7 +331,9 @@ function run_cuda_smoke_test() {
     local smoke_bin="${BUILD_DIR}/${configure_preset}/bin/cccl.test.cuda_runtime_smoke"
 
     if [[ -x "${smoke_bin}" ]]; then
-        run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" || return $?
+        # --abort stops on the first failed REQUIRE/CHECK, so we don't keep
+        # running more checks against a possibly-corrupted CUDA context.
+        run_ci_timed_command "CUDA smoke ${BUILD_NAME}" "${smoke_bin}" --abort || return $?
     elif cccl_smoke_tests_enabled "${configure_preset}"; then
         echo "Error: CCCL_ENABLE_CUDA_SMOKE_TESTS=ON but smoke binary not found: ${smoke_bin}" >&2
         return 1
