@@ -1,16 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// We only ever want to tune the vectorized implementation of cub::DeviceTransform for this benchmark, so no dedicated
-// tuning benchmark exists
-
-#define TUNE_ALGORITHM 1
-
-// %RANGE% TUNE_BIF_BIAS bif -16:16:4
-// %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
-// %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
-
 #include "common.h"
 
 template <typename T>
