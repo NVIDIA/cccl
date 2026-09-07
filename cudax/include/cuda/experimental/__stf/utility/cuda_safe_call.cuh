@@ -769,6 +769,7 @@ UNITTEST("cuda_try2")
   //! [cuda_try2]
 };
 
+#  if !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_CTK_BELOW(12, 1))
 inline cudaError_t test_failing_direct(int)
 {
   return cudaErrorInvalidValue;
@@ -780,7 +781,6 @@ inline cudaError_t test_lvalue_ref_param(int& x)
   return cudaSuccess;
 }
 
-#  if !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_CTK_BELOW(12, 1))
 UNITTEST("cuda_try location capture")
 {
   // The introspected forms report the CALLER's location, not this header's.
