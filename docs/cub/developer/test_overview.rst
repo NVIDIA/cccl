@@ -364,8 +364,8 @@ and ``2`` records the launch under CUDA graph capture and then executes it.
 
 Instead of calling the CUB API directly, declare a launch wrapper for it with
 ``DECLARE_LAUNCH_WRAPPER`` and call the wrapper from the test body,
-with exactly the same arguments as the wrapped function,
-omitting the temporary storage size and pointer arguments:
+with exactly the same arguments as you would call the wrapped function,
+omitting the temporary storage size and pointer arguments, as well as a stream argument:
 
 .. code-block:: c++
 
