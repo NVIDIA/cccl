@@ -124,6 +124,7 @@ set(
   stress/many_read.cu
   stress/task_bench.cu
   threads/axpy-threads-2.cu
+  threads/threads-allocators.cu
   # threads/axpy-threads.cu
   utility/exception_policy_c_headers.cu
   utility/timing_with_fences.cu
@@ -212,6 +213,7 @@ set(
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
   threads/axpy-threads-graph.cu
   threads/axpy-threads-graph-capture.cu
+  threads/threads-graph-launch.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...
