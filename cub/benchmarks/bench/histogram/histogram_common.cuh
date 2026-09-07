@@ -74,14 +74,9 @@ struct bench_policy_selector
 };
 #endif // !TUNE_BASE
 
-// Use the full range of signed sample types.
 template <class SampleT>
 SampleT get_lower_level()
 {
-  if constexpr (cuda::std::is_integral_v<SampleT> && cuda::std::is_signed_v<SampleT>)
-  {
-    return ::cuda::std::numeric_limits<SampleT>::min();
-  }
   return SampleT{0};
 }
 
@@ -105,8 +100,7 @@ int64_t max_representable_bins()
 {
   if constexpr (cuda::std::is_integral_v<SampleT> && sizeof(SampleT) < sizeof(int64_t))
   {
-    return static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max())
-         - static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::min());
+    return static_cast<int64_t>(::cuda::std::numeric_limits<SampleT>::max());
   }
   // Avoid overflowing while computing the width of a 64-bit signed type.
   return ::cuda::std::numeric_limits<int64_t>::max();
