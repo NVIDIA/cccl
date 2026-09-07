@@ -247,45 +247,47 @@ public:
   }
 
   /* End the task, but do not clear its data structures yet */
-  stream_task<>& end_uncleared()
+  //! \brief Finish the task without clearing it. Never throws.
+  //!
+  //! Resuming after a failure here is not an option: acquire() has locked this task's
+  //! logical-data mutexes, and release() below is what unlocks them, so returning early would
+  //! leave them held and deadlock the next task touching that data. The failures available are
+  //! an allocation failure (the standing ruling is to abort) or a CUDA error from
+  //! insert_dependency / event creation, which in practice means a sticky error has poisoned
+  //! the context. Report and abort.
+  stream_task<>& end_uncleared() noexcept
   {
-    assert(get_task_phase() == task::phase::running);
-
-    event_list end_list;
-
-    const auto& e_place = get_exec_place();
-
-    if (e_place.size() > 1)
+    ON_THROW(abort)
     {
-      // s0 depends on all other streams
-      for (size_t i = 1; i < stream_grid.size(); i++)
+      assert(get_task_phase() == task::phase::running);
+
+      event_list end_list;
+
+      const auto& e_place = get_exec_place();
+
+      if (e_place.size() > 1)
       {
-        stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        // s0 depends on all other streams
+        for (size_t i = 1; i < stream_grid.size(); i++)
+        {
+          stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        }
       }
-    }
 
-    auto se = submitted_events.end_as_event(ctx);
-    end_list.add(se);
+      auto se = submitted_events.end_as_event(ctx);
+      end_list.add(se);
 
-    release(ctx, end_list);
+      release(ctx, end_list);
+    };
 
     return *this;
   }
 
-  //! \brief Finish the task. Never throws.
-  //!
-  //! end() is called both on the normal path and from failure guards while an exception is
-  //! already propagating, so it absorbs its own errors rather than making every caller wrap it.
-  //! end_uncleared() and clear() can both throw (event creation, dependency release); a failure
-  //! is reported and execution resumes. Callers that need the error to propagate should call
-  //! end_uncleared() and clear() directly.
+  //! \brief Finish the task. Never throws, because neither of its steps does.
   stream_task<>& end() noexcept
   {
-    ON_THROW(notify)
-    {
-      end_uncleared();
-      clear();
-    };
+    end_uncleared();
+    clear();
     return *this;
   }
 

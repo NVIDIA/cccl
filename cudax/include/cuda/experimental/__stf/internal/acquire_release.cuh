@@ -29,6 +29,7 @@
 #include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <algorithm>
 #include <vector>

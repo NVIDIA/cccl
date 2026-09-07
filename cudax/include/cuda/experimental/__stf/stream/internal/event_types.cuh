@@ -23,6 +23,7 @@
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__utility/unstable_unique.cuh>
 
