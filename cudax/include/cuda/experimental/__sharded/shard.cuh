@@ -41,6 +41,11 @@ using ::cuda::experimental::places::exec_place;
  * where the memory lives, the `exec_place` to activate when operating on it,
  * and a reference stream for stream-ordered operations. `global_offset` is
  * the shard's starting index in the logical (whole-array) index space.
+ *
+ * A shard is a host-side handle. Places are host concepts, so every member
+ * function is host-only and a shard is not meant to cross into device code:
+ * a kernel receives the span it needs (`data`, `size`, `global_offset`) as
+ * arguments, which is how this library's own kernels are written.
  */
 template <typename _Tp>
 struct shard
@@ -53,35 +58,32 @@ struct shard
   exec_place exec; //!< execution place to activate for this shard
   cudaStream_t stream = nullptr; //!< reference stream for stream-ordered operations
 
-  // Iterators over valid elements. Host and device: a shard may be passed by
-  // value to a kernel and iterated there. Only the span members (`data`,
-  // `size`, `global_offset`) are meaningful in device code; `place`, `exec`
-  // and `stream` are host-side placement metadata.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _Tp* begin() noexcept
+  // Iterators over valid elements
+  [[nodiscard]] _CCCL_HOST_API _Tp* begin() noexcept
   {
     return data;
   }
-  [[nodiscard]] _CCCL_HOST_DEVICE_API _Tp* end() noexcept
+  [[nodiscard]] _CCCL_HOST_API _Tp* end() noexcept
   {
     return data + size;
   }
-  [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* begin() const noexcept
+  [[nodiscard]] _CCCL_HOST_API const _Tp* begin() const noexcept
   {
     return data;
   }
-  [[nodiscard]] _CCCL_HOST_DEVICE_API const _Tp* end() const noexcept
+  [[nodiscard]] _CCCL_HOST_API const _Tp* end() const noexcept
   {
     return data + size;
   }
 
   /// @brief Logical size in bytes.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t size_bytes() const noexcept
+  [[nodiscard]] _CCCL_HOST_API size_t size_bytes() const noexcept
   {
     return size * sizeof(_Tp);
   }
 
   /// @brief Allocated capacity in bytes.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t capacity_bytes() const noexcept
+  [[nodiscard]] _CCCL_HOST_API size_t capacity_bytes() const noexcept
   {
     return capacity * sizeof(_Tp);
   }
@@ -92,38 +94,38 @@ struct shard
     size = capacity;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool empty() const noexcept
+  [[nodiscard]] _CCCL_HOST_API bool empty() const noexcept
   {
     return size == 0 || data == nullptr;
   }
 
   /// @brief First global index covered by this shard.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t global_begin() const noexcept
+  [[nodiscard]] _CCCL_HOST_API size_t global_begin() const noexcept
   {
     return global_offset;
   }
 
   /// @brief One-past-the-last global index covered by this shard.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t global_end() const noexcept
+  [[nodiscard]] _CCCL_HOST_API size_t global_end() const noexcept
   {
     return global_offset + size;
   }
 
   /// @brief Whether a global index falls within this shard.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool contains(size_t global_idx) const noexcept
+  [[nodiscard]] _CCCL_HOST_API bool contains(size_t global_idx) const noexcept
   {
     return global_idx >= global_offset && global_idx < global_offset + size;
   }
 
   /// @brief Convert a global index to a shard-local index.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t to_local(size_t global_idx) const noexcept
+  [[nodiscard]] _CCCL_HOST_API size_t to_local(size_t global_idx) const noexcept
   {
     _CCCL_ASSERT(contains(global_idx), "shard::to_local: global index outside this shard");
     return global_idx - global_offset;
   }
 
   /// @brief Convert a shard-local index to a global index.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API size_t to_global(size_t local_idx) const noexcept
+  [[nodiscard]] _CCCL_HOST_API size_t to_global(size_t local_idx) const noexcept
   {
     _CCCL_ASSERT(local_idx < size, "shard::to_global: local index out of range");
     return global_offset + local_idx;
