@@ -139,18 +139,36 @@ namespace cuda::experimental::places
  */
 inline int locality_domain_native_raw_count(int dev_id)
 {
-  if (cuInit(0) != CUDA_SUCCESS)
-  {
-    return 0;
-  }
-  CUdevice dev;
-  if (cuDeviceGet(&dev, dev_id) != CUDA_SUCCESS)
-  {
-    return 0;
-  }
-  int count       = 0;
-  CUresult result = cuDeviceGetAttribute(&count, CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, dev);
-  return (result == CUDA_SUCCESS && count > 0) ? count : 0;
+  // The answer is a static device property, so query it once per device on first use and serve
+  // it from a table afterwards. This sits on the allocation path -- allocate() consults it
+  // through __pool_location() for every allocation -- and each query costs three driver
+  // round-trips. Building the table is thread-safe; every lookup after it is a lock-free read.
+  static const ::std::vector<int> counts = [] {
+    ::std::vector<int> result;
+    int ndevs = 0;
+    if (cuInit(0) != CUDA_SUCCESS || cuDeviceGetCount(&ndevs) != CUDA_SUCCESS || ndevs <= 0)
+    {
+      // No usable driver: every device degrades to whole-device, and an empty table answers 0
+      // for any ordinal.
+      return result;
+    }
+    result.resize(static_cast<::std::size_t>(ndevs), 0);
+    for (int d = 0; d < ndevs; ++d)
+    {
+      CUdevice dev;
+      int count = 0;
+      if (cuDeviceGet(&dev, d) == CUDA_SUCCESS
+          && cuDeviceGetAttribute(&count, CU_DEVICE_ATTRIBUTE_LOCALITY_DOMAIN_COUNT, dev) == CUDA_SUCCESS && count > 0)
+      {
+        result[static_cast<::std::size_t>(d)] = count;
+      }
+    }
+    return result;
+  }();
+
+  return (dev_id >= 0 && static_cast<::std::size_t>(dev_id) < counts.size())
+         ? counts[static_cast<::std::size_t>(dev_id)]
+         : 0;
 }
 
 /**
@@ -236,7 +254,7 @@ public:
     // Canonicalize the cache key so every method resolves to the SAME green
     // context, stream pool, and execution-place identity instead of one
     // whole-device context per requested method.
-    if (native_raw_count(dev_id) == 0)
+    if (locality_domain_native_raw_count(dev_id) == 0)
     {
       split = locality_domain_sm_split::backfill;
     }
@@ -351,20 +369,7 @@ private:
     devices_[::std::make_pair(dev_id, split)] = mv(entries);
   }
 
-  // Memoized locality_domain_native_raw_count per device (driver attribute
-  // query); called under mtx_ from get().
-  int native_raw_count(int dev_id)
-  {
-    auto it = raw_counts_.find(dev_id);
-    if (it == raw_counts_.end())
-    {
-      it = raw_counts_.emplace(dev_id, locality_domain_native_raw_count(dev_id)).first;
-    }
-    return it->second;
-  }
-
   ::std::map<::std::pair<int, locality_domain_sm_split>, ::std::vector<domain_entry>> devices_;
-  ::std::map<int, int> raw_counts_;
   ::std::mutex mtx_;
 };
 
