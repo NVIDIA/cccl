@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// Should precede any includes
+struct stream_registry_factory_t;
+#define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY stream_registry_factory_t
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_for.cuh>
@@ -11,6 +15,7 @@
 #include <cuda/__execution/policy.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/devices>
+#include <cuda/functional>
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
@@ -20,7 +25,10 @@
 #include <cstdint>
 #include <sstream>
 
+#include "catch2_test_env_launch_helper.h"
 #include "cub_test_macros.h"
+
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 struct square_ref_op
 {
@@ -87,34 +95,10 @@ struct for_each_tuning
   }
 };
 
-struct block_size_extracting_op
-{
-  unsigned int* block_size;
-
-  __device__ void operator()(int) const
-  {
-    if (threadIdx.x == 0)
-    {
-      atomicMax(block_size, blockDim.x);
-    }
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::always_false>;
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
-
-struct extents_block_size_extracting_op
-{
-  unsigned int* block_size;
-
-  __device__ void operator()(int, int) const
-  {
-    if (threadIdx.x == 0)
-    {
-      atomicMax(block_size, blockDim.x);
-    }
-  }
-};
 
 // c2h selects the device via -d/--device, so the stream must be created on the current device;
 // c2h::device_vector allocates there, and a device 0 stream would cross devices.
@@ -367,6 +351,10 @@ void test_env_stream_routing(LaunchFn launch)
 
   CHECK(capture.finish_and_count_nodes() == 2); // one for the single-phase call, one for the two-phase call
 }
+
+// None of the tests below use the launch wrappers, so they would run identically in every
+// TEST_LAUNCH variant; restrict them to the host-launch variant to avoid redundant runs.
+#if TEST_LAUNCH == 0
 
 // -----------------------------------------------------------------------
 // Bulk
@@ -831,7 +819,7 @@ CUB_TEST("DeviceFor::Bulk can be tuned", "[for][device]", CUB_SMALL, block_sizes
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
@@ -843,7 +831,7 @@ CUB_TEST("DeviceFor::ForEachN can be tuned", "[for][device]", CUB_SMALL, block_s
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
@@ -855,7 +843,7 @@ CUB_TEST("DeviceFor::ForEach can be tuned", "[for][device]", CUB_SMALL, block_si
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(d_data.begin(), d_data.end(), op, env));
@@ -867,7 +855,7 @@ CUB_TEST("DeviceFor::ForEachCopyN can be tuned", "[for][device]", CUB_SMALL, blo
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
@@ -879,7 +867,7 @@ CUB_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", CUB_SMALL, bloc
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_data.begin(), d_data.end(), op, env));
@@ -890,7 +878,7 @@ CUB_TEST("DeviceFor::Bulk two-phase API propagates tuning", "[for][device]", CUB
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
@@ -907,7 +895,7 @@ CUB_TEST("DeviceFor::ForEachN two-phase API propagates tuning", "[for][device]",
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env       = cuda::execution::tune(for_each_tuning<target_block_size>{});
   const auto num_items = static_cast<int>(d_data.size());
 
@@ -926,7 +914,7 @@ CUB_TEST("DeviceFor::ForEach two-phase API propagates tuning", "[for][device]", 
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
@@ -944,7 +932,7 @@ CUB_TEST("DeviceFor::ForEachCopyN two-phase API propagates tuning", "[for][devic
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env       = cuda::execution::tune(for_each_tuning<target_block_size>{});
   const auto num_items = static_cast<int>(d_data.size());
 
@@ -963,7 +951,7 @@ CUB_TEST("DeviceFor::ForEachCopy two-phase API propagates tuning", "[for][device
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<int> d_data{1, 2, 3, 4};
   c2h::device_vector<unsigned int> d_block_size(1);
-  const block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
@@ -982,7 +970,7 @@ CUB_TEST("DeviceFor::ForEachInExtents two-phase API propagates tuning", "[for][d
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
   using extents_type = cuda::std::extents<int, 4>;
-  const extents_block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
@@ -1000,7 +988,7 @@ CUB_TEST("DeviceFor::ForEachInLayout two-phase API propagates tuning", "[for][de
   c2h::device_vector<unsigned int> d_block_size(1);
   using extents_type = cuda::std::extents<int, 4>;
   const auto mapping = cuda::std::layout_left::mapping<extents_type>{};
-  const extents_block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t op{thrust::raw_pointer_cast(d_block_size.data())};
   const auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
 
   size_t temp_storage_bytes = 0;
@@ -1012,6 +1000,9 @@ CUB_TEST("DeviceFor::ForEachInLayout two-phase API propagates tuning", "[for][de
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+#endif // TEST_LAUNCH == 0
+
+// Compile-time checks; cheap enough to keep a test in every TEST_LAUNCH variant.
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test ForPolicy properties", "[for][device]", CUB_SMALL)
 {
