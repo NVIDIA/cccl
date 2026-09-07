@@ -29,10 +29,13 @@
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
+#include <cuda/__execution/guarantee.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/runs_on.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -177,6 +180,18 @@ struct DeviceRadixSort
 private:
   // TODO(bgruber): I would ideally like to have the logic of extracting the policy selector from the tuning environment
   // inside the dispatch function, but this will not work with CCCL.C, which needs to pass a stateful policy selector.
+
+  template <typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static ::cuda::std::optional<::cuda::execution::runs_on>
+  __guaranteed_runs_on(const EnvT& __env)
+  {
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::__get_runs_on_t>,
+                  "runs_on should be used inside guarantee to have an effect.");
+    const auto __guarantees =
+      ::cuda::__call_or(::cuda::execution::__get_guarantees, ::cuda::std::execution::env<>{}, __env);
+    return ::cuda::__call_or(::cuda::execution::__get_runs_on, ::cuda::std::nullopt, __guarantees);
+  }
+
   // Refactor this once we have a host code JIT compiler.
   template <SortOrder Order,
             typename KeyT,
@@ -194,8 +209,9 @@ private:
     int end_bit,
     bool is_overwrite_okay,
     cudaStream_t stream,
-    DecomposerT decomposer = {},
-    TuningEnvT             = {})
+    DecomposerT decomposer                                              = {},
+    TuningEnvT                                                          = {},
+    ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee = {})
   {
     using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, OffsetT>;
     using policy_selector_t =
@@ -210,6 +226,7 @@ private:
       end_bit,
       is_overwrite_okay,
       stream,
+      runs_on_guarantee,
       decomposer,
       policy_selector_t{});
   }
@@ -228,8 +245,9 @@ private:
     NumItemsT num_items,
     DecomposerT decomposer,
     cudaStream_t stream,
-    TuningEnvT tuning_env  = {},
-    int begin_bit          = 0,
+    ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee = {},
+    TuningEnvT tuning_env                                               = {},
+    int begin_bit                                                       = 0,
     int end_bit            = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}),
     bool is_overwrite_okay = true)
   {
@@ -253,7 +271,8 @@ private:
         is_overwrite_okay,
         stream,
         decomposer,
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     }
     _CCCL_UNREACHABLE();
   }
@@ -274,9 +293,10 @@ private:
     NumItemsT num_items,
     DecomposerT decomposer,
     cudaStream_t stream,
-    TuningEnvT tuning_env = {},
-    int begin_bit         = 0,
-    int end_bit           = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}))
+    ::cuda::std::optional<::cuda::execution::runs_on> runs_on_guarantee = {},
+    TuningEnvT tuning_env                                               = {},
+    int begin_bit                                                       = 0,
+    int end_bit = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}))
   {
     // We cast away const-ness, but will *not* write to these arrays. ``DispatchRadixSort::Dispatch`` will allocate
     // temporary storage and create a new double-buffer internally when the ``is_overwrite_ok`` flag is not set.
@@ -290,6 +310,7 @@ private:
       num_items,
       decomposer,
       stream,
+      runs_on_guarantee,
       tuning_env,
       begin_bit,
       end_bit,
@@ -546,6 +567,8 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Ascending>(
         storage,
@@ -558,7 +581,8 @@ public:
         false,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -787,6 +811,8 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Ascending>(
         storage,
@@ -798,6 +824,7 @@ public:
         num_items,
         decomposer,
         stream,
+        runs_on_guarantee,
         tuning_env,
         begin_bit,
         end_bit);
@@ -1006,9 +1033,21 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Ascending>(
-        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        decomposer,
+        stream,
+        runs_on_guarantee,
+        tuning_env);
     });
   }
 
@@ -1239,6 +1278,8 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Ascending>(
         storage,
@@ -1251,7 +1292,8 @@ public:
         true,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -1444,9 +1486,11 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on_guarantee, tuning_env);
     });
   }
 
@@ -1661,9 +1705,21 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        num_items,
+        decomposer,
+        stream,
+        runs_on_guarantee,
+        tuning_env,
+        begin_bit,
+        end_bit);
     });
   }
 
@@ -1908,6 +1964,8 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Descending>(
         storage,
@@ -1920,7 +1978,8 @@ public:
         false,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -2407,6 +2466,8 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Descending>(
         storage,
@@ -2419,7 +2480,8 @@ public:
         true,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -2729,6 +2791,8 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Descending>(
         storage,
@@ -2740,6 +2804,7 @@ public:
         num_items,
         decomposer,
         stream,
+        runs_on_guarantee,
         tuning_env,
         begin_bit,
         end_bit);
@@ -2804,9 +2869,21 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Descending>(
-        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        decomposer,
+        stream,
+        runs_on_guarantee,
+        tuning_env);
     });
   }
 
@@ -2864,9 +2941,11 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on_guarantee, tuning_env);
     });
   }
 
@@ -2929,9 +3008,21 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        num_items,
+        decomposer,
+        stream,
+        runs_on_guarantee,
+        tuning_env,
+        begin_bit,
+        end_bit);
     });
   }
 
@@ -3150,6 +3241,8 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Ascending>(
         storage,
@@ -3162,7 +3255,8 @@ public:
         false,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -3351,6 +3445,8 @@ public:
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Ascending>(
         storage,
@@ -3362,6 +3458,7 @@ public:
         num_items,
         decomposer,
         stream,
+        runs_on_guarantee,
         tuning_env,
         begin_bit,
         end_bit);
@@ -3531,6 +3628,8 @@ public:
   SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Ascending>(
         storage,
@@ -3542,6 +3641,7 @@ public:
         num_items,
         decomposer,
         stream,
+        runs_on_guarantee,
         tuning_env);
     });
   }
@@ -3757,6 +3857,8 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Ascending>(
         storage,
@@ -3769,7 +3871,8 @@ public:
         true,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -3927,10 +4030,12 @@ public:
   SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       DoubleBuffer<NullType> d_values;
       return radix_sort_with_decomposer<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on_guarantee, tuning_env);
     });
   }
 
@@ -4110,10 +4215,22 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       DoubleBuffer<NullType> d_values;
       return radix_sort_with_decomposer<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        num_items,
+        decomposer,
+        stream,
+        runs_on_guarantee,
+        tuning_env,
+        begin_bit,
+        end_bit);
     });
   }
 
@@ -4326,6 +4443,8 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Descending>(
         storage,
@@ -4338,7 +4457,8 @@ public:
         false,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -4782,6 +4902,8 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return select_tuning_and_dispatch<SortOrder::Descending>(
         storage,
@@ -4794,7 +4916,8 @@ public:
         true,
         stream,
         {},
-        tuning_env);
+        tuning_env,
+        runs_on_guarantee);
     });
   }
 
@@ -5072,6 +5195,8 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Descending>(
         storage,
@@ -5083,6 +5208,7 @@ public:
         num_items,
         decomposer,
         stream,
+        runs_on_guarantee,
         tuning_env,
         begin_bit,
         end_bit);
@@ -5136,6 +5262,8 @@ public:
     const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       return radix_sort_with_decomposer<SortOrder::Descending>(
         storage,
@@ -5147,6 +5275,7 @@ public:
         num_items,
         decomposer,
         stream,
+        runs_on_guarantee,
         tuning_env);
     });
   }
@@ -5197,10 +5326,12 @@ public:
   SortKeysDescending(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       DoubleBuffer<NullType> d_values;
       return radix_sort_with_decomposer<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, runs_on_guarantee, tuning_env);
     });
   }
 
@@ -5259,10 +5390,22 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    const auto runs_on_guarantee = __guaranteed_runs_on(env);
+
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
       DoubleBuffer<NullType> d_values;
       return radix_sort_with_decomposer<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+        storage,
+        bytes,
+        d_keys,
+        d_values,
+        num_items,
+        decomposer,
+        stream,
+        runs_on_guarantee,
+        tuning_env,
+        begin_bit,
+        end_bit);
     });
   }
 
