@@ -870,8 +870,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           using T         = typename decltype(aligned_ptr)::value_type;
           const char* src = aligned_ptr.ptr + offset * sizeof(T);
           char* dst       = smem;
-          _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
-          _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
+          _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(src), "");
+          _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<bulk_copy_alignment>(dst), "");
 
           // TODO(bgruber): we could precompute bytes_to_copy on the host
           int bytes_to_copy;
@@ -905,7 +905,6 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         // Order of evaluation is left-to-right
         (..., bulk_copy_tile(aligned_ptrs));
 
-        // we can use ptx::sem_relaxed when available
         ptx::mbarrier_arrive_expect_tx(
           ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
           ptx::scope_cta,
