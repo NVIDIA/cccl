@@ -4,6 +4,18 @@
 =============== complex.std.double begin ===============
 (cuda::std::complex<double>) <address> (real = 1.5, imag = -2.25)
 =============== complex.std.double end ===============
+=============== complex.std.half begin ===============
+(cuda::std::complex<__half>) <address>: {
+  real = (__x = 15872)
+  imag = (__x = 49280)
+}
+=============== complex.std.half end ===============
+=============== complex.std.bfloat16 begin ===============
+(cuda::std::complex<__nv_bfloat16>) <address>: {
+  real = (__x = 16320)
+  imag = (__x = 49168)
+}
+=============== complex.std.bfloat16 end ===============
 =============== complex.cuda.float begin ===============
 (cuda::complex<float>) <address> (real = 0.5, imag = 42.5)
 =============== complex.cuda.float end ===============
