@@ -390,7 +390,7 @@ The helper injects a memory resource and stream into that env automatically.
 Since the whole file is compiled three times, any ``CUB_TEST`` in the same translation unit
 that does *not* go through a launch wrapper would otherwise be registered identically in all
 three binaries. Guard such launcher-independent tests with ``#if TEST_LAUNCH == 0`` (picking
-whichever launcher id you want to keep) so the test only exists in one of the three
+whichever launcher ID you want to keep) so the test only exists in one of the three
 executables:
 
 .. code-block:: c++
