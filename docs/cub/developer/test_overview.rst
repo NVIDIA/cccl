@@ -344,3 +344,59 @@ Each of these executables is going to generate ``2`` input problem sizes.
 For each problem size, ``3`` random vectors are generated.
 As a result, we have ``12`` different tests.
 The code also demonstrates the syntax and usage of ``c2h::device_policy`` with a Thrust algorithm.
+
+Launch wrappers
+*************************************
+
+CUB's device-scope algorithms can be invoked from host code, from device code (CDP), and
+recorded into a CUDA graph via stream capture. To cover all three call sites without
+duplicating each test, add the following ``%PARAM%`` line and include the launch helper:
+
+.. code-block:: c++
+
+    // %PARAM% TEST_LAUNCH lid 0:1:2
+    #include "catch2_test_launch_helper.h"
+
+This causes the test file to be compiled three times, once per launcher id:
+``0`` launches the algorithm from the host,
+``1`` launches it from device code,
+and ``2`` records the launch under CUDA graph capture and then executes it.
+
+Instead of calling the CUB API directly, declare a launch wrapper for it with
+``DECLARE_LAUNCH_WRAPPER`` and call the wrapper from the test body,
+with exactly the same arguments as the wrapped function,
+omitting the temporary storage size and pointer arguments:
+
+.. code-block:: c++
+
+    DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
+
+    CUB_TEST("Reduce test", "[device][reduce]", CUB_SMALL)
+    {
+      // ...
+      cub_reduce_sum(d_in, d_out, n); // same
+    }
+
+The wrapper allocates temporary storage and invokes the CUB API through whichever of the
+three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
+launch errors along the way.
+
+For testing single phase environment-based APIs use ``catch2_test_env_launch_helper.h`` instead.
+It provides the same ``DECLARE_LAUNCH_WRAPPER``,
+but expects the wrapped API's last argument to be an execution environment.
+The helper injects a memory resource and stream into that env automatically.
+
+Since the whole file is compiled three times, any ``CUB_TEST`` in the same translation unit
+that does *not* go through a launch wrapper would otherwise be registered identically in all
+three binaries. Guard such launcher-independent tests with ``#if TEST_LAUNCH == 0`` (picking
+whichever launcher id you want to keep) so the test only exists in one of the three
+executables:
+
+.. code-block:: c++
+
+    #if TEST_LAUNCH == 0
+    CUB_TEST("Some launcher-independent edge case", "[device][reduce]", CUB_SMALL)
+    {
+      // ...
+    }
+    #endif // TEST_LAUNCH == 0
