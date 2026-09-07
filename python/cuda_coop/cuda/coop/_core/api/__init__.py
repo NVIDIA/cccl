@@ -10,8 +10,13 @@ not own semantic lowering, provider rendering, or backend compiler state.
 """
 
 from ._dispatch import _GROUP_OPERATIONS
+from .adjacent_difference import adjacent_difference  # noqa: F401
+from .discontinuity import discontinuity  # noqa: F401
+from .exchange import exchange  # noqa: F401
+from .histogram import histogram  # noqa: F401
 from .load_store import load, store  # noqa: F401
 from .reduce import reduce, sum  # noqa: F401
+from .run_length_decode import run_length_decode  # noqa: F401
 from .scan import (  # noqa: F401
     exclusive_scan,
     exclusive_sum,
@@ -19,6 +24,7 @@ from .scan import (  # noqa: F401
     inclusive_sum,
     scan,
 )
+from .shuffle import shuffle  # noqa: F401
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (

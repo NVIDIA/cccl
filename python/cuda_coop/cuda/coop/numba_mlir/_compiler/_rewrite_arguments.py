@@ -132,6 +132,22 @@ class _ArgumentRewrite:
                 factory_kwargs["block_aggregate"] = True
                 seen_factory_kwargs.add("block_aggregate")
                 continue
+            if name in {"block_prefix", "block_suffix"} and op_name == "shuffle":
+                value = self._resolve_factory_kwarg_value(name, value_var)
+                if value is None:
+                    continue
+                if name in seen_factory_kwargs:
+                    raise CoopSinglePhaseRewriteError(
+                        f"Duplicate coop shuffle boundary output '{name}'."
+                    )
+                if value is not _UNRESOLVED or not isinstance(value_var, ir.Var):
+                    raise CoopSinglePhaseRewriteError(
+                        "coop shuffle boundary output must be a variable or None."
+                    )
+                runtime_args.append(value_var)
+                factory_kwargs[name] = True
+                seen_factory_kwargs.add(name)
+                continue
             if name in runtime_factory_kwargs:
                 if (
                     name in seen_runtime_factory_kwargs
@@ -228,6 +244,47 @@ class _ArgumentRewrite:
                 runtime_arg_count=runtime_arg_count,
                 factory_kwargs=factory_kwargs,
             )
+        if op_name == "adjacent_difference":
+            self._finalize_adjacent_difference_factory_kwargs(
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+        elif op_name == "discontinuity":
+            self._finalize_discontinuity_factory_kwargs(
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+            runtime_args = self._reorder_discontinuity_runtime_args(
+                runtime_args,
+                factory_kwargs,
+            )
+        elif op_name == "shuffle":
+            self._finalize_shuffle_factory_kwargs(
+                runtime_arg_count=len(runtime_args),
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+        elif op_name == "exchange":
+            self._finalize_exchange_factory_kwargs(
+                runtime_args=runtime_args,
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+        elif op_name == "warp_exchange":
+            self._finalize_warp_exchange_factory_kwargs(
+                runtime_args=runtime_args,
+                runtime_arg_count=runtime_arg_count,
+                seen_factory_kwargs=seen_factory_kwargs,
+                factory_kwargs=factory_kwargs,
+            )
+        elif op_name == "_group_run_length_decode":
+            self._finalize_group_run_length_decode_factory_kwargs(
+                runtime_args=runtime_args,
+                factory_kwargs=factory_kwargs,
+            )
         missing = required_factory_kwargs - seen_factory_kwargs
         if missing:
             if "threads_per_block" in missing:
@@ -301,6 +358,8 @@ class _ArgumentRewrite:
             "warp_inclusive_scan",
         } and is_runtime_binding("valid_items"):
             parameter, index = "valid_items", 1
+        elif op_name == "adjacent_difference" and factory_kwargs.get("valid_items"):
+            parameter, index = "valid_items", 2
         if parameter is None or index is None or index >= len(runtime_args):
             return
         value = runtime_args[index]

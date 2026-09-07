@@ -74,7 +74,15 @@ class BlockScanAlgorithm(_LoadStoreAlgorithm):
     WARP_SCANS = 2
 
 
+class BlockHistogramAlgorithm(IntEnum):
+    """CUB ``BlockHistogram`` algorithm choices."""
+
+    SORT = 0
+    ATOMIC = 1
+
+
 __all__ = [
+    "BlockHistogramAlgorithm",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",

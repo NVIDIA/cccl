@@ -292,6 +292,8 @@ SCAN_REDUCE_TYPES = frozenset(TYPE_SPECS.keys())
 
 INTEGER_VALUE_TYPES = frozenset({Uint8, Int32, Uint32, Int64, Uint64})
 
+RADIX_KEY_TYPES = frozenset({Int32, Uint32, Int64, Uint64})
+
 ALL_PROVIDER_TYPES = frozenset(TYPE_SPECS.keys())
 
 ORDINARY_PROVIDER_TYPES = {

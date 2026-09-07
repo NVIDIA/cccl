@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 # ruff: noqa: E402, F401
 
-"""Shared constructors for the initial group-planner contract tests."""
+"""Shared constructors for portable group-planner contract tests."""
 
 from cuda.coop._core import (
     COMPLETE_WARP_GROUP_KINDS,
@@ -15,14 +15,21 @@ from cuda.coop._core import (
     CxxFunction,
     CxxOperator,
     Dependency,
+    GroupAdjacentDifferenceSemantics,
+    GroupDiscontinuitySemantics,
+    GroupExchangeMode,
+    GroupExchangeSemantics,
+    GroupHistogramSemantics,
     GroupLoadStoreAlgorithm,
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
     GroupLoweringTarget,
     GroupOperandKind,
     GroupReduceSemantics,
+    GroupRunLengthDecodeSemantics,
     GroupScanMode,
     GroupScanSemantics,
+    GroupShuffleSemantics,
     LaunchFactOrigin,
     LaunchFacts,
     LogicalResultContract,
@@ -30,7 +37,6 @@ from cuda.coop._core import (
     PreconditionEnforcement,
     ResultOwnership,
     ResultVisibility,
-    RuntimeValue,
     StatefulOperator,
     StorageOwnership,
     SynchronizationScope,
@@ -49,12 +55,25 @@ from cuda.coop._core import (
     this_warp,
 )
 from cuda.coop._core.block import (
+    BlockAdjacentDifferenceDirection,
+    BlockDiscontinuityMode,
     BlockReduceAlgorithm,
     BlockScanAlgorithm,
+    make_block_adjacent_difference_semantics,
+    make_block_discontinuity_semantics,
+    make_block_exchange_semantics,
+    make_block_exchange_spec,
+    make_block_histogram_semantics,
     make_block_reduce_semantics,
+    make_block_run_length_decode_semantics,
     make_block_scan_spec,
+    make_block_shuffle_semantics,
 )
-from cuda.coop._core.warp import make_warp_reduce_spec, make_warp_scan_spec
+from cuda.coop._core.warp import (
+    make_warp_exchange_spec,
+    make_warp_reduce_spec,
+    make_warp_scan_spec,
+)
 
 
 def _reduce(**overrides):
@@ -83,6 +102,93 @@ def _reduce(**overrides):
     )
 
 
+def _exchange(mode="blocked_to_striped", items_per_thread=3, **overrides):
+    semantics = GroupExchangeSemantics(
+        make_block_exchange_semantics(
+            dtype=overrides.pop("dtype", "int"),
+            mode=mode,
+            items_per_thread=items_per_thread,
+            warp_time_slicing=overrides.pop("warp_time_slicing", False),
+            rank_dtype=overrides.pop("rank_dtype", None),
+            valid_flag_dtype=overrides.pop("valid_flag_dtype", None),
+        )
+    )
+    assert not overrides
+    return semantics
+
+
+def _adjacent_difference(**overrides):
+    semantics = GroupAdjacentDifferenceSemantics(
+        make_block_adjacent_difference_semantics(
+            dtype=overrides.pop("dtype", "int"),
+            items_per_thread=overrides.pop("items_per_thread", 2),
+            direction=overrides.pop("direction", "left"),
+            difference_operator=overrides.pop(
+                "difference_operator",
+                CxxOperator(
+                    "::cuda::std::minus<T>",
+                    Dependency("T"),
+                    name="difference_op",
+                ),
+            ),
+            valid_items=overrides.pop("valid_items", None),
+            tile_predecessor_item=overrides.pop("tile_predecessor_item", None),
+            tile_successor_item=overrides.pop("tile_successor_item", None),
+        )
+    )
+    assert not overrides
+    return semantics
+
+
+def _discontinuity(**overrides):
+    semantics = GroupDiscontinuitySemantics(
+        make_block_discontinuity_semantics(
+            dtype=overrides.pop("dtype", "int"),
+            flag_dtype=overrides.pop("flag_dtype", "flag"),
+            items_per_thread=overrides.pop("items_per_thread", 2),
+            mode=overrides.pop("mode", "heads"),
+            flag_operator=overrides.pop(
+                "flag_operator",
+                CxxOperator(
+                    "::cuda::std::not_equal_to<T>",
+                    Dependency("T"),
+                    name="flag_op",
+                ),
+            ),
+            tile_predecessor_item=overrides.pop("tile_predecessor_item", None),
+            tile_successor_item=overrides.pop("tile_successor_item", None),
+        )
+    )
+    assert not overrides
+    return semantics
+
+
+def _shuffle(**overrides):
+    items_per_thread = overrides.pop("items_per_thread", None)
+    semantics = GroupShuffleSemantics(
+        make_block_shuffle_semantics(
+            dtype=overrides.pop("dtype", "int"),
+            mode=overrides.pop(
+                "mode",
+                "offset" if items_per_thread is None else "up",
+            ),
+            items_per_thread=items_per_thread,
+            distance=overrides.pop(
+                "distance",
+                (
+                    ArgumentBinding.runtime()
+                    if items_per_thread is None
+                    else ArgumentBinding.omitted()
+                ),
+            ),
+            block_prefix=overrides.pop("block_prefix", False),
+            block_suffix=overrides.pop("block_suffix", False),
+        )
+    )
+    assert not overrides
+    return semantics
+
+
 def _scan(**overrides):
     cub_algorithm = overrides.pop("cub_algorithm", None)
     valid_items = overrides.pop("valid_items", ArgumentBinding.omitted())
@@ -106,7 +212,7 @@ def _scan(**overrides):
 
 
 def _load_store(kind="load", **overrides):
-    operation = GroupLoadStoreSemantics(
+    return GroupLoadStoreSemantics(
         kind=GroupLoadStoreKind(kind),
         dtype=overrides.pop("dtype", "int"),
         items_per_thread=overrides.pop("items_per_thread", 2),
@@ -115,8 +221,51 @@ def _load_store(kind="load", **overrides):
         oob_default=overrides.pop("oob_default", ArgumentBinding.omitted()),
         offset=overrides.pop("offset", ArgumentBinding.omitted()),
     )
+
+
+def _histogram(**overrides):
+    bins_per_thread = overrides.pop("bins_per_thread", 1)
+    primitive = make_block_histogram_semantics(
+        item_dtype=overrides.pop("item_dtype", "int"),
+        counter_dtype=overrides.pop("counter_dtype", "unsigned int"),
+        items_per_thread=overrides.pop("items_per_thread", 2),
+        bins=overrides.pop("bins", 64),
+        algorithm=overrides.pop("algorithm", "atomic"),
+    )
     assert not overrides
-    return operation
+    return GroupHistogramSemantics(
+        primitive=primitive,
+        bins_per_thread=bins_per_thread,
+    )
+
+
+def _run_length_decode(**overrides):
+    primitive = make_block_run_length_decode_semantics(
+        item_dtype=overrides.pop("item_dtype", "int"),
+        run_length_dtype=overrides.pop("run_length_dtype", "unsigned int"),
+        decoded_offset_dtype=overrides.pop(
+            "decoded_offset_dtype",
+            "unsigned int",
+        ),
+        total_decoded_size_dtype=overrides.pop(
+            "total_decoded_size_dtype",
+            "unsigned int",
+        ),
+        runs_per_thread=overrides.pop("runs_per_thread", 1),
+        decoded_items_per_thread=overrides.pop("decoded_items_per_thread", 2),
+        with_relative_offsets=overrides.pop("with_relative_offsets", True),
+        relative_offset_dtype=overrides.pop(
+            "relative_offset_dtype",
+            "unsigned int",
+        ),
+        with_decoded_window_offset=overrides.pop(
+            "with_decoded_window_offset",
+            True,
+        ),
+        returns_total_decoded_size=True,
+    )
+    assert not overrides
+    return GroupRunLengthDecodeSemantics(primitive)
 
 
 def _plan(group, operation, launch=(64, 1, 1)):

@@ -21,7 +21,7 @@ from dataclasses import dataclass, field, replace
 from itertools import count
 
 import numpy as np
-from numba_cuda_mlir import cuda as _cuda_module
+from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.extending import (
     WholeFunctionPlanner,
     register_planner,
@@ -45,6 +45,9 @@ from .._types import (
 )
 from ._operations import factory_operation
 from ._parameters import normalize_dim_param, normalize_dtype_param
+
+_cuda_module = cuda
+_numba_types = types
 
 _INFERENCE_EXCEPTIONS = (
     KeyError,

@@ -170,6 +170,7 @@ print(f"numba-cuda-mlir={importlib.metadata.version('numba-cuda-mlir')}")
 PY
     python -m pytest -v \
       backends/numba_mlir/unit/ \
+      backends/numba_mlir/compile/ \
       backends/numba_mlir/runtime/
     ;;
   cutlass-host)
