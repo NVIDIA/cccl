@@ -36,9 +36,6 @@ function usage {
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
     echo "  --enable-tile: Enable tile support"
-    echo "  --minimal-ctk: Hide the optional cuRAND/cuSPARSE toolkit components from CMake, as on a"
-    echo "                 partial toolkit install. Used with -configure to check that the vendor-tier"
-    echo "                 targets are gated on the component instead of hard-failing the configure."
     echo "  --test-par: CTest parallel level (Defaults to 1)"
     echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
@@ -85,10 +82,6 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
     --enable-tile) GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_TILE=ON"); args=("${args[@]:1}");;
-    # Pre-setting the find_library cache entries to empty stops FindCUDAToolkit from
-    # searching for them, so the CUDA::curand / CUDA::cusparse imported targets are never
-    # created -- the same state as a toolkit installed without those components.
-    --minimal-ctk) GLOBAL_CMAKE_OPTIONS+=("-DCUDA_curand_LIBRARY=" "-DCUDA_cusparse_LIBRARY="); args=("${args[@]:1}");;
     --test-par) CTEST_PARALLEL_LEVEL="${args[1]}"; args=("${args[@]:2}");;
     -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
     -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;

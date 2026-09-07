@@ -15,15 +15,9 @@ function(cudax_stf_configure_target target_name)
     ${target_name}
     PRIVATE #
       CUDA::cudart_static
+      CUDA::curand
       CUDA::cuda_driver
   )
-
-  # STF itself does not use cuRAND; only a couple of examples/tests do (they are dropped
-  # from their source lists when the component is missing). Link it when the toolkit has
-  # it, but do not make every STF target depend on a partial install having it.
-  if (TARGET CUDA::curand)
-    target_link_libraries(${target_name} PRIVATE CUDA::curand)
-  endif()
 
   if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
     target_compile_options(

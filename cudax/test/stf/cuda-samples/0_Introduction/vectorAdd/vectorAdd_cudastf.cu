@@ -121,11 +121,11 @@ void run()
 
   ctx.host_launch(A_handle.read(), B_handle.read(), C_handle.read())->*[](auto hA, auto hB, auto hC) {
     // Verify that the result vector is correct
-    for (int i = 0; i < hC.extent(0); ++i)
+    for (size_t i = 0; i < hC.extent(0); ++i)
     {
       if (::std::abs(hA[i] + hB[i] - hC[i]) > 1e-5)
       {
-        fprintf(stderr, "Result verification failed at element %d!\n", i);
+        fprintf(stderr, "Result verification failed at element %zu!\n", i);
         exit(EXIT_FAILURE);
       }
     }

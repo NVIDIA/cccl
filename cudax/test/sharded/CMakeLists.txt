@@ -58,28 +58,25 @@ foreach (source IN LISTS sharded_test_sources)
 endforeach()
 
 # Vendor tier: cuRAND (random.cuh is opt-in and not part of the umbrella).
-# Gated on the toolkit component so a cuRAND-less install skips cleanly.
-if (TARGET CUDA::curand)
-  cudax_add_sharded_test(curand_test_target "algorithms/random_fill.cu")
-  target_link_libraries(${curand_test_target} PRIVATE CUDA::curand)
+cudax_add_sharded_test(curand_test_target "algorithms/random_fill.cu")
+target_link_libraries(${curand_test_target} PRIVATE CUDA::curand)
 
-  set(test_target cudax.test.sharded.header_standalone.random)
-  cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
-  cudax_places_configure_target(${test_target})
-  target_link_libraries(
-    ${test_target}
-    PRIVATE cudax.compiler_interface CUDA::curand
-  )
-  target_compile_definitions(
-    ${test_target}
-    PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/random.cuh>"
-  )
-endif()
+set(test_target cudax.test.sharded.header_standalone.random)
+cccl_add_executable(${test_target} SOURCES header_standalone.cu ADD_CTEST)
+cudax_places_configure_target(${test_target})
+target_link_libraries(
+  ${test_target}
+  PRIVATE cudax.compiler_interface CUDA::curand
+)
+target_compile_definitions(
+  ${test_target}
+  PRIVATE "CUDAX_SHARDED_HEADER=<cuda/experimental/__sharded/random.cuh>"
+)
 
-# Vendor tier: cuSPARSE (sparse.cuh is opt-in; the sharded_csr container
-# itself is vendor-free and tested in the main list above). Gated on the
-# toolkit component so a cuSPARSE-less install skips cleanly.
-if (TARGET CUDA::cusparse)
+# Math-library tier: cuSPARSE (sparse.cuh is opt-in; the sharded_csr container
+# itself is vendor-free and tested in the main list above), behind the same
+# switch as STF's cuBLAS/cuSOLVER tests.
+if (cudax_ENABLE_CUDASTF_MATHLIBS)
   foreach (
     source
     IN

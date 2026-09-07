@@ -77,11 +77,6 @@ set(
 
 cccl_get_cudatoolkit()
 
-# pi.cu is the only STF example that uses cuRAND directly.
-if (NOT TARGET CUDA::curand)
-  list(REMOVE_ITEM stf_example_codegen_sources pi.cu)
-endif()
-
 ## cudax_add_stf_example
 #
 # Add an stf example executable and register it with ctest.

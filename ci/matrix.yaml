@@ -113,10 +113,9 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['gcc12']}
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
     - {jobs: ['build'], project: 'cudax', std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Newest
-    # cudax links optional toolkit components (cuRAND, cuSPARSE) from its vendor-tier tests and
-    # examples. Every other image here ships a complete toolkit, so this configure-only job is what
-    # keeps those links gated on the component rather than hard-failing a partial toolkit install.
-    - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: 'gcc', args: '-configure --minimal-ctk'}
+    # Math-library tier (opt-in, OFF in the presets): STF's cuBLAS/cuSOLVER examples and the
+    # sharded cuSPARSE tests/examples only build with cudax_ENABLE_CUDASTF_MATHLIBS=ON.
+    - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: 'gcc', cmake_options: '-Dcudax_ENABLE_CUDASTF_MATHLIBS=ON'}
     # CTK '13.X' build with tile support: default projects
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], ctk: '13.X', cxx: ['gcc', 'clang'], args: '--enable-tile'}
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   ctk: '13.X', cxx: ['gcc', 'clang'], args: '--enable-tile'}
