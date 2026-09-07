@@ -186,6 +186,15 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 {
   return vec;
 }
+
+template <class T, class... Props>
+std::vector<T> to_vec(cuda::buffer<T, Props...> const& buf)
+{
+  const auto host = cuda::make_buffer(buf.stream(), cuda::mr::legacy_pinned_memory_resource{}, buf);
+
+  buf.stream().sync();
+  return std::vector<T>{host.begin(), host.end()};
+}
 } // namespace detail
 
 #define REQUIRE_APPROX_EQ(ref, out)                          \
