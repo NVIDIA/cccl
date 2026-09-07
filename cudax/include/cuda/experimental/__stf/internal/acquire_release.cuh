@@ -348,18 +348,23 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs) no
 
   auto& task_deps = pimpl->deps;
 
-  // Everything from here to leaves.add() below updates shared dependency state, and every way
-  // it can fail is an allocation failure: event-list merges, the prereq containers, the dot
-  // tracing structures. Aborting on those is the standing ruling -- and it is also what keeps
-  // this function safe, since a throw partway through would leave the dependency graph half
-  // updated AND every logical-data mutex still locked (they are taken in acquire() and released
-  // in the loop below), which deadlocks the next task touching that data.
+  // Everything from here to leaves.add() below updates shared dependency state. Aborting on
+  // failure is the standing ruling -- and it is also what keeps this function safe, since a
+  // throw partway through would leave the dependency graph half updated AND every logical-data
+  // mutex still locked (they are taken in acquire() and released in the loop below), which
+  // deadlocks the next task touching that data.
   //
-  // catch_exactly rather than catch_only on purpose: std::bad_array_new_length derives from
-  // bad_alloc but means a size computation went wrong, not that memory ran out. It should not
-  // be quietly treated as memory pressure. Anything else we did not anticipate escapes into
-  // terminate rather than being silently absorbed here.
-  ON_THROW(catch_exactly<::std::bad_alloc>(abort))
+  // Two failure kinds are anticipated, and the policy names both rather than absorbing
+  // everything. Allocation failures come from the event-list merges, the prereq containers and
+  // the dot tracing structures. CUDA failures come from add_write_prereq -> event_list::optimize
+  // -> factorize, which in the graph backend adds an empty node through cuda_try; the stream
+  // backend's factorize is pure computation, so this arm only fires for graph contexts.
+  //
+  // catch_exactly for bad_alloc on purpose: std::bad_array_new_length derives from it but means
+  // a size computation went wrong, not that memory ran out, and should not be quietly treated
+  // as memory pressure. Anything else we did not anticipate escapes into terminate rather than
+  // being silently absorbed here.
+  ON_THROW(catch_exactly<::std::bad_alloc>(abort) | catch_only<cuda_exception>(abort))
   {
     // We copy the list of prereqs into the task
     merge_event_list(done_prereqs);
