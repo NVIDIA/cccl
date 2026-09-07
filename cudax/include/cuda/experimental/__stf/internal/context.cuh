@@ -27,6 +27,7 @@
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/internal/bundle.cuh>
 #include <cuda/experimental/__stf/internal/inner_shape.cuh>
 #include <cuda/experimental/__stf/internal/reducer.cuh>
 #include <cuda/experimental/__stf/internal/scalar_interface.cuh>
@@ -673,7 +674,8 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>
+                                                && !reserved::any_bundle_dep_v<Deps...>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
     if constexpr (::cuda::std::is_integral_v<S>)
@@ -695,7 +697,8 @@ public:
             typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t>
+                                                && !reserved::any_bundle_dep_v<Deps...>>>
   auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::cuda::std::variant_npos, "Context is not initialized.");
@@ -706,7 +709,7 @@ public:
     };
   }
 
-  template <typename S, typename... Deps>
+  template <typename S, typename... Deps, typename = ::cuda::std::enable_if_t<!reserved::any_bundle_dep_v<Deps...>>>
   auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
@@ -804,6 +807,141 @@ public:
     return launch(mv(ths), default_exec_place(), mv(deps)...);
   }
 #endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
+
+  /*
+   * Bundle-aware overloads: when a dependency list contains bundle
+   * dependencies, expand them into their per-field dependencies, delegate to
+   * the ordinary construct, and wrap the resulting scope so the user function
+   * receives one tuple of views per bundle.
+   */
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto task(exec_place e_place, Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->task(mv(e_place), mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto task(Args... args)
+  {
+    return task(default_exec_place(), mv(args)...);
+  }
+
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
+  template <
+    typename exec_place_t,
+    typename S,
+    typename... Args,
+    ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t> && reserved::any_bundle_dep_v<Args...>,
+                             int> = 0>
+  auto parallel_for(exec_place_t e_place, S shape, Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->parallel_for(mv(e_place), mv(shape), mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename S, typename... Args, ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>, int> = 0>
+  auto parallel_for(S shape, Args... args)
+  {
+    return parallel_for(default_exec_place(), mv(shape), mv(args)...);
+  }
+
+  template <
+    typename partitioner_t,
+    typename exec_place_t,
+    typename S,
+    typename... Args,
+    ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<exec_place, exec_place_t> && reserved::any_bundle_dep_v<Args...>,
+                             int> = 0>
+  auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->parallel_for(mv(p), mv(e_place), mv(shape), mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename thread_hierarchy_spec_t,
+            typename... Args,
+            typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto launch(thread_hierarchy_spec_t spec, exec_place e_place, Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->launch(mv(spec), mv(e_place), mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto launch(exec_place e_place, Args... args)
+  {
+    return launch(par(par()), mv(e_place), mv(args)...);
+  }
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto launch(Args... args)
+  {
+    return launch(default_exec_place(), mv(args)...);
+  }
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto host_launch(Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->host_launch(mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto cuda_kernel(Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->cuda_kernel(mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto cuda_kernel(exec_place e_place, Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->cuda_kernel(mv(e_place), mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto cuda_kernel_chain(Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->cuda_kernel_chain(mv(flat)...);
+      },
+      mv(args)...);
+  }
+
+  template <typename... Args, typename = ::cuda::std::enable_if_t<reserved::any_bundle_dep_v<Args...>>>
+  auto cuda_kernel_chain(exec_place e_place, Args... args)
+  {
+    return reserved::make_bundle_scope(
+      [&](auto... flat) {
+        return this->cuda_kernel_chain(mv(e_place), mv(flat)...);
+      },
+      mv(args)...);
+  }
 
   auto repeat(size_t count)
   {

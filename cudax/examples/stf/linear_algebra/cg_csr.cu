@@ -21,20 +21,30 @@ using vector_t  = logical_data<slice<double>>;
 using scalar_t  = logical_data<scalar_view<double>>;
 using context_t = context;
 
-struct csr_matrix
+/* A CSR matrix is one object made of three arrays: a bundle of the values
+ * and of the (constant) structure. Tasks depend on the whole matrix with a
+ * single argument, and every field remains an ordinary logical data. */
+struct csr_matrix : bundle<field<slice<double>>, field<slice<size_t>, constant>, field<slice<size_t>, constant>>
 {
   csr_matrix(
     context_t& ctx, size_t num_rows, size_t num_nonzeros, double* values, size_t* row_offsets, size_t* column_indices)
-  {
-    val_handle = ctx.logical_data(make_slice(values, num_nonzeros));
-    col_handle = ctx.logical_data(make_slice(column_indices, num_nonzeros));
-    row_handle = ctx.logical_data(make_slice(row_offsets, num_rows + 1));
-  }
+      : bundle(ctx.logical_data(make_slice(values, num_nonzeros)),
+               ctx.logical_data(make_slice(column_indices, num_nonzeros)),
+               ctx.logical_data(make_slice(row_offsets, num_rows + 1)))
+  {}
 
-  /* Description of the CSR */
-  mutable logical_data<slice<double>> val_handle;
-  mutable logical_data<slice<size_t>> row_handle;
-  mutable logical_data<slice<size_t>> col_handle;
+  auto& vals()
+  {
+    return get_field<0>();
+  }
+  auto& colind()
+  {
+    return get_field<1>();
+  }
+  auto& rowptr()
+  {
+    return get_field<2>();
+  }
 };
 
 // Note that a and b might be the same logical data
@@ -48,19 +58,20 @@ void DOT(context_t& ctx, vector_t& a, vector_t& b, scalar_t& res)
 
 void SPMV(context_t& ctx, csr_matrix& a, vector_t& x, vector_t& y)
 {
-  ctx.parallel_for(y.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.read(), y.write())
-      ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
-            int row_start = da_row(row);
-            int row_end   = da_row(row + 1);
+  ctx.parallel_for(y.shape(), a.read(), x.read(), y.write())->*[] _CCCL_DEVICE(size_t row, auto da, auto dx, auto dy) {
+    auto& [da_val, da_col, da_row] = da;
 
-            double sum = 0.0;
-            for (int elt = row_start; elt < row_end; elt++)
-            {
-              sum += da_val(elt) * dx(da_col(elt));
-            }
+    int row_start = da_row(row);
+    int row_end   = da_row(row + 1);
 
-            dy(row) = sum;
-          };
+    double sum = 0.0;
+    for (int elt = row_start; elt < row_end; elt++)
+    {
+      sum += da_val(elt) * dx(da_col(elt));
+    }
+
+    dy(row) = sum;
+  };
 }
 
 /* genTridiag: generate a random tridiagonal symmetric matrix
