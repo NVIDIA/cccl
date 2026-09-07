@@ -436,6 +436,57 @@ public:
       __container_ref);
   }
 
+  //! @brief Asynchronously regenerates the container without changing its capacity.
+  //!
+  //! @tparam _Container Owning container type
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  //! @param[in] __container Owning container whose reference is rebuilt after storage replacement
+  template <class _Container>
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, const _Container& __container)
+  {
+    rehash_async(__stream, capacity(), __container);
+  }
+
+  //! @brief Asynchronously replaces the slot storage and reinserts all filled slots.
+  //!
+  //! @tparam _Container Owning container type
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  //! @param[in] __capacity Requested new capacity
+  //! @param[in] __container Owning container whose reference is rebuilt after storage replacement
+  template <class _Container>
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, __size_type __capacity, const _Container& __container)
+  {
+    const auto __new_capacity = __compute_num_buckets(__capacity) * _BucketSize;
+    ::cuda::device_buffer<__value_type> __new_slots{__stream, __memory_resource, __new_capacity, ::cuda::no_init};
+
+    _CCCL_TRY_CUDA_API(
+      CUB_NS_QUALIFIER::DeviceTransform::Fill,
+      "cuco: failed to initialize rehashed slot storage",
+      __new_slots.data(),
+      static_cast<detail::__index_type>(__new_capacity),
+      __empty_slot_sentinel,
+      __stream);
+
+    __slots.swap(__new_slots);
+
+    if (!__new_slots.empty())
+    {
+      constexpr auto __block_size = detail::__default_block_size;
+      const auto __grid_size      = detail::__grid_size(static_cast<detail::__index_type>(__new_slots.size()));
+      const auto __old_storage = __storage_ref_type{__new_slots.data(), static_cast<__size_type>(__new_slots.size())};
+      const auto __new_ref     = __container.ref();
+      const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
+
+      __open_addressing::__rehash<__block_size>
+        <<<static_cast<unsigned>(__grid_size), __block_size, 0, __stream.get()>>>(__old_storage, __new_ref, __is_filled);
+      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to rehash");
+    }
+
+    __new_slots.destroy(__stream);
+  }
+
   //! @brief Retrieves all elements in the container.
   //!
   //! @note This function synchronizes the given stream.
