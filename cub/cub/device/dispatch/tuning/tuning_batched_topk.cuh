@@ -118,6 +118,29 @@ struct multi_worker_policy
 #endif // _CCCL_HOSTED()
 };
 
+//! Fixed launch geometry for the sorted-output epilogue.
+struct sort_policy
+{
+  int threads_per_block;
+  int items_per_thread;
+};
+
+inline constexpr sort_policy sorted_output_policies[] = {
+  {256, 64},
+  {256, 32},
+  {256, 16},
+  {256, 8},
+  {256, 4},
+  {256, 2},
+  {128, 2},
+  {128, 1},
+  {64, 1},
+  {32, 1},
+};
+
+inline constexpr int sorted_output_policy_count =
+  static_cast<int>(sizeof(sorted_output_policies) / sizeof(sorted_output_policies[0]));
+
 //! Sub-policy for the baseline (worker-per-segment) backend of @ref DeviceBatchedTopK.
 struct baseline_topk_policy
 {

@@ -75,6 +75,8 @@ template <cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
           cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
+          cuda::execution::output_ordering::__output_ordering_t OutputOrdering =
+            cuda::execution::output_ordering::__output_ordering_t::__unsorted,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -98,7 +100,7 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk_pairs(
     cuda::stream_ref{stream},
     cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<Determinism>{},
                              cuda::execution::tie_break::__tie_break_holder_t<TieBreak>{},
-                             cuda::execution::output_ordering::unsorted)};
+                             cuda::execution::output_ordering::__output_ordering_holder_t<OutputOrdering>{})};
   if constexpr (SelectDirection == cub::detail::topk::select::max)
   {
     return cub::DeviceBatchedTopK::MaxPairs(
@@ -137,8 +139,10 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
     cub::detail::topk::select SelectDirection,
     cuda::execution::determinism::__determinism_t Determinism =
       cuda::execution::determinism::__determinism_t::__not_guaranteed,
-    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified),
-  ESCAPE_LIST(SelectDirection, Determinism, TieBreak));
+    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
+    cuda::execution::output_ordering::__output_ordering_t OutputOrdering =
+      cuda::execution::output_ordering::__output_ordering_t::__unsorted),
+  ESCAPE_LIST(SelectDirection, Determinism, TieBreak, OutputOrdering));
 
 // Wrapper-test companion to expect_batched_topk_unsupported_and_skip: when the request's backend is unavailable in this
 // build, dispatch it directly (host), verify the runtime cudaErrorNotSupported, and skip the correctness checks;
@@ -196,6 +200,8 @@ using uint_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, c
 using select_direction_list =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
 
+using sorted_pair_key_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
+
 // Determinism/tie-break combinations used as a single compile-time axis by the determinism-aware pairs tests. The
 // selected multiset is invariant to the tie-break preference, so every combo is verified the same way; tie-break
 // preferences only pair with a deterministic requirement.
@@ -214,6 +220,12 @@ using det_tie_pair_combos =
                               cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
                  det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
                               cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+
+using sorted_det_tie_pair_combos =
+  c2h::type_list<det_tie_pair<cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>>;
 
 // Consistency check: ensures values remain associated with their corresponding keys
 template <typename KeyT, typename ValueT>
@@ -374,6 +386,71 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
 
   // Since the results of top-k are unordered, sort output segments before comparison.
   fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs return ordered sorted output",
+         "[pairs][segmented][topk][device]",
+         CUB_SMALL,
+         sorted_pair_key_types,
+         select_direction_list,
+         sorted_det_tie_pair_combos)
+{
+  using key_t           = c2h::get<0, TestType>;
+  using value_t         = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                            = c2h::get<2, TestType>;
+  constexpr auto direction               = c2h::get<1, TestType>::value;
+  constexpr auto determinism             = combo::determinism;
+  constexpr auto tie_break               = combo::tie_break;
+  constexpr segment_size_t segment_size  = 2051;
+  constexpr segment_size_t static_max_k  = 2048;
+  constexpr segment_index_t num_segments = 3;
+  const segment_size_t k                 = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::device_vector<value_t> values_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr    = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr   = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto values_in_it     = cuda::make_counting_iterator(value_t{0});
+  auto d_keys_in        = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out       = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+  auto d_values_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  skip_unless_batched_topk_pairs_supported<direction, determinism, tie_break>(
+    segment_size,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::constant<segment_size>{},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<num_segments>{});
+
+  batched_topk_pairs<direction, determinism, tie_break, cuda::execution::output_ordering::__output_ordering_t::__sorted>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::constant<segment_size>{},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<num_segments>{});
+
+  REQUIRE(verify_pairs_consistency(keys_in_buffer, keys_out_buffer, values_out_buffer));
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k));
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
