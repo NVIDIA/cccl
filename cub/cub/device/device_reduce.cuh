@@ -46,6 +46,7 @@
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/argument>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
@@ -153,7 +154,9 @@ inline constexpr bool is_non_deterministic_v =
 //! ====================================
 //!
 //! ``cub::DeviceReduce`` supports all three :ref:`determinism guarantees <cccl-determinism>`; the
-//! default is ``run_to_run``.
+//! default is ``run_to_run``. ``ReduceByKey`` has separate type/operator constraints, documented in the
+//! :ref:`CUB determinism support matrix <cub-determinism>`. The implementation details below apply to the other
+//! reductions; ``ReduceByKey`` does not use RFA or atomic accumulation.
 //!
 //! - ``run_to_run`` (the default) is reproducible because, for a given GPU, every launch with the same input,
 //!   build, and launch configuration selects the *same* tuning policy and therefore performs the *same* fixed
@@ -2734,8 +2737,11 @@ public:
   //! respectively. The total number of runs encountered is written to ``d_num_runs_out``.
   //!
   //! - The ``==`` equality operator is used to determine whether keys are equivalent
-  //! - Provides "run-to-run" determinism for pseudo-associative reduction
-  //!   (e.g., addition of floating point types) on the same GPU device.
+  //! - Requests "run-to-run" determinism by default. It is supported for integral types with known operators,
+  //!   primitive types with min/max, and floating-point types with ``cuda::std::plus``.
+  //! - Pass ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` in the environment to opt out.
+  //! - "gpu-to-gpu" determinism is supported for integral types with known operators and primitive types with min/max.
+  //!   Other combinations under "run-to-run" or "gpu-to-gpu" are rejected at compile time.
   //! - Let ``out`` be any of
   //!   ``[d_unique_out, d_unique_out + *d_num_runs_out)``
   //!   ``[d_aggregates_out, d_aggregates_out + *d_num_runs_out)``
@@ -2780,7 +2786,8 @@ public:
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
-  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!   Supports customization of stream via ``cuda::get_stream`` and determinism through
+  //!   ``cuda::execution::require``.
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input sequence of keys
@@ -2830,15 +2837,44 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ReduceByKey");
 
-    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
-    using EqualityOp              = ::cuda::std::equal_to<>;
-    using default_policy_selector = detail::reduce_by_key::policy_selector_from_types<
-      ReductionOpT,
-      ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>,
-      detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>>;
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+    using accum_t    = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>;
+    using key_t      = detail::non_void_value_t<UniqueOutputIteratorT, detail::it_value_t<KeysInputIteratorT>>;
+    using OffsetT    = detail::choose_offset_t<NumItemsT>;
+    using EqualityOp = ::cuda::std::equal_to<>;
+
+    constexpr bool is_run_to_run_required =
+      ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::run_to_run_t>;
+    constexpr bool is_gpu_to_gpu_required =
+      ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
+    constexpr bool is_safe_integral_op =
+      ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ReductionOpT>;
+    constexpr bool is_primitive_min_max_op =
+      detail::is_primitive_v<accum_t> && detail::is_cuda_minimum_maximum_v<ReductionOpT, accum_t>;
+    constexpr bool is_fp_plus_op =
+      ::cuda::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ReductionOpT, accum_t>;
+
+    static_assert(!is_run_to_run_required || is_safe_integral_op || is_primitive_min_max_op || is_fp_plus_op,
+                  "run_to_run deterministic reduce-by-key requires integral types with known operators, "
+                  "primitive types with min/max, or floating-point types with plus operator");
+    static_assert(!is_gpu_to_gpu_required || is_safe_integral_op || is_primitive_min_max_op,
+                  "gpu_to_gpu deterministic reduce-by-key requires integral types with known operators or "
+                  "primitive types with min/max");
+
+    static constexpr bool stable_reduction_order = is_run_to_run_required && is_fp_plus_op;
+    using default_policy_selector =
+      detail::reduce_by_key::policy_selector_from_types<ReductionOpT, accum_t, key_t, stable_reduction_order>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::reduce_by_key::dispatch(
+        return detail::reduce_by_key::dispatch<stable_reduction_order>(
           storage,
           bytes,
           d_keys_in,
@@ -2867,8 +2903,7 @@ public:
   //! respectively. The total number of runs encountered is written to ``d_num_runs_out``.
   //!
   //! - The ``==`` equality operator is used to determine whether keys are equivalent
-  //! - Provides "run-to-run" determinism for pseudo-associative reduction
-  //!   (e.g., addition of floating point types) on the same GPU device.
+  //! - Provides "run-to-run" determinism for floating-point reduction with ``cuda::std::plus`` on the same GPU device.
   //!   However, results for pseudo-associative reduction may be inconsistent
   //!   from one device to a another device of a different compute-capability
   //!   because CUB can employ different tile-sizing for different architectures.
@@ -3011,10 +3046,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 
+    using accum_t    = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<ValuesInputIteratorT>>;
     using OffsetT    = detail::choose_offset_t<NumItemsT>;
     using EqualityOp = ::cuda::std::equal_to<>;
 
-    return detail::reduce_by_key::dispatch(
+    static constexpr bool stable_reduction_order =
+      ::cuda::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ReductionOpT, accum_t>;
+
+    return detail::reduce_by_key::dispatch<stable_reduction_order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
