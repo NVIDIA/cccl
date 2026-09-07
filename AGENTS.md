@@ -35,6 +35,101 @@ For a given task, you should:
 
 ---
 
+## CCCL C++ and CUB Conventions
+
+For C++/CUDA library work, do not rely on nearby formatting alone. Before drafting code, read the
+CCCL C++ coding guidelines and the relevant component developer guide from `CONTRIBUTING.md`. For
+CUB work this usually means at least:
+
+* `docs/cub/developer_overview.rst`
+* `docs/cub/test_overview.rst` when adding or changing tests
+* `docs/cub/benchmarking.rst` when running or comparing benchmarks
+* `docs/cub/tuning.rst` when adding or changing benchmark definitions
+
+When implementing CUB headers, tests, or benchmarks:
+
+* Inspect sibling files in the same subsystem before choosing structure, names, comments, and helper APIs.
+* Keep feature PRs narrowly scoped. If a change needs an independent helper extraction, shared trait
+  refactor, utility-header addition, or code motion with possible codegen impact, split that into a
+  preparatory PR with its own tests and, for CUDA codegen-sensitive paths, SASS diffs for relevant
+  benchmarks.
+* For new headers under `cub/cub/`, use the CUB header shape used by current CUB headers: SPDX/license
+  comment, `#pragma once`, `#include <cub/config.cuh>`, other required includes, then the
+  `_CCCL_IMPLICIT_SYSTEM_HEADER_*` pragma block before code. Do not add libcu++ include guards or
+  `<cuda/std/__cccl/prologue.h>` / `<cuda/std/__cccl/epilogue.h>` to CUB headers.
+* Prefer `cuda::std` facilities and headers where libcu++ provides the needed facility. Keep host-only
+  standard-library facilities only where there is no suitable `cuda::std` equivalent or the code is
+  intentionally host-only.
+* Before adding low-level CUDA device helpers to CUB utility headers such as `cub/util_ptx.cuh`, search for
+  an existing libcu++ or CUB facility. Prefer existing `cuda::device` APIs, such as the warp shuffle helpers
+  documented under `docs/libcudacxx/extended_api/warp/`, over new CUB wrappers. If a generally useful helper
+  is missing, put it in a separate PR in the proper component or keep the helper local to the implementation
+  until the API boundary is clear.
+* Match CCCL/CUB documentation and declaration style, including `//!` documentation comments, SPDX
+  license identifiers for new files, and PascalCase template parameters where the coding guidelines require
+  them.
+* Public CUB snippets should be test-backed. Prefer adding an API/example test and using `.. literalinclude::`
+  with start/end markers in documentation comments instead of hand-written code blocks that can drift.
+* Preserve the public API shape of sibling collectives. In particular, expose nested `TempStorage` structs
+  even when the storage is empty, and keep documented constructor/storage patterns consistent with nearby
+  thread, warp, or block collectives.
+* Apply CCCL style rules before asking for review: mark non-mutated locals `const`, use trailing `_` for
+  data members, add `noexcept` to no-throw device helpers, add `[[nodiscard]]` to value-returning helpers
+  whose result should not be discarded, and prefer compile-time constraints or `static_assert`s over runtime
+  unreachable paths for unsupported template instantiations.
+* Fully qualify nonmember library/header references where the guidelines or local style require it, but do
+  not add unnecessary `this->` or namespace qualification to member calls once the call is unambiguous.
+* Keep target-specific branches small and readable. If an `NV_IF_TARGET` or similar branch shares the same
+  fallback call with another path, factor the fallback once instead of duplicating it in each branch.
+* Follow the CUB Catch2 typed-test pattern from nearby tests. Prefer `C2H_TEST`, `params_t<TestType>`,
+  `c2h::host_vector`, `c2h::device_vector`, and the compile-time parameter-list style described in
+  `docs/cub/test_overview.rst`.
+* When comparing host references with device outputs, make any device-to-host copy intentional and easy to
+  see. Direct `c2h::host_vector` / `c2h::device_vector` comparisons are used in existing tests and bulk-copy
+  mismatched systems to host, but an explicit host copy is clearer when data movement matters to the test:
+  `c2h::host_vector<T> h_out = d_out; REQUIRE(h_out == h_ref);`.
+* Use CUB architecture constants such as `cub::detail::warp_threads` instead of hard-coded architectural
+  values like `32`, and make public documentation match any row-major or multidimensional thread
+  linearization used by the implementation.
+* For fixed-size range APIs, mirror the contract of the corresponding primitive in the same subsystem: use
+  `static_size_v` and
+  `cuda::std::iter_value_t`-based element checks, and allow zero-sized instantiations when the sibling API
+  does.
+* When inactive lanes, partial tiles, or output-parameter overloads are part of the contract, initialize
+  outputs with a sentinel value that the operation cannot produce, and verify every overload set across the
+  important type categories used by the primitive, including 64-bit floating-point and custom or multi-word
+  types where applicable.
+* Let `clang-format` format code, then manually scan documentation comments and prose for readable wrapping
+  consistent with surrounding files and reviewer expectations. Avoid artificial narrow wrapping in comments.
+
+For CUB benchmarks, first identify whether the benchmark should measure a device-level algorithm or a
+thread/warp/block primitive:
+
+* Device-level algorithm benchmarks may naturally include global input/output traffic if that traffic is part
+  of the algorithm contract.
+* Thread, warp, and block primitive microbenchmarks should measure the primitive itself. Avoid measured-path
+  global input/output traffic unless the primitive requires it. Prefer device-side benchmarking with
+  `<device_side_benchmark.cuh>`; use `cub/benchmarks/bench/reduce/warp_reduce_base.cuh` as a reference
+  pattern.
+* Keep benchmark axes sliceable and comparable. Put the algorithm or implementation choice on its own axis,
+  and keep workload knobs such as value type, items, batches, logical warp threads, rows, and synchronization
+  mode on separate axes instead of folding them into a single variant string.
+* Generate benchmark inputs in-device or keep setup outside the measured path. If using the device-side
+  benchmark helper, account for the helper's unroll factor in reported element counts, for example with
+  `state.add_element_count(items * batches * unroll_factor)`.
+* Guard occupancy-derived launches. If `cudaOccupancyMaxActiveBlocksPerMultiprocessor` or equivalent sizing
+  produces a zero-sized grid for a benchmark configuration, call `state.skip(...)` with a clear reason rather
+  than launching an invalid kernel.
+* When posting benchmark results, include the exact device, command, benchmark axes, and an honest
+  interpretation of what the benchmark measures. If a revised benchmark changes methodology, state that older
+  numbers are not comparable.
+
+If review feedback reveals a convention that was missed, update the local task notes or postmortem and, when
+the convention is general, update `AGENTS.md` or the relevant developer guide instead of only fixing the line
+that was reviewed.
+
+---
+
 ## Known Agent Limitations
 
 ### OpenAI Codex
