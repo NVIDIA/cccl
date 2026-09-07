@@ -373,7 +373,7 @@ struct lookahead_scan_closure
     warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseThreadAndWarpAggrW,
     int valid_items,
     bool is_first_tile,
-    bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside this function and compile it twice?
+    bool is_partial_tile, // TODO(bgruber): should we dispatch on this outside the function and compile it twice?
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
     int idxTile,
     int num_tiles) const
@@ -399,7 +399,7 @@ struct lookahead_scan_closure
 
       // Reduce across thread and warp
       _CCCL_IKET_RANGE_PUSH(ReduceThreadWarp);
-      if (is_last_tile)
+      if (is_partial_tile)
       {
         // TODO(bgruber): for operators where we know the identity we can probably optimize this better
         regThreadAggr = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
@@ -441,7 +441,7 @@ struct lookahead_scan_closure
       regSquadAggr = refThreadAndWarpAggrW.data()[squadReduce.threadCount()];
     }
 
-    if (is_last_tile)
+    if (is_partial_tile)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 1; i < squadReduce.warpCount(); ++i)
@@ -813,9 +813,12 @@ struct lookahead_scan_closure
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
         static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
-      const bool is_last_tile = valid_items < tile_size;
+      const bool is_partial_tile = valid_items < tile_size;
+      const bool is_last_tile    = idxTileBase + ::cuda::std::size_t(valid_items) >= params.numElem;
+      // In exclusive scans, ignore the last element, see AgentScan::ConsumeTile
+      const int load_items = (!isInclusive && is_last_tile) ? valid_items - 1 : valid_items;
       const warpspeed::CpAsyncOobInfo loadInfo =
-        warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
+        warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, load_items);
 
       if (squad == squadLoad)
       {
@@ -848,7 +851,7 @@ struct lookahead_scan_closure
           phaseThreadAndWarpAggrW,
           valid_items,
           is_first_tile,
-          is_last_tile,
+          is_partial_tile,
           loadInfo,
           idxTile,
           numTiles);
@@ -866,7 +869,7 @@ struct lookahead_scan_closure
       {
         static_assert(tile_size % squadScanStore.threadCount() == 0);
         _CCCL_IKET_RANGE_START(SquadScanStore);
-        if (is_last_tile)
+        if (is_partial_tile)
         {
           scan_and_store_tile<true>(
             squad,

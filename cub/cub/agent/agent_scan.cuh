@@ -343,9 +343,20 @@ struct AgentScan
 
     if constexpr (IS_LAST_TILE)
     {
-      // Fill last element with the first element because collectives are
-      // not suffix guarded.
-      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
+      if constexpr (IS_INCLUSIVE)
+      {
+        // Fill last element with the first element because collectives are
+        // not suffix guarded.
+        BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
+      }
+      else
+      {
+        // Ignore the last element of the input, as it doesn't contribute to the result
+        // We use init_value instead of the first element to avoid the edge case where
+        // only the last element is inside a new tile.
+        BlockLoadT(temp_storage.load)
+          .Load(d_in + tile_offset, items, static_cast<int>(num_remaining) - 1, static_cast<AccumT>(init_value));
+      }
     }
     else
     {
