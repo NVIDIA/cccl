@@ -97,7 +97,8 @@ Only the public APIs available in the ``<cub/device/device_xxx.cuh>`` headers ar
 excluding direct calls to the dispatch layer.
 For two phase APIs, the NVTX range is not emitted when querying the temporary storage size, only during algorithm execution.
 For single phase APIs, the NVTX range is emitted for the entire duration of the algorithm call.
-NVTX annotations can be disabled by defining ``NVTX_DISABLE`` during compilation.
+CCCL's NVTX annotations can be disabled by defining ``CCCL_NVTX_DISABLE`` during compilation.
+To disable NVTX annotations in general, define ``NVTX_DISABLE`` during compilation.
 When CUB device algorithms are called on a stream during
 `graph capture <https://developer.nvidia.com/blog/cuda-graphs/>`_,
 the NVTX range is reported for the duration of capture (where no execution happens),
