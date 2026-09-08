@@ -28,10 +28,25 @@
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__iterator/zip_function.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
+
+// only for the THRUST_NAMESPACE_BEGIN/END macros, so we can forward declare thrust::zip_iterator/zip_function below
+// without actually depending on Thrust
+#include <thrust/detail/config/namespace.h>
+
+// forward declarations, so we can unwrap thrust::zip_iterator/zip_function in __transform_internal below without
+// including their headers
+THRUST_NAMESPACE_BEGIN
+template <typename IteratorTuple>
+class zip_iterator;
+
+template <typename Function>
+class zip_function;
+THRUST_NAMESPACE_END
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -132,6 +147,54 @@ struct DeviceTransform
       ::cuda::std::move(transform_op),
       stream,
       policy_selector{});
+  }
+
+  // unwrap cuda::zip_iterator/zip_function so we can optimize the underlying iterators
+  template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
+            typename... ZippedIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename NumItemsT,
+            typename TransformOp,
+            typename Env>
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
+    ::cuda::std::tuple<::cuda::zip_iterator<ZippedIteratorsIn...>> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    ::cuda::always_true predicate,
+    ::cuda::zip_function<TransformOp> transform_op,
+    const Env& env)
+  {
+    return __transform_internal<StableAddress>(
+      ::cuda::std::move(::cuda::std::get<0>(inputs).__iterators()),
+      ::cuda::std::move(output),
+      num_items,
+      predicate,
+      ::cuda::std::move(transform_op.__fun()),
+      env);
+  }
+
+  // unwrap thrust::zip_iterator/zip_function so we can optimize the underlying iterators
+  template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
+            typename... ZippedIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename NumItemsT,
+            typename TransformOp,
+            typename Env>
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
+    ::cuda::std::tuple<::thrust::zip_iterator<::cuda::std::tuple<ZippedIteratorsIn...>>> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    ::cuda::always_true predicate,
+    ::thrust::zip_function<TransformOp> transform_op,
+    const Env& env)
+  {
+    return __transform_internal<StableAddress>(
+      ::cuda::std::get<0>(inputs).get_iterator_tuple(),
+      ::cuda::std::move(output),
+      num_items,
+      predicate,
+      transform_op.underlying_function(),
+      env);
   }
 
   // TODO(bgruber): we want to eventually forward the output tuple to the kernel and optimize writing multiple streams

@@ -368,6 +368,94 @@ CUB_TEST("DeviceTransform::Transform add five streams", "[device][transform]", C
   REQUIRE(reference_h == result);
 }
 
+struct sum_two_traceable
+{
+  __host__ __device__ auto operator()(int a, int b) const -> int
+  {
+    return a + b;
+  }
+};
+
+// specializing zip_function for sum_two_traceable and making its call operator return a wrong result means the
+// tests below can only pass if DeviceTransform actually unwraps the zip_iterator/zip_function
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <>
+class zip_function<sum_two_traceable>
+{
+  sum_two_traceable fun;
+
+public:
+  __host__ __device__ zip_function(sum_two_traceable fun)
+      : fun(fun)
+  {}
+
+  __host__ __device__ sum_two_traceable& __fun()
+  {
+    return fun;
+  }
+
+  template <typename Tuple>
+  __host__ __device__ int operator()(Tuple&&) const
+  {
+    return -1; // wrong on purpose; only reached if not unwrapped
+  }
+};
+_CCCL_END_NAMESPACE_CUDA
+
+THRUST_NAMESPACE_BEGIN
+template <>
+class zip_function<sum_two_traceable>
+{
+  mutable sum_two_traceable fun;
+
+public:
+  __host__ __device__ zip_function(sum_two_traceable fun)
+      : fun(fun)
+  {}
+
+  __host__ __device__ sum_two_traceable& underlying_function() const
+  {
+    return fun;
+  }
+
+  template <typename Tuple>
+  __host__ __device__ int operator()(Tuple&&) const
+  {
+    return -1; // wrong on purpose; only reached if not unwrapped
+  }
+};
+THRUST_NAMESPACE_END
+
+CUB_TEST("DeviceTransform::Transform unpacks cuda::zip_iterator", "[device][transform]", CUB_SMALL)
+{
+  constexpr int num_items = 1337;
+  c2h::device_vector<int> a(num_items, 3);
+  c2h::device_vector<int> b(num_items, 4);
+
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  auto zip = cuda::make_zip_iterator(a.begin(), b.begin());
+  transform_many(
+    cuda::std::make_tuple(zip), result.begin(), num_items, cuda::zip_function<sum_two_traceable>{sum_two_traceable{}});
+
+  c2h::device_vector<int> reference(num_items, 3 + 4);
+  REQUIRE(reference == result);
+}
+
+CUB_TEST("DeviceTransform::Transform unpacks thrust::zip_iterator", "[device][transform]", CUB_SMALL)
+{
+  constexpr int num_items = 1337;
+  c2h::device_vector<int> a(num_items, 3);
+  c2h::device_vector<int> b(num_items, 4);
+
+  c2h::device_vector<int> result(num_items, thrust::no_init);
+  auto zip = thrust::make_zip_iterator(a.begin(), b.begin());
+  transform_many(
+    cuda::std::make_tuple(zip), result.begin(), num_items, thrust::zip_function<sum_two_traceable>{sum_two_traceable{}});
+
+  c2h::device_vector<int> reference(num_items, 3 + 4);
+  REQUIRE(reference == result);
+}
+
 struct give_me_five
 {
   __device__ auto operator()() const -> int
