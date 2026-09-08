@@ -207,7 +207,8 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
 
   using System = typename thrust::iterator_system<InputIterator>::type;
 
-  System system; // NOLINT(misc-const-correctness): select_system requires a mutable lvalue
+  // thrust systems must be mutable
+  System system; // NOLINT(misc-const-correctness)
 
   return thrust::reduce(select_system(system), first, last);
 }
