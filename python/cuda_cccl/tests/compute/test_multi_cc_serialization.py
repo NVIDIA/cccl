@@ -662,6 +662,7 @@ def test_select_always_false_op_recompiles_per_target_cc():
 # ----------------------------------------------------------------------------
 
 
+@requires_serialization
 def test_build_for_a_target_cc_needs_no_gpu():
     """``make_<algo>(compute_capability=...)`` compiles with no device present.
 
@@ -673,6 +674,9 @@ def test_build_for_a_target_cc_needs_no_gpu():
     patching ``Device``: the query is the backend's own, below anything this
     package can monkeypatch. The operator is a Python function on purpose, since
     a well-known operator never reaches the backend and would pass either way.
+
+    v1 only: the v2 backend refuses an ahead-of-time build outright, so there is
+    no compile to reach.
     """
     program = textwrap.dedent(
         """
