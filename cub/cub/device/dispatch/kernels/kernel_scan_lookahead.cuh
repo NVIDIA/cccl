@@ -589,6 +589,16 @@ struct lookahead_scan_closure
     // It has an undefined value in
     // - tile*::warp0::lane0
 
+    // Acquire refInOut for the remainder of scope. We do this here already, before acquiring refAggrExclusiveCta, since
+    // the former SMEM resource is usually available sooner then the exclusive aggregate coming from the lookback
+    warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
+
+    // We are always loading a full tile even for the last tile, so we are loading invalid data
+    warpspeed::squadLoadSmem(
+      squad,
+      regAggrInclusive,
+      reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
+
     // Include aggregate of previous tiles
     {
       // important: we have to acquire the resource for the first tile as well to prevent a hang
@@ -641,15 +651,6 @@ struct lookahead_scan_closure
     // - tile0::warp0::lane0
 
     // Scan across elements allocated to this thread
-
-    // Acquire refInOut for remainder of scope.
-    warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
-
-    // We are always loading a full tile even for the last tile, so we are loading invalid data
-    warpspeed::squadLoadSmem(
-      squad,
-      regAggrInclusive,
-      reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
 
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
