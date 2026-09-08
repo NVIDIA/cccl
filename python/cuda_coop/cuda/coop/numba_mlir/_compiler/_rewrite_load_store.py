@@ -28,6 +28,52 @@ class _LoadStoreMatchMetadata:
     box_root_store_scalar: bool = False
 
 
+class _ExactStoreScalar:
+    """Check the compiler's scalar type before the boxing assignment can cast it."""
+
+    def __init__(self, dtype):
+        self.dtype = dtype
+        self._numba_type = None
+
+    @property
+    def _numba_type_(self):
+        from numba_cuda_mlir import types
+
+        from ._numba_mlir_compat import _get_numba_mlir_compat
+
+        if self._numba_type is None:
+            compat = _get_numba_mlir_compat()
+            dtype = self.dtype
+
+            def validate(value):
+                actual_dtype = getattr(value, "literal_type", value)
+                if actual_dtype != dtype:
+                    raise compat.numba_errors.TypingError(
+                        "cuda.coop.numba_mlir.store value dtype "
+                        f"{actual_dtype} does not match destination dtype {dtype}"
+                    )
+
+                def impl(value):
+                    return value
+
+                return impl
+
+            template = compat.make_overload_template(
+                self,
+                validate,
+                {"no_cpython_wrapper": True, "nopython": True},
+                strict=True,
+                inline="always",
+                prefer_literal=False,
+                base=compat.overload_function_template,
+            )
+            self._numba_type = types.Function(template)
+        return self._numba_type
+
+    def __call__(self, value):
+        raise RuntimeError("Store scalar validation requires device compilation")
+
+
 class _LoadStoreRewrite:
     @staticmethod
     def _validate_oob_default(
@@ -375,7 +421,6 @@ def prepare_load_store_runtime_args(
     scope: ir.Scope,
     loc: ir.Loc,
 ) -> list[ir.Var]:
-    del context
     metadata = match.family_metadata
     if not isinstance(metadata, _LoadStoreMatchMetadata):
         raise CoopSinglePhaseRewriteError("missing Load/Store family metadata")
@@ -434,6 +479,22 @@ def prepare_load_store_runtime_args(
         )
     )
     value = runtime_args[1]
+    if context.static_scalar_provenance(value) is _UNRESOLVED:
+        validator = new_var("validate")
+        checked_value = new_var("checked_value")
+        block.append(
+            ir.Assign(
+                ir.Global(
+                    _next_global_name("store_scalar"), _ExactStoreScalar(dtype), loc
+                ),
+                validator,
+                loc,
+            )
+        )
+        block.append(
+            ir.Assign(ir.Expr.call(validator, [value], (), loc), checked_value, loc)
+        )
+        value = checked_value
     for item_index in range(items_per_thread):
         index_var = new_var(f"index_{item_index}")
         block.append(ir.Assign(ir.Const(item_index, loc), index_var, loc))
