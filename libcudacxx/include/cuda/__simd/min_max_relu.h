@@ -43,6 +43,35 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #if _CCCL_HAS_SIMD_MIN_MAX_RELU()
 
+// CUDA [12.0, 13.3] ptxas generates incorrect SM90 code for dependent VIMNMX.RELU instructions.
+// The workaround consists in adding an identity LOP3 to break the dependency. CTK 13.4 fixes the issue.
+template <typename _Tp>
+[[nodiscard]] _CCCL_DEVICE_API inline _Tp __workaround_sm90_vimnmx_relu(_Tp __value) noexcept
+{
+#  if _CCCL_CTK_BELOW(13, 4)
+  NV_IF_TARGET(NV_IS_EXACTLY_SM_90, ({
+                 _Tp __result;
+                 asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__value));
+                 return __result;
+               }))
+#  endif // _CCCL_CTK_BELOW(13, 4)
+  return __value;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::simd::__array_u32_t<_Np>
+__workaround_sm90_vimnmx_relu(::cuda::std::simd::__array_u32_t<_Np> __values) noexcept
+{
+#  if _CCCL_CTK_BELOW(13, 4)
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __values[__i] = ::cuda::simd::__workaround_sm90_vimnmx_relu(__values[__i]);
+  }
+#  endif // _CCCL_CTK_BELOW(13, 4)
+  return __values;
+}
+
 template <typename _Tp, typename _Abi>
 struct __max_relu_operation
 {
@@ -62,9 +91,10 @@ struct __max_relu_operation
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
       if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int16_t))
       {
-        const auto __lhs_u    = ::cuda::std::simd::__to_unsigned_storage(__lhs);
-        const auto __rhs_u    = ::cuda::std::simd::__to_unsigned_storage(__rhs);
-        const auto __result_u = ::cuda::simd::__vmax_relu_16bit_x2(__lhs_u, __rhs_u);
+        const auto __lhs_u        = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+        const auto __rhs_u        = ::cuda::std::simd::__to_unsigned_storage(__rhs);
+        const auto __result_tmp_u = ::cuda::simd::__vmax_relu_16bit_x2(__lhs_u, __rhs_u);
+        const auto __result_u     = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_tmp_u);
         return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
       }
       else
@@ -74,7 +104,8 @@ struct __max_relu_operation
         _CCCL_PRAGMA_UNROLL_FULL()
         for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
         {
-          __result.__data[__i] = ::__vimax_s32_relu(__lhs.__data[__i], __rhs.__data[__i]);
+          const auto __result_i = ::__vimax_s32_relu(__lhs.__data[__i], __rhs.__data[__i]);
+          __result.__data[__i]  = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_i);
         }
         return __result;
       }
@@ -82,14 +113,15 @@ struct __max_relu_operation
 
   template <typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
-  operator()(const _Storage& __a, const _Storage& __b, const _Storage& __c) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int16_t))
     {
-      const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);
-      const auto __b_u      = ::cuda::std::simd::__to_unsigned_storage(__b);
-      const auto __c_u      = ::cuda::std::simd::__to_unsigned_storage(__c);
-      const auto __result_u = ::cuda::simd::__vmax3_relu_16bit_x2(__a_u, __b_u, __c_u);
+      const auto __a_u          = ::cuda::std::simd::__to_unsigned_storage(__a);
+      const auto __b_u          = ::cuda::std::simd::__to_unsigned_storage(__b);
+      const auto __c_u          = ::cuda::std::simd::__to_unsigned_storage(__c);
+      const auto __result_tmp_u = ::cuda::simd::__vmax3_relu_16bit_x2(__a_u, __b_u, __c_u);
+      const auto __result_u     = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_tmp_u);
       return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
     }
     else
@@ -99,7 +131,8 @@ struct __max_relu_operation
       _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
       {
-        __result.__data[__i] = ::__vimax3_s32_relu(__a.__data[__i], __b.__data[__i], __c.__data[__i]);
+        const auto __result_i = ::__vimax3_s32_relu(__a.__data[__i], __b.__data[__i], __c.__data[__i]);
+        __result.__data[__i]  = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_i);
       }
       return __result;
     }
@@ -125,9 +158,10 @@ struct __min_relu_operation
 #  endif // _CCCL_HAS_SIMD_8BIT_PTX()
       if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int16_t))
       {
-        const auto __lhs_u    = ::cuda::std::simd::__to_unsigned_storage(__lhs);
-        const auto __rhs_u    = ::cuda::std::simd::__to_unsigned_storage(__rhs);
-        const auto __result_u = ::cuda::simd::__vmin_relu_16bit_x2(__lhs_u, __rhs_u);
+        const auto __lhs_u        = ::cuda::std::simd::__to_unsigned_storage(__lhs);
+        const auto __rhs_u        = ::cuda::std::simd::__to_unsigned_storage(__rhs);
+        const auto __result_tmp_u = ::cuda::simd::__vmin_relu_16bit_x2(__lhs_u, __rhs_u);
+        const auto __result_u     = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_tmp_u);
         return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
       }
       else
@@ -137,7 +171,8 @@ struct __min_relu_operation
         _CCCL_PRAGMA_UNROLL_FULL()
         for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
         {
-          __result.__data[__i] = ::__vimin_s32_relu(__lhs.__data[__i], __rhs.__data[__i]);
+          const auto __result_i = ::__vimin_s32_relu(__lhs.__data[__i], __rhs.__data[__i]);
+          __result.__data[__i]  = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_i);
         }
         return __result;
       }
@@ -149,10 +184,11 @@ struct __min_relu_operation
   {
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int16_t))
     {
-      const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);
-      const auto __b_u      = ::cuda::std::simd::__to_unsigned_storage(__b);
-      const auto __c_u      = ::cuda::std::simd::__to_unsigned_storage(__c);
-      const auto __result_u = ::cuda::simd::__vmin3_relu_16bit_x2(__a_u, __b_u, __c_u);
+      const auto __a_u          = ::cuda::std::simd::__to_unsigned_storage(__a);
+      const auto __b_u          = ::cuda::std::simd::__to_unsigned_storage(__b);
+      const auto __c_u          = ::cuda::std::simd::__to_unsigned_storage(__c);
+      const auto __result_tmp_u = ::cuda::simd::__vmin3_relu_16bit_x2(__a_u, __b_u, __c_u);
+      const auto __result_u     = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_tmp_u);
       return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
     }
     else
@@ -162,7 +198,8 @@ struct __min_relu_operation
       _CCCL_PRAGMA_UNROLL_FULL()
       for (::cuda::std::simd::__simd_size_type __i = 0; __i < __size; ++__i)
       {
-        __result.__data[__i] = ::__vimin3_s32_relu(__a.__data[__i], __b.__data[__i], __c.__data[__i]);
+        const auto __result_i = ::__vimin3_s32_relu(__a.__data[__i], __b.__data[__i], __c.__data[__i]);
+        __result.__data[__i]  = ::cuda::simd::__workaround_sm90_vimnmx_relu(__result_i);
       }
       return __result;
     }
