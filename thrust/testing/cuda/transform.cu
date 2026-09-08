@@ -1,5 +1,6 @@
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
+#include <thrust/zip_function.h>
 
 #include <cuda/iterator>
 

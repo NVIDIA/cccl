@@ -6,6 +6,8 @@
 #include <cub/device/device_segmented_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 
+#include <thrust/zip_function.h>
+
 #include <cuda/iterator>
 #include <cuda/std/tuple>
 
