@@ -193,10 +193,9 @@ partition. Runtime query, membership, and synchronization methods such as
 
 ``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
 fixed-size register payload owned by each participating thread. Portable and
-qualified calls use
-the same inference rules: an untyped Load output infers its dtype from the
-source, and Store combines the destination dtype with payload writes. Load
-populates the supplied output in place and returns ``None``.
+qualified calls use the same inference rules: an untyped Load output infers
+its dtype from the source, and Store combines the destination dtype with
+payload writes. Load fills the supplied output in place and returns ``None``.
 
 Both namespaces accept ``alignment`` as a compile-time positive power of two
 in bytes. It specifies minimum alignment when the compiler materializes
@@ -205,6 +204,9 @@ payload storage; ``None`` lets the compiler choose. For example,
 16-byte alignment. The backend may use stronger alignment, including for
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
+
+The payload's ``items_per_thread`` attribute is a compile-time integer and
+can be used as a loop bound inside a kernel, including through payload aliases.
 
 Supported payload types are signed and unsigned 8-, 16-, 32-, and 64-bit
 integers plus 32- and 64-bit floating-point values. Boolean, 16-bit floating
