@@ -554,20 +554,55 @@ def _qualified_untyped_load(source, observed):
     "module", (root_coop, qualified_coop), ids=("root", "qualified")
 )
 @pytest.mark.parametrize("projection", (0, -1), ids=("first", "last"))
-def test_untyped_thread_data_infers_dtype_through_tuple_aliases(module, projection):
+@pytest.mark.parametrize("operation", ("load", "store"))
+def test_untyped_thread_data_infers_dtype_through_tuple_aliases(
+    module, projection, operation
+):
     @cuda.jit
     def kernel(source, destination):
         payload = module.ThreadData(_ITEMS_PER_THREAD)
         packed = (payload,)
         alias = packed
-        module.load(module.this_block(), source, alias[projection])
-        module.store(module.this_block(), destination, alias[projection])
+        projected = alias[projection]
+        thread = cuda.threadIdx.x
+        if operation == "load":
+            module.load(module.this_block(), source, projected)
+            for item in range(_ITEMS_PER_THREAD):
+                destination[thread * _ITEMS_PER_THREAD + item] = projected[item]
+        else:
+            for item in range(_ITEMS_PER_THREAD):
+                projected[item] = source[thread * _ITEMS_PER_THREAD + item]
+            module.store(module.this_block(), destination, projected)
 
     source = _values(np.dtype(np.int32), _TILE_ITEMS)
     destination = np.full_like(source, -1)
     kernel[1, _THREADS](source, destination)
 
     np.testing.assert_array_equal(destination, source)
+
+
+@pytest.mark.parametrize(
+    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+)
+@pytest.mark.parametrize("dtype", (None, types.int32), ids=("inferred", "explicit"))
+def test_thread_data_item_extent_drives_a_kernel_loop(module, dtype):
+    @cuda.jit
+    def kernel(source, destination, extents):
+        payload = module.ThreadData(_ITEMS_PER_THREAD, dtype)
+        loaded = module.load(module.this_block(), source, payload)
+        alias = loaded
+        thread = cuda.threadIdx.x
+        extents[thread] = alias.items_per_thread
+        for item in range(alias.items_per_thread):
+            destination[thread * _ITEMS_PER_THREAD + item] = alias[item]
+
+    source = _values(np.dtype(np.int32), _TILE_ITEMS)
+    destination = np.full_like(source, -1)
+    extents = np.zeros(_THREADS, dtype=np.int32)
+    kernel[1, _THREADS](source, destination, extents)
+
+    np.testing.assert_array_equal(destination, source)
+    np.testing.assert_array_equal(extents, np.full_like(extents, _ITEMS_PER_THREAD))
 
 
 def test_qualified_load_infers_an_untyped_payload():

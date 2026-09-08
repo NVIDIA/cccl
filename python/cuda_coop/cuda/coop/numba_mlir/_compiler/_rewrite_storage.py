@@ -556,6 +556,7 @@ class _StorageRewrite:
                     if not isinstance(call, ir.Expr) or call.op != "call":
                         continue
                     if self._is_thread_data_ctor_call(call):
+                        self._thread_data_like_vars.add(inst.target.name)
                         self._thread_data_specs[inst.target.name] = (
                             self._merge_thread_data_specs(
                                 self._thread_data_specs.get(inst.target.name),
@@ -563,6 +564,7 @@ class _StorageRewrite:
                             )
                         )
                     elif self._is_typed_group_payload_ctor_call(call):
+                        self._thread_data_like_vars.add(inst.target.name)
                         self._thread_data_specs[inst.target.name] = (
                             self._merge_thread_data_specs(
                                 self._thread_data_specs.get(inst.target.name),
