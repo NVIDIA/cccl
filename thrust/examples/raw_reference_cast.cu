@@ -3,6 +3,8 @@
 #include <thrust/fill.h>
 #include <thrust/sequence.h>
 
+#include <cuda/iterator>
+
 #include <iostream>
 
 // This example illustrates how to use the raw_reference_cast to convert
@@ -79,7 +81,6 @@ int main()
 {
   using Vector   = thrust::device_vector<int>;
   using Iterator = Vector::iterator;
-  using System   = thrust::device_system_tag;
 
   // allocate device memory
   Vector A(5);
@@ -94,8 +95,9 @@ int main()
   print("B", B);
 
   // note: we must specify the System to ensure correct execution
-  thrust::for_each(thrust::counting_iterator<int, System>(0),
-                   thrust::counting_iterator<int, System>(5),
+  thrust::for_each(thrust::device,
+                   cuda::counting_iterator<int>(0),
+                   cuda::counting_iterator<int>(5),
                    copy_iterators<Iterator, Iterator>(A.begin(), B.begin()));
 
   std::cout << "After A->B Copy" << '\n';

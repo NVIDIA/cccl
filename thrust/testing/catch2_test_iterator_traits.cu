@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_traits.h>

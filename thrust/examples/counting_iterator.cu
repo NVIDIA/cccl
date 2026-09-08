@@ -1,7 +1,8 @@
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
+
+#include <cuda/iterator>
 
 #include <iostream>
 #include <iterator>
@@ -17,8 +18,8 @@ int main()
   thrust::device_vector<int> indices(8);
 
   // counting iterators define a sequence [0, 8)
-  thrust::counting_iterator<int> first(0);
-  thrust::counting_iterator<int> last = first + 8;
+  cuda::counting_iterator<int> first(0);
+  cuda::counting_iterator<int> last = first + 8;
 
   // compute indices of nonzero elements
   using IndexIterator = thrust::device_vector<int>::iterator;

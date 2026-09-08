@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/reduce.h>
@@ -165,8 +167,8 @@ void TestReduceCountingIterator()
 
   ASSERT_LEQUAL(T(n), unittest::truncate_to_max_representable<T>(n));
 
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = cuda::make_counting_iterator<T>(0);
+  thrust::counting_iterator<T, thrust::device_system_tag> d_first = cuda::make_counting_iterator<T>(0);
 
   T init = unittest::random_integer<T>();
 
