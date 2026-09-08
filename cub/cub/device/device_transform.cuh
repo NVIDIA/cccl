@@ -40,6 +40,7 @@
 
 // forward declarations, so we can unwrap thrust::zip_iterator/zip_function in __transform_internal below without
 // including their headers
+//! @cond
 THRUST_NAMESPACE_BEGIN
 template <typename IteratorTuple>
 class zip_iterator;
@@ -47,6 +48,7 @@ class zip_iterator;
 template <typename Function>
 class zip_function;
 THRUST_NAMESPACE_END
+//! @endcond
 
 CUB_NAMESPACE_BEGIN
 namespace detail
