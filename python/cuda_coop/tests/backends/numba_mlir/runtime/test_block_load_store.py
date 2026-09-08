@@ -502,6 +502,40 @@ def test_portable_scalar_store_matches_an_independent_oracle():
     np.testing.assert_array_equal(destination, source)
 
 
+@pytest.mark.parametrize(
+    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+)
+def test_thread_data_constructor_alias_across_branch(module, monkeypatch):
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    original_apply = CoopSinglePhaseRewrite.apply
+    applications = 0
+
+    def bounded_apply(rewrite):
+        nonlocal applications
+        applications += 1
+        assert applications < 10, "constructor alias repeatedly matched the rewrite"
+        return original_apply(rewrite)
+
+    monkeypatch.setattr(CoopSinglePhaseRewrite, "apply", bounded_apply)
+
+    @cuda.jit
+    def kernel(source, destination):
+        constructor = module.ThreadData
+        alias = constructor
+        if cuda.threadIdx.x < 16:
+            first = alias(1, types.int32)
+            module.load(module.this_block(), source, first)
+            destination[cuda.threadIdx.x] = first[0]
+
+    source = _values(np.dtype(np.int32), _THREADS)
+    destination = np.full_like(source, -1)
+    kernel[1, _THREADS](source, destination)
+
+    np.testing.assert_array_equal(destination[:16], source[:16])
+    np.testing.assert_array_equal(destination[16:], np.full_like(source[16:], -1))
+
+
 @cuda.jit
 def _qualified_untyped_load(source, observed):
     thread = cuda.threadIdx.x
