@@ -143,7 +143,7 @@ C2H_TEST("continues_on can be called with const ref scheduler", "[adaptors][cont
 
 C2H_TEST("continues_on can be called with ref scheduler", "[adaptors][continues_on]")
 {
-  const dummy_scheduler<> sched;
+  dummy_scheduler<> sched; // NOLINT(misc-const-correctness)
   auto snd = ex::continues_on(ex::just(13), sched);
   auto op  = ex::connect(std::move(snd), checked_value_receiver{13});
   ex::start(op);
