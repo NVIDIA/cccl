@@ -18,7 +18,7 @@
 
 #include <cuda_runtime_api.h>
 
-#include "cub_test_macros_lightweight.h"
+#include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
 
 template <typename InputT, typename OutputT = InputT>

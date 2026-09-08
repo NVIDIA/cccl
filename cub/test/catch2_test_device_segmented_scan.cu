@@ -23,7 +23,7 @@
 #include <type_traits>
 #include <utility>
 
-#include <cub_test_macros_lightweight.h>
+#include <cub_test_macros.h>
 #include <cuda_runtime_api.h>
 
 #include <c2h/buffer_generators.cuh>

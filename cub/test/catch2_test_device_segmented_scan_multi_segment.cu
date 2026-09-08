@@ -27,7 +27,7 @@
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "catch2_test_launch_helper.h"
-#include "cub_test_macros_lightweight.h"
+#include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2

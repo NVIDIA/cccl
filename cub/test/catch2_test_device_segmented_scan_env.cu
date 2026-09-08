@@ -34,7 +34,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, dev
 #include <cuda_runtime_api.h>
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
-#include "cub_test_macros_lightweight.h"
+#include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
 
 namespace stdexec = cuda::std::execution;

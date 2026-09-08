@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
-#include "cub_test_macros_lightweight.h"
+#include "cub_test_macros.h"
 
 using segmented_scan_test::current_device;
 using segmented_scan_test::require_equal;

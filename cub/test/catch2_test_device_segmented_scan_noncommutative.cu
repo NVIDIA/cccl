@@ -18,7 +18,7 @@
 #include <cuda_runtime_api.h>
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
-#include "cub_test_macros_lightweight.h"
+#include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
