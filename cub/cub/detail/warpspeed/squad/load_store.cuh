@@ -35,7 +35,7 @@ namespace detail::warpspeed
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadSmem);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(StoreSmem);
 _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadBulk);
-_CCCL_IKET_CREATE_PUSH_POP_RANGE(BulkStore);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(StoreBulk);
 
 #if __cccl_ptx_isa >= 860
 
@@ -241,7 +241,7 @@ template <typename OutputT>
 _CCCL_DEVICE_API void
 squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::cuda::std::byte* srcSmem)
 {
-  _CCCL_IKET_RANGE_PUSH(BulkStore);
+  _CCCL_IKET_RANGE_PUSH(StoreBulk);
   // This function performs either 1 copy, or three copies, depending on the
   // size and alignment of the output tile in global memory.
   //

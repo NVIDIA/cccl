@@ -47,7 +47,7 @@ namespace detail::scan
 namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 
-_CCCL_IKET_CREATE_START_END_RANGE(Prologue);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Prologue);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadReduce);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadScanStore);
 _CCCL_IKET_CREATE_START_END_RANGE(SquadLoad);
@@ -776,7 +776,7 @@ struct lookahead_scan_closure
       return first_tile;
     }();
 
-    _CCCL_IKET_RANGE_END(Prologue);
+    _CCCL_IKET_RANGE_POP();
 
 #  pragma unroll 1
     // SM90 produces bad codegen and deadlocks with a `while (true)`, so it exits via the bound check.
@@ -927,7 +927,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   const scanKernelParams<InputT, OutputT, AccumT>& params, const ScanOpT& scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
-  _CCCL_IKET_RANGE_START(Prologue);
+  _CCCL_IKET_RANGE_PUSH(Prologue);
 
   // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();

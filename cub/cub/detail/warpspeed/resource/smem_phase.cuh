@@ -12,7 +12,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/resource/smem_ref.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 
