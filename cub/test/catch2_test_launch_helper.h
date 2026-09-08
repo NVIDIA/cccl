@@ -339,7 +339,7 @@ void launch_env(ActionT action, Args... args)
   const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
   c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
-  c2h::device_vector<std::uint8_t> d_temp_storage(expected_bytes_allocated);
+  c2h::device_vector<std::size_t> d_temp_storage(expected_bytes_allocated);
   c2h::device_vector<std::size_t> d_allocated(1, 0);
   c2h::device_vector<std::size_t> d_deallocated(1, 0);
 
