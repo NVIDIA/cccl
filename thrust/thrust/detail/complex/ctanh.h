@@ -153,7 +153,7 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
    */
   if (ix >= 0x40360000)
   { /* x >= 22 */
-    double exp_mx = ::cuda::std::exp(-fabs(x));
+    const double exp_mx = ::cuda::std::exp(-fabs(x));
     return (complex<double>(::cuda::std::copysign(1.0, x),
                             4.0 * ::cuda::std::sin(y) * ::cuda::std::cos(y) * exp_mx * exp_mx));
   }
