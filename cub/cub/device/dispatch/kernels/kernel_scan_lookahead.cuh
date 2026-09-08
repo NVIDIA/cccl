@@ -312,7 +312,19 @@ struct lookahead_scan_closure
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
   {
     warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
+    if constexpr (isInclusive)
+    {
     warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+    }
+    else
+    {
+      // in exclusive scans, we might be loading no data at all
+      // if the tile consists just of the last element
+      if (loadInfo.origCopySizeBytes > 0)
+      {
+        warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+      }
+    }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
