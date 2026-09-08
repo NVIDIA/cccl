@@ -59,7 +59,7 @@ struct random_to_vec_item_t
     {                                                                                                        \
       const auto* dist = prepare_random_data(stream, seed, data.size());                                     \
       auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()}; \
-      thrust::for_each(c2h::device_policy_on(stream),                                                        \
+      thrust::for_each(device_policy.on(stream.get()),                                                       \
                        thrust::counting_iterator<size_t>{0},                                                 \
                        thrust::counting_iterator<size_t>{data.size()},                                       \
                        op);                                                                                  \
