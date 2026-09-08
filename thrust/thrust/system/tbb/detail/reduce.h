@@ -103,7 +103,7 @@ OutputType reduce(
 {
   using Size = thrust::detail::it_difference_t<InputIterator>;
 
-  Size n = ::cuda::std::distance(begin, end);
+  const Size n = ::cuda::std::distance(begin, end);
 
   if (n == 0)
   {
