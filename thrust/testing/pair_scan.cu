@@ -42,9 +42,9 @@ struct TestPairScan
     // zip up pairs on the host
     thrust::transform(h_p1.begin(), h_p1.end(), h_p2.begin(), h_pairs.begin(), make_pair_functor());
 
-    thrust::device_vector<T> d_p1    = h_p1;
-    thrust::device_vector<T> d_p2    = h_p2;
-    thrust::device_vector<P> d_pairs = h_pairs;
+    const thrust::device_vector<T> d_p1 = h_p1;
+    const thrust::device_vector<T> d_p2 = h_p2;
+    thrust::device_vector<P> d_pairs    = h_pairs;
     thrust::device_vector<P> d_output(n);
 
     P init = cuda::std::make_pair(13, 13);

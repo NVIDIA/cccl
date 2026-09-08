@@ -16,7 +16,7 @@ void TestSetSymmetricDifferenceByKeyDescendingSimple()
   Vector ref_key{7, 6, 3, 3, 2}, ref_val{1, 0, 1, 1, 0};
   Vector result_key(5), result_val(5);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_symmetric_difference_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_symmetric_difference_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -53,7 +53,7 @@ void TestSetSymmetricDifferenceByKeyDescending(const size_t n)
   thrust::device_vector<T> d_a_val = h_a_val;
   thrust::device_vector<T> d_b_val = h_b_val;
 
-  size_t max_size = h_a_key.size() + h_b_key.size();
+  const size_t max_size = h_a_key.size() + h_b_key.size();
   thrust::host_vector<T> h_result_key(max_size), h_result_val(max_size);
   thrust::device_vector<T> d_result_key(max_size), d_result_val(max_size);
 
