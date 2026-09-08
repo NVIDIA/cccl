@@ -19,6 +19,7 @@ CMakeUserPresets.json
 *.pyc
 __pycache__
 *.pyd
+*.log
 wheelhouse/
 bench-artifacts/
 # Local results written by pytest-benchmark --benchmark-save.

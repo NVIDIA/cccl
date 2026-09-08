@@ -525,7 +525,6 @@ jobs:
     with:
       id: ${{ matrix.id }}
       name: ${{ matrix.name }}
-      gpu: ${{ matrix.gpu }}
       launch_args: ${{ matrix.launch_args }}
       baseline_ref: ${{ matrix.baseline_ref }}
       preset: ${{ matrix.preset }}

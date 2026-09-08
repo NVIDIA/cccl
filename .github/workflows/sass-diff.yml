@@ -116,6 +116,7 @@ jobs:
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
             --env "CCCL_BUILD_INFIX=sass-${{ inputs.id }}" \
             --env "SCCACHE_REGION=${AWS_REGION}" \
+            --env "PARALLEL_LEVEL=$(($(grep -cP 'processor\s+:' /proc/cpuinfo) - 1))" \
             --volume "${GITHUB_WORKSPACE}/${ARTIFACT_ROOT}:/sass-artifacts" \
             -- ./ci/sass/sass_diff.sh \
             "${BASE_REF}" \

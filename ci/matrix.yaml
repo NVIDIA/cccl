@@ -2,7 +2,6 @@ compile_time:
   pull_request:
     - id: public-headers-gcc13
       name: Public headers compile-time bench
-      gpu: rtx2080
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -10,7 +9,7 @@ compile_time:
         - cub.headers.base
         - thrust.cpp.cuda.headers.base
         - libcudacxx.test.public_headers
-      args: "-arch native"
+      args: "-arch 75"
       slices:
         - id: total-compilation
           title: TU total compilation
@@ -79,6 +78,8 @@ workflows:
   #
   # IMPORTANT: Do NOT delete or remove the `override:` key below, even when it is empty.
   override:
+    - {jobs: ['build_nolid', 'build_lid0', 'build_lid1', 'build_lid2'], project: 'cub', std: 'minmax', ctk: '13.3', cxx: ['gcc', 'clang', 'msvc']}
+    - {jobs: ['build'], project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '13.3', cxx: ['gcc', 'clang', 'msvc']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

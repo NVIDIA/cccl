@@ -17,10 +17,59 @@ $ErrorActionPreference = "Stop"
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
 $script:HOST_COMPILER  = (Get-Command "cl").source -replace '\\','/'
-$script:PARALLEL_LEVEL = $env:NUMBER_OF_PROCESSORS
+
+# Get the number of logical processors
+$N_CPUS = (Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
+if (-not $N_CPUS) { $N_CPUS = [Environment]::ProcessorCount } # Fallback for cross-platform
+if (-not $N_CPUS) { $N_CPUS = $env:NUMBER_OF_PROCESSORS } # Fallback for cross-platform
+$N_CPUS_MINUS_1 = if ($N_CPUS -gt 1) { $N_CPUS - 1 } else { 1 }
+
+# Set variables as read-only constants
+Set-Variable -Name N_CPUS -Value $N_CPUS -Option ReadOnly -Force
+Set-Variable -Name N_CPUS_MINUS_1 -Value $N_CPUS_MINUS_1 -Option ReadOnly -Force
+
+# Provide a default value for PARALLEL_LEVEL if it does not exist in the environment
+if (-not $env:PARALLEL_LEVEL) {
+    $PARALLEL_LEVEL = $N_CPUS_MINUS_1
+} else {
+    $PARALLEL_LEVEL = [int]$env:PARALLEL_LEVEL
+}
+
+# Safely check environment variables with defaults
+$USE_SCCACHE_DIST = if ($env:USE_SCCACHE_DIST) { [bool]::Parse($env:USE_SCCACHE_DIST) } else { $false }
+$SCCACHE_DIST_URL_SET = -not [string]::IsNullOrEmpty($env:SCCACHE_DIST_URL)
+
+# If PARALLEL_LEVEL <= 0, assume build cluster and tune parallelism to as many
+# concurrent preprocessor calls we think we can do without OOM'ing the machine
+if ($USE_SCCACHE_DIST -and $SCCACHE_DIST_URL_SET -and $PARALLEL_LEVEL -le 0) {
+    # Memory (in KB) used by each `sccache <compiler> ...` invocation from ninja
+    # * 1.5Mb for the shell launched by ninja
+    # * 6MiB for each sccache client process
+    # * round up to 10MiB
+    $mem_per_job = 10 * 1024
+    # Assume preprocessor invocations take ~300Mb or so
+    $mem_for_preprocessing = $N_CPUS * 300 * 1024
+    # It's usually around 400-600MiB, but be conservative
+    # and assume the sccache daemon will use 1GiB of RAM
+    $mem_for_sccache_daemon = 1 * 1024 * 1024
+    # Available memory (in KB) using CIM/WMI
+    $mem_available = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory
+    # Stay under 95% for CI
+    $mem_available = [math]::Floor($mem_available * 95 / 100)
+    # Total job count is available memory after accounting for `nproc` concurrent preprocessor
+    # calls divided by the amount of memory required to invoke the sccache thin client process
+    $PARALLEL_LEVEL = [math]::Floor(($mem_available - $mem_for_sccache_daemon - $mem_for_preprocessing) / $mem_per_job)
+}
+
+if ($PARALLEL_LEVEL -le 0) {
+    $PARALLEL_LEVEL = $N_CPUS_MINUS_1
+}
+
+# Export to environment block
+$env:PARALLEL_LEVEL = $PARALLEL_LEVEL
 
 Write-Host "=== Docker Container Resource Info ==="
-Write-Host "Number of Processors: $script:PARALLEL_LEVEL"
+Write-Host "Number of Processors: $script:N_CPUS"
 Get-WmiObject Win32_OperatingSystem | ForEach-Object {
     Write-Host ("Memory: total={0:N1} GB, free={1:N1} GB" -f ($_.TotalVisibleMemorySize / 1MB), ($_.FreePhysicalMemory / 1MB))
 }
@@ -34,6 +83,11 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
 }
 
 $script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
+
+# limit the number of concurrent link steps to avoid OOM'ing CI
+$script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_JOB_POOLS=link_jobs=' + "$N_CPUS_MINUS_1" + '"'
+$script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_JOB_POOL_LINK=link_jobs"'
+
 if ($CUDA_ARCH) {
     $script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_CUDA_ARCHITECTURES={0}"' -f $CUDA_ARCH
 }
@@ -50,11 +104,7 @@ if (-not $env:CCCL_BUILD_INFIX) {
 }
 
 # Presets will be configured in this directory:
-$BUILD_DIR = "../build/$env:CCCL_BUILD_INFIX"
-
-If(!(test-path -PathType container "../build")) {
-    New-Item -ItemType Directory -Path "../build"
-}
+$BUILD_DIR = "$PSScriptRoot/../../build/$env:CCCL_BUILD_INFIX"
 
 # The most recent build will always be symlinked to cccl/build/latest
 New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
@@ -63,7 +113,11 @@ New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
 $BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
 
 # Prepare environment for CMake:
-$env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
+if ($PARALLEL_LEVEL -ge $N_CPUS_MINUS_1) {
+    $env:CMAKE_BUILD_PARALLEL_LEVEL = $N_CPUS_MINUS_1
+} else {
+    $env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
+}
 $env:CTEST_PARALLEL_LEVEL = 1
 $env:CUDAHOSTCXX = $script:HOST_COMPILER
 $env:CXX = $script:HOST_COMPILER
@@ -78,6 +132,7 @@ Write-Host "CUDACXX=$env:CUDACXX"
 Write-Host "CUDAHOSTCXX=$env:CUDAHOSTCXX"
 Write-Host "TBB_ROOT=$env:TBB_ROOT"
 Write-Host "NVCC_VERSION=$NVCC_VERSION"
+Write-Host "PARALLEL_LEVEL=$env:PARALLEL_LEVEL"
 Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
 Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
 Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
@@ -104,7 +159,13 @@ function configure_preset {
     $step = "$BUILD_NAME (configure)"
 
     # CMake must be invoked in the same directory as the presets file:
-    pushd ".."
+    $CURRENT_PATH = Split-Path $pwd -leaf
+    If($CURRENT_PATH -ne "windows") {
+        Write-Host "Moving to repo root"
+        pushd "$PSScriptRoot/../.."
+    }
+
+    & bash -c ". ./ci/pretty_printing.sh; begin_group '$step'"
 
     # Echo and execute command to stdout:
     $configure_command = "cmake --preset $PRESET --log-level VERBOSE"
@@ -116,15 +177,24 @@ function configure_preset {
     }
 
     Write-Host $configure_command
-    Invoke-Expression $configure_command
+
+    $env:SCCACHE_NO_DIST_COMPILE="1"
+
+    $duration = [math]::Round((Measure-Command { Invoke-Expression $configure_command | Out-Default }).TotalSeconds)
+
     $test_result = $LastExitCode
+
+    Remove-Item Env:\SCCACHE_NO_DIST_COMPILE
+
+    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
+
+    If($CURRENT_PATH -ne "windows") {
+        popd
+    }
 
     If ($test_result -ne 0) {
         throw "$step Failed"
     }
-
-    popd
-    Write-Host "$step complete."
 }
 
 function build_preset {
@@ -140,26 +210,42 @@ function build_preset {
     $step = "$BUILD_NAME (build)"
 
     # CMake must be invoked in the same directory as the presets file:
-    pushd ".."
+    $CURRENT_PATH = Split-Path $pwd -leaf
+    If($CURRENT_PATH -ne "windows") {
+        Write-Host "Moving to repo root"
+        pushd "$PSScriptRoot/../.."
+    }
+
+    & bash -c ". ./ci/pretty_printing.sh; begin_group '$step'"
 
     sccache -z >$null
-
-    cmake --build --preset $PRESET -v
-    $test_result = $LastExitCode
 
     $preset_dir = "${BUILD_DIR}/${PRESET}"
     $sccache_json = "${preset_dir}/sccache_stats.json"
 
-    sccache --show-adv-stats
+    # Echo and execute command to stdout:
+    $build_command = "cmake --build --preset $PRESET --parallel $env:PARALLEL_LEVEL"
+    # $build_command = "cmake --build --preset $PRESET -v --parallel $env:PARALLEL_LEVEL"
+
+    Write-Host $build_command
+
+    $duration = [math]::Round((Measure-Command { Invoke-Expression $build_command | Out-Default }).TotalSeconds)
+
+    $test_result = $LastExitCode
+
     sccache --show-adv-stats --stats-format=json > "${sccache_json}"
 
-    echo "$step complete"
+    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
 
-    If ($test_result -ne 0) {
-         throw "$step Failed"
+    sccache --show-adv-stats
+
+    If($CURRENT_PATH -ne "windows") {
+        popd
     }
 
-    popd
+    If ($test_result -ne 0) {
+        throw "$step Failed"
+    }
 }
 
 function test_preset {
@@ -175,22 +261,35 @@ function test_preset {
     $step = "$BUILD_NAME (test)"
 
     # CTest must be invoked in the same directory as the presets file:
-    pushd ".."
+    $CURRENT_PATH = Split-Path $pwd -leaf
+    If($CURRENT_PATH -ne "windows") {
+        Write-Host "Moving to repo root"
+        pushd "$PSScriptRoot/../.."
+    }
+
+    & bash -c ". ./ci/pretty_printing.sh; begin_group '$step'"
 
     sccache -z >$null
 
-    ctest --preset $PRESET
+    # Echo and execute command to stdout:
+    $test_command = "ctest --preset $PRESET"
+
+    Write-Host $build_command
+
+    $duration = [math]::Round((Measure-Command { Invoke-Expression $test_command | Out-Default }).TotalSeconds)
     $test_result = $LastExitCode
+
+    & bash -c ". ./ci/pretty_printing.sh; end_group '$step' $test_result $duration"
 
     sccache --show-adv-stats
 
-    echo "$step complete"
+    If($CURRENT_PATH -ne "windows") {
+        popd
+    }
 
     If ($test_result -ne 0) {
          throw "$step Failed"
     }
-
-    popd
 }
 
 function configure_and_build_preset {
