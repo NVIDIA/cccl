@@ -240,6 +240,12 @@ struct __tuple_constraints
     {
       return __select_constructor::__invalid;
     }
+#if _CCCL_COMPILER(GCC, <, 8) // Old GCC eagerly instantiates __select_variadic_constructible
+    else if constexpr (!__disambiguate_variadic_constructible<_UTypes...>())
+    {
+      return __select_constructor::__invalid;
+    }
+#endif // _CCCL_COMPILER(GCC, <, 8)
     else if constexpr (!(is_constructible_v<_Types, _UTypes> && ...))
     { // [tuple.cnstr]-13.3: is_constructible<Types, UTypes>... is true
       return __select_constructor::__invalid;
