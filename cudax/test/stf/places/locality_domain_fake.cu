@@ -148,7 +148,7 @@ int main()
   cuda_safe_call(cudaStreamDestroy(stream));
 
   // Grid over the fake domains
-  exec_place grid = make_locality_domain_grid(dev);
+  exec_place grid = exec_place::locality_domains(dev);
   EXPECT(grid.size() == ndomains);
   for (size_t i = 0; i < grid.size(); i++)
   {

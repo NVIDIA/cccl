@@ -20,8 +20,8 @@
  *  - `data_place::locality_domain(dev, i)` allocates memory whose backing
  *    store lives in domain `i` (`CU_MEM_LOCATION_TYPE_DEVICE_LOCALITY_DOMAIN`,
  *    both VMM physical handles and stream-ordered memory pools),
- *  - `make_locality_domain_grid(dev)` builds a grid over every domain of a
- *    device,
+ *  - `exec_place::locality_domains(dev)` / `make_locality_domain_grid(dev)`
+ *    build a grid over every domain of a device,
  *  - `locality_domain_helper` enumerates the domains of a device.
  *
  * `exec_place::locality_domain(d, i)` and `data_place::locality_domain(d, i)`
@@ -967,6 +967,12 @@ make_locality_domain_grid(int dev_id, locality_domain_sm_split split = locality_
     domains.push_back(exec_place::locality_domain(dev_id, static_cast<int>(i), split));
   }
   return make_grid(mv(domains));
+}
+
+//! Single-device sugar over make_locality_domain_grid; see all_devices() for the device-level analogue
+inline exec_place exec_place::locality_domains(int dev_id, locality_domain_sm_split split)
+{
+  return make_locality_domain_grid(dev_id, split);
 }
 
 /**

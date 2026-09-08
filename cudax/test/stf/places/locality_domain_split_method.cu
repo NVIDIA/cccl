@@ -168,7 +168,7 @@ int main()
 
   // ==== A grid built with an explicit method has one place per domain ====
 
-  exec_place grid = make_locality_domain_grid(dev, locality_domain_sm_split::fine);
+  exec_place grid = exec_place::locality_domains(dev, locality_domain_sm_split::fine);
   EXPECT(grid.size() == ndomains);
 
   // ==== Tasks run on every method's places ====
