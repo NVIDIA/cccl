@@ -146,11 +146,10 @@ restrictions as Numba CUDA functions:
   `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
   scalars and host arrays are captured by value (as constants),
   while device arrays are captured by reference.
-* A :func:`gpu_struct <cuda.compute.gpu_struct>` value must be indexed with a
-  compile-time constant, so ``value[0]`` is allowed but ``value[i]`` for a loop
-  variable ``i`` is not. Fields may have different types, so the type of
-  ``value[i]`` would not be known while compiling. Access the fields by name, or
-  index them individually.
+* Indexing a :func:`gpu_struct <cuda.compute.gpu_struct>` with a value only
+  known at run time, such as a loop variable, gives a result of the type the
+  fields unify to, rather than the indexed field's own type. Indexing with a
+  constant, or accessing a field by name, gives the field's declared type.
 * A multi-dimensional device array captured as operator state must be
   C-contiguous; a Fortran-ordered one is rejected with an error.
 * Storing a value into a captured array, or into a ``cuda.local.array``, of a
@@ -158,10 +157,7 @@ restrictions as Numba CUDA functions:
   value is signed, so a negative value widened into a larger integer type
   becomes a large positive one, and an unsigned value converted to a float
   becomes negative. Convert explicitly to the destination's type first, or keep
-  the types the same. This is a limitation of the JIT backend
-  (`numba-cuda-mlir#303 <https://github.com/NVIDIA/numba-cuda-mlir/issues/303>`_
-  and `#290 <https://github.com/NVIDIA/numba-cuda-mlir/issues/290>`_); a value
-  *returned* from an operator is converted correctly.
+  the types the same.
 
 
 .. _cuda.compute.iterators:

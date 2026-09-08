@@ -186,24 +186,75 @@ def test_index_out_of_range_is_rejected():
         )
 
 
-def test_runtime_index_is_rejected():
-    """A non-constant index is reported as needing a compile-time constant."""
+def test_runtime_index_selects_a_field():
+    """A struct can be indexed with a value only known at run time.
+
+    Every field is read through the same expression, so the result takes the
+    type the fields unify to, exactly as any other value that depends on a
+    runtime condition does.
+    """
     Pair = gpu_struct({"a": np.int32, "b": np.int32})
 
-    def runtime_index(s):
+    def sum_fields(pair):
         total = 0
         for i in range(2):
-            total += s[i]
+            total += pair[i]
         return total
 
-    h_in = np.zeros(4, dtype=Pair.dtype)
+    h_in = np.zeros(2, dtype=Pair.dtype)
+    h_in["a"] = [1, 3]
+    h_in["b"] = [10, 20]
     d_in = DeviceArray.from_numpy(h_in)
     d_out = DeviceArray.empty(h_in.shape, np.dtype(np.int64))
 
-    with pytest.raises(Exception, match="compile-time constant index"):
-        cuda.compute.unary_transform(
-            d_in=d_in, d_out=d_out, op=runtime_index, num_items=h_in.size
-        )
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=sum_fields, num_items=h_in.size
+    )
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), np.array([11, 23]))
+
+
+def test_runtime_index_of_a_struct_with_differing_field_types():
+    """Indexing fields of different types yields the type they unify to."""
+    Mixed = gpu_struct({"a": np.int32, "b": np.float64})
+
+    def sum_fields(mixed):
+        total = 0.0
+        for i in range(2):
+            total += mixed[i]
+        return total
+
+    h_in = np.zeros(2, dtype=Mixed.dtype)
+    h_in["a"] = [1, 3]
+    h_in["b"] = [10.5, 20.5]
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.float64))
+
+    cuda.compute.unary_transform(
+        d_in=d_in, d_out=d_out, op=sum_fields, num_items=h_in.size
+    )
+
+    np.testing.assert_allclose(d_out.copy_to_host(), np.array([11.5, 23.5]))
+
+
+def test_runtime_index_keeps_the_sign_of_a_narrower_field():
+    """A negative field widened into the unified type keeps its sign."""
+    Mixed = gpu_struct({"a": np.int32, "b": np.int64})
+
+    def first(mixed):
+        total = 0
+        for i in range(1):
+            total += mixed[i]
+        return total
+
+    h_in = np.zeros(3, dtype=Mixed.dtype)
+    h_in["a"] = [-1, -2147483648, 7]
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, np.dtype(np.int64))
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=first, num_items=h_in.size)
+
+    np.testing.assert_array_equal(d_out.copy_to_host(), h_in["a"].astype(np.int64))
 
 
 def test_constructor_rejects_incompatible_argument_type():
@@ -377,8 +428,6 @@ def test_float_into_a_bool_field_asks_whether_it_is_nonzero():
     d_in = DeviceArray.from_numpy(h_in)
     d_out = DeviceArray.empty(h_in.shape, Flag.dtype)
 
-    cuda.compute.unary_transform(
-        d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size
-    )
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size)
 
     np.testing.assert_array_equal(d_out.copy_to_host()["a"], (h_in * 0.5) != 0)

@@ -390,10 +390,22 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             return
 
         if not isinstance(idx, _mlir.types.IntegerLiteral):
-            raise _mlir.errors.TypingError(
-                f"indexing {struct_class.__name__} requires a compile-time "
-                f"constant index, got {idx}"
+            # A runtime index (a loop variable, say) selects among the fields.
+            # Returning the branch-per-field implementation gives the result the
+            # type the fields unify to, which is what a caller gets from any
+            # other expression whose value depends on a runtime condition.  The
+            # lowering below emits the selection; this body is only typed.
+            conditions = "\n".join(
+                f"    {'if' if position == 0 else 'elif'} idx == {position}: "
+                f"return struct_val.{name}"
+                for position, name in enumerate(field_names_list)
             )
+            exec(
+                f"def impl(struct_val, idx):\n{conditions}\n"
+                f"    else: return struct_val.{field_names_list[-1]}",
+                namespace := {},
+            )
+            return namespace["impl"]
 
         idx_val = getattr(idx, "literal_value", getattr(idx, "value", None))
         if idx_val is None or not (0 <= idx_val < len(field_names_list)):
@@ -409,30 +421,61 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         )
         return namespace["impl"]
 
-    # getitem lowering: `struct[i]` extracts field i.  Typing (the overload
-    # above) has already rejected a non-constant or out-of-range index, so the
-    # index here is a valid constant.  numba-cuda-mlir resolves getitem through
-    # a registered builder rather than by lowering the implementation the
-    # overload returns, so the extraction is done here.
+    # getitem lowering: `struct[i]` yields field i.  numba-cuda-mlir resolves
+    # getitem through a registered builder rather than by lowering the
+    # implementation the overload returns, so the work is done here.
     def lower_struct_getitem(builder, target, args, kwargs):
         struct_var, index = args
-        # The index arrives as a plain int (static_getitem) or as an IR Var
-        # whose numba type is an IntegerLiteral carrying the constant value.
+        # The index arrives as a plain int (static_getitem) or as an IR Var whose
+        # numba type is an IntegerLiteral when it is a constant.
         if isinstance(index, int):
             field_index = index
         else:
             index_type = builder.get_numba_type(index.name)
             field_index = getattr(index_type, "literal_value", None)
-        if field_index is None or not (0 <= field_index < len(field_names_list)):
-            raise NotImplementedError(
-                "indexing a gpu_struct requires a constant integer index in range"
-            )
+
         struct_value = builder.load_var(struct_var)
-        field_value = _load_field(
-            builder, struct_value, field_index, field_types_list[field_index]
-        )
-        target_mlir_ty = builder.get_mlir_type(builder.get_numba_type(target.name))
-        builder.store_var(target, _mlir.convert(field_value, target_mlir_ty))
+        target_type = builder.get_numba_type(target.name)
+        target_mlir_ty = builder.get_mlir_type(target_type)
+
+        def field_as_target(position):
+            """Field ``position`` converted to the result's type."""
+            value = _load_field(
+                builder, struct_value, position, field_types_list[position]
+            )
+            return _mlir.convert_number(
+                value,
+                target_mlir_ty,
+                from_signed=_is_signed(field_types_list[position]),
+                to_signed=_is_signed(target_type),
+            )
+
+        if field_index is not None:
+            # Reported here rather than only from the overload: a constant index
+            # the overload rejected falls back to its non-literal signature,
+            # which cannot see the value, so this is where it surfaces.
+            if not 0 <= field_index < len(field_names_list):
+                raise _mlir.errors.TypingError(
+                    f"index {field_index} is out of range for "
+                    f"{struct_class.__name__}, which has "
+                    f"{len(field_names_list)} fields"
+                )
+            builder.store_var(target, field_as_target(field_index))
+            return
+
+        # A runtime index: select among the fields.  Chained from the last field
+        # back, so it also stands in for an out-of-range index, which the fields
+        # cannot answer and which nothing here can report from device code.
+        index_value = builder.load_var(index)
+        selected = field_as_target(len(field_names_list) - 1)
+        for position in reversed(range(len(field_names_list) - 1)):
+            matches = _mlir.arith.cmpi(
+                _mlir.arith.CmpIPredicate.eq,
+                index_value,
+                _mlir.arith.constant(index_value.type, position),
+            )
+            selected = _mlir.arith.select(matches, field_as_target(position), selected)
+        builder.store_var(target, selected)
 
     _mlir.lowering_registry.lower(operator.getitem, StructType, _mlir.types.Integer)(
         lower_struct_getitem
