@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cuda/std/cstddef>
 #include <cuda/std/iterator>
 #include <cuda/std/utility>
 
@@ -13,7 +14,8 @@ struct block_size_extracting_op
   unsigned int* ptr;
 
   template <typename... Ts>
-  __device__ auto operator()(Ts&&... args) const -> decltype(InnerOp{}(::cuda::std::forward<Ts>(args)...))
+  [[nodiscard]] _CCCL_DEVICE_API auto operator()(Ts&&... args) const
+    -> decltype(InnerOp{}(::cuda::std::forward<Ts>(args)...))
   {
     atomicMax(ptr, blockDim.x); // not every thread may reach this, so avoid guarding the atomic by threadIdx
     return InnerOp{}(::cuda::std::forward<Ts>(args)...);
@@ -26,53 +28,53 @@ struct block_size_extracting_constant_iterator
   using value_type        = int;
   using reference         = int;
   using pointer           = int*;
-  using difference_type   = ptrdiff_t;
+  using difference_type   = ::cuda::std::ptrdiff_t;
   using iterator_category = ::cuda::std::random_access_iterator_tag;
 
   int value;
   unsigned int* block_size_ptr;
   difference_type offset;
 
-  __host__ __device__ block_size_extracting_constant_iterator(int val, unsigned int* bs_ptr, difference_type off = 0)
+  _CCCL_API block_size_extracting_constant_iterator(int val, unsigned int* bs_ptr, difference_type off = 0) noexcept
       : value(val)
       , block_size_ptr(bs_ptr)
       , offset(off)
   {}
 
-  __device__ reference operator[](difference_type) const
+  [[nodiscard]] _CCCL_DEVICE_API reference operator[](difference_type) const
   {
     atomicMax(block_size_ptr, blockDim.x); // not every thread may reach this, so avoid guarding the atomic by threadIdx
     return value;
   }
 
-  __device__ reference operator*() const
+  [[nodiscard]] _CCCL_DEVICE_API reference operator*() const
   {
     atomicMax(block_size_ptr, blockDim.x); // not every thread may reach this, so avoid guarding the atomic by threadIdx
     return value;
   }
 
-  __host__ __device__ block_size_extracting_constant_iterator operator+(difference_type n) const
+  [[nodiscard]] _CCCL_API block_size_extracting_constant_iterator operator+(difference_type n) const noexcept
   {
     return {value, block_size_ptr, offset + n};
   }
 
-  __host__ __device__ block_size_extracting_constant_iterator& operator+=(difference_type n)
+  _CCCL_API block_size_extracting_constant_iterator& operator+=(difference_type n) noexcept
   {
     offset += n;
     return *this;
   }
 
-  __host__ __device__ difference_type operator-(const block_size_extracting_constant_iterator& other) const
+  [[nodiscard]] _CCCL_API difference_type operator-(const block_size_extracting_constant_iterator& other) const noexcept
   {
     return offset - other.offset;
   }
 
-  __host__ __device__ bool operator==(const block_size_extracting_constant_iterator& other) const
+  [[nodiscard]] _CCCL_API bool operator==(const block_size_extracting_constant_iterator& other) const noexcept
   {
     return offset == other.offset;
   }
 
-  __host__ __device__ bool operator!=(const block_size_extracting_constant_iterator& other) const
+  [[nodiscard]] _CCCL_API bool operator!=(const block_size_extracting_constant_iterator& other) const noexcept
   {
     return offset != other.offset;
   }

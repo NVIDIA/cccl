@@ -7,8 +7,11 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm/find.h>
+#include <cuda/std/execution>
 #include <cuda/std/optional>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -136,16 +139,10 @@ struct stream_registry_factory_t
     return cudaMemsetAsync(dst, value, num_bytes, stream);
   }
 
-  CUB_RUNTIME_FUNCTION cudaError_t
-  MemcpyAsync(void* dst, const void* src, size_t num_bytes, cudaMemcpyKind kind, cudaStream_t stream)
-  {
-    return cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
-  }
-
   CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
   {
-    int device = 0;
-    auto error = cudaGetDevice(&device);
+    int device       = 0;
+    const auto error = cudaGetDevice(&device);
     if (error != cudaSuccess)
     {
       return error;

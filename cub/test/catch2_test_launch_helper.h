@@ -165,14 +165,14 @@ void launch(ActionT action, Args... args)
 struct get_expected_allocation_size_t
 {};
 
-__host__ __device__ static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
+[[nodiscard]] __host__ __device__ static cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
 expected_allocation_size(size_t expected)
 {
   return cuda::std::execution::prop{get_expected_allocation_size_t{}, expected};
 }
 
 template <size_t... Is, class TplT, class EnvT>
-auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, const EnvT& env)
+[[nodiscard]] auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, const EnvT& env)
 {
   return cuda::std::make_tuple(cuda::std::get<Is>(tpl)..., env);
 }
@@ -253,14 +253,16 @@ void launch_env(ActionT action, Args... args)
   auto fixed_env  = cuda::std::execution::env{mr_env, stream_env, env};
 
   auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
+  auto kernels    = cuda::std::execution::__query_or(env, get_allowed_kernels_t{}, cuda::std::span<void*>{});
 
   cudaGraph_t graph{};
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
 
   cuda::std::apply(
-    [stream, action](auto... args) {
-      // Make sure specified stream is used
+    [stream, kernels, action](auto... args) {
+      // Make sure specified stream and kernels are used
       const stream_scope scope(stream);
+      const kernel_scope allowed_kernels(kernels);
       const cudaError_t error = action(args...);
       REQUIRE(cudaSuccess == error);
     },
@@ -337,7 +339,7 @@ void launch_env(ActionT action, Args... args)
   const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
   c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
-  c2h::device_vector<std::size_t> d_temp_storage(expected_bytes_allocated);
+  c2h::device_vector<std::uint8_t> d_temp_storage(expected_bytes_allocated);
   c2h::device_vector<std::size_t> d_allocated(1, 0);
   c2h::device_vector<std::size_t> d_deallocated(1, 0);
 
