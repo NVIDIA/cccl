@@ -17,10 +17,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/detail/any_assign.h>
 #include <thrust/iterator/iterator_adaptor.h>
 
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
@@ -38,13 +38,13 @@ struct make_discard_iterator_base
   using reference     = any_assign&;
   using incrementable = ::cuda::std::ptrdiff_t;
 
-  using base_iterator = counting_iterator<incrementable, System, random_access_traversal_tag>;
+  using base_iterator = ::cuda::counting_iterator<incrementable, ::cuda::std::ptrdiff_t>;
 
   using type =
     iterator_adaptor<discard_iterator<System>,
                      base_iterator,
                      value_type,
-                     iterator_system_t<base_iterator>,
+                     System,
                      iterator_traversal_t<base_iterator>,
                      reference>;
 };

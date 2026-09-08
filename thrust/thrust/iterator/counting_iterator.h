@@ -28,7 +28,6 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
@@ -169,7 +168,7 @@ template <typename Incrementable,
           typename Traversal    = use_default,
           typename Difference   = use_default,
           typename StrideHolder = detail::unit_stride>
-class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
+class CCCL_DEPRECATED_BECAUSE("Use cuda::counting_iterator instead") _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
     : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type
     , StrideHolder
 {
@@ -305,6 +304,7 @@ private:
 //! \param x The initial value of the new \p counting_iterator's counter.
 //! \return A new \p counting_iterator whose counter has been initialized to \p x.
 template <typename Incrementable>
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_counting_iterator instead")
 inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator(Incrementable x)
 {
   return counting_iterator<Incrementable>(x);
@@ -316,6 +316,7 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 
 //! Constructs a counting_iterator with a runtime stride
 template <typename Incrementable, typename Stride>
+CCCL_DEPRECATED_BECAUSE("Use cuda::strided_iterator with cuda::counting_iterator instead")
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
   return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, __runtime_value<Stride>>(
@@ -324,6 +325,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 
 //! Constructs a counting_iterator with a compile-time stride
 template <auto Stride, typename Incrementable>
+CCCL_DEPRECATED_BECAUSE("Use cuda::strided_iterator with cuda::counting_iterator instead")
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
 {
   return counting_iterator<Incrementable,

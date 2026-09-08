@@ -12,6 +12,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/cstdint>
 
@@ -95,9 +96,10 @@ _CCCL_HOST_DEVICE void shuffle_copy(
 
   // perform stream compaction over length n bijection to get length m
   // pseudorandom bijection over the original input
-  const thrust::counting_iterator<std::uint64_t> indices(0);
-  const thrust::transform_iterator<construct_key_flag_op, thrust::counting_iterator<std::uint64_t>, key_flag_tuple>
-    key_flag_it(indices, construct_key_flag_op(m, bijection));
+  const ::cuda::counting_iterator<std::uint64_t, std::ptrdiff_t> indices(0);
+  const thrust::
+    transform_iterator<construct_key_flag_op, ::cuda::counting_iterator<std::uint64_t, std::ptrdiff_t>, key_flag_tuple>
+      key_flag_it(indices, construct_key_flag_op(m, bijection));
   const write_output_op<RandomIterator, OutputIterator> write_functor{m, first, result};
   auto gather_output_it =
     thrust::make_transform_output_iterator(thrust::discard_iterator<std::size_t>(), write_functor);

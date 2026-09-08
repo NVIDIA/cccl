@@ -102,7 +102,7 @@ DECLARE_UNITTEST(TestMinMaxElementDispatchImplicit);
 
 void TestMinMaxElementWithBigIndexesHelper(int magnitude)
 {
-  using Iter = thrust::counting_iterator<long long>;
+  using Iter = cuda::counting_iterator<long long>;
   const Iter begin(1);
   const Iter end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);

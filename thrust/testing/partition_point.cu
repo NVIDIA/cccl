@@ -95,8 +95,8 @@ struct test_less_than
 
 void TestPartitionPointWithBigIndexesHelper(int magnitude)
 {
-  const thrust::counting_iterator<long long> begin(0);
-  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const cuda::counting_iterator<long long> begin(0);
+  const cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   const test_less_than fn = {(1ll << magnitude) - 17};

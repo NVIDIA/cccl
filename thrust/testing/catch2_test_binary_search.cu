@@ -262,8 +262,8 @@ _CCCL_DIAG_POP
 
 void TestBoundsWithBigIndexesHelper(int magnitude)
 {
-  const thrust::counting_iterator<long long> begin(1);
-  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const cuda::counting_iterator<long long> begin(1);
+  const cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
   CHECK(::cuda::std::distance(begin, end) == 1ll << magnitude);
 
   ::cuda::std::intmax_t distance_low_value =

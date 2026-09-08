@@ -213,13 +213,13 @@ struct iterator_traversal<::cuda::constant_iterator<T, Index>>
   using type = random_access_traversal_tag;
 };
 
-template <class Start>
-struct iterator_system<::cuda::counting_iterator<Start>>
+template <class Start, class DiffT>
+struct iterator_system<::cuda::counting_iterator<Start, DiffT>>
 {
   using type = any_system_tag;
 };
-template <class Start>
-struct iterator_traversal<::cuda::counting_iterator<Start>>
+template <class Start, class DiffT>
+struct iterator_traversal<::cuda::counting_iterator<Start, DiffT>>
 {
   using type = random_access_traversal_tag;
 };

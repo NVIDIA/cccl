@@ -94,8 +94,8 @@ DECLARE_UNITTEST(TestMinElementDispatchImplicit);
 
 void TestMinElementWithBigIndexesHelper(int magnitude)
 {
-  const thrust::counting_iterator<long long> begin(1);
-  const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  const cuda::counting_iterator<long long> begin(1);
+  const cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   ASSERT_EQUAL(*thrust::min_element(thrust::device, begin, end, ::cuda::std::greater<long long>()), (1ll << magnitude));
