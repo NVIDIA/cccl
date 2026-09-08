@@ -418,15 +418,22 @@ struct HistogramPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
-    return {.threads_per_block                = 128,
-            .pixels_per_thread                = cc > cuda::compute_capability{9, 0} ? 16 : 7,
-            .vec_size                         = 4,
-            .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
-            .load_modifier                    = cub::LOAD_LDG,
-            .rle_compress                     = false,
-            .mem_preference                   = cub::SMEM,
-            .use_work_stealing                = false,
-            .init_kernel_pdl_trigger_max_bins = 2048};
+    const auto sweep = cub::HistogramPrivatizationPolicy{
+      128, cc > cuda::compute_capability{9, 0} ? 16 : 7, 4, cub::BLOCK_LOAD_DIRECT, cub::LOAD_LDG, false, false};
+    return {
+      .gmem                                                  = sweep,
+      .static_smem                                           = sweep,
+      .dynamic_smem                                          = sweep,
+      .init_threads_per_block                                = 256,
+      .max_privatized_static_smem_single_channel_bytes       = 256 * sizeof(unsigned int),
+      .max_privatized_dynamic_smem_single_channel_bytes      = 0,
+      .static_smem_min_blocks_per_sm                         = 0,
+      .max_privatized_dynamic_smem_multi_channel_range_bytes = 0,
+      .max_privatized_dynamic_smem_2_channel_even_bytes      = 0,
+      .max_privatized_dynamic_smem_3_channel_even_bytes      = 0,
+      .max_privatized_dynamic_smem_4_channel_even_bytes      = 0,
+      .min_cached_search_gmem_range_bins                     = 0,
+      .max_output_histogram_bytes_for_init_kernel_pdl        = 8192};
   }
 };
 // example-end histogram-even-policy-selector

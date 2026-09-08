@@ -21,11 +21,9 @@
 #include <cub/block/block_load.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
-#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -33,65 +31,15 @@
 
 CUB_NAMESPACE_BEGIN
 
-enum BlockHistogramMemoryPreference
-{
-  GMEM,
-  SMEM,
-  BLEND
-};
-
-#if _CCCL_HOSTED()
-namespace detail
-{
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(BlockHistogramMemoryPreference mempref) noexcept
-{
-  switch (mempref)
-  {
-    case GMEM:
-      return "GMEM";
-    case SMEM:
-      return "SMEM";
-    case BLEND:
-      return "BLEND";
-  }
-  return "<unknown BlockHistogramMemoryPreference>";
-}
-} // namespace detail
-
-inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
-{
-  return os << CUB_NS_QUALIFIER::detail::to_string(mempref);
-}
-#endif // _CCCL_HOSTED()
-
-CUB_NAMESPACE_END
-
-#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
-template <::cuda::std::same_as<char> CharT>
-struct std::formatter<CUB_NS_QUALIFIER::BlockHistogramMemoryPreference, CharT> : formatter<const CharT*, CharT>
-{
-  template <class FmtCtx>
-  auto format(const CUB_NS_QUALIFIER::BlockHistogramMemoryPreference& mempref, FmtCtx& ctx) const
-  {
-    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(mempref), ctx);
-  }
-};
-#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
-
-CUB_NAMESPACE_BEGIN
-
-namespace detail
-{
-//! Parameterizable tuning policy type for AgentHistogram
+//! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
           int PixelsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           bool RleCompress,
-          BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
           int VecSize = 4>
-struct agent_histogram_policy
+struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") AgentHistogramPolicy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
@@ -100,9 +48,6 @@ struct agent_histogram_policy
 
   /// Whether to perform localized RLE to compress samples before histogramming
   static constexpr bool IS_RLE_COMPRESS = RleCompress;
-
-  /// Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
-  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = MemoryPreference;
 
   /// Whether to dequeue tiles from a global work queue
   static constexpr bool IS_WORK_STEALING = WorkStealing;
@@ -117,30 +62,33 @@ struct agent_histogram_policy
   ///< Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
-} // namespace detail
-
-//! Deprecated [Since 3.5]
-template <int ThreadsPerBlock,
-          int PixelsPerThread,
-          BlockLoadAlgorithm LoadAlgorithm,
-          CacheLoadModifier LoadModifier,
-          bool RleCompress,
-          BlockHistogramMemoryPreference MemoryPreference,
-          bool WorkStealing,
-          int VecSize = 4>
-using AgentHistogramPolicy
-  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::agent_histogram_policy<
-    ThreadsPerBlock,
-    PixelsPerThread,
-    LoadAlgorithm,
-    LoadModifier,
-    RleCompress,
-    MemoryPreference,
-    WorkStealing,
-    VecSize>;
 
 namespace detail::histogram
 {
+struct HistogramPrivatizedStaticSmem
+{};
+
+struct HistogramPrivatizedDynamicSmem
+{};
+
+struct HistogramPrivatizedGmem
+{};
+
+inline constexpr auto histogram_privatized_static_smem  = HistogramPrivatizedStaticSmem{};
+inline constexpr auto histogram_privatized_dynamic_smem = HistogramPrivatizedDynamicSmem{};
+inline constexpr auto histogram_privatized_gmem         = HistogramPrivatizedGmem{};
+
+template <class PrivatizationMode>
+inline constexpr bool is_privatized_static_smem_v =
+  ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedStaticSmem>;
+
+template <class PrivatizationMode>
+inline constexpr bool is_privatized_dynamic_smem_v =
+  ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedDynamicSmem>;
+
+template <class PrivatizationMode>
+inline constexpr bool is_privatized_gmem_v = ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedGmem>;
+
 // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
 template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<Modifier, ValueT, OffsetT> itr)
@@ -158,12 +106,11 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //! @brief AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating
 //! in device-wide histogram .
 //!
-//! @tparam AgentHistogramPolicyT
-//!   Parameterized AgentHistogramPolicy tuning policy type
+//! @tparam PolicySelector
+//!   Selector that returns the active HistogramPolicy.
 //!
-//! @tparam PrivatizedSmemBins
-//!   Number of privatized shared-memory histogram bins of any channel.  Zero indicates privatized
-//! counters to be maintained in device-accessible memory.
+//! @tparam PrivatizationMode
+//!   Storage mode for the privatized histogram.
 //!
 //! @tparam NumChannels
 //!   Number of channels interleaved in the input data.  Supports up to four channels.
@@ -175,7 +122,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!   Random-access input iterator type for reading samples
 //!
 //! @tparam CounterT
-//!   Integer type for counting sample occurrences per histogram bin
+//!   Integer type for per-block privatized histogram bins
 //!
 //! @tparam PrivatizedDecodeOpT
 //!   The transform operator type for determining privatized counter indices from samples, one for
@@ -187,29 +134,48 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //!
 //! @tparam OffsetT
 //!   Signed integer type for global offsets
-template <typename AgentHistogramPolicyT,
-          int PrivatizedSmemBins,
+//!
+//! @tparam OutputCounterT
+//!   Integer type for final output histogram bins. May be wider than `CounterT`.
+template <typename PolicySelector,
+          typename PrivatizationMode,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
-          typename OffsetT>
+          typename OffsetT,
+          typename OutputCounterT = CounterT>
 struct AgentHistogram
 {
-  static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
-  static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
-  static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
-  static constexpr int samples_per_thread          = pixels_per_thread * NumChannels;
+  static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
+                "The output histogram counter must be at least as wide as the local counter");
+  static_assert(is_privatized_static_smem_v<PrivatizationMode> || is_privatized_dynamic_smem_v<PrivatizationMode>
+                || is_privatized_gmem_v<PrivatizationMode>);
+  static constexpr bool uses_static_smem  = is_privatized_static_smem_v<PrivatizationMode>;
+  static constexpr bool uses_dynamic_smem = is_privatized_dynamic_smem_v<PrivatizationMode>;
+  static constexpr bool uses_gmem         = is_privatized_gmem_v<PrivatizationMode>;
+  static constexpr auto policy            = current_policy<PolicySelector>();
+  static constexpr auto privatization_policy =
+    uses_static_smem ? policy.static_smem
+    : uses_dynamic_smem
+      ? policy.dynamic_smem
+      : policy.gmem;
+  static constexpr int privatized_static_smem_bins =
+    uses_static_smem ? policy.max_privatized_static_smem_single_channel_bytes / int{sizeof(CounterT)} : 0;
+  static_assert(!uses_static_smem || privatized_static_smem_bins > 0,
+                "Static-SMEM privatization requires room for at least one bin");
+  static constexpr int vec_size                    = privatization_policy.vec_size;
+  static constexpr int threads_per_block           = privatization_policy.threads_per_block;
+  static constexpr int items_per_thread            = privatization_policy.items_per_thread;
+  static constexpr int samples_per_thread          = items_per_thread * NumChannels;
   static constexpr int vecs_per_thread             = samples_per_thread / vec_size;
-  static constexpr int tile_pixels                 = pixels_per_thread * threads_per_block;
+  static constexpr int tile_pixels                 = items_per_thread * threads_per_block;
   static constexpr int tile_samples                = samples_per_thread * threads_per_block;
-  static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
-  static constexpr bool is_work_stealing           = AgentHistogramPolicyT::IS_WORK_STEALING;
-  static constexpr CacheLoadModifier load_modifier = AgentHistogramPolicyT::LOAD_MODIFIER;
-  static constexpr auto mem_preference =
-    (PrivatizedSmemBins > 0) ? BlockHistogramMemoryPreference{AgentHistogramPolicyT::MEM_PREFERENCE} : GMEM;
+  static constexpr bool is_rle_compress            = privatization_policy.rle_compress;
+  static constexpr bool is_work_stealing           = privatization_policy.work_stealing;
+  static constexpr CacheLoadModifier load_modifier = privatization_policy.load_modifier;
 
   using SampleT = it_value_t<SampleIteratorT>;
   using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
@@ -225,15 +191,17 @@ struct AgentHistogram
   using WrappedPixelIteratorT = CacheModifiedInputIterator<load_modifier, PixelT, OffsetT>;
   using WrappedVecsIteratorT  = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
   using BlockLoadSampleT =
-    BlockLoad<SampleT, threads_per_block, samples_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadPixelT =
-    BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+    BlockLoad<SampleT, threads_per_block, samples_per_thread, privatization_policy.load_algorithm>;
+  using BlockLoadPixelT = BlockLoad<PixelT, threads_per_block, items_per_thread, privatization_policy.load_algorithm>;
+  using BlockLoadVecT   = BlockLoad<VecT, threads_per_block, vecs_per_thread, privatization_policy.load_algorithm>;
 
   struct _TempStorage
   {
-    // Smem needed for block-privatized smem histogram (with 1 word of padding)
-    CounterT histograms[NumActiveChannels][PrivatizedSmemBins + 1];
+    // The one-element fallback keeps this type well-formed for modes that do not
+    // use the compile-time-sized histogram. Static-SMEM mode uses exactly the
+    // configured number of bins; out-of-range samples are rejected before the
+    // atomic update and therefore require no padding bin.
+    CounterT privatized_histogram[NumActiveChannels][privatized_static_smem_bins > 0 ? privatized_static_smem_bins : 1];
     int tile_idx;
 
     union
@@ -246,79 +214,64 @@ struct AgentHistogram
 
   using TempStorage = Uninitialized<_TempStorage>;
 
-  _TempStorage& temp_storage;
+  _TempStorage& static_smem_storage;
   WrappedSampleIteratorT d_wrapped_samples; // with cache modifier applied, if possible
   SampleT* d_native_samples; // possibly nullptr if unavailable
-  const int* num_output_bins; // one for each channel
-  const int* num_privatized_bins; // one for each channel
-  CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
-  CounterT** d_output_histograms; // in global memory
+  const int* num_output_bins; // array of ints, one for each channel
+  const int* num_privatized_bins; // array of ints, one for each channel
+  CounterT* gmem_privatized_histograms[NumActiveChannels]; // one for each channel
+  CounterT* dynamic_smem_privatized_histograms[NumActiveChannels]; // dynamic shared-memory channel bases, when enabled
+  OutputCounterT** output_histogram; // final output, in global memory
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
                                            // channel
-  const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
-                                                   // channel
-  bool prefer_smem; // for privatized counterss
-
-  template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
+  PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
+  _CCCL_DEVICE _CCCL_FORCEINLINE CounterT* PrivatizedHistogram(int channel)
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    if constexpr (uses_dynamic_smem)
     {
-      for (int bin = static_cast<int>(threadIdx.x); bin < num_privatized_bins[ch]; bin += threads_per_block)
-      {
-        privatized_histograms[ch][bin] = 0;
-      }
+      return dynamic_smem_privatized_histograms[channel];
     }
-
-    // TODO(bgruber): do we also need the __syncthreads() when prefer_smem is false?
-    // Barrier to make sure all threads are done updating counters
-    __syncthreads();
+    else if constexpr (uses_static_smem)
+    {
+      return static_smem_storage.privatized_histogram[channel];
+    }
+    else
+    {
+      return gmem_privatized_histograms[channel];
+    }
   }
 
-  // Update final output histograms from privatized histograms
-  template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(TwoDimSubscriptableCounterT& privatized_histograms)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters()
   {
-    // Barrier to make sure all threads are done updating counters
-    __syncthreads();
-
-    // Apply privatized bin counts to output bin counts
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      const int channel_bins = num_privatized_bins[ch];
-      for (int bin = static_cast<int>(threadIdx.x); bin < channel_bins; bin += threads_per_block)
+      CounterT* privatized_histogram = PrivatizedHistogram(ch);
+      for (int bin = static_cast<int>(threadIdx.x); bin < num_privatized_bins[ch]; bin += threads_per_block)
       {
-        int output_bin       = -1;
-        const CounterT count = privatized_histograms[ch][bin];
-        const bool is_valid  = count > 0;
-        output_decode_op[ch].template BinSelect<load_modifier>(static_cast<SampleT>(bin), output_bin, is_valid);
-
-        if (output_bin >= 0)
-        {
-          atomicAdd(&d_output_histograms[ch][output_bin], count);
-        }
+        privatized_histogram[bin] = 0;
       }
     }
+
+    // Barrier to make sure all threads are done updating counters
+    __syncthreads();
   }
 
   // Accumulate pixels.  Specialized for RLE compression.
-  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
-    SampleT samples[pixels_per_thread][NumChannels],
-    bool is_valid[pixels_per_thread],
-    TwoDimSubscriptableCounterT& privatized_histograms,
+    SampleT samples[items_per_thread][NumChannels],
+    bool is_valid[items_per_thread],
     ::cuda::std::true_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
+      CounterT* privatized_histogram = PrivatizedHistogram(ch);
       // Bin pixels
-      int bins[pixels_per_thread];
+      int bins[items_per_thread];
 
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+      for (int pixel = 0; pixel < items_per_thread; ++pixel)
       {
         bins[pixel] = -1;
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
@@ -327,15 +280,13 @@ struct AgentHistogram
       CounterT accumulator = 1;
 
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pixel = 0; pixel < pixels_per_thread - 1; ++pixel)
+      for (int pixel = 0; pixel < items_per_thread - 1; ++pixel)
       {
         if (bins[pixel] != bins[pixel + 1])
         {
           if (bins[pixel] >= 0)
           {
-            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                              (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
-                              (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
+            atomicAdd_block(privatized_histogram + bins[pixel], accumulator);
           }
 
           accumulator = 0;
@@ -344,36 +295,31 @@ struct AgentHistogram
       }
 
       // Last pixel
-      if (bins[pixels_per_thread - 1] >= 0)
+      if (bins[items_per_thread - 1] >= 0)
       {
-        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                          (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
-                          (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+        atomicAdd_block(privatized_histogram + bins[items_per_thread - 1], accumulator);
       }
     }
   }
 
   // Accumulate pixels.  Specialized for individual accumulation of each pixel.
-  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
-    SampleT samples[pixels_per_thread][NumChannels],
-    bool is_valid[pixels_per_thread],
-    TwoDimSubscriptableCounterT& privatized_histograms,
+    SampleT samples[items_per_thread][NumChannels],
+    bool is_valid[items_per_thread],
     ::cuda::std::false_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+    for (int pixel = 0; pixel < items_per_thread; ++pixel)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
-        int bin = -1;
+        CounterT* privatized_histogram = PrivatizedHistogram(ch);
+        int bin                        = -1;
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0)
         {
-          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                            (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
-                            (atomicAdd(privatized_histograms[ch] + bin, 1);));
+          atomicAdd_block(privatized_histogram + bin, 1);
         }
       }
     }
@@ -381,27 +327,27 @@ struct AgentHistogram
 
   // Load full, aligned tile using pixel iterator
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[pixels_per_thread][NumChannels])
+  LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[items_per_thread][NumChannels])
   {
     if constexpr (NumActiveChannels == 1)
     {
       using AliasedVecs = VecT[vecs_per_thread];
       WrappedVecsIteratorT d_wrapped_vecs(reinterpret_cast<VecT*>(d_native_samples + block_offset));
       // Load using a wrapped vec iterator
-      BlockLoadVecT{temp_storage.vec_load}.Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
+      BlockLoadVecT{static_smem_storage.vec_load}.Load(d_wrapped_vecs, reinterpret_cast<AliasedVecs&>(samples));
     }
     else
     {
-      using AliasedPixels = PixelT[pixels_per_thread];
+      using AliasedPixels = PixelT[items_per_thread];
       WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
       // Load using a wrapped pixel iterator
-      BlockLoadPixelT{temp_storage.pixel_load}.Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
+      BlockLoadPixelT{static_smem_storage.pixel_load}.Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
     }
   }
 
   template <bool IsFullTile, bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[pixels_per_thread][NumChannels])
+  LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[items_per_thread][NumChannels])
   {
     if constexpr (IsFullTile)
     {
@@ -413,7 +359,7 @@ struct AgentHistogram
       {
         // Load using sample iterator
         using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT{temp_storage.sample_load}.Load(
+        BlockLoadSampleT{static_smem_storage.sample_load}.Load(
           d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples));
       }
     }
@@ -422,28 +368,28 @@ struct AgentHistogram
       if constexpr (IsAligned)
       {
         // Load partially-full, aligned tile using the pixel iterator
-        using AliasedPixels = PixelT[pixels_per_thread];
+        using AliasedPixels = PixelT[items_per_thread];
         WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
         int valid_pixels = valid_samples / NumChannels;
 
         // Load using a wrapped pixel iterator
-        BlockLoadPixelT{temp_storage.pixel_load}.Load(
+        BlockLoadPixelT{static_smem_storage.pixel_load}.Load(
           d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
       }
       else
       {
         using AliasedSamples = SampleT[samples_per_thread];
-        BlockLoadSampleT{temp_storage.sample_load}.Load(
+        BlockLoadSampleT{static_smem_storage.sample_load}.Load(
           d_wrapped_samples + block_offset, reinterpret_cast<AliasedSamples&>(samples), valid_samples);
       }
     }
   }
 
   template <bool IsFullTile, bool IsStriped>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[pixels_per_thread], int valid_samples)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[items_per_thread], int valid_samples)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+    for (int pixel = 0; pixel < items_per_thread; ++pixel)
     {
       if constexpr (IsStriped)
       {
@@ -451,7 +397,7 @@ struct AgentHistogram
       }
       else
       {
-        is_valid[pixel] = IsFullTile || (((threadIdx.x * pixels_per_thread + pixel) * NumChannels) < valid_samples);
+        is_valid[pixel] = IsFullTile || (((threadIdx.x * items_per_thread + pixel) * NumChannels) < valid_samples);
       }
     }
   }
@@ -466,20 +412,13 @@ struct AgentHistogram
   template <bool IsAligned, bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT block_offset, int valid_samples)
   {
-    SampleT samples[pixels_per_thread][NumChannels];
-    bool is_valid[pixels_per_thread];
+    SampleT samples[items_per_thread][NumChannels];
+    bool is_valid[items_per_thread];
 
     LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
-    MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
+    MarkValid<IsFullTile, privatization_policy.load_algorithm == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
-    if (prefer_smem)
-    {
-      AccumulatePixels(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
-    }
-    else
-    {
-      AccumulatePixels(samples, is_valid, d_privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
-    }
+    AccumulatePixels(samples, is_valid, ::cuda::std::bool_constant<is_rle_compress>{});
   }
 
   //! @brief Consume row tiles. Specialized for work-stealing from queue
@@ -533,12 +472,12 @@ struct AgentHistogram
       // Get next tile
       if (threadIdx.x == 0)
       {
-        temp_storage.tile_idx = tile_queue.Drain(1) + num_even_share_tiles;
+        static_smem_storage.tile_idx = tile_queue.Drain(1) + num_even_share_tiles;
       }
 
       __syncthreads();
 
-      tile_idx = temp_storage.tile_idx;
+      tile_idx = static_smem_storage.tile_idx;
     }
   }
 
@@ -586,8 +525,8 @@ struct AgentHistogram
 
   //! @brief Constructor
   //!
-  //! @param temp_storage
-  //!   Reference to temp_storage
+  //! @param static_smem_storage
+  //!   Shared storage used by the agent
   //!
   //! @param d_samples
   //!   Input data to reduce
@@ -598,47 +537,58 @@ struct AgentHistogram
   //! @param num_privatized_bins
   //!   The number bins per privatized histogram
   //!
-  //! @param d_output_histograms
+  //! @param output_histogram
   //!   Reference to final output histograms
   //!
-  //! @param d_privatized_histograms
-  //!   Reference to privatized histograms
+  //! @param gmem_privatized_histograms
+  //!   Global-memory privatized histograms, or `nullptr` entries for a shared-memory mode
   //!
   //! @param output_decode_op
   //!   The transform operator for determining output bin-ids from privatized counter indices, one for each channel
   //!
   //! @param privatized_decode_op
   //!   The transform operator for determining privatized counter indices from samples, one for each channel
+  //!
+  //! @param dynamic_smem_privatized_histograms
+  //!   Base of the runtime-sized shared-memory histogram, or `nullptr` for a static-SMEM or global-memory mode
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
-    TempStorage& temp_storage,
+    TempStorage& static_smem_storage,
     SampleIteratorT d_samples,
     const int* num_output_bins,
     const int* num_privatized_bins,
-    CounterT** d_output_histograms,
-    CounterT** d_privatized_histograms,
+    OutputCounterT** output_histogram,
+    CounterT** gmem_privatized_histograms,
     const OutputDecodeOpT* output_decode_op,
-    const PrivatizedDecodeOpT* privatized_decode_op)
-      : temp_storage(temp_storage.Alias())
+    PrivatizedDecodeOpT* privatized_decode_op,
+    CounterT* dynamic_smem_privatized_histograms)
+      : static_smem_storage(static_smem_storage.Alias())
       , d_wrapped_samples(d_samples)
       , d_native_samples(NativePointer(d_wrapped_samples))
       , num_output_bins(num_output_bins)
       , num_privatized_bins(num_privatized_bins)
-      , d_output_histograms(d_output_histograms)
+      , output_histogram(output_histogram)
       , output_decode_op(output_decode_op)
       , privatized_decode_op(privatized_decode_op)
-      , prefer_smem((mem_preference == SMEM) ? true : // prefer smem privatized histograms
-                      (mem_preference == GMEM) ? false
-                                               : // prefer gmem privatized histograms
-                      blockIdx.x & 1) // prefer blended privatized histograms
   {
-    const int blockId = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
-
-    // TODO(bgruber): d_privatized_histograms seems only used when !prefer_smem, can we skip it if prefer_smem?
-    // Initialize the locations of this block's privatized histograms
-    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    if constexpr (uses_dynamic_smem)
     {
-      const auto offset                 = static_cast<::cuda::std::int64_t>(blockId) * num_privatized_bins[ch];
-      this->d_privatized_histograms[ch] = d_privatized_histograms[ch] + offset;
+      _CCCL_ASSERT(dynamic_smem_privatized_histograms != nullptr, "Dynamic-SMEM mode requires a shared-memory base");
+      CounterT* channel_histogram = dynamic_smem_privatized_histograms;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        this->dynamic_smem_privatized_histograms[ch] = channel_histogram;
+        channel_histogram += num_privatized_bins[ch];
+      }
+    }
+    else if constexpr (uses_gmem)
+    {
+      const int block_id = static_cast<int>((blockIdx.y * gridDim.x) + blockIdx.x);
+      for (int ch = 0; ch < NumActiveChannels; ++ch)
+      {
+        const auto offset                    = static_cast<::cuda::std::int64_t>(block_id) * num_privatized_bins[ch];
+        this->gmem_privatized_histograms[ch] = gmem_privatized_histograms[ch] + offset;
+      }
     }
   }
 
@@ -697,26 +647,33 @@ struct AgentHistogram
   //! Initialize privatized bin counters.  Specialized for privatized shared-memory counters
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCounters()
   {
-    if (prefer_smem)
-    {
-      ZeroBinCounters(temp_storage.histograms);
-    }
-    else
-    {
-      ZeroBinCounters(d_privatized_histograms);
-    }
+    ZeroBinCounters();
   }
 
   //! Store privatized histogram to device-accessible memory.  Specialized for privatized shared-memory counters
   _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput()
   {
-    if (prefer_smem)
+    // Barrier to make sure all threads are done updating counters
+    __syncthreads();
+
+    // Apply privatized bin counts to output bin counts
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      StoreOutput(temp_storage.histograms);
-    }
-    else
-    {
-      StoreOutput(d_privatized_histograms);
+      CounterT* privatized_histogram = PrivatizedHistogram(ch);
+      const int channel_bins         = num_privatized_bins[ch];
+      for (int bin = static_cast<int>(threadIdx.x); bin < channel_bins; bin += threads_per_block)
+      {
+        int output_bin       = -1;
+        const CounterT count = privatized_histogram[bin];
+        const bool is_valid  = count > 0;
+        output_decode_op[ch].template BinSelect<load_modifier>(static_cast<SampleT>(bin), output_bin, is_valid);
+
+        if (output_bin >= 0)
+        {
+          atomicAdd(&output_histogram[ch][output_bin], static_cast<OutputCounterT>(count));
+        }
+      }
     }
   }
 };

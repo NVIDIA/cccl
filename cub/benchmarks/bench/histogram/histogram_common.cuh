@@ -19,14 +19,6 @@
 
 #  define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
 
-#  if TUNE_MEM_PREFERENCE == 0
-constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::GMEM;
-#  elif TUNE_MEM_PREFERENCE == 1
-constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::SMEM;
-#  else // TUNE_MEM_PREFERENCE == 2
-constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
-#  endif // TUNE_MEM_PREFERENCE
-
 #  if TUNE_LOAD_ALGORITHM_ID == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
 #  elif TUNE_LOAD_ALGORITHM_ID == 1
@@ -35,25 +27,38 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
 #  endif // TUNE_LOAD_ALGORITHM_ID
 
-template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
-struct bench_policy_selector
+// Only generated tuning variants instantiate this selector. The `.base` target used for
+// production-policy comparisons defines TUNE_BASE=1 and calls DeviceHistogram without a
+// tuning environment, so it exercises the shipping selector unchanged.
+//
+// A generated tuning point supplies one candidate kernel configuration. Apply that same
+// candidate to every privatization mode so the tuner measures the candidate independently
+// of the runtime bin count selected by the production storage thresholds.
+template <typename SampleT, typename CounterT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, bool IS_EVEN>
+struct histogram_tuning_policy_selector
 {
-  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::HistogramPolicy
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> cub::HistogramPolicy
   {
     constexpr cub::BlockLoadAlgorithm load_algorithm =
       (TUNE_LOAD_ALGORITHM == cub::BLOCK_LOAD_STRIPED)
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    return {TUNE_THREADS,
-            TUNE_ITEMS,
-            TUNE_VEC_SIZE,
-            load_algorithm,
-            TUNE_LOAD_MODIFIER,
-            TUNE_RLE_COMPRESS,
-            MEM_PREFERENCE,
-            TUNE_WORK_STEALING,
-            2048}; // TODO(bgruber): make tunable
+    constexpr auto sweep = cub::HistogramPrivatizationPolicy{
+      TUNE_THREADS,
+      TUNE_ITEMS,
+      TUNE_VEC_SIZE,
+      load_algorithm,
+      TUNE_LOAD_MODIFIER,
+      TUNE_RLE_COMPRESS,
+      TUNE_WORK_STEALING};
+    auto policy =
+      cub::detail::histogram::policy_selector_from_types<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, IS_EVEN>{}(
+        cc);
+    policy.gmem         = sweep;
+    policy.static_smem  = sweep;
+    policy.dynamic_smem = sweep;
+    return policy;
   }
 };
 #endif // !TUNE_BASE
