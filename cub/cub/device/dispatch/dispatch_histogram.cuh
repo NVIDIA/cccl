@@ -237,7 +237,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
   FirstLevelArrayT first_level_array,
   SecondLevelArrayT second_level_array,
-  CooperativeSecondLevelArrayT cooperative_second_level_array,
+  [[maybe_unused]] CooperativeSecondLevelArrayT cooperative_second_level_array,
   int max_num_output_bins,
   OffsetT num_row_pixels,
   OffsetT num_rows,
@@ -291,9 +291,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }
   }();
 
-  const int threads_per_block          = active_policy.threads_per_block;
-  const int high_bin_threads_per_block = active_policy.high_bin_threads();
-  const int pixels_per_thread          = active_policy.pixels_per_thread;
+  const int threads_per_block                           = active_policy.threads_per_block;
+  [[maybe_unused]] const int high_bin_threads_per_block = active_policy.high_bin_threads();
+  const int pixels_per_thread                           = active_policy.pixels_per_thread;
 
   // Get SM count
   int sm_count;
@@ -314,7 +314,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   int histogram_sweep_occupancy                            = histogram_sweep_sm_occupancy * sm_count;
   [[maybe_unused]] const int privatized_storage_grid_limit = histogram_sweep_occupancy;
   bool use_cooperative                                     = false;
-  int cooperative_smem_bytes                               = 0;
+  [[maybe_unused]] int cooperative_smem_bytes              = 0;
   int cooperative_cache_slots_per_channel                  = 0;
 
 #if _CCCL_HOSTED()
