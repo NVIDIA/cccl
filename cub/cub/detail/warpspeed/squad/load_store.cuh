@@ -241,7 +241,6 @@ template <typename OutputT>
 _CCCL_DEVICE_API void
 squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::cuda::std::byte* srcSmem)
 {
-  _CCCL_IKET_RANGE_PUSH(StoreBulk);
   // This function performs either 1 copy, or three copies, depending on the
   // size and alignment of the output tile in global memory.
   //
@@ -255,6 +254,8 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
   // - One copy that cleans up the last up to 15 bytes.
   if (squad.isLeaderWarp())
   {
+    _CCCL_IKET_RANGE_PUSH(StoreBulk);
+
     // Acquire shared memory in async proxy
     // Perform fence.proxy.async with full warp to avoid BSSY+BSYNC
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
@@ -355,8 +356,9 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     // Commit and wait for store to have completed reading from shared memory
     ::cuda::ptx::cp_async_bulk_commit_group();
     ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
+
+    _CCCL_IKET_RANGE_POP();
   }
-  _CCCL_IKET_RANGE_POP();
 }
 
 #endif // __cccl_ptx_isa >= 860
