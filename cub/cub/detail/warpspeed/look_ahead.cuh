@@ -16,7 +16,6 @@
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 #include <cub/thread/thread_store.cuh>
-#include <cub/warp/specializations/warp_redux.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
@@ -186,8 +185,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   ScanOpT& scan_op,
   const int num_tiles)
 {
-  const int laneIdx                                       = static_cast<int>(specialRegisters.laneIdx);
-  [[maybe_unused]] const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
+  const int laneIdx = static_cast<int>(specialRegisters.laneIdx);
 
   int idxTileCur             = idxTilePrev;
   AccumT aggrExclusiveCtaCur = aggrExclusiveCtaPrev;
@@ -195,7 +193,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   using warp_reduce_t = WarpReduce<AccumT>;
   static_assert(::cuda::std::is_same_v<typename warp_reduce_t::TempStorage, Uninitialized<NullType>>,
                 "WarpReduce for a full warp must not require temporary storage");
-  [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
+  typename warp_reduce_t::TempStorage temp_storage;
 
   while (idxTileCur < idxTileNext)
   {
@@ -220,25 +218,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
       const ::cuda::std::uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);
 
       // Accumulate the rightmost tile aggregates
-      AccumT local_aggr;
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_80,
-        ({ // NOTE: Inlined from warp_reduce_shfl
-          if constexpr (is_warp_redux_op_supported_sm80<ScanOpT, AccumT>)
-          {
-            const bool use_value = lanemaskEq & warp_right_aggregates_mask;
-            const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
-            local_aggr           = cub::detail::warp_redux_sm80(value, ~0, scan_op);
-          }
-          else
-          {
-            // TODO(bgruber): this generates a LOT of SASS. I think it can do better.
-            local_aggr =
-              warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);
-          }
-        }),
-        (local_aggr =
-           warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);))
+      const AccumT local_aggr =
+        warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);
 
       // We never initialized aggrExclusiveCtaCur when starting look ahead at tile 0
       aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
