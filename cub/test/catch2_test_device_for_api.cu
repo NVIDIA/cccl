@@ -77,7 +77,7 @@ CUB_TEST("Device bulk works with temporary storage", "[bulk][device]", CUB_SMALL
 {
   // example-begin bulk-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
-  square_t op{thrust::raw_pointer_cast(vec.data())};
+  const square_t op{thrust::raw_pointer_cast(vec.data())};
 
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
@@ -95,7 +95,7 @@ CUB_TEST("Device bulk works with temporary storage", "[bulk][device]", CUB_SMALL
     std::cerr << "Bulk operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {1, 4, 9, 16};
+  const c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end bulk-temp-storage
 
   REQUIRE(vec == expected);
@@ -105,7 +105,7 @@ CUB_TEST("Device bulk works without temporary storage", "[bulk][device]", CUB_SM
 {
   // example-begin bulk-wo-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
-  square_t op{thrust::raw_pointer_cast(vec.data())};
+  const square_t op{thrust::raw_pointer_cast(vec.data())};
 
   auto result = cub::DeviceFor::Bulk(vec.size(), op);
   if (result != cudaSuccess)
@@ -113,7 +113,7 @@ CUB_TEST("Device bulk works without temporary storage", "[bulk][device]", CUB_SM
     std::cerr << "Bulk operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {1, 4, 9, 16};
+  const c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end bulk-wo-temp-storage
 
   REQUIRE(vec == expected);
@@ -123,7 +123,7 @@ CUB_TEST("Device for each n works with temporary storage", "[for_each][device]",
 {
   // example-begin for-each-n-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
-  square_ref_t op{};
+  const square_ref_t op{};
 
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
@@ -145,7 +145,7 @@ CUB_TEST("Device for each n works with temporary storage", "[for_each][device]",
     std::cerr << "ForEachN operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {1, 4, 9, 16};
+  const c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-n-temp-storage
 
   REQUIRE(vec == expected);
@@ -155,7 +155,7 @@ CUB_TEST("Device for each n works without temporary storage", "[for_each][device
 {
   // example-begin for-each-n-wo-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
-  square_ref_t op{};
+  const square_ref_t op{};
 
   auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
@@ -163,7 +163,7 @@ CUB_TEST("Device for each n works without temporary storage", "[for_each][device
     std::cerr << "ForEachN operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {1, 4, 9, 16};
+  const c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-n-wo-temp-storage
 
   REQUIRE(vec == expected);
@@ -211,7 +211,7 @@ CUB_TEST("Device for each works with temporary storage", "[for_each][device]", C
 {
   // example-begin for-each-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
-  square_ref_t op{};
+  const square_ref_t op{};
 
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
@@ -233,7 +233,7 @@ CUB_TEST("Device for each works with temporary storage", "[for_each][device]", C
     std::cerr << "ForEach operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {1, 4, 9, 16};
+  const c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-temp-storage
 
   REQUIRE(vec == expected);
@@ -243,7 +243,7 @@ CUB_TEST("Device for each works without temporary storage", "[for_each][device]"
 {
   // example-begin for-each-wo-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
-  square_ref_t op{};
+  const square_ref_t op{};
 
   auto result = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
@@ -251,7 +251,7 @@ CUB_TEST("Device for each works without temporary storage", "[for_each][device]"
     std::cerr << "ForEach operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {1, 4, 9, 16};
+  const c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-wo-temp-storage
 
   REQUIRE(vec == expected);
@@ -262,7 +262,7 @@ CUB_TEST("Device for each n copy works with temporary storage", "[for_each][devi
   // example-begin for-each-copy-n-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   c2h::device_vector<int> count(1);
-  odd_count_t op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
@@ -284,7 +284,7 @@ CUB_TEST("Device for each n copy works with temporary storage", "[for_each][devi
     std::cerr << "ForEachCopyN operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {2};
+  const c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-n-temp-storage
 
   REQUIRE(count == expected);
@@ -295,7 +295,7 @@ CUB_TEST("Device for each n copy works without temporary storage", "[for_each][d
   // example-begin for-each-copy-n-wo-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   c2h::device_vector<int> count(1);
-  odd_count_t op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
   auto result = cub::DeviceFor::ForEachCopyN(vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
@@ -303,7 +303,7 @@ CUB_TEST("Device for each n copy works without temporary storage", "[for_each][d
     std::cerr << "ForEachCopyN operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {2};
+  const c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-n-wo-temp-storage
 
   REQUIRE(count == expected);
@@ -314,7 +314,7 @@ CUB_TEST("Device for each copy works with temporary storage", "[for_each][device
   // example-begin for-each-copy-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   c2h::device_vector<int> count(1);
-  odd_count_t op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
@@ -336,7 +336,7 @@ CUB_TEST("Device for each copy works with temporary storage", "[for_each][device
     std::cerr << "ForEachCopy operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {2};
+  const c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-temp-storage
 
   REQUIRE(count == expected);
@@ -347,7 +347,7 @@ CUB_TEST("Device for each copy works without temporary storage", "[for_each][dev
   // example-begin for-each-copy-wo-temp-storage
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   c2h::device_vector<int> count(1);
-  odd_count_t op{thrust::raw_pointer_cast(count.data())};
+  const odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
   auto result = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
@@ -355,7 +355,7 @@ CUB_TEST("Device for each copy works without temporary storage", "[for_each][dev
     std::cerr << "ForEachCopy operation failed with error code: " << result << '\n';
   }
 
-  c2h::device_vector<int> expected = {2};
+  const c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-wo-temp-storage
 
   REQUIRE(count == expected);
@@ -381,7 +381,7 @@ CUB_TEST("DeviceFor::Bulk two-phase size-query is unambiguous", "[for][device]",
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, n, noop_t{}));
 }
@@ -391,7 +391,7 @@ CUB_TEST("DeviceFor::ForEachN two-phase size-query is unambiguous", "[for][devic
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   int* d_in                 = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, d_in, n, noop_ref_t{}));
 }
@@ -411,7 +411,7 @@ CUB_TEST("DeviceFor::ForEachCopyN two-phase size-query is unambiguous", "[for][d
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   int* d_in                 = nullptr;
-  int n                     = 0;
+  const int n               = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, d_in, n, noop_t{}));
 }

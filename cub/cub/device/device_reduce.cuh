@@ -1428,10 +1428,10 @@ public:
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
 
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    const ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    const init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     return detail::reduce::dispatch<AccumT>(
       d_temp_storage,
@@ -1891,10 +1891,10 @@ public:
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
 
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    const ArgIndexInputIteratorT d_indexed_in(d_in);
 
     // Initial value
-    init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    const init_value_t initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     return detail::reduce::dispatch<AccumT>(
       d_temp_storage,

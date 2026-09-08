@@ -50,7 +50,7 @@ public:
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, device_id);
 
-    static BuildInformation singleton{
+    static const BuildInformation singleton{
       deviceProp.major, deviceProp.minor, TEST_CUB_PATH, TEST_THRUST_PATH, TEST_LIBCUDACXX_PATH, TEST_CTK_PATH};
     return singleton;
   }
@@ -160,7 +160,7 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
   size_t temp_storage_bytes = 0;
   REQUIRE(CUDA_SUCCESS == Run{}(build, nullptr, &temp_storage_bytes, args..., null_stream));
 
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
+  const pointer_t<uint8_t> temp_storage(temp_storage_bytes);
 
   REQUIRE(CUDA_SUCCESS == Run{}(build, temp_storage.ptr, &temp_storage_bytes, args..., null_stream));
 

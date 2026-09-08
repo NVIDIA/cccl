@@ -97,11 +97,11 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint4
 
   if constexpr (!PTR_IS_FOUR_BYTE_ALIGNED)
   {
-    uint32_t tail = aligned_ptr[4];
-    data_out.x    = __funnelshift_r(data_out.x, data_out.y, bit_shift);
-    data_out.y    = __funnelshift_r(data_out.y, data_out.z, bit_shift);
-    data_out.z    = __funnelshift_r(data_out.z, data_out.w, bit_shift);
-    data_out.w    = __funnelshift_r(data_out.w, tail, bit_shift);
+    const uint32_t tail = aligned_ptr[4];
+    data_out.x          = __funnelshift_r(data_out.x, data_out.y, bit_shift);
+    data_out.y          = __funnelshift_r(data_out.y, data_out.z, bit_shift);
+    data_out.z          = __funnelshift_r(data_out.z, data_out.w, bit_shift);
+    data_out.w          = __funnelshift_r(data_out.w, tail, bit_shift);
   }
 }
 
@@ -113,9 +113,9 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint2
 
   if constexpr (!PTR_IS_FOUR_BYTE_ALIGNED)
   {
-    uint32_t tail = aligned_ptr[2];
-    data_out.x    = __funnelshift_r(data_out.x, data_out.y, bit_shift);
-    data_out.y    = __funnelshift_r(data_out.y, tail, bit_shift);
+    const uint32_t tail = aligned_ptr[2];
+    data_out.x          = __funnelshift_r(data_out.x, data_out.y, bit_shift);
+    data_out.y          = __funnelshift_r(data_out.y, tail, bit_shift);
   }
 }
 
@@ -127,8 +127,8 @@ LoadVectorAndFunnelShiftR(uint32_t const* aligned_ptr, uint32_t bit_shift, uint3
 
   if constexpr (!PTR_IS_FOUR_BYTE_ALIGNED)
   {
-    uint32_t tail = aligned_ptr[1];
-    data_out      = __funnelshift_r(data_out, tail, bit_shift);
+    const uint32_t tail = aligned_ptr[1];
+    data_out            = __funnelshift_r(data_out, tail, bit_shift);
   }
 }
 
@@ -213,15 +213,15 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   char* out_chars_aligned = out_ptr - alignment_offset;
 
   // The number of extra bytes preceding `in_ptr` that are loaded but dropped
-  uint32_t in_extra_bytes = reinterpret_cast<uintptr_t>(in_ptr) % in_datatype_size;
+  const uint32_t in_extra_bytes = reinterpret_cast<uintptr_t>(in_ptr) % in_datatype_size;
 
   // The offset required by `LoadVector`:
   // If the input pointer is not aligned, we load data from the last aligned address preceding the
   // pointer. That is, loading up to (in_datatype_size-1) bytes before `in_ptr`
-  uint32_t in_offset_req = in_extra_bytes;
+  const uint32_t in_offset_req = in_extra_bytes;
 
   // Bytes after `out_chars_aligned` to the first VectorT-aligned address at or after `out_begin`
-  uint32_t out_start_aligned = ::cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
+  const uint32_t out_start_aligned = ::cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
 
   // Compute the beginning of the aligned ranges (output and input pointers)
   VectorT* out_aligned_begin   = reinterpret_cast<VectorT*>(out_chars_aligned + out_start_aligned);
@@ -231,8 +231,8 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   // bytes after the last byte that is copied. That is, we always load four bytes up to the next
   // aligned input address at a time. E.g., if the last byte loaded is one byte past the last
   // aligned address we'll also load the three bytes after that byte.
-  uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<uintptr_t>(in_aligned_begin) % in_datatype_size);
-  uint32_t in_end_padding_req          = (in_datatype_size - in_extra_bytes_from_aligned) % in_datatype_size;
+  const uint32_t in_extra_bytes_from_aligned = (reinterpret_cast<uintptr_t>(in_aligned_begin) % in_datatype_size);
+  const uint32_t in_end_padding_req          = (in_datatype_size - in_extra_bytes_from_aligned) % in_datatype_size;
 
   // Bytes after `out_chars_aligned` to the last VectorT-aligned
   // address at (or before) `out_begin` + `num_bytes`
@@ -788,8 +788,8 @@ private:
     {
       if (blev_buffer_offset < num_blev_buffers)
       {
-        BlockBufferOffsetT tile_buffer_id = buffers_by_size_class[blev_buffer_offset].buffer_id;
-        block_offset[i]                   = ::cuda::ceil_div(+tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
+        const BlockBufferOffsetT tile_buffer_id = buffers_by_size_class[blev_buffer_offset].buffer_id;
+        block_offset[i] = ::cuda::ceil_div(+tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
       }
       else
       {
@@ -826,7 +826,7 @@ private:
     {
       if (blev_buffer_offset < num_blev_buffers)
       {
-        BlockBufferOffsetT tile_buffer_id                         = buffers_by_size_class[blev_buffer_offset].buffer_id;
+        const BlockBufferOffsetT tile_buffer_id                   = buffers_by_size_class[blev_buffer_offset].buffer_id;
         blev_buffer_srcs[tile_buffer_offset + blev_buffer_offset] = tile_buffer_srcs[tile_buffer_id];
         blev_buffer_dsts[tile_buffer_offset + blev_buffer_offset] = tile_buffer_dsts[tile_buffer_id];
         blev_buffer_sizes[tile_buffer_offset + blev_buffer_offset]        = tile_buffer_sizes[tile_buffer_id];
@@ -998,7 +998,7 @@ public:
     BufferOffsetT buffer_offset = tile_id * BUFFERS_PER_BLOCK;
 
     // Indicates whether all of this tiles items are within bounds
-    bool is_full_tile = buffer_offset + BUFFERS_PER_BLOCK < num_buffers;
+    const bool is_full_tile = buffer_offset + BUFFERS_PER_BLOCK < num_buffers;
 
     // Load the buffer sizes of this tile's buffers
     BufferSizeIteratorT tile_buffer_sizes_it = buffer_sizes_it + buffer_offset;
@@ -1102,7 +1102,7 @@ public:
       size_class_agg.get(WLEV_SIZE_CLASS));
 
     // Perform batch memcpy for all the buffers that require thread-level collaboration
-    uint32_t num_tlev_buffers = size_class_agg.get(TLEV_SIZE_CLASS);
+    const uint32_t num_tlev_buffers = size_class_agg.get(TLEV_SIZE_CLASS);
     BatchMemcpyTLEVBuffers(
       temp_storage.staged.buffers_by_size_class, tile_buffer_srcs, tile_buffer_dsts, num_tlev_buffers);
   }

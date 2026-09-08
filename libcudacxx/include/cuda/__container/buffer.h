@@ -181,7 +181,7 @@ private:
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to
     // specify stream ordered access
-    ::cuda::__ensure_current_context __guard(__buf_.stream());
+    const ::cuda::__ensure_current_context __guard(__buf_.stream());
     ::cuda::__driver::__memcpyAsync(
       __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
   }
@@ -842,7 +842,7 @@ template <typename _BufferTo, typename _BufferFrom>
 _CCCL_HOST_API void __copy_cross_buffers(
   stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from, typename _BufferFrom::size_type __count)
 {
-  ::cuda::__ensure_current_context __guard(__stream);
+  const ::cuda::__ensure_current_context __guard(__stream);
   __stream.wait(__from.stream());
   ::cuda::__driver::__memcpyAsync(
     __to.__unwrapped_begin(),
@@ -904,7 +904,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
   else
   {
 #  if _CCCL_CUDA_COMPILATION()
-    ::cuda::__ensure_current_context __guard(__stream);
+    const ::cuda::__ensure_current_context __guard(__stream);
     CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
     static_assert(::cuda::__driver::__cu_driver_memsetable<_Tp>,

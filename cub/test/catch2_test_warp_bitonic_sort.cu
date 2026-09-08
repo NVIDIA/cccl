@@ -82,7 +82,7 @@ __global__ void warp_bitonic_sort_kernel(KeyT* in, KeyT* out, int valid_items, A
   __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
-  warp_bitonic_sort_t warp_sort{storage[warp_id]};
+  warp_bitonic_sort_t warp_sort{storage[warp_id]}; // NOLINT(misc-const-correctness)
 
   const int warp_offset = valid_items * warp_id;
 
@@ -138,7 +138,7 @@ __global__ void warp_bitonic_sort_kernel(
   __shared__ storage_t storage[TotalWarps];
 
   // Instantiate warp-scope algorithm
-  warp_bitonic_sort_t warp_sort{storage[warp_id]};
+  warp_bitonic_sort_t warp_sort{storage[warp_id]}; // NOLINT(misc-const-correctness)
 
   const int warp_offset = valid_items * warp_id;
 

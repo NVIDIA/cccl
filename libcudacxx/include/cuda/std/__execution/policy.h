@@ -139,7 +139,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       // We must reject prvalue cuda::stream because they are not copyable
       static_assert(!is_same_v<remove_cvref_t<_Value>, ::cuda::stream> || is_lvalue_reference_v<_Value>,
                     "cuda::stream is not copyable. It must be passed as a cuda::stream_ref");
-      ::cuda::stream_ref __stream{__value};
+      const ::cuda::stream_ref __stream{__value};
       return __with(prop{__tag, __stream}, ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
     }
     else if constexpr (is_same_v<remove_cvref_t<_Tag>, ::cuda::mr::get_memory_resource_t>)

@@ -48,13 +48,25 @@ dependencies.
 
 The Python test lanes therefore fetch the wheel in the devcontainer (which needs ``gh``)
 and then run the test payload in a sibling container holding nothing but Python, launched
-through the host's docker daemon by ``ci/util/python/run_in_minimal_container.sh``. This
-is the same docker-outside-of-docker arrangement the wheel builds already use. An undeclared
+through the host's docker daemon -- by ci/util/python/run_in_minimal_container.sh on
+Linux and ci/windows/run_in_minimal_container.ps1 on Windows. This is the same
+docker-outside-of-docker arrangement the wheel builds already use. An undeclared
 dependency fails there instead of passing silently. The same applies to both the v1
 (NVRTC) and v2 (HostJIT) backends.
 
-The sibling is handed the specific GPUs the driver reports, rather than ``--gpus all``,
-which would reach GPUs belonging to other jobs on a shared runner.
+The two platforms differ only where they must. Linux hands the sibling the specific GPUs
+the driver reports, since ``--gpus all`` would reach GPUs belonging to other jobs on a
+shared runner. Windows exposes GPUs as a whole device class and only under process
+isolation, and its image must match the host kernel -- the devcontainer images are
+LTSC 2022, so the sibling defaults to ``mcr.microsoft.com/windows/servercore:ltsc2022``.
+
+Windows needs one more thing. ``python:3.14-slim`` still ships glibc and libstdc++,
+because every C/C++ Python extension links against them; Server Core ships neither of
+the Windows equivalents, since ``msvcp140.dll`` and ``vcruntime140*.dll`` come from the
+MSVC redistributable rather than from Windows itself. Without them numba and
+``cccl.c.parallel.dll`` both fail to load. The Windows payload installs the
+redistributable before running anything, which leaves the comparison the lane exists to
+make intact: still no compiler, still no CUDA toolkit.
 
 ``test_headers`` is the one lane here that needs no GPU -- it asserts that headers
 shipped in the wheel are on disk and never launches a kernel -- so its entry point sets
@@ -62,8 +74,9 @@ shipped in the wheel are on disk and never launches a kernel -- so its entry poi
 devices.
 
 Each lane is therefore two scripts: an entry point that provisions the wheel and
-dispatches (``ci/test_<lane>.sh``), and a payload that must survive in the minimal image
-(``ci/util/python/run_<lane>_tests.sh``). Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the
+dispatches (``ci/test_<lane>.sh``, or ``ci/windows/test_<lane>.ps1``), and a payload that
+must survive in the minimal image (``ci/util/python/run_<lane>_tests.sh``, or
+``ci/windows/run_<lane>.ps1``). Set ``CCCL_MINIMAL_CONTAINER=0`` to run the payload in the
 devcontainer instead, which is useful locally and for comparing the two environments.
 
 These lanes deliberately stay in the devcontainer, because they need what it provides:
