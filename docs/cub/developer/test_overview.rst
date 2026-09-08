@@ -55,8 +55,6 @@ Say there's no need to cover many types with your test.
 
 .. code-block:: c++
 
-    #include "cub_test_macros.h"
-
     // 0) Define test name and tags
     CUB_TEST("SCOPE FACILITY works with CONDITION", "[FACILITY][SCOPE]", CUB_SMALL)
     {
