@@ -139,6 +139,85 @@ def test_thread_data_constructor_alias_can_feed_a_loop(module):
     assert _call_targets(func_ir).count(cuda.local.array) == 1
 
 
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_item_extent_is_a_compile_time_constant(module):
+    def kernel():
+        payload = module.ThreadData(3, types.int32)
+        alias = payload
+        return alias.items_per_thread
+
+    func_ir, _ = _rewrite(kernel)
+    assignments = [
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    ]
+
+    assert not any(
+        isinstance(stmt.value, ir.Expr)
+        and stmt.value.op == "getattr"
+        and stmt.value.attr == "items_per_thread"
+        for stmt in assignments
+    )
+    definitions = {stmt.target.name: stmt.value for stmt in assignments}
+    returned = next(
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Return)
+    )
+    result = definitions[returned.value.name]
+    assert result.op == "cast"
+    extent = definitions[result.value.name]
+    assert isinstance(extent, ir.Const)
+    assert extent.value == 3
+
+
+def test_native_local_array_item_extent_is_not_rewritten():
+    def kernel():
+        payload = cuda.local.array(3, types.int32)
+        return payload.items_per_thread
+
+    func_ir, _ = _rewrite(kernel)
+    assignments = [
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    ]
+
+    assert any(
+        isinstance(stmt.value, ir.Expr)
+        and stmt.value.op == "getattr"
+        and stmt.value.attr == "items_per_thread"
+        for stmt in assignments
+    )
+
+
+def test_mixed_thread_data_item_extent_is_not_rewritten():
+    def kernel(flag):
+        thread_data = coop.ThreadData(3, types.int32)
+        native = cuda.local.array(3, types.int32)
+        payload = thread_data if flag else native
+        return payload.items_per_thread
+
+    func_ir, _ = _rewrite(kernel)
+    assignments = [
+        stmt
+        for block in func_ir.blocks.values()
+        for stmt in block.body
+        if isinstance(stmt, ir.Assign)
+    ]
+
+    assert any(
+        isinstance(stmt.value, ir.Expr)
+        and stmt.value.op == "getattr"
+        and stmt.value.attr == "items_per_thread"
+        for stmt in assignments
+    )
+
+
 @pytest.mark.parametrize(
     "alignment",
     [None, 1, 2, 4, 8, 16, np.int64(32)],

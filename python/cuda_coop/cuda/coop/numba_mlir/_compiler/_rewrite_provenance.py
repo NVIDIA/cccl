@@ -79,6 +79,8 @@ class _ProvenanceRewrite:
         self._thread_data_func_vars: set[str] = set()
         self._typed_group_payload_func_vars: set[str] = set()
         self._thread_data_specs: dict[str, _ThreadDataSpec] = {}
+        self._thread_data_like_vars: set[str] = set()
+        self._thread_data_extents: dict[ir.Assign, int] = {}
         self._func_ir_identity: int | None = None
         self._func_temp_storage_requirements: dict[
             str, _TempStorageRequirementSummary
@@ -1030,6 +1032,59 @@ class _ProvenanceRewrite:
         if not isinstance(value, ir.Var):
             return None
         return self._resolve_thread_data_spec_from_var(value, seen=set())
+
+    def _is_thread_data_like_var(
+        self, value: ir.Var, seen: set[str] | None = None
+    ) -> bool:
+        """Whether *value* originates from a public thread-data payload."""
+
+        def resolve(candidate: ir.Var, active: set[str]) -> bool | None:
+            if not isinstance(candidate, ir.Var):
+                return False
+            if candidate.name in self._thread_data_like_vars:
+                return True
+            if candidate.name in active:
+                return None
+            active.add(candidate.name)
+            states: list[bool | None] = []
+            for definition in self._lookup_definitions(candidate):
+                if isinstance(definition, ir.Var):
+                    states.append(resolve(definition, set(active)))
+                    continue
+                if not isinstance(definition, ir.Expr):
+                    states.append(False)
+                    continue
+                if definition.op == "call":
+                    states.append(
+                        self._is_thread_data_ctor_call(definition)
+                        or self._is_typed_group_payload_ctor_call(definition)
+                    )
+                    continue
+                sources: list[ir.Var] = []
+                if definition.op in {"cast", "exhaust_iter"}:
+                    source = getattr(definition, "value", None)
+                    if isinstance(source, ir.Var):
+                        sources.append(source)
+                elif definition.op == "phi":
+                    sources.extend(
+                        incoming
+                        for incoming in _phi_incoming_values(definition)
+                        if isinstance(incoming, ir.Var)
+                    )
+                elif definition.op == "static_getitem":
+                    sources.extend(self._resolve_static_tuple_item_vars(definition))
+                if not sources:
+                    states.append(False)
+                    continue
+                states.extend(resolve(source, set(active)) for source in sources)
+            if False in states:
+                return False
+            if any(state is True for state in states):
+                self._thread_data_like_vars.add(candidate.name)
+                return True
+            return None
+
+        return resolve(value, set() if seen is None else set(seen)) is True
 
     def _resolve_var_numba_type(self, value: ir.Var):
         typemap = getattr(self._state, "typemap", None)

@@ -56,6 +56,7 @@ class CoopSinglePhaseRewrite(
             self._func_ir_identity = func_ir_identity
             self._func_ir = func_ir
             self._thread_data_specs = {}
+            self._thread_data_like_vars = set()
             self._temp_storage_plans = {}
             self._temp_storage_global_plan = None
             self._temp_storage_ctor_order = {}
@@ -78,6 +79,7 @@ class CoopSinglePhaseRewrite(
             if isinstance(inst, ir.Assign)
         }
         self._matches = {}
+        self._thread_data_extents = {}
         self._temp_storage_assigns = set()
         self._temp_storage_func_vars = set()
         self._thread_data_func_vars = set()
@@ -86,6 +88,16 @@ class CoopSinglePhaseRewrite(
             if not isinstance(inst, ir.Assign):
                 continue
             call = inst.value
+            if (
+                isinstance(call, ir.Expr)
+                and call.op == "getattr"
+                and call.attr == "items_per_thread"
+            ):
+                if self._is_thread_data_like_var(call.value):
+                    spec = self._resolve_thread_data_spec(call.value)
+                    if spec is not None and spec.items_per_thread is not None:
+                        self._thread_data_extents[inst] = spec.items_per_thread
+                continue
             if not isinstance(call, ir.Expr) or call.op != "call":
                 continue
             if self._is_temp_storage_ctor_call(call):
@@ -100,6 +112,7 @@ class CoopSinglePhaseRewrite(
                 continue
             if self._is_thread_data_ctor_call(call):
                 self._thread_data_func_vars.add(call.func.name)
+                self._thread_data_like_vars.add(inst.target.name)
                 self._thread_data_specs[inst.target.name] = (
                     self._merge_thread_data_specs(
                         self._thread_data_specs.get(inst.target.name),
@@ -109,6 +122,7 @@ class CoopSinglePhaseRewrite(
                 continue
             if self._is_typed_group_payload_ctor_call(call):
                 self._typed_group_payload_func_vars.add(call.func.name)
+                self._thread_data_like_vars.add(inst.target.name)
                 self._thread_data_specs[inst.target.name] = (
                     self._merge_thread_data_specs(
                         self._thread_data_specs.get(inst.target.name),
@@ -161,6 +175,7 @@ class CoopSinglePhaseRewrite(
             or bool(self._temp_storage_assigns)
             or bool(self._thread_data_func_vars)
             or bool(self._typed_group_payload_func_vars)
+            or bool(self._thread_data_extents)
         )
 
     def apply(self):
@@ -183,6 +198,15 @@ class CoopSinglePhaseRewrite(
                 func_var_names_to_clear.add(match.func_var_name_extra)
         new_block = ir.Block(self._block.scope, self._block.loc)
         for inst in self._block.body:
+            if inst in self._thread_data_extents:
+                new_block.append(
+                    ir.Assign(
+                        ir.Const(self._thread_data_extents[inst], inst.loc),
+                        inst.target,
+                        inst.loc,
+                    )
+                )
+                continue
             if (
                 isinstance(inst, ir.Assign)
                 and inst.target.name in func_var_names_to_clear
