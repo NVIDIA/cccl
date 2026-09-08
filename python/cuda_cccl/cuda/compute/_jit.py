@@ -852,16 +852,12 @@ def _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, cc):
             kind="llvm_ir",
         )
 
-    ltoir, _ = _mlir.cuda.compile(
-        wrapped_op,
-        sig=wrapper_sig,
-        device=True,
-        abi="c",
-        abi_info={"abi_name": wrapped_op.__name__},
-        output="ltoir",
-        cc=cc,
+    return DeviceCode(
+        op_bytes=_mlir.compile_to_ltoir(
+            wrapped_op, wrapper_sig, wrapped_op.__name__, cc
+        ),
+        kind="ltoir",
     )
-    return DeviceCode(op_bytes=ltoir, kind="ltoir")
 
 
 # -----------------------------------------------------------------------------

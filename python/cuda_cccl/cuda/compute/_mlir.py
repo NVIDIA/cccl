@@ -100,6 +100,7 @@ __all__ = [
     "as_numpy_dtype",
     "struct_field_position",
     "compile_to_llvm_ir",
+    "compile_to_ltoir",
     "infer_return_type",
     "refresh_contexts",
 ]
@@ -229,6 +230,27 @@ def infer_return_type(pyfunc, arg_types):
     with _target_without_a_device(_INFERENCE_FALLBACK_CC):
         result = _compiler._compile_only(pyfunc, tuple(arg_types), {"device": True})
     return result.signature.return_type
+
+
+def compile_to_ltoir(pyfunc, sig, abi_name: str, cc=None) -> bytes:
+    """Compile a device function to LTO-IR, which the v1 (NVRTC) backend links.
+
+    The function is emitted with a C ABI under the exact symbol ``abi_name``.
+    ``cc`` is the target compute capability as ``(major, minor)``; when omitted
+    numba-cuda-mlir falls back to querying the current device, which requires
+    one to be present.
+    """
+    with _target_without_a_device(cc):
+        ltoir, _ = cuda.compile(
+            pyfunc,
+            sig=sig,
+            device=True,
+            abi="c",
+            abi_info={"abi_name": abi_name},
+            output="ltoir",
+            cc=cc,
+        )
+    return ltoir
 
 
 def compile_to_llvm_ir(pyfunc, sig, abi_name: str, cc=None) -> str:

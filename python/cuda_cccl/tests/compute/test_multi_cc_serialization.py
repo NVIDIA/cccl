@@ -17,6 +17,10 @@ adapt to the installed CTK rather than hard-coding architectures.
 """
 
 import concurrent.futures
+import os
+import subprocess
+import sys
+import textwrap
 import threading
 
 import numpy as np
@@ -656,6 +660,44 @@ def test_select_always_false_op_recompiles_per_target_cc():
 # ----------------------------------------------------------------------------
 # GPU-free construction / deserialization (no device query, no recompile)
 # ----------------------------------------------------------------------------
+
+
+def test_build_for_a_target_cc_needs_no_gpu():
+    """``make_<algo>(compute_capability=...)`` compiles with no device present.
+
+    Compiling the operator reaches the JIT backend, whose target resolver reads
+    the host's compute capability even when the caller names one, so this is the
+    step that decides whether the no-GPU claim above holds.
+
+    Unlike its neighbours this hides the devices in a subprocess rather than
+    patching ``Device``: the query is the backend's own, below anything this
+    package can monkeypatch. The operator is a Python function on purpose, since
+    a well-known operator never reaches the backend and would pass either way.
+    """
+    program = textwrap.dedent(
+        """
+        import numpy as np
+
+        from cuda.compute import ProxyArray, make_unary_transform
+
+        def add_one(a):
+            return a + 1
+
+        make_unary_transform(
+            d_in=ProxyArray(np.int32),
+            d_out=ProxyArray(np.int32),
+            op=add_one,
+            compute_capability=(8, 9),
+        )
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, CUDA_VISIBLE_DEVICES=""),
+    )
+    assert result.returncode == 0, result.stderr
 
 
 @requires_serialization
