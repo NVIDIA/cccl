@@ -65,7 +65,7 @@ thread_reduce_partial_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce
   {
     thread_data[i] = d_in[i];
   }
-  cuda::std::span<T, NumItems> span(thread_data);
+  const cuda::std::span<T, NumItems> span(thread_data);
   *d_out = cub::detail::ThreadReducePartial(span, reduce_operator, valid_items);
 }
 
@@ -81,7 +81,7 @@ thread_reduce_partial_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator redu
     thread_data[i] = d_in[i];
   }
   using Extent = cuda::std::extents<int, NumItems>;
-  cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
+  const cuda::std::mdspan<T, Extent> mdspan(thread_data, cuda::std::extents<int, NumItems>{});
   *d_out = cub::detail::ThreadReducePartial(mdspan, reduce_operator, valid_items);
 }
 
@@ -137,8 +137,8 @@ CUB_TEST("ThreadReduce Integral Type Tests",
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
-  const int bounded_valid_items  = cuda::std::min(valid_items, num_items);
+  const c2h::host_vector<value_t> h_in = d_in;
+  const int bounded_valid_items        = cuda::std::min(valid_items, num_items);
   auto reference_result =
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   thread_reduce_partial_kernel<num_items>
@@ -170,8 +170,8 @@ CUB_TEST("ThreadReduce Floating-Point Type Tests",
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
-  const int bounded_valid_items  = cuda::std::min(valid_items, num_items);
+  const c2h::host_vector<value_t> h_in = d_in;
+  const int bounded_valid_items        = cuda::std::min(valid_items, num_items);
   auto reference_result =
     compute_single_problem_reference(h_in.cbegin(), h_in.cbegin() + bounded_valid_items, reduce_op, operator_identity);
   thread_reduce_partial_kernel<num_items>
@@ -204,7 +204,7 @@ CUB_TEST("ThreadReduce Narrow PrecisionType Tests",
   c2h::device_vector<value_t> d_in(num_items);
   c2h::device_vector<accum_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<value_t> h_in = d_in;
+  const c2h::host_vector<value_t> h_in = d_in;
   CAPTURE(h_in, dist_param::min(), dist_param::max());
   CAPTURE(c2h::type_name<value_t>(), c2h::type_name<decltype(reduce_op)>(), valid_items, num_items, operator_identity);
   const int bounded_valid_items = cuda::std::min(valid_items, num_items);
@@ -230,8 +230,8 @@ CUB_TEST("ThreadReduce Container Tests", "[reduce][thread]", CUB_SMALL)
   c2h::device_vector<int> d_in(max_size);
   c2h::device_vector<int> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, dist_param::min(), dist_param::max());
-  c2h::host_vector<int> h_in = d_in;
-  const int valid_items      = GENERATE_COPY(
+  const c2h::host_vector<int> h_in = d_in;
+  const int valid_items            = GENERATE_COPY(
     take(1, random(2, max_size - 2)),
     take(1, random(max_size + 2, cuda::std::numeric_limits<int>::max())),
     values({1, max_size - 1, max_size, max_size + 1}));
