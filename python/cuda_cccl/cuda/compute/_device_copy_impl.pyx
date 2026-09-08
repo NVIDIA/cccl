@@ -214,7 +214,8 @@ cdef size_t _validate_rank(object values, str name) except *:
 
 cdef void* _alloc_array(size_t count, size_t item_size) except NULL:
     cdef void* result
-    if item_size != 0 and count > (<size_t>-1) // item_size:
+    cdef size_t size_t_max = <size_t>(-1)
+    if item_size != 0 and count > size_t_max // item_size:
         raise MemoryError()
     result = PyMem_Malloc(count * item_size)
     if result == NULL:
@@ -329,20 +330,20 @@ cdef class _RuntimeAxisMetadata:
         self._metadata = NULL
 
     def __init__(self, object rank):
-        cdef Py_ssize_t rank_value = <Py_ssize_t>_as_index(rank, "rank")
-        cdef Py_ssize_t i
+        cdef uint64_t rank_value = _as_uint64(rank, "rank")
+        cdef size_t i
 
-        if rank_value < 0:
-            raise ValueError(f"rank must be non-negative, got {rank_value}")
         if rank_value == 0:
             rank_value = 1
+        if rank_value > <uint64_t>(<size_t>-1):
+            raise OverflowError("rank does not fit in size_t")
 
         self._rank = <size_t>rank_value
         self._metadata = <cccl_device_copy_axis_metadata_t*>_alloc_array(
             self._rank, sizeof(cccl_device_copy_axis_metadata_t)
         )
 
-        for i in range(rank_value):
+        for i in range(self._rank):
             self._metadata[i].kind = CCCL_DEVICE_COPY_AXIS_RUNTIME
             self._metadata[i].value = 0
 
@@ -374,9 +375,72 @@ cdef class _RuntimeAxisMetadata:
         return result
 
 
+cdef int64_t* _device_copy_unit_axis_array() except NULL:
+    cdef int64_t* result = <int64_t*>_alloc_array(1, sizeof(int64_t))
+    result[0] = 1
+    return result
+
+
+cdef int64_t* _device_copy_copy_native_shape(
+    const int64_t* shape,
+    size_t rank,
+) except NULL:
+    cdef int64_t* result = <int64_t*>_alloc_array(rank, sizeof(int64_t))
+    cdef size_t axis
+
+    try:
+        for axis in range(rank):
+            if shape[axis] < 0:
+                raise BufferError("DLPack tensor shape entries must be non-negative")
+            result[axis] = shape[axis]
+    except Exception:
+        PyMem_Free(result)
+        raise
+
+    return result
+
+
+cdef int64_t* _device_copy_copy_native_strides(
+    const int64_t* shape,
+    const int64_t* strides,
+    size_t rank,
+) except NULL:
+    cdef int64_t* result = <int64_t*>_alloc_array(rank, sizeof(int64_t))
+    cdef uint64_t running
+    cdef size_t axis
+
+    try:
+        if strides != NULL:
+            for axis in range(rank):
+                result[axis] = strides[axis]
+            return result
+
+        running = 1
+        axis = rank
+        while axis > 0:
+            axis -= 1
+            if running > <uint64_t>INT64_MAX:
+                raise BufferError("DLPack tensor strides are too large")
+            result[axis] = <int64_t>running
+            if (
+                shape[axis] != 0
+                and running > (<uint64_t>INT64_MAX) // <uint64_t>shape[axis]
+            ):
+                raise BufferError("DLPack tensor strides are too large")
+            running *= <uint64_t>shape[axis]
+    except Exception:
+        PyMem_Free(result)
+        raise
+
+    return result
+
+
 cdef class _PreparedDeviceCopyView:
     cdef object _owner
+    cdef object _dtype_key
     cdef size_t _rank
+    cdef size_t _itemsize
+    cdef size_t _alignment
     cdef uintptr_t _data_ptr
     cdef uint64_t _byte_offset
     cdef int64_t* _shape
@@ -384,7 +448,10 @@ cdef class _PreparedDeviceCopyView:
 
     def __cinit__(self):
         self._owner = None
+        self._dtype_key = None
         self._rank = 0
+        self._itemsize = 0
+        self._alignment = 0
         self._data_ptr = 0
         self._byte_offset = 0
         self._shape = NULL
@@ -415,6 +482,72 @@ cdef class _PreparedDeviceCopyView:
         self._shape = _copy_int64_sequence(shape, self._rank, "shape", True)
         if strides is not None:
             self._strides = _copy_int64_sequence(strides, self._rank, "strides", False)
+
+    cdef void _init_from_native(
+        self,
+        object owner,
+        uintptr_t data_ptr,
+        uint64_t byte_offset,
+        size_t rank,
+        const int64_t* shape,
+        const int64_t* strides,
+    ) except *:
+        cdef int64_t* copied_shape = NULL
+        cdef int64_t* copied_strides = NULL
+        cdef size_t native_rank
+
+        if rank == 0:
+            native_rank = 1
+            copied_shape = _device_copy_unit_axis_array()
+            try:
+                copied_strides = _device_copy_unit_axis_array()
+            except Exception:
+                PyMem_Free(copied_shape)
+                copied_shape = NULL
+                raise
+        else:
+            native_rank = rank
+            if shape == NULL:
+                raise BufferError(
+                    "DLPack tensor shape must not be null for non-scalar tensors"
+                )
+
+            copied_shape = _device_copy_copy_native_shape(shape, native_rank)
+            try:
+                copied_strides = _device_copy_copy_native_strides(
+                    shape,
+                    strides,
+                    native_rank,
+                )
+            except Exception:
+                PyMem_Free(copied_shape)
+                copied_shape = NULL
+                raise
+
+        if copied_strides == NULL:
+            raise BufferError(
+                "DLPack tensor strides must not be null after native preparation"
+            )
+
+        try:
+            self._owner = owner
+            self._rank = native_rank
+            self._data_ptr = data_ptr
+            self._byte_offset = byte_offset
+            self._shape = copied_shape
+            self._strides = copied_strides
+            copied_shape = NULL
+            copied_strides = NULL
+        finally:
+            if copied_shape != NULL:
+                PyMem_Free(copied_shape)
+            if copied_strides != NULL:
+                PyMem_Free(copied_strides)
+
+    cdef void _set_dtype_metadata(self, size_t itemsize, size_t alignment, object dtype_key) except *:
+        self._itemsize = itemsize
+        self._alignment = alignment
+        self._dtype_key = tuple(dtype_key)
 
     def __dealloc__(self):
         if self._shape != NULL:
@@ -451,6 +584,18 @@ cdef class _PreparedDeviceCopyView:
     @property
     def rank(self):
         return self._rank
+
+    @property
+    def itemsize(self):
+        return self._itemsize
+
+    @property
+    def alignment(self):
+        return self._alignment
+
+    @property
+    def dtype_key(self):
+        return self._dtype_key
 
     @property
     def shape(self):
@@ -506,8 +651,6 @@ cdef _cccl_device_copy_layout_kind_t _device_copy_select_strided_layout(const in
         if strides[axis] <= 0:
             return _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
     return _CCCL_DEVICE_COPY_LAYOUT_STRIDE
-
-
 
 
 cdef tuple _device_copy_normalize_static_extent_axes(object axes):
@@ -884,6 +1027,43 @@ cdef class _DeviceCopyPlan:
         )
         self._build_normalized()
 
+    cdef void _init_from_native(
+        self,
+        size_t rank,
+        const int64_t* shape,
+        const int64_t* source_strides,
+        const int64_t* destination_strides,
+        int64_t source_element_offset,
+        int64_t destination_element_offset,
+    ) except *:
+        if rank != 0 and shape == NULL:
+            raise ValueError("copy plan shape must not be null")
+        if rank != 0 and source_strides == NULL:
+            raise ValueError("copy plan source strides must not be null")
+        if rank != 0 and destination_strides == NULL:
+            raise ValueError("copy plan destination strides must not be null")
+
+        self._original_rank = rank
+        self._source_element_offset = source_element_offset
+        self._destination_element_offset = destination_element_offset
+        self._allocate(rank)
+        self._load_original_native(shape, source_strides, destination_strides)
+        self._elements = self._compute_elements()
+        self._empty = self._elements == 0
+
+        self._validate_destination_unique()
+        self._validate_element_interval(
+            self._source_element_offset,
+            self._original_source_strides,
+            "source array view refers to elements before its allocation base",
+        )
+        self._validate_element_interval(
+            self._destination_element_offset,
+            self._original_destination_strides,
+            "destination array view refers to elements before its allocation base",
+        )
+        self._build_normalized()
+
     cdef void _allocate(self, size_t rank) except *:
         self._original_shape = _copy_plan_alloc_int64(rank)
         self._original_source_strides = _copy_plan_alloc_int64(rank)
@@ -900,6 +1080,20 @@ cdef class _DeviceCopyPlan:
             self._original_shape[i] = _copy_plan_extent(shape[i])
             self._original_source_strides[i] = <int64_t>source_strides[i]
             self._original_destination_strides[i] = <int64_t>destination_strides[i]
+
+    cdef void _load_original_native(
+        self,
+        const int64_t* shape,
+        const int64_t* source_strides,
+        const int64_t* destination_strides,
+    ) except *:
+        cdef size_t i
+        for i in range(self._original_rank):
+            if shape[i] < 0:
+                raise ValueError("copy plan shape extents must be non-negative")
+            self._original_shape[i] = shape[i]
+            self._original_source_strides[i] = source_strides[i]
+            self._original_destination_strides[i] = destination_strides[i]
 
     cdef int64_t _compute_elements(self) except? -1:
         cdef int64_t elements = 1
@@ -1504,11 +1698,64 @@ cdef uint64_t _device_copy_checked_byte_offset(
         raise OverflowError("normalized device copy byte offset is outside uint64 range") from None
 
 
+cdef _PreparedDeviceCopyView _device_copy_prepared_view(object view):
+    if isinstance(view, _PreparedDeviceCopyView):
+        return <_PreparedDeviceCopyView>view
+    return None
+
+
+cdef size_t _device_copy_view_rank(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._rank
+    return <size_t>len(view.shape)
+
+
+cdef bint _device_copy_prepared_shapes_equal(
+    _PreparedDeviceCopyView source,
+    _PreparedDeviceCopyView destination,
+) noexcept:
+    cdef size_t axis
+    if source._rank != destination._rank:
+        return False
+    for axis in range(source._rank):
+        if source._shape[axis] != destination._shape[axis]:
+            return False
+    return True
+
+
+cdef _DeviceCopyPlan _device_copy_make_plan_from_native_views(
+    _PreparedDeviceCopyView source,
+    _PreparedDeviceCopyView destination,
+    size_t itemsize,
+):
+    cdef uint64_t source_byte_offset = source._byte_offset
+    cdef uint64_t destination_byte_offset = destination._byte_offset
+    cdef int64_t source_element_offset = _device_copy_initial_element_offset(source_byte_offset, itemsize)
+    cdef int64_t destination_element_offset = _device_copy_initial_element_offset(destination_byte_offset, itemsize)
+    cdef _DeviceCopyPlan plan = _DeviceCopyPlan.__new__(_DeviceCopyPlan)
+
+    plan._init_from_native(
+        source._rank,
+        source._shape,
+        source._strides,
+        destination._strides,
+        source_element_offset,
+        destination_element_offset,
+    )
+    return plan
+
+
 cdef _DeviceCopyPlan _device_copy_make_plan_from_views(object source, object destination, size_t itemsize):
+    cdef _PreparedDeviceCopyView prepared_source = _device_copy_prepared_view(source)
+    cdef _PreparedDeviceCopyView prepared_destination = _device_copy_prepared_view(destination)
     cdef uint64_t source_byte_offset = <uint64_t>source.byte_offset
     cdef uint64_t destination_byte_offset = <uint64_t>destination.byte_offset
     cdef int64_t source_element_offset = _device_copy_initial_element_offset(source_byte_offset, itemsize)
     cdef int64_t destination_element_offset = _device_copy_initial_element_offset(destination_byte_offset, itemsize)
+
+    if prepared_source is not None and prepared_destination is not None:
+        return _device_copy_make_plan_from_native_views(prepared_source, prepared_destination, itemsize)
 
     return _DeviceCopyPlan(
         source.shape,
@@ -1531,12 +1778,19 @@ cdef void _device_copy_check_views_compatible(
     object source_dtype_key,
     object destination_dtype_key,
 ) except *:
+    cdef _PreparedDeviceCopyView prepared_source = _device_copy_prepared_view(source)
+    cdef _PreparedDeviceCopyView prepared_destination = _device_copy_prepared_view(destination)
+
     if source_dtype_key != destination_dtype_key:
         raise TypeError("source and destination dtypes must match")
     if <size_t>source.itemsize != <size_t>destination.itemsize:
         raise TypeError("source and destination item sizes must match")
     if <size_t>source.alignment != <size_t>destination.alignment:
         raise TypeError("source and destination alignments must match")
+    if prepared_source is not None and prepared_destination is not None:
+        if not _device_copy_prepared_shapes_equal(prepared_source, prepared_destination):
+            raise ValueError("source and destination shapes must match")
+        return
     if tuple(source.shape) != tuple(destination.shape):
         raise ValueError("source and destination shapes must match")
 
@@ -1584,19 +1838,6 @@ class _DeviceCopyProtocolView:
         self.alignment = alignment
         self.num_items = _device_copy_shape_size(shape)
         self.dtype_key = dtype_key
-
-
-class _DeviceCopyDLPackView:
-    __slots__ = ("view", "itemsize", "alignment", "dtype_key")
-
-    def __init__(self, view, itemsize, alignment, dtype_key):
-        self.view = view
-        self.itemsize = itemsize
-        self.alignment = alignment
-        self.dtype_key = dtype_key
-
-    def __getattr__(self, name):
-        return getattr(self.view, name)
 
 
 cdef object _device_copy_numpy_dtype_key(object dtype):
@@ -1791,19 +2032,21 @@ cdef tuple _device_copy_protocol_view_and_dtype_key(object array):
 
 cdef tuple _device_copy_prepare_view_and_dtype_key(object array, object stream_handle):
     cdef object dtype_key
+    cdef _PreparedDeviceCopyView view
 
     try:
         dtype_key = _device_copy_dlpack_dtype_key(array, stream_handle)
     except (AttributeError, TypeError, BufferError):
         return _device_copy_protocol_view_and_dtype_key(array)
 
+    view = _prepare_dlpack_view(array, stream=stream_handle)
+    view._set_dtype_metadata(
+        _device_copy_dtype_key_itemsize(dtype_key),
+        _device_copy_dtype_key_alignment(dtype_key),
+        dtype_key,
+    )
     return (
-        _DeviceCopyDLPackView(
-            _prepare_dlpack_view(array, stream=stream_handle),
-            _device_copy_dtype_key_itemsize(dtype_key),
-            _device_copy_dtype_key_alignment(dtype_key),
-            dtype_key,
-        ),
+        view,
         dtype_key,
     )
 
@@ -2146,7 +2389,7 @@ cdef class _DeviceCopyExecutable:
         self._build = _DeviceCopyBuild()
 
         if self._rank == 0:
-            return
+            raise ValueError("device copy executable rank must be positive")
 
         capability = _device_copy_compute_capability(compute_capability)
         value_type = _device_copy_type_info_from_key(self._type_info_key)
@@ -2174,13 +2417,8 @@ cdef class _DeviceCopyExecutable:
     def _get_source(self):
         return self._build._get_source()
 
-    def close(self):
-        if self._use_cached_builds:
-            self._builds_by_rank = ()
-            self._closed = True
-            return
+    cdef void _close(self) except *:
         self._build._close()
-        self._closed = True
 
 
 @cache_with_registered_key_functions(maxsize=_DEVICE_COPY_CACHE_MAXSIZE)
@@ -2261,7 +2499,7 @@ cdef class _DeviceCopy:
         else:
             self._compute_capability = compute_capability
         self._type_info_key = _device_copy_type_info_key(source_view)
-        self._max_rank = <size_t>len(source_view.shape)
+        self._max_rank = _device_copy_view_rank(source_view)
         if self._max_rank == 0:
             self._max_rank = 1
         self._builds_by_rank = [None] * (self._max_rank + 1)
@@ -2319,7 +2557,7 @@ cdef class _DeviceCopy:
         if self._use_cached_builds:
             if self._closed:
                 raise RuntimeError("DeviceCopy object is closed")
-            if <size_t>len(source_view.shape) > self._max_rank:
+            if _device_copy_view_rank(source_view) > self._max_rank:
                 raise ValueError("device copy runtime rank exceeds prepared rank")
             if _device_copy_call_rank(plan) > self._max_rank:
                 raise ValueError("device copy simplified rank exceeds prepared rank")
@@ -2361,16 +2599,17 @@ cdef class _DeviceCopy:
         return self._build._get_cubin()
 
     def _get_source(self):
-        cdef _DeviceCopyBuild build = self._build
+        cdef _cccl_device_copy_build_result_t build_res
         if self._use_cached_builds and self._closed:
             raise RuntimeError("DeviceCopy object is closed")
         if self._use_cached_builds:
             return (<_DeviceCopyExecutable>self._builds_by_rank[self._max_rank])._get_source()
-        if build._closed:
+        if self._build._closed:
             raise RuntimeError("DeviceCopy build result is closed")
-        if build._build.source == NULL or build._build.source_size == 0:
+        build_res = self._build._build
+        if build_res.source == NULL or build_res.source_size == 0:
             return ""
-        return (<char*>build._build.source)[:build._build.source_size].decode("utf-8")
+        return (<char*>build_res.source)[:build_res.source_size].decode("utf-8")
 
     def close(self):
         if self._use_cached_builds:
@@ -2589,58 +2828,20 @@ cdef void _validate_dlpack_tensor(DLTensor* tensor) except *:
         raise BufferError("non-empty DLPack tensor must have a data pointer")
 
 
-cdef tuple _dlpack_shape_tuple(DLTensor* tensor):
-    if tensor.ndim == 0:
-        return ()
-    return _int64_tuple(tensor.shape, <size_t>tensor.ndim)
-
-
-cdef tuple _dlpack_compact_c_strides_tuple(DLTensor* tensor):
-    cdef size_t rank = <size_t>tensor.ndim
-    cdef int64_t* strides = <int64_t*>_alloc_array(rank, sizeof(int64_t))
-    cdef uint64_t running = 1
-    cdef size_t axis = rank
-    cdef tuple result
-
-    try:
-        while axis > 0:
-            axis -= 1
-            if running > <uint64_t>0x7FFFFFFFFFFFFFFF:
-                raise BufferError("DLPack tensor strides are too large")
-            strides[axis] = <int64_t>running
-            if tensor.shape[axis] != 0 and running > (<uint64_t>-1) // <uint64_t>tensor.shape[axis]:
-                raise BufferError("DLPack tensor strides are too large")
-            running *= <uint64_t>tensor.shape[axis]
-
-        result = _int64_tuple(strides, rank)
-    finally:
-        PyMem_Free(strides)
-
-    return result
-
-
-cdef tuple _dlpack_strides_tuple(DLTensor* tensor):
-    if tensor.ndim == 0:
-        return ()
-    if tensor.strides == NULL:
-        return _dlpack_compact_c_strides_tuple(tensor)
-    return _int64_tuple(tensor.strides, <size_t>tensor.ndim)
-
-
 cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_tensor(object owner, DLTensor* tensor):
-    cdef tuple shape
-    cdef tuple strides
+    cdef _PreparedDeviceCopyView view
 
     _validate_dlpack_tensor(tensor)
-    shape = _dlpack_shape_tuple(tensor)
-    strides = _dlpack_strides_tuple(tensor)
-    return _PreparedDeviceCopyView(
+    view = _PreparedDeviceCopyView.__new__(_PreparedDeviceCopyView)
+    view._init_from_native(
         owner,
         <uintptr_t>tensor.data,
         <uint64_t>tensor.byte_offset,
-        shape,
-        strides,
+        <size_t>tensor.ndim,
+        tensor.shape,
+        tensor.strides,
     )
+    return view
 
 
 cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_owner(_DLPackManagedTensorOwner owner):
