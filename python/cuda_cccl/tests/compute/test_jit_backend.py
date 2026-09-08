@@ -303,3 +303,39 @@ def test_operator_compiles_after_the_backend_has_already_compiled():
         [sys.executable, "-c", program], capture_output=True, text=True
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("result", ["scalar", "struct"])
+def test_stateful_operator_infers_its_output_type(result):
+    """A stateful operator compiles without being told its output type.
+
+    Inferring it needs no code generation and no device, and the descriptor can
+    describe a gpu_struct result, which a NumPy dtype cannot. No algorithm
+    reaches this path today because they all pass an output type.
+    """
+    import numpy as np
+    from _utils.device_array import DeviceArray
+
+    from cuda.compute import gpu_struct
+    from cuda.compute._jit import (
+        _numba_type_to_type_descriptor,
+        to_jit_op_adapter,
+    )
+
+    state = DeviceArray.from_numpy(np.array([5], dtype=np.int64))
+    Pair = gpu_struct({"a": np.int32, "b": np.int32})
+
+    if result == "scalar":
+
+        def op(x):
+            return x + state[0]
+
+    else:
+
+        def op(x):
+            return Pair(x + state[0], x)
+
+    int32 = _numba_type_to_type_descriptor(_mlir.types.int32)
+    compiled = to_jit_op_adapter(op).compile((int32,))
+
+    assert compiled.name.startswith("wrapped_op")

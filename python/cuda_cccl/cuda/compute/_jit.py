@@ -36,7 +36,6 @@ except ImportError:
 
 from ._odr_helpers import create_stateful_op_void_ptr_wrapper
 from ._target_cc import get_target_cc
-from ._utils import sanitize_identifier
 from ._utils.protocols import (
     get_data_pointer,
     get_dtype,
@@ -840,6 +839,31 @@ def _infer_return_type_impl(py_func, input_types):
     return _numba_type_to_type_descriptor(return_type)
 
 
+def _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, cc):
+    """Compile a generated wrapper to the device code the backend links.
+
+    The v2 (HostJIT) backend links LLVM IR; v1 (NVRTC) links LTO-IR.
+    """
+    from ._device_code import DeviceCode
+
+    if USING_V2:
+        return DeviceCode(
+            op_bytes=_compile_op_to_llvm_ir(wrapped_op, wrapper_sig, cc),
+            kind="llvm_ir",
+        )
+
+    ltoir, _ = _mlir.cuda.compile(
+        wrapped_op,
+        sig=wrapper_sig,
+        device=True,
+        abi="c",
+        abi_info={"abi_name": wrapped_op.__name__},
+        output="ltoir",
+        cc=cc,
+    )
+    return DeviceCode(op_bytes=ltoir, kind="ltoir")
+
+
 # -----------------------------------------------------------------------------
 # Stateless ops
 # -----------------------------------------------------------------------------
@@ -880,24 +904,7 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
     sig = numba_output_type(*numba_input_types)
     wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
 
-    from ._device_code import DeviceCode
-
-    if USING_V2:
-        code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_ir(wrapped_op, wrapper_sig, cc),
-            kind="llvm_ir",
-        )
-    else:
-        ltoir, _ = _mlir.cuda.compile(
-            wrapped_op,
-            sig=wrapper_sig,
-            device=True,
-            abi="c",
-            abi_info={"abi_name": wrapped_op.__name__},
-            output="ltoir",
-            cc=cc,
-        )
-        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
+    code = _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, cc)
 
     return Op(
         operator_type=OpKind.STATELESS,
@@ -1188,21 +1195,12 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
 
     # Infer output type if needed
     if output_type is None:
-        # Compile to infer return type.
-        # The transformed function expects (state_arrays..., regular_args...)
-        all_numba_input_types = tuple(state_array_types) + numba_input_types
-        sanitized_name = sanitize_identifier(op.__name__)
-        unique_suffix = hex(id(op))[2:]
-        abi_name = f"{sanitized_name}_{unique_suffix}"
-        _, return_type = _mlir.cuda.compile(
-            op,
-            all_numba_input_types,
-            device=True,
-            abi_info={"abi_name": abi_name},
-            output="ltoir",
+        # The return type follows from typing alone, as on the stateless path:
+        # inferring it needs no code generation, no target arch and no device.
+        # The transformed function expects (state_arrays..., regular_args...).
+        output_type = _numba_type_to_type_descriptor(
+            _mlir.infer_return_type(op, tuple(state_array_types) + numba_input_types)
         )
-        # Convert return type to TypeDescriptor
-        output_type = cccl_types.from_numpy_dtype(_mlir.as_numpy_dtype(return_type))
 
     # Convert output type to numba-cuda-mlir type
     numba_output_type = type_descriptor_to_numba(output_type)
@@ -1221,25 +1219,7 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
         op, sig, state_dtypes, state_shapes
     )
 
-    # Compile the wrapper — LLVM bitcode for v2 (HostJIT), LTO-IR for v1 (NVRTC).
-    from ._device_code import DeviceCode
-
-    if USING_V2:
-        code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_ir(wrapped_op, wrapper_sig, get_target_cc()),
-            kind="llvm_ir",
-        )
-    else:
-        ltoir, _ = _mlir.cuda.compile(
-            wrapped_op,
-            sig=wrapper_sig,
-            device=True,
-            abi="c",
-            abi_info={"abi_name": wrapped_op.__name__},
-            output="ltoir",
-            cc=get_target_cc(),
-        )
-        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
+    code = _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, get_target_cc())
 
     # Pack all data pointers as bytes (sequentially)
     state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
