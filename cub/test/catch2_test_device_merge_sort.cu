@@ -217,9 +217,9 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works",
     thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  auto key_ranks_it        = cuda::counting_iterator(offset_t{});
-  auto keys_expected_it    = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
-  const bool results_equal = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  const auto key_ranks_it     = cuda::counting_iterator(offset_t{});
+  const auto keys_expected_it = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  const bool results_equal    = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
   REQUIRE(results_equal == true);
 }
 

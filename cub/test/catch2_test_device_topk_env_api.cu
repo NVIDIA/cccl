@@ -32,11 +32,11 @@ struct topk_custom_t
 
 struct topk_custom_decomposer_t
 {
-  __host__ __device__ ::cuda::std::tuple<int&> operator()(topk_custom_t& key) const
+  __host__ __device__::cuda::std::tuple<int&> operator()(topk_custom_t& key) const
   {
     return {key.rank};
   }
-  __host__ __device__ ::cuda::std::tuple<const int&> operator()(const topk_custom_t& key) const
+  __host__ __device__::cuda::std::tuple<const int&> operator()(const topk_custom_t& key) const
   {
     return {key.rank};
   }
@@ -45,9 +45,9 @@ struct topk_custom_decomposer_t
 CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]", CUB_SMALL)
 {
   // example-begin topk-max-keys-env
-  auto d_in   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
-  auto d_out  = thrust::device_vector<int>(3);
-  const int k = 3;
+  const auto d_in = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1, 4, 2};
+  auto d_out      = thrust::device_vector<int>(3);
+  const int k     = 3;
 
   const cuda::stream stream{cuda::devices[0]};
   const cuda::stream_ref stream_ref{stream};
@@ -56,7 +56,7 @@ CUB_TEST("cub::DeviceTopK::MaxKeys env-alloc accepts stream_ref", "[topk][env]",
                              cuda::execution::output_ordering::unsorted),
     stream_ref};
 
-  auto error = cub::DeviceTopK::MaxKeys(d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), k, env);
+  const auto error = cub::DeviceTopK::MaxKeys(d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), k, env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceTopK::MaxKeys failed with status: " << error << '\n';

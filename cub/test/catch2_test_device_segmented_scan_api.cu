@@ -278,12 +278,13 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[2 offsets]";
   // example-begin inclusive-segmented-scan-init-two-offsets
-  const unsigned prime = 7;
-  auto input           = thrust::device_vector<unsigned>{
+  constexpr unsigned prime = 7;
+  const auto input         = thrust::device_vector<unsigned>{
     2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6};
 
-  auto row_size    = static_cast<size_t>(prime);
-  auto row_offsets = thrust::device_vector<size_t>{0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size};
+  constexpr auto row_size = size_t{prime};
+  const auto row_offsets =
+    thrust::device_vector<size_t>{0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size};
   const size_t num_segments = row_offsets.size() - 1;
 
   thrust::device_vector<unsigned> output(input.size(), thrust::no_init);
@@ -344,7 +345,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
     h_expected.insert(h_expected.end(), row.begin(), row.end());
   }
 
-  auto expected = thrust::device_vector<unsigned>{h_expected};
+  const auto expected = thrust::device_vector<unsigned>{h_expected};
   // example-end inclusive-segmented-scan-init-two-offsets
 
   REQUIRE(status == cudaSuccess);

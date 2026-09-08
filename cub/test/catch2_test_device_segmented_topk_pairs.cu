@@ -238,10 +238,10 @@ bool verify_unique_indices(c2h::device_vector<ValueT>& values_out, cuda::std::in
   c2h::device_vector<ValueT> sorted_values{values_out};
   fixed_size_segmented_sort_keys(sorted_values, num_segments, k, cub::detail::topk::select::min);
 
-  auto num_items   = sorted_values.size();
-  auto counting_it = cuda::make_counting_iterator(cuda::std::int64_t{0});
-  auto seg_ids     = cuda::make_transform_iterator(counting_it, fixed_stride_segment_id_op{k});
-  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), seg_ids}; // NOLINT(misc-const-correctness)
+  const auto num_items = sorted_values.size();
+  auto counting_it     = cuda::make_counting_iterator(cuda::std::int64_t{0});
+  const auto seg_ids   = cuda::make_transform_iterator(counting_it, fixed_stride_segment_id_op{k});
+  const flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), seg_ids};
   auto num_duplicates = thrust::count_if(counting_it, counting_it + (num_items - 1), flag_op);
 
   return num_duplicates == 0;

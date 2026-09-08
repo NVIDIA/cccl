@@ -136,12 +136,12 @@ CUB_TEST("DeviceFind::FindIf legacy size-query is unambiguous", "[find][device]"
 
 CUB_TEST("DeviceFind::LowerBound legacy size-query is unambiguous", "[find][device]", CUB_SMALL)
 {
-  int* d_range       = nullptr;
-  int* d_values      = nullptr;
-  int* d_output      = nullptr;
-  size_t bytes       = 0;
-  const int range_n  = 0;
-  const int values_n = 0;
+  int* const d_range  = nullptr;
+  int* const d_values = nullptr;
+  int* const d_output = nullptr;
+  size_t bytes        = 0;
+  const int range_n   = 0;
+  const int values_n  = 0;
 
   REQUIRE(
     cudaSuccess

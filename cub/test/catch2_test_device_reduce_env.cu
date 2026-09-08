@@ -640,7 +640,7 @@ CUB_TEST("Device reduce not_guaranteed falls back when output type differs from 
   using offset_t      = cub::detail::choose_offset_t<num_items_t>;
   using transform_t   = cuda::std::identity;
 
-  auto d_in                   = thrust::device_vector<input_t>{0, 1, 2, 3};
+  const auto d_in             = thrust::device_vector<input_t>{0, 1, 2, 3};
   auto d_out                  = thrust::device_vector<output_t>(1);
   const num_items_t num_items = static_cast<num_items_t>(d_in.size());
   const init_value_t init{};
