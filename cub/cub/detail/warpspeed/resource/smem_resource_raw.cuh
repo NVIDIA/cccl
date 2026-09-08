@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/constant_assert.cuh>
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
@@ -28,6 +29,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+CREATE_IKET_START_END_RANGE(Acquire);
+
 struct SmemResourceRaw
 {
   static constexpr int mMaxNumPhases = 4;
@@ -165,6 +168,7 @@ struct SmemResourceRaw
 
   _CCCL_DEVICE_API void acquire(int phase)
   {
+    IKET_RANGE_START(Acquire);
     _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
 
     // The release of the previous phase occurs on the `phase - 1` barrier. So
@@ -175,6 +179,7 @@ struct SmemResourceRaw
     while (!::cuda::ptx::mbarrier_try_wait_parity(&ptrBarPhase[mStageCurrent], mParity[phase]))
     {
     }
+    IKET_RANGE_END(Acquire);
   }
 };
 } // namespace detail::warpspeed

@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/detail/warpspeed/resource/smem_ref.cuh>
@@ -45,6 +46,20 @@ namespace detail::scan
 {
 namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
+
+CREATE_IKET_START_END_RANGE(Prologue);
+CREATE_IKET_START_END_RANGE(SquadReduce);
+CREATE_IKET_START_END_RANGE(SquadScanStore);
+CREATE_IKET_START_END_RANGE(SquadLoad);
+CREATE_IKET_START_END_RANGE(SquadSched);
+CREATE_IKET_START_END_RANGE(SquadLookahead);
+CREATE_IKET_START_END_RANGE(GetNextIdx);
+CREATE_IKET_START_END_RANGE(ReduceThreadWarp);
+CREATE_IKET_START_END_RANGE(ReduceSquad);
+CREATE_IKET_START_END_RANGE(StoreTileAggregate);
+CREATE_IKET_START_END_RANGE(IncludeThreadWarpAggr);
+CREATE_IKET_START_END_RANGE(IncludeCtaAggr);
+CREATE_IKET_START_END_RANGE(ThreadScan);
 
 _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy& policy)
 {
@@ -383,6 +398,7 @@ struct lookahead_scan_closure
       warpspeed::squadLoadSmem(squad, regInput, smem_data_start);
 
       // Reduce across thread and warp
+      IKET_RANGE_START(ReduceThreadWarp);
       if (is_last_tile)
       {
         // TODO(bgruber): for operators where we know the identity we can probably optimize this better
@@ -394,6 +410,7 @@ struct lookahead_scan_closure
         regThreadAggr = CUB_NS_QUALIFIER::ThreadReduce(regInput, scan_op);
         regWarpAggr   = __scan_detail::warpReduce(regThreadAggr, scan_op);
       }
+      IKET_RANGE_END(ReduceThreadWarp);
     }
 
     // Store warp aggregate to shared memory
@@ -406,6 +423,7 @@ struct lookahead_scan_closure
 
     // Reduce across squad
     // We need to accumulate the first element by hand because of the potential initial element and partial tiles
+    IKET_RANGE_START(ReduceSquad);
     AccumT regSquadAggr;
     if constexpr (hasInit)
     {
@@ -442,13 +460,16 @@ struct lookahead_scan_closure
         regSquadAggr = scan_op(regSquadAggr, refThreadAndWarpAggrW.data()[squadReduce.threadCount() + i]);
       }
     }
+    IKET_RANGE_END(ReduceSquad);
 
     // Store tile aggregate for lookahead
+    IKET_RANGE_START(StoreTileAggregate);
     if (squad.isLeaderThread())
     {
       warpspeed::storeTileAggregate(
         params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadAggr, idxTile, num_tiles);
     }
+    IKET_RANGE_END(StoreTileAggregate);
 
     // Store thread aggregate
     refThreadAndWarpAggrW.data()[squad.threadRank()] = regThreadAggr;
@@ -492,6 +513,7 @@ struct lookahead_scan_closure
     {
       // acquire the thread and warp aggregates only for as long as we need them
       warpspeed::SmemRef refThreadAndWarpAggrR = phaseThreadAndWarpAggrR.acquireRef();
+      IKET_RANGE_START(IncludeThreadWarpAggr);
       // Add the aggregates of the preceding warps in this CTA to the cumulative aggregate. These have been calculated
       // in reduce squad. We need the reduce and scan squads to be the same size to do this.
       static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
@@ -580,6 +602,7 @@ struct lookahead_scan_closure
           aggrExclusive = scan_op(aggrExclusive, aggrExclusiveIntraWarp);
         }
       }
+      IKET_RANGE_END(IncludeThreadWarpAggr);
     }
     // aggrExclusive contains the aggregates of previous warps and threads.
     //
@@ -593,6 +616,7 @@ struct lookahead_scan_closure
     {
       // important: we have to acquire the resource for the first tile as well to prevent a hang
       warpspeed::SmemRef refAggrExclusiveCtaR = phaseAggrExclusiveCtaR.acquireRef();
+      IKET_RANGE_START(IncludeCtaAggr);
 
       if (!is_first_tile)
       {
@@ -627,6 +651,7 @@ struct lookahead_scan_closure
         }
       }
     }
+    IKET_RANGE_END(IncludeCtaAggr);
     // aggrExclusive contains the following values:
     //
     // - tile0::warp0::lane0            (init_value)
@@ -651,6 +676,7 @@ struct lookahead_scan_closure
       regAggrInclusive,
       reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
 
+    IKET_RANGE_START(ThreadScan);
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
     const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
@@ -659,8 +685,10 @@ struct lookahead_scan_closure
 
     // Sync before storing to avoid data races on SMEM
     squad.syncThreads();
+    IKET_RANGE_END(ThreadScan);
 
     // Store result to shared memory
+
     ::cuda::std::byte* smem_output_tile = refInOutRW.data().inout;
     if constexpr (sizeof(OutputT) <= sizeof(InputT))
     {
@@ -748,6 +776,8 @@ struct lookahead_scan_closure
       return first_tile;
     }();
 
+    IKET_RANGE_END(Prologue);
+
 #  pragma unroll 1
     // SM90 produces bad codegen and deadlocks with a `while (true)`, so it exits via the bound check.
     // SM100 uses a explicit true condition and relies on the clusterlaunchcontrol exit below instead.
@@ -774,7 +804,9 @@ struct lookahead_scan_closure
 
       if (squad == squadSched)
       {
+        IKET_RANGE_START(SquadSched);
         load_next_tile_index(squad, phaseNextBlockIdxW);
+        IKET_RANGE_END(SquadSched);
       }
 
       const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
@@ -787,9 +819,12 @@ struct lookahead_scan_closure
 
       if (squad == squadLoad)
       {
+        IKET_RANGE_START(SquadLoad);
         load_current_tile(squad, phaseInOutW, loadInfo);
+        IKET_RANGE_END(SquadLoad);
       }
 
+      IKET_RANGE_START(GetNextIdx);
       // Get next tile index from shared memory (all squads)
       uint4 regNextBlockIdx{};
       {
@@ -802,9 +837,11 @@ struct lookahead_scan_closure
                           (return ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);),
                           (return static_cast<int>(regNextBlockIdx.x) < numTiles;));
       }();
+      IKET_RANGE_END(GetNextIdx);
 
       if (squad == squadReduce)
       {
+        IKET_RANGE_START(SquadReduce);
         reduce_tile(
           squad,
           phaseInOutRW,
@@ -815,16 +852,20 @@ struct lookahead_scan_closure
           loadInfo,
           idxTile,
           numTiles);
+        IKET_RANGE_END(SquadReduce);
       }
 
       if (squad == squadLookahead)
       {
+        IKET_RANGE_START(SquadLookahead);
         lookahead(squad, phaseAggrExclusiveCtaW, is_first_tile, idxTilePrev, AggrExclusiveCtaPrev, idxTile, numTiles);
+        IKET_RANGE_END(SquadLookahead);
       }
 
       if (squad == squadScanStore)
       {
         static_assert(tile_size % squadScanStore.threadCount() == 0);
+        IKET_RANGE_START(SquadScanStore);
         if (is_last_tile)
         {
           scan_and_store_tile<true>(
@@ -849,6 +890,7 @@ struct lookahead_scan_closure
             loadInfo,
             idxTileBase);
         }
+        IKET_RANGE_END(SquadScanStore);
       }
 
       // All squads: Check loop condition and update next tile index
@@ -885,6 +927,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   const scanKernelParams<InputT, OutputT, AccumT>& params, const ScanOpT& scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
+  IKET_RANGE_START(Prologue);
+
   // Cache special registers at the start of kernel, since getting them takes a few cycles
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 

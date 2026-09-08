@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/resource/smem_ref.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 
@@ -36,6 +37,7 @@ struct SmemPhase
   {
     // Wait on barrier
     mSmemResourceRaw.acquire(mCurPhase);
+    IKET_RANGE_START(SmemRef);
     // Return ref
     return SmemRef<_Tp>(mSmemResourceRaw, mCurPhase);
   }

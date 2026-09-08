@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 
@@ -21,6 +22,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+CREATE_IKET_START_END_RANGE(SmemRef);
+
 template <typename _Tp>
 struct SmemRef
 {
@@ -57,6 +60,7 @@ struct SmemRef
     {
       mSmemResourceRaw.release(mCurPhase);
     }
+    IKET_RANGE_END(SmemRef);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _Tp& data() noexcept
