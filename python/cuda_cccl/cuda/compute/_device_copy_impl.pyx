@@ -2115,8 +2115,6 @@ cdef class _DeviceCopyBuild:
     # `public` makes `_loaded` gettable/settable from Python to enable the Python cache protocol.
     cdef public bint _loaded
     cdef bint _closed
-    cdef object _source_owner
-    cdef object _destination_owner
     cdef int64_t _scalar_shape
     cdef int64_t _scalar_stride
 
@@ -2139,8 +2137,6 @@ cdef class _DeviceCopyBuild:
         self._build.destination_layout = _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
         self._loaded = False
         self._closed = True
-        self._source_owner = None
-        self._destination_owner = None
         self._scalar_shape = 1
         self._scalar_stride = 1
 
