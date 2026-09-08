@@ -372,54 +372,50 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
         target_mlir_ty = builder.get_mlir_type(builder.get_numba_type(target.name))
         builder.store_var(target, _mlir.convert(field_value, target_mlir_ty))
 
-    # Validate that all field names are valid Python identifiers before
-    # we exec any generated code that accesses them:
-    for name in field_names_list:
-        if not name.isidentifier():
-            raise ValueError(
-                f"Struct field name {name!r} is not a valid Python identifier"
-            )
+    @_mlir.typing_registry.register_global(operator.getitem)
+    class StructGetItem(_mlir.AbstractTemplate):
+        """Types ``struct[i]``; the registered builder below implements it.
 
-    @_mlir.overload(
-        operator.getitem,
-        typing_registry=_mlir.typing_registry,
-        prefer_literal=True,
-    )
-    def struct_getitem(struct_val, idx):
-        if not isinstance(struct_val, StructType):
-            return
+        A signature is given directly rather than an implementation to lower,
+        because numba-cuda-mlir resolves getitem through the builder: an
+        implementation returned here would be compiled to obtain its signature
+        and then discarded.
+        """
 
-        if not isinstance(idx, _mlir.types.IntegerLiteral):
-            # A runtime index (a loop variable, say) selects among the fields.
-            # Returning the branch-per-field implementation gives the result the
-            # type the fields unify to, which is what a caller gets from any
-            # other expression whose value depends on a runtime condition.  The
-            # lowering below emits the selection; this body is only typed.
-            conditions = "\n".join(
-                f"    {'if' if position == 0 else 'elif'} idx == {position}: "
-                f"return struct_val.{name}"
-                for position, name in enumerate(field_names_list)
-            )
-            exec(
-                f"def impl(struct_val, idx):\n{conditions}\n"
-                f"    else: return struct_val.{field_names_list[-1]}",
-                namespace := {},
-            )
-            return namespace["impl"]
+        # Without this the index arrives unliteralled, and a constant index
+        # would take the runtime branch below and report the unified type
+        # instead of the indexed field's own.
+        prefer_literal = True
 
-        idx_val = getattr(idx, "literal_value", getattr(idx, "value", None))
-        if idx_val is None or not (0 <= idx_val < len(field_names_list)):
-            raise _mlir.errors.TypingError(
-                f"index {idx_val} is out of range for {struct_class.__name__}, "
-                f"which has {len(field_names_list)} fields"
-            )
+        def generic(self, args, kws):
+            if kws or len(args) != 2:
+                return None
+            struct_type, index_type = args
+            if not isinstance(struct_type, StructType):
+                return None
+            if not isinstance(index_type, _mlir.types.Integer):
+                return None
 
-        field_name = field_names_list[idx_val]
-        exec(
-            f"def impl(struct_val, idx): return struct_val.{field_name}",
-            namespace := {},
-        )
-        return namespace["impl"]
+            if isinstance(index_type, _mlir.types.IntegerLiteral):
+                position = index_type.literal_value
+                if position is None or not 0 <= position < len(field_names_list):
+                    raise _mlir.errors.TypingError(
+                        f"index {position} is out of range for "
+                        f"{struct_class.__name__}, which has "
+                        f"{len(field_names_list)} fields"
+                    )
+                return _mlir.signature(field_types_list[position], *args)
+
+            # A runtime index reads whichever field it selects, so the result
+            # takes the type they unify to, as any value that depends on a
+            # runtime condition does.
+            unified = self.context.unify_types(*field_types_list)
+            if unified is None:
+                raise _mlir.errors.TypingError(
+                    f"{struct_class.__name__} cannot be indexed with a runtime "
+                    f"value because its field types do not unify"
+                )
+            return _mlir.signature(unified, *args)
 
     # getitem lowering: `struct[i]` yields field i.  numba-cuda-mlir resolves
     # getitem through a registered builder rather than by lowering the
