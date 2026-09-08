@@ -535,6 +535,9 @@ class _ProvenanceRewrite:
                 for incoming in _phi_incoming_values(definition):
                     if isinstance(incoming, ir.Var):
                         self._record_inferred_thread_data_dtype(incoming, dtype, seen)
+            elif definition.op == "static_getitem":
+                for item in self._resolve_static_tuple_item_vars(definition):
+                    self._record_inferred_thread_data_dtype(item, dtype, seen)
 
     def _extract_temp_storage_ctor_spec(self, call: ir.Expr) -> _TempStorageCtorSpec:
         kw_map = {name: value for name, value in call.kws}

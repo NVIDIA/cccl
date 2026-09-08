@@ -550,6 +550,26 @@ def _qualified_untyped_load(source, observed):
         observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
 
 
+@pytest.mark.parametrize(
+    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+)
+@pytest.mark.parametrize("projection", (0, -1), ids=("first", "last"))
+def test_untyped_thread_data_infers_dtype_through_tuple_aliases(module, projection):
+    @cuda.jit
+    def kernel(source, destination):
+        payload = module.ThreadData(_ITEMS_PER_THREAD)
+        packed = (payload,)
+        alias = packed
+        module.load(module.this_block(), source, alias[projection])
+        module.store(module.this_block(), destination, alias[projection])
+
+    source = _values(np.dtype(np.int32), _TILE_ITEMS)
+    destination = np.full_like(source, -1)
+    kernel[1, _THREADS](source, destination)
+
+    np.testing.assert_array_equal(destination, source)
+
+
 def test_qualified_load_infers_an_untyped_payload():
     source = _values(np.dtype(np.int32), _TILE_ITEMS, shift=29)
     observed = np.full(_TILE_ITEMS, -1, dtype=np.int32)
