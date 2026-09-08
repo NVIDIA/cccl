@@ -28,7 +28,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail
 {
 //! @brief Maps a splitter index to its ideal global rank `Ni/p`.
 //!
@@ -44,7 +45,8 @@ struct __ideal_rank_fn
     return ((__i + 1) * __N) / __comm_size;
   }
 };
-} // namespace cuda::experimental::__detail
+} // namespace __detail
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

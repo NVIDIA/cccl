@@ -34,7 +34,7 @@ namespace
 // Run the whole world's transform through the range overload and check every rank against its own
 // reference. This boilerplate is identical for every test regardless of how the inputs are shaped.
 template <class T, class Op>
-void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void run_case(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
               const std::vector<std::vector<T>>& inputs_by_rank,
               Op op)
 {
@@ -58,7 +58,7 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
 
   const auto in_copy = in;
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     streams,
@@ -110,7 +110,7 @@ MULTI_GPU_TEST("transform documentation example", c2h::type_list<int>)
     outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, input_values.size(), cuda::no_init));
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     // Passing streams as the environment directly
@@ -256,7 +256,7 @@ MULTI_GPU_TEST("transform, env environments", value_types, transform_test_util::
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     envs,
@@ -308,7 +308,7 @@ MULTI_GPU_TEST("transform, differing input and output types", )
     out.emplace_back(cuda::make_device_buffer<out_t>(streams[i], device, values.size(), cuda::no_init));
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     streams,
@@ -365,7 +365,7 @@ MULTI_GPU_TEST("transform, in place", value_types, transform_test_util::operator
       cuda::make_device_buffer<T>(streams[i], comms[i].logical_device().underlying_device(), values));
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     streams,
