@@ -69,9 +69,13 @@ def _rewrite(function):
     rewrite = CoopSinglePhaseRewrite(state)
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
-        while rewrite.match(func_ir, block, state.typemap, state.calltypes):
+        for _ in range(10):
+            if not rewrite.match(func_ir, block, state.typemap, state.calltypes):
+                break
             block = rewrite.apply()
             func_ir.blocks[label] = block
+        else:
+            pytest.fail("payload rewrite did not reach a fixed point")
     return func_ir, typingctx
 
 
@@ -102,6 +106,37 @@ def test_qualified_thread_data_lowers_to_a_compiler_array():
 
     assert cuda.local.array in targets
     assert typingctx.refresh_count == 1
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_constructor_alias_can_feed_multiple_blocks(module):
+    def kernel(flag):
+        constructor = module.ThreadData
+        alias = constructor
+        if flag:
+            first = alias(1, types.int32)
+            return first[0]
+        second = alias(2, types.int32)
+        return second[1]
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert _call_targets(func_ir).count(cuda.local.array) == 2
+
+
+@pytest.mark.parametrize("module", (common_coop, coop), ids=("root", "qualified"))
+def test_thread_data_constructor_alias_can_feed_a_loop(module):
+    def kernel():
+        constructor = module.ThreadData
+        result = 0
+        for _ in range(2):
+            data = constructor(1, types.int32)
+            result += data[0]
+        return result
+
+    func_ir, _ = _rewrite(kernel)
+
+    assert _call_targets(func_ir).count(cuda.local.array) == 1
 
 
 @pytest.mark.parametrize(

@@ -185,47 +185,6 @@ class CoopSinglePhaseRewrite(
         for inst in self._block.body:
             if (
                 isinstance(inst, ir.Assign)
-                and inst.target.name
-                in self._thread_data_func_vars | self._typed_group_payload_func_vars
-            ):
-                module_var = ir.Var(
-                    inst.target.scope,
-                    f"__coop_thread_data_module_{next(_GLOBAL_NAME_COUNTER)}__",
-                    inst.loc,
-                )
-                local_module_var = ir.Var(
-                    inst.target.scope,
-                    f"__coop_thread_data_local_{next(_GLOBAL_NAME_COUNTER)}__",
-                    inst.loc,
-                )
-                new_block.append(
-                    ir.Assign(
-                        ir.Global(
-                            _next_global_name("thread_data_module"),
-                            _cuda_module,
-                            inst.loc,
-                        ),
-                        module_var,
-                        inst.loc,
-                    )
-                )
-                new_block.append(
-                    ir.Assign(
-                        ir.Expr.getattr(module_var, "local", inst.loc),
-                        local_module_var,
-                        inst.loc,
-                    )
-                )
-                new_block.append(
-                    ir.Assign(
-                        ir.Expr.getattr(local_module_var, "array", inst.loc),
-                        inst.target,
-                        inst.loc,
-                    )
-                )
-                continue
-            if (
-                isinstance(inst, ir.Assign)
                 and inst.target.name in func_var_names_to_clear
             ):
                 new_block.append(
@@ -348,10 +307,52 @@ class CoopSinglePhaseRewrite(
                         )
                     )
                     rewritten_kws.append(("alignment", alignment_var))
+                # The constructor may be an alias defined in another block.
+                # Give each rewritten call its own callee so it cannot rematch.
+                array_fn_var = ir.Var(
+                    inst.target.scope,
+                    f"__coop_thread_data_array_{next(_GLOBAL_NAME_COUNTER)}__",
+                    inst.loc,
+                )
+                module_var = ir.Var(
+                    inst.target.scope,
+                    f"__coop_thread_data_module_{next(_GLOBAL_NAME_COUNTER)}__",
+                    inst.loc,
+                )
+                local_var = ir.Var(
+                    inst.target.scope,
+                    f"__coop_thread_data_local_{next(_GLOBAL_NAME_COUNTER)}__",
+                    inst.loc,
+                )
+                new_block.append(
+                    ir.Assign(
+                        ir.Global(
+                            _next_global_name("thread_data_module"),
+                            _cuda_module,
+                            inst.loc,
+                        ),
+                        module_var,
+                        inst.loc,
+                    )
+                )
+                new_block.append(
+                    ir.Assign(
+                        ir.Expr.getattr(module_var, "local", inst.loc),
+                        local_var,
+                        inst.loc,
+                    )
+                )
+                new_block.append(
+                    ir.Assign(
+                        ir.Expr.getattr(local_var, "array", inst.loc),
+                        array_fn_var,
+                        inst.loc,
+                    )
+                )
                 new_block.append(
                     ir.Assign(
                         ir.Expr.call(
-                            inst.value.func,
+                            array_fn_var,
                             rewritten_args,
                             tuple(rewritten_kws),
                             inst.loc,
@@ -470,8 +471,43 @@ class CoopSinglePhaseRewrite(
                     continue
                 filtered_block.append(stmt)
             new_block = filtered_block
+        self._clear_unused_payload_callees(new_block)
         self._state.typingctx.refresh()
         return new_block
+
+    def _clear_unused_payload_callees(self, new_block):
+        """Retire constructor bindings only after their last call is rewritten."""
+
+        blocks = [
+            new_block if block is self._block else block
+            for block in self._func_ir.blocks.values()
+        ]
+        candidates = self._thread_data_func_vars | self._typed_group_payload_func_vars
+        while candidates:
+            used_names = set()
+            for block in blocks:
+                for stmt in block.body:
+                    used_names.update(
+                        var.name
+                        for var in stmt.list_vars()
+                        if not isinstance(stmt, ir.Assign)
+                        or var.name != stmt.target.name
+                    )
+            retired = False
+            for block in blocks:
+                for stmt in block.body:
+                    if not isinstance(stmt, ir.Assign) or (
+                        stmt.target.name not in candidates
+                        or stmt.target.name in used_names
+                    ):
+                        continue
+                    candidates.remove(stmt.target.name)
+                    if isinstance(stmt.value, ir.Var):
+                        candidates.add(stmt.value.name)
+                    stmt.value = ir.Const(None, stmt.loc)
+                    retired = True
+            if not retired:
+                break
 
 
 from . import _group_planner  # noqa: E402, F401
