@@ -333,31 +333,6 @@ void launch(ActionT action, Args... args)
 #elif TEST_LAUNCH == 0
 
 template <class ActionT, class... Args>
-void launch(cuda::stream_ref stream, ActionT action, Args... args)
-{
-  const auto device = launch_helper_detail::device_for_stream(stream);
-  const launch_helper_detail::scoped_current_device device_scope{device};
-
-  cuda::std::size_t temp_storage_bytes{};
-  cudaError_t error = action(nullptr, temp_storage_bytes, args..., stream.get());
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  launch_helper_detail::synchronize(stream);
-  REQUIRE(cudaSuccess == error);
-
-  REQUIRE(temp_storage_bytes > 0); // required by API contract
-
-  // randomly offset the temporary storage address by one byte
-  const int offset = GENERATE(take(1, random(0, 1)));
-  auto temp_storage =
-    c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes + offset, cuda::no_init);
-
-  error = action(temp_storage.data() + offset, temp_storage_bytes, args..., stream.get());
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  launch_helper_detail::synchronize(stream);
-  REQUIRE(cudaSuccess == error);
-}
-
-template <class ActionT, class... Args>
 void launch(ActionT action, Args... args)
 {
   cuda::std::size_t temp_storage_bytes{};
@@ -378,6 +353,14 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
+}
+
+template <class ActionT, class... Args>
+void launch(cuda::stream_ref stream, ActionT action, Args... args)
+{
+  const auto device = launch_helper_detail::device_for_stream(stream);
+  const launch_helper_detail::scoped_current_device device_scope{device};
+  launch(action, args..., stream.get());
 }
 #else // TEST_LAUNCH == 2
 #  error "Unsupported TEST_LAUNCH value. Supported values are 0, 1, or 2"
