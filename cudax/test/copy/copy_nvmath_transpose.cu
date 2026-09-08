@@ -37,11 +37,11 @@ TEST_CASE("copy d2d nvmath transpose_merge_extents", "[copy][d2d][nvmath][transp
     s = 2;
   }
   // clang-format off
-  cuda::std::array<int, 20> src_strides{
+  const cuda::std::array<int, 20> src_strides{
     1 << 19, 1 << 18, 1 << 17, 1 << 16, 1 << 15, 1 << 14, 1 << 13, 1 << 12,
     1 << 11, 1 << 10, 1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,
     1 << 3,  1 << 2,  1 << 1,  1 << 0};
-  cuda::std::array<int, 20> dst_strides{
+  const cuda::std::array<int, 20> dst_strides{
     1 << 0,  1 << 1,  1 << 2,  1 << 3,  1 << 4,  1 << 5,  1 << 6,  1 << 7,
     1 << 8,  1 << 9,  1 << 10, 1 << 11, 1 << 12, 1 << 13, 1 << 14, 1 << 15,
     1 << 16, 1 << 17, 1 << 18, 1 << 19};
@@ -54,9 +54,9 @@ TEST_CASE("copy d2d nvmath transpose_merge_extents", "[copy][d2d][nvmath][transp
 TEST_CASE("copy d2d nvmath transpose", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 55 * 13 * 55 * 55;
-  cuda::std::array<int, 4> shape{55, 13, 55, 55};
-  cuda::std::array<int, 4> src_strides{13, 1, 39325, 715};
-  cuda::std::array<int, 4> dst_strides{39325, 3025, 55, 1};
+  const cuda::std::array<int, 4> shape{55, 13, 55, 55};
+  const cuda::std::array<int, 4> src_strides{13, 1, 39325, 715};
+  const cuda::std::array<int, 4> dst_strides{39325, 3025, 55, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -65,9 +65,9 @@ TEST_CASE("copy d2d nvmath transpose", "[copy][d2d][nvmath][transpose]")
 TEST_CASE("copy d2d nvmath transpose_2", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 55 * 55 * 13 * 55;
-  cuda::std::array<int, 4> shape{55, 55, 13, 55};
-  cuda::std::array<int, 4> src_strides{715, 39325, 1, 13};
-  cuda::std::array<int, 4> dst_strides{39325, 715, 55, 1};
+  const cuda::std::array<int, 4> shape{55, 55, 13, 55};
+  const cuda::std::array<int, 4> src_strides{715, 39325, 1, 13};
+  const cuda::std::array<int, 4> dst_strides{39325, 715, 55, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -76,9 +76,9 @@ TEST_CASE("copy d2d nvmath transpose_2", "[copy][d2d][nvmath][transpose]")
 TEST_CASE("copy d2d nvmath transpose_3", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 101 * 101 * 101 * 101;
-  cuda::std::array<int, 4> shape{101, 101, 101, 101};
-  cuda::std::array<int, 4> src_strides{101, 1030301, 1, 10201};
-  cuda::std::array<int, 4> dst_strides{1030301, 10201, 101, 1};
+  const cuda::std::array<int, 4> shape{101, 101, 101, 101};
+  const cuda::std::array<int, 4> src_strides{101, 1030301, 1, 10201};
+  const cuda::std::array<int, 4> dst_strides{1030301, 10201, 101, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -87,9 +87,9 @@ TEST_CASE("copy d2d nvmath transpose_3", "[copy][d2d][nvmath][transpose]")
 TEST_CASE("copy d2d nvmath transpose_small_tile", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 7 * 100019 * 7;
-  cuda::std::array<int, 3> shape{7, 100019, 7};
-  cuda::std::array<int, 3> src_strides{1, 7, 700133};
-  cuda::std::array<int, 3> dst_strides{700133, 7, 1};
+  const cuda::std::array<int, 3> shape{7, 100019, 7};
+  const cuda::std::array<int, 3> src_strides{1, 7, 700133};
+  const cuda::std::array<int, 3> dst_strides{700133, 7, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -98,9 +98,9 @@ TEST_CASE("copy d2d nvmath transpose_small_tile", "[copy][d2d][nvmath][transpose
 TEST_CASE("copy d2d nvmath transpose_small_tile_2", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 33 * 100019 * 33;
-  cuda::std::array<int, 3> shape{33, 100019, 33};
-  cuda::std::array<int, 3> src_strides{1, 33, 3300627};
-  cuda::std::array<int, 3> dst_strides{3300627, 33, 1};
+  const cuda::std::array<int, 3> shape{33, 100019, 33};
+  const cuda::std::array<int, 3> src_strides{1, 33, 3300627};
+  const cuda::std::array<int, 3> dst_strides{3300627, 33, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -109,9 +109,9 @@ TEST_CASE("copy d2d nvmath transpose_small_tile_2", "[copy][d2d][nvmath][transpo
 TEST_CASE("copy d2d nvmath transpose_small_tile_3", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 7 * 100019 * 7;
-  cuda::std::array<int, 3> shape{7, 100019, 7};
-  cuda::std::array<int, 3> src_strides{1, 49, 7};
-  cuda::std::array<int, 3> dst_strides{700133, 1, 100019};
+  const cuda::std::array<int, 3> shape{7, 100019, 7};
+  const cuda::std::array<int, 3> src_strides{1, 49, 7};
+  const cuda::std::array<int, 3> dst_strides{700133, 1, 100019};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -120,9 +120,9 @@ TEST_CASE("copy d2d nvmath transpose_small_tile_3", "[copy][d2d][nvmath][transpo
 TEST_CASE("copy d2d nvmath transpose_small_tile_4", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 33 * 100019 * 33;
-  cuda::std::array<int, 3> shape{33, 100019, 33};
-  cuda::std::array<int, 3> src_strides{1, 1089, 33};
-  cuda::std::array<int, 3> dst_strides{3300627, 1, 100019};
+  const cuda::std::array<int, 3> shape{33, 100019, 33};
+  const cuda::std::array<int, 3> src_strides{1, 1089, 33};
+  const cuda::std::array<int, 3> dst_strides{3300627, 1, 100019};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -131,9 +131,9 @@ TEST_CASE("copy d2d nvmath transpose_small_tile_4", "[copy][d2d][nvmath][transpo
 TEST_CASE("copy d2d nvmath transpose_channels", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 10001 * 10001 * 3;
-  cuda::std::array<int, 3> shape{10001, 10001, 3};
-  cuda::std::array<int, 3> src_strides{3, 30003, 1};
-  cuda::std::array<int, 3> dst_strides{30003, 3, 1};
+  const cuda::std::array<int, 3> shape{10001, 10001, 3};
+  const cuda::std::array<int, 3> src_strides{3, 30003, 1};
+  const cuda::std::array<int, 3> dst_strides{30003, 3, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -142,9 +142,9 @@ TEST_CASE("copy d2d nvmath transpose_channels", "[copy][d2d][nvmath][transpose]"
 TEST_CASE("copy d2d nvmath transpose_channels_2", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 1001 * 1001 * 3 * 3 * 3;
-  cuda::std::array<int, 5> shape{1001, 1001, 3, 3, 3};
-  cuda::std::array<int, 5> src_strides{27, 27027, 9, 1, 3};
-  cuda::std::array<int, 5> dst_strides{27027, 27, 9, 3, 1};
+  const cuda::std::array<int, 5> shape{1001, 1001, 3, 3, 3};
+  const cuda::std::array<int, 5> src_strides{27, 27027, 9, 1, 3};
+  const cuda::std::array<int, 5> dst_strides{27027, 27, 9, 3, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -153,9 +153,9 @@ TEST_CASE("copy d2d nvmath transpose_channels_2", "[copy][d2d][nvmath][transpose
 TEST_CASE("copy d2d nvmath transpose_inbalanced", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 3 * 1000033;
-  cuda::std::array<int, 2> shape{3, 1000033};
-  cuda::std::array<int, 2> src_strides{1, 3};
-  cuda::std::array<int, 2> dst_strides{1000033, 1};
+  const cuda::std::array<int, 2> shape{3, 1000033};
+  const cuda::std::array<int, 2> src_strides{1, 3};
+  const cuda::std::array<int, 2> dst_strides{1000033, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -167,8 +167,8 @@ TEST_CASE("copy d2d nvmath transpose_inbalanced", "[copy][d2d][nvmath][transpose
 TEST_CASE("copy d2d nvmath transpose_max_shared_mem_rank", "[copy][d2d][nvmath][transpose]")
 {
   constexpr int alloc = 4 * 4 * 4 * 4 * 4 * 4 * 16 * 8; // 524288
-  cuda::std::array<int, 8> shape{4, 4, 4, 4, 4, 4, 16, 8};
-  cuda::std::array<int, 8> src_strides{1, 4, 16, 64, 256, 1024, 4096, 65536};
-  cuda::std::array<int, 8> dst_strides{131072, 32768, 8192, 2048, 512, 128, 8, 1};
+  const cuda::std::array<int, 8> shape{4, 4, 4, 4, 4, 4, 16, 8};
+  const cuda::std::array<int, 8> src_strides{1, 4, 16, 64, 256, 1024, 4096, 65536};
+  const cuda::std::array<int, 8> dst_strides{131072, 32768, 8192, 2048, 512, 128, 8, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
