@@ -14,24 +14,55 @@
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 
-template <int LogicalWarpThreads>
+__host__ __device__ __forceinline__ constexpr bool skip(int batches, int logical_warp_threads) noexcept
+{
+  return batches > logical_warp_threads || 4 * batches <= logical_warp_threads;
+}
+
+template <int LogicalWarpThreads, bool ToBlocked>
 struct benchmark_batched_op_t
 {
   template <typename T, cuda::std::size_t Batches>
   __device__ __forceinline__ cuda::std::array<T, Batches> operator()(cuda::std::array<T, Batches> thread_data) const
   {
+    if constexpr (!skip(Batches, LogicalWarpThreads))
+    {
+#if 0
     using WarpReduceBatched           = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
     using TempStorage                 = typename WarpReduceBatched::TempStorage;
     constexpr auto max_out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
     cuda::std::array<T, max_out_per_thread> outputs;
     __shared__ TempStorage temp_storage;
 
-    WarpReduceBatched{temp_storage}.ReduceToStriped(thread_data, outputs, op_t{});
+    if constexpr (ToBlocked) {
+      WarpReduceBatched{temp_storage}.ReduceToBlocked(thread_data, outputs, op_t{});
+    }
+    else
+    {
+      WarpReduceBatched{temp_storage}.ReduceToStriped(thread_data, outputs, op_t{});
+    }
 
-#pragma unroll
+#  pragma unroll
     for (int i = 0; i < max_out_per_thread; ++i)
     {
       thread_data[i] = outputs[i];
+    }
+#else
+      using WarpReduce  = cub::WarpReduce<T, LogicalWarpThreads>;
+      using TempStorage = typename WarpReduce::TempStorage;
+      __shared__ TempStorage temp_storage;
+
+      WarpReduce warp_reduce{temp_storage};
+
+// Sequentially reduce Batches arrays
+#  pragma unroll
+      for (int i = 0; i < Batches; ++i)
+      {
+        // This is somewhat of an unfair comparison since all results are returned by lane 0
+        // while they are distributed among threads for WarpReduceBatched.
+        thread_data[i] = warp_reduce.Reduce(thread_data[i], op_t{});
+      }
+#endif
     }
     return thread_data;
   }
@@ -43,177 +74,75 @@ struct benchmark_sequential_op_t
   template <typename T, cuda::std::size_t Batches>
   __device__ __forceinline__ cuda::std::array<T, Batches> operator()(cuda::std::array<T, Batches> thread_data) const
   {
-    using WarpReduce  = cub::WarpReduce<T, LogicalWarpThreads>;
-    using TempStorage = typename WarpReduce::TempStorage;
-    __shared__ TempStorage temp_storage;
-
-    WarpReduce warp_reduce{temp_storage};
-
-// Sequentially reduce Batches arrays
-#pragma unroll
-    for (int i = 0; i < Batches; ++i)
-    {
-      // This is somewhat of an unfair comparison since all results are returned by lane 0
-      // while they are distributed among threads for WarpReduceBatched.
-      thread_data[i] = warp_reduce.Reduce(thread_data[i], op_t{});
-    }
     return thread_data;
   }
 };
 
-enum class launch_bounds_mode_t
-{
-  partial,
-  full,
-};
+using batches_list              = nvbench::enum_type_list<2, 3, 4, 8, 9, 12, 16, 23, 32>;
+using logical_warp_threads_list = nvbench::enum_type_list<2, 4, 8, 16, 32>;
+using to_blocked_list           = nvbench::enum_type_list<true, false>;
 
-launch_bounds_mode_t parse_launch_bounds_mode(nvbench::state& state)
+template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads, bool ToBlocked>
+void warp_reduce_batched(
+  nvbench::state& state,
+  nvbench::
+    type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>, nvbench::enum_type<ToBlocked>>)
 {
-  const auto& launch_bounds_mode = state.get_string("LaunchBoundsMode");
-  if (launch_bounds_mode == "partial")
+  if constexpr (skip(Batches, LogicalWarpThreads))
   {
-    return launch_bounds_mode_t::partial;
+    state.skip("Skipping to avoid explosion of compile time");
+    return;
   }
-  else if (launch_bounds_mode == "full")
-  {
-    return launch_bounds_mode_t::full;
-  }
-  else
-  {
-    throw std::invalid_argument("Invalid launch bounds mode: " + launch_bounds_mode);
-  }
-}
-
-using batches_list              = nvbench::enum_type_list<8, 15, 16, 32, 64>;
-using logical_warp_threads_list = nvbench::enum_type_list<8, 16, 32>;
-
-template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
-void warp_reduce_batched(nvbench::state& state,
-                         nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
-{
   constexpr int block_size                = 256;
-  constexpr int grid_size                 = (1 << 28) / block_size;
-  constexpr int max_sm_warps              = 48; // For consumer GPUs, datacenter allows 64, but same amount of registers
-  constexpr int full_bounds_max_sm_blocks = (max_sm_warps * 32) / block_size;
-  constexpr int unroll_factor = cuda::ceil_div(64, cuda::next_power_of_two(Batches)); // Balance compile time and
-                                                                                      // performance
-  const auto launch_bounds_mode = parse_launch_bounds_mode(state);
+  constexpr int min_reductions_per_thread = 128;
+  constexpr int grid_size                 = (1 << 28) / (min_reductions_per_thread * block_size);
+  constexpr int unroll_factor = cuda::ceil_div(min_reductions_per_thread, Batches); // Balance compile time and
+                                                                                    // performance
   const auto& kernel =
-    launch_bounds_mode == launch_bounds_mode_t::full
-      ? benchmark_kernel_full_bounds<block_size,
-                                     full_bounds_max_sm_blocks,
-                                     unroll_factor,
-                                     benchmark_batched_op_t<LogicalWarpThreads>,
-                                     cuda::std::array<T, Batches>>
-      : benchmark_kernel<block_size,
-                         unroll_factor,
-                         benchmark_batched_op_t<LogicalWarpThreads>,
-                         cuda::std::array<T, Batches>>;
-
-  auto wspro_stages = 0;
-  for (int stride_inter_reduce = 2; stride_inter_reduce <= LogicalWarpThreads; stride_inter_reduce *= 2)
-  {
-    wspro_stages += cuda::ceil_div(Batches, stride_inter_reduce);
-  }
-  state.add_summary("Stages").set_int64("value", wspro_stages);
+    benchmark_kernel<block_size,
+                     unroll_factor,
+                     benchmark_batched_op_t<LogicalWarpThreads, ToBlocked>,
+                     cuda::std::array<T, Batches>>;
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
-    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_batched_op_t<LogicalWarpThreads>{});
+    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(
+      benchmark_batched_op_t<LogicalWarpThreads, ToBlocked>{});
   });
 }
 
-NVBENCH_BENCH_TYPES(warp_reduce_batched, NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list))
+NVBENCH_BENCH_TYPES(warp_reduce_batched,
+                    NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list, to_blocked_list))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"})
-  .add_string_axis("LaunchBoundsMode", {"partial", "full"});
+  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads", "ToBlocked"});
 
-template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
-void warp_reduce_sequential(nvbench::state& state,
-                            nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
-{
-  constexpr int block_size                = 256;
-  constexpr int grid_size                 = (1 << 28) / block_size;
-  constexpr int max_sm_warps              = 48; // For consumer GPUs, datacenter allows 64, but same amount of registers
-  constexpr int full_bounds_max_sm_blocks = (max_sm_warps * 32) / block_size;
-  constexpr int unroll_factor = cuda::ceil_div(64, cuda::next_power_of_two(Batches)); // Balance compile time and
-                                                                                      // performance
-  const auto launch_bounds_mode = parse_launch_bounds_mode(state);
-  const auto& kernel =
-    launch_bounds_mode == launch_bounds_mode_t::full
-      ? benchmark_kernel_full_bounds<block_size,
-                                     full_bounds_max_sm_blocks,
-                                     unroll_factor,
-                                     benchmark_sequential_op_t<LogicalWarpThreads>,
-                                     cuda::std::array<T, Batches>>
-      : benchmark_kernel<block_size,
-                         unroll_factor,
-                         benchmark_sequential_op_t<LogicalWarpThreads>,
-                         cuda::std::array<T, Batches>>;
-
-  const auto sequential_stages = Batches * cuda::ilog2(LogicalWarpThreads);
-  state.add_summary("Stages").set_int64("value", sequential_stages);
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
-    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_sequential_op_t<LogicalWarpThreads>{});
-  });
-}
-
-NVBENCH_BENCH_TYPES(warp_reduce_sequential, NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list))
-  .set_name("sequential")
-  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"})
-  .add_string_axis("LaunchBoundsMode", {"partial", "full"});
-
-template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
+template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads, bool ToBlocked>
 void warp_reduce_batched_latency(
-  nvbench::state& state, nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
+  nvbench::state& state,
+  nvbench::
+    type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>, nvbench::enum_type<ToBlocked>>)
 {
-  constexpr int block_size    = 32;
-  constexpr int grid_size     = 1;
-  constexpr int unroll_factor = cuda::ceil_div(128, cuda::next_power_of_two(Batches)); // Balance compile time and
-                                                                                       // performance
-  const auto& kernel =
-    benchmark_kernel<block_size, unroll_factor, benchmark_batched_op_t<LogicalWarpThreads>, cuda::std::array<T, Batches>>;
-
-  auto wspro_stages = 0;
-  for (int stride_inter_reduce = 2; stride_inter_reduce <= LogicalWarpThreads; stride_inter_reduce *= 2)
+  if constexpr (skip(Batches, LogicalWarpThreads))
   {
-    wspro_stages += cuda::ceil_div(Batches, stride_inter_reduce);
+    state.skip("Skipping to avoid explosion of compile time");
+    return;
   }
-  state.add_summary("Stages").set_int64("value", wspro_stages);
+  constexpr int block_size    = cub::detail::warp_threads;
+  constexpr int grid_size     = 1;
+  constexpr int unroll_factor = cuda::ceil_div(256, Batches); // Balance compile time and
+                                                              // performance
+  const auto& kernel =
+    benchmark_kernel<block_size,
+                     unroll_factor,
+                     benchmark_batched_op_t<LogicalWarpThreads, ToBlocked>,
+                     cuda::std::array<T, Batches>>;
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
-    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_batched_op_t<LogicalWarpThreads>{});
+    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(
+      benchmark_batched_op_t<LogicalWarpThreads, ToBlocked>{});
   });
 }
 
 NVBENCH_BENCH_TYPES(warp_reduce_batched_latency,
-                    NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list))
+                    NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list, to_blocked_list))
   .set_name("base-latency")
-  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"});
-
-template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
-void warp_reduce_sequential_latency(
-  nvbench::state& state, nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
-{
-  constexpr int block_size    = 32;
-  constexpr int grid_size     = 1;
-  constexpr int unroll_factor = cuda::ceil_div(128, cuda::next_power_of_two(Batches)); // Balance compile time and
-                                                                                       // performance
-  const auto& kernel =
-    benchmark_kernel<block_size,
-                     unroll_factor,
-                     benchmark_sequential_op_t<LogicalWarpThreads>,
-                     cuda::std::array<T, Batches>>;
-
-  const auto sequential_stages = Batches * cuda::ilog2(LogicalWarpThreads);
-  state.add_summary("Stages").set_int64("value", sequential_stages);
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
-    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_sequential_op_t<LogicalWarpThreads>{});
-  });
-}
-
-NVBENCH_BENCH_TYPES(warp_reduce_sequential_latency,
-                    NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list))
-  .set_name("sequential-latency")
-  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"});
+  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads", "ToBlocked"});
