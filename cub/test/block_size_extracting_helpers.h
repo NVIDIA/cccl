@@ -14,8 +14,7 @@ struct block_size_extracting_op
   unsigned int* ptr;
 
   template <typename... Ts>
-  [[nodiscard]] _CCCL_DEVICE_API auto operator()(Ts&&... args) const
-    -> decltype(InnerOp{}(::cuda::std::forward<Ts>(args)...))
+  _CCCL_DEVICE_API auto operator()(Ts&&... args) const -> decltype(InnerOp{}(::cuda::std::forward<Ts>(args)...))
   {
     atomicMax(ptr, blockDim.x); // not every thread may reach this, so avoid guarding the atomic by threadIdx
     return InnerOp{}(::cuda::std::forward<Ts>(args)...);
