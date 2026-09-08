@@ -7,6 +7,7 @@ import json
 import math
 import os
 import re
+from typing import Any
 
 import cccl
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ pd.options.display.max_colwidth = 100
 
 default_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 color_cycle = itertools.cycle(default_colors)
-color_map = {}
+color_map: dict[str, str] = {}
 
 precision = 0.01
 sensitivity = 0.5
@@ -74,7 +75,7 @@ def get_rt_axes(df):
 def ct_space(df):
     ct_axes = get_ct_axes(df)
 
-    unique_ct_combinations = []
+    unique_ct_combinations: list[dict[str, Any]] = []
     for _, row in df[ct_axes].drop_duplicates().iterrows():
         unique_ct_combinations.append({})
         for col in ct_axes:
@@ -240,7 +241,7 @@ def iterate_case_dfs(args, callable):
         if not pattern.match(algname):
             continue
 
-        case_dfs = {}
+        case_dfs: dict[str, dict[str, pd.DataFrame]] = {}
         for file in storages:
             storage = storages[file]
             for subbench in storage.subbenches(algname):
@@ -330,7 +331,6 @@ def coverage(args):
 
 def parallel_coordinates_plot(df, title):
     # Parallel coordinates plot adaptation of https://stackoverflow.com/a/69411450
-    import matplotlib.cm as cm
     import matplotlib.patches as patches
     from matplotlib.path import Path
 
@@ -395,7 +395,7 @@ def parallel_coordinates_plot(df, title):
     host_ax.tick_params(axis="x", which="major", pad=7)
 
     # Color map:
-    colormap = cm.get_cmap("turbo")
+    colormap = plt.get_cmap("turbo")
 
     # Normalize speedups:
     df["speedup_normalized"] = (df["speedup"] - df["speedup"].min()) / (
@@ -535,7 +535,7 @@ def extract_modes(samples):
     """
     mode_ids = []
 
-    widths, heights = hd_displot(samples)
+    widths, heights = qrde_hd(samples)
     peak_ids = extract_peaks(heights)
     bin_area = 1.0 / len(heights)
 
@@ -875,7 +875,11 @@ def main():
     args = parse_arguments()
 
     if args.list_benches:
-        cccl.bench.list_benches()
+        cccl.bench.list_benches(
+            cccl.bench.filter_benchmarks_by_regex(
+                cccl.bench.Config().benchmarks, args.R
+            )
+        )
         return
 
     if args.coverage:

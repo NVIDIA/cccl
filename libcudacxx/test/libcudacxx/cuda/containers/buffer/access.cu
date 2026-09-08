@@ -58,7 +58,7 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
     return;
   }
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer::get_unsynchronized")
@@ -262,13 +262,13 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
     static_assert(noexcept(cuda::std::declval<const Buffer&>().memory_resource()));
 
     { // Returns the resource used during construction
-      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      const Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
       const auto& mr = buf.memory_resource();
       CCCLRT_CHECK(mr == resource);
     }
 
     { // Works with empty buffer
-      Buffer buf{stream, resource, 0, cuda::no_init};
+      const Buffer buf{stream, resource, 0, cuda::no_init};
       const auto& mr = buf.memory_resource();
       CCCLRT_CHECK(mr == resource);
     }
@@ -292,7 +292,7 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
     CCCLRT_CHECK(buf.stream() == stream);
 
     {
-      cuda::stream other_stream{cuda::device_ref{0}};
+      const cuda::stream other_stream{cuda::device_ref{0}};
       buf.set_stream(other_stream);
       CCCLRT_CHECK(buf.stream() == other_stream);
       buf.set_stream(stream);
@@ -309,7 +309,7 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
       CCCLRT_CHECK(!buf.empty());
       CCCLRT_CHECK(buf.data() != nullptr);
 
-      cuda::stream destroy_stream{cuda::device_ref{0}};
+      const cuda::stream destroy_stream{cuda::device_ref{0}};
       destroy_stream.wait(stream);
       buf.destroy(destroy_stream);
       CCCLRT_CHECK(buf.empty());

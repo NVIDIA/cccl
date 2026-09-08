@@ -25,7 +25,7 @@ __device__ static inline void fabric_try_get(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_get(
+_CCCL_DEVICE_API void fabric_try_get(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,

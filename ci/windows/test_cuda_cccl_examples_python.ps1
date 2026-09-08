@@ -1,3 +1,12 @@
+<#
+.SYNOPSIS
+    Entry point for the Windows cuda.compute examples test lane.
+.DESCRIPTION
+    Provisions the cuda_cccl wheel, then runs the test payload -- by default in a
+    minimal sibling container, except in `sysctk` mode or when
+    CCCL_MINIMAL_CONTAINER=0. See "Testing Python in a minimal container" in
+    docs/infrastructure/ci/references/ci_scripts.rst.
+#>
 Param(
     [Parameter(Mandatory = $true)]
     [Alias("py-version")]
@@ -10,41 +19,21 @@ Param(
 
 $ErrorActionPreference = "Stop"
 
-# Import shared helpers
-Import-Module "$PSScriptRoot/build_common.psm1"
 Import-Module "$PSScriptRoot/build_common_python.psm1"
 
-$python = Get-Python -Version $PyVersion
-$cudaMajor = Get-CudaMajor
-$ctkFlavor = Get-CtkExtraFlavor $CtkMode
+# Needs gh and the workflow helpers, which the minimal container lacks.
+$null = Get-CudaCcclWheel
 
-# Pin cuda-toolkit to the container's CTK minor (-ctk-mode latest
-# opts out). See build_common_python.psm1.
-Set-CtkPin $CtkMode
+$payloadArgs = @('-py-version', $PyVersion)
+if ($CtkMode) { $payloadArgs += @('-ctk-mode', $CtkMode) }
 
-$repoRoot = Get-RepoRoot
-
-${wheelPath} = Get-CudaCcclWheel
-
-# pytest-benchmark is for the host-benchmark smoke test below.
-Invoke-Checked { & $python -m pip install -U pip pytest pytest-xdist pytest-benchmark } "Failed to install pytest / pytest-xdist / pytest-benchmark"
-# CuPy is required by the cuda.compute examples and is not part of the test extras
-Invoke-Checked { & $python -m pip install "${wheelPath}[test-$ctkFlavor$cudaMajor]" "cupy-cuda${cudaMajor}x" } "Failed to install cuda_cccl test extra / cupy"
-
-Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
-try {
-    Invoke-Checked { & $python -m pytest -n 6 test_examples.py } "examples tests failed"
+if (((Get-CtkExtraFlavor $CtkMode) -ne 'sysctk') -and ($env:CCCL_MINIMAL_CONTAINER -ne '0')) {
+    & "$PSScriptRoot/run_in_minimal_container.ps1" `
+        -Script 'ci\windows\run_examples_tests.ps1' `
+        -ScriptArgs $payloadArgs
+} else {
+    # By name, not @payloadArgs: array splatting binds positionally, so the
+    # payload would receive the literal "-py-version" as its version.
+    & "$PSScriptRoot/run_examples_tests.ps1" -PyVersion $PyVersion -CtkMode $CtkMode
 }
-finally { Pop-Location }
-
-# Smoke-test the host-overhead benchmark harness: run every benchmark case
-# exactly once (pass/fail only, no timing) so harness rot fails CI here instead
-# of silently surviving until someone runs the perf suite. --benchmark-disable
-# makes pytest-benchmark invoke each benchmarked callable a single time. This
-# lane already installs cupy + numba (for the examples), which the benchmark
-# suite also needs, so only pytest-benchmark is added above.
-Push-Location (Join-Path $repoRoot "python/cuda_cccl/benchmarks/compute/host")
-try {
-    Invoke-Checked { & $python -m pytest -v --benchmark-disable . } "host benchmark smoke test failed"
-}
-finally { Pop-Location }
+exit $LASTEXITCODE

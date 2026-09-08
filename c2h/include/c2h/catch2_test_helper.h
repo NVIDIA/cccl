@@ -297,6 +297,9 @@ struct CustomEqualsRangeMatcher : Catch::Matchers::MatcherBase<Range>
     return std::equal(begin(range), end(range), begin(other), Pred{});
   }
 
+  // Catch2 matchers must expose describe() publicly so that composing matchers
+  // (AllMatch, Contains, SizeIs, ...) can call it on a member matcher.
+  // NOLINTNEXTLINE(misc-override-with-different-visibility)
   std::string describe() const override
   {
     return "Equals: " + Catch::rangeToString(range);
@@ -503,6 +506,8 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
     return comparison_result.total_mismatches == 0;
   }
 
+  // See the note on CustomEqualsRangeMatcher::describe above.
+  // NOLINTNEXTLINE(misc-override-with-different-visibility)
   std::string describe() const override
   {
     std::stringstream ss;

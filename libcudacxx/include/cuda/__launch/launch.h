@@ -368,7 +368,7 @@ template <class _Kernel, class _Config, class... _Args>
 [[nodiscard]] _CCCL_HOST_API inline ::CUfunction __get_cufunction_of(const void* __kernel)
 {
   ::cudaFunction_t __kernel_cufunction{};
-  _CCCL_TRY_CUDA_API(::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, __kernel);
+  _CCCL_TRY_RUNTIME_API(::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, __kernel);
   return (::CUfunction) __kernel_cufunction;
 }
 

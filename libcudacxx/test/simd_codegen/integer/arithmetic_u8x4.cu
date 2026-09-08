@@ -53,7 +53,8 @@ __device__ Vec_u8_x4 test_operator_unary_minus_u8_x4(Vec_u8_x4 in)
 ; SM120f: {{.*VIADD.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_minus_u8_x4.*}}
-; SM120f: {{.*VIADD.*}}
+; SM120f: {{.*VIADD\.U8x4.*}}
+; SM120f-NOT: {{.*VIADD\.U8x4.*}}
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : {{.*test_operator_plus_u8_x4.*}}
 ; SM120f: {{.*VIADD.*}}

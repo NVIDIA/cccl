@@ -51,9 +51,9 @@ CUB_TEST_CASE("Device scan exclusive scan works with default environment", "[sca
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
-  num_items_t num_items = 2;
-  auto d_in             = cuda::constant_iterator(value_t{1});
-  auto d_out            = c2h::device_vector<value_t>(num_items);
+  const num_items_t num_items = 2;
+  auto d_in                   = cuda::constant_iterator(value_t{1});
+  auto d_out                  = c2h::device_vector<value_t>(num_items);
 
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
@@ -63,7 +63,7 @@ CUB_TEST_CASE("Device scan exclusive scan works with default environment", "[sca
   const unsigned int target_block_size = selector_t{}(cc).lookback.threads_per_block;
 
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto init = value_t{42};
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items));
@@ -78,7 +78,7 @@ CUB_TEST_CASE("Device scan exclusive scan with FutureValue works with default en
 {
   using num_items_t = int;
 
-  num_items_t num_items = 4;
+  const num_items_t num_items = 4;
 
   auto d_in  = c2h::device_vector<int>{1, 1, 1, 1};
   auto d_out = c2h::device_vector<int>(num_items);
@@ -98,7 +98,7 @@ CUB_TEST_CASE("Device scan exclusive sum works with default environment", "[sum]
   using num_items_t = int;
   using value_t     = int;
 
-  num_items_t num_items = 2;
+  const num_items_t num_items = 2;
 
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = c2h::device_vector<value_t>(num_items);
@@ -113,11 +113,11 @@ CUB_TEST_CASE("Device scan inclusive-scan-init works with default environment", 
   using num_items_t = int;
   using value_t     = int;
 
-  num_items_t num_items = 3;
-  auto d_in             = cuda::constant_iterator(value_t{1});
-  auto d_out            = c2h::device_vector<value_t>(num_items);
+  const num_items_t num_items = 3;
+  auto d_in                   = cuda::constant_iterator(value_t{1});
+  auto d_out                  = c2h::device_vector<value_t>(num_items);
 
-  value_t init{10};
+  const value_t init{10};
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
 
@@ -164,7 +164,7 @@ CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 3;
   auto d_in      = cuda::constant_iterator(1);
@@ -205,7 +205,7 @@ CUB_TEST_CASE("Device scan inclusive sum works with default environment", "[sum]
   using num_items_t = int;
   using value_t     = int;
 
-  num_items_t num_items = 3;
+  const num_items_t num_items = 3;
 
   auto d_in  = c2h::device_vector<value_t>{1, 1, 1};
   auto d_out = c2h::device_vector<value_t>(num_items);
@@ -222,9 +222,9 @@ CUB_TEST_CASE("Device scan inclusive-scan works with default environment", "[sca
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
-  num_items_t num_items = 2;
-  auto d_in             = cuda::constant_iterator(value_t{1});
-  auto d_out            = c2h::device_vector<value_t>(num_items);
+  const num_items_t num_items = 2;
+  auto d_in                   = cuda::constant_iterator(value_t{1});
+  auto d_out                  = c2h::device_vector<value_t>(num_items);
 
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
@@ -234,7 +234,7 @@ CUB_TEST_CASE("Device scan inclusive-scan works with default environment", "[sca
   const unsigned int target_block_size = selector_t{}(cc).lookback.threads_per_block;
 
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, num_items));
   REQUIRE(d_out[0] == d_in[0]);
@@ -248,7 +248,7 @@ CUB_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 3;
   auto d_in      = cuda::constant_iterator(1);
@@ -267,13 +267,13 @@ CUB_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", CUB_S
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 3;
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = c2h::device_vector<int>(num_items);
 
-  int init{10};
+  const int init{10};
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
@@ -353,13 +353,13 @@ CUB_TEST("Device scan exclusive-scan uses environment", "[scan][device]", CUB_SM
   using scan_op_t   = cuda::std::plus<>;
   using num_items_t = int;
 
-  num_items_t num_items = 10;
-  auto d_in             = cuda::constant_iterator(1.0f);
-  auto d_out            = c2h::device_vector<float>(num_items);
+  const num_items_t num_items = 10;
+  auto d_in                   = cuda::constant_iterator(1.0f);
+  auto d_out                  = c2h::device_vector<float>(num_items);
 
   using init_value_t = float;
 
-  init_value_t init{42.0f};
+  const init_value_t init{42.0f};
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
@@ -379,9 +379,9 @@ CUB_TEST("Device scan exclusive-scan with FutureValue uses environment", "[scan]
   using scan_op_t   = cuda::std::plus<>;
   using num_items_t = int;
 
-  num_items_t num_items = 10;
-  auto d_in             = cuda::constant_iterator(1);
-  auto d_out            = c2h::device_vector<int>(num_items);
+  const num_items_t num_items = 10;
+  auto d_in                   = cuda::constant_iterator(1);
+  auto d_out                  = c2h::device_vector<int>(num_items);
 
   auto init_value_vec = c2h::device_vector<int>{42};
   auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
@@ -404,9 +404,9 @@ CUB_TEST("Device scan exclusive-sum uses environment", "[scan][device]", CUB_SMA
   using scan_op_t   = cuda::std::plus<>;
   using num_items_t = int;
 
-  num_items_t num_items = 10;
-  auto d_in             = cuda::constant_iterator(1.0f);
-  auto d_out            = c2h::device_vector<float>(num_items);
+  const num_items_t num_items = 10;
+  auto d_in                   = cuda::constant_iterator(1.0f);
+  auto d_out                  = c2h::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -424,9 +424,9 @@ CUB_TEST("Device scan inclusive-sum uses environment", "[scan][device]", CUB_SMA
 {
   using num_items_t = int;
 
-  num_items_t num_items = GENERATE(0, 1, 10);
-  auto d_in             = c2h::device_vector<int>(num_items, 3);
-  auto d_out            = c2h::device_vector<int>(num_items);
+  const num_items_t num_items = GENERATE(0, 1, 10);
+  auto d_in                   = c2h::device_vector<int>(num_items, 3);
+  auto d_out                  = c2h::device_vector<int>(num_items);
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
@@ -442,7 +442,7 @@ CUB_TEST("Device scan inclusive-sum uses environment", "[scan][device]", CUB_SMA
   {
     h_expected[i] = 3 * (i + 1);
   }
-  c2h::device_vector<int> expected = h_expected;
+  const c2h::device_vector<int> expected = h_expected;
   REQUIRE(d_out == expected);
 }
 
@@ -451,9 +451,9 @@ CUB_TEST("Device scan inclusive-scan uses environment", "[scan][device]", CUB_SM
   using scan_op_t   = cuda::std::plus<>;
   using num_items_t = int;
 
-  num_items_t num_items = 10;
-  auto d_in             = cuda::constant_iterator(1.0f);
-  auto d_out            = c2h::device_vector<float>(num_items);
+  const num_items_t num_items = 10;
+  auto d_in                   = cuda::constant_iterator(1.0f);
+  auto d_out                  = c2h::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -471,10 +471,10 @@ CUB_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]", C
 {
   using num_items_t = int;
 
-  num_items_t num_items = 4;
-  auto d_in             = c2h::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
-  auto d_out            = c2h::device_vector<float>(num_items);
-  float init            = 10.0f;
+  const num_items_t num_items = 4;
+  auto d_in                   = c2h::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto d_out                  = c2h::device_vector<float>(num_items);
+  const float init            = 10.0f;
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess

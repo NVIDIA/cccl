@@ -22,7 +22,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -110,7 +110,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -198,7 +198,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -318,7 +318,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -446,7 +446,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -584,7 +584,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -684,7 +684,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -817,7 +817,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -957,7 +957,7 @@ template <typename _B16,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -1126,7 +1126,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -1274,7 +1274,7 @@ template <typename _B16,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -1467,7 +1467,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -1623,7 +1623,7 @@ template <typename _B16,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -1840,7 +1840,7 @@ __device__ static inline void cp_reduce_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,
@@ -2004,7 +2004,7 @@ template <typename _B16,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_reduce_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::op_t<_Op> __op,

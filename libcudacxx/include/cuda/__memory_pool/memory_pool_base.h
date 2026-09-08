@@ -468,10 +468,11 @@ struct memory_pool_properties
   {
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
       __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
-    if (::cuda::__driver::__freeAsyncNoThrow(__ptr, __cccl_allocation_stream().get()) != ::cudaSuccess)
-    {
-      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorMemoryAllocation, "Failed to allocate initial pool size");
-    }
+    _CCCL_TRY_DRIVER_API(
+      ::cuda::__driver::__freeAsyncNoThrow,
+      "Failed to allocate initial pool size",
+      __ptr,
+      __cccl_allocation_stream().get());
   }
   return __cuda_pool_handle;
 }
@@ -535,7 +536,7 @@ public:
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "deallocate failed",
       reinterpret_cast<::CUdeviceptr>(__ptr),
@@ -665,7 +666,7 @@ public:
   //! synchronize all relevant streams before calling `deallocate`.
   _CCCL_HOST_API void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t) noexcept
   {
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeAsyncNoThrow, "deallocate failed", reinterpret_cast<::CUdeviceptr>(__ptr), __stream.get());
   }
 

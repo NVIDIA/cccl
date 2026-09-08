@@ -125,8 +125,7 @@ public:
   //! @return The resulting hash value for `__key`
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder _CCCL_NODEBUG_ALIAS =
-      __byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
+    using _Holder _CCCL_NODEBUG = __byte_holder<sizeof(_Key), __chunk_size, __block_size, true, ::cuda::std::uint32_t>;
     // Materialize a copy so the device compiler can use wide loads.
     const _Key __copy{__key};
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__copy));

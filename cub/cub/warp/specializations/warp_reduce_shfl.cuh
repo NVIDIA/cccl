@@ -26,8 +26,7 @@
 #include <cub/warp/specializations/warp_redux.cuh>
 
 #include <cuda/__cmath/pow2.h>
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
@@ -445,7 +444,7 @@ struct WarpReduceShfl
   /**
    * @brief Reduction
    *
-   * @tparam ALL_LANES_VALID
+   * @tparam AllValidLanes
    *   Whether all lanes in each warp are contributing a valid fold of items
    *
    * @param[in] input
@@ -457,22 +456,28 @@ struct WarpReduceShfl
    * @param[in] reduction_op
    *   Binary reduction operator
    */
-  template <bool ALL_LANES_VALID, typename ReductionOp>
+  template <bool AllValidLanes, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    if constexpr (ALL_LANES_VALID && is_warp_redux_op_supported<ReductionOp, T>)
+    constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
+    const int last_lane         = (AllValidLanes) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
+    T reduce_value              = input;
+
+    if constexpr (IS_ARCH_WARP && (AllValidLanes || has_identity) && is_warp_redux_op_supported<ReductionOp, T>)
     {
-      if (const auto output = cub::detail::warp_redux(input, member_mask, reduction_op))
+      if constexpr (!AllValidLanes)
+      {
+        reduce_value = lane_id <= last_lane ? input : ::cuda::identity_element<ReductionOp, T>();
+      }
+      if (const auto output = cub::detail::warp_redux(reduce_value, member_mask, reduction_op))
       {
         return *output;
       }
     }
-    T output = input;
     // Template-iterate reduction steps
-    const int last_lane = (ALL_LANES_VALID) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
-    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
-    return output;
+    ReduceStep(reduce_value, reduction_op, last_lane, constant_v<0>);
+    return reduce_value;
   }
 
   /**

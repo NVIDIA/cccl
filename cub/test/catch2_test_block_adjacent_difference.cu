@@ -85,7 +85,7 @@ struct last_tile_op_t
   __device__ void
   operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
   {
-    custom_difference_t<T> diff{};
+    const custom_difference_t<T> diff{};
 
     if (ReadLeft)
     {
@@ -111,7 +111,7 @@ struct middle_tile_op_t
   __device__ void
   operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
   {
-    custom_difference_t<T> diff{};
+    const custom_difference_t<T> diff{};
 
     if (ReadLeft)
     {
@@ -139,7 +139,7 @@ struct last_tile_with_pred_op_t
   __device__ void
   operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
   {
-    custom_difference_t<T> diff{};
+    const custom_difference_t<T> diff{};
     block_adj_diff.SubtractLeftPartialTile(input, output, diff, m_valid_items, m_neighbour_tile_value);
   }
 };
@@ -286,7 +286,7 @@ CUB_TEST("Block adjacent difference works with single tiles",
   constexpr bool read_left = true;
 
   c2h::host_vector<key_t> h_data = d_data;
-  key_t neighbour_value          = h_data[h_data.size() / 2];
+  const key_t neighbour_value    = h_data[h_data.size() / 2];
 
   host_adj_diff<read_left>(h_data, valid_items, neighbour_value);
 
@@ -313,7 +313,7 @@ CUB_TEST("Block adjacent difference works with middle tiles",
   const bool in_place = GENERATE(false, true);
 
   c2h::host_vector<key_t> h_data = d_data;
-  key_t neighbour_value          = h_data[h_data.size() / 2];
+  const key_t neighbour_value    = h_data[h_data.size() / 2];
 
   host_adj_diff<params::read_left>(h_data, params::tile_size, neighbour_value);
 

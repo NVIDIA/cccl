@@ -26,9 +26,9 @@ TEST_CASE("copy d2d shared_memory 2D transpose", "[copy][d2d][shared_memory][tra
   constexpr int M     = 8192;
   constexpr int N     = 32;
   constexpr int alloc = M * N;
-  cuda::std::array<int, 2> shape{M, N};
-  cuda::std::array<int, 2> src_strides{1, M};
-  cuda::std::array<int, 2> dst_strides{N, 1};
+  const cuda::std::array<int, 2> shape{M, N};
+  const cuda::std::array<int, 2> src_strides{1, M};
+  const cuda::std::array<int, 2> dst_strides{N, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -41,9 +41,9 @@ TEST_CASE("copy d2d shared_memory 2D partial tiles", "[copy][d2d][shared_memory]
   constexpr int M     = 8193;
   constexpr int N     = 37;
   constexpr int alloc = M * N;
-  cuda::std::array<int, 2> shape{M, N};
-  cuda::std::array<int, 2> src_strides{1, M};
-  cuda::std::array<int, 2> dst_strides{N, 1};
+  const cuda::std::array<int, 2> shape{M, N};
+  const cuda::std::array<int, 2> src_strides{1, M};
+  const cuda::std::array<int, 2> dst_strides{N, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -82,9 +82,9 @@ TEST_CASE("copy d2d shared_memory 3D transpose", "[copy][d2d][shared_memory][tra
   constexpr int D1    = 16;
   constexpr int D2    = 16;
   constexpr int alloc = D0 * D1 * D2;
-  cuda::std::array<int, 3> shape{D0, D1, D2};
-  cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
-  cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
+  const cuda::std::array<int, 3> shape{D0, D1, D2};
+  const cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
+  const cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -129,9 +129,9 @@ TEST_CASE("copy d2d shared_memory 3D logical 2D fallback", "[copy][d2d][shared_m
   constexpr int D1    = 257;
   constexpr int D2    = 33;
   constexpr int alloc = D0 * D1 * D2;
-  cuda::std::array<int, 3> shape{D0, D1, D2};
-  cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
-  cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
+  const cuda::std::array<int, 3> shape{D0, D1, D2};
+  const cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
+  const cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -146,9 +146,9 @@ TEST_CASE("copy d2d shared_memory 3D padded small dimension", "[copy][d2d][share
   constexpr int dst_pitch = 16;
   constexpr int src_alloc = D0 * D1 * D2;
   constexpr int dst_alloc = D0 * D1 * dst_pitch;
-  cuda::std::array<int, 3> shape{D0, D1, D2};
-  cuda::std::array<int, 3> src_strides{1, D0 * D2, D0};
-  cuda::std::array<int, 3> dst_strides{D1 * dst_pitch, dst_pitch, 1};
+  const cuda::std::array<int, 3> shape{D0, D1, D2};
+  const cuda::std::array<int, 3> src_strides{1, D0 * D2, D0};
+  const cuda::std::array<int, 3> dst_strides{D1 * dst_pitch, dst_pitch, 1};
   test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
 }
 

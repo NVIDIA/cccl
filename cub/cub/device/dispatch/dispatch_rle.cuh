@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_rle.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -448,6 +449,11 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
               init_grid_size,
               init_kernel_threads,
               (long long) stream);
+#else // CUB_DEBUG_LOG
+      detail::log("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
+                  init_grid_size,
+                  init_kernel_threads,
+                  (long long) stream);
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
@@ -472,7 +478,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
         return error;
       }
 
-// Log device_rle_sweep_kernel configuration
+      // Log device_rle_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_rle_sweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per "
               "thread\n",
@@ -480,6 +486,13 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
               threads_per_block,
               (long long) stream,
               items_per_thread);
+#else // CUB_DEBUG_LOG
+      detail::log("Invoking device_rle_sweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per "
+                  "thread\n",
+                  num_current_tiles,
+                  threads_per_block,
+                  (long long) stream,
+                  items_per_thread);
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_rle_sweep_kernel
@@ -655,7 +668,7 @@ template <typename InputIteratorT,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -692,6 +705,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceRle", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int threads_per_block = active_policy.lookback.threads_per_block;
@@ -754,7 +769,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
             init_grid_size,
             init_kernel_threads,
             (long long) stream);
-#endif
+#else // CUB_DEBUG_LOG
+    log("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
+        init_grid_size,
+        init_kernel_threads,
+        (long long) stream);
+#endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -778,7 +798,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
             threads_per_block,
             (long long) stream,
             items_per_thread);
-#endif
+#else // CUB_DEBUG_LOG
+    log("Invoking device_rle_sweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
+        num_current_tiles,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread);
+#endif // CUB_DEBUG_LOG
 
     auto streaming_context = [&] {
       if constexpr (use_streaming_invocation)

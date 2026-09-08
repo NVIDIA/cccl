@@ -23,7 +23,7 @@ __device__ static inline void cp_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE_API void cp_async_bulk(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -62,7 +62,7 @@ __device__ static inline void cp_async_bulk_multicast_32b(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_multicast_32b(
+_CCCL_DEVICE_API void cp_async_bulk_multicast_32b(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -106,7 +106,7 @@ __device__ static inline void cp_async_bulk_multicast_32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_multicast_32b(
+_CCCL_DEVICE_API void cp_async_bulk_multicast_32b(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,

@@ -18,7 +18,7 @@ __device__ static inline void tcgen05_cp_128x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_128x256b(
+_CCCL_DEVICE_API void tcgen05_cp_128x256b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -45,7 +45,7 @@ __device__ static inline void tcgen05_cp_4x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_4x256b(
+_CCCL_DEVICE_API void tcgen05_cp_4x256b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -72,7 +72,7 @@ __device__ static inline void tcgen05_cp_128x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_128x128b(
+_CCCL_DEVICE_API void tcgen05_cp_128x128b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -99,7 +99,7 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_02_13(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13(
+_CCCL_DEVICE_API void tcgen05_cp_64x128b_warpx2_02_13(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -126,7 +126,7 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_01_23(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23(
+_CCCL_DEVICE_API void tcgen05_cp_64x128b_warpx2_01_23(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -153,7 +153,7 @@ __device__ static inline void tcgen05_cp_32x128b_warpx4(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4(
+_CCCL_DEVICE_API void tcgen05_cp_32x128b_warpx4(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -180,7 +180,7 @@ __device__ static inline void tcgen05_cp_128x256b_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void tcgen05_cp_128x256b_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -207,7 +207,7 @@ __device__ static inline void tcgen05_cp_4x256b_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void tcgen05_cp_4x256b_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -234,7 +234,7 @@ __device__ static inline void tcgen05_cp_128x128b_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void tcgen05_cp_128x128b_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -261,7 +261,7 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -294,7 +294,7 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -327,7 +327,7 @@ __device__ static inline void tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -354,7 +354,7 @@ __device__ static inline void tcgen05_cp_128x256b_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void tcgen05_cp_128x256b_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -381,7 +381,7 @@ __device__ static inline void tcgen05_cp_4x256b_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void tcgen05_cp_4x256b_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -408,7 +408,7 @@ __device__ static inline void tcgen05_cp_128x128b_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void tcgen05_cp_128x128b_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -435,7 +435,7 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -468,7 +468,7 @@ __device__ static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -501,7 +501,7 @@ __device__ static inline void tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");

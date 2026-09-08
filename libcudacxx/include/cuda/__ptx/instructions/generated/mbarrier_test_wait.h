@@ -15,7 +15,7 @@ __device__ static inline bool mbarrier_test_wait(
 */
 #if __cccl_ptx_isa >= 700
 template <typename = void>
-_CCCL_DEVICE static inline bool mbarrier_test_wait(::cuda::std::uint64_t* __addr, const ::cuda::std::uint64_t& __state)
+_CCCL_DEVICE_API bool mbarrier_test_wait(::cuda::std::uint64_t* __addr, const ::cuda::std::uint64_t& __state)
 {
   ::cuda::std::uint32_t __waitComplete;
   asm("{\n\t"
@@ -43,7 +43,7 @@ __device__ static inline bool mbarrier_test_wait(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait(
+_CCCL_DEVICE_API bool mbarrier_test_wait(
   ::cuda::ptx::sem_acquire_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::std::uint64_t* __addr,
@@ -91,7 +91,7 @@ __device__ static inline bool mbarrier_test_wait(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait(
+_CCCL_DEVICE_API bool mbarrier_test_wait(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::std::uint64_t* __addr,
@@ -143,7 +143,7 @@ __device__ static inline bool mbarrier_test_wait(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait(
+_CCCL_DEVICE_API bool mbarrier_test_wait(
   ::cuda::ptx::mbarrier_phase_primary_t,
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
@@ -235,7 +235,7 @@ __device__ static inline bool mbarrier_test_wait(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait(
+_CCCL_DEVICE_API bool mbarrier_test_wait(
   ::cuda::ptx::mbarrier_phase_primary_t,
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,

@@ -16,7 +16,7 @@ __device__ static inline void cp_async_bulk_prefetch(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch(
+_CCCL_DEVICE_API void cp_async_bulk_prefetch(
   const void* __srcMem, ::cuda::std::uint32_t __size, ::cuda::std::uint64_t __cache_policy = 0x10F0000000000000)
 {
   asm volatile("cp.async.bulk.prefetch.L2.global.L2::cache_hint [%0], %1, %2;"
@@ -35,7 +35,7 @@ __device__ static inline void cp_async_bulk_prefetch_L2_evict_last(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_prefetch_L2_evict_last(const void* __srcMem, ::cuda::std::uint32_t __size)
+_CCCL_DEVICE_API void cp_async_bulk_prefetch_L2_evict_last(const void* __srcMem, ::cuda::std::uint32_t __size)
 {
   asm volatile("cp.async.bulk.prefetch.L2.global.L2::evict_last [%0], %1;"
                :

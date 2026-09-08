@@ -15,7 +15,7 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
 */
 #if __cccl_ptx_isa >= 700
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 mbarrier_arrive_no_complete(::cuda::std::uint64_t* __addr, const ::cuda::std::uint32_t& __count)
 {
   ::cuda::std::uint64_t __state;

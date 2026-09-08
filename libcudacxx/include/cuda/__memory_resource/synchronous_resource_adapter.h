@@ -92,7 +92,8 @@ struct synchronous_resource_adapter
     }
     else
     {
-      ::cuda::__driver::__streamSynchronizeNoThrow(__stream.get());
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::__driver::__streamSynchronizeNoThrow, "Failed to synchronizer stream", __stream.get());
       __resource.deallocate_sync(__ptr, __bytes, __alignment);
     }
   }

@@ -310,7 +310,7 @@ struct AgentReduceImpl
         reinterpret_cast<VectorT*>(d_in_unqualified));
 
       // Load items as vector items
-      InputT input_items[ITEMS_PER_THREAD];
+      alignas(VectorT) InputT input_items[ITEMS_PER_THREAD];
       VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
 
       // Alias items as an array of VectorT and load it in striped fashion

@@ -24,7 +24,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -124,7 +124,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -220,7 +220,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -320,7 +320,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -416,7 +416,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -516,7 +516,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -612,7 +612,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -712,7 +712,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -808,7 +808,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -908,7 +908,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1004,7 +1004,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1104,7 +1104,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1200,7 +1200,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1300,7 +1300,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b0_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b0_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1396,7 +1396,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1496,7 +1496,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b0_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b0_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1592,7 +1592,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1692,7 +1692,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1788,7 +1788,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1888,7 +1888,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -1984,7 +1984,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2084,7 +2084,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2180,7 +2180,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2280,7 +2280,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2376,7 +2376,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2476,7 +2476,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2572,7 +2572,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2672,7 +2672,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2768,7 +2768,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2868,7 +2868,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b1_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b1_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -2964,7 +2964,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3064,7 +3064,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b1_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b1_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3160,7 +3160,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3260,7 +3260,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3356,7 +3356,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3456,7 +3456,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3552,7 +3552,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3652,7 +3652,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3748,7 +3748,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3848,7 +3848,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -3944,7 +3944,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4044,7 +4044,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4140,7 +4140,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4240,7 +4240,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4336,7 +4336,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4436,7 +4436,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b2_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b2_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4532,7 +4532,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4632,7 +4632,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b2_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b2_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4728,7 +4728,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4828,7 +4828,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -4924,7 +4924,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5024,7 +5024,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_fill(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_fill(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5120,7 +5120,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5220,7 +5220,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5316,7 +5316,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5416,7 +5416,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_use(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_use(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5512,7 +5512,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5612,7 +5612,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5708,7 +5708,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5808,7 +5808,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_lastuse(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -5904,7 +5904,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -6004,7 +6004,7 @@ __device__ static inline void tcgen05_mma_ws_collector_b3_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_collector_b3_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -6100,7 +6100,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,
@@ -6200,7 +6200,7 @@ __device__ static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_kind _Kind>
-_CCCL_DEVICE static inline void tcgen05_mma_ws_tmem_a_collector_b3_discard(
+_CCCL_DEVICE_API void tcgen05_mma_ws_tmem_a_collector_b3_discard(
   ::cuda::ptx::cta_group_1_t,
   ::cuda::ptx::kind_t<_Kind> __kind,
   ::cuda::std::uint32_t __d_tmem,

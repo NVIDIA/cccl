@@ -25,10 +25,9 @@
 template <typename T>
 struct bench_policy_selector
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::compute_capability) const
-    -> cub::detail::find::find_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::compute_capability) const -> cub::FindIfPolicy
   {
-    return cub::detail::find::find_policy{
+    return cub::FindIfPolicy{
       (1 << TUNE_THREADS_PER_BLOCK_POW2), cub::Nominal4BItemsToItems<T>(TUNE_ITEMS_PER_THREAD), 4, TUNE_LOAD_MODIFIER};
   }
 };
@@ -61,7 +60,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(bench_policy_selector<T>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceFind::FindIf,
       "FindIf failed",
       thrust::raw_pointer_cast(dinput.data()),

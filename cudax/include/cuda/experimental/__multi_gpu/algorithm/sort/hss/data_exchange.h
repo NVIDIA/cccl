@@ -266,7 +266,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
       auto __out = ::cuda::std::make_tuple(__send_counts.data(), __offsets.data());
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm_it->logical_device(),
+        __offsets.stream(),
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         ::cuda::std::move(__out),
@@ -317,9 +317,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
         __local_counts[__idx].stream(),
         __local_counts[__idx],
         ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * __h_send_counts.size()},
-        ::cuda::copy_configuration{__comm_it->logical_device().underlying_device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
+        ::cuda::copy_configuration{
+          __local_counts[__idx].stream().device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
     }
   }
 
@@ -423,10 +422,9 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   __local_merged.reserve(__num_local);
 
   {
-    auto __comm_it = ::cuda::std::ranges::begin(__comms);
-    auto __env_it  = ::cuda::std::ranges::begin(__envs);
+    auto __env_it = ::cuda::std::ranges::begin(__envs);
 
-    for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__env_it)
     {
       auto& __merged = __local_merged.emplace_back(
         __local_recvd[__idx].stream(),
@@ -434,7 +432,6 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
         ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it));
 
       __merge_k_way(
-        *__comm_it,
         *__env_it,
         __local_recvd[__idx],
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_counts_column),
