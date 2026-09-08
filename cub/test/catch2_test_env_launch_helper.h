@@ -23,6 +23,7 @@
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/utility.h>
+#include <catch2_test_cuda_utils.cuh>
 #include <catch2_test_memory_resources.h>
 
 //! @file
@@ -258,13 +259,6 @@ auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, const En
 
 namespace env_launch_helper_detail
 {
-inline cuda::device_ref current_device()
-{
-  int device{0};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
 template <typename T>
 T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
 {
@@ -434,9 +428,9 @@ void launch(ActionT action, Args... args)
 
   const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
-  const auto device = env_launch_helper_detail::current_device();
-  auto stream       = cuda::stream{device};
-  auto d_error      = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
+  auto [device, owning_stream] = ::cub_test::make_current_device_and_owning_stream();
+  const auto stream            = ::cuda::stream_ref{owning_stream};
+  auto d_error                 = c2h::make_device_buffer<cudaError_t>(stream, device, 1, cuda::no_init);
   auto d_temp_storage =
     c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, expected_bytes_allocated, cuda::no_init);
 

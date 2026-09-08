@@ -19,16 +19,15 @@
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
+#include <catch2_test_cuda_utils.cuh>
 
-using segmented_scan_test::current_device;
 using segmented_scan_test::require_equal;
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
   // example-begin exclusive-segmented-sum-env
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it       = d_offsets.begin();
   auto d_in               = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
@@ -52,8 +51,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[se
 {
   // example-begin exclusive-segmented-scan-env
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it       = d_offsets.begin();
   auto d_in               = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
@@ -77,8 +75,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[seg
 {
   // example-begin inclusive-segmented-sum-env
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it       = d_offsets.begin();
   auto d_in               = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
@@ -102,8 +99,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[se
 {
   // example-begin inclusive-segmented-scan-env
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it       = d_offsets.begin();
   auto d_in               = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
@@ -127,8 +123,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", 
 {
   // example-begin inclusive-segmented-scan-init-env
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it       = d_offsets.begin();
   auto d_in               = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
@@ -155,8 +150,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) acc
   // example-begin exclusive-segmented-sum-separate-env
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_in_offsets       = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
   auto d_out_offsets      = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it        = d_in_offsets.begin();
@@ -185,8 +179,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
   // example-begin exclusive-segmented-scan-separate-env
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_in_offsets       = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
   auto d_out_offsets      = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it        = d_in_offsets.begin();
@@ -215,8 +208,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) acc
   // example-begin inclusive-segmented-sum-separate-env
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_in_offsets       = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
   auto d_out_offsets      = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it        = d_in_offsets.begin();
@@ -245,8 +237,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) ac
   // example-begin inclusive-segmented-scan-separate-env
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_in_offsets       = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
   auto d_out_offsets      = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it        = d_in_offsets.begin();
@@ -275,8 +266,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
   // example-begin inclusive-segmented-scan-init-separate-env
   const auto sentinel     = -1;
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto d_in_offsets       = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
   auto d_out_offsets      = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
   auto d_in_off_it        = d_in_offsets.begin();
@@ -322,8 +312,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
 {
   // example-begin segmented-scan-tuning
   const auto num_segments = ::cuda::std::int64_t{3};
-  auto device             = current_device();
-  auto stream             = cuda::stream{device};
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(SegmentedScanPolicySelector{})};
   auto d_offsets    = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
   auto d_offsets_it = d_offsets.begin();

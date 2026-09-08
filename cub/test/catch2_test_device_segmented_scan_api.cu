@@ -24,8 +24,8 @@
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
+#include <catch2_test_cuda_utils.cuh>
 
-using segmented_scan_test::current_device;
 using segmented_scan_test::require_equal;
 
 void check_execution_status(cudaError_t status, const std::string& algo_name)
@@ -42,8 +42,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedSum[2 offsets]";
 
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // example-begin exclusive-segmented-sum-two-offsets
   auto input        = cuda::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8});
@@ -99,8 +98,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedSum[3 offsets]";
 
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // example-begin exclusive-segmented-sum-three-offsets
   // Sequence of 16 values, representing 4x4 matrix in row-major layout
@@ -171,8 +169,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[2 offsets]";
 
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // example-begin inclusive-segmented-sum-two-offsets
   auto input   = cuda::make_device_buffer<int>(stream, device, {2, 1, 1, 2, 1, 2, 1, 1});
@@ -229,8 +226,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[3 offsets]";
   // example-begin inclusive-segmented-sum-three-offsets
   // Sequence of 16 values, representing 4x4 matrix in row-major layout
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto input = cuda::make_device_buffer<int>(stream, device, {1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2});
 
@@ -306,8 +302,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[2 offsets]";
   // example-begin inclusive-segmented-scan-init-two-offsets
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   constexpr unsigned prime = 7;
   auto input = cuda::make_device_buffer<unsigned>(stream, device, {2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
@@ -391,8 +386,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedScan[2 offsets]";
 
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto input = cuda::make_device_buffer<unsigned>(
     stream,
@@ -501,8 +495,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   */
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScan[3-offsets]";
 
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // example-begin inclusive-segmented-scan-three-offsets
   constexpr size_t n = 8;
@@ -581,8 +574,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -597,8 +589,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -622,8 +613,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -647,8 +637,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -674,8 +663,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -690,8 +678,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -715,8 +702,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -739,8 +725,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -765,8 +750,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in      = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out     = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);
@@ -790,8 +774,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
          "[segmented_scan][device]",
          CUB_SMALL)
 {
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   auto in          = c2h::make_device_buffer<int>(stream, device, 1, 0);
   auto out         = c2h::make_device_buffer<int>(stream, device, 1, cuda::no_init);

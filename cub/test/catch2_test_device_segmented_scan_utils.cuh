@@ -20,6 +20,7 @@
 
 #include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
+#include <catch2_test_cuda_utils.cuh>
 
 template <typename InputT, typename OutputT = InputT>
 struct type_pair
@@ -59,13 +60,6 @@ void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt resu
 
 namespace segmented_scan_test
 {
-[[nodiscard]] inline cuda::device_ref current_device()
-{
-  int device = 0;
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
 [[nodiscard]] inline bool is_default_stream(cuda::stream_ref stream) noexcept
 {
   return stream.get() == cudaStream_t{};
@@ -215,7 +209,7 @@ void require_equal(cuda::stream_ref stream, const cuda::device_buffer<T>& actual
 {
   REQUIRE(actual.size() == expected.size());
 
-  const auto device = actual.size() != 0 ? pointer_device(actual.data()) : current_device();
+  const auto device = actual.size() != 0 ? pointer_device(actual.data()) : ::cub_test::current_device();
   auto h_actual     = make_host_buffer<T>(stream, device, actual.size(), cuda::no_init);
   copy_to_host(stream, actual, h_actual);
 

@@ -29,6 +29,7 @@
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
+#include <catch2_test_cuda_utils.cuh>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -81,7 +82,6 @@ struct populate_bicyclic_monoid_input
 namespace
 {
 using segmented_scan_test::copy_to_host;
-using segmented_scan_test::current_device;
 using segmented_scan_test::enqueue_copy_to_device;
 using segmented_scan_test::make_device_buffer_from_host;
 using segmented_scan_test::make_host_buffer;
@@ -250,8 +250,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
-  const auto device = current_device();
-  auto copy_stream  = cuda::stream{device};
+  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   const unsigned num_items = block_size * items_per_thread * 101 + 1;
   const auto h_offsets     = make_host_buffer<offset_t>(
@@ -349,8 +348,7 @@ CUB_TEST(
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
-  const auto device = current_device();
-  auto copy_stream  = cuda::stream{device};
+  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   constexpr auto max_nelems = get_max_elems<value_t>();
 
@@ -444,8 +442,7 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
-  const auto device = current_device();
-  auto copy_stream  = cuda::stream{device};
+  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   // WAR for MSVC which incorrectly deduces that these variables are declared, but unused
   [[maybe_unused]] static constexpr int items_per_thread       = 4;
@@ -530,8 +527,7 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
-  const auto device = current_device();
-  auto copy_stream  = cuda::stream{device};
+  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   constexpr auto max_nelems = get_max_elems<value_t>();
 
@@ -661,8 +657,7 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   using value_t  = unsigned int;
   using offset_t = unsigned int;
 
-  const auto device = current_device();
-  auto copy_stream  = cuda::stream{device};
+  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   [[maybe_unused]] static constexpr int items_per_thread       = c2h::get<0, TestType>::value;
   [[maybe_unused]] static constexpr int block_size             = 128;
@@ -757,8 +752,7 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
   using value_t  = unsigned int;
   using offset_t = int;
 
-  const auto device = current_device();
-  auto copy_stream  = cuda::stream{device};
+  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   [[maybe_unused]] static constexpr int items_per_thread       = 7;
   [[maybe_unused]] static constexpr int block_size             = 128;
@@ -911,8 +905,7 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   using value_t  = unsigned int;
   using offset_t = unsigned int;
 
-  const auto device = current_device();
-  auto copy_stream  = cuda::stream{device};
+  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   [[maybe_unused]] static constexpr int items_per_thread       = 9;
   [[maybe_unused]] static constexpr int block_size             = 128;

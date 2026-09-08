@@ -18,6 +18,7 @@
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <catch2/generators/catch_generators_all.hpp>
+#include <catch2_test_cuda_utils.cuh>
 
 //! @file
 //! This file contains utilities for device-scope API tests
@@ -145,18 +146,11 @@ template <typename... As>
 struct first_arg_is_stream<::cuda::stream_ref, As...> : ::cuda::std::true_type
 {};
 
-inline cuda::device_ref current_device()
-{
-  int device{0};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device));
-  return cuda::device_ref{device};
-}
-
 inline cuda::device_ref device_for_stream(cuda::stream_ref stream)
 {
   if (stream == ::cudaStream_t{})
   {
-    return current_device();
+    return ::cub_test::current_device();
   }
 
   return stream.device();
@@ -332,8 +326,7 @@ void launch(cuda::stream_ref stream, ActionT action, Args... args)
 template <class ActionT, class... Args>
 void launch(ActionT action, Args... args)
 {
-  const auto device = launch_helper_detail::current_device();
-  auto stream       = cuda::stream{device};
+  auto [device, stream] = ::cub_test::make_current_device_and_owning_stream();
   launch(cuda::stream_ref{stream}, action, args...);
 }
 
@@ -376,9 +369,8 @@ void launch(ActionT action, Args... args)
   REQUIRE(temp_storage_bytes > 0); // required by API contract
 
   // randomly offset the temporary storage address by one byte
-  const int offset  = GENERATE(take(1, random(0, 1)));
-  const auto device = launch_helper_detail::current_device();
-  auto stream       = cuda::stream{device};
+  const int offset      = GENERATE(take(1, random(0, 1)));
+  auto [device, stream] = ::cub_test::make_current_device_and_owning_stream();
   auto temp_storage =
     c2h::make_device_buffer<cuda::std::uint8_t>(stream, device, temp_storage_bytes + offset, cuda::no_init);
 

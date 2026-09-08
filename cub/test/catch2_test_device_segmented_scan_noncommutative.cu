@@ -20,6 +20,7 @@
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
+#include <catch2_test_cuda_utils.cuh>
 
 /* Consider free monoid with two generators, ``q`` and ``p``, modulo defining relationship (``p * q == 1``).
  * Elements of this algebra are ``q^m * p^n``, identified by a pair of integral exponents. The identity
@@ -87,7 +88,6 @@ struct populate_input
 }; // namespace impl
 
 using segmented_scan_test::copy_to_host;
-using segmented_scan_test::current_device;
 using segmented_scan_test::make_device_buffer_from_host;
 using segmented_scan_test::make_host_buffer;
 using segmented_scan_test::make_tabulated_host_buffer;
@@ -100,8 +100,7 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
 
   const unsigned num_items = 1'234'567;
 
-  const auto device = current_device();
-  auto stream       = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   const auto h_offsets = make_host_buffer<unsigned>(
     stream,

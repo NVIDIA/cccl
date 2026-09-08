@@ -32,6 +32,7 @@
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <c2h/utility.h>
+#include <catch2_test_cuda_utils.cuh>
 #include <catch2_test_device_segmented_scan_utils.cuh>
 #include <catch2_test_launch_helper.h>
 
@@ -197,7 +198,6 @@ type_pair<custom_t>
 #endif
 
 using segmented_scan_test::copy_to_host;
-using segmented_scan_test::current_device;
 using segmented_scan_test::make_host_buffer;
 
 template <typename ValueT, typename OffsetT>
@@ -282,8 +282,7 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
     GENERATE_COPY(table<offset_t, offset_t>({{0, small_size}, {medium_size, large_size}, {large_size, num_items}}));
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << ")");
 
-  auto device = current_device();
-  auto stream = cuda::stream{device};
+  auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // Generate input segments
   auto segment_offsets = c2h::gen_uniform_offsets_device_buffer<offset_t>(
