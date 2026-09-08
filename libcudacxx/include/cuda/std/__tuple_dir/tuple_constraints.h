@@ -317,8 +317,17 @@ struct __tuple_constraints
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL __select_constructor
   __select_tuple_like_constructible(__tuple_indices<_Indices...>) noexcept
   {
-    using ::cuda::std::get;
-    return __select_variadic_constructible<decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))...>();
+#if _CCCL_COMPILER(GCC, <, 8) // Old GCC eagerly instantiates __select_tuple_like_constructible_impl
+    if constexpr (!__disambiguate_tuple_like<_UTuple>())
+    {
+      return __select_constructor::__invalid;
+    }
+    else
+#endif // _CCCL_COMPILER(GCC, <, 8)
+    {
+      using ::cuda::std::get;
+      return __select_variadic_constructible<decltype(get<_Indices>(::cuda::std::declval<_UTuple>()))...>();
+    }
   }
 
   template <class _UTuple>

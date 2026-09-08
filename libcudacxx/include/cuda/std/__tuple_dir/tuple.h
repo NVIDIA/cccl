@@ -182,6 +182,9 @@ public:
       : __base_(__tuple_like_constructor_tag{}, allocator_arg_t(), __a, ::cuda::std::move(__t))
   {}
 
+  // NOTE: The SFINAE here is delicate and should not be changed without extensive testing
+  // We cannot change the SFINAE to class = enable_if because NVCC cannot differentiate the explicit/implicit overload
+  // We cannot change the __select_constructor _Constraints to a type alias because MSVC cannot handle that
   template <class... _UTypes,
             enable_if_t<_DisambiguateVariadic<_UTypes...>::value, int> = 0,
             __select_constructor _Constraints =
@@ -264,14 +267,6 @@ public:
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_TupleOfIteratorReferences>(__t))
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
-
-  template <class _Tuple>
-  using _TupleLikeConstructible =
-    _ConstructorConstraint<__tuple_constraints<_Tp...>::template __select_tuple_like_constructible_v<_Tuple>>;
-
-  template <class _Tuple>
-  using _NothrowTupleLikeConstructible =
-    bool_constant<__tuple_constraints<_Tp...>::template __nothrow_tuple_like_constructible_v<_Tuple>>;
 
   template <class... _UTypes,
             enable_if_t<_DisambiguateTupleLike<tuple<_UTypes...>&>::value, int> = 0,
@@ -385,6 +380,14 @@ public:
             enable_if_t<_ConstructorConstraint<_Constraints>::__is_deleted, int> = 0>
   constexpr tuple(const tuple<_UTypes...>&&) = delete;
 #endif // _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
+
+  template <class _Tuple>
+  using _TupleLikeConstructible =
+    _ConstructorConstraint<__tuple_constraints<_Tp...>::template __select_tuple_like_constructible_v<_Tuple>>;
+
+  template <class _Tuple>
+  using _NothrowTupleLikeConstructible =
+    bool_constant<__tuple_constraints<_Tp...>::template __nothrow_tuple_like_constructible_v<_Tuple>>;
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   template <class _Tuple,
