@@ -401,7 +401,7 @@ auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> ve
   result.total_mismatches = mismatches.size();
 
   // Handle first mismatches
-  size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
+  const size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
   result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
 
   // Handle last mismatches
@@ -662,7 +662,7 @@ inline std::size_t get_override_seed_count()
 
 inline std::size_t adjust_seed_count(std::size_t requested)
 {
-  static std::size_t override_seeds = get_override_seed_count();
+  static const std::size_t override_seeds = get_override_seed_count();
   return override_seeds != 0 ? override_seeds : requested;
 }
 } // namespace c2h

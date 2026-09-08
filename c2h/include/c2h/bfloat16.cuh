@@ -90,9 +90,9 @@ struct bfloat16_t
         float F32;
       };
 
-      F32                    = a;
-      uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
-      ir                     = static_cast<uint16_t>((U32 + rounding_bias) >> 16);
+      F32                          = a;
+      const uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
+      ir                           = static_cast<uint16_t>((U32 + rounding_bias) >> 16);
     }
     this->__x = ir;
   }
