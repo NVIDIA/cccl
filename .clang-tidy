@@ -36,7 +36,6 @@ Checks:
   - '-bugprone-signed-char-misuse'
   - '-bugprone-multi-level-implicit-pointer-conversion'
   - 'misc-*'
-  - '-misc-const-correctness'
   - '-misc-use-anonymous-namespace'
   - '-misc-use-internal-linkage'
   # END REMOVE ME
