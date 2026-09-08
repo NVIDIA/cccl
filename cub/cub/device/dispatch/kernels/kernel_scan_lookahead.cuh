@@ -217,6 +217,25 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regAggrInclusive)[
   }
 }
 
+template <typename Tp, size_t ElemPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+replaceSingleItem(const warpspeed::Squad& squad, Tp (&regAggrInclusive)[ElemPerThread], int index, const Tp& value)
+{
+  constexpr int elem_per_thread = static_cast<int>(ElemPerThread);
+  const int index_this_thread   = index - squad.threadRank() * elem_per_thread;
+  if (index_this_thread >= 0 && index_this_thread < elem_per_thread)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < elem_per_thread; ++i)
+    {
+      if (i == index_this_thread)
+      {
+        regAggrInclusive[i] = value;
+      }
+    }
+  }
+}
+
 template <bool IsInclusive, bool IsLastTile, typename Tp, size_t ElemPerThread, typename ScanOpT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
@@ -314,7 +333,7 @@ struct lookahead_scan_closure
     warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
     if constexpr (isInclusive)
     {
-    warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+      warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
     }
     else
     {
@@ -370,7 +389,7 @@ struct lookahead_scan_closure
     warpspeed::SmemPhase<thread_and_warp_aggr_t>& phaseThreadAndWarpAggrW,
     int valid_items,
     bool is_first_tile,
-    bool is_partial_tile, // TODO(bgruber): should we dispatch on this outside the function and compile it twice?
+    bool is_last_tile, // TODO(bgruber): should we dispatch on is_last_tile outside the function and compile it twice?
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
     int idxTile,
     int num_tiles) const
@@ -380,7 +399,8 @@ struct lookahead_scan_closure
     const int valid_threads_this_warp =
       cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
     const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
-    _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
+    // valid_warps can be 0 for exclusive scans where the last tile consists of a single element
+    _CCCL_ASSERT(0 <= valid_warps && valid_warps <= squad.warpCount(), "");
 
     // Load tile from shared memory and reduce across thread and warp
     AccumT regThreadAggr;
@@ -395,7 +415,7 @@ struct lookahead_scan_closure
       warpspeed::squadLoadSmem(squad, regInput, smem_data_start);
 
       // Reduce across thread and warp
-      if (is_partial_tile)
+      if (is_last_tile)
       {
         // TODO(bgruber): for operators where we know the identity we can probably optimize this better
         regThreadAggr = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
@@ -435,7 +455,7 @@ struct lookahead_scan_closure
       regSquadAggr = refThreadAndWarpAggrW.data()[squadReduce.threadCount()];
     }
 
-    if (is_partial_tile)
+    if (is_last_tile)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 1; i < squadReduce.warpCount(); ++i)
@@ -663,6 +683,13 @@ struct lookahead_scan_closure
       regAggrInclusive,
       reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
 
+    if constexpr (IsLastTile && !isInclusive)
+    {
+      // the last element was not loaded to smem, so replace it by init value
+      // its actual value doesn't matter, since we discard it
+      replaceSingleItem(squad, regAggrInclusive, valid_items - 1, static_cast<AccumT>(real_init_value));
+    }
+
     // Perform inclusive scan of register array in current thread.
     // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use aggrExclusive
     const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
@@ -793,9 +820,8 @@ struct lookahead_scan_closure
       _CCCL_ASSERT(idxTileBase < params.numElem, "");
       const int valid_items =
         static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
-      const bool is_partial_tile = valid_items < tile_size;
-      const bool is_last_tile    = idxTileBase + ::cuda::std::size_t(valid_items) >= params.numElem;
-      // In exclusive scans, ignore the last element, see AgentScan::ConsumeTile
+      const bool is_last_tile = idxTileBase + ::cuda::std::size_t(valid_items) >= params.numElem;
+      // In exclusive scans, ignore the last element
       const int load_items = (!isInclusive && is_last_tile) ? valid_items - 1 : valid_items;
       const warpspeed::CpAsyncOobInfo loadInfo =
         warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, load_items);
@@ -824,9 +850,9 @@ struct lookahead_scan_closure
           squad,
           phaseInOutRW,
           phaseThreadAndWarpAggrW,
-          valid_items,
+          load_items,
           is_first_tile,
-          is_partial_tile,
+          is_last_tile,
           loadInfo,
           idxTile,
           numTiles);
@@ -840,7 +866,7 @@ struct lookahead_scan_closure
       if (squad == squadScanStore)
       {
         static_assert(tile_size % squadScanStore.threadCount() == 0);
-        if (is_partial_tile)
+        if (is_last_tile)
         {
           scan_and_store_tile<true>(
             squad,
