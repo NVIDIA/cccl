@@ -55,14 +55,6 @@ DECLARE_UNITTEST(TestReverseDispatchImplicit);
 template <typename Vector>
 void TestReverseCopySimple()
 {
-#if _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 10)
-
-  if (typeid(Vector) == typeid(thrust::host_vector<custom_numeric>))
-  {
-    KNOWN_FAILURE // WAR NVBug 2481122
-  }
-#endif // _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 10)
-
   using Iterator = typename Vector::iterator;
 
   Vector input{1, 2, 3, 4, 5};

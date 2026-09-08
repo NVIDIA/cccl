@@ -21,8 +21,6 @@
 
 #include "testing.cuh"
 
-namespace
-{
 template <class... Values>
 struct checked_value_receiver
 {
@@ -216,4 +214,3 @@ struct proxy_value_receiver
 
 template <class Ty>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES proxy_value_receiver(Ty&) -> proxy_value_receiver<Ty>;
-} // namespace

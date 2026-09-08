@@ -25,8 +25,6 @@
 
 #include "testing.cuh"
 
-namespace
-{
 namespace test
 {
 constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
@@ -147,5 +145,4 @@ struct empty_kernel
   __device__ void operator()() const noexcept {}
 };
 } // namespace test
-} // namespace
 #endif // __COMMON_UTILITY_H__

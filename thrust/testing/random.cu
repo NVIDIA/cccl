@@ -416,21 +416,12 @@ void TestRanlux48BaseEqual()
 }
 DECLARE_UNITTEST(TestRanlux48BaseEqual);
 
-#if defined(__INTEL_COMPILER) && 1800 >= __INTEL_COMPILER
-void TestRanlux48BaseUnequal()
-{
-  // ICPC has a known failure with this test.
-  // See nvbug 200414000.
-  KNOWN_FAILURE;
-}
-#else
 void TestRanlux48BaseUnequal()
 {
   using Engine = thrust::random::ranlux48_base;
 
   TestEngineUnequal<Engine>();
 }
-#endif
 DECLARE_UNITTEST(TestRanlux48BaseUnequal);
 
 void TestMinstdRandValidation()

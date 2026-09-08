@@ -134,6 +134,12 @@ public:
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
   {}
 
+  // Groups can't be copied, moved nor assigned.
+  __this_group_base(const __this_group_base&)            = delete;
+  __this_group_base(__this_group_base&&)                 = delete;
+  __this_group_base& operator=(const __this_group_base&) = delete;
+  __this_group_base& operator=(__this_group_base&&)      = delete;
+
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
   {
     return __hier_;
