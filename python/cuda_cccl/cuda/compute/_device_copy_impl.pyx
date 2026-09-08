@@ -16,7 +16,11 @@ from libc.stdint cimport INT64_MAX, int32_t, int64_t, uint8_t, uint16_t, uint32_
 
 import operator
 
-from cuda.compute._caching import cache_with_registered_key_functions
+from cuda.compute import _cccl_interop as cccl
+from cuda.compute._caching import (
+    cache_build_results,
+    cache_with_registered_key_functions,
+)
 
 _DEVICE_COPY_CACHE_MAXSIZE = 64
 
@@ -2073,13 +2077,15 @@ cdef _cccl_type_info _device_copy_type_info_from_key(tuple key) except *:
 
 cdef class _DeviceCopyBuild:
     cdef _cccl_device_copy_build_result_t _build
+    # `public` makes `_loaded` gettable/settable from Python to enable the Python cache protocol.
+    cdef public bint _loaded
     cdef bint _closed
     cdef object _source_owner
     cdef object _destination_owner
     cdef int64_t _scalar_shape
     cdef int64_t _scalar_stride
 
-    def __cinit__(self):
+    def __cinit__(self, *args, **kwargs):
         self._build.cc = 0
         self._build.payload = NULL
         self._build.payload_size = 0
@@ -2096,11 +2102,43 @@ cdef class _DeviceCopyBuild:
         self._build.rank = 0
         self._build.source_layout = _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
         self._build.destination_layout = _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+        self._loaded = False
         self._closed = True
         self._source_owner = None
         self._destination_owner = None
         self._scalar_shape = 1
         self._scalar_stride = 1
+
+    def __init__(
+        self,
+        tuple type_info_key=None,
+        object rank=None,
+        object source_layout=None,
+        object destination_layout=None,
+        object common_data=None,
+    ):
+        cdef tuple capability
+        cdef _cccl_type_info value_type
+
+        # Direct plan-specialized builds initialize an empty owner and call
+        # _build_for_plan themselves.
+        if type_info_key is None and rank is None:
+            return
+        if type_info_key is None or rank is None:
+            raise TypeError(
+                "device copy type_info_key and rank must either both be provided or both be None"
+            )
+
+        capability = tuple(common_data.compute_capability)
+        value_type = _device_copy_type_info_from_key(type_info_key)
+        self._build_for_rank(
+            value_type,
+            <size_t>rank,
+            <int>capability[0],
+            <int>capability[1],
+            <_cccl_device_copy_layout_kind_t>source_layout,
+            <_cccl_device_copy_layout_kind_t>destination_layout,
+        )
 
     cdef void _build_for_rank(
         self,
@@ -2175,6 +2213,7 @@ cdef class _DeviceCopyBuild:
                 NULL,
             )
             _device_copy_check_cuda(status, "cccl_device_copy_build_ex")
+            self._loaded = True
             self._closed = False
         finally:
             PyMem_Free(shape_metadata)
@@ -2262,6 +2301,7 @@ cdef class _DeviceCopyBuild:
                 NULL,
             )
             _device_copy_check_cuda(status, "cccl_device_copy_build_ex")
+            self._loaded = True
             self._closed = False
         finally:
             PyMem_Free(shape_metadata)
@@ -2290,6 +2330,28 @@ cdef class _DeviceCopyBuild:
         if self._build.source == NULL or self._build.source_size == 0:
             return ""
         return (<char*>self._build.source)[:self._build.source_size].decode("utf-8")
+
+    def serialize(self):
+        raise NotImplementedError(
+            "DeviceCopy HostJIT build-result serialization is not implemented"
+        )
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        raise NotImplementedError(
+            "DeviceCopy HostJIT build-result deserialization is not implemented"
+        )
+
+    @staticmethod
+    def compile(*args):
+        # HostJIT currently exposes a fused build-and-load operation. Keep the
+        # generic cache protocol intact until the C API gains serialization.
+        return _DeviceCopyBuild(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        raise RuntimeError("DeviceCopy HostJIT build result is not loaded")
 
     cdef void _copy(
         self,
@@ -2367,39 +2429,53 @@ cdef class _DeviceCopyBuild:
             return
         status = _cccl_device_copy_cleanup(&self._build)
         self._closed = True
+        self._loaded = False
         _device_copy_check_cuda(status, "cccl_device_copy_cleanup")
 
     def __dealloc__(self):
         if not self._closed:
             _cccl_device_copy_cleanup(&self._build)
             self._closed = True
+            self._loaded = False
 
 
 cdef class _DeviceCopyExecutable:
-    cdef _DeviceCopyBuild _build
+    cdef object _build_results
+    cdef object _bound_build_result
     cdef tuple _type_info_key
     cdef size_t _rank
 
     def __init__(self, tuple type_info_key, object rank, *, object compute_capability=None):
-        cdef tuple capability
-        cdef _cccl_type_info value_type
+        cdef object rank_key
 
         self._type_info_key = tuple(type_info_key)
         self._rank = <size_t>rank
-        self._build = _DeviceCopyBuild()
 
         if self._rank == 0:
             raise ValueError("device copy executable rank must be positive")
 
-        capability = _device_copy_compute_capability(compute_capability)
-        value_type = _device_copy_type_info_from_key(self._type_info_key)
-        self._build._build_for_rank(
-            value_type,
-            self._rank,
-            <int>capability[0],
-            <int>capability[1],
-            _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED,
-            _CCCL_DEVICE_COPY_LAYOUT_STRIDE,
+        rank_key = int(self._rank)
+        self._build_results, self._bound_build_result = cache_build_results(
+            _DeviceCopyBuild,
+            self._type_info_key,
+            rank_key,
+            <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED,
+            <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _DeviceCopyBuild,
+                self._type_info_key,
+                rank_key,
+                <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED,
+                <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE,
+                compute_capability=compute_capability,
+            ),
+        )
+
+    cdef _DeviceCopyBuild _resolve_build(self):
+        return <_DeviceCopyBuild>cccl.resolve_build_result(
+            self._build_results,
+            self._bound_build_result,
         )
 
     cdef void _copy(
@@ -2409,16 +2485,14 @@ cdef class _DeviceCopyExecutable:
         _DeviceCopyPlan plan,
         object stream_handle,
     ) except *:
-        self._build._copy(source, destination, plan, 0, 0, stream_handle)
+        cdef _DeviceCopyBuild build = self._resolve_build()
+        build._copy(source, destination, plan, 0, 0, stream_handle)
 
     def _get_cubin(self):
-        return self._build._get_cubin()
+        return self._resolve_build()._get_cubin()
 
     def _get_source(self):
-        return self._build._get_source()
-
-    cdef void _close(self) except *:
-        self._build._close()
+        return self._resolve_build()._get_source()
 
 
 @cache_with_registered_key_functions(maxsize=_DEVICE_COPY_CACHE_MAXSIZE)
@@ -2494,10 +2568,7 @@ cdef class _DeviceCopy:
 
         self._build = _DeviceCopyBuild()
         self._closed = False
-        if self._use_cached_builds:
-            self._compute_capability = _device_copy_compute_capability(compute_capability)
-        else:
-            self._compute_capability = compute_capability
+        self._compute_capability = compute_capability
         self._type_info_key = _device_copy_type_info_key(source_view)
         self._max_rank = _device_copy_view_rank(source_view)
         if self._max_rank == 0:
@@ -2518,7 +2589,6 @@ cdef class _DeviceCopy:
                         self._max_rank,
                         compute_capability=self._compute_capability,
                     )
-                self._build = (<_DeviceCopyExecutable>self._builds_by_rank[self._max_rank])._build
             else:
                 capability = _device_copy_compute_capability(compute_capability)
                 value_type = _device_copy_type_info(source_view)

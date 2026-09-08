@@ -393,6 +393,18 @@ class Owner:
     pass
 
 
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"type_info_key": ()},
+        {"rank": 1},
+    ],
+)
+def test_DeviceCopyBuild_rejects_partial_specialization(device_copy_impl, kwargs):
+    with pytest.raises(TypeError, match="must either both be provided or both be None"):
+        device_copy_impl._DeviceCopyBuild(**kwargs)
+
+
 def test_runtime_axis_metadata(device_copy_impl):
     metadata = device_copy_impl._make_runtime_axis_metadata(3)
 
