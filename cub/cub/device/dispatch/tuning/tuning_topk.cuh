@@ -17,10 +17,12 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/concepts>
 
 CUB_NAMESPACE_BEGIN
@@ -84,6 +86,9 @@ concept topk_policy_selector = policy_selector<T, topk_policy>;
 struct policy_selector
 {
   int key_size;
+  int value_size; // 0 when selecting keys only
+  int offset_size;
+  int out_offset_size;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
@@ -108,12 +113,14 @@ struct policy_selector
 static_assert(topk_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <typename KeyT>
+template <typename KeyT, typename ValueT, typename OffsetT, typename OutOffsetT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    constexpr auto policies = policy_selector{int{sizeof(KeyT)}};
+    constexpr int value_size = ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)};
+    constexpr auto policies =
+      policy_selector{int{sizeof(KeyT)}, value_size, int{sizeof(OffsetT)}, int{sizeof(OutOffsetT)}};
     return policies(cc);
   }
 };
