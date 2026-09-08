@@ -40,7 +40,7 @@ C2H_CCCLRT_TEST("cuda::buffer iterators", "[container][buffer]", test_types)
     return;
   }
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer::begin/end properties")
