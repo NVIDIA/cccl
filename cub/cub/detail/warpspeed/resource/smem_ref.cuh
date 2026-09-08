@@ -36,7 +36,9 @@ struct SmemRef
   _CCCL_DEVICE_API SmemRef(SmemResourceRaw& smemResourceRaw, int phase) noexcept
       : mSmemResourceRaw(smemResourceRaw)
       , mCurPhase(phase)
-  {}
+  {
+    _CCCL_IKET_RANGE_PUSH(SmemRef);
+  }
   // SmemRef is a non-copyable, non-movable type. It must be passed by (mutable)
   // reference to be useful. The reason is that it in case of an accidental copy
   // or move the destructor is called twice. This leads to double-arrivals on
