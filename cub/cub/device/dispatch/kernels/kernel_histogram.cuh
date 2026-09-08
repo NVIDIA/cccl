@@ -149,14 +149,18 @@ struct fast_divide_by_constant
     UInt high;
     if constexpr (sizeof(UInt) == 8)
     {
+#if _CCCL_HAS_INT128()
+      NV_IF_ELSE_TARGET(
+        NV_IS_DEVICE,
+        (high = static_cast<UInt>(
+           __umul64hi(static_cast<unsigned long long>(magic), static_cast<unsigned long long>(numerator)));),
+        (high = static_cast<UInt>((static_cast<__uint128_t>(magic) * static_cast<__uint128_t>(numerator)) >> bits);));
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       NV_IF_ELSE_TARGET(
         NV_IS_DEVICE,
         (high = static_cast<UInt>(
            __umul64hi(static_cast<unsigned long long>(magic), static_cast<unsigned long long>(numerator)));),
         ({
-#if _CCCL_HAS_INT128()
-          high = static_cast<UInt>((static_cast<__uint128_t>(magic) * static_cast<__uint128_t>(numerator)) >> bits);
-#else
           const ::cuda::std::uint64_t a_low     = static_cast<::cuda::std::uint32_t>(magic);
           const ::cuda::std::uint64_t a_high    = magic >> 32;
           const ::cuda::std::uint64_t b_low     = static_cast<::cuda::std::uint32_t>(numerator);
@@ -165,12 +169,11 @@ struct fast_divide_by_constant
           const ::cuda::std::uint64_t low_high  = a_low * b_high;
           const ::cuda::std::uint64_t high_low  = a_high * b_low;
           const ::cuda::std::uint64_t high_high = a_high * b_high;
-          const ::cuda::std::uint64_t middle =
-            (low_low >> 32) + static_cast<::cuda::std::uint32_t>(low_high)
-            + static_cast<::cuda::std::uint32_t>(high_low);
-          high = high_high + (low_high >> 32) + (high_low >> 32) + (middle >> 32);
-#endif
+          const ::cuda::std::uint64_t middle    = (low_low >> 32) + static_cast<::cuda::std::uint32_t>(low_high)
+                                                + static_cast<::cuda::std::uint32_t>(high_low);
+          high                                  = high_high + (low_high >> 32) + (high_low >> 32) + (middle >> 32);
         }));
+#endif // !_CCCL_HAS_INT128()
     }
     else
     {
@@ -1340,20 +1343,21 @@ struct AgentHistogramCooperative
     auto* cache_keys = reinterpret_cast<::cuda::std::uint32_t*>(dynamic_smem);
     CounterT* cache_counts =
       reinterpret_cast<CounterT*>(cache_keys + static_cast<size_t>(NumActiveChannels) * cache_slots_per_channel);
-    const int cache_mask = cache_slots_per_channel > 0 ? cache_slots_per_channel - 1 : 0;
-    const int cache_log2 =
-      cache_slots_per_channel > 0 ? 31 - __clz(static_cast<unsigned int>(cache_slots_per_channel)) : 0;
+    const int cache_mask    = cache_slots_per_channel > 0 ? cache_slots_per_channel - 1 : 0;
+    const int cache_log2    = cache_slots_per_channel > 0 ? 31 - __clz(cache_slots_per_channel) : 0;
+    const int thread_idx    = static_cast<int>(threadIdx.x);
+    const int block_threads = static_cast<int>(blockDim.x);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
       auto* channel_keys       = cache_keys + static_cast<size_t>(ch) * cache_slots_per_channel;
       CounterT* channel_counts = cache_counts + static_cast<size_t>(ch) * count_replicas * cache_slots_per_channel;
-      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+      for (int slot = thread_idx; slot < cache_slots_per_channel; slot += block_threads)
       {
         channel_keys[slot] = ~::cuda::std::uint32_t{0};
       }
-      for (int count = threadIdx.x; count < count_replicas * cache_slots_per_channel; count += blockDim.x)
+      for (int count = thread_idx; count < count_replicas * cache_slots_per_channel; count += block_threads)
       {
         channel_counts[count] = CounterT{0};
       }
@@ -1362,7 +1366,7 @@ struct AgentHistogramCooperative
       {
         CounterT* block_histogram =
           d_privatized_histograms_wrapper[ch] + static_cast<size_t>(blockIdx.x) * num_output_bins_wrapper[ch];
-        for (int bin = threadIdx.x; bin < num_output_bins_wrapper[ch]; bin += blockDim.x)
+        for (int bin = thread_idx; bin < num_output_bins_wrapper[ch]; bin += block_threads)
         {
           block_histogram[bin] = CounterT{0};
         }
@@ -1704,7 +1708,7 @@ struct AgentHistogramCooperative
     {
       auto* channel_keys       = cache_keys + static_cast<size_t>(ch) * cache_slots_per_channel;
       CounterT* channel_counts = cache_counts + static_cast<size_t>(ch) * count_replicas * cache_slots_per_channel;
-      for (int slot = threadIdx.x; slot < cache_slots_per_channel; slot += blockDim.x)
+      for (int slot = thread_idx; slot < cache_slots_per_channel; slot += block_threads)
       {
         const auto key = channel_keys[slot];
         if (key != ~::cuda::std::uint32_t{0})
