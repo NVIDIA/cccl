@@ -27,26 +27,27 @@ struct benchmark_batched_op_t
   {
     if constexpr (!skip(Batches, LogicalWarpThreads))
     {
-#if 0
-    using WarpReduceBatched           = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
-    using TempStorage                 = typename WarpReduceBatched::TempStorage;
-    constexpr auto max_out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
-    cuda::std::array<T, max_out_per_thread> outputs;
-    __shared__ TempStorage temp_storage;
+#if 1
+      using WarpReduceBatched           = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
+      using TempStorage                 = typename WarpReduceBatched::TempStorage;
+      constexpr auto max_out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
+      cuda::std::array<T, max_out_per_thread> outputs;
+      __shared__ TempStorage temp_storage;
 
-    if constexpr (ToBlocked) {
-      WarpReduceBatched{temp_storage}.ReduceToBlocked(thread_data, outputs, op_t{});
-    }
-    else
-    {
-      WarpReduceBatched{temp_storage}.ReduceToStriped(thread_data, outputs, op_t{});
-    }
+      if constexpr (ToBlocked)
+      {
+        WarpReduceBatched{temp_storage}.ReduceToBlocked(thread_data, outputs, op_t{});
+      }
+      else
+      {
+        WarpReduceBatched{temp_storage}.ReduceToStriped(thread_data, outputs, op_t{});
+      }
 
 #  pragma unroll
-    for (int i = 0; i < max_out_per_thread; ++i)
-    {
-      thread_data[i] = outputs[i];
-    }
+      for (int i = 0; i < max_out_per_thread; ++i)
+      {
+        thread_data[i] = outputs[i];
+      }
 #else
       using WarpReduce  = cub::WarpReduce<T, LogicalWarpThreads>;
       using TempStorage = typename WarpReduce::TempStorage;
