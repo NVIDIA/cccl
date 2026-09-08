@@ -32,10 +32,10 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-CREATE_IKET_PUSH_POP_RANGE(LoadSmem);
-CREATE_IKET_PUSH_POP_RANGE(StoreSmem);
-CREATE_IKET_PUSH_POP_RANGE(LoadBulk);
-CREATE_IKET_PUSH_POP_RANGE(BulkStore);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadSmem);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(StoreSmem);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadBulk);
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(BulkStore);
 
 #if __cccl_ptx_isa >= 860
 
@@ -106,7 +106,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
 template <typename ResourceTp, typename Tp>
 _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> cpAsyncOobInfo)
 {
-  IKET_RANGE_PUSH(LoadBulk);
+  _CCCL_IKET_RANGE_PUSH(LoadBulk);
   ::cuda::std::byte* ptrSmem = refDestSmem.data().inout;
   _CCCL_ASSERT(::cuda::is_aligned(ptrSmem, 16), "");
   ::cuda::std::uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
@@ -156,7 +156,7 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
         reinterpret_cast<Tp*>(ptrSmem + cpAsyncOobInfo.smemStartSkipBytes)[squad.threadRank()] =
           reinterpret_cast<const Tp*>(cpAsyncOobInfo.ptrGmem)[squad.threadRank()];
       }
-      IKET_RANGE_POP();
+      _CCCL_IKET_RANGE_POP();
       return; // no bulk copy has been performed so we don't need to update the tx count of any barrier
     }
 
@@ -211,7 +211,7 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
     }
 #  endif // __cccl_ptx_isa >= 920
   }
-  IKET_RANGE_POP();
+  _CCCL_IKET_RANGE_POP();
 }
 
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void squadStoreMasked16B(
@@ -241,7 +241,7 @@ template <typename OutputT>
 _CCCL_DEVICE_API void
 squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::cuda::std::byte* srcSmem)
 {
-  IKET_RANGE_PUSH(BulkStore);
+  _CCCL_IKET_RANGE_PUSH(BulkStore);
   // This function performs either 1 copy, or three copies, depending on the
   // size and alignment of the output tile in global memory.
   //
@@ -356,7 +356,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     ::cuda::ptx::cp_async_bulk_commit_group();
     ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
   }
-  IKET_RANGE_POP();
+  _CCCL_IKET_RANGE_POP();
 }
 
 #endif // __cccl_ptx_isa >= 860
@@ -364,32 +364,32 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 template <typename InputT, typename AccumT, int ElemPerThread>
 _CCCL_DEVICE_API void squadLoadSmem(Squad squad, AccumT (&outReg)[ElemPerThread], const InputT* smemBuf)
 {
-  IKET_RANGE_PUSH(LoadSmem);
+  _CCCL_IKET_RANGE_PUSH(LoadSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
     const int elem_idx = squad.threadRank() * ElemPerThread + i;
     outReg[i]          = smemBuf[elem_idx];
   }
-  IKET_RANGE_POP();
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <typename OutputT, typename AccumT, int ElemPerThread>
 _CCCL_DEVICE_API void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemPerThread])
 {
-  IKET_RANGE_PUSH(StoreSmem);
+  _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
     const int elem_idx = squad.threadRank() * ElemPerThread + i;
     smemBuf[elem_idx]  = inReg[i];
   }
-  IKET_RANGE_POP();
+  _CCCL_IKET_RANGE_POP();
 }
 
 template <typename OutputT, typename AccumT, int ElemPerThread>
 _CCCL_DEVICE_API void
 squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemPerThread], int beginIndex, int endIndex)
 {
-  IKET_RANGE_PUSH(StoreSmem);
+  _CCCL_IKET_RANGE_PUSH(StoreSmem);
   for (int i = 0; i < ElemPerThread; ++i)
   {
     const int elem_idx = squad.threadRank() * ElemPerThread + i;
@@ -398,7 +398,7 @@ squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[ElemP
       smemBuf[elem_idx - beginIndex] = inReg[i];
     }
   }
-  IKET_RANGE_POP();
+  _CCCL_IKET_RANGE_POP();
 }
 } // namespace detail::warpspeed
 
