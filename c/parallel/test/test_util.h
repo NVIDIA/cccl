@@ -236,7 +236,7 @@ cccl_type_info get_type_info()
   return info;
 }
 
-std::string type_enum_to_name(cccl_type_enum type)
+inline std::string type_enum_to_name(cccl_type_enum type)
 {
   switch (type)
   {

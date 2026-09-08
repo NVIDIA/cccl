@@ -290,7 +290,7 @@ __apply(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) noexcept(__detail::__nothrow
 #undef _CCCL_TUPLE_GET
 
 template <class _Fn, class _Tuple, class... _Us>
-using __apply_result_t _CCCL_NODEBUG_ALIAS =
+using __apply_result_t _CCCL_NODEBUG =
   decltype(::cuda::std::__apply(declval<_Fn>(), declval<_Tuple>(), declval<_Us>()...));
 
 template <class _Fn, class _Tuple, class... _Us>
@@ -375,7 +375,7 @@ _CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tupl) noexcept -> auto&&
 // __decayed_tuple<Ts...>
 //
 template <class... _Ts>
-using __decayed_tuple _CCCL_NODEBUG_ALIAS = __tuple<decay_t<_Ts>...>;
+using __decayed_tuple _CCCL_NODEBUG = __tuple<decay_t<_Ts>...>;
 
 //
 // __pair
@@ -415,7 +415,7 @@ template <class _Tp>
 _CCCL_API auto __remove_rvalue_ref(_Tp&&) noexcept -> _Tp;
 
 template <size_t _Index, class _Tuple>
-using __tuple_element_t _CCCL_NODEBUG_ALIAS =
+using __tuple_element_t _CCCL_NODEBUG =
   decltype(::cuda::std::__remove_rvalue_ref(::cuda::std::__get<_Index>(declval<_Tuple>())));
 
 _CCCL_END_NAMESPACE_CUDA_STD

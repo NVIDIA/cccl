@@ -28,7 +28,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-using __remove_const_ref_t _CCCL_NODEBUG_ALIAS = remove_const_t<remove_reference_t<_Tp>>;
+using __remove_const_ref_t _CCCL_NODEBUG = remove_const_t<remove_reference_t<_Tp>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

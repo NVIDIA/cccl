@@ -129,7 +129,7 @@ struct TestVectorLowerBoundDescending
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorLowerBoundDescending, SignedIntegralTypes> TestVectorLowerBoundDescendingInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorLowerBoundDescending, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorUpperBoundDescending
@@ -155,7 +155,7 @@ struct TestVectorUpperBoundDescending
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorUpperBoundDescending, SignedIntegralTypes> TestVectorUpperBoundDescendingInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorUpperBoundDescending, SignedIntegralTypes);
 
 template <typename T>
 struct TestVectorBinarySearchDescending
@@ -181,4 +181,4 @@ struct TestVectorBinarySearchDescending
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestVectorBinarySearchDescending, SignedIntegralTypes> TestVectorBinarySearchDescendingInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorBinarySearchDescending, SignedIntegralTypes);

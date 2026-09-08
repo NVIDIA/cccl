@@ -168,6 +168,38 @@ auto compute_reference_result(
   return h_histogram;
 }
 
+// Computes the [lower_level, upper_level] sample range for a channel with `num_bins` bins, laid out inside
+// [0:max_level]. The range gets narrower the fewer bins a channel uses. Example:
+//    max_level = 256
+//   num_levels = { 257, 129,  65 }
+//  lower_level = {   0,  64,  96 }
+//  upper_level = { 256, 192, 160 }
+//
+// The bounds are derived by shrinking [0:max_level] by the bins the channel does not use, instead of growing
+// `num_bins * min_bin_width` around the center. The latter rounds up beyond max_level and thus yields infinity when
+// max_level is the maximum of a floating point LevelT, see NVIDIA/cccl#1793.
+template <typename LevelT>
+auto compute_bin_range(int num_bins, LevelT max_level, int max_level_count) -> array<LevelT, 2>
+{
+  const auto min_bin_width = max_level / (max_level_count - 1);
+  REQUIRE(min_bin_width > 0);
+
+  const int unused_bins       = (max_level_count - 1) - num_bins;
+  const int unused_bins_below = unused_bins / 2;
+  const int unused_bins_above = unused_bins - unused_bins_below;
+
+  const auto lower_level = static_cast<LevelT>(unused_bins_below * min_bin_width);
+  const auto upper_level = static_cast<LevelT>(max_level - unused_bins_above * min_bin_width);
+  // `lower_level < upper_level` alone does not catch an overflow to +/-infinity, which is how #1793 went unnoticed
+  if constexpr (!cs::is_unsigned_v<LevelT>)
+  {
+    REQUIRE(lower_level >= LevelT{});
+  }
+  REQUIRE(upper_level <= max_level);
+  REQUIRE(lower_level < upper_level);
+  return {lower_level, upper_level};
+}
+
 template <size_t ActiveChannels, typename LevelT>
 auto setup_bin_levels_for_even(const array<int, ActiveChannels>& num_levels, LevelT max_level, int max_level_count)
   -> array<array<LevelT, ActiveChannels>, 2>
@@ -176,25 +208,14 @@ auto setup_bin_levels_for_even(const array<int, ActiveChannels>& num_levels, Lev
   auto& lower_level = levels[0];
   auto& upper_level = levels[1];
 
-  // Create upper and lower levels between between [0:max_level], getting narrower with each channel. Example:
-  //    max_level = 256
-  //   num_levels = { 257, 129,  65 }
-  //  lower_level = {   0,  64,  96 }
-  //  upper_level = { 256, 192, 160 }
-
   // TODO(bgruber): eventually, we could just pick a random lower/upper bound for each channel
-
-  const auto min_bin_width = max_level / (max_level_count - 1);
-  REQUIRE(min_bin_width > 0);
 
   for (size_t c = 0; c < ActiveChannels; ++c)
   {
-    const int num_bins        = num_levels[c] - 1;
-    const auto min_hist_width = num_bins * min_bin_width;
-    lower_level[c]            = static_cast<LevelT>(max_level / 2 - min_hist_width / 2);
-    upper_level[c]            = static_cast<LevelT>(max_level / 2 + min_hist_width / 2);
     CAPTURE(c, num_levels[c]);
-    REQUIRE(lower_level[c] < upper_level[c]);
+    const auto [lower, upper] = compute_bin_range(num_levels[c] - 1, max_level, max_level_count);
+    lower_level[c]            = lower;
+    upper_level[c]            = upper;
   }
   return levels;
 }
@@ -206,18 +227,20 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
   // TODO(bgruber): eventually, we could just pick random levels for each channel
 
   const auto min_bin_width = max_level / (max_level_count - 1);
-  REQUIRE(min_bin_width > 0);
 
   array<c2h::host_vector<LevelT>, ActiveChannels> levels;
   for (size_t c = 0; c < ActiveChannels; ++c)
   {
+    CAPTURE(c, num_levels[c]);
     levels[c].resize(num_levels[c]);
     const int num_bins        = num_levels[c] - 1;
-    const auto min_hist_width = num_bins * min_bin_width;
-    const auto lower_level    = (max_level / 2 - min_hist_width / 2);
+    const auto [lower, upper] = compute_bin_range(num_bins, max_level, max_level_count);
     for (int l = 0; l < num_levels[c]; ++l)
     {
-      levels[c][l] = static_cast<LevelT>(lower_level + l * min_bin_width);
+      // The last level is taken from the range instead of being computed, because `lower + num_bins * min_bin_width`
+      // rounds up beyond max_level and thus yields infinity when max_level is the maximum of a floating point LevelT,
+      // see NVIDIA/cccl#1793.
+      levels[c][l] = (l == num_bins) ? upper : static_cast<LevelT>(lower + l * min_bin_width);
       if (l > 0)
       {
         REQUIRE(levels[c][l - 1] < levels[c][l]);
@@ -523,9 +546,8 @@ CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMA
   test_even_and_range<sample_t, 4, 3, int>(max_level, max_level_count, 1920, 1080);
 }
 
-// TODO(bgruber): float produces INFs in the HistogramRange test setup AND the HistogramEven implementation
 // This test covers int32 and int64 arithmetic for bin computation
-CUB_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", CUB_SMALL, c2h::remove<types, float>)
+CUB_TEST("DeviceHistogram::Histogram* large levels", "[histogram][device]", CUB_SMALL, types)
 {
   using sample_t             = c2h::get<0, TestType>;
   using level_t              = sample_t;

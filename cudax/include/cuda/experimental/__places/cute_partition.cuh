@@ -1667,11 +1667,74 @@ cute_partition<rank, num_place_leaves, num_local_leaves> make_partition(
 }
 
 /**
+ * @brief Composite data place whose partitioner is a cute_partition object
+ *
+ * Like data_place_composite but ownership is defined by the partition object
+ * value (a bare partition_fn_t cannot carry its leaves), so a canonical
+ * descriptor is stored on the place. Because a padded partition is
+ * intrinsically specific to one tensor, such a place is per-tensor by nature.
+ * This place supports both shaped raw allocations
+ * (allocate_nd(data_dims, elemsize)) and STF logical data.
+ */
+
+/**
+ * @brief Owner provider for localized_array from a partition descriptor.
+ *
+ * Tries the analytic block plan first (exact owners, byte-true placement
+ * statistics: the sample counters then hold byte counts); falls back to the
+ * sampled majority vote for layouts denser than the placement blocks.
+ */
+inline auto make_partition_placement_provider(
+  const cute_partition_descriptor& partition,
+  dim4 data_dims,
+  size_t total_size,
+  size_t elemsize,
+  size_t probes = localized_placement_default_probes)
+{
+  return [partition, data_dims, total_size, elemsize, probes](
+           size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<block_run> {
+    // Budget the analytic walks against what the sampled fallback would
+    // spend anyway (probes owner() evaluations per block): when a walk fits
+    // this budget it is BOTH cheaper and exact, so choosing it can never be
+    // a performance regression. The floor keeps small allocations
+    // permissive.
+    const size_t budget = ::cuda::std::max<size_t>(nblocks * localized_placement_default_probes, size_t(1) << 16);
+
+    // Exact tier: the strict quotient exists -- runs come straight from the
+    // layout algebra, no per-block work at all.
+    if (auto runs = partition.try_block_runs(block_size_bytes, elemsize, budget))
+    {
+      stats.accuracy = 1.0; // exact: zero misplacement
+      return mv(*runs);
+    }
+    // Census tier: straddling blocks resolved by exact byte majority with a
+    // closed-form misplaced count (byte-true accuracy in the stats).
+    size_t misplaced = 0;
+    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
+    {
+      const size_t total_bytes = total_size * elemsize;
+      stats.accuracy = total_bytes == 0 ? 1.0 : 1.0 - static_cast<double>(misplaced) / static_cast<double>(total_bytes);
+      return owners_to_block_runs(mv(*owners));
+    }
+    // Sampled tier: opaque-density fallback (element-pitch interleavings).
+    const auto owner_of = ::std::function<pos4(size_t)>([&partition, data_dims](size_t ind) {
+      return partition.owner(data_dims.index_to_pos(ind));
+    });
+    return owners_to_block_runs(
+      compute_block_owners(owner_of, nblocks, block_size_bytes, elemsize, total_size, probes, stats));
+  };
+}
+
+/**
  * @brief Evaluate - without allocating - how a localized allocation of a
  * tensor distributed by `partition` over `grid` would be placed
  *
  * See evaluate_localized_placement(); the tensor extents are the partition's
- * true extents.
+ * true extents. Placement follows the same tiered decision procedure as the
+ * allocation path (make_partition_placement_provider): the analytic and
+ * census tiers yield an exact `accuracy`, and only layouts denser than the
+ * placement blocks fall back to the sampled majority vote, where `accuracy`
+ * is an estimate. `probes` only affects that fallback.
  */
 template <typename Partition>
 [[nodiscard]] localized_stats evaluate_localized_placement(
@@ -1701,81 +1764,38 @@ template <typename Partition>
   stats.block_size         = block_size;
   stats.nblocks            = stats.vm_bytes / block_size;
 
-  const ::std::vector<pos4> owners = compute_block_owners(
-    [&](size_t index) {
-      return partition.owner(data_dims.index_to_pos(index));
-    },
-    stats.nblocks,
-    block_size,
-    elemsize,
-    total_elems,
-    probes,
-    stats);
+  if (elemsize == 0 || block_size < elemsize)
+  {
+    _CCCL_THROW(::std::invalid_argument,
+                "placement blocks must hold at least one element (elemsize in [1, block size])");
+  }
 
-  for_each_owner_run(owners, [&](pos4 p, size_t /*first_block*/, size_t num_blocks) {
-    const data_place place = grid.get_place(p).affine_data_place();
-    stats.bytes_per_place[place.to_string()] += num_blocks * block_size;
-    stats.bytes_per_grid_index[grid.get_dims().get_index(p)] += num_blocks * block_size;
+  // Uniform descriptor access: the typed cute_partition wrapper exposes
+  // descriptor(); the type-erased cute_partition_descriptor is its own.
+  const cute_partition_descriptor desc = [&]() -> cute_partition_descriptor {
+    if constexpr (::cuda::std::is_same_v<Partition, cute_partition_descriptor>)
+    {
+      return partition;
+    }
+    else
+    {
+      return partition.descriptor();
+    }
+  }();
+
+  auto provider = make_partition_placement_provider(desc, data_dims, total_elems, elemsize, probes);
+  const ::std::vector<block_run> runs = provider(block_size, stats.nblocks, stats);
+
+  for (const auto& r : runs)
+  {
+    const size_t grid_index = checked_grid_index(grid.get_dims(), r.owner);
+    const data_place place  = grid.get_place(r.owner).affine_data_place();
+    stats.bytes_per_place[place.to_string()] += r.num_blocks * block_size;
+    stats.bytes_per_grid_index[grid_index] += r.num_blocks * block_size;
     stats.nallocs++;
-  });
+  }
 
   return stats;
-}
-
-/**
- * @brief Composite data place whose partitioner is a cute_partition object
- *
- * Like data_place_composite but ownership is defined by the partition object
- * value (a bare partition_fn_t cannot carry its leaves), so a canonical
- * descriptor is stored on the place. Because a padded partition is
- * intrinsically specific to one tensor, such a place is per-tensor by nature.
- * This place supports both shaped raw allocations
- * (allocate_nd(data_dims, elemsize)) and STF logical data.
- */
-
-/**
- * @brief Owner provider for localized_array from a partition descriptor.
- *
- * Tries the analytic block plan first (exact owners, byte-true placement
- * statistics: the sample counters then hold byte counts); falls back to the
- * sampled majority vote for layouts denser than the placement blocks.
- */
-inline auto make_partition_placement_provider(
-  const cute_partition_descriptor& partition, dim4 data_dims, size_t total_size, size_t elemsize)
-{
-  return [partition, data_dims, total_size, elemsize](
-           size_t block_size_bytes, size_t nblocks, localized_stats& stats) -> ::std::vector<block_run> {
-    // Budget the analytic walks against what the sampled fallback would
-    // spend anyway (probes owner() evaluations per block): when a walk fits
-    // this budget it is BOTH cheaper and exact, so choosing it can never be
-    // a performance regression. The floor keeps small allocations
-    // permissive.
-    const size_t budget = ::cuda::std::max<size_t>(nblocks * localized_placement_default_probes, size_t(1) << 16);
-
-    // Exact tier: the strict quotient exists -- runs come straight from the
-    // layout algebra, no per-block work at all.
-    if (auto runs = partition.try_block_runs(block_size_bytes, elemsize, budget))
-    {
-      stats.total_samples    = total_size * elemsize;
-      stats.matching_samples = stats.total_samples; // exact: zero misplacement
-      return mv(*runs);
-    }
-    // Census tier: straddling blocks resolved by exact byte majority with a
-    // closed-form misplaced count (byte-true accuracy in the stats).
-    size_t misplaced = 0;
-    if (auto owners = partition.try_block_owners(block_size_bytes, elemsize, &misplaced, budget))
-    {
-      stats.total_samples    = total_size * elemsize;
-      stats.matching_samples = stats.total_samples - misplaced;
-      return owners_to_block_runs(mv(*owners));
-    }
-    // Sampled tier: opaque-density fallback (element-pitch interleavings).
-    const auto owner_of = ::std::function<pos4(size_t)>([&partition, data_dims](size_t ind) {
-      return partition.owner(data_dims.index_to_pos(ind));
-    });
-    return owners_to_block_runs(compute_block_owners(
-      owner_of, nblocks, block_size_bytes, elemsize, total_size, localized_placement_default_probes, stats));
-  };
 }
 
 class data_place_cute_composite final : public data_place_interface

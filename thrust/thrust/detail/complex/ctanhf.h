@@ -58,6 +58,10 @@ namespace detail::complex
 {
 using thrust::complex;
 
+// `y - y` is a deliberate IEEE-754 idiom, not a redundant expression: it yields +0.0 for a
+// finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
+// the complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
 {
   float x, y;
@@ -100,6 +104,7 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
   denom = 1.0f + beta * s * s;
   return (complex<float>((beta * rho * s) / denom, t / denom));
 }
+// NOLINTEND(misc-redundant-expression)
 
 _CCCL_HOST_DEVICE inline complex<float> ctanf(complex<float> z)
 {

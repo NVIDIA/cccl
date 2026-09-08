@@ -91,7 +91,8 @@ private:
     if (this->kind() == kinds::green_context)
     {
 #  if _CCCL_CTK_AT_LEAST(12, 5)
-      static_cast<void>(::cuda::__driver::__greenCtxDestroyNoThrow(green_context()));
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::__driver::__greenCtxDestroyNoThrow, "Failed to destroy green context", green_context());
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
       __green_ctx_ = nullptr;
       __cu_ctx_    = nullptr;

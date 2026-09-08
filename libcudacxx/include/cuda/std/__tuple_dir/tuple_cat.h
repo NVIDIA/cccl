@@ -44,7 +44,7 @@ struct __tuple_cat_type;
 template <class... _Ttypes, class... _Utypes>
 struct __tuple_cat_type<tuple<_Ttypes...>, __tuple_types<_Utypes...>>
 {
-  using type _CCCL_NODEBUG_ALIAS = tuple<_Ttypes..., _Utypes...>;
+  using type _CCCL_NODEBUG = tuple<_Ttypes..., _Utypes...>;
 };
 
 template <class _ResultTuple, bool _Is_Tuple0TupleLike, class... _Tuples>
@@ -54,7 +54,7 @@ struct __tuple_cat_return_1
 template <class... _Types, class _Tuple0>
 struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0>
 {
-  using type _CCCL_NODEBUG_ALIAS =
+  using type _CCCL_NODEBUG =
     typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type;
 };
 
@@ -78,7 +78,7 @@ struct __tuple_cat_return<_Tuple0, _Tuples...>
 template <>
 struct __tuple_cat_return<>
 {
-  using type _CCCL_NODEBUG_ALIAS = tuple<>;
+  using type _CCCL_NODEBUG = tuple<>;
 };
 
 _CCCL_API constexpr tuple<> tuple_cat()
@@ -92,8 +92,8 @@ struct __tuple_cat_return_ref_imp;
 template <class... _Types, size_t... _I0, class _Tuple0>
 struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0>
 {
-  using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
-  using type                    = tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_I0, _T0>>&&...>;
+  using _T0 _CCCL_NODEBUG = remove_reference_t<_Tuple0>;
+  using type              = tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_I0, _T0>>&&...>;
 };
 
 template <class... _Types, size_t... _I0, class _Tuple0, class _Tuple1, class... _Tuples>
@@ -136,8 +136,8 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
   _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&, _Tuple1&&, _Tuples&&...>::type
   _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
   {
-    using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
-    using _T1 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple1>;
+    using _T0 _CCCL_NODEBUG = remove_reference_t<_Tuple0>;
+    using _T1 _CCCL_NODEBUG = remove_reference_t<_Tuple1>;
     return __tuple_cat<tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_J0, _T0>>&&...>,
                        __make_tuple_indices_t<sizeof...(_Types) + tuple_size<_T0>::value>,
                        __make_tuple_indices_t<tuple_size<_T1>::value>>()(
@@ -155,7 +155,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
 template <class _Tuple0, class... _Tuples>
 _CCCL_API constexpr typename __tuple_cat_return<_Tuple0, _Tuples...>::type tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)
 {
-  using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
+  using _T0 _CCCL_NODEBUG = remove_reference_t<_Tuple0>;
   return __tuple_cat<tuple<>, __tuple_indices<>, __make_tuple_indices_t<tuple_size<_T0>::value>>()(
     tuple<>(), ::cuda::std::forward<_Tuple0>(__t0), ::cuda::std::forward<_Tuples>(__tpls)...);
 }

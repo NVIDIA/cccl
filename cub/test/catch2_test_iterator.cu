@@ -101,7 +101,7 @@ static_assert(cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOut
 //                       cub::LOAD_LDG,
 //                       cub::LOAD_VOLATILE>;
 //
-// C2H_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
+// CUB_TEST("Test cache modified iterator", "[iterator]", CUB_SMALL, types, cache_modifiers)
 // {
 //   using T                       = c2h::get<0, TestType>;
 //   constexpr auto cache_modifier = c2h::get<1, TestType>::value;

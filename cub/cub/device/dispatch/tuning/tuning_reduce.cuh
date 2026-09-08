@@ -247,6 +247,71 @@ get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
   return {};
 }
 
+// tunings from cub/benchmarks/bench/reduce/arg_extrema.cu. These are raw measured values and must not be passed
+// through scale_mem_bound.
+_CCCL_HOST_DEVICE_API constexpr auto
+get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int accum_size)
+  -> ::cuda::std::optional<sm100_tuning_values>
+{
+  if (operation_t != op_kind_t::other || accum_t != type_t::other || offset_size != 4)
+  {
+    return {};
+  }
+
+  if (accum_size == 8)
+  {
+    // ipt_16.tpb_256.ipv_2  2^28 mean 1.264 across int8/int16/int32/float, worst small-size cost -9%
+    return sm100_tuning_values{16, 256, 2};
+  }
+  if (accum_size == 16)
+  {
+    // ipt_17.tpb_416.ipv_2  2^28: double 1.314, int64 ~1.29
+    return sm100_tuning_values{17, 416, 2};
+  }
+  if (accum_size == 32)
+  {
+    // ipt_10.tpb_384.ipv_2  2^28: int128 1.345
+    return sm100_tuning_values{10, 384, 2};
+  }
+
+  return {};
+}
+
+// tunings from cub/benchmarks/bench/reduce/sum.cu
+_CCCL_HOST_DEVICE_API constexpr auto get_sm107_tuning(type_t accum_t, op_kind_t operation_t, int offset_size)
+  -> ::cuda::std::optional<sm100_tuning_values>
+{
+  if (operation_t != op_kind_t::plus)
+  {
+    // for min or max, verification showed the benefits were too small (within noise)
+    return {};
+  }
+
+  if (accum_t == type_t::float64 && offset_size == 4)
+  {
+    // ipt_17.tpb_192.ipv_2  1.128568  1.062323  1.127248  1.197567
+    return sm100_tuning_values{17, 192, 2};
+  }
+  if (accum_t == type_t::float64 && offset_size == 8)
+  {
+    // ipt_19.tpb_256.ipv_1  1.077322  1.048921  1.086155  1.172982
+    return sm100_tuning_values{19, 256, 1};
+  }
+  if ((accum_t == type_t::int64 || accum_t == type_t::uint64) && offset_size == 4)
+  {
+    // ipt_24.tpb_448.ipv_1  1.106178  1.039921  1.108836  1.150000
+    return sm100_tuning_values{24, 448, 1};
+  }
+  if ((accum_t == type_t::int64 || accum_t == type_t::uint64) && offset_size == 8)
+  {
+    // ipt_19.tpb_448.ipv_2  1.075765  1.028160  1.083034  1.142857
+    return sm100_tuning_values{19, 448, 2};
+  }
+  // float32 and 4-byte-or-smaller integer accumulators: the best candidates traded a small gain at 2^28 for real
+  // small-problem regressions during verification, so they are intentionally left untuned
+  return {};
+}
+
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
@@ -404,6 +469,33 @@ struct policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_two_phase_tuning(::cuda::compute_capability cc) const
     -> ReducePolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (const auto sm107_tuning = get_sm107_tuning(accum_t, operation_t, offset_size, accum_size))
+      {
+        const auto rp = ReducePassPolicy{
+          sm107_tuning->threads,
+          sm107_tuning->items,
+          sm107_tuning->items_per_vec_load,
+          BLOCK_REDUCE_WARP_REDUCTIONS,
+          LOAD_LDG};
+        return {rp, rp};
+      }
+      if (const auto sm107_tuning = get_sm107_tuning(accum_t, operation_t, offset_size))
+      {
+        const auto [scaled_items, scaled_threads] =
+          scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
+        const auto rp = ReducePassPolicy{
+          scaled_threads,
+          scaled_items,
+          1 << sm107_tuning->items_per_vec_load,
+          BLOCK_REDUCE_WARP_REDUCTIONS,
+          LOAD_DEFAULT};
+        return {rp, rp};
+      }
+      // fall through to the sm100 tunings for untuned shapes
+    }
+
     // if we don't have a tuning for sm100, fall through
     auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
     if (cc >= ::cuda::compute_capability{10, 0} && sm100_tuning)

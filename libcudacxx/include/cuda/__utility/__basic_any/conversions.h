@@ -77,7 +77,7 @@ struct __archetype<true, true> : __archetype<true, false>
 };
 
 template <class _Interface>
-using __archetype_t _CCCL_NODEBUG_ALIAS =
+using __archetype_t _CCCL_NODEBUG =
   __archetype<__extension_of<_Interface, __imovable<>>, __extension_of<_Interface, __icopyable<>>>;
 
 // Strip top-level cv- and ref-qualifiers from pointer types:
@@ -88,7 +88,7 @@ template <class _Ty>
 _CCCL_HOST_DEVICE_API auto __normalize_interface(_Ty*) -> _Ty*;
 
 template <class _Ty>
-using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::__normalize_interface(::cuda::std::declval<_Ty>()));
+using __normalize_t _CCCL_NODEBUG = decltype(::cuda::__normalize_interface(::cuda::std::declval<_Ty>()));
 
 // Used to map a __basic_any specialization to a normalized interface type:
 template <class _Ty>
@@ -139,13 +139,13 @@ template <class _Archetype>
 extern __archetype<false, false> const* __as_immovable<_Archetype const*>;
 
 template <class _CvAny>
-using __normalized_interface_of _CCCL_NODEBUG_ALIAS = __normalize_t<decltype(__interface_from<__normalize_t<_CvAny>>)>;
+using __normalized_interface_of _CCCL_NODEBUG = __normalize_t<decltype(__interface_from<__normalize_t<_CvAny>>)>;
 
 template <class _CvAny>
-using __src_archetype_of _CCCL_NODEBUG_ALIAS = decltype(__as_archetype<__normalized_interface_of<_CvAny>>);
+using __src_archetype_of _CCCL_NODEBUG = decltype(__as_archetype<__normalized_interface_of<_CvAny>>);
 
 template <class _CvAny>
-using __dst_archetype_of _CCCL_NODEBUG_ALIAS = decltype(__as_immovable<__src_archetype_of<_CvAny>>);
+using __dst_archetype_of _CCCL_NODEBUG = decltype(__as_immovable<__src_archetype_of<_CvAny>>);
 
 // If the archetypes are implicitly convertible, then it is possible to
 // dynamically cast from the source to the destination. The cast may fail,

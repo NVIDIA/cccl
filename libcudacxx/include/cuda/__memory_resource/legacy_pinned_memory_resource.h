@@ -85,7 +85,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to legacy_pinned_memory_resource::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(
+    _CCCL_ASSERT_DRIVER_API(
       ::cuda::__driver::__freeHostNoThrow, "legacy_pinned_memory_resource::deallocate_sync failed", __ptr);
   }
 

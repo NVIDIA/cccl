@@ -36,7 +36,7 @@ struct TestZipFunctionCtor
     ASSERT_EQUAL(thrust::zip_function(SumThree{})(cuda::std::tuple(1, 2, 3)), SumThree{}(1, 2, 3));
   }
 };
-SimpleUnitTest<TestZipFunctionCtor, type_list<int>> TestZipFunctionCtorInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionCtor, type_list<int>);
 
 template <typename T>
 struct TestZipFunctionTransform
@@ -75,7 +75,7 @@ struct TestZipFunctionTransform
     ASSERT_EQUAL(h_result_tuple, d_result_zip);
   }
 };
-VariableUnitTest<TestZipFunctionTransform, ThirtyTwoBitTypes> TestZipFunctionTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipFunctionTransform, ThirtyTwoBitTypes);
 
 struct RemovePred
 {
@@ -109,7 +109,7 @@ struct TestZipFunctionMixed
     ASSERT_EQUAL(vecC, expected);
   }
 };
-SimpleUnitTest<TestZipFunctionMixed, type_list<int, float>> TestZipFunctionMixedInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipFunctionMixed, type_list<int, float>);
 
 struct NestedFunctionCall
 {
@@ -148,7 +148,7 @@ struct TestNestedZipFunction
     ASSERT_EQUAL(isMH, expected);
   }
 };
-SimpleUnitTest<TestNestedZipFunction, type_list<int, float>> TestNestedZipFunctionInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction, type_list<int, float>);
 
 struct SortPred
 {
@@ -173,4 +173,4 @@ struct TestNestedZipFunction2
     thrust::sort(nestedTupleIt, nestedTupleIt + static_cast<std::ptrdiff_t>(n), SortPred{});
   }
 };
-SimpleUnitTest<TestNestedZipFunction2, type_list<int, float>> TestNestedZipFunctionInstance2;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestNestedZipFunction2, type_list<int, float>);

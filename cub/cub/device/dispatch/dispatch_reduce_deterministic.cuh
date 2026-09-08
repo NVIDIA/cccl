@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
@@ -112,13 +113,19 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     return cudaSuccess;
   }
 
-// Log single_reduce_sweep_kernel configuration
+  // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
           "%d items per thread\n",
           active_policy.single_tile.threads_per_block,
           (long long) stream,
           active_policy.single_tile.items_per_thread);
+#else // CUB_DEBUG_LOG
+  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+      "%d items per thread\n",
+      active_policy.single_tile.threads_per_block,
+      (long long) stream,
+      active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
   // Invoke single_reduce_sweep_kernel
@@ -270,7 +277,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
       }
     }();
 
-// Log device_reduce_sweep_kernel configuration
+    // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
@@ -279,6 +286,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
             (long long) stream,
             active_policy.multi_tile.items_per_thread,
             reduce_config.sm_occupancy);
+#else // CUB_DEBUG_LOG
+    log("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
+        "per thread, %d SM occupancy\n",
+        current_grid_size,
+        active_policy.multi_tile.threads_per_block,
+        (long long) stream,
+        active_policy.multi_tile.items_per_thread,
+        reduce_config.sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
@@ -318,13 +333,19 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     }
   }
 
-// Log single_reduce_sweep_kernel configuration
+  // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
           "%d items per thread\n",
           active_policy.single_tile.threads_per_block,
           (long long) stream,
           active_policy.single_tile.items_per_thread);
+#else // CUB_DEBUG_LOG
+  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+      "%d items per thread\n",
+      active_policy.single_tile.threads_per_block,
+      (long long) stream,
+      active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
   // Invoke DeterministicDeviceReduceSingleTileKernel/DeterministicDeviceReduceDeferredSingleTileKernel
@@ -422,6 +443,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;

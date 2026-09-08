@@ -111,12 +111,11 @@ void TestSetUnionByKey(const size_t n)
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
 
-  size_t denominators[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-  size_t num_denominators = sizeof(denominators) / sizeof(size_t);
+  const size_t denominators[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-  for (size_t i = 0; i < num_denominators; ++i)
+  for (const size_t denominator : denominators)
   {
-    size_t size_a = n / denominators[i];
+    const size_t size_a = n / denominator;
 
     thrust::host_vector<T> h_a_keys(random_keys.begin(), random_keys.begin() + size_a);
     thrust::host_vector<T> h_b_keys(random_keys.begin() + size_a, random_keys.end());
