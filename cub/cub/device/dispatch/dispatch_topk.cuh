@@ -449,16 +449,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! @tparam DecomposerT
 //!   Implementation detail, do not specify directly, requirements on the content of this type are subject to breaking
 //!   change.
-template <select SelectDirection,
-          typename KeyInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueInputIteratorT,
-          typename ValueOutputIteratorT,
-          typename OffsetT,
-          typename OutOffsetT,
-          typename DecomposerT           = detail::identity_decomposer_t,
-          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyInputIteratorT>>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  select SelectDirection,
+  typename KeyInputIteratorT,
+  typename KeyOutputIteratorT,
+  typename ValueInputIteratorT,
+  typename ValueOutputIteratorT,
+  typename OffsetT,
+  typename OutOffsetT,
+  typename DecomposerT = detail::identity_decomposer_t,
+  typename PolicySelector =
+    policy_selector_from_types<it_value_t<KeyInputIteratorT>, it_value_t<ValueInputIteratorT>, OffsetT, OutOffsetT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
