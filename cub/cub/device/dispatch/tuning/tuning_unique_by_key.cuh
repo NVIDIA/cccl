@@ -1499,14 +1499,8 @@ private:
     {
       if (value_type == type_t::float32)
       {
-        // ipt_17.tpb_192.trp_1.ld_1.ns_664.dcid_6.l2w_365  1.136  1.160  1.205  1.136
-        return UniqueByKeyPolicy{
-          192,
-          17,
-          BLOCK_LOAD_WARP_TRANSPOSE,
-          LOAD_CA,
-          BLOCK_SCAN_WARP_SCANS,
-          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 664, 365}};
+        // float32 values: the search winner regressed during verification, left untuned
+        return {};
       }
       // ipt_17.tpb_224.trp_1.ld_0.ns_1044.dcid_0.l2w_910  1.002  1.030  1.176  1.152
       return UniqueByKeyPolicy{
