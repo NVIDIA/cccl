@@ -181,11 +181,11 @@ struct DeviceTransform
             typename TransformOp,
             typename Env>
   CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
-    ::cuda::std::tuple<::thrust::zip_iterator<::cuda::std::tuple<ZippedIteratorsIn...>>> inputs,
+    ::cuda::std::tuple<THRUST_NS_QUALIFIER::zip_iterator<::cuda::std::tuple<ZippedIteratorsIn...>>> inputs,
     RandomAccessIteratorOut output,
     NumItemsT num_items,
     ::cuda::always_true predicate,
-    ::thrust::zip_function<TransformOp> transform_op,
+    THRUST_NS_QUALIFIER::zip_function<TransformOp> transform_op,
     const Env& env)
   {
     return __transform_internal<StableAddress>(
