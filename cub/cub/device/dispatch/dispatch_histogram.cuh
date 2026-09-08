@@ -429,7 +429,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 #else // CUB_DEBUG_LOG
   log("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
       histogram_init_grid_dims,
-      histogram_init_threads_per_block,
+      active_policy.init_threads_per_block,
       (long long) stream);
 #endif // CUB_DEBUG_LOG
 
@@ -464,14 +464,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           items_per_thread,
           histogram_sweep_sm_occupancy);
 #else // CUB_DEBUG_LOG
-  log("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
+  log("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, %d, %lld>>>(), %d pixels "
       "per thread, %d SM occupancy\n",
       sweep_grid_dims.x,
       sweep_grid_dims.y,
       sweep_grid_dims.z,
       threads_per_block,
+      dynamic_smem_bytes,
       (long long) stream,
-      pixels_per_thread,
+      items_per_thread,
       histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
@@ -993,25 +994,25 @@ struct max_policy_from_hub<void>
   using type = void;
 };
 
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  bool IsByteSample,
-  typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource = DeviceHistogramKernelSource<NUM_CHANNELS,
-                                                       NUM_ACTIVE_CHANNELS,
-                                                       SampleIteratorT,
-                                                       local_counter_t<PolicySelector, CounterT>,
-                                                       LevelT,
-                                                       OffsetT,
-                                                       SampleT,
-                                                       CounterT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          bool IsByteSample,
+          typename PolicySelector,
+          typename SampleT      = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+          typename KernelSource = DeviceHistogramKernelSource<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            SampleIteratorT,
+            local_counter_t<PolicySelector, CounterT>,
+            LevelT,
+            OffsetT,
+            SampleT,
+            CounterT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -1251,25 +1252,25 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
   return cudaSuccess;
 }
 
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  bool IsByteSample,
-  typename PolicySelector,
-  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename KernelSource = DeviceHistogramKernelSource<NUM_CHANNELS,
-                                                       NUM_ACTIVE_CHANNELS,
-                                                       SampleIteratorT,
-                                                       local_counter_t<PolicySelector, CounterT>,
-                                                       LevelT,
-                                                       OffsetT,
-                                                       SampleT,
-                                                       CounterT>,
-  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          bool IsByteSample,
+          typename PolicySelector,
+          typename SampleT      = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+          typename KernelSource = DeviceHistogramKernelSource<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            SampleIteratorT,
+            local_counter_t<PolicySelector, CounterT>,
+            LevelT,
+            OffsetT,
+            SampleT,
+            CounterT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
