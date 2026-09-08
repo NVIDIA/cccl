@@ -25,10 +25,10 @@
 #include <vector>
 
 #include <c2h/catch2_main.h>
-#include <c2h/catch2_nvtx.h>
-#include <c2h/catch2_seed.h>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_allocator.cuh>
+#include <c2h/detail/catch2_nvtx.h>
+#include <c2h/detail/catch2_seed.h>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
