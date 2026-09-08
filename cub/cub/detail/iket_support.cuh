@@ -13,8 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
-// Experimental: Optional IKET (In-Kernel Event Tracing) instrumentation. Enabled if the header is present. Otherwise,
-// instrumentation macros compile to nothing.
+// Experimental: Optional IKET (In-Kernel Event Tracing) instrumentation based on an internal prototype. Enabled if the
+// header is present. Otherwise, instrumentation macros compile to nothing.
 #if __has_include(<iket/iket_device_apis.cuh>)
 #  include <iket/iket_device_apis.cuh>
 #else
