@@ -540,8 +540,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr size_t num_tiles_to_num_tile_state
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
   size_t& temp_storage_bytes, size_t bytes_per_description, size_t bytes_per_payload, size_t num_tiles)
 {
-  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
-  size_t allocation_sizes[]{
+  const size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  const size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
     num_tile_states * bytes_per_description,
     // bytes needed for partials
@@ -562,8 +562,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
   size_t temp_storage_bytes,
   void* (&allocations)[3])
 {
-  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
-  size_t allocation_sizes[]{
+  const size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  const size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
     num_tile_states * bytes_per_description,
     // bytes needed for partials
@@ -666,7 +666,7 @@ struct ScanTileState<T, true>
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+    const int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
 
     TxnWord val                = TxnWord();
     TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
@@ -789,8 +789,8 @@ public:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
   {
-    TxnWord alias                  = d_tile_descriptors[TILE_STATUS_PADDING + tile_idx];
-    TileDescriptor tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
+    TxnWord alias                        = d_tile_descriptors[TILE_STATUS_PADDING + tile_idx];
+    const TileDescriptor tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
     return tile_descriptor.value;
   }
 };
@@ -877,7 +877,7 @@ struct ScanTileState<T, false>
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+    const int tile_idx = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
     if (tile_idx < num_tiles)
     {
       // Not-yet-set
@@ -1073,7 +1073,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx               = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
+    const int tile_idx         = static_cast<int>((blockIdx.x * blockDim.x) + threadIdx.x);
     TxnWord val                = TxnWord();
     TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
 
@@ -1248,7 +1248,7 @@ struct TilePrefixCallbackOp
     // Perform a segmented reduction to get the prefix for the current window.
     // Use the swizzled scan operator because we are now scanning *down* towards thread0.
 
-    int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+    const int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
     window_aggregate =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
