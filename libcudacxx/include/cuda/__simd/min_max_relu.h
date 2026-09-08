@@ -48,7 +48,7 @@ struct __max_relu_operation
 {
   template <typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
-  operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __lhs, const _Storage& __rhs) noexcept
   {
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
@@ -111,7 +111,7 @@ struct __min_relu_operation
 {
   template <typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
-  operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __lhs, const _Storage& __rhs) noexcept
   {
 #  if _CCCL_HAS_SIMD_8BIT_PTX()
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int8_t))
@@ -145,7 +145,7 @@ struct __min_relu_operation
 
   template <typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
-  operator()(const _Storage& __a, const _Storage& __b, const _Storage& __c) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
     if constexpr (sizeof(_Tp) == sizeof(::cuda::std::int16_t))
     {
