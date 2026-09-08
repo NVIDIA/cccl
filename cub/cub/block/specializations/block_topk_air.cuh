@@ -417,14 +417,14 @@ private:
     }
 
     // TODO (elstehle): Add support for custom decomposers
-    identity_decomposer_t decomposer;
+    const identity_decomposer_t decomposer;
 
     // Get bit-twiddled sortkeys. For float keys, -0.0 is normalized to +0.0 for ranking. When
     // not scattering the original keys, track which keys were -0.0 so we can restore -0.0 in
     // the output via a bitvector.
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
     constexpr int flip_back_num_words                = ::cuda::ceil_div(items_per_thread, 32);
-    [[maybe_unused]] ::cuda::std::uint32_t flip_back_bits[flip_back_num_words] = {};
+    [[maybe_unused]] ::cuda::std::uint32_t flip_back_bits[flip_back_num_words] = {}; // NOLINT(misc-const-correctness)
     if constexpr (::cuda::is_floating_point_v<KeyT>)
     {
       const bit_ordered_type twiddled_minus_zero =
