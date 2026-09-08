@@ -7,7 +7,6 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cstddef>
@@ -43,8 +42,8 @@
 //!   // codes and launch errors.
 //!   cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device);
 //!
-//!   // Tests with stream-ordered setup can pass a stream as the first argument.
-//!   cub_reduce_sum(stream, d_in, d_out, n, should_be_invoked_on_device);
+//!   // Tests with stream-ordered setup can pass a stream-like object as the first argument.
+//!   cub_reduce_sum(cuda::get_stream(stream), d_in, d_out, n, should_be_invoked_on_device);
 //! }
 //!
 //! ```
@@ -60,7 +59,7 @@
 //! so `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device)` implicitly turns
 //! into `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device, stream)`.
 //!
-//! The stream-aware wrapper overload uses the caller-provided stream for host and
+//! The stream-aware launch overload uses the caller-provided stream for host and
 //! graph launches. Device-side launches cannot consume a host stream; in that mode,
 //! the helper synchronizes the caller stream as a dependency boundary and invokes the
 //! wrapped API with its default stream argument.
@@ -86,66 +85,21 @@
     }                                                                                                 \
   }
 
-#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                                               \
-  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                                                                     \
-  [[maybe_unused]] inline constexpr struct WRAPPED_API_NAME##_t                                                     \
-  {                                                                                                                 \
-    template <class Stream, class... As>                                                                            \
-    ::cuda::std::enable_if_t<launch_helper_detail::is_stream_argument<Stream>::value>                               \
-    operator()(Stream&& stream, As... args) const                                                                   \
-    {                                                                                                               \
-      launch(::cuda::stream_ref{stream}, WRAPPED_API_NAME##_invocable_t{}, args...);                                \
-    }                                                                                                               \
-                                                                                                                    \
-    template <class... As>                                                                                          \
-    ::cuda::std::enable_if_t<!launch_helper_detail::first_arg_is_stream<As...>::value> operator()(As... args) const \
-    {                                                                                                               \
-      launch(WRAPPED_API_NAME##_invocable_t{}, args...);                                                            \
-    }                                                                                                               \
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)           \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                 \
+  [[maybe_unused]] inline constexpr struct WRAPPED_API_NAME##_t \
+  {                                                             \
+    template <class... As>                                      \
+    void operator()(As... args) const                           \
+    {                                                           \
+      launch(WRAPPED_API_NAME##_invocable_t{}, args...);        \
+    }                                                           \
   } WRAPPED_API_NAME
 
 #define ESCAPE_LIST(...) __VA_ARGS__
 
 namespace launch_helper_detail
 {
-template <class T>
-using remove_cvref_t = ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<T>>;
-
-template <class T>
-struct is_stream_argument;
-
-template <>
-struct is_stream_argument<cudaStream_t> : ::cuda::std::true_type
-{};
-
-template <typename T>
-struct is_stream_argument<T*> : ::cuda::std::false_type
-{};
-
-template <typename T>
-struct is_stream_argument : ::cuda::std::is_convertible<remove_cvref_t<T>, ::cuda::stream_ref>
-{};
-
-template <class...>
-struct first_arg_is_stream : ::cuda::std::false_type
-{};
-
-template <class First, class... Rest>
-struct first_arg_is_stream<First, Rest...> : is_stream_argument<First>
-{};
-
-template <typename... As>
-struct first_arg_is_stream<cudaStream_t, As...> : ::cuda::std::true_type
-{};
-
-template <typename T, typename... As>
-struct first_arg_is_stream<T*, As...> : ::cuda::std::false_type
-{};
-
-template <typename... As>
-struct first_arg_is_stream<::cuda::stream_ref, As...> : ::cuda::std::true_type
-{};
-
 inline cuda::device_ref device_for_stream(cuda::stream_ref stream)
 {
   if (stream == ::cudaStream_t{})
@@ -205,19 +159,12 @@ T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
 
 // TODO(bgruber): make the following macro also produce a global instance of a functor, but to pass the template
 // arguments, we need variable templates from C++14.
-#define DECLARE_TMPL_LAUNCH_WRAPPER(API, WRAPPED_API_NAME, TMPL_PARAMS, TMPL_ARGS)                            \
-  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, ESCAPE_LIST(template <TMPL_PARAMS>), ESCAPE_LIST(<TMPL_ARGS>));    \
-  template <TMPL_PARAMS, class Stream, class... As>                                                           \
-  static ::cuda::std::enable_if_t<launch_helper_detail::is_stream_argument<Stream>::value> WRAPPED_API_NAME(  \
-    Stream&& stream, As... args)                                                                              \
-  {                                                                                                           \
-    launch(::cuda::stream_ref{stream}, WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, args...);                 \
-  }                                                                                                           \
-  template <TMPL_PARAMS, class... As>                                                                         \
-  static ::cuda::std::enable_if_t<!launch_helper_detail::first_arg_is_stream<As...>::value> WRAPPED_API_NAME( \
-    As... args)                                                                                               \
-  {                                                                                                           \
-    launch(WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, args...);                                             \
+#define DECLARE_TMPL_LAUNCH_WRAPPER(API, WRAPPED_API_NAME, TMPL_PARAMS, TMPL_ARGS)                         \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, ESCAPE_LIST(template <TMPL_PARAMS>), ESCAPE_LIST(<TMPL_ARGS>)); \
+  template <TMPL_PARAMS, class... As>                                                                      \
+  static void WRAPPED_API_NAME(As... args)                                                                 \
+  {                                                                                                        \
+    launch(WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, args...);                                          \
   }
 
 #if TEST_LAUNCH == 2
@@ -365,3 +312,9 @@ void launch(cuda::stream_ref stream, ActionT action, Args... args)
 #else // TEST_LAUNCH == 2
 #  error "Unsupported TEST_LAUNCH value. Supported values are 0, 1, or 2"
 #endif // TEST_LAUNCH == 2
+
+template <class ActionT, class StreamT, class... Args>
+auto launch(ActionT action, StreamT&& stream, Args... args) -> decltype(::cuda::get_stream(stream), void())
+{
+  launch(::cuda::get_stream(stream), action, args...);
+}
