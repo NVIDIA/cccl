@@ -66,7 +66,7 @@ struct bsf
   {
     RandomAccessIterator iter = thrust::system::detail::generic::scalar::lower_bound(begin, end, value, comp);
 
-    thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
+    const thrust::detail::wrapped_function<StrictWeakOrdering, bool> wrapped_comp{comp};
 
     return iter != end && !wrapped_comp(value, *iter);
   }
@@ -144,7 +144,7 @@ _CCCL_HOST_DEVICE OutputType binary_search(
 
   { // copy value to device
     using value_in_system_t = typename thrust::iterator_system<const T*>::type;
-    value_in_system_t value_in_system;
+    const value_in_system_t value_in_system;
     using thrust::system::detail::generic::select_system;
     thrust::copy_n(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(value_in_system)),
                                  thrust::detail::derived_cast(thrust::detail::strip_const(exec))),
@@ -160,7 +160,7 @@ _CCCL_HOST_DEVICE OutputType binary_search(
   OutputType output;
   { // copy result to host and return
     using result_out_system_t = typename thrust::iterator_system<OutputType*>::type;
-    result_out_system_t result_out_system;
+    const result_out_system_t result_out_system;
     using thrust::system::detail::generic::select_system;
     thrust::copy_n(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
                                  thrust::detail::derived_cast(thrust::detail::strip_const(result_out_system))),

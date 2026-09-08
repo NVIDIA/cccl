@@ -754,7 +754,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     //                                                       [2] large-segment ids.
     //   !any_small_segments (large-only): [0] tile offsets, [1] segment-size transform-scan temp storage.
     static constexpr int allocations_array_size     = only_small_segments ? 1 : (any_small_segments ? 3 : 2);
-    size_t allocation_sizes[allocations_array_size] = {1};
+    size_t allocation_sizes[allocations_array_size] = {1}; // NOLINT(misc-const-correctness)
 
     using num_segments_val_t         = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
     using counters_t                 = batched_topk_counters<num_segments_val_t>;

@@ -54,7 +54,7 @@ template <bool IsLayoutRight, typename T, typename IndexType, size_t... Extents>
 static void fill_linear([[maybe_unused]] c2h::host_vector<T>& vector,
                         [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext)
 {
-  [[maybe_unused]] size_t pos = 0;
+  [[maybe_unused]] size_t pos = 0; // NOLINT(misc-const-correctness)
   if constexpr (sizeof...(Extents) == 0)
   {
     return;
@@ -154,8 +154,8 @@ CUB_TEST(
   CAPTURE(c2h::type_name<index_type>(), c2h::type_name<dims>(), c2h::type_name<layout_t>());
 
   device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right              = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
 // MSVC error: C3546: '...': there are no parameter packs available to expand in
 //             make_tuple_types.h:__make_tuple_types_flat
@@ -180,15 +180,15 @@ CUB_TEST("DeviceFor::ForEachInLayout 3D dynamic",
   auto X                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Y                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Z                              = GENERATE_COPY(take(3, random(2, 10)));
-  ext_t ext{X, Y, Z};
+  const ext_t ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{1});
   c2h::host_vector<data_t> h_output_expected(cub::detail::size(ext), data_t{2});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_layout(mapping_t{ext}, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  constexpr bool is_layout_right        = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
+  constexpr bool is_layout_right              = cuda::std::is_same_v<layout_t, cuda::std::layout_right>;
   fill_linear<is_layout_right>(h_output_expected, ext);
 
 #if !_CCCL_COMPILER(MSVC)

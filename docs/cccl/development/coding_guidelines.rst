@@ -58,9 +58,6 @@ CUB and Thrust
 
 #. Non-public entities, which are not macros, should be put inside a ``detail`` namespace (preferred)
    or prefixed with ``__``.
-#. Any full qualification of a CUB or Thrust entity must use ``THRUST_NS_QUALIFIER::`` instead of ``::thrust::``,
-   and ``CUB_NS_QUALIFIER::`` instead of ``::cub::``.
-   This avoids lookup failures when a user defines a wrapped namespace.
 
 CUB
 ----

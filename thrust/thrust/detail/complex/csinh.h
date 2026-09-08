@@ -93,7 +93,7 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
     else if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
-      complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
+      const complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
       return (complex<double>(z_.real() * ::cuda::std::copysign(1.0, x), z_.imag()));
     }
     else

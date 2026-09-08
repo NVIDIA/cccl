@@ -67,9 +67,9 @@ struct SmemResourceRaw
   _CCCL_HOST_DEVICE_API constexpr void
   addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
   {
-    int numOwningThreads = squadCountThreads(squads);
+    const int numOwningThreads = squadCountThreads(squads);
 
-    int curPhase = mNumPhases;
+    const int curPhase = mNumPhases;
     mNumPhases++;
 
     syncHandler.registerPhase(mResourceHandle, numOwningThreads, ptrBarrier);
@@ -169,7 +169,7 @@ struct SmemResourceRaw
 
     // The release of the previous phase occurs on the `phase - 1` barrier. So
     // that is what we wait on.
-    int phaseAcq                       = (mNumPhases + phase - 1) % mNumPhases;
+    const int phaseAcq                 = (mNumPhases + phase - 1) % mNumPhases;
     ::cuda::std::uint64_t* ptrBarPhase = mPtrBar[phaseAcq];
 
     while (!::cuda::ptx::mbarrier_try_wait_parity(&ptrBarPhase[mStageCurrent], mParity[phase]))

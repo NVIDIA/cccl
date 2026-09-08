@@ -267,7 +267,7 @@ struct generator_base_t
   thrust::device_vector<T> generate(T min, T max)
   {
     thrust::device_vector<T> vec(m_elements);
-    cuda::std::span<T> span(thrust::raw_pointer_cast(vec.data()), m_elements);
+    const cuda::std::span<T> span(thrust::raw_pointer_cast(vec.data()), m_elements);
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     gen_device(m_seed, span, m_entropy, min, max);
 #else
@@ -324,7 +324,7 @@ struct uniform_key_segments_generator_t
   operator thrust::device_vector<KeyT>()
   {
     thrust::device_vector<KeyT> keys_vec(m_total_elements);
-    cuda::std::span<KeyT> keys(thrust::raw_pointer_cast(keys_vec.data()), keys_vec.size());
+    const cuda::std::span<KeyT> keys(thrust::raw_pointer_cast(keys_vec.data()), keys_vec.size());
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     gen_uniform_key_segments_device(m_seed, keys, m_min_segment_size, m_max_segment_size);
 #else
@@ -346,7 +346,7 @@ struct uniform_segment_offsets_generator_t
   operator thrust::device_vector<OffsetT>()
   {
     thrust::device_vector<OffsetT> offsets_vec(m_total_elements + 2);
-    cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
+    const cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
     const std::size_t offsets_size =
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
       gen_uniform_segment_offsets_device(m_seed, offsets, m_min_segment_size, m_max_segment_size);
@@ -370,7 +370,7 @@ struct power_law_segment_offsets_generator_t
   operator thrust::device_vector<OffsetT>()
   {
     thrust::device_vector<OffsetT> offsets_vec(m_segments + 1);
-    cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
+    const cuda::std::span<OffsetT> offsets(thrust::raw_pointer_cast(offsets_vec.data()), offsets_vec.size());
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
     gen_power_law_segment_offsets_device(m_seed, offsets, m_elements);
 #else
@@ -508,7 +508,7 @@ struct max_t
   template <typename DataType>
   __host__ __device__ DataType operator()(const DataType& lhs, const DataType& rhs) const
   {
-    less_t less{};
+    const less_t less{};
     return less(lhs, rhs) ? rhs : lhs;
   }
 
@@ -599,7 +599,7 @@ struct caching_allocator_t
       throw std::runtime_error("Memory was not allocated by this allocator");
     }
 
-    std::ptrdiff_t num_bytes = iter->second;
+    const std::ptrdiff_t num_bytes = iter->second;
     allocated_blocks.erase(iter);
     free_blocks.insert(std::make_pair(num_bytes, ptr));
   }
