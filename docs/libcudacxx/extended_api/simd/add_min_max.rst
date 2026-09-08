@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-simd-add-min-max:
 
 ``cuda::simd::add_min`` and ``cuda::simd::add_max``
-====================================================
+===================================================
 
 Defined in the ``<cuda/simd>`` header.
 
@@ -56,7 +56,7 @@ Returns a ``cuda::std::simd::basic_vec<T, Abi>`` containing the element-wise res
 
 **Constraints**
 
-- ``T`` must be an `integer type <https://eel.is/c++draft/basic.fundamental#1>`__.
+- ``T`` must be an integer type.
 - The composed ReLU forms require ``T`` to be a signed integer type.
 
 **Performance considerations**
@@ -67,8 +67,13 @@ On ``SM90``, ``SM100``, and ``SM103``:
 - Signed and unsigned 32-bit elements use one ``VIADDMNMX`` instruction per element.
 - The composed signed 16-bit and 32-bit ReLU ``cuda::simd::max_relu(a + b, c)`` and ``cuda::simd::min_relu(a + b, c)`` forms use the corresponding ``VIADDMNMX.RELU`` instruction.
 
-On ``SM107`` and ``SM120``, the operations use one addition and one ``VIMNMX`` instruction.
-Other element widths use the portable element-wise implementation.
+On ``SM107`` and ``SM120``:
+
+- Signed and unsigned 16-bit elements use one ``VIADD.16x2`` and one ``VIMNMX.S16x2`` or ``VIMNMX.U16x2`` instruction.
+- Signed and unsigned 32-bit elements use one ``IADD`` and one ``VIMNMX`` instruction.
+- The composed signed 16-bit and 32-bit ReLU ``cuda::simd::max_relu(a + b, c)`` and ``cuda::simd::min_relu(a + b, c)`` forms use one addition and one of the corresponding ``VIMNMX.RELU`` instruction.
+
+Other element types use the portable element-wise implementation.
 
 Example
 -------

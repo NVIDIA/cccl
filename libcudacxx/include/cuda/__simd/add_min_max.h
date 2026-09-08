@@ -41,6 +41,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 // Depending on the compiler and the gpu architecture, the plain C++ code does not always generate the optimal packed
 // 16-bit SASS instructions.
 
+// ReLU variants rely on automatic compiler optimizations and do not need custom code:
+// cuda::simd::max_relu(a + b, c);
+// cuda::simd::min_relu(a + b, c);
+// this is reported in the documentation
+
 #if _CCCL_HAS_SIMD_ADD_MIN_MAX()
 
 template <typename _Tp>
@@ -48,7 +53,7 @@ struct __add_max_operation
 {
   template <typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
-  operator()(const _Storage& __a, const _Storage& __b, const _Storage& __c) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
     const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);
     const auto __b_u      = ::cuda::std::simd::__to_unsigned_storage(__b);
@@ -63,7 +68,7 @@ struct __add_min_operation
 {
   template <typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
-  operator()(const _Storage& __a, const _Storage& __b, const _Storage& __c) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
     const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);
     const auto __b_u      = ::cuda::std::simd::__to_unsigned_storage(__b);
