@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
+#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU()
 
 #  include <cuda/__simd/simd_intrinsics.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -217,9 +217,99 @@ template <typename _Tp, ::cuda::std::size_t _Np>
 
 #  endif // _CCCL_HAS_SIMD_VABSDIFF()
 
+#  if _CCCL_HAS_SIMD_MIN_MAX_RELU()
+
+#    if _CCCL_HAS_SIMD_8BIT_PTX()
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmax_relu_8bit_x4(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::cuda::simd::__vmax_relu_s8x4(__lhs_u[__i], __rhs_u[__i]);
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmin_relu_8bit_x4(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::cuda::simd::__vmin_relu_s8x4(__lhs_u[__i], __rhs_u[__i]);
+  }
+  return __result_u;
+}
+
+#    endif // _CCCL_HAS_SIMD_8BIT_PTX()
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmax_relu_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::__vimax_s16x2_relu(__lhs_u[__i], __rhs_u[__i]);
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmin_relu_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::__vimin_s16x2_relu(__lhs_u[__i], __rhs_u[__i]);
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmax3_relu_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::__vimax3_s16x2_relu(__a_u[__i], __b_u[__i], __c_u[__i]);
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmin3_relu_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::__vimin3_s16x2_relu(__a_u[__i], __b_u[__i], __c_u[__i]);
+  }
+  return __result_u;
+}
+
+#  endif // _CCCL_HAS_SIMD_MIN_MAX_RELU()
+
 _CCCL_END_NAMESPACE_CUDA_SIMD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
+#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU()
 #endif // _CUDA___SIMD_SIMD_INTRINSICS_ARRAY_H
