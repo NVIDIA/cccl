@@ -239,11 +239,14 @@ if (CCCL_PYTHON_USE_V2)
     MODULE
     WITH_SOABI
     "${_generated_device_copy_extension_src}"
+    "${cuda_cccl_SOURCE_DIR}/cuda/compute/_device_copy_owner_retention.cxx"
   )
   add_dependencies(_device_copy_impl cythonize_device_copy_impl)
   target_include_directories(
     _device_copy_impl
-    PRIVATE "${_cuda_compute_dlpack_include_dir}"
+    PRIVATE
+      "${cuda_cccl_SOURCE_DIR}/cuda/compute"
+      "${_cuda_compute_dlpack_include_dir}"
   )
   target_link_libraries(
     _device_copy_impl

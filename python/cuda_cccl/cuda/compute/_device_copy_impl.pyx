@@ -1442,10 +1442,41 @@ cdef extern from "cuda.h":
     ctypedef enum _CUresult "CUresult":
         _CUDA_SUCCESS "CUDA_SUCCESS"
 
+    ctypedef enum _CUstreamCaptureStatus "CUstreamCaptureStatus":
+        _CU_STREAM_CAPTURE_STATUS_NONE "CU_STREAM_CAPTURE_STATUS_NONE"
+
     ctypedef struct _CUstream_st "CUstream_st":
         pass
 
     ctypedef _CUstream_st* _CUstream "CUstream"
+
+    _CUresult cuStreamIsCapturing(
+        _CUstream stream,
+        _CUstreamCaptureStatus* capture_status,
+    )
+
+    _CUresult cuStreamSynchronize(_CUstream stream) noexcept nogil
+
+
+cdef extern from "_device_copy_owner_retention.h":
+    ctypedef struct _DeviceCopyOwnerRetention "cccl_device_copy_owner_retention":
+        pass
+
+    _DeviceCopyOwnerRetention* _device_copy_create_owner_retention "cccl_device_copy_create_owner_retention"(
+        PyObject* source,
+        PyObject* destination,
+    ) except NULL
+
+    void _device_copy_release_owner_retention "cccl_device_copy_release_owner_retention"(
+        _DeviceCopyOwnerRetention* owners,
+    ) noexcept
+
+    _CUresult _device_copy_schedule_owner_release "cccl_device_copy_schedule_owner_release"(
+        _CUstream stream,
+        _DeviceCopyOwnerRetention* owners,
+    ) noexcept nogil
+
+    Py_ssize_t _device_copy_drain_completed_owners_impl "cccl_device_copy_drain_completed_owners_impl"() noexcept
 
 
 cdef extern from "cccl/c/types.h":
@@ -1597,6 +1628,10 @@ cdef _CUstream _device_copy_stream(object stream_handle) except *:
     if stream_handle is None:
         return NULL
     return <_CUstream><uintptr_t>stream_handle
+
+
+def _drain_device_copy_owner_releases():
+    return _device_copy_drain_completed_owners_impl()
 
 
 cdef _cccl_type_info _device_copy_type_info(object view) except *:
@@ -2373,6 +2408,11 @@ cdef class _DeviceCopyBuild:
         cdef _DeviceCopyByteOffsetSplit source_byte_offset_split
         cdef _DeviceCopyByteOffsetSplit destination_byte_offset_split
         cdef _CUresult status
+        cdef _CUresult retention_status
+        cdef _CUresult synchronize_status
+        cdef _CUstream cuda_stream
+        cdef _CUstreamCaptureStatus capture_status
+        cdef _DeviceCopyOwnerRetention* owner_retention = NULL
 
         if plan._empty:
             return
@@ -2415,12 +2455,47 @@ cdef class _DeviceCopyBuild:
         destination_view.shape = shape
         destination_view.strides = destination_strides
 
+        cuda_stream = _device_copy_stream(stream_handle)
+        _device_copy_drain_completed_owners_impl()
+        status = cuStreamIsCapturing(cuda_stream, &capture_status)
+        _device_copy_check_cuda(status, "cuStreamIsCapturing")
+        if capture_status != _CU_STREAM_CAPTURE_STATUS_NONE:
+            raise RuntimeError("DeviceCopy does not yet support CUDA stream capture")
+
+        owner_retention = _device_copy_create_owner_retention(
+            <PyObject*>source,
+            <PyObject*>destination,
+        )
         status = _cccl_device_copy(
             self._build,
             source_view,
             destination_view,
-            _device_copy_stream(stream_handle),
+            cuda_stream,
         )
+
+        with nogil:
+            retention_status = _device_copy_schedule_owner_release(
+                cuda_stream,
+                owner_retention,
+            )
+        if retention_status == _CUDA_SUCCESS:
+            owner_retention = NULL
+        else:
+            # Match array_copy's failure contract: do not release views until
+            # all work issued to the stream has completed.
+            with nogil:
+                synchronize_status = cuStreamSynchronize(cuda_stream)
+            if synchronize_status == _CUDA_SUCCESS:
+                _device_copy_release_owner_retention(owner_retention)
+            # If synchronization itself fails, leak the two references rather
+            # than risk releasing storage still in use by the device.
+            owner_retention = NULL
+
+            if status != _CUDA_SUCCESS:
+                _device_copy_check_cuda(status, "cccl_device_copy")
+            _device_copy_check_cuda(synchronize_status, "cuStreamSynchronize")
+            _device_copy_check_cuda(retention_status, "cuLaunchHostFunc")
+
         _device_copy_check_cuda(status, "cccl_device_copy")
 
     cdef void _close(self) except *:
