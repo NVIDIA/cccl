@@ -158,10 +158,12 @@ C2H_CCCLRT_TEST("__shared_block_ptr move assignment", "[memory_resource]")
 
 C2H_CCCLRT_TEST("__shared_block_ptr equality", "[memory_resource]")
 {
-  cuda::mr::__shared_block_ptr<trivial_payload> a(1); // NOLINT(misc-const-correctness)
-  const cuda::mr::__shared_block_ptr<trivial_payload> b(2);
-  const cuda::mr::__shared_block_ptr<trivial_payload> a_copy(a); // NOLINT(performance-unnecessary-copy-initialization)
-  const cuda::mr::__shared_block_ptr<trivial_payload> null;
+  // NOLINTBEGIN(misc-const-correctness)
+  cuda::mr::__shared_block_ptr<trivial_payload> a(1);
+  cuda::mr::__shared_block_ptr<trivial_payload> b(2);
+  cuda::mr::__shared_block_ptr<trivial_payload> a_copy(a); // NOLINT(performance-unnecessary-copy-initialization)
+  cuda::mr::__shared_block_ptr<trivial_payload> null;
+  // NOLINTEND(misc-const-correctness)
 
   CHECK(a == a);
   CHECK(a == a_copy);
