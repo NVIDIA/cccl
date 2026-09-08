@@ -478,7 +478,7 @@ public:
   }
 
   template <typename Tuple>
-  __host__ __device__ ::cuda::std::tuple<int, int> operator()(Tuple&&) const
+  __host__ __device__::cuda::std::tuple<int, int> operator()(Tuple&&) const
   {
     return {-1, -1}; // wrong on purpose; only reached if not unwrapped
   }
@@ -496,7 +496,7 @@ CUB_TEST("DeviceTransform::Transform unpacks cuda::zip_iterator", "[device][tran
   transform_many(
     cuda::std::make_tuple(zip), result.begin(), num_items, cuda::zip_function<sum_two_traceable>{sum_two_traceable{}});
 
-  c2h::device_vector<int> reference(num_items, 3 + 1);
+  const c2h::device_vector<int> reference(num_items, 3 + 1);
   REQUIRE(reference == result);
 
   // also unpacks when transforming into multiple outputs
@@ -507,8 +507,8 @@ CUB_TEST("DeviceTransform::Transform unpacks cuda::zip_iterator", "[device][tran
                  num_items,
                  cuda::zip_function<sum_diff_two_traceable>{sum_diff_two_traceable{}});
 
-  c2h::device_vector<int> reference_sum(num_items, 3 + 1);
-  c2h::device_vector<int> reference_diff(num_items, 3 - 1);
+  const c2h::device_vector<int> reference_sum(num_items, 3 + 1);
+  const c2h::device_vector<int> reference_diff(num_items, 3 - 1);
   REQUIRE(reference_sum == sum);
   REQUIRE(reference_diff == diff);
 }
@@ -524,7 +524,7 @@ CUB_TEST("DeviceTransform::Transform unpacks thrust::zip_iterator", "[device][tr
   transform_many(
     cuda::std::make_tuple(zip), result.begin(), num_items, thrust::zip_function<sum_two_traceable>{sum_two_traceable{}});
 
-  c2h::device_vector<int> reference(num_items, 3 + 1);
+  const c2h::device_vector<int> reference(num_items, 3 + 1);
   REQUIRE(reference == result);
 
   // also unpacks when transforming into multiple outputs
@@ -535,8 +535,8 @@ CUB_TEST("DeviceTransform::Transform unpacks thrust::zip_iterator", "[device][tr
                  num_items,
                  thrust::zip_function<sum_diff_two_traceable>{sum_diff_two_traceable{}});
 
-  c2h::device_vector<int> reference_sum(num_items, 3 + 1);
-  c2h::device_vector<int> reference_diff(num_items, 3 - 1);
+  const c2h::device_vector<int> reference_sum(num_items, 3 + 1);
+  const c2h::device_vector<int> reference_diff(num_items, 3 - 1);
   REQUIRE(reference_sum == sum);
   REQUIRE(reference_diff == diff);
 }
