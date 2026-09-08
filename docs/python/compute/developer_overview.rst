@@ -828,6 +828,33 @@ Calling ``clear_all_caches()`` concurrently with active factory calls or
 algorithm execution is not supported unless the caller synchronizes externally.
 
 
+Struct types registered by ``cuda.compute``
+-------------------------------------------
+
+``gpu_struct`` types are registered with the JIT backend by hand — typing, data
+model and lowering — rather than by using the backend's own value-semantic
+aggregate (its experimental ``struct``/``AggregateType``). Value semantics is
+the only property of that aggregate ``cuda.compute`` needs, and it comes bound
+to three that do not suit it:
+
+#. **Nominal (name-based) identity.** Its type identity is tied to a unique type
+   *name*. The same logical struct is registered several times per build — the
+   operator's input type, the constructed return value, the output array's
+   element type, nested inline fields — and with name-based identity those split
+   into incompatible types, so casts between them fail. What is needed is
+   identity by *shape*.
+#. **Zero-argument construction only** (``s = S(); s.a = x``). The public API and
+   the tuple-reconstruction path both need positional ``S(a, b)``.
+#. **No by-index access** (``s[i]``) and no tuple-to-struct casts, both of which
+   ``cuda.compute`` relies on; a CUB operator returning a tuple becomes a struct.
+
+Numba's own ``Record`` type is value-adjacent but reference-semantic — a pointer
+into array memory — so it is not a substitute either.
+
+The registration itself is isolated in ``cuda/compute/_jit.py`` to keep
+Numba-specific type plumbing out of the other modules.
+
+
 Source map
 ----------
 
