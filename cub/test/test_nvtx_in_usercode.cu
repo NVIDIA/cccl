@@ -1,7 +1,5 @@
 #include <cub/device/device_for.cuh> // internal include of NVTX
 
-#include <thrust/iterator/counting_iterator.h>
-
 #include <cuda/iterator>
 #include <cuda/std/functional>
 

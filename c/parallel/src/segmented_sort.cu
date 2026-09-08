@@ -336,7 +336,7 @@ std::string get_three_way_partition_kernel_name(std::string_view large_selector_
   check(cccl_type_name_from_nvrtc<device_three_way_partition_policy_selector>(&policy_selector_t));
 
   static constexpr std::string_view input_it_t =
-    "thrust::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>";
+    "cuda::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>";
   static constexpr std::string_view first_out_it_t  = "cub::detail::segmented_sort::local_segment_index_t*";
   static constexpr std::string_view second_out_it_t = "cub::detail::segmented_sort::local_segment_index_t*";
   static constexpr std::string_view unselected_out_it_t =
@@ -548,7 +548,7 @@ try
 
 {0}
 
-#include <thrust/iterator/counting_iterator.h> // used in three_way_partition kernel
+#include <cuda/__iterator/counting_iterator.h> // used in three_way_partition kernel
 #include <thrust/iterator/reverse_iterator.h> // used in three_way_partition kernel
 #include <cub/detail/choose_offset.cuh> // used in three_way_partition kernel
 

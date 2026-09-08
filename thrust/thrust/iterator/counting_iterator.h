@@ -169,7 +169,7 @@ template <typename Incrementable,
           typename Traversal    = use_default,
           typename Difference   = use_default,
           typename StrideHolder = detail::unit_stride>
-class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
+class CCCL_DEPRECATED_BECAUSE("Use cuda::counting_iterator instead") _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
     : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type
     , StrideHolder
 {

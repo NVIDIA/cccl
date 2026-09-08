@@ -121,7 +121,7 @@ CUB_TEST_CASE("Device scan inclusive-scan-init works with default environment", 
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::make_counting_iterator(init + 1)));
 }
 
 #endif // TEST_LAUNCH == 0
@@ -176,7 +176,7 @@ CUB_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::make_counting_iterator(init)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -196,7 +196,7 @@ CUB_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", CUB_SMALL, 
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(d_in, d_out.begin(), num_items, env));
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(0)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::counting_iterator<int>(0)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -259,7 +259,7 @@ CUB_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", CUB_SMALL,
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, num_items, env));
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::make_counting_iterator(1)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -281,7 +281,7 @@ CUB_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", CUB_S
   REQUIRE(
     cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), block_size_check, init, num_items, env));
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::make_counting_iterator(init + 1)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -371,7 +371,7 @@ CUB_TEST("Device scan exclusive-scan uses environment", "[scan][device]", CUB_SM
 
   device_scan_exclusive(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(static_cast<int>(init))));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::counting_iterator<int>(static_cast<int>(init))));
 }
 
 CUB_TEST("Device scan exclusive-scan with FutureValue uses environment", "[scan][device]", CUB_SMALL)
@@ -396,7 +396,7 @@ CUB_TEST("Device scan exclusive-scan with FutureValue uses environment", "[scan]
 
   device_scan_exclusive(d_in, d_out.begin(), scan_op_t{}, future_init, num_items, env);
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(42)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::counting_iterator<int>(42)));
 }
 
 CUB_TEST("Device scan exclusive-sum uses environment", "[scan][device]", CUB_SMALL)
@@ -417,7 +417,7 @@ CUB_TEST("Device scan exclusive-sum uses environment", "[scan][device]", CUB_SMA
 
   device_scan_exclusive_sum(d_in, d_out.begin(), num_items, env);
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(0)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::counting_iterator<int>(0)));
 }
 
 CUB_TEST("Device scan inclusive-sum uses environment", "[scan][device]", CUB_SMALL)
@@ -464,7 +464,7 @@ CUB_TEST("Device scan inclusive-scan uses environment", "[scan][device]", CUB_SM
 
   device_scan_inclusive(d_in, d_out.begin(), scan_op_t{}, num_items, env);
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(1)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), cuda::counting_iterator<int>(1)));
 }
 
 CUB_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]", CUB_SMALL)

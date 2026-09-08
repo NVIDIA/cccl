@@ -106,8 +106,8 @@ int main()
   reduce_tuple<int, float> binary_op; // reduction operator
 
   result_type result = thrust::transform_reduce(
-    thrust::make_zip_iterator(thrust::counting_iterator<int>(0), data.begin()),
-    thrust::make_zip_iterator(cuda::std::tuple(thrust::counting_iterator<int>(0), data.begin()))
+    thrust::make_zip_iterator(cuda::counting_iterator<int>(0), data.begin()),
+    thrust::make_zip_iterator(cuda::std::tuple(cuda::counting_iterator<int>(0), data.begin()))
       + static_cast<std::ptrdiff_t>(data.size()),
     unary_op,
     init,

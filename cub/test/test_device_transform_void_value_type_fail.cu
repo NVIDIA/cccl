@@ -8,10 +8,10 @@
 #include <cub/device/device_transform.cuh>
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/functional>
+#include <cuda/iterator>
 
 #include <cstdint>
 #include <cstdio>
@@ -84,7 +84,7 @@ int main()
     return EXIT_FAILURE;
   }
 
-  auto const input = thrust::make_transform_iterator(thrust::make_counting_iterator(size_type{0}), transform_key_fn);
+  auto const input = thrust::make_transform_iterator(cuda::make_counting_iterator(size_type{0}), transform_key_fn);
   status           = cub::DeviceTransform::Transform(
     input, thrust::raw_pointer_cast(actual.data()), static_cast<int>(probe.size()), cuda::std::identity{}, stream);
   if (status != cudaSuccess)

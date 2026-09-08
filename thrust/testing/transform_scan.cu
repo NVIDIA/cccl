@@ -1,10 +1,11 @@
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/tabulate.h>
 #include <thrust/transform_scan.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <numeric>
@@ -306,7 +307,7 @@ void TestTransformScanCountingIterator()
   using T     = typename Vector::value_type;
   using space = typename thrust::iterator_system<typename Vector::iterator>::type;
 
-  thrust::counting_iterator<T, space> first(1);
+  cuda::counting_iterator<T, space> first(1);
 
   Vector result(3);
 

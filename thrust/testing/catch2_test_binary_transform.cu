@@ -1,9 +1,9 @@
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
@@ -338,14 +338,13 @@ TEMPLATE_LIST_TEST_CASE("BinaryCountingIterator", "[transform]", generic_list)
 
   CHECK(T(n) <= unittest::truncate_to_max_representable<T>(n));
 
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+  cuda::counting_iterator<T> first = cuda::make_counting_iterator<T>(0);
 
   thrust::host_vector<T> h_result(n);
   thrust::device_vector<T> d_result(n);
 
-  thrust::transform(h_first, h_first + n, h_first, h_result.begin(), ::cuda::std::plus<T>());
-  thrust::transform(d_first, d_first + n, d_first, d_result.begin(), ::cuda::std::plus<T>());
+  thrust::transform(first, first + n, first, h_result.begin(), ::cuda::std::plus<T>());
+  thrust::transform(first, first + n, first, d_result.begin(), ::cuda::std::plus<T>());
 
   CHECK(h_result == d_result);
 }

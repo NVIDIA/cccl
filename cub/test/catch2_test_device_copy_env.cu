@@ -59,7 +59,7 @@ CUB_TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][devi
 
   int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  cuda::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
@@ -82,7 +82,7 @@ CUB_TEST("DeviceCopy::Batched uses environment", "[copy][device]", CUB_SMALL)
 
   int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  cuda::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
@@ -109,7 +109,7 @@ CUB_TEST_CASE("DeviceCopy::Batched uses custom stream", "[copy][device]", CUB_SM
 
   int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  cuda::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
