@@ -489,14 +489,14 @@ CUB_TEST("DeviceTransform::Transform unpacks cuda::zip_iterator", "[device][tran
 {
   constexpr int num_items = 1337;
   c2h::device_vector<int> a(num_items, 3);
-  c2h::device_vector<int> b(num_items, 4);
+  c2h::device_vector<int> b(num_items, 1);
   auto zip = cuda::make_zip_iterator(a.begin(), b.begin());
 
   c2h::device_vector<int> result(num_items, thrust::no_init);
   transform_many(
     cuda::std::make_tuple(zip), result.begin(), num_items, cuda::zip_function<sum_two_traceable>{sum_two_traceable{}});
 
-  c2h::device_vector<int> reference(num_items, 3 + 4);
+  c2h::device_vector<int> reference(num_items, 3 + 1);
   REQUIRE(reference == result);
 
   // also unpacks when transforming into multiple outputs
@@ -507,8 +507,8 @@ CUB_TEST("DeviceTransform::Transform unpacks cuda::zip_iterator", "[device][tran
                  num_items,
                  cuda::zip_function<sum_diff_two_traceable>{sum_diff_two_traceable{}});
 
-  c2h::device_vector<int> reference_sum(num_items, 3 + 4);
-  c2h::device_vector<int> reference_diff(num_items, 3 - 4);
+  c2h::device_vector<int> reference_sum(num_items, 3 + 1);
+  c2h::device_vector<int> reference_diff(num_items, 3 - 1);
   REQUIRE(reference_sum == sum);
   REQUIRE(reference_diff == diff);
 }
@@ -517,14 +517,14 @@ CUB_TEST("DeviceTransform::Transform unpacks thrust::zip_iterator", "[device][tr
 {
   constexpr int num_items = 1337;
   c2h::device_vector<int> a(num_items, 3);
-  c2h::device_vector<int> b(num_items, 4);
+  c2h::device_vector<int> b(num_items, 1);
   auto zip = thrust::make_zip_iterator(a.begin(), b.begin());
 
   c2h::device_vector<int> result(num_items, thrust::no_init);
   transform_many(
     cuda::std::make_tuple(zip), result.begin(), num_items, thrust::zip_function<sum_two_traceable>{sum_two_traceable{}});
 
-  c2h::device_vector<int> reference(num_items, 3 + 4);
+  c2h::device_vector<int> reference(num_items, 3 + 1);
   REQUIRE(reference == result);
 
   // also unpacks when transforming into multiple outputs
@@ -535,8 +535,8 @@ CUB_TEST("DeviceTransform::Transform unpacks thrust::zip_iterator", "[device][tr
                  num_items,
                  thrust::zip_function<sum_diff_two_traceable>{sum_diff_two_traceable{}});
 
-  c2h::device_vector<int> reference_sum(num_items, 3 + 4);
-  c2h::device_vector<int> reference_diff(num_items, 3 - 4);
+  c2h::device_vector<int> reference_sum(num_items, 3 + 1);
+  c2h::device_vector<int> reference_diff(num_items, 3 - 1);
   REQUIRE(reference_sum == sum);
   REQUIRE(reference_diff == diff);
 }
