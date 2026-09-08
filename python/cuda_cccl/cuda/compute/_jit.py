@@ -291,7 +291,16 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             if isinstance(other, _mlir.types.UniTuple):
                 tuple_size = other.count
                 if tuple_size == len(field_types):
-                    return _mlir.Conversion.safe
+                    # Every element has the same type, but it still has to
+                    # convert to each field, as the heterogeneous branch below
+                    # checks.  Claiming otherwise types a call that then has no
+                    # lowering.
+                    all_compatible = all(
+                        typingctx.can_convert(other.dtype, tgt_type) is not None
+                        for tgt_type in field_spec.values()
+                    )
+                    if all_compatible:
+                        return _mlir.Conversion.safe
 
             elif isinstance(other, _mlir.types.Tuple):
                 tuple_size = len(other.types)

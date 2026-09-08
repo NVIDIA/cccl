@@ -431,3 +431,34 @@ def test_float_into_a_bool_field_asks_whether_it_is_nonzero():
     cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size)
 
     np.testing.assert_array_equal(d_out.copy_to_host()["a"], (h_in * 0.5) != 0)
+
+
+def test_tuple_to_struct_conversion_checks_element_types():
+    """A tuple converts to a struct only if its elements convert to the fields.
+
+    A uniform tuple is checked the same way as a mixed one: matching the field
+    count is not enough, or a call types cleanly and then has no lowering.
+    """
+    from numba_cuda_mlir.descriptor import mlir_target
+
+    from cuda.compute._jit import _register_struct_with_numba
+
+    types = cuda.compute._jit._mlir.types
+    typingctx = mlir_target.typing_context
+
+    Inner = gpu_struct({"p": np.int32})
+    Pair = gpu_struct({"a": np.int32, "b": np.int32})
+    inner_type = _register_struct_with_numba(Inner)
+    pair_type = _register_struct_with_numba(Pair)
+
+    def converts(source):
+        return pair_type.can_convert_from(typingctx, source) is not None
+
+    # Elements convert to both fields.
+    assert converts(types.UniTuple(types.int32, 2))
+    # Right element type, wrong number of them.
+    assert not converts(types.UniTuple(types.int32, 3))
+    # Right number, but a struct does not convert to an int32 field. The mixed
+    # tuple below has always been rejected; the uniform one used to be accepted.
+    assert not converts(types.UniTuple(inner_type, 2))
+    assert not converts(types.Tuple([types.int32, inner_type]))
