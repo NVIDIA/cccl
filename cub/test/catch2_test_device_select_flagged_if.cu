@@ -36,8 +36,8 @@ template <class T, class FlagT, class Pred>
 static c2h::host_vector<T>
 get_reference(c2h::device_vector<T> const& in, c2h::device_vector<FlagT> const& flags, Pred if_predicate)
 {
-  c2h::host_vector<T> reference   = in;
-  c2h::host_vector<FlagT> h_flags = flags;
+  c2h::host_vector<T> reference         = in;
+  const c2h::host_vector<FlagT> h_flags = flags;
   // Zips flags and items
   auto zipped_in_it = thrust::make_zip_iterator(h_flags.cbegin(), reference.cbegin());
 
@@ -179,7 +179,7 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  const is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -191,7 +191,7 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<input_type> reference_in = in;
+  const c2h::device_vector<input_type> reference_in = in;
 
   select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, is_even);
 
@@ -283,26 +283,26 @@ CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
 
   SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_flagged_if(stream.get());
   }
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_flagged_if(stream);
   }
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_flagged_if(stream_ref);
   }
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_flagged_if(env);
   }
 
@@ -314,7 +314,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_flagged_if(policy);
   }
@@ -393,26 +393,26 @@ CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
 
   SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_flagged_if(stream.get());
   }
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     test_flagged_if(stream);
   }
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
   {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
+    const cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream_ref stream_ref{stream};
     test_flagged_if(stream_ref);
   }
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
   {
-    cuda::std::execution::env env{};
+    const cuda::std::execution::env env{};
     test_flagged_if(env);
   }
 
@@ -424,7 +424,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
 
   SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
   {
-    cuda::stream stream{cuda::devices[current_device]};
+    const cuda::stream stream{cuda::devices[current_device]};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_flagged_if(policy);
   }
@@ -511,7 +511,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  const is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -539,7 +539,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  const is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
