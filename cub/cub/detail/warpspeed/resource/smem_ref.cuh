@@ -22,7 +22,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-CREATE_IKET_START_END_RANGE(SmemRef);
+CREATE_IKET_PUSH_POP_RANGE(SmemRef);
 
 template <typename _Tp>
 struct SmemRef
@@ -60,7 +60,7 @@ struct SmemRef
     {
       mSmemResourceRaw.release(mCurPhase);
     }
-    IKET_RANGE_END(SmemRef);
+    IKET_RANGE_POP();
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _Tp& data() noexcept

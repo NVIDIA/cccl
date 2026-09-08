@@ -29,7 +29,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-CREATE_IKET_START_END_RANGE(Acquire);
+CREATE_IKET_PUSH_POP_RANGE(Acquire);
 
 struct SmemResourceRaw
 {
@@ -168,7 +168,7 @@ struct SmemResourceRaw
 
   _CCCL_DEVICE_API void acquire(int phase)
   {
-    IKET_RANGE_START(Acquire);
+    IKET_RANGE_PUSH(Acquire);
     _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
 
     // The release of the previous phase occurs on the `phase - 1` barrier. So
@@ -179,7 +179,7 @@ struct SmemResourceRaw
     while (!::cuda::ptx::mbarrier_try_wait_parity(&ptrBarPhase[mStageCurrent], mParity[phase]))
     {
     }
-    IKET_RANGE_END(Acquire);
+    IKET_RANGE_POP();
   }
 };
 } // namespace detail::warpspeed

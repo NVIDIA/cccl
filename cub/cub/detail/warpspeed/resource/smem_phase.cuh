@@ -37,7 +37,7 @@ struct SmemPhase
   {
     // Wait on barrier
     mSmemResourceRaw.acquire(mCurPhase);
-    IKET_RANGE_START(SmemRef);
+    IKET_RANGE_PUSH(SmemRef);
     // Return ref
     return SmemRef<_Tp>(mSmemResourceRaw, mCurPhase);
   }
