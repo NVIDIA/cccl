@@ -66,7 +66,7 @@ struct __count_query_native<block_level, cluster_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp __call() noexcept
   {
-    unsigned __count = 1;
+    unsigned __count = 1; // NOLINT(misc-const-correctness)
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__count = ::__clusterSizeInBlocks();))
     return static_cast<_Tp>(__count);
   }
