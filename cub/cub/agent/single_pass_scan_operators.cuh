@@ -1247,8 +1247,10 @@ struct TilePrefixCallbackOp
 
     // Perform a segmented reduction to get the prefix for the current window.
     // Use the swizzled scan operator because we are now scanning *down* towards thread0.
+    // Treat OOB tiles as singleton ranges so we don't call the scan_op for values that are not part of the input.
 
-    int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE));
+    int tail_flag = (predecessor_status == StatusWord(SCAN_TILE_INCLUSIVE))
+                 || (predecessor_status == StatusWord(SCAN_TILE_OOB));
     window_aggregate =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
   }
@@ -1283,7 +1285,10 @@ private:
 
       // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
-      exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      if (predecessor_status != StatusWord(SCAN_TILE_OOB))
+      {
+        exclusive_prefix = scan_op(window_aggregate, exclusive_prefix);
+      }
     }
 
     // Compute the inclusive tile prefix and update the status for this tile
@@ -1329,7 +1334,9 @@ private:
       }
     }
 
-    const int tail_flag = (static_cast<int>(threadIdx.x) == anchor_tile_lane);
+    // mark everything before the anchor (= higher lanes) as tail, so we don't execute unnecessary scan_op calls
+    // especially OOB values before the first tile
+    const int tail_flag = (static_cast<int>(threadIdx.x) >= anchor_tile_lane);
     exclusive_prefix =
       WarpReduceT(temp_storage.warp_reduce).TailSegmentedReduce(value, tail_flag, SwizzleScanOp<ScanOpT>(scan_op));
 
