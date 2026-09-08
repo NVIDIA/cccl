@@ -43,9 +43,9 @@ void initialize(thrust::device_vector<cuda::std::pair<int, int>>& v)
   thrust::host_vector<cuda::std::pair<int, int>> host_data(v.size());
   for (auto& e : host_data)
   {
-    int a = dist(rng);
-    int b = dist(rng);
-    e     = cuda::std::make_pair(a, b);
+    const int a = dist(rng);
+    const int b = dist(rng);
+    e           = cuda::std::make_pair(a, b);
   }
   v = host_data;
 }
@@ -85,7 +85,7 @@ void print(const thrust::device_vector<cuda::std::pair<int, int>>& v)
 {
   for (const auto& p : v)
   {
-    cuda::std::pair<int, int> local_p = p;
+    const cuda::std::pair<int, int> local_p = p;
     std::cout << " (" << local_p.first << "," << local_p.second << ")";
   }
   std::cout << "\n";
@@ -123,7 +123,7 @@ struct evens_before_odds
 
 int main()
 {
-  size_t N = 16;
+  const size_t N = 16;
 
   std::cout << "sorting integers\n";
   {

@@ -6,7 +6,7 @@
 template <typename T, unsigned int N>
 void _TestStableSortWithLargeKeys()
 {
-  size_t n = (128 * 1024) / sizeof(FixedVector<T, N>);
+  const size_t n = (128 * 1024) / sizeof(FixedVector<T, N>);
 
   thrust::host_vector<FixedVector<T, N>> h_keys(n);
 

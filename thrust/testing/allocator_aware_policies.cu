@@ -77,7 +77,7 @@ struct TestAllocatorAttachment
 
   void operator()()
   {
-    typename PolicyInfo::policy policy;
+    typename PolicyInfo::policy policy; // NOLINT(misc-const-correctness)
 
     // test correctness of attachment
     assert_correct<test_allocator_t<int>>(policy(test_allocator_t<int>()));
