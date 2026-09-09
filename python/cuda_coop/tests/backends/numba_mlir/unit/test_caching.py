@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import hashlib
+import ntpath
+import posixpath
+from types import SimpleNamespace
 
 import pytest
 
@@ -142,3 +145,41 @@ def test_numba_type_tokens_remain_distinct():
     tokens = tuple(_numba_semantic_token(value) for value in values)
 
     assert len(set(tokens)) == len(values)
+
+
+@pytest.mark.parametrize(
+    ("platform", "environment", "expected"),
+    [
+        ("posix", {"XDG_CACHE_HOME": "/scratch/cache"}, "/scratch/cache/cccl"),
+        ("posix", {}, "/home/test/.cache/cccl"),
+        ("posix", {"XDG_CACHE_HOME": ""}, "/home/test/.cache/cccl"),
+        ("posix", {"XDG_CACHE_HOME": "relative"}, "/home/test/.cache/cccl"),
+        ("posix", {"LOCALAPPDATA": "/other/cache"}, "/home/test/.cache/cccl"),
+        ("nt", {"LOCALAPPDATA": r"D:\Cache"}, r"D:\Cache\cccl"),
+        ("nt", {}, r"C:\Users\test\AppData\Local\cccl"),
+        ("nt", {"LOCALAPPDATA": ""}, r"C:\Users\test\AppData\Local\cccl"),
+        ("nt", {"LOCALAPPDATA": "relative"}, r"C:\Users\test\AppData\Local\cccl"),
+        ("nt", {"LOCALAPPDATA": r"D:relative"}, r"C:\Users\test\AppData\Local\cccl"),
+        ("nt", {"XDG_CACHE_HOME": r"D:\Cache"}, r"C:\Users\test\AppData\Local\cccl"),
+    ],
+)
+def test_cache_location_uses_platform_cache_directory(
+    monkeypatch, platform, environment, expected
+):
+    path = ntpath if platform == "nt" else posixpath
+    user_home = r"C:\Users\test" if platform == "nt" else "/home/test"
+    monkeypatch.setattr(
+        _caching,
+        "os",
+        SimpleNamespace(
+            name=platform,
+            environ=environment,
+            path=SimpleNamespace(
+                isabs=path.isabs,
+                join=path.join,
+                expanduser=lambda value: user_home if value == "~" else value,
+            ),
+        ),
+    )
+
+    assert _caching._cache_location() == expected

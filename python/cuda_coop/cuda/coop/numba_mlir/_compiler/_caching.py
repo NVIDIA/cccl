@@ -4,8 +4,8 @@
 
 """Persistent content-addressed cache helpers for Numba-CUDA-MLIR.
 
-The existing schema and key bytes are intentionally preserved across this
-module move.  Persistence is separate from semantic operation identities.
+Persistence is separate from semantic operation identities. Cache entries
+are partitioned by function identity and keyed by serialized arguments.
 """
 
 import hashlib
@@ -24,7 +24,21 @@ _ENABLE_CACHE = (
 _CACHE_USABLE = _ENABLE_CACHE
 _CACHE_SCHEMA_VERSION = 5
 _CACHE_MISS = object()
-_CACHE_LOCATION = os.path.join(os.path.expanduser("~"), ".cache", "cccl")
+
+
+def _cache_location():
+    if os.name == "nt":
+        cache_home = os.environ.get("LOCALAPPDATA", "")
+        fallback = ("AppData", "Local")
+    else:
+        cache_home = os.environ.get("XDG_CACHE_HOME", "")
+        fallback = (".cache",)
+    if not os.path.isabs(cache_home):
+        cache_home = os.path.join(os.path.expanduser("~"), *fallback)
+    return os.path.join(cache_home, "cccl")
+
+
+_CACHE_LOCATION = _cache_location()
 
 
 def _json_cache_key(value):

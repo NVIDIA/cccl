@@ -255,5 +255,16 @@ def test_descriptor_values_cannot_escape_to_runtime(constructor):
     def escapes():
         return constructor()
 
-    with pytest.raises(GroupRewriteError, match="would escape to runtime"):
+    from cuda.coop.numba_mlir._compiler._group_errors import (
+        EscapingGroupDescriptorError,
+    )
+
+    with pytest.raises(
+        EscapingGroupDescriptorError, match="would escape to runtime"
+    ) as exc:
         _GroupCallPlanner(_state(escapes), _launch()).run()
+
+    assert isinstance(exc.value, GroupRewriteError)
+    lines = str(exc.value).splitlines()
+    assert len(lines) > 1
+    assert all(len(line) <= 80 for line in lines)

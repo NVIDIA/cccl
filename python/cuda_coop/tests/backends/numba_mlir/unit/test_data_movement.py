@@ -1337,12 +1337,22 @@ def test_runtime_oob_default_rejects_before_provider_materialization(
         else getattr(types, default_type_name)
     )
     array_type = types.Array(types.int32, 1, "C")
-    with pytest.raises((CoopSinglePhaseRewriteError, TypeError), match=error):
+    with pytest.raises((CoopSinglePhaseRewriteError, TypeError), match=error) as exc:
         _run_single_phase_to_provider_boundary(
             memory,
             arg_types=(array_type, types.int32, default_type),
             monkeypatch=monkeypatch,
         )
+
+    if default_type_name == "int64":
+        from cuda.coop.numba_mlir._compiler._group_errors import (
+            DefaultDtypeMismatchError,
+        )
+
+        assert isinstance(exc.value, DefaultDtypeMismatchError)
+        lines = str(exc.value).splitlines()
+        assert len(lines) == 2
+        assert all(len(line) <= 80 for line in lines)
 
 
 @pytest.mark.parametrize("qualified", [False, True], ids=["root", "qualified"])

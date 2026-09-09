@@ -28,10 +28,10 @@ header bundle. Importing :mod:`cuda.coop` does not require Numba-CUDA-MLIR or
 an accessible GPU.
 
 The Numba backend is intentionally limited to
-``numba-cuda-mlir>=0.5.0,<0.6``. It currently uses a guarded compatibility shim
-for private 0.5.x compiler registration APIs, so another runtime series is
-rejected before compiler registries are changed. Replacing that shim with an
-upstream public API is follow-up work.
+``numba-cuda-mlir>=0.5.0,<0.6``. Its private compiler API module
+provides access to overload templates, IR, datamodels, and the registries
+needed to roll back a failed activation. It does not adapt between runtime
+versions. Other runtime series are rejected before compiler registries change.
 
 Backend activation
 ------------------
@@ -89,9 +89,18 @@ Runtime environment variables
    source.
 
 ``CUDA_COOP_ENABLE_CACHE``
-   A truthy value enables the persistent compiler cache under
-   ``~/.cache/cccl``. The value is read when the backend cache module is
-   imported.
+   A truthy value enables the persistent compiler cache. The value is read
+   when the backend cache module is imported.
+
+``XDG_CACHE_HOME``
+   On Linux and other POSIX systems, sets the cache base directory; entries
+   are stored in ``<value>/cccl``. Unset, empty, or relative values fall back
+   to ``~/.cache/cccl``. Read when the backend cache module is imported.
+
+``LOCALAPPDATA``
+   On Windows, sets the cache base directory; entries are stored in
+   ``<value>\cccl``. Unset, empty, or relative values fall back to
+   ``~\AppData\Local\cccl``. Read when the backend cache module is imported.
 
 ``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR``
    Writes content-addressed pre-NVRTC CUDA source files to this directory for

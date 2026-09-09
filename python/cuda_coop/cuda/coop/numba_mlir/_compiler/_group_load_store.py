@@ -22,6 +22,21 @@ from cuda.coop._core import (
     plan_group_primitive,
 )
 
+from ._group_errors import (
+    DefaultDtypeMismatchError,
+    InvalidLoadStoreAlgorithmError,
+    MemoryDtypeMismatchError,
+    NonConstantTempStorageError,
+    PortableLoadPayloadError,
+    PortableStorePayloadError,
+    UnknownBlockDimensionError,
+    UnknownLoadStoreDtypeError,
+    UnknownLoadStoreExtentError,
+    UnknownLoadStoreProviderError,
+    UnsupportedLoadStoreAlgorithmError,
+    UnsupportedLoadStoreGroupError,
+    UnsupportedLoadStoreTargetError,
+)
 from ._group_planner_support import (
     Any,
     GroupRewriteError,
@@ -63,14 +78,9 @@ def _direct_algorithm(value: object, *, operation: str) -> str:
     if token == "direct":
         return token
     if token in _BLOCK_LOAD_STORE_ALGORITHMS:
-        raise NotImplementedError(
-            f"cuda.coop.numba_mlir.{operation} algorithm {token!r} is not "
-            "executable; only 'direct' is currently supported"
-        )
+        raise UnsupportedLoadStoreAlgorithmError(operation, token)
     choices = ", ".join(sorted(_BLOCK_LOAD_STORE_ALGORITHMS))
-    raise ValueError(
-        f"cuda.coop.numba_mlir.{operation} algorithm must be one of: {choices}"
-    )
+    raise InvalidLoadStoreAlgorithmError(operation, choices)
 
 
 _CUB_PLAN_ROUTES = {
@@ -90,7 +100,12 @@ _CUB_PLAN_ROUTES = {
 
 
 class _LoadStorePlanning:
-    """Family-local semantics over the declared shared planning context."""
+    """Shared planning for the separately registered load and store primitives.
+
+    A compiler family is a module supplying planning and rewrite hooks for one
+    or more operation names. Load and store share this implementation because
+    they share payload, dtype, and tile rules; each has its own registration.
+    """
 
     def __init__(self, context: GroupPlanningContext) -> None:
         self._context = context
@@ -110,16 +125,10 @@ class _LoadStorePlanning:
     ) -> tuple[Any, dict[str, Any]]:
         assert group.hierarchy is not None
         if group.kind != "block":
-            raise NotImplementedError(
-                f"cuda.coop.numba_mlir.{operation} currently lowers only "
-                "this_block() groups through CUB"
-            )
+            raise UnsupportedLoadStoreGroupError(operation)
         block_dim = group.hierarchy.block_dim
         if block_dim is None:
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} requires an exact block "
-                "dimension before provider selection"
-            )
+            raise UnknownBlockDimensionError(operation)
 
         from .._lowering import _load_store
 
@@ -144,10 +153,7 @@ class _LoadStorePlanning:
                 parameter="oob_default",
             )
             if value_dtype != payload_dtype:
-                raise TypeError(
-                    "cuda.coop.numba_mlir.load runtime oob_default dtype "
-                    f"{value_dtype} does not match payload dtype {payload_dtype}"
-                )
+                raise DefaultDtypeMismatchError(value_dtype, payload_dtype)
             return binding
 
         scalar = binding.value
@@ -172,10 +178,7 @@ class _LoadStorePlanning:
             return 1
         extent = self._context.array_extent(payload)
         if extent is None:
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} requires a static "
-                "items_per_thread extent before provider selection"
-            )
+            raise UnknownLoadStoreExtentError(operation)
         return extent
 
     def _plan_load_store(
@@ -196,10 +199,7 @@ class _LoadStorePlanning:
         memory_dtype = self._context.dtype(bound.arguments[memory_name])
         dtype = memory_dtype if memory_dtype is not None else payload_dtype
         if dtype is None:
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} could not infer a dtype "
-                "before provider selection"
-            )
+            raise UnknownLoadStoreDtypeError(operation)
         dtype = _validate_common_numeric_dtype(dtype, operation=operation)
         if operation == "store" and not payload_is_array:
             resolved, provenance = self._context.try_static_scalar_provenance(payload)
@@ -220,10 +220,7 @@ class _LoadStorePlanning:
             and memory_dtype is not None
             and payload_dtype != memory_dtype
         ):
-            raise TypeError(
-                f"cuda.coop.numba_mlir.{operation} memory dtype "
-                f"{memory_dtype} does not match payload dtype {payload_dtype}"
-            )
+            raise MemoryDtypeMismatchError(operation, memory_dtype, payload_dtype)
 
         oob_default = (
             self._planning_oob_default(
@@ -243,10 +240,7 @@ class _LoadStorePlanning:
             not self._context.is_none(temp_storage_value)
             and self._context.temp_storage(temp_storage_value) is None
         ):
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} temp_storage must "
-                "resolve to a compile-time TempStorage descriptor"
-            )
+            raise NonConstantTempStorageError(operation)
 
         semantics = GroupLoadStoreSemantics(
             kind=GroupLoadStoreKind(operation),
@@ -264,26 +258,17 @@ class _LoadStorePlanning:
         try:
             return plan.require_supported()
         except NotImplementedError as exc:
-            raise NotImplementedError(
-                f"cuda.coop.numba_mlir.{operation} currently lowers only "
-                f"this_block() groups through CUB: {exc}"
-            ) from exc
+            raise UnsupportedLoadStoreGroupError(operation, exc) from exc
 
     @staticmethod
     def _plan_provider_operation(plan: GroupLoweringPlan) -> str:
         if plan.target is not GroupLoweringTarget.CUB_BLOCK:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir Load/Store received an unsupported "
-                f"lowering target {plan.target.value!r}"
-            )
+            raise UnsupportedLoadStoreTargetError(plan.target.value)
         assert plan.provenance is not None
         try:
             return _CUB_PLAN_ROUTES[plan.provenance.semantic_key]
         except KeyError as exc:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir Load/Store received an unknown CUB "
-                f"implementation provenance {plan.provenance.semantic_key!r}"
-            ) from exc
+            raise UnknownLoadStoreProviderError(plan.provenance.semantic_key) from exc
 
     @staticmethod
     def _planned_argument(
@@ -306,17 +291,13 @@ class _LoadStorePlanning:
                 if not self._context.is_thread_data(
                     operation, "output", bound.arguments["output"]
                 ):
-                    raise TypeError(
-                        "cuda.coop.load requires output to be a fixed-size ThreadData payload in the portable API; use cuda.coop.numba_mlir for backend-qualified local-array payload support"
-                    )
+                    raise PortableLoadPayloadError()
             else:
                 value = bound.arguments["value"]
                 if self._context.is_array(operation, value) and (
                     not self._context.is_thread_data(operation, "value", value)
                 ):
-                    raise TypeError(
-                        "cuda.coop.store accepts only a scalar or fixed-size ThreadData value payload in the portable API; use cuda.coop.numba_mlir for backend-qualified local-array payload support"
-                    )
+                    raise PortableStorePayloadError()
         plan = self._plan_load_store(
             operation=operation,
             group=group,
