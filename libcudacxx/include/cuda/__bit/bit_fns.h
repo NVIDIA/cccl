@@ -35,8 +35,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! @param[in] __value The unsigned integer value to search.
 //! @param[in] __rank The zero-based rank of the set bit to find.
-//! @return The zero-based position of the selected set bit, or `-1` (`0xFFFFFFFF`, the not-found result of @c __fns) if
-//!         \p __value has fewer than `__rank + 1` set bits.
+//! @return The zero-based position of the selected set bit, or `-1` if \p __value has fewer than `__rank + 1` set bits.
 //! @pre `0 <= __rank && __rank < num_bits(_Tp)`.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
