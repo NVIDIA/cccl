@@ -638,9 +638,10 @@ def clear_all_caches():
     """
     Clear all algorithm caches.
 
-    This function clears cached algorithm wrappers and completed build results
-    in the current process, forcing recompilation on the next invocation.
-    Useful for benchmarking compilation time.
+    This function clears cached algorithm wrappers, completed build results,
+    and compiled device code (JIT-compiled Python operators and NVRTC-compiled
+    iterator wrappers) in the current process, forcing recompilation on the
+    next invocation. Useful for benchmarking compilation time.
 
     This function is not synchronized with active factory calls or algorithm
     execution. Callers that use it in a multi-threaded program must externally
@@ -655,9 +656,11 @@ def clear_all_caches():
     """
     _clear_wrapper_caches()
     _process_wide_build_results_cache.clear()
-    # Auxiliary caches registered process-wide (e.g. _jit._infer_return_type)
-    # must be cleared too, so builds after a clear really are cold. Factory
-    # entries' cache_clear is idempotent with _clear_wrapper_caches above.
+    # Auxiliary caches registered process-wide (_jit._infer_return_type, the
+    # compiled-operator memo _jit._compile_op_impl, and the NVRTC memos in
+    # _cpp_compile) must be cleared too, so builds after a clear really are
+    # cold. Factory entries' cache_clear is idempotent with
+    # _clear_wrapper_caches above.
     for cached_func in _process_wide_cache_registry.values():
         cached_func.cache_clear()
 

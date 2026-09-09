@@ -339,3 +339,44 @@ def test_stateful_operator_infers_its_output_type(result):
     compiled = to_jit_op_adapter(op).compile((int32,))
 
     assert compiled.name.startswith("wrapped_op")
+
+
+@pytest.mark.thread_unsafe(
+    reason="Clears the process-wide caches, which a concurrent instance would race."
+)
+def test_clear_all_caches_drops_compiled_device_code():
+    """clear_all_caches() must leave the compile memos cold, not just the build cache.
+
+    A build after a clear is only genuinely cold if the JIT-compiled operator
+    and the NVRTC-compiled iterator wrapper are recompiled too; otherwise the
+    native build reruns while the (dominant) JIT cost is served from memo.
+    """
+    import numpy as np
+    from _utils.device_array import DeviceArray
+
+    import cuda.compute
+    from cuda.compute import CountingIterator, OpKind, TransformIterator
+    from cuda.compute._cpp_compile import compile_cpp_op_code, compile_cpp_to_ltoir
+    from cuda.compute._jit import _compile_op_impl
+
+    def add_one(x):
+        return x + 1
+
+    d_in = TransformIterator(CountingIterator(np.int32(0)), add_one)
+    d_out = DeviceArray.empty(1, np.int32)
+    cuda.compute.reduce_into(
+        d_in=d_in,
+        d_out=d_out,
+        op=OpKind.PLUS,
+        h_init=np.array([0], dtype=np.int32),
+        num_items=8,
+    )
+    assert d_out.copy_to_host()[0] == sum(range(1, 9))
+    assert _compile_op_impl.cache_info().currsize > 0
+    assert compile_cpp_op_code.cache_info().currsize > 0
+
+    cuda.compute.clear_all_caches()
+
+    assert _compile_op_impl.cache_info().currsize == 0
+    assert compile_cpp_op_code.cache_info().currsize == 0
+    assert compile_cpp_to_ltoir.cache_info().currsize == 0
