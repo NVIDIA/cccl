@@ -3,6 +3,13 @@
 ``cuda.coop``: Cooperative Group Primitives
 ============================================
 
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   Overview <self>
+   coop/developer_overview
+
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
 The initial backend integrates with Numba-CUDA-MLIR and supports Load, Store,
 Exchange, Shuffle, Reduce, and Scan across their supported thread-group scopes.
