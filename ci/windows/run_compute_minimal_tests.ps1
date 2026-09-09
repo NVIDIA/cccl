@@ -43,7 +43,7 @@ Invoke-Checked { & $python -m pip install "$wheelPath[minimal-$ctkFlavor$cudaMaj
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
-    Invoke-Checked { & $python -m pytest -n 6 -v compute/test_no_numba.py } "test_no_numba.py failed"
+    Invoke-Checked { & $python -m pytest -n 6 -v compute/test_no_numba.py compute/test_raw_op.py } "minimal-extra tests failed"
 
     if (Test-FreeThreadedPython $python) {
         # Select only tests that support the minimal extra, so pytest does not

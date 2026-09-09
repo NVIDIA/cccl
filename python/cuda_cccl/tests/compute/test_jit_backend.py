@@ -345,11 +345,14 @@ def test_stateful_operator_infers_its_output_type(result):
     reason="Clears the process-wide caches, which a concurrent instance would race."
 )
 def test_clear_all_caches_drops_compiled_device_code():
-    """clear_all_caches() must leave the compile memos cold, not just the build cache.
+    """clear_all_caches() must make the next build cold, not just empty the memos.
 
-    A build after a clear is only genuinely cold if the JIT-compiled operator
-    and the NVRTC-compiled iterator wrapper are recompiled too; otherwise the
-    native build reruns while the (dominant) JIT cost is served from memo.
+    A build after a clear is only genuinely cold if the JIT-compiled operator,
+    the NVRTC-compiled iterator wrapper, and select's always-false predicate are
+    recompiled too; otherwise the native build reruns while the (dominant) JIT
+    cost is served from memo. Device code memoized on a live iterator object is
+    object state the clear does not reach -- that caveat is pinned down here so
+    it stays documented behavior rather than an accident.
     """
     import numpy as np
     from _utils.device_array import DeviceArray
@@ -358,25 +361,57 @@ def test_clear_all_caches_drops_compiled_device_code():
     from cuda.compute import CountingIterator, OpKind, TransformIterator
     from cuda.compute._cpp_compile import compile_cpp_op_code, compile_cpp_to_ltoir
     from cuda.compute._jit import _compile_op_impl
+    from cuda.compute.algorithms._select import _always_false_op
 
     def add_one(x):
         return x + 1
 
-    d_in = TransformIterator(CountingIterator(np.int32(0)), add_one)
-    d_out = DeviceArray.empty(1, np.int32)
-    cuda.compute.reduce_into(
-        d_in=d_in,
-        d_out=d_out,
-        op=OpKind.PLUS,
-        h_init=np.array([0], dtype=np.int32),
-        num_items=8,
-    )
-    assert d_out.copy_to_host()[0] == sum(range(1, 9))
-    assert _compile_op_impl.cache_info().currsize > 0
-    assert compile_cpp_op_code.cache_info().currsize > 0
+    def make_iter():
+        return TransformIterator(CountingIterator(np.int32(0)), add_one)
+
+    def run_reduce(d_in):
+        d_out = DeviceArray.empty(1, np.int32)
+        cuda.compute.reduce_into(
+            d_in=d_in,
+            d_out=d_out,
+            op=OpKind.PLUS,
+            h_init=np.array([0], dtype=np.int32),
+            num_items=8,
+        )
+        assert d_out.copy_to_host()[0] == sum(range(1, 9))
+
+    def run_select():
+        h_in = np.arange(8, dtype=np.int32)
+        d_out = DeviceArray.empty(8, np.int32)
+        d_num = DeviceArray.empty(1, np.uint64)
+        cuda.compute.select(
+            d_in=DeviceArray.from_numpy(h_in),
+            d_out=d_out,
+            d_num_selected_out=d_num,
+            cond=lambda x: x % 2 == 0,
+            num_items=8,
+        )
+        assert int(d_num.copy_to_host()[0]) == 4
+
+    memos = (_compile_op_impl, compile_cpp_op_code, _always_false_op)
+
+    first = make_iter()
+    run_reduce(first)
+    run_select()
+    assert all(m.cache_info().currsize > 0 for m in memos)
 
     cuda.compute.clear_all_caches()
-
-    assert _compile_op_impl.cache_info().currsize == 0
-    assert compile_cpp_op_code.cache_info().currsize == 0
+    assert all(m.cache_info().currsize == 0 for m in memos)
     assert compile_cpp_to_ltoir.cache_info().currsize == 0
+
+    # cache_clear() also zeroes the counters, so a rebuild with fresh objects
+    # is cold exactly when every memo misses again.
+    run_reduce(make_iter())
+    run_select()
+    assert all(m.cache_info().misses > 0 for m in memos)
+
+    # Reusing the live iterator relinks the ops memoized on it: no recompile.
+    cuda.compute.clear_all_caches()
+    run_reduce(first)
+    assert _compile_op_impl.cache_info().misses == 0
+    assert compile_cpp_op_code.cache_info().misses == 0

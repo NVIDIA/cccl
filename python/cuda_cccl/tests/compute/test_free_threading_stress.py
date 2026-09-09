@@ -46,8 +46,10 @@ TRANSFORM_NATIVE_CACHE_THREADS = 4
 # global registries and refresh_contexts() completing is narrow, so widen the
 # field for those tests.
 STRUCT_REGISTRATION_THREADS = 8
-# Each iteration compiles one distinct specialization per worker, so iterations
-# are capped well below STRESS_ITERATIONS to bound native-compile time.
+# Each iteration compiles one distinct specialization per worker (a native
+# build, and on the JIT paths a numba-cuda-mlir compile as well), so iterations
+# are capped well below STRESS_ITERATIONS to bound compile time. Same-key storms
+# coalesce to one compile per iteration and can afford STRESS_ITERATIONS.
 DISTINCT_KEY_STORM_ITERATIONS = 3
 
 
@@ -1885,7 +1887,7 @@ def test_distinct_op_cold_build_storm(jit_compute_module):
     cc = jit_compute_module
 
     num_items = 64
-    for iteration in range(STRESS_ITERATIONS):
+    for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
         cc.clear_all_caches()
         returned_reducers = [None] * STRESS_THREADS
 
@@ -1955,7 +1957,7 @@ def test_concurrent_cold_gpu_struct_registration(jit_compute_module):
     info = np.iinfo(np.int32)
     num_items = 64
 
-    for iteration in range(STRESS_ITERATIONS):
+    for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
         cc.clear_all_caches()
 
         # A fresh class every iteration re-arms the cold-registration race:
@@ -2028,7 +2030,7 @@ def test_concurrent_distinct_gpu_struct_registration(jit_compute_module):
 
     num_items = 32
 
-    for iteration in range(STRESS_ITERATIONS):
+    for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
         cc.clear_all_caches()
 
         def make_thread(worker_id):

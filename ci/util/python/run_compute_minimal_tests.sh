@@ -24,7 +24,7 @@ python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-${ctk_flavor}${cuda_major
 python -m pip install pytest pytest-xdist
 
 cd "${repo_root}/python/cuda_cccl/tests/"
-python -m pytest -n 6 -v compute/test_no_numba.py
+python -m pytest -n 6 -v compute/test_no_numba.py compute/test_raw_op.py
 if is_free_threaded_python; then
   # Select only tests that support the minimal extra, so pytest does not collect
   # tests needing a JIT backend the minimal extras do not install. These tests
