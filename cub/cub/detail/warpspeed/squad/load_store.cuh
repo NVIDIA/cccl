@@ -100,6 +100,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
 template <typename ResourceTp, typename Tp>
 _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> cpAsyncOobInfo)
 {
+  if (cpAsyncOobInfo.origCopySizeBytes == 0)
+  {
+    // no bulk copy has been performed so we don't need to update the tx count of any barrier
+    // this happens in exclusive scans where the last element is in a new tile
+    return;
+  }
+
   ::cuda::std::byte* ptrSmem = refDestSmem.data().inout;
   _CCCL_ASSERT(::cuda::is_aligned(ptrSmem, 16), "");
   ::cuda::std::uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
