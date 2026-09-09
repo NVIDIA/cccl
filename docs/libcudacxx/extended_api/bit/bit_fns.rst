@@ -24,7 +24,7 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 
 **Return value**
 
-- The zero-based position of the set bit with rank ``rank``, or ``-1`` (``0xFFFFFFFF``, the not-found result of CUDA's ``__fns`` intrinsic) if ``value`` has fewer than ``rank + 1`` set bits.
+- The zero-based position of the set bit with rank ``rank``, or ``-1`` if ``value`` has fewer than ``rank + 1`` set bits.
 
 **Constraints**
 
@@ -36,10 +36,7 @@ The function finds the ``rank``-th set bit of ``value``, counting set bits from 
 
 **Performance considerations**
 
-The function performs essentially the following operations in device code, for ``T`` up to 64 bits:
-
-- ``POPC``, ``ISETP`` and a branch for the not-found early exit.
-- ``log2(num_bits(T))`` binary-search steps, each ``POPC``, ``LOP3``, ``ISETP``, ``SEL`` x2, an integer subtract and ``SHF``, plus the adds that accumulate the position.
+- ``log2(num_bits(T))`` binary-search steps, each of them executing population count and 6 ALU instructions.
 
 .. note::
 
