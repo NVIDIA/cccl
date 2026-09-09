@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#pragma once
+
 #include <cuda/std/complex>
 #include <cuda/stream>
 #include <cuda/type_traits>
