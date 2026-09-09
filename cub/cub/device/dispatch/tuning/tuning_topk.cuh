@@ -89,6 +89,7 @@ struct policy_selector
   int value_size; // 0 when selecting keys only
   int offset_size;
   int out_offset_size;
+  type_t key_type; // distinguishes same-sized key types (e.g. float vs. int32), which take different tunings
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
@@ -119,8 +120,8 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
     constexpr int value_size = ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)};
-    constexpr auto policies =
-      policy_selector{int{sizeof(KeyT)}, value_size, int{sizeof(OffsetT)}, int{sizeof(OutOffsetT)}};
+    constexpr auto policies  = policy_selector{
+      int{sizeof(KeyT)}, value_size, int{sizeof(OffsetT)}, int{sizeof(OutOffsetT)}, classify_type<KeyT>};
     return policies(cc);
   }
 };
