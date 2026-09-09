@@ -55,9 +55,9 @@ TEMPLATE_TEST_CASE(
     constexpr int M     = 8192;
     constexpr int N     = 32;
     constexpr int alloc = M * N;
-    cuda::std::array<int, 2> shape{M, N};
-    cuda::std::array<int, 2> src_strides{1, M};
-    cuda::std::array<int, 2> dst_strides{N, 1};
+    constexpr cuda::std::array<int, 2> shape{M, N};
+    constexpr cuda::std::array<int, 2> src_strides{1, M};
+    constexpr cuda::std::array<int, 2> dst_strides{N, 1};
     test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
   }
 
@@ -66,9 +66,9 @@ TEMPLATE_TEST_CASE(
     constexpr int M     = 8193;
     constexpr int N     = 37;
     constexpr int alloc = M * N;
-    cuda::std::array<int, 2> shape{M, N};
-    cuda::std::array<int, 2> src_strides{1, M};
-    cuda::std::array<int, 2> dst_strides{N, 1};
+    constexpr cuda::std::array<int, 2> shape{M, N};
+    constexpr cuda::std::array<int, 2> src_strides{1, M};
+    constexpr cuda::std::array<int, 2> dst_strides{N, 1};
     test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
   }
 }
@@ -97,9 +97,9 @@ TEST_CASE("copy d2d shared_memory 3D partial tiles", "[copy][d2d][shared_memory]
   constexpr int D1    = 17;
   constexpr int D2    = 19;
   constexpr int alloc = D0 * D1 * D2;
-  cuda::std::array<int, 3> shape{D0, D1, D2};
-  cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
-  cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
+  constexpr cuda::std::array<int, 3> shape{D0, D1, D2};
+  constexpr cuda::std::array<int, 3> src_strides{1, D0, D0 * D1};
+  constexpr cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 
@@ -114,9 +114,9 @@ TEST_CASE("copy d2d shared_memory 4D irregular partial tiles", "[copy][d2d][shar
   constexpr int D3        = 5;
   constexpr int src_alloc = (D0 - 1) + (D1 - 1) * 257 + (D2 - 1) * 5000 + (D3 - 1) * 100000 + 1;
   constexpr int dst_alloc = (D0 - 1) * 2000 + (D1 - 1) * 100 + (D2 - 1) * 5 + D3;
-  cuda::std::array<int, 4> shape{D0, D1, D2, D3};
-  cuda::std::array<int, 4> src_strides{1, 257, 5000, 100000};
-  cuda::std::array<int, 4> dst_strides{2000, 100, 5, 1};
+  constexpr cuda::std::array<int, 4> shape{D0, D1, D2, D3};
+  constexpr cuda::std::array<int, 4> src_strides{1, 257, 5000, 100000};
+  constexpr cuda::std::array<int, 4> dst_strides{2000, 100, 5, 1};
   test_copy_stride_relaxed<data_t>(src_alloc, 0, shape, src_strides, dst_alloc, 0, dst_strides);
 }
 

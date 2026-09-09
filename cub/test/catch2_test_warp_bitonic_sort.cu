@@ -6,6 +6,7 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/transform.h>
 
 #include <cuda/iterator>
 #include <cuda/std/limits>
@@ -15,6 +16,7 @@
 
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
+#include <c2h/device_policy.h>
 
 using cub::detail::warp_threads;
 
@@ -56,6 +58,28 @@ struct CustomLess
     }
   };
 };
+
+// Maps keys that are not ordered strictly before the upper bound to KeyT{}.
+template <typename KeyT>
+struct clamp_key_below_t
+{
+  KeyT upper_bound;
+
+  __device__ __host__ KeyT operator()(const KeyT& key) const
+  {
+    return CustomLess{}(key, upper_bound) ? key : KeyT{};
+  }
+};
+
+// The Sort(..., valid_items, oob_default) overloads need every valid key ordered strictly before the
+// sentinel, which c2h::gen does not guarantee since it can generate the sentinel value itself.
+// This clamping method works generically, also for custom_t
+template <typename KeyT>
+void clamp_keys_below(c2h::device_vector<KeyT>& d_keys, KeyT upper_bound)
+{
+  thrust::transform(
+    c2h::device_policy, d_keys.begin(), d_keys.end(), d_keys.begin(), clamp_key_below_t<KeyT>{upper_bound});
+}
 
 /**
  * @brief Kernel to dispatch to the appropriate WarpBitonicSort member function, sorting keys-only.
@@ -431,6 +455,7 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
   c2h::device_vector<type> d_in(total_items);
   c2h::device_vector<type> d_out(total_items);
   c2h::gen(C2H_SEED(5), d_in);
+  clamp_keys_below(d_in, CustomLess::get_oob_default<type>());
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
@@ -514,6 +539,7 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   c2h::device_vector<value_type> d_values_out(total_items);
   c2h::gen(C2H_SEED(5), d_keys_in);
   c2h::gen(C2H_SEED(1), d_values_in);
+  clamp_keys_below(d_keys_in, CustomLess::get_oob_default<key_type>());
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
@@ -567,6 +593,7 @@ CUB_TEST("Warp sort on custom key-value pairs works",
   c2h::device_vector<value_type> d_values_out(total_items);
   c2h::gen(C2H_SEED(5), d_keys_in);
   c2h::gen(C2H_SEED(1), d_values_in);
+  clamp_keys_below(d_keys_in, CustomLess::get_oob_default<key_type>());
 
   // Run test
   warp_bitonic_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(

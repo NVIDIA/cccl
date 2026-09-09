@@ -135,9 +135,9 @@ TEMPLATE_TEST_CASE(
 {
   constexpr int alloc      = 63 * 70 * 1001;
   constexpr int src_offset = alloc - 1;
-  cuda::std::array<int, 3> shape{63, 70, 1001};
-  cuda::std::array<int, 3> src_strides{-1001, -63063, -1};
-  cuda::std::array<int, 3> dst_strides{70070, 1001, 1};
+  constexpr cuda::std::array<int, 3> shape{63, 70, 1001};
+  constexpr cuda::std::array<int, 3> src_strides{-1001, -63063, -1};
+  constexpr cuda::std::array<int, 3> dst_strides{70070, 1001, 1};
   test_copy_stride_relaxed<TestType>(alloc, src_offset, shape, src_strides, alloc, 0, dst_strides);
 }
 

@@ -11,6 +11,7 @@
 #include <thrust/iterator/zip_iterator.h>
 
 #include <cuda/iterator>
+#include <cuda/std/mdspan>
 #include <cuda/std/tuple>
 
 #include "cub_test_macros.h"
@@ -361,10 +362,10 @@ CUB_TEST("Device for each copy works without temporary storage", "[for_each][dev
 }
 
 // Guard tests: each public DeviceFor method must resolve unambiguously
-// to the legacy temp-storage overload when called in its minimal form
-// (no explicit stream, all defaults left implicit), even though the env
-// and bare-stream overloads are also in scope. If the env-overload
-// SFINAE is wrong, these become "ambiguous overload" compile errors.
+// to the temp-storage overload when called in its minimal form (no
+// explicit environment or stream, all defaults left implicit), even
+// though the single-phase overloads are also in scope. If the overload
+// set is wrong, these become "ambiguous overload" compile errors.
 
 struct noop_t
 {
@@ -376,7 +377,7 @@ struct noop_ref_t
   __device__ void operator()(int&) const {}
 };
 
-CUB_TEST("DeviceFor::Bulk legacy size-query is unambiguous", "[for][device]", CUB_SMALL)
+CUB_TEST("DeviceFor::Bulk two-phase size-query is unambiguous", "[for][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -385,7 +386,7 @@ CUB_TEST("DeviceFor::Bulk legacy size-query is unambiguous", "[for][device]", CU
   REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, n, noop_t{}));
 }
 
-CUB_TEST("DeviceFor::ForEachN legacy size-query is unambiguous", "[for][device]", CUB_SMALL)
+CUB_TEST("DeviceFor::ForEachN two-phase size-query is unambiguous", "[for][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -395,7 +396,7 @@ CUB_TEST("DeviceFor::ForEachN legacy size-query is unambiguous", "[for][device]"
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, d_in, n, noop_ref_t{}));
 }
 
-CUB_TEST("DeviceFor::ForEach legacy size-query is unambiguous", "[for][device]", CUB_SMALL)
+CUB_TEST("DeviceFor::ForEach two-phase size-query is unambiguous", "[for][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -405,7 +406,7 @@ CUB_TEST("DeviceFor::ForEach legacy size-query is unambiguous", "[for][device]",
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, d_first, d_last, noop_ref_t{}));
 }
 
-CUB_TEST("DeviceFor::ForEachCopyN legacy size-query is unambiguous", "[for][device]", CUB_SMALL)
+CUB_TEST("DeviceFor::ForEachCopyN two-phase size-query is unambiguous", "[for][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -415,7 +416,7 @@ CUB_TEST("DeviceFor::ForEachCopyN legacy size-query is unambiguous", "[for][devi
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, d_in, n, noop_t{}));
 }
 
-CUB_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][device]", CUB_SMALL)
+CUB_TEST("DeviceFor::ForEachCopy two-phase size-query is unambiguous", "[for][device]", CUB_SMALL)
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -425,4 +426,37 @@ CUB_TEST("DeviceFor::ForEachCopy legacy size-query is unambiguous", "[for][devic
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, d_first, d_last, noop_t{}));
 }
 
-// todo(giannis): extents/layout guards once a default-constructible 0-extent is wired up
+struct noop_extents_t
+{
+  __device__ void operator()(int, int) const {}
+};
+
+CUB_TEST("DeviceFor::ForEachInExtents two-phase size-query is unambiguous", "[for][device]", CUB_SMALL)
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cuda::std::extents<int, 0> extents{};
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceFor::ForEachInExtents(d_temp_storage, temp_storage_bytes, extents, noop_extents_t{}));
+}
+
+CUB_TEST("DeviceFor::ForEachInLayout two-phase size-query is unambiguous", "[for][device]", CUB_SMALL)
+{
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  using extents_type        = cuda::std::extents<int, 0>;
+  auto mapping              = cuda::std::layout_right::mapping<extents_type>{};
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceFor::ForEachInLayout(d_temp_storage, temp_storage_bytes, mapping, noop_extents_t{}));
+}
+
+// fast_div_mod asserts a positive divisor, so an empty extent must return before those arrays are
+// built. Reaches the compute path, unlike the size-query guards above.
+CUB_TEST("DeviceFor::ForEachInExtents handles an empty extent", "[for][device]", CUB_SMALL)
+{
+  cuda::std::extents<int, cuda::std::dynamic_extent> extents{0};
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(extents, noop_extents_t{}));
+}

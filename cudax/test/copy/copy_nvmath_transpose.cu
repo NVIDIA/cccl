@@ -149,9 +149,9 @@ TEMPLATE_TEST_CASE(
   constexpr int D1    = 293;
   constexpr int D2    = 3;
   constexpr int alloc = D0 * D1 * D2;
-  cuda::std::array<int, 3> shape{D0, D1, D2};
-  cuda::std::array<int, 3> src_strides{D2, D0 * D2, 1};
-  cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
+  constexpr cuda::std::array<int, 3> shape{D0, D1, D2};
+  constexpr cuda::std::array<int, 3> src_strides{D2, D0 * D2, 1};
+  constexpr cuda::std::array<int, 3> dst_strides{D1 * D2, D2, 1};
   test_copy_stride_relaxed<TestType>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
 

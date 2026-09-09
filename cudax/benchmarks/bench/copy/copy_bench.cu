@@ -209,10 +209,10 @@ void flatten_common(nvbench::state& state)
   {
     extent = 2;
   }
-  cuda::std::array<int, 23> src_strides{
+  constexpr cuda::std::array<int, 23> src_strides{
     1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22, 1 << 14, 1 << 13, 1 << 12, 1 << 11,
     1 << 10, 1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,  1 << 3,  1 << 2,  1 << 0,  1 << 1};
-  cuda::std::array<int, 23> dst_strides{
+  constexpr cuda::std::array<int, 23> dst_strides{
     1 << 15, 1 << 16, 1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 21, 1 << 22, 1 << 14, 1 << 13, 1 << 12, 1 << 11,
     1 << 10, 1 << 9,  1 << 8,  1 << 7,  1 << 6,  1 << 5,  1 << 4,  1 << 3,  1 << 1,  1 << 2,  1 << 0};
   bench_copy<int8_t>(state, 0, shape, src_strides, 0, dst_strides);
