@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_VECTOR_ACCESS_H
-#define _CUDAX__COPY_VECTOR_ACCESS_H
+#ifndef _CUDA___MDSPAN___COPY_VECTOR_ACCESS_H
+#define _CUDA___MDSPAN___COPY_VECTOR_ACCESS_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,8 +30,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief Aligned storage type for vectorized memory access of a given byte width.
 template <::cuda::std::size_t _VectorBytes>
 struct alignas(_VectorBytes) __vector_access
@@ -67,8 +67,9 @@ using __vector_access_t = __vector_access<_VectorBytes>;
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_VECTOR_ACCESS_H
+#endif // _CUDA___MDSPAN___COPY_VECTOR_ACCESS_H

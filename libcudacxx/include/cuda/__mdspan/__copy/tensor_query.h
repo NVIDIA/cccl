@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_TENSOR_QUERY_H
-#define __CUDAX_COPY_TENSOR_QUERY_H
+#ifndef _CUDA___MDSPAN___COPY_TENSOR_QUERY_H
+#define _CUDA___MDSPAN___COPY_TENSOR_QUERY_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,19 +23,18 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__mdspan/__copy/abs_integer.h>
+#  include <cuda/__mdspan/__copy/mdspan_to_raw_tensor.h>
+#  include <cuda/__mdspan/__copy/types.h>
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/array>
 
-#  include <cuda/experimental/__copy_bytes/abs_integer.cuh>
-#  include <cuda/experimental/__copy_bytes/mdspan_to_raw_tensor.cuh>
-#  include <cuda/experimental/__copy_bytes/types.cuh>
-
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief Checks whether two raw tensors have the same rank and identical extents.
 //!
 //! @param[in] __tensor_in  First raw tensor
@@ -78,8 +77,7 @@ struct __stride_compare
   template <typename _Idx>
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(const _Idx __lhs, const _Idx __rhs) const noexcept
   {
-    return ::cuda::experimental::__abs_integer(__strides[__lhs])
-         < ::cuda::experimental::__abs_integer(__strides[__rhs]);
+    return ::cuda::__abs_integer(__strides[__lhs]) < ::cuda::__abs_integer(__strides[__rhs]);
   }
 };
 
@@ -114,9 +112,9 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
   using __rank_t       = typename __raw_tensor_t::__rank_t;
   const auto __rank    = __tensor.__rank;
-  const auto __perm    = ::cuda::experimental::__stride_order(__tensor);
+  const auto __perm    = ::cuda::__stride_order(__tensor);
 
-  __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
+  __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank, {}, {}};
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     __result.__extents[__i] = __tensor.__extents[__perm[__i]];
@@ -142,9 +140,8 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
 {
   if constexpr (_Extents::rank() > 0)
   {
-    namespace cudax       = ::cuda::experimental;
-    const auto __tensor   = cudax::__to_raw_tensor(__mdspan);
-    const auto __sorted   = cudax::__sort_by_stride(__tensor);
+    const auto __tensor   = ::cuda::__to_raw_tensor(__mdspan);
+    const auto __sorted   = ::cuda::__sort_by_stride(__tensor);
     using __stride_t      = decltype(__sorted.__strides[0]);
     using __rank_t        = typename _Extents::rank_type;
     const auto& __extents = __sorted.__extents;
@@ -160,7 +157,7 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
     for (__rank_t __i = 0; __i + 1 < __rank; ++__i)
     {
       const auto __extent = static_cast<__stride_t>(__extents[__i]);
-      if (__extent * cudax::__abs_integer(__strides[__i]) > cudax::__abs_integer(__strides[__i + 1]))
+      if (__extent * ::cuda::__abs_integer(__strides[__i]) > ::cuda::__abs_integer(__strides[__i + 1]))
       {
         return true;
       }
@@ -172,9 +169,10 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
     return false;
   }
 }
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // __CUDAX_COPY_TENSOR_QUERY_H
+#endif // _CUDA___MDSPAN___COPY_TENSOR_QUERY_H

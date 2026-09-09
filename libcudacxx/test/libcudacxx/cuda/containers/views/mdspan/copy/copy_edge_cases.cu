@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -37,7 +37,6 @@ TEST_CASE("copy d2d scalar", "[copy][d2d][0d]")
 // __have_default_accessors is true, tile_size == tensor_size → path (1) DeviceTransform
 TEST_CASE("copy d2d different types", "[copy][d2d][1d][mixed_types]")
 {
-  namespace cudax = cuda::experimental;
   constexpr int N = 8;
   thrust::host_vector<int> h_src(N);
   for (int i = 0; i < N; ++i)
@@ -54,7 +53,7 @@ TEST_CASE("copy d2d different types", "[copy][d2d][1d][mixed_types]")
   const cuda::device_mdspan<int, extents_t, layout_right> src(thrust::raw_pointer_cast(d_src.data()), mapping);
   const cuda::device_mdspan<float, extents_t, layout_right> dst(thrust::raw_pointer_cast(d_dst.data()), mapping);
 
-  cudax::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   thrust::host_vector<float> h_expected(N);
@@ -70,7 +69,6 @@ TEST_CASE("copy d2d different types", "[copy][d2d][1d][mixed_types]")
 // dst: (0,0):(0,1)
 TEST_CASE("copy d2d size 0", "[copy][d2d][zero_size]")
 {
-  namespace cudax = cuda::experimental;
   thrust::device_vector<int> d_src(1, 0);
   thrust::device_vector<int> d_dst(1, 0);
 
@@ -81,7 +79,7 @@ TEST_CASE("copy d2d size 0", "[copy][d2d][zero_size]")
   const cuda::device_mdspan<int, extents_t, layout_right> src(thrust::raw_pointer_cast(d_src.data()), mapping);
   const cuda::device_mdspan<int, extents_t, layout_right> dst(thrust::raw_pointer_cast(d_dst.data()), mapping);
 
-  cudax::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   thrust::host_vector<int> result(d_dst);
@@ -97,7 +95,6 @@ TEST_CASE("copy d2d size 0", "[copy][d2d][zero_size]")
 // Bypasses the DeviceTransform contiguous path since __have_default_accessors is false
 TEST_CASE("copy d2d contiguous scaled_accessor", "[copy][d2d][1d][accessor]")
 {
-  namespace cudax = cuda::experimental;
   constexpr int N = 128;
 
   auto h_src = make_iota<int>(N);
@@ -116,7 +113,7 @@ TEST_CASE("copy d2d contiguous scaled_accessor", "[copy][d2d][1d][accessor]")
     thrust::raw_pointer_cast(d_src.data()), mapping, dev_acc_t{scaled_acc_t{2, cuda::std::default_accessor<int>{}}});
   const dst_mdspan_t dst(thrust::raw_pointer_cast(d_dst.data()), mapping);
 
-  cudax::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   thrust::host_vector<int> h_expected(N);
@@ -303,7 +300,6 @@ TEST_CASE("copy d2d tile boundary partial", "[copy][d2d][tile_boundary]")
 
 TEST_CASE("copy d2d mismatched shapes", "[copy][d2d][negative]")
 {
-  namespace cudax = cuda::experimental;
   constexpr int N = 64;
   thrust::device_vector<float> d_src(N);
   thrust::device_vector<float> d_dst(N);
@@ -318,7 +314,7 @@ TEST_CASE("copy d2d mismatched shapes", "[copy][d2d][negative]")
   const cuda::device_mdspan<float, extents_dst_t, layout_right> dst(
     thrust::raw_pointer_cast(d_dst.data()), layout_right::mapping<extents_dst_t>(dst_ext));
 
-  CHECK_THROWS_AS(cudax::copy(src, dst, stream), std::invalid_argument);
+  CHECK_THROWS_AS(cuda::copy(src, dst, stream), std::invalid_argument);
 }
 
 /***********************************************************************************************************************
@@ -329,7 +325,6 @@ TEST_CASE("copy d2d mismatched shapes", "[copy][d2d][negative]")
 // dst: dextents<long long, 2>(4, 8), layout_right
 TEST_CASE("copy d2d different extent types", "[copy][d2d][mixed_types]")
 {
-  namespace cudax = cuda::experimental;
   constexpr int M = 4;
   constexpr int N = 8;
 
@@ -347,7 +342,7 @@ TEST_CASE("copy d2d different extent types", "[copy][d2d][mixed_types]")
   const cuda::device_mdspan<float, dst_extents_t, layout_right> dst(
     thrust::raw_pointer_cast(d_dst.data()), layout_right::mapping<dst_extents_t>(dst_ext));
 
-  cudax::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   const thrust::host_vector<float> result(d_dst);
@@ -358,7 +353,6 @@ TEST_CASE("copy d2d different extent types", "[copy][d2d][mixed_types]")
 // dst: dextents<long long, 2>(4, 8), layout_stride with strides array<long long, 2>
 TEST_CASE("copy d2d different extent and stride types", "[copy][d2d][mixed_types]")
 {
-  namespace cudax = cuda::experimental;
   constexpr int M = 4;
   constexpr int N = 8;
 
@@ -379,7 +373,7 @@ TEST_CASE("copy d2d different extent and stride types", "[copy][d2d][mixed_types
   const cuda::device_mdspan<float, dst_extents_t, cuda::std::layout_stride> dst(
     thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
 
-  cudax::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   const thrust::host_vector<float> result(d_dst);
@@ -392,7 +386,6 @@ TEST_CASE("copy d2d different extent and stride types", "[copy][d2d][mixed_types
 
 TEST_CASE("copy d2d misaligned pointer", "[copy][d2d][alignment]")
 {
-  namespace cudax = cuda::experimental;
   constexpr int N = 512;
 
   thrust::host_vector<char> h_src(N);
@@ -417,7 +410,7 @@ TEST_CASE("copy d2d misaligned pointer", "[copy][d2d][alignment]")
   const cuda::device_mdspan<char, extents_t, layout_right> src(src_ptr, mapping);
   const cuda::device_mdspan<char, extents_t, layout_right> dst(dst_ptr, mapping);
 
-  cudax::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   thrust::host_vector<char> h_dst_buf(d_dst_buf);
@@ -431,8 +424,6 @@ TEST_CASE("copy d2d misaligned pointer", "[copy][d2d][alignment]")
 
 TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
 {
-  namespace cudax = cuda::experimental;
-
   const auto N        = static_cast<size_t>(INT_MAX) + 257;
   const auto required = 2 * N;
 
@@ -454,7 +445,7 @@ TEST_CASE("copy d2d large count > INT_MAX", "[copy][d2d][large][.]")
   const cuda::device_mdspan<char, extents_t, layout_right> src(thrust::raw_pointer_cast(d_src.data()), mapping);
   const cuda::device_mdspan<char, extents_t, layout_right> dst(thrust::raw_pointer_cast(d_dst.data()), mapping);
 
-  cudax::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   REQUIRE(d_dst[0] == static_cast<char>(0x42));

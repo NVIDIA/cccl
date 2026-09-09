@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_DISPATCH_BY_VECTOR_H
-#define _CUDAX__COPY_DISPATCH_BY_VECTOR_H
+#ifndef _CUDA___MDSPAN___COPY_DISPATCH_BY_VECTOR_H
+#define _CUDA___MDSPAN___COPY_DISPATCH_BY_VECTOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,17 +23,16 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__mdspan/__copy/tensor_copy_utils.h>
+#  include <cuda/__mdspan/__copy/types.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 
-#  include <cuda/experimental/__copy/tensor_copy_utils.cuh>
-#  include <cuda/experimental/__copy_bytes/types.cuh>
-
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief Compute the maximum vector access width in bytes for a pair of raw tensors.
 //!
 //! Takes the minimum of the source alignment, destination alignment, and the GPU architecture's
@@ -54,9 +53,7 @@ __vector_size_bytes(const __raw_tensor<_SrcExtentT, _SrcStrideT, _TpSrc, _MaxRan
                     const __raw_tensor<_DstExtentT, _DstStrideT, _TpDst, _MaxRank>& __dst) noexcept
 {
   return ::cuda::std::min(
-    {::cuda::experimental::__max_alignment(__src),
-     ::cuda::experimental::__max_alignment(__dst),
-     ::cuda::experimental::__max_gpu_arch_vector_size()});
+    {::cuda::__max_alignment(__src), ::cuda::__max_alignment(__dst), ::cuda::__max_gpu_arch_vector_size()});
 }
 
 template <int _VectorSize>
@@ -82,13 +79,12 @@ _CCCL_HOST_API void __dispatch_by_vector_size(
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _Rank>& __dst,
   _Op __op) noexcept
 {
-  namespace cudax              = ::cuda::experimental;
   const auto __call_vectorized = [&](auto __const_vector_size) {
-    const auto __src_recast = cudax::__reshape_vectorized<__const_vector_size>(__src);
-    const auto __dst_recast = cudax::__reshape_vectorized<__const_vector_size>(__dst);
+    const auto __src_recast = ::cuda::__reshape_vectorized<__const_vector_size>(__src);
+    const auto __dst_recast = ::cuda::__reshape_vectorized<__const_vector_size>(__dst);
     __op(__src_recast, __dst_recast);
   };
-  const auto __vector_size_bytes = cudax::__vector_size_bytes(__src, __dst);
+  const auto __vector_size_bytes = ::cuda::__vector_size_bytes(__src, __dst);
 // 32-bytes aligned vector types have been introduced in CTK 13.0
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   static_assert(sizeof(_TpIn) <= 32);
@@ -141,9 +137,10 @@ _CCCL_HOST_API void __dispatch_by_vector_size(
   }
   // no fallthrough (sizeof(T) is never 0)
 }
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // _CUDAX__COPY_DISPATCH_BY_VECTOR_H
+#endif // _CUDA___MDSPAN___COPY_DISPATCH_BY_VECTOR_H

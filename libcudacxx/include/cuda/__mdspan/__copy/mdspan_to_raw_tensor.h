@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_MDSPAN_TO_RAW_TENSOR_H
-#define __CUDAX_COPY_MDSPAN_TO_RAW_TENSOR_H
+#ifndef _CUDA___MDSPAN___COPY_MDSPAN_TO_RAW_TENSOR_H
+#define _CUDA___MDSPAN___COPY_MDSPAN_TO_RAW_TENSOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,17 +23,16 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__mdspan/__copy/types.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 
-#  include <cuda/experimental/__copy_bytes/types.cuh>
-
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! @brief Extracts the stride type from a layout mapping, defaulting to `index_type` when absent.
 template <typename _LayoutPolicy, typename _Mapping>
 struct __mapping_stride_type
@@ -124,11 +123,12 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
 {
   using __extent_t = typename _Extents::index_type;
   using __stride_t = __mdspan_stride_t<_LayoutPolicy, decltype(__mdspan.mapping())>;
-  return ::cuda::experimental::__to_raw_tensor<__extent_t, __stride_t, _Extents::rank()>(__mdspan);
+  return ::cuda::__to_raw_tensor<__extent_t, __stride_t, _Extents::rank()>(__mdspan);
 }
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // __CUDAX_COPY_MDSPAN_TO_RAW_TENSOR_H
+#endif // _CUDA___MDSPAN___COPY_MDSPAN_TO_RAW_TENSOR_H

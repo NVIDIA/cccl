@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_TENSOR_ITERATOR_H
-#define _CUDAX__COPY_TENSOR_ITERATOR_H
+#ifndef _CUDA___MDSPAN___COPY_TENSOR_ITERATOR_H
+#define _CUDA___MDSPAN___COPY_TENSOR_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,8 +30,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 /***********************************************************************************************************************
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
@@ -55,7 +55,7 @@ template <typename _ExtentT, ::cuda::std::size_t _Size>
 __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noexcept
 {
   using __seq_t = ::cuda::std::make_index_sequence<_Size>;
-  return ::cuda::experimental::__extents_fast_div_mod_impl(__extents, __seq_t{});
+  return ::cuda::__extents_fast_div_mod_impl(__extents, __seq_t{});
 }
 
 /***********************************************************************************************************************
@@ -93,7 +93,7 @@ struct __tensor_coord_iterator
   //! @param[in] __extents Tensor extents (may be unsigned; converted to _ExtentT internally)
   template <typename _UExtentT>
   _CCCL_HOST_API explicit __tensor_coord_iterator(const ::cuda::std::array<_UExtentT, _Rank>& __extents) noexcept
-      : __extents_{::cuda::experimental::__extents_fast_div_mod(__to_extent_array(__extents))}
+      : __extents_{::cuda::__extents_fast_div_mod(__to_extent_array(__extents))}
   {}
 
   //! @brief Returns the multi-dimensional coordinates for the given linear index.
@@ -163,8 +163,9 @@ struct __partial_tensor
     return __accessor.access(const_cast<::cuda::std::remove_const_t<_Tp>*>(__ptr), __offset(__coords));
   }
 };
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_TENSOR_ITERATOR_H
+#endif // _CUDA___MDSPAN___COPY_TENSOR_ITERATOR_H

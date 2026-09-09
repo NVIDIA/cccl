@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef CUDAX_TEST_COPY_COMMON_CUH
-#define CUDAX_TEST_COPY_COMMON_CUH
+#ifndef LIBCUDACXX_TEST_CUDA_MDSPAN_COPY_COMMON_CUH
+#define LIBCUDACXX_TEST_CUDA_MDSPAN_COPY_COMMON_CUH
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -18,9 +18,7 @@
 #include <cuda/std/array>
 #include <cuda/stream>
 
-#include <cuda/experimental/copy.cuh>
-
-#include "testing.cuh"
+#include <testing.cuh>
 
 using cuda::std::layout_left;
 using cuda::std::layout_right;
@@ -56,7 +54,7 @@ void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>
   const cuda::device_mdspan<T, extents_t, SrcLayout> src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
   const cuda::device_mdspan<T, extents_t, DstLayout> dst(thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
 
-  cuda::experimental::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   const thrust::host_vector<T> result(d_dst);
@@ -100,7 +98,7 @@ void test_copy_strided(
   const cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> dst(
     thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
 
-  cuda::experimental::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   const thrust::host_vector<T> result(d_dst);
@@ -168,7 +166,7 @@ void test_copy_stride_relaxed(
   const cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> src(src_ptr, src_map);
   const cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> dst(dst_ptr, dst_map);
 
-  cuda::experimental::copy(src, dst, stream);
+  cuda::copy(src, dst, stream);
   stream.sync();
 
   const thrust::host_vector<T> result(d_dst);
@@ -182,4 +180,4 @@ void test_copy_stride_relaxed(
   test_copy_stride_relaxed<T>(alloc, offset, shape, strides, alloc, offset, strides);
 }
 
-#endif // CUDAX_TEST_COPY_COMMON_CUH
+#endif // LIBCUDACXX_TEST_CUDA_MDSPAN_COPY_COMMON_CUH

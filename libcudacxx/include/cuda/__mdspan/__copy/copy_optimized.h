@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_OPTIMIZED_H
-#define _CUDAX__COPY_OPTIMIZED_H
+#ifndef _CUDA___MDSPAN___COPY_COPY_OPTIMIZED_H
+#define _CUDA___MDSPAN___COPY_COPY_OPTIMIZED_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,19 +22,17 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__mdspan/__copy/tensor_iterator.h>
+#include <cuda/__mdspan/__copy/types.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/launch>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/array>
 
-#include <cuda/experimental/__copy/tensor_iterator.cuh>
-#include <cuda/experimental/__copy_bytes/types.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Element-wise copy kernel for strided tensor data.
@@ -122,7 +120,7 @@ _CCCL_HOST_API void __copy_optimized(
   const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter(__src.__extents);
   const auto __grid_size = ::cuda::ceil_div(__tensor_size, _ExtentT{__block_size});
   const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_size));
-  const auto& __kernel   = ::cuda::experimental::__copy_optimized_kernel<
+  const auto& __kernel   = ::cuda::__copy_optimized_kernel<
     decltype(__config),
     _TpIn,
     _TpOut,
@@ -148,8 +146,8 @@ _CCCL_HOST_API void __copy_optimized(
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_OPTIMIZED_H
+#endif // _CUDA___MDSPAN___COPY_COPY_OPTIMIZED_H
