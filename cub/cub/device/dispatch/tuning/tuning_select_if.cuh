@@ -2993,14 +2993,14 @@ private:
     {
       if (input_type == type_t::float32)
       {
-        // trp_1.ld_0.ipt_21.tpb_512.ns_1592.dcid_0.l2w_420  1.017  0.955  1.170  1.264
+        // trp_0.ld_1.ipt_14.tpb_320.ns_140.dcid_1.l2w_805  1.267  0.987  1.299  1.617
         return SelectLookbackPolicy{
-          512,
-          21,
-          BLOCK_LOAD_WARP_TRANSPOSE,
-          LOAD_DEFAULT,
+          320,
+          14,
+          BLOCK_LOAD_DIRECT,
+          LOAD_CA,
           BLOCK_SCAN_WARP_SCANS,
-          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1592, 420}};
+          LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 140, 805}};
       }
       // trp_1.ld_1.ipt_20.tpb_224.ns_60.dcid_0.l2w_640  0.966  0.967  1.148  1.227
       return SelectLookbackPolicy{
