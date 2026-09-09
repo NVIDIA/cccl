@@ -40,6 +40,7 @@ enum class __pstl_algorithm
   __for_each_n,
   __generate_n,
   __inclusive_scan,
+  __lexicographical_compare,
   __max_element,
   __merge,
   __min_element,
