@@ -871,8 +871,8 @@ struct policy_selector
   int value_size;
   bool primitive_key;
   bool primitive_value;
-  type_t key_type;
-  type_t value_type;
+  type_t key_type   = type_t::other;
+  type_t value_type = type_t::other;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
