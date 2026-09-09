@@ -367,11 +367,17 @@ function Test-FreeThreadedPython {
     # arguments without escaping embedded double quotes, so a double-quoted
     # Python literal reaches python.exe with its quotes stripped.
     $probe = (& $Python -c "import sysconfig; print('FT=%d' % (sysconfig.get_config_var('Py_GIL_DISABLED') in (1, '1')))" | Out-String).Trim()
-    switch ($probe) {
-        'FT=1' { return $true }
-        'FT=0' { return $false }
-        default { throw "free-threading probe returned '$probe' instead of FT=0 or FT=1 (exit code $LASTEXITCODE)" }
+    # Capture the exit code before anything else can disturb it. A probe that
+    # printed a sentinel but exited nonzero is still a failed probe, matching the
+    # bash is_free_threaded_python, which treats any nonzero exit as an error.
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -eq 0) {
+        switch ($probe) {
+            'FT=1' { return $true }
+            'FT=0' { return $false }
+        }
     }
+    throw "free-threading probe failed (exit code $exitCode, output '$probe'); expected exit 0 with FT=0 or FT=1"
 }
 
 Export-ModuleMember -Function Invoke-Checked, Get-Python, Assert-MinimalEnvironment, Install-MsvcRuntime, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch, Test-FreeThreadedPython

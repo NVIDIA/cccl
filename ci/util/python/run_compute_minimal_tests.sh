@@ -26,6 +26,15 @@ python -m pip install pytest pytest-xdist
 cd "${repo_root}/python/cuda_cccl/tests/"
 python -m pytest -n 6 -v compute/test_no_numba.py compute/test_raw_op.py
 if is_free_threaded_python; then
+  # Fail fast if the interpreter is not actually GIL-free (wrong build /
+  # PYTHON_GIL=1). The stress tests below check this themselves, but the
+  # pytest-run-parallel sweep does NOT catch a GIL that is enabled from the
+  # start -- it would run threads GIL-serialized and pass vacuously. (A GIL
+  # *re-enabled mid-run* by a non-free-threaded import IS caught by the plugin,
+  # which is why we do not pass --ignore-gil-enabled.) One check up front covers
+  # both and gives one clear failure instead of one per stress test.
+  python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; free-threading tests have no signal'"
+
   # Select only tests that support the minimal extra, so pytest does not collect
   # tests needing a JIT backend the minimal extras do not install. These tests
   # provide their own worker threads, so keep pytest in a single process.
@@ -52,12 +61,6 @@ if is_free_threaded_python; then
   # free-threaded path rather than for every minimal (e.g. GIL-enabled 3.14) run.
   python -m pip install pytest-run-parallel
 
-  # Fail fast if the interpreter is not actually GIL-free (wrong build /
-  # PYTHON_GIL=1): pytest-run-parallel does NOT catch a GIL that is enabled from
-  # the start -- it would run threads GIL-serialized and pass vacuously. (A GIL
-  # *re-enabled mid-run* by a non-free-threaded import IS caught by the plugin,
-  # which is why we do not pass --ignore-gil-enabled.)
-  python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; parallel sweep has no signal'"
   # The swept files are the ones marked no_numba module-wide, i.e. everything
   # the minimal extras can run.
   python -m pytest -n 0 -v --parallel-threads=2 \
