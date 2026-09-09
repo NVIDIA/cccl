@@ -2965,7 +2965,7 @@ private:
 
   // tunings from cub/benchmarks/bench/partition/flagged.cu, which benchmarks with 4-byte offsets. These are raw
   // measured values and must not be passed through nominal_4B_items_to_items.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_flagged_partition_tuning() const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_sm107_flagged_partition_tuning() const noexcept
     -> ::cuda::std::optional<SelectLookbackPolicy>
   {
     if (distinct_partitions || offset_size_bytes != 4)
