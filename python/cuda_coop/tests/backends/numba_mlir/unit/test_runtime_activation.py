@@ -462,53 +462,17 @@ def test_compat_rejects_unsupported_runtime_series(version):
 
 
 @pytest.mark.parametrize(
-    ("module_name", "attribute", "replacement", "reason_code"),
+    ("module_name", "attribute"),
     [
-        (
-            "numba_cuda_mlir.extending",
-            "_NumbaCudaMlirOverloadFunctionTemplate",
-            None,
-            "incomplete-runtime-hook-api",
-        ),
-        (
-            "numba_cuda_mlir.extending",
-            "_NumbaCudaMlirOverloadFunctionTemplate",
-            type(
-                "MalformedOverloadTemplate",
-                (),
-                {"_get_jit_decorator": lambda self: None},
-            ),
-            "incomplete-runtime-hook-api",
-        ),
-        (
-            "numba_cuda_mlir.numba_cuda.typing.templates",
-            "make_overload_template",
-            lambda func: func,
-            "incomplete-runtime-hook-api",
-        ),
-        (
-            "numba_cuda_mlir.numbair_transforms",
-            "ir",
-            None,
-            "incomplete-runtime-hook-api",
-        ),
-        (
-            "numba_cuda_mlir._whole_function_planners",
-            "_planner_registry",
-            SimpleNamespace(_lock=RLock(), _planners=()),
-            "registration-transaction-unavailable",
-        ),
+        ("numba_cuda_mlir.extending", "_NumbaCudaMlirOverloadFunctionTemplate"),
+        ("numba_cuda_mlir.numba_cuda.typing.templates", "make_overload_template"),
+        ("numba_cuda_mlir.numbair_transforms", "ir"),
+        ("numba_cuda_mlir._whole_function_planners", "_planner_registry"),
     ],
 )
-def test_compat_rejects_malformed_private_0_5_shapes(
-    monkeypatch,
-    module_name,
-    attribute,
-    replacement,
-    reason_code,
-):
+def test_compat_reports_missing_private_api(monkeypatch, module_name, attribute):
     modules = _fake_compat_modules()
-    setattr(modules[module_name], attribute, replacement)
+    delattr(modules[module_name], attribute)
     monkeypatch.setattr(
         _numba_mlir_compat.importlib,
         "import_module",
@@ -518,7 +482,9 @@ def test_compat_rejects_malformed_private_0_5_shapes(
     with pytest.raises(_activation._NumbaMlirBackendImportError) as exc_info:
         _numba_mlir_compat._load_numba_mlir_compat(SimpleNamespace(__version__="0.5.1"))
 
-    assert exc_info.value.reason_code == reason_code
+    assert exc_info.value.reason_code == "incomplete-runtime-hook-api"
+    assert exc_info.value.details["missing"] == attribute
+    assert isinstance(exc_info.value.__cause__, AttributeError)
 
 
 def test_private_compiler_imports_are_confined_to_compatibility_shim():

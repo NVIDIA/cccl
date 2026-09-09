@@ -2,21 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compatibility boundary for private Numba-CUDA-MLIR 0.5 APIs.
+"""Private compiler API access for the supported Numba-CUDA-MLIR 0.5.x runtime.
 
 The backend otherwise imports documented, top-level Numba-CUDA-MLIR APIs
-directly.  Keep every dependency on the runtime's private registries and its
-vendored Numba implementation in this module so a future runtime API can
-replace this shim as one unit.
+directly. This module exposes the private overload, IR, datamodel, and registry
+APIs needed by the backend. It supports one runtime series, without adapting
+between versions. Registry snapshots let activation undo its own additions
+when an import fails.
 """
 
 from __future__ import annotations
 
 import importlib
 import importlib.metadata
-import inspect
 import re
-from collections.abc import MutableMapping, MutableSequence
+from collections.abc import MutableSequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -55,7 +55,7 @@ class _RegistrationSnapshot:
 
 @dataclass(frozen=True)
 class _NumbaMlirCompilerCompat:
-    """Validated private compiler surface for Numba-CUDA-MLIR 0.5.x."""
+    """Private compiler surface for Numba-CUDA-MLIR 0.5.x."""
 
     version: str
     planner_registry: Any
@@ -192,7 +192,7 @@ def _import_compat_module(module_name: str) -> Any:
 
 
 def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
-    """Load and validate the private compiler shape supported by this shim."""
+    """Load the private compiler APIs from the supported runtime series."""
 
     version = _detected_version(runtime)
     if not _is_supported_runtime_version(version):
@@ -214,144 +214,27 @@ def _load_numba_mlir_compat(runtime: Any) -> _NumbaMlirCompilerCompat:
     templates = _import_compat_module("numba_cuda_mlir.numba_cuda.typing.templates")
     transforms = _import_compat_module("numba_cuda_mlir.numbair_transforms")
 
-    callable_requirements = {
-        "numba_cuda_mlir.extending": (
-            "WholeFunctionPlanner",
-            "register_planner",
-            "require_launch_config",
-            "set_required_dynamic_shared_memory",
-        ),
-        "numba_cuda_mlir.numba_cuda.core.rewrites": (
-            "Rewrite",
-            "register_rewrite",
-        ),
-        "numba_cuda_mlir.numba_cuda.typing.typeof": ("typeof",),
-        "numba_cuda_mlir.numba_cuda.typing.templates": ("make_overload_template",),
-    }
-    modules = {
-        "numba_cuda_mlir.extending": extending,
-        "numba_cuda_mlir.numba_cuda.core.rewrites": rewrites,
-        "numba_cuda_mlir.numba_cuda.typing.typeof": typeof_module,
-        "numba_cuda_mlir.numba_cuda.typing.templates": templates,
-    }
-    missing = [
-        f"{module_name}.{name}"
-        for module_name, names in callable_requirements.items()
-        for name in names
-        if not callable(getattr(modules[module_name], name, None))
-    ]
-
-    overload_template = getattr(
-        extending,
-        "_NumbaCudaMlirOverloadFunctionTemplate",
-        None,
-    )
-    overload_base = getattr(templates, "_OverloadFunctionTemplate", None)
-    overload_template_valid = (
-        isinstance(overload_template, type)
-        and isinstance(overload_base, type)
-        and issubclass(overload_template, overload_base)
-        and callable(getattr(overload_template, "_get_jit_decorator", None))
-    )
-    if overload_template_valid:
-        try:
-            get_jit_parameters = tuple(
-                inspect.signature(overload_template._get_jit_decorator).parameters
-            )
-        except (TypeError, ValueError):
-            get_jit_parameters = ()
-        overload_template_valid = get_jit_parameters == ("self",)
-    if not overload_template_valid:
-        missing.append(
-            "numba_cuda_mlir.extending._NumbaCudaMlirOverloadFunctionTemplate"
+    try:
+        return _NumbaMlirCompilerCompat(
+            version=version,
+            planner_registry=planner_module._planner_registry,
+            rewrite_registry=rewrites.rewrite_registry,
+            overload_function_template=extending._NumbaCudaMlirOverloadFunctionTemplate,
+            make_overload_template=templates.make_overload_template,
+            numba_errors=errors,
+            numba_typeof=typeof_module.typeof,
+            numba_ir=transforms.ir,
+            rewrite_type=rewrites.Rewrite,
+            register_rewrite=rewrites.register_rewrite,
         )
-    make_overload_template = getattr(templates, "make_overload_template", None)
-    if callable(make_overload_template):
-        try:
-            parameters = inspect.signature(make_overload_template).parameters
-        except (TypeError, ValueError):
-            parameters = {}
-        expected_parameters = (
-            "func",
-            "overload_func",
-            "jit_options",
-            "strict",
-            "inline",
-            "prefer_literal",
-            "base",
-        )
-        positional = {
-            inspect.Parameter.POSITIONAL_ONLY,
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        }
-        keyword = {
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            inspect.Parameter.KEYWORD_ONLY,
-        }
-        ordered_parameters = tuple(parameters.values())
-        valid_signature = (
-            tuple(parameters)[: len(expected_parameters)] == expected_parameters
-            and all(
-                parameter.kind in positional for parameter in ordered_parameters[:5]
-            )
-            and all(parameter.kind in keyword for parameter in ordered_parameters[5:7])
-        )
-        if not valid_signature:
-            missing.append(
-                "numba_cuda_mlir.numba_cuda.typing.templates."
-                "make_overload_template signature"
-            )
-    constant_inference_error = getattr(errors, "ConstantInferenceError", None)
-    if not isinstance(constant_inference_error, type) or not issubclass(
-        constant_inference_error, Exception
-    ):
-        missing.append("numba_cuda_mlir.numba_cuda.core.errors.ConstantInferenceError")
-    numba_ir = getattr(transforms, "ir", None)
-    if numba_ir is None:
-        missing.append("numba_cuda_mlir.numbair_transforms.ir")
-    if missing:
-        missing_capabilities = tuple(missing)
+    except AttributeError as exc:
         raise _NumbaMlirBackendImportError(
             "incomplete-runtime-hook-api",
-            "cuda.coop.numba_mlir requires Numba-CUDA-MLIR 0.5 compiler "
-            "capabilities that are missing or malformed: "
-            + ", ".join(missing_capabilities),
-            missing_capabilities=missing_capabilities,
-        )
-
-    planner_registry = getattr(planner_module, "_planner_registry", None)
-    planner_lock = getattr(planner_registry, "_lock", None)
-    planners = getattr(planner_registry, "_planners", None)
-    rewrite_registry = getattr(rewrites, "rewrite_registry", None)
-    rewrite_lists = getattr(rewrite_registry, "rewrites", None)
-    valid_rewrite_lists = isinstance(rewrite_lists, MutableMapping) and all(
-        isinstance(value, MutableSequence) for value in rewrite_lists.values()
-    )
-    if (
-        not hasattr(planner_lock, "__enter__")
-        or not hasattr(planner_lock, "__exit__")
-        or not isinstance(planners, MutableSequence)
-        or not valid_rewrite_lists
-        or not isinstance(rewrite_lists.get("before-inference"), MutableSequence)
-    ):
-        raise _NumbaMlirBackendImportError(
-            "registration-transaction-unavailable",
-            "cuda.coop.numba_mlir cannot transactionally register its "
-            "compiler hooks with the installed numba-cuda-mlir 0.5 runtime.",
-        )
-
-    return _NumbaMlirCompilerCompat(
-        version=version,
-        planner_registry=planner_registry,
-        rewrite_registry=rewrite_registry,
-        overload_function_template=overload_template,
-        make_overload_template=make_overload_template,
-        numba_errors=errors,
-        numba_typeof=typeof_module.typeof,
-        numba_ir=numba_ir,
-        rewrite_type=rewrites.Rewrite,
-        register_rewrite=rewrites.register_rewrite,
-    )
+            "cuda.coop.numba_mlir could not load a required compiler API.\n"
+            f"{_runtime_requirement(runtime)}",
+            cause=exc,
+            missing=getattr(exc, "name", None),
+        ) from exc
 
 
 _compiler_compat: _NumbaMlirCompilerCompat | None = None
