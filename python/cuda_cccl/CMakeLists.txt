@@ -128,8 +128,7 @@ endif()
 
 # -3 generates source for Python 3
 # -M generates depfile
-# -w sets working directory
-set(CYTHON_FLAGS -3 -M -w "${cuda_cccl_SOURCE_DIR}")
+set(CYTHON_FLAGS -3 -M)
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
