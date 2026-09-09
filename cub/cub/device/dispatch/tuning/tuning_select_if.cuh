@@ -2859,6 +2859,110 @@ private:
     return {};
   }
 
+  // tunings from cub/benchmarks/bench/select/flagged.cu. Select implementations stream with an internal 32-bit
+  // offset, so the selector always reports a 4-byte offset regardless of the user's offset type. These are raw
+  // measured values and must not be passed through nominal_4B_items_to_items.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  get_sm107_flagged_tuning(bool has_flags, bool keep_rejects, bool may_alias) const
+    -> ::cuda::std::optional<SelectLookbackPolicy>
+  {
+    if (!has_flags || keep_rejects || may_alias || offset_size_bytes != 4)
+    {
+      return {};
+    }
+    if (!input_is_primitive && input_type != type_t::int128 && input_type != type_t::uint128)
+    {
+      return {};
+    }
+
+    if (input_size_bytes == 1)
+    {
+      // trp_0.ld_1.ipt_20.tpb_416.ns_20.dcid_5.l2w_555.pf_2  1.037  1.039  1.077  1.050
+      return SelectLookbackPolicy{
+        416,
+        20,
+        BLOCK_LOAD_DIRECT,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 20, 555},
+        LoadPrefetch::l1};
+    }
+    if (input_size_bytes == 2)
+    {
+      // trp_1.ld_0.ipt_22.tpb_448.ns_436.dcid_0.l2w_695.pf_3  1.003  0.968  1.287  1.435
+      return SelectLookbackPolicy{
+        448,
+        22,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 436, 695},
+        LoadPrefetch::bulk_l2};
+    }
+    if (input_size_bytes == 4)
+    {
+      if (input_type == type_t::float32)
+      {
+        // trp_1.ld_0.ipt_20.tpb_448.ns_20.dcid_7.l2w_965.pf_3  0.933  0.956  1.115  1.161
+        return SelectLookbackPolicy{
+          448,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 20, 965},
+          LoadPrefetch::bulk_l2};
+      }
+      // trp_0.ld_0.ipt_19.tpb_448.ns_1988.dcid_0.l2w_640.pf_2  1.016  0.985  1.084  1.111
+      return SelectLookbackPolicy{
+        448,
+        19,
+        BLOCK_LOAD_DIRECT,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1988, 640},
+        LoadPrefetch::l1};
+    }
+    if (input_size_bytes == 8)
+    {
+      if (input_type == type_t::float64)
+      {
+        // trp_0.ld_0.ipt_11.tpb_512.ns_808.dcid_7.l2w_585.pf_1  1.012  1.169  1.096  1.088
+        return SelectLookbackPolicy{
+          512,
+          11,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 808, 585},
+          LoadPrefetch::l2};
+      }
+      // trp_1.ld_0.ipt_18.tpb_320.ns_492.dcid_5.l2w_750.pf_3  1.135  1.158  1.083  1.054
+      return SelectLookbackPolicy{
+        320,
+        18,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 492, 750},
+        LoadPrefetch::bulk_l2};
+    }
+    if (input_size_bytes == 16)
+    {
+      // trp_0.ld_1.ipt_19.tpb_128.ns_1236.dcid_0.l2w_675.pf_1  0.938  1.188  1.704  1.830
+      return SelectLookbackPolicy{
+        128,
+        19,
+        BLOCK_LOAD_DIRECT,
+        LOAD_CA,
+        BLOCK_SCAN_WARP_SCANS,
+        LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1236, 675},
+        LoadPrefetch::l2};
+    }
+
+    return {};
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
     -> SelectLookbackPolicy
   {
@@ -2879,6 +2983,11 @@ private:
         {
           return *policy_opt;
         }
+      }
+
+      if (auto policy_opt = get_sm107_flagged_tuning(has_flags, keep_rejects, may_alias))
+      {
+        return *policy_opt;
       }
     }
 

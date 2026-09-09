@@ -240,7 +240,7 @@ void TestTransformScanCudaStreams()
   Vector result{-1, -4, -2, -6, -1};
   Vector output(5);
 
-  Vector input_copy(input);
+  const Vector input_copy(input);
 
   cudaStream_t s;
   cudaStreamCreate(&s);

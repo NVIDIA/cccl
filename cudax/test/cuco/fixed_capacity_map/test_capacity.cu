@@ -41,10 +41,10 @@ C2H_TEST("fixed_capacity_map dynamic capacity — capacity() reflects the valid 
   const auto valid =
     cudax::cuco::make_valid_capacity<dyn_map_t::probing_scheme_type, dyn_map_t::bucket_size>(requested);
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  dyn_map_t map{stream, mr, requested, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
+  const dyn_map_t map{stream, mr, requested, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
   REQUIRE(map.capacity() == valid);
   REQUIRE(map.capacity() >= requested);
 }
@@ -65,10 +65,10 @@ C2H_TEST("fixed_capacity_map static capacity — valid capacity and capacity_v",
   static_assert(smap_t::capacity_v == valid, "the map type carries the valid capacity, not the request");
   static_assert(smap_t::ref_type::capacity_v == valid, "the ref carries the same valid capacity");
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  smap_t map{stream, mr, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
+  const smap_t map{stream, mr, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
   REQUIRE(map.capacity() == valid);
 }
 
@@ -77,10 +77,10 @@ C2H_TEST("fixed_capacity_map dynamic extent — load factor constructor", "[capa
   constexpr int num_elements   = 500;
   constexpr double load_factor = 0.5;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  cudax::cuco::fixed_capacity_map<int, int> map{
+  const cudax::cuco::fixed_capacity_map<int, int> map{
     stream,
     mr,
     static_cast<::cuda::std::size_t>(num_elements),

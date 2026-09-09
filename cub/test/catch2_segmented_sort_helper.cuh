@@ -99,7 +99,7 @@ struct short_key_verification_helper
 public:
   void prepare_verification_data(const c2h::device_vector<key_t>& in_keys)
   {
-    c2h::host_vector<key_t> h_in{in_keys};
+    const c2h::host_vector<key_t> h_in{in_keys};
     keys_histogram = c2h::host_vector<std::size_t>(max_histo_size, 0);
     for (const auto& key : h_in)
     {
@@ -411,6 +411,7 @@ private:
                && current_key == this->compute_key(key_out_dup_end, segment_size, key_conversion));
 
       // Bookkeeping for validating unstable sorts:
+      // NOLINTNEXTLINE(misc-const-correctness)
       int unchecked_values_for_current_dup_key_begin     = segment_begin + key_out_dup_begin;
       const int unchecked_values_for_current_dup_key_end = segment_begin + key_out_dup_end;
 
@@ -481,7 +482,7 @@ private:
 
   __device__ _CCCL_FORCEINLINE KeyT compute_key(int seg_idx, int segment_size, double conversion)
   {
-    int conv_idx = sort_descending ? (segment_size - 1 - seg_idx) : seg_idx;
+    const int conv_idx = sort_descending ? (segment_size - 1 - seg_idx) : seg_idx;
     return static_cast<KeyT>(conv_idx * conversion);
   }
 };
@@ -503,9 +504,11 @@ void generate_unsorted_derived_inputs(
 
   static constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
-  const int num_segments          = static_cast<int>(d_offsets.size() - 1);
-  const int* offsets              = thrust::raw_pointer_cast(d_offsets.data());
-  KeyT* keys                      = thrust::raw_pointer_cast(d_keys.data());
+  const int num_segments = static_cast<int>(d_offsets.size() - 1);
+  const int* offsets     = thrust::raw_pointer_cast(d_offsets.data());
+  KeyT* keys             = thrust::raw_pointer_cast(d_keys.data());
+  // The pointee cannot be const: segment_filler writes through it in the sort_pairs branch below.
+  // NOLINTNEXTLINE(misc-const-correctness)
   [[maybe_unused]] ValueT* values = thrust::raw_pointer_cast(d_values.data());
 
   // Build keys in reversed order from how they'll eventually be sorted:
@@ -778,8 +781,8 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   auto output_keys = reinterpret_cast<KeyT*>(wrapped_output_keys);
 
   // Use different types for the offset begin/end iterators to ensure that this is supported:
-  const int* offset_begin_it                  = d_begin_offsets;
-  thrust::device_ptr<const int> offset_end_it = thrust::device_pointer_cast(d_end_offsets);
+  const int* offset_begin_it                        = d_begin_offsets;
+  const thrust::device_ptr<const int> offset_end_it = thrust::device_pointer_cast(d_end_offsets);
 
   cudaError_t status = cudaErrorInvalidValue;
 
@@ -1380,8 +1383,8 @@ void test_segments_random(
 
   C2H_TIME_SECTION("D->H input arrays");
 
-  c2h::device_vector<KeyT> keys_orig     = keys_input;
-  c2h::device_vector<ValueT> values_orig = values_input;
+  const c2h::device_vector<KeyT> keys_orig     = keys_input;
+  const c2h::device_vector<ValueT> values_orig = values_input;
 
   C2H_TIME_SECTION("Clone input arrays on device");
 
@@ -1395,17 +1398,17 @@ void test_segments_random(
 
   C2H_TIME_SECTION_RESET();
 
-  c2h::device_vector<KeyT> keys_ref     = h_keys_ref;
-  c2h::device_vector<ValueT> values_ref = h_values_ref;
+  const c2h::device_vector<KeyT> keys_ref     = h_keys_ref;
+  const c2h::device_vector<ValueT> values_ref = h_values_ref;
 
   C2H_TIME_SECTION("H->D reference arrays");
 
   bool need_reset = false;
 
   // Don't use GENERATE for these. We can reuse the expensive reference arrays for them:
-  for (bool stable_sort : {unstable, stable})
+  for (const bool stable_sort : {unstable, stable})
   {
-    for (bool sort_buffers : {pointers, double_buffer})
+    for (const bool sort_buffers : {pointers, double_buffer})
     {
       CAPTURE(stable_sort, sort_descending, sort_buffers);
 
@@ -1662,7 +1665,7 @@ template <typename KeyT, typename ValueT = cub::NullType>
 void test_same_size_segments_derived(int segment_size, int num_segments)
 {
   CAPTURE(segment_size, num_segments);
-  c2h::device_vector<int> offsets = generate_same_size_offsets(segment_size, num_segments);
+  const c2h::device_vector<int> offsets = generate_same_size_offsets(segment_size, num_segments);
   test_segments_derived<KeyT, ValueT>(offsets);
 }
 
@@ -1670,7 +1673,7 @@ template <typename KeyT, typename ValueT = cub::NullType>
 void test_random_size_segments_derived(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   CAPTURE(seed.get());
-  c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
+  const c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
   test_segments_derived<KeyT, ValueT>(offsets);
 }
 
@@ -1678,7 +1681,7 @@ template <typename KeyT, typename ValueT = cub::NullType>
 void test_random_size_segments_random(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   CAPTURE(seed.get());
-  c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
+  const c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
   test_segments_random<KeyT, ValueT>(seed, offsets);
 }
 
@@ -1686,7 +1689,7 @@ template <typename KeyT, typename ValueT = cub::NullType>
 void test_edge_case_segments_random(c2h::seed_t seed)
 {
   CAPTURE(seed.get());
-  c2h::device_vector<int> offsets = generate_edge_case_offsets<KeyT, ValueT>();
+  const c2h::device_vector<int> offsets = generate_edge_case_offsets<KeyT, ValueT>();
   test_segments_random<KeyT, ValueT>(seed, offsets);
 }
 

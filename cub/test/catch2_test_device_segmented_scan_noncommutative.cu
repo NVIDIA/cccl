@@ -78,9 +78,9 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
   using op_t   = impl::bicyclic_monoid_op<unsigned>;
   using pair_t = typename op_t::pair_t;
 
-  unsigned num_items = 1'234'567;
+  const unsigned num_items = 1'234'567;
   c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
-  size_t num_segments = offsets.size() - 1;
+  const size_t num_segments = offsets.size() - 1;
 
   c2h::device_vector<pair_t> input(num_items);
   thrust::tabulate(input.begin(), input.end(), impl::populate_input<unsigned>{});
@@ -91,7 +91,7 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
   size_t tmp_size{};
-  cudaError_t status1 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+  const cudaError_t status1 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     nullptr,
     tmp_size,
     d_input,
@@ -110,7 +110,7 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
 
   REQUIRE(d_tmp != nullptr);
 
-  cudaError_t status2 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+  const cudaError_t status2 = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_tmp,
     tmp_size,
     d_input,
@@ -122,7 +122,7 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
   REQUIRE(cudaSuccess == status2);
 
   // transfer to host_vector is synchronizing
-  c2h::host_vector<pair_t> h_output(output);
+  const c2h::host_vector<pair_t> h_output(output);
   c2h::host_vector<pair_t> h_input(input);
   c2h::host_vector<pair_t> h_expected(input.size());
   c2h::host_vector<unsigned> h_offsets(offsets);

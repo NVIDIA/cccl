@@ -18,9 +18,11 @@
  * outside of the task-based programming model.
  */
 
+#include <cuda/experimental/__places/exec/locality_domain.cuh>
 #include <cuda/experimental/__places/places.cuh>
 
 #include <cstdio>
+#include <stdexcept>
 
 using namespace cuda::experimental::places;
 
@@ -47,8 +49,6 @@ __global__ void check_kernel(int* ptr, int n, int value, int* result)
 
 void test_host_allocation()
 {
-  printf("Testing host allocation...\n");
-
   const size_t n         = 1024;
   const size_t byte_size = n * sizeof(int);
 
@@ -73,14 +73,10 @@ void test_host_allocation()
 
   // Deallocate
   place.deallocate(ptr, byte_size, nullptr);
-
-  printf("  Host allocation test PASSED\n");
 }
 
 void test_device_allocation()
 {
-  printf("Testing device allocation...\n");
-
   const size_t n         = 1024;
   const size_t byte_size = n * sizeof(int);
   const int test_value   = 42;
@@ -120,14 +116,10 @@ void test_device_allocation()
 
   cuda_try(cudaStreamSynchronize(stream));
   cuda_try(cudaStreamDestroy(stream));
-
-  printf("  Device allocation test PASSED\n");
 }
 
 void test_managed_allocation()
 {
-  printf("Testing managed allocation...\n");
-
   // Check if concurrent managed access is supported
   int dev;
   cuda_try(cudaGetDevice(&dev));
@@ -178,18 +170,56 @@ void test_managed_allocation()
   place.deallocate(ptr, byte_size);
 
   cuda_try(cudaStreamDestroy(stream));
+}
 
-  printf("  Managed allocation test PASSED\n");
+// The localized `CUmemLocation` stores the device and domain ordinals in
+// 8-bit fields. A view is just an identity token, so `locality_domain(0, 256)`
+// is legal to build; but using it for memory must fail rather than silently
+// wrap to domain 0. Only the localized path narrows, so this is checked only
+// when that path is actually taken (native backend, localized memory enabled,
+// hardware domains present, no fake topology).
+void test_locality_domain_ordinal_wrap_rejected()
+{
+#if _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
+  if (locality_domain_memory_disabled() || locality_domain_native_raw_count(0) <= 0 || locality_domain_fake_count() > 0)
+  {
+    printf("  Localized memory path not taken on this setup, skipping ordinal wrap test.\n");
+    return;
+  }
+
+  cudaStream_t stream;
+  cuda_try(cudaStreamCreate(&stream));
+
+  for (int domain_id : {256, -1})
+  {
+    auto place = data_place::locality_domain(0, domain_id);
+
+    CUmemGenericAllocationHandle handle = 0;
+    EXPECT(place.mem_create(&handle, size_t{1} << 21) == CUDA_ERROR_INVALID_VALUE);
+
+    bool threw = false;
+    try
+    {
+      void* ptr = place.allocate(1024, stream);
+      place.deallocate(ptr, 1024, stream);
+    }
+    catch (const ::std::runtime_error&)
+    {
+      threw = true;
+    }
+    EXPECT(threw);
+  }
+
+  cuda_try(cudaStreamSynchronize(stream));
+  cuda_try(cudaStreamDestroy(stream));
+#endif // _CUDAX_PLACES_LOCALITY_DOMAIN_NATIVE
 }
 
 int main()
 {
-  printf("=== Testing data_place direct allocation (no context) ===\n\n");
-
   test_host_allocation();
   test_device_allocation();
   test_managed_allocation();
-
-  printf("\n=== All tests PASSED ===\n");
+  test_locality_domain_ordinal_wrap_rejected();
   return 0;
 }
