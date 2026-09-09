@@ -351,7 +351,12 @@ bool JITCompiler::compile(const std::string& source_code)
     return false;
   }
 
-  cleanup();
+  // A module that would not unload is still in use as far as the runtime is
+  // concerned, so do not replace it with a new one behind the caller's back.
+  if (!cleanup())
+  {
+    return false;
+  }
 
   temp_dir_ = createTempDirectory();
   if (temp_dir_.empty())
@@ -511,9 +516,15 @@ bool JITCompiler::compile(const std::string& source_code)
   return true;
 }
 
-void JITCompiler::cleanup()
+bool JITCompiler::cleanup()
 {
-  library_.unload();
+  if (!library_.unload())
+  {
+    // The module is still mapped, so its shared library is still open: leave the
+    // artifacts where they are, or the file would go away from under the mapping.
+    last_error_ = library_.getLastError();
+    return false;
+  }
 
   if (!config_.keep_artifacts)
   {
@@ -521,6 +532,7 @@ void JITCompiler::cleanup()
   }
 
   last_error_.clear();
+  return true;
 }
 
 std::string JITCompiler::createTempDirectory()

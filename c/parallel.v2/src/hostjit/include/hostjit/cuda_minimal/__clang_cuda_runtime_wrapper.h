@@ -417,21 +417,31 @@ extern "C" unsigned __cudaPushCallConfiguration(dim3 gridDim, dim3 blockDim, siz
 #  endif
 
 // The JIT shared library is linked without the C runtime (no libc on the link
-// line) so atexit is unavailable.  The CUDA module constructor calls atexit()
-// to register a cleanup function.  Provide a no-op stub — the JIT library is
-// short-lived and unloaded explicitly.
-#  if !defined(__HOSTJIT_DEVICE_COMPILATION__)
-#    if defined(_MSC_VER)
-extern "C" int atexit(void(__cdecl*)(void))
-{
-  return 0;
-}
-#    else
-extern "C" int atexit(void (*)(void))
-{
-  return 0;
-}
-#    endif
+// line), so the only atexit in the image is the one the teardown runtime
+// defines, and it exists for a single call: the CUDA module constructor's, which
+// registers __cuda_module_dtor -> __cudaUnregisterFatBinary so that the image's
+// unload hook can make it.  It holds that one registration and nothing else, and
+// a program's own atexit would have neither a slot to take nor the process-exit
+// behaviour the C standard gives the name.  So a call from the program is turned
+// down here, while it is being compiled, rather than at run time by a return
+// value the caller is unlikely to read.
+//
+// The rename is what makes that work: it catches a program that declares atexit
+// itself, and it leaves the constructor's call alone, that one being emitted by
+// the compiler rather than written in the source.  The definition and the hook
+// that calls it live in hostjit_module_runtime.h, which libnvcc compiles into
+// one object per produced library.
+#  define atexit __hostjit_atexit_is_reserved_for_the_module_teardown
+#  if defined(_MSC_VER)
+extern "C" int __hostjit_atexit_is_reserved_for_the_module_teardown(void(__cdecl* func)(void))
+  __attribute__((unavailable("atexit is not available: the image's exit hook is reserved for unregistering the CUDA "
+                             "module, and a freestanding library has no C runtime to defer a callback to process "
+                             "exit")));
+#  else
+extern "C" int __hostjit_atexit_is_reserved_for_the_module_teardown(void (*func)(void))
+  __attribute__((unavailable("atexit is not available: the image's exit hook is reserved for unregistering the CUDA "
+                             "module, and a freestanding library has no C runtime to defer a callback to process "
+                             "exit")));
 #  endif
 
 #endif // __CUDA__ && __clang__
