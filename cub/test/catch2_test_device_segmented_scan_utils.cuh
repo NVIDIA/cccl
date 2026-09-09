@@ -15,6 +15,8 @@
 #include <cuda/stream>
 
 #include <cstddef>
+#include <sstream>
+#include <string>
 
 #include <cuda_runtime_api.h>
 
@@ -204,19 +206,41 @@ void enqueue_copy_to_device(
   }
 }
 
-template <typename T, typename Expected>
-void require_equal(cuda::stream_ref stream, const cuda::device_buffer<T>& actual, const Expected& expected)
+template <typename T>
+struct device_buffer_equals_matcher : Catch::Matchers::MatcherGenericBase
 {
-  REQUIRE(actual.size() == expected.size());
+  device_buffer_equals_matcher(cuda::stream_ref stream, const cuda::host_buffer<T>& expected)
+      : stream{stream}
+      , expected{expected}
+  {}
 
-  const auto device = actual.size() != 0 ? pointer_device(actual.data()) : ::cub_test::current_device();
-  auto h_actual     = make_host_buffer<T>(stream, device, actual.size(), cuda::no_init);
-  copy_to_host(stream, actual, h_actual);
-
-  for (std::size_t i = 0; i < expected.size(); ++i)
+  bool match(const cuda::device_buffer<T>& actual) const
   {
-    REQUIRE(h_actual[i] == expected[i]);
+    const auto device = actual.size() != 0 ? pointer_device(actual.data()) : ::cub_test::current_device();
+    auto actual_host  = make_host_buffer<T>(stream, device, actual.size(), cuda::no_init);
+    copy_to_host(stream, actual, actual_host);
+
+    comparison_result = ::c2h::detail::compare_host_ranges(actual_host, expected);
+    return comparison_result.actual_size == comparison_result.expected_size && comparison_result.total_mismatches == 0;
   }
+
+  std::string describe() const override
+  {
+    std::stringstream ss;
+    ::c2h::detail::print_comparison(comparison_result, ss);
+    return ss.str();
+  }
+
+private:
+  cuda::stream_ref stream;
+  const cuda::host_buffer<T>& expected;
+  mutable ::c2h::detail::vector_compare_result_t<T> comparison_result{};
+};
+
+template <typename T>
+[[nodiscard]] auto Equals(cuda::stream_ref stream, const cuda::host_buffer<T>& expected)
+{
+  return device_buffer_equals_matcher<T>{stream, expected};
 }
 
 template <typename T>

@@ -19,14 +19,14 @@
 #include <cstddef>
 #include <iostream> // std::cerr
 #include <string>
-#include <vector>
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
 #include <catch2_test_cuda_utils.cuh>
 
-using segmented_scan_test::require_equal;
+using segmented_scan_test::Equals;
+using segmented_scan_test::make_host_buffer;
 
 void check_execution_status(cudaError_t status, const std::string& algo_name)
 {
@@ -85,11 +85,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
     stream.get());
   check_execution_status(status, algo_name);
 
-  const std::vector<int> expected{0, 1, 3, 0, 4, 0, 6, 13};
+  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, 0, 4, 0, 6, 13});
   // example-end exclusive-segmented-sum-two-offsets
 
   REQUIRE(status == cudaSuccess);
-  require_equal(stream, output, expected);
+  REQUIRE_THAT_QUIET(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets works",
@@ -156,11 +156,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
     stream.get());
   check_execution_status(status, algo_name);
 
-  const std::vector<int> expected{0, 1, 3, 0, 5, 11, 0, 9, 19};
+  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, 0, 5, 11, 0, 9, 19});
   // example-end exclusive-segmented-sum-three-offsets
 
   REQUIRE(status == cudaSuccess);
-  require_equal(stream, output, expected);
+  REQUIRE_THAT_QUIET(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets works inplace",
@@ -211,12 +211,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
     stream.get());
   check_execution_status(status, algo_name);
 
-  const std::vector<int> expected{2, 3, 4, 2, 3, 2, 3, 4};
+  const auto expected = make_host_buffer<int>(stream, device, {2, 3, 4, 2, 3, 2, 3, 4});
   // example-end inclusive-segmented-sum-two-offsets
 
   REQUIRE(status == cudaSuccess);
   // input was modified inplace
-  require_equal(stream, input, expected);
+  REQUIRE_THAT_QUIET(input, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets works",
@@ -280,20 +280,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
     stream.get());
   check_execution_status(status, algo_name);
 
-  std::vector<int> h_expected{};
-  h_expected.reserve(output.size());
-  std::vector<std::vector<int>> expected_rows{
-    {0, 1, 2, 3, 4}, {0, -1, -2, -3, -4}, {0, 2, 4, 6, 8}, {0, -2, -4, -6, -8}};
-  for (const auto& row : expected_rows)
-  {
-    h_expected.insert(h_expected.end(), row.begin(), row.end());
-  }
-
-  const auto& expected = h_expected;
+  const auto expected =
+    make_host_buffer<int>(stream, device, {0, 1, 2, 3, 4, 0, -1, -2, -3, -4, 0, 2, 4, 6, 8, 0, -2, -4, -6, -8});
   // example-end inclusive-segmented-sum-three-offsets
 
   REQUIRE(status == cudaSuccess);
-  require_equal(stream, output, expected);
+  REQUIRE_THAT_QUIET(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offsets works",
@@ -364,20 +356,14 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
     stream.get());
   check_execution_status(status, algo_name);
 
-  std::vector<unsigned> h_expected{};
-  h_expected.reserve(output.size());
-  std::vector<std::vector<unsigned>> expected_rows{
-    {2, 4, 1, 2, 4, 1, 2}, {3, 2, 6, 4, 5, 1, 3}, {4, 2, 1, 4, 2, 1, 4}, {5, 4, 6, 2, 3, 1, 5}, {6, 1, 6, 1, 6, 1, 6}};
-  for (const auto& row : expected_rows)
-  {
-    h_expected.insert(h_expected.end(), row.begin(), row.end());
-  }
-
-  const auto& expected = h_expected;
+  const auto expected = make_host_buffer<unsigned>(
+    stream,
+    device,
+    {2, 4, 1, 2, 4, 1, 2, 3, 2, 6, 4, 5, 1, 3, 4, 2, 1, 4, 2, 1, 4, 5, 4, 6, 2, 3, 1, 5, 6, 1, 6, 1, 6, 1, 6});
   // example-end inclusive-segmented-scan-init-two-offsets
 
   REQUIRE(status == cudaSuccess);
-  require_equal(stream, output, expected);
+  REQUIRE_THAT_QUIET(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets works",
@@ -467,8 +453,8 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   // example-end exclusive-segmented-scan-two-offsets
 
   // verify correctness
-  std::vector<unsigned> h_input(input.size());
-  std::vector<unsigned> h_offsets(offsets.size());
+  auto h_input   = make_host_buffer<unsigned>(stream, device, input.size(), cuda::no_init);
+  auto h_offsets = make_host_buffer<unsigned>(stream, device, offsets.size(), cuda::no_init);
   cuda::copy_bytes(stream, input, cuda::std::span<unsigned>{h_input.data(), h_input.size()});
   cuda::copy_bytes(stream, offsets, cuda::std::span<unsigned>{h_offsets.data(), h_offsets.size()});
   stream.sync();
@@ -481,7 +467,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
     compute_exclusive_scan_reference(inp_b, inp_e, out_b, init_value, scan_op);
   }
   REQUIRE(status == cudaSuccess);
-  require_equal(stream, output, h_input);
+  REQUIRE_THAT_QUIET(output, Equals(stream, h_input));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offsets works",
@@ -554,20 +540,23 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
     stream.get());
   check_execution_status(status, algo_name);
 
-  const std::vector<float> expected{
-    0.21f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 0
-    0.00f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 1
-    0.00f, 0.00f, 0.17f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 2
-    0.00f, 0.00f, 0.00f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 3
-    0.00f, 0.00f, 0.00f, 0.00f, 0.31f, 0.31f, 1.00f, 1.00f, // row 4
-    0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.25f, 1.00f, 1.00f, // row 5
-    0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f, 1.00f, // row 6
-    0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.72f // row 7
-  };
+  const auto expected = make_host_buffer<float>(
+    stream,
+    device,
+    {
+      0.21f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 0
+      0.00f, 0.33f, 0.33f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 1
+      0.00f, 0.00f, 0.17f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 2
+      0.00f, 0.00f, 0.00f, 0.56f, 0.56f, 0.56f, 1.00f, 1.00f, // row 3
+      0.00f, 0.00f, 0.00f, 0.00f, 0.31f, 0.31f, 1.00f, 1.00f, // row 4
+      0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.25f, 1.00f, 1.00f, // row 5
+      0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f, 1.00f, // row 6
+      0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.72f // row 7
+    });
 
   // example-end inclusive-segmented-scan-three-offsets
   REQUIRE(status == cudaSuccess);
-  require_equal(stream, output, expected);
+  REQUIRE_THAT_QUIET(output, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",

@@ -10,7 +10,6 @@ struct stream_registry_factory_t;
 #include <cub/device/device_segmented_scan.cuh>
 
 #include <sstream>
-#include <vector>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -44,8 +43,9 @@ namespace stdexec = cuda::std::execution;
 // Input data: {1,2,3,4,5,6,7,8}  - 3 segments of sizes 3, 2, 3 at input offsets {0,3,5,8}
 // Output layout: 10 slots with padding at positions 3 and 6; output begin offsets {0,4,7}
 
+using segmented_scan_test::Equals;
+using segmented_scan_test::make_host_buffer;
 using segmented_scan_test::read_single;
-using segmented_scan_test::require_equal;
 
 #if TEST_LAUNCH == 0
 
@@ -63,8 +63,8 @@ CUB_TEST_CASE("Device segmented exclusive sum works with default environment", "
           == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments));
 
-  const std::vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented exclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
@@ -81,8 +81,8 @@ CUB_TEST_CASE("Device segmented exclusive scan works with default environment", 
           == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
 
-  const std::vector<int> expected{100, 108, 114, 121, 100, 103, 103, 100, 101};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive sum works with default environment", "[segmented_scan][device]", CUB_SMALL)
@@ -99,8 +99,8 @@ CUB_TEST_CASE("Device segmented inclusive sum works with default environment", "
           == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments));
 
-  const std::vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
@@ -117,8 +117,8 @@ CUB_TEST_CASE("Device segmented inclusive scan works with default environment", 
           == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}));
 
-  const std::vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan init works with default environment",
@@ -137,8 +137,8 @@ CUB_TEST_CASE("Device segmented inclusive scan init works with default environme
           == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
             d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100));
 
-  const std::vector<int> expected{108, 114, 121, 126, 103, 103, 112, 101, 103};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented exclusive sum with separate offsets works with default environment",
@@ -160,8 +160,8 @@ CUB_TEST_CASE("Device segmented exclusive sum with separate offsets works with d
           == cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
 
-  const std::vector<int> expected{0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented exclusive scan with separate offsets works with default environment",
@@ -184,8 +184,9 @@ CUB_TEST_CASE("Device segmented exclusive scan with separate offsets works with 
     == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
       d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
-  const std::vector<int> expected{100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
-  require_equal(stream, d_out, expected);
+  const auto expected =
+    make_host_buffer<int>(stream, device, {100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive sum with separate offsets works with default environment",
@@ -207,8 +208,8 @@ CUB_TEST_CASE("Device segmented inclusive sum with separate offsets works with d
           == cub::DeviceSegmentedScan::InclusiveSegmentedSum(
             d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments));
 
-  const std::vector<int> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan with separate offsets works with default environment",
@@ -231,8 +232,8 @@ CUB_TEST_CASE("Device segmented inclusive scan with separate offsets works with 
     == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
       d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}));
 
-  const std::vector<int> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST_CASE("Device segmented inclusive scan init with separate offsets works with default environment",
@@ -255,8 +256,9 @@ CUB_TEST_CASE("Device segmented inclusive scan init with separate offsets works 
     == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
       d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
-  const std::vector<int> expected{101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
-  require_equal(stream, d_out, expected);
+  const auto expected =
+    make_host_buffer<int>(stream, device, {101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 #endif // TEST_LAUNCH == 0
@@ -281,8 +283,8 @@ CUB_TEST("Device segmented exclusive sum uses environment", "[segmented_scan][de
 
   device_segmented_exclusive_sum(d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
 
-  const std::vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -314,8 +316,8 @@ CUB_TEST("Device segmented exclusive scan uses environment", "[segmented_scan][d
   device_segmented_exclusive_scan(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100, env);
 
-  const std::vector<int> expected{100, 108, 114, 121, 100, 103, 103, 100, 101};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -338,8 +340,8 @@ CUB_TEST("Device segmented inclusive sum uses environment", "[segmented_scan][de
 
   device_segmented_inclusive_sum(d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
 
-  const std::vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -370,8 +372,8 @@ CUB_TEST("Device segmented inclusive scan uses environment", "[segmented_scan][d
   device_segmented_inclusive_scan(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, env);
 
-  const std::vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan init uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -403,8 +405,8 @@ CUB_TEST("Device segmented inclusive scan init uses environment", "[segmented_sc
   device_segmented_inclusive_scan_init(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 100, env);
 
-  const std::vector<int> expected{108, 114, 121, 126, 103, 103, 112, 101, 103};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented exclusive sum with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -438,8 +440,8 @@ CUB_TEST("Device segmented exclusive sum with separate offsets uses environment"
   device_segmented_exclusive_sum(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, env);
 
-  const std::vector<int> expected{0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented exclusive scan with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -475,8 +477,9 @@ CUB_TEST("Device segmented exclusive scan with separate offsets uses environment
   device_segmented_exclusive_scan(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100, env);
 
-  const std::vector<int> expected{100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
-  require_equal(stream, d_out, expected);
+  const auto expected =
+    make_host_buffer<int>(stream, device, {100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive sum with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -510,8 +513,8 @@ CUB_TEST("Device segmented inclusive sum with separate offsets uses environment"
   device_segmented_inclusive_sum(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, env);
 
-  const std::vector<int> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan with separate offsets uses environment", "[segmented_scan][device]", CUB_SMALL)
@@ -546,8 +549,8 @@ CUB_TEST("Device segmented inclusive scan with separate offsets uses environment
   device_segmented_inclusive_scan(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, env);
 
-  const std::vector<int> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("Device segmented inclusive scan init with separate offsets uses environment",
@@ -585,8 +588,9 @@ CUB_TEST("Device segmented inclusive scan init with separate offsets uses enviro
   device_segmented_inclusive_scan_init(
     d_in.data(), d_out.data(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100, env);
 
-  const std::vector<int> expected{101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
-  require_equal(stream, d_out, expected);
+  const auto expected =
+    make_host_buffer<int>(stream, device, {101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 #if TEST_LAUNCH != 1
@@ -664,8 +668,8 @@ CUB_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][devic
   device_segmented_exclusive_scan(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, 100, env);
 
-  const std::vector<int> expected{100, 108, 114, 121, 100, 103, 103, 100, 101};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
   REQUIRE(read_single(stream, d_block_size) == target_block_size);
 }
 
@@ -684,8 +688,8 @@ CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][devic
 
   device_segmented_inclusive_scan(d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, env);
 
-  const std::vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
   REQUIRE(read_single(stream, d_block_size) == target_block_size);
 }
 
@@ -705,8 +709,8 @@ CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
   device_segmented_inclusive_scan_init(
     d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, 100, env);
 
-  const std::vector<int> expected{108, 114, 121, 126, 103, 103, 112, 101, 103};
-  require_equal(stream, d_out, expected);
+  const auto expected = make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
   REQUIRE(read_single(stream, d_block_size) == target_block_size);
 }
 

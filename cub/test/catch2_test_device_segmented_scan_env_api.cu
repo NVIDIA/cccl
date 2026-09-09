@@ -15,13 +15,13 @@
 
 #include <cstddef>
 #include <iostream>
-#include <vector>
 
 #include "catch2_test_device_segmented_scan_utils.cuh"
 #include "cub_test_macros.h"
 #include <catch2_test_cuda_utils.cuh>
 
-using segmented_scan_test::require_equal;
+using segmented_scan_test::Equals;
+using segmented_scan_test::make_host_buffer;
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
 {
@@ -40,11 +40,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[seg
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
   // example-end exclusive-segmented-sum-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[segmented_scan][env]", CUB_SMALL)
@@ -64,11 +64,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[se
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{4, 8, 8, 8, 4, 4, 4, 4, 4};
+  const auto expected = make_host_buffer<int>(stream, device, {4, 8, 8, 8, 4, 4, 4, 4, 4});
   // example-end exclusive-segmented-scan-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[segmented_scan][env]", CUB_SMALL)
@@ -88,11 +88,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[seg
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{8, 14, 21, 26, 3, 3, 12, 1, 3};
+  const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
   // example-end inclusive-segmented-sum-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[segmented_scan][env]", CUB_SMALL)
@@ -112,11 +112,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[se
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{8, 8, 8, 8, 3, 3, 9, 1, 2};
+  const auto expected = make_host_buffer<int>(stream, device, {8, 8, 8, 8, 3, 3, 9, 1, 2});
   // example-end inclusive-segmented-scan-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", "[segmented_scan][env]", CUB_SMALL)
@@ -136,11 +136,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", 
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{8, 8, 8, 8, 4, 4, 9, 4, 4};
+  const auto expected = make_host_buffer<int>(stream, device, {8, 8, 8, 8, 4, 4, 9, 4, 4});
   // example-end inclusive-segmented-scan-init-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) accepts stream",
@@ -165,11 +165,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) acc
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13};
+  const auto expected = make_host_buffer<int>(stream, device, {0, 1, 3, sentinel, 0, 4, sentinel, 0, 6, 13});
   // example-end exclusive-segmented-sum-separate-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) accepts stream",
@@ -194,11 +194,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{2, 3, 3, sentinel, 2, 2, sentinel, 2, 9, 9};
+  const auto expected = make_host_buffer<int>(stream, device, {2, 3, 3, sentinel, 2, 2, sentinel, 2, 9, 9});
   // example-end exclusive-segmented-scan-separate-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) accepts stream",
@@ -223,11 +223,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) acc
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedSum failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21};
+  const auto expected = make_host_buffer<int>(stream, device, {1, 3, 6, sentinel, 4, 9, sentinel, 6, 13, 21});
   // example-end inclusive-segmented-sum-separate-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) accepts stream",
@@ -252,11 +252,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) ac
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{3, 3, 4, sentinel, 1, 5, sentinel, 9, 9, 9};
+  const auto expected = make_host_buffer<int>(stream, device, {3, 3, 4, sentinel, 1, 5, sentinel, 9, 9, 9});
   // example-end inclusive-segmented-scan-separate-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets) accepts stream",
@@ -281,11 +281,11 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{7, 7, 7, sentinel, 7, 7, sentinel, 9, 9, 9};
+  const auto expected = make_host_buffer<int>(stream, device, {7, 7, 7, sentinel, 7, 7, sentinel, 9, 9, 9});
   // example-end inclusive-segmented-scan-init-separate-env
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 #if _CCCL_STD_VER >= 2020
@@ -326,11 +326,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  const std::vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
+  const auto expected = make_host_buffer<int>(stream, device, {0, 8, 14, 21, 0, 3, 3, 0, 1});
   // example-end segmented-scan-tuning
 
   REQUIRE(error == cudaSuccess);
-  require_equal(stream, d_out, expected);
+  REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
 }
 
 #endif // _CCCL_STD_VER >= 2020
