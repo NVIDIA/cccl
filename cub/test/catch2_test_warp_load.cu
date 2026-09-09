@@ -29,7 +29,7 @@ __global__ void warp_load_kernel(InputIteratorT input_iterator, ActionT action, 
   const int linear_tid = static_cast<int>(threadIdx.x);
 
   const int warp_id = linear_tid / LOGICAL_WARP_THREADS;
-  warp_load_t load(storage[warp_id]);
+  warp_load_t load(storage[warp_id]); // NOLINT(misc-const-correctness)
 
   // Test WarpLoad specialization
   T reg[ITEMS_PER_THREAD];

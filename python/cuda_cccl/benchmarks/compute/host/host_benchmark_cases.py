@@ -123,9 +123,9 @@ def synchronize() -> None:
 
 def _numba_cuda_skip_reason() -> str | None:
     try:
-        import numba.cuda  # noqa: F401
+        import numba_cuda_mlir.cuda  # noqa: F401
     except Exception as exc:
-        return f"numba.cuda is not available: {exc}"
+        return f"numba_cuda_mlir.cuda is not available: {exc}"
     return None
 
 

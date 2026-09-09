@@ -40,7 +40,7 @@ public:
     R_bits = total_bits - L_bits;
     R_mask = (1ull << R_bits) - 1;
 
-    thrust::uniform_int_distribution<std::uint32_t> dist;
+    thrust::uniform_int_distribution<std::uint32_t> dist; // NOLINT(misc-const-correctness)
     for (auto& k : key)
     {
       k = dist(g);
@@ -64,13 +64,13 @@ public:
     {
       constexpr uint64_t m0  = 0xD2B74407B1CE6E93;
       const uint64_t product = m0 * L;
-      uint32_t F_k           = (product >> 32) ^ k;
-      uint32_t B_k           = static_cast<uint32_t>(product);
-      uint32_t L_prime       = F_k ^ R;
+      const uint32_t F_k     = (product >> 32) ^ k;
+      const uint32_t B_k     = static_cast<uint32_t>(product);
+      const uint32_t L_prime = F_k ^ R;
 
-      uint32_t R_prime = (B_k << (R_bits - L_bits)) | R >> L_bits;
-      L                = L_prime & L_mask;
-      R                = R_prime & R_mask;
+      const uint32_t R_prime = (B_k << (R_bits - L_bits)) | R >> L_bits;
+      L                      = L_prime & L_mask;
+      R                      = R_prime & R_mask;
     }
     // Combine the left and right sides together to get result
     return (static_cast<uint64_t>(L) << R_bits) | static_cast<uint64_t>(R);

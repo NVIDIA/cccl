@@ -36,7 +36,7 @@ __device__ void test_group_by(Config config)
       static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
       static_assert(cuda::std::is_empty_v<Mapping>);
 
-      cudax::group_by<N> mapping;
+      const cudax::group_by<N> mapping;
       CHECK(mapping.unit_count() == static_cast<unsigned>(N));
     }
 
@@ -112,6 +112,7 @@ __device__ void test_group_by(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_by mapping{N};
       static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
       CHECK(mapping.unit_count() == static_cast<unsigned>(N));
@@ -192,6 +193,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cudax::non_exhaustive_t>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       Mapping mapping{cudax::non_exhaustive};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
       CHECK(mapping.unit_count() == static_cast<unsigned>(N));
@@ -267,6 +269,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       Mapping mapping{N};
       static_assert(cuda::std::is_same_v<Mapping, decltype(mapping)>);
       CHECK(mapping.unit_count() == static_cast<unsigned>(N));
@@ -279,6 +282,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned, cudax::non_exhaustive_t>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::group_by mapping{static_cast<unsigned>(N), cudax::non_exhaustive};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
       CHECK(mapping.unit_count() == static_cast<unsigned>(N));

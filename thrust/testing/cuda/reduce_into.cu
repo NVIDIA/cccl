@@ -111,7 +111,7 @@ void TestReduceIntoLargeInput()
   using OffsetT           = std::size_t;
   const OffsetT num_items = 1ull << 32;
 
-  cuda::constant_iterator<T> d_data(T{1});
+  const cuda::constant_iterator<T> d_data(T{1});
   thrust::device_vector<T> d_result(1);
 
   reduce_into_kernel<<<1, 1>>>(thrust::device, d_data, d_data + num_items, d_result.begin(), T{});

@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/constant_assert.cuh>
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
@@ -28,6 +29,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(Acquire);
+
 struct SmemResourceRaw
 {
   static constexpr int mMaxNumPhases = 4;
@@ -67,9 +70,9 @@ struct SmemResourceRaw
   _CCCL_HOST_DEVICE_API constexpr void
   addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
   {
-    int numOwningThreads = squadCountThreads(squads);
+    const int numOwningThreads = squadCountThreads(squads);
 
-    int curPhase = mNumPhases;
+    const int curPhase = mNumPhases;
     mNumPhases++;
 
     syncHandler.registerPhase(mResourceHandle, numOwningThreads, ptrBarrier);
@@ -165,16 +168,18 @@ struct SmemResourceRaw
 
   _CCCL_DEVICE_API void acquire(int phase)
   {
+    _CCCL_IKET_RANGE_PUSH(Acquire);
     _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
 
     // The release of the previous phase occurs on the `phase - 1` barrier. So
     // that is what we wait on.
-    int phaseAcq                       = (mNumPhases + phase - 1) % mNumPhases;
+    const int phaseAcq                 = (mNumPhases + phase - 1) % mNumPhases;
     ::cuda::std::uint64_t* ptrBarPhase = mPtrBar[phaseAcq];
 
     while (!::cuda::ptx::mbarrier_try_wait_parity(&ptrBarPhase[mStageCurrent], mParity[phase]))
     {
     }
+    _CCCL_IKET_RANGE_POP();
   }
 };
 } // namespace detail::warpspeed
