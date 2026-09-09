@@ -183,7 +183,7 @@ private:
     return nullptr;
   }
 
-  scoped_current_device guard{device};
+  const scoped_current_device guard{device};
 
   void* ptr                = nullptr;
   const cudaError_t status = checked_cuda_malloc(&ptr, bytes);
