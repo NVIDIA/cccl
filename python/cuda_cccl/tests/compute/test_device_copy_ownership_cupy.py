@@ -41,12 +41,19 @@ class _StreamProtocol:
         return 0, self._stream.ptr
 
 
+@pytest.mark.parametrize("prepared", [False, True])
 def test_DeviceCopy_keeps_dlpack_owners_alive_until_stream_completion(
-    cp, device_copy_impl
+    cp, device_copy_impl, prepared
 ):
     source = cp.arange(256, dtype=cp.int32)
     destination = cp.empty_like(source)
-    device_copy = device_copy_impl._make_device_copy(source, destination)
+    if prepared:
+        source_arg = device_copy_impl._as_device_array_view(source)
+        destination_arg = device_copy_impl._as_device_array_view(destination)
+    else:
+        source_arg = source
+        destination_arg = destination
+    device_copy = device_copy_impl._make_device_copy(source_arg, destination_arg)
     stream = cp.cuda.Stream(non_blocking=True)
     stream_protocol = _StreamProtocol(stream)
     callback_started = threading.Event()
@@ -60,11 +67,13 @@ def test_DeviceCopy_keeps_dlpack_owners_alive_until_stream_completion(
         stream.launch_host_func(block_stream, None)
         assert callback_started.wait(timeout=10)
 
-        device_copy(source, destination, stream=stream_protocol)
+        device_copy(source_arg, destination_arg, stream=stream_protocol)
         source_ref = weakref.ref(source)
         destination_ref = weakref.ref(destination)
         del source
         del destination
+        del source_arg
+        del destination_arg
         gc.collect()
 
         assert source_ref() is not None

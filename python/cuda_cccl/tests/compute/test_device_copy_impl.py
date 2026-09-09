@@ -785,6 +785,60 @@ def test_prepare_runtime_strided_view_keeps_owner_alive(device_copy_impl):
     assert owner_ref() is None
 
 
+def test_as_device_array_view_materializes_and_reuses_native_view(
+    device_copy_impl,
+):
+    producer = CudaArrayInterfaceProducer(
+        0x1000,
+        (2, 3),
+        (12, 4),
+        device_id=3,
+        read_only=True,
+    )
+
+    view = device_copy_impl._as_device_array_view(producer)
+
+    assert view.data_ptr == 0x1000
+    assert view.byte_offset == 0
+    assert view.device_type == K_DLCUDA
+    assert view.device_id == 3
+    assert view.read_only is True
+    assert view.shape == (2, 3)
+    assert view.strides == (3, 1)
+    assert view.itemsize == 4
+    assert view.alignment == 4
+    assert device_copy_impl._as_device_array_view(view) is view
+
+
+def test_as_device_array_view_keeps_protocol_owner_alive(device_copy_impl):
+    producer = CudaArrayInterfaceProducer(0x1000, (1,), (4,))
+    producer_ref = weakref.ref(producer)
+    view = device_copy_impl._as_device_array_view(producer)
+
+    del producer
+    gc.collect()
+    assert producer_ref() is not None
+
+    del view
+    gc.collect()
+    assert producer_ref() is None
+
+
+def test_as_device_array_view_rejects_native_view_without_dtype_metadata(
+    device_copy_impl,
+):
+    view = device_copy_impl._prepare_runtime_strided_view(
+        Owner(),
+        0x1000,
+        0,
+        (1,),
+        (1,),
+    )
+
+    with pytest.raises(TypeError, match="does not have dtype metadata"):
+        device_copy_impl._as_device_array_view(view)
+
+
 @pytest.mark.parametrize(
     "shape, strides",
     [

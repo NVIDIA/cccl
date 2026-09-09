@@ -93,3 +93,43 @@ def test_DeviceCopyImpl_assume_non_overlapping_allows_disjoint_interleaved_views
 
     cp.cuda.Device().synchronize()
     cp.testing.assert_array_equal(destination, expected)
+
+
+class _CountingDLPackArray:
+    def __init__(self, array):
+        self.array = array
+        self.dlpack_calls = []
+
+    def __dlpack__(self, *args, **kwargs):
+        self.dlpack_calls.append((args, kwargs))
+        return self.array.__dlpack__(*args, **kwargs)
+
+    def __dlpack_device__(self):
+        return self.array.__dlpack_device__()
+
+
+def test_DeviceCopyImpl_reuses_native_views_without_reacquiring_dlpack(
+    cp, device_copy_impl
+):
+    source = cp.arange(24, dtype=cp.int32).reshape(4, 6)[:, ::2]
+    destination = cp.empty_like(source)
+    source_producer = _CountingDLPackArray(source)
+    destination_producer = _CountingDLPackArray(destination)
+
+    source_view = device_copy_impl._as_device_array_view(source_producer)
+    destination_view = device_copy_impl._as_device_array_view(destination_producer)
+    source_calls = len(source_producer.dlpack_calls)
+    destination_calls = len(destination_producer.dlpack_calls)
+
+    device_copy_impl._copy_into(source_view, destination_view)
+    with device_copy_impl._make_device_copy(
+        source_view,
+        destination_view,
+    ) as device_copy:
+        source *= 2
+        device_copy(source_view, destination_view)
+    cp.cuda.Device().synchronize()
+
+    assert len(source_producer.dlpack_calls) == source_calls
+    assert len(destination_producer.dlpack_calls) == destination_calls
+    cp.testing.assert_array_equal(destination, source)

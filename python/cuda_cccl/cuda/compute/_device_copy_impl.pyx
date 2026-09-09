@@ -2452,7 +2452,12 @@ cdef tuple _device_copy_prepare_view_and_dtype_key(
     bint destination=False,
 ):
     cdef object dtype_key
-    cdef _PreparedDeviceCopyView view
+    cdef _PreparedDeviceCopyView view = _device_copy_prepared_view(array)
+
+    if view is not None:
+        if view._dtype_key is None:
+            raise TypeError("prepared device array view does not have dtype metadata")
+        return (view, view._dtype_key)
 
     try:
         dtype_key = _device_copy_dlpack_dtype_key(array, stream_handle)
@@ -2473,6 +2478,55 @@ cdef tuple _device_copy_prepare_view_and_dtype_key(
         view,
         dtype_key,
     )
+
+
+cdef _PreparedDeviceCopyView _device_copy_materialize_prepared_view(
+    object view,
+    object dtype_key,
+):
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+
+    if prepared_view is not None:
+        return prepared_view
+
+    prepared_view = _PreparedDeviceCopyView(
+        view.owner,
+        view.data_ptr,
+        view.byte_offset,
+        view.shape,
+        view.strides,
+        device_type=view.device_type,
+        device_id=view.device_id,
+        flags=view.flags,
+        flags_known=view.flags_known,
+        read_only=view.read_only,
+    )
+    prepared_view._set_dtype_metadata(
+        <size_t>view.itemsize,
+        <size_t>view.alignment,
+        dtype_key,
+    )
+    return prepared_view
+
+
+def _as_device_array_view(object array, *, object stream=None):
+    cdef object stream_handle
+    cdef object view
+    cdef object dtype_key
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(array)
+
+    if prepared_view is not None:
+        if prepared_view._dtype_key is None:
+            raise TypeError("prepared device array view does not have dtype metadata")
+        return prepared_view
+
+    stream_handle = _device_copy_stream_handle(stream)
+    view, dtype_key = _device_copy_prepare_view_and_dtype_key(
+        array,
+        stream_handle,
+        True,
+    )
+    return _device_copy_materialize_prepared_view(view, dtype_key)
 
 
 cdef tuple _device_copy_type_info_key(object view):
