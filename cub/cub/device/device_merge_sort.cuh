@@ -149,7 +149,7 @@ private:
   {
     using default_policy_selector_t = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
     using policy_selector_t =
-      ::cuda::std::execution::__query_result_or_t<TuningEnvT, DeviceMergeSort, default_policy_selector_t>;
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, MergeSortPolicy, default_policy_selector_t>;
     return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
