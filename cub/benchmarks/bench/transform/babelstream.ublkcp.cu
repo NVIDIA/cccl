@@ -9,5 +9,6 @@
 // %RANGE% TUNE_BIF_BIAS bif -16:16:4
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 // %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
+// %RANGE% TUNE_STORE_VEC_SIZE_POW2 svsp 0:4:1
 
 #include "babelstream.h"

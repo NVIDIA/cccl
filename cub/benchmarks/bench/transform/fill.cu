@@ -5,8 +5,9 @@
 // tuning benchmark exists
 
 #define TUNE_ALGORITHM 1
+// fill has no inputs, so no need to bias min_bytes_in_flight
+#define TUNE_BIF_BIAS 0
 
-// %RANGE% TUNE_BIF_BIAS bif -16:16:4
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 // %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
 // %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
