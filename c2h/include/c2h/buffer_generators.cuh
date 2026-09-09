@@ -155,11 +155,12 @@ template <typename T>
   T min_segment_size,
   T max_segment_size)
 {
+  const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
+
   // Scope `device` for generator storage backed by current-device allocation.
   const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
-  auto d_segment_offsets =
-    ::c2h::make_device_buffer<T>(stream, device, static_cast<std::size_t>(total_elements) + 2, cuda::no_init);
+  auto d_segment_offsets = ::c2h::make_device_buffer<T>(stream, device, offsets_size, cuda::no_init);
   const auto num_offsets = ::c2h::detail::gen_uniform_offsets(
     stream, seed, d_segment_offsets.first(d_segment_offsets.size()), total_elements, min_segment_size, max_segment_size);
 

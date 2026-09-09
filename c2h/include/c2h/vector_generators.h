@@ -77,7 +77,8 @@ void gen(modulo_t mod, device_vector<T>& data)
 template <typename T>
 device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {
-  device_vector<T> segment_offsets(total_elements + 2);
+  const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
+  device_vector<T> segment_offsets(offsets_size);
   const auto new_size = ::c2h::detail::gen_uniform_offsets(
     seed,
     {THRUST_NS_QUALIFIER::raw_pointer_cast(segment_offsets.data()), segment_offsets.size()},

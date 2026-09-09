@@ -6,6 +6,7 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/span>
 #include <cuda/stream>
 
@@ -314,7 +315,7 @@ void launch(cuda::stream_ref stream, ActionT action, Args... args)
 #endif // TEST_LAUNCH == 2
 
 template <class ActionT, class StreamT, class... Args>
-auto launch(ActionT action, StreamT&& stream, Args... args) -> decltype(::cuda::get_stream(stream), void())
+auto launch(ActionT action, StreamT&& stream, Args... args) -> ::cuda::std::void_t<decltype(::cuda::get_stream(stream))>
 {
   launch(::cuda::get_stream(stream), action, args...);
 }

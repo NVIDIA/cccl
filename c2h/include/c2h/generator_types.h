@@ -3,10 +3,14 @@
 
 #pragma once
 
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/span>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cstddef>
+#include <stdexcept>
 
 #include <c2h/custom_type.h>
 
@@ -14,6 +18,35 @@ namespace c2h
 {
 namespace detail
 {
+template <typename T>
+[[nodiscard]] std::size_t checked_uniform_offsets_size(T total_elements)
+{
+  static_assert(::cuda::std::is_integral_v<T>, "Uniform offset types must be integral");
+
+  if constexpr (::cuda::std::is_signed_v<T>)
+  {
+    if (total_elements < T{0})
+    {
+      throw std::invalid_argument{"total_elements must be non-negative"};
+    }
+  }
+
+  // gen_uniform_offsets uses total_elements + 1 as a sentinel.
+  if (total_elements == (::cuda::std::numeric_limits<T>::max)())
+  {
+    throw std::invalid_argument{"total_elements is too large to generate uniform offsets"};
+  }
+
+  constexpr auto max_size            = (::cuda::std::numeric_limits<std::size_t>::max)();
+  const auto total_elements_unsigned = static_cast<::cuda::std::uintmax_t>(total_elements);
+  if (total_elements_unsigned > static_cast<::cuda::std::uintmax_t>(max_size - 2))
+  {
+    throw std::invalid_argument{"total_elements is too large to generate uniform offsets"};
+  }
+
+  return static_cast<std::size_t>(total_elements) + 2;
+}
+
 template <class T>
 class value_wrapper_t
 {

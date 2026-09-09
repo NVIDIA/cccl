@@ -9,6 +9,8 @@
 #include <cuda/std/span>
 #include <cuda/stream>
 
+#include <stdexcept>
+
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 
@@ -42,8 +44,14 @@ std::size_t gen_uniform_offsets(
   T min_segment_size,
   T max_segment_size)
 {
+  const auto offsets_size = checked_uniform_offsets_size(total_elements);
+  if (segment_offsets.size() < offsets_size)
+  {
+    throw std::invalid_argument{"segment_offsets is too small for total_elements"};
+  }
+
   const auto policy              = device_policy.on(stream.get());
-  const auto total_elements_size = static_cast<std::size_t>(total_elements);
+  const auto total_elements_size = offsets_size - 2;
 
   gen_values_between(stream, seed, segment_offsets, min_segment_size, max_segment_size);
   thrust::fill_n(policy, segment_offsets.begin() + total_elements_size, 1, total_elements + 1);
