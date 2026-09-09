@@ -7,7 +7,7 @@ from typing import Tuple
 
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray, get_compute_capability
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -154,9 +154,6 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_radix_sort_keys(dtype, num_items):
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     order = SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
@@ -215,9 +212,6 @@ def test_radix_sort_pairs(dtype, num_items):
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_radix_sort_keys_double_buffer(dtype, num_items):
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     order = SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
@@ -245,9 +239,6 @@ def test_radix_sort_keys_double_buffer(dtype, num_items):
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items):
-    cc_major, _ = get_compute_capability()
-    # NOTE: int16 failures seen only with NVRTC 13.1:
-
     order = SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
@@ -291,9 +282,6 @@ DTYPE_SIZE_BIT_WINDOW = [
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items):
-    cc_major, _ = get_compute_capability()
-    # NOTE: int16 failures seen only with NVRTC 13.1:
-
     order = SortOrder.ASCENDING
     num_bits = dtype().itemsize
     begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
@@ -400,8 +388,6 @@ def test_radix_sort_large_num_items(dtype):
     multiple "portions" internally (roughly >= 2**28 elements, depending
     on the tuning policy chosen for the current GPU).
     """
-    import cuda.compute._cccl_interop
-
     num_items = 2**28
 
     h_in_keys = np.arange(num_items - 1, -1, -1, dtype=dtype)
@@ -451,9 +437,6 @@ def test_radix_sort_with_stream(cuda_stream):
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_radix_sort():
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(
@@ -492,9 +475,6 @@ def test_radix_sort():
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_radix_sort_double_buffer():
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     h_in_keys = np.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     h_in_values = np.array(

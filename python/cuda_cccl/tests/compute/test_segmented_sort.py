@@ -109,7 +109,6 @@ def host_segmented_sort(
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_segmented_sort_keys(dtype, num_segments, segment_size):
-    # Disable SASS verification only for this test when dtype is int64
     order = cuda.compute.SortOrder.ASCENDING
     num_items = num_segments * segment_size
 

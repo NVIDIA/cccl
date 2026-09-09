@@ -77,8 +77,6 @@ def _host_three_way_partition(h_in: np.ndarray, less_than_op, greater_equal_op):
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_three_way_partition_basic(dtype, num_items):
-    # NOTE: the SASS check failure is seen only with NVRTC 13.1:
-
     h_in = random_array(num_items, dtype, max_value=100)
 
     def less_than_op(x):

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray, get_compute_capability
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -273,9 +273,6 @@ def test_zip_iterator_with_scan(num_items):
 )
 def test_output_zip_iterator_with_scan(num_items):
     """Test ZipIterator as output iterator with scan operations."""
-    # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
-    cc_major, _ = get_compute_capability()
-
     h_in1 = np.random.randint(0, 1000, num_items, dtype=np.int64)
     h_in2 = np.random.randint(0, 1000, num_items, dtype=np.int64)
     d_in1 = DeviceArray.from_numpy(h_in1)
@@ -439,8 +436,6 @@ def test_deeply_nested_zip_iterators():
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_nested_output_zip_iterator_with_scan(num_items, dtype_map):
-    cc_major, _ = get_compute_capability()
-
     Vec2 = gpu_struct(dtype_map)
 
     h_in1 = np.zeros(num_items, dtype=Vec2.dtype)

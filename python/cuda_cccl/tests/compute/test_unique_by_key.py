@@ -5,7 +5,7 @@
 
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray, get_compute_capability
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -131,9 +131,6 @@ unique_by_key_params = [
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_unique_by_key(dtype, num_items, op):
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_items = random_array(num_items, np.float32)
@@ -175,9 +172,6 @@ def test_unique_by_key(dtype, num_items, op):
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_unique_by_key_iterators(dtype, num_items, op):
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+, due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_items = random_array(num_items, np.float32)
@@ -366,9 +360,6 @@ def test_unique_by_key_struct_types():
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_unique_by_key_with_stream(cuda_stream):
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     num_items = 10000
 
@@ -421,9 +412,6 @@ def test_unique_by_key_with_stream(cuda_stream):
     reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
 )
 def test_unique_by_key_well_known_equal_to():
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification for CC 9.0+ due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
 
     dtype = np.int32
 

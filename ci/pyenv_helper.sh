@@ -51,9 +51,22 @@ setup_python_env() {
 # re-enable it). Callers that need the GIL genuinely off assert that separately,
 # so a mis-set PYTHON_GIL fails loudly instead of silently skipping.
 #
+# The probe prints a sentinel and anything else aborts the lane. An exit-code
+# probe would read a crashed probe as "GIL build" and silently skip the
+# free-threading coverage this function exists to gate.
+#
 # Must be called after setup_python_env, so `python` is the venv's interpreter.
 is_free_threaded_python() {
-    python -c 'import sys, sysconfig; sys.exit(0 if sysconfig.get_config_var("Py_GIL_DISABLED") in (1, "1") else 1)'
+    local probe
+    probe="$(python -c 'import sysconfig; print("FT=%d" % (sysconfig.get_config_var("Py_GIL_DISABLED") in (1, "1")))')" || probe="<probe exited ${?}>"
+    case "${probe}" in
+        FT=1) return 0 ;;
+        FT=0) return 1 ;;
+        *)
+            echo "ERROR: free-threading probe returned '${probe}' instead of FT=0 or FT=1" >&2
+            exit 1
+            ;;
+    esac
 }
 
 # The lane's mode gate: accepts "pinned" (the default; empty also means pinned),

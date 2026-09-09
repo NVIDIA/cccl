@@ -459,6 +459,9 @@ def test_histogram_cache_reuses_artifact_when_bounds_change():
     )
 
 
+@pytest.mark.thread_unsafe(
+    reason="Clears the process-wide caches and asserts wrapper identity, which a concurrent instance's clear breaks."
+)
 def test_histogram_cache_reuses_artifact_for_same_offset_width():
     cuda.compute.clear_all_caches()
 
