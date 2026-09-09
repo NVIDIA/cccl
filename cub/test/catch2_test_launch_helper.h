@@ -165,7 +165,7 @@ void launch(ActionT action, Args... args)
 struct get_expected_allocation_size_t
 {};
 
-[[nodiscard]] static _CCCL_API cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
+[[nodiscard]] inline _CCCL_API cuda::std::execution::prop<get_expected_allocation_size_t, size_t>
 expected_allocation_size(size_t expected)
 {
   return cuda::std::execution::prop{get_expected_allocation_size_t{}, expected};

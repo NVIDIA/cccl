@@ -24,7 +24,7 @@
 struct get_allowed_kernels_t
 {};
 
-[[nodiscard]] static _CCCL_API cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
+[[nodiscard]] inline _CCCL_API cuda::std::execution::prop<get_allowed_kernels_t, cuda::std::span<void*>>
 allowed_kernels(cuda::std::span<void*> allowed_kernels)
 {
   return cuda::std::execution::prop{get_allowed_kernels_t{}, allowed_kernels};
@@ -36,7 +36,7 @@ struct stream_registry_factory_state_t
   cuda::std::span<void*> m_kernels;
 };
 
-static CUB_RUNTIME_FUNCTION stream_registry_factory_state_t* get_stream_registry_factory_state()
+inline CUB_RUNTIME_FUNCTION stream_registry_factory_state_t* get_stream_registry_factory_state()
 {
   stream_registry_factory_state_t* ptr{};
   NV_IF_ELSE_TARGET(NV_IS_HOST, (static stream_registry_factory_state_t state; ptr = &state;), (ptr = nullptr;));
