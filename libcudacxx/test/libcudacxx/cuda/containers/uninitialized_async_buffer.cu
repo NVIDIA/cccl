@@ -95,6 +95,23 @@ C2H_TEST_LIST(
       CCCLRT_CHECK(input.size() == 0);
       CCCLRT_CHECK(input.stream() == cuda::stream_ref{cudaStream_t{}});
     }
+
+    if constexpr (sizeof(TestType) != 1)
+    { // Ensure that we properly fail to allocate data that would overflow
+      constexpr size_t max_element_count = static_cast<size_t>(-1) / sizeof(TestType);
+
+      // Multiplication for byte count would overflow
+      REQUIRE_THROWS_MATCHES(
+        __uninitialized_async_buffer(resource, stream, max_element_count + 1),
+        ::std::invalid_argument,
+        Catch::Matchers::ExceptionMessageMatcher("cuda::__uninitialized_async_buffer: Input size overflow"));
+
+      // Adding alignment would overflow
+      REQUIRE_THROWS_MATCHES(
+        __uninitialized_async_buffer(resource, stream, max_element_count, 4),
+        ::std::invalid_argument,
+        Catch::Matchers::ExceptionMessageMatcher("cuda::__uninitialized_async_buffer: Input size overflow"));
+    }
   }
 
   SECTION("conversion")
@@ -208,6 +225,21 @@ C2H_TEST_LIST(
     const TestType* old_ptr = buf.data();
     const size_t old_size   = buf.size();
 
+    if constexpr (sizeof(TestType) != 1)
+    {
+      constexpr size_t max_element_count = static_cast<size_t>(-1) / sizeof(TestType);
+      cuda::stream new_stream{cuda::device_ref{0}};
+
+      REQUIRE_THROWS_MATCHES(
+        (buf.__replace_allocation(new_stream, max_element_count + 1)),
+        ::std::invalid_argument,
+        Catch::Matchers::ExceptionMessageMatcher("cuda::__uninitialized_async_buffer: Input size overflow"));
+
+      CCCLRT_CHECK(buf.data() == old_ptr);
+      CCCLRT_CHECK(buf.size() == old_size);
+      CCCLRT_CHECK(buf.stream() == stream);
+    }
+
     {
       const __uninitialized_async_buffer old_buf = buf.__replace_allocation(1337);
       CCCLRT_CHECK(buf.data() != old_ptr);
@@ -215,7 +247,6 @@ C2H_TEST_LIST(
 
       CCCLRT_CHECK(old_buf.data() == old_ptr);
       CCCLRT_CHECK(old_buf.size() == old_size);
-
       CCCLRT_CHECK(buf.stream() == old_buf.stream());
     }
   }
