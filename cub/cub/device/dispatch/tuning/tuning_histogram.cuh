@@ -124,12 +124,12 @@ struct HistogramPolicy
   HistogramCacheAlgorithm high_bin_cache             = HistogramCacheAlgorithm::single_probe;
   HistogramSpillAlgorithm high_bin_spill             = HistogramSpillAlgorithm::global_memory_privatized;
   HistogramAggregationAlgorithm high_bin_aggregation = HistogramAggregationAlgorithm::rle;
-  int high_bin_cache_entries_per_channel             = 2048;
+  int high_bin_cache_bytes_per_channel               = 16384;
   int high_bin_cache_count_replicas                  = 1;
-  int high_bin_cache_cuckoo_max_bins                 = 262144;
+  int high_bin_cache_cuckoo_max_histogram_bytes      = 1048576;
   int high_bin_pixels_per_thread                     = 4;
   int high_bin_threads_per_block                     = 0; //!< High-bin block size; 0 inherits threads_per_block
-  int high_bin_interpolation_min_bins                = 512;
+  int high_bin_interpolation_min_level_bytes         = 2052;
   int high_bin_min_histogram_bytes                   = 0;
   //! Target resident cooperative blocks per SM. Zero keeps the occupancy-derived grid and a one-block launch bound.
   int high_bin_blocks_per_sm = 0;
@@ -163,12 +163,12 @@ struct HistogramPolicy
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
         && lhs.high_bin_algorithm == rhs.high_bin_algorithm && lhs.high_bin_cache == rhs.high_bin_cache
         && lhs.high_bin_spill == rhs.high_bin_spill && lhs.high_bin_aggregation == rhs.high_bin_aggregation
-        && lhs.high_bin_cache_entries_per_channel == rhs.high_bin_cache_entries_per_channel
+        && lhs.high_bin_cache_bytes_per_channel == rhs.high_bin_cache_bytes_per_channel
         && lhs.high_bin_cache_count_replicas == rhs.high_bin_cache_count_replicas
-        && lhs.high_bin_cache_cuckoo_max_bins == rhs.high_bin_cache_cuckoo_max_bins
+        && lhs.high_bin_cache_cuckoo_max_histogram_bytes == rhs.high_bin_cache_cuckoo_max_histogram_bytes
         && lhs.high_bin_pixels_per_thread == rhs.high_bin_pixels_per_thread
         && lhs.high_bin_threads_per_block == rhs.high_bin_threads_per_block
-        && lhs.high_bin_interpolation_min_bins == rhs.high_bin_interpolation_min_bins
+        && lhs.high_bin_interpolation_min_level_bytes == rhs.high_bin_interpolation_min_level_bytes
         && lhs.high_bin_min_histogram_bytes == rhs.high_bin_min_histogram_bytes
         && lhs.high_bin_blocks_per_sm == rhs.high_bin_blocks_per_sm
         && lhs.high_bin_grid_pixels_per_block == rhs.high_bin_grid_pixels_per_block;
@@ -191,11 +191,12 @@ struct HistogramPolicy
         << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins
         << ", .high_bin_algorithm = " << p.high_bin_algorithm << ", .high_bin_cache = " << p.high_bin_cache
         << ", .high_bin_spill = " << p.high_bin_spill << ", .high_bin_aggregation = " << p.high_bin_aggregation
-        << ", .high_bin_cache_entries_per_channel = " << p.high_bin_cache_entries_per_channel
+        << ", .high_bin_cache_bytes_per_channel = " << p.high_bin_cache_bytes_per_channel
         << ", .high_bin_cache_count_replicas = " << p.high_bin_cache_count_replicas
-        << ", .high_bin_cache_cuckoo_max_bins = " << p.high_bin_cache_cuckoo_max_bins
-        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread << ", .high_bin_threads_per_block = "
-        << p.high_bin_threads_per_block << ", .high_bin_interpolation_min_bins = " << p.high_bin_interpolation_min_bins
+        << ", .high_bin_cache_cuckoo_max_histogram_bytes = " << p.high_bin_cache_cuckoo_max_histogram_bytes
+        << ", .high_bin_pixels_per_thread = " << p.high_bin_pixels_per_thread
+        << ", .high_bin_threads_per_block = " << p.high_bin_threads_per_block
+        << ", .high_bin_interpolation_min_level_bytes = " << p.high_bin_interpolation_min_level_bytes
         << ", .high_bin_min_histogram_bytes = " << p.high_bin_min_histogram_bytes
         << ", .high_bin_blocks_per_sm = " << p.high_bin_blocks_per_sm
         << ", .high_bin_grid_pixels_per_block = " << p.high_bin_grid_pixels_per_block << " }";
@@ -478,9 +479,9 @@ public:
             HistogramCacheAlgorithm::single_probe,
             HistogramSpillAlgorithm::global_memory_privatized,
             HistogramAggregationAlgorithm::rle,
-            8192,
+            65536,
             1,
-            262144,
+            1048576,
             4,
             0});
         }
@@ -501,9 +502,9 @@ public:
             HistogramCacheAlgorithm::single_probe,
             HistogramSpillAlgorithm::global_memory_privatized,
             HistogramAggregationAlgorithm::rle,
-            4096,
+            32768,
             1,
-            262144,
+            1048576,
             4,
             0});
         }
@@ -526,11 +527,11 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          8192,
+          65536,
           1,
-          262144,
+          1048576,
           4,
-          is_even ? 768 : 512});
+          (is_even ? 769 : 513) * sample_size_bytes});
       }
 
       if (counter_size == 4 && sample_is_primitive && num_channels >= 2)
@@ -549,11 +550,11 @@ public:
           HistogramCacheAlgorithm::single_probe,
           HistogramSpillAlgorithm::global_memory_privatized,
           HistogramAggregationAlgorithm::rle,
-          is_even || sample_size == 8 ? 2048 : 1024,
+          (is_even || sample_size == 8 ? 2048 : 1024) * (int{sizeof(::cuda::std::uint32_t)} + 4 * counter_size),
           4,
-          262144,
+          1048576,
           4,
-          1024});
+          1025 * sample_size_bytes});
       }
 
       // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
