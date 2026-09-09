@@ -22,8 +22,6 @@ from cuda.compute._caching import (
     cache_with_registered_key_functions,
 )
 
-_DEVICE_COPY_CACHE_MAXSIZE = 64
-
 
 # Keep these local Cython declarations in sync with DLPack v1.3 dlpack.h.
 cdef extern from *:
@@ -3003,7 +3001,7 @@ cdef class _DeviceCopyExecutable:
         return self._resolve_build()._get_source()
 
 
-@cache_with_registered_key_functions(maxsize=_DEVICE_COPY_CACHE_MAXSIZE)
+@cache_with_registered_key_functions
 def _make_device_copy_executable(tuple type_info_key, object rank, *, object compute_capability=None):
     return _DeviceCopyExecutable(type_info_key, rank, compute_capability=compute_capability)
 
