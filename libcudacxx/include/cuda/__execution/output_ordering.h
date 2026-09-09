@@ -24,7 +24,6 @@
 #include <cuda/__execution/require.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -52,10 +51,10 @@ enum class __output_ordering_t
 };
 
 template <__output_ordering_t _Guarantee>
-struct _CCCL_DECLSPEC_EMPTY_BASES __output_ordering_holder_t
-    : __requirement
-    , ::cuda::std::integral_constant<__output_ordering_t, _Guarantee>
+struct __output_ordering_holder_t : __requirement
 {
+  static constexpr __output_ordering_t value = _Guarantee;
+
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_output_ordering_t&) const noexcept
     -> __output_ordering_holder_t<_Guarantee>
   {
