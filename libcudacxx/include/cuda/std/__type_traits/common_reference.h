@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/copy_cv.h>
@@ -192,17 +194,26 @@ template <class _Tp, class _Up, class = void>
 struct __common_reference_sub_bullet1 : __common_reference_sub_bullet2<_Tp, _Up>
 {};
 
-// sub-bullet 1 - If T1 and T2 are reference types and COMMON-REF(T1, T2) is well-formed, then
-// the member typedef `type` denotes that type.
+// sub-bullet 1 - Let R be COMMON-REF(T1, T2). If T1 and T2 are reference types, R is well-formed,
+// and is_convertible_v<add_pointer_t<T1>, add_pointer_t<R>> && is_convertible_v<add_pointer_t<T2>,
+// add_pointer_t<R>> is true, then the member typedef `type` denotes R.
 template <class _Tp, class _Up>
 struct common_reference<_Tp, _Up> : __common_reference_sub_bullet1<_Tp, _Up>
 {};
 
+// The pointer conversions ensure that `R` refers to one of the operands rather than to a
+// materialized temporary; without them a user-defined conversion operator can make `COMMON-REF`
+// succeed with an unrelated type.
 template <class _Tp, class _Up>
-struct __common_reference_sub_bullet1<
-  _Tp,
-  _Up,
-  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<is_reference_v<_Tp> && is_reference_v<_Up>>>>
+_CCCL_CONCEPT __common_ref_binds_directly = _CCCL_REQUIRES_EXPR((_Tp, _Up), )(
+  requires(is_reference_v<_Tp>),
+  requires(is_reference_v<_Up>),
+  typename(__common_ref_t<_Tp, _Up>),
+  requires(is_convertible_v<add_pointer_t<_Tp>, add_pointer_t<__common_ref_t<_Tp, _Up>>>),
+  requires(is_convertible_v<add_pointer_t<_Up>, add_pointer_t<__common_ref_t<_Tp, _Up>>>));
+
+template <class _Tp, class _Up>
+struct __common_reference_sub_bullet1<_Tp, _Up, enable_if_t<__common_ref_binds_directly<_Tp, _Up>>>
 {
   using type = __common_ref_t<_Tp, _Up>;
 };

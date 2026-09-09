@@ -20,10 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/weak_result_type.h>
 #include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -109,6 +112,37 @@ template <class _Tp>
 void ref(const _Tp&&) = delete;
 template <class _Tp>
 void cref(const _Tp&&) = delete;
+
+// [refwrap.common.ref]
+template <class _Rp, class _Tp, class _RpQual, class _TpQual>
+_CCCL_CONCEPT __ref_wrap_common_reference_exists_with = _CCCL_REQUIRES_EXPR((_Rp, _Tp, _RpQual, _TpQual), )(
+  requires(__is_cuda_std_reference_wrapper_v<_Rp> || __is_std_reference_wrapper_v<_Rp>),
+  typename(common_reference_t<typename _Rp::type&, _TpQual>),
+  requires(convertible_to<_RpQual, common_reference_t<typename _Rp::type&, _TpQual>>));
+
+template <class _Rp, class _Tp, template <class> class _RpQual, template <class> class _TpQual>
+struct basic_common_reference<
+  _Rp,
+  _Tp,
+  _RpQual,
+  _TpQual,
+  enable_if_t<__ref_wrap_common_reference_exists_with<_Rp, _Tp, _RpQual<_Rp>, _TpQual<_Tp>>
+              && !__ref_wrap_common_reference_exists_with<_Tp, _Rp, _TpQual<_Tp>, _RpQual<_Rp>>>>
+{
+  using type _CCCL_NODEBUG_ALIAS = common_reference_t<typename _Rp::type&, _TpQual<_Tp>>;
+};
+
+template <class _Tp, class _Rp, template <class> class _TpQual, template <class> class _RpQual>
+struct basic_common_reference<
+  _Tp,
+  _Rp,
+  _TpQual,
+  _RpQual,
+  enable_if_t<__ref_wrap_common_reference_exists_with<_Rp, _Tp, _RpQual<_Rp>, _TpQual<_Tp>>
+              && !__ref_wrap_common_reference_exists_with<_Tp, _Rp, _TpQual<_Tp>, _RpQual<_Rp>>>>
+{
+  using type _CCCL_NODEBUG_ALIAS = common_reference_t<typename _Rp::type&, _TpQual<_Tp>>;
+};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
