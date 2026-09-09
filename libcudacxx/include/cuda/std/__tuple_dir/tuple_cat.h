@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/tie.h>
@@ -29,7 +30,6 @@
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/forward.h>
@@ -38,126 +38,86 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp, class _Up>
-struct __tuple_cat_type;
-
-template <class... _Ttypes, class... _Utypes>
-struct __tuple_cat_type<tuple<_Ttypes...>, __tuple_types<_Utypes...>>
+template <class... _Types>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __tuple_cat_return_impl(__tuple_types<_Types...>) noexcept
+  -> __tuple_types<_Types...>
 {
-  using type _CCCL_NODEBUG = tuple<_Ttypes..., _Utypes...>;
-};
+  return {};
+}
 
-template <class _ResultTuple, bool _Is_Tuple0TupleLike, class... _Tuples>
-struct __tuple_cat_return_1
-{};
-
-template <class... _Types, class _Tuple0>
-struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0>
+template <class... _Types1, class... _Types2, class... _TupleTypes>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto
+__tuple_cat_return_impl(__tuple_types<_Types1...>, __tuple_types<_Types2...>, _TupleTypes... __tail) noexcept
 {
-  using type _CCCL_NODEBUG =
-    typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type;
-};
+  return ::cuda::std::__tuple_cat_return_impl(__tuple_types<_Types1..., _Types2...>{}, __tail...);
+}
 
-template <class... _Types, class _Tuple0, class _Tuple1, class... _Tuples>
-struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0, _Tuple1, _Tuples...>
-    : public __tuple_cat_return_1<
-        typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type,
-        __tuple_like_ext<remove_reference_t<_Tuple1>>,
-        _Tuple1,
-        _Tuples...>
-{};
+template <class... _Types>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL tuple<_Types...> __tuple_cat_return_type(__tuple_types<_Types...>) noexcept;
 
 template <class... _Tuples>
-struct __tuple_cat_return;
+using __tuple_cat_return_t = decltype(::cuda::std::__tuple_cat_return_type(
+  ::cuda::std::__tuple_cat_return_impl(__make_tuple_types_t<remove_cvref_t<_Tuples>>{}...)));
 
-template <class _Tuple0, class... _Tuples>
-struct __tuple_cat_return<_Tuple0, _Tuples...>
-    : public __tuple_cat_return_1<tuple<>, __tuple_like_ext<remove_reference_t<_Tuple0>>, _Tuple0, _Tuples...>
-{};
-
-template <>
-struct __tuple_cat_return<>
+_CCCL_EXEC_CHECK_DISABLE
+template <class _Tuple, size_t... _Indices>
+[[nodiscard]] _CCCL_API constexpr auto __tuple_cat_impl(__tuple_indices<_Indices...>, _Tuple&& __tuple) noexcept
 {
-  using type _CCCL_NODEBUG = tuple<>;
-};
+  using ::cuda::std::get;
+  return ::cuda::std::forward_as_tuple(get<_Indices>(::cuda::std::forward<_Tuple>(__tuple))...);
+}
 
-_CCCL_API constexpr tuple<> tuple_cat()
+_CCCL_EXEC_CHECK_DISABLE
+template <class _Tuple1, class _Tuple2, size_t... _Indices1, size_t... _Indices2, class... _Tuples>
+[[nodiscard]] _CCCL_API constexpr auto __tuple_cat_impl(
+  __tuple_indices<_Indices1...>,
+  __tuple_indices<_Indices2...>,
+  _Tuple1&& __tuple1,
+  _Tuple2&& __tuple2,
+  _Tuples&&... __tuples)
+{
+  using ::cuda::std::get;
+  if constexpr (sizeof...(_Tuples) != 0)
+  {
+    using _TupleSize0 = __make_tuple_indices_t<sizeof...(_Indices1) + sizeof...(_Indices2)>;
+    using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
+    return ::cuda::std::__tuple_cat_impl(
+      _TupleSize0{},
+      _TupleSize1{},
+      ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                    get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...),
+      ::cuda::std::forward<_Tuples>(__tuples)...);
+  }
+  else
+  {
+    return ::cuda::std::forward_as_tuple(get<_Indices1>(::cuda::std::forward<_Tuple1>(__tuple1))...,
+                                         get<_Indices2>(::cuda::std::forward<_Tuple2>(__tuple2))...);
+  }
+}
+
+template <class... _Tuples>
+_CCCL_CONCEPT __all_tuple_like = (__tuple_like<_Tuples> && ...);
+
+[[nodiscard]] _CCCL_API constexpr tuple<> tuple_cat()
 {
   return tuple<>();
 }
 
-template <class _Rp, class _Indices, class _Tuple0, class... _Tuples>
-struct __tuple_cat_return_ref_imp;
-
-template <class... _Types, size_t... _I0, class _Tuple0>
-struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0>
+_CCCL_TEMPLATE(class... _Tuples)
+_CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
+[[nodiscard]] _CCCL_API constexpr __tuple_cat_return_t<_Tuples...> tuple_cat(_Tuples&&... __tuples)
 {
-  using _T0 _CCCL_NODEBUG = remove_reference_t<_Tuple0>;
-  using type              = tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_I0, _T0>>&&...>;
-};
-
-template <class... _Types, size_t... _I0, class _Tuple0, class _Tuple1, class... _Tuples>
-struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0, _Tuple1, _Tuples...>
-    : public __tuple_cat_return_ref_imp<
-        tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_I0, remove_reference_t<_Tuple0>>>&&...>,
-        __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuple1>>::value>,
-        _Tuple1,
-        _Tuples...>
-{};
-
-template <class _Tuple0, class... _Tuples>
-struct __tuple_cat_return_ref
-    : public __tuple_cat_return_ref_imp<tuple<>,
-                                        __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuple0>>::value>,
-                                        _Tuple0,
-                                        _Tuples...>
-{};
-
-template <class _Types, class _I0, class _J0>
-struct __tuple_cat;
-
-template <class... _Types, size_t... _I0, size_t... _J0>
-struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J0...>>
-{
-  template <class _Tuple0>
-  _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&>::type
-  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0)
+  if constexpr (sizeof...(_Tuples) <= 2)
   {
-    return ::cuda::std::forward_as_tuple(
-      ::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
-      // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
-      // Each expansion forwards the tuple only to select get<I>'s cvref-qualified
-      // overload for a distinct element.
-      // NOLINTNEXTLINE(bugprone-use-after-move)
-      ::cuda::std::get<_J0>(::cuda::std::forward<_Tuple0>(__t0))...);
+    return ::cuda::std::__tuple_cat_impl(__make_tuple_indices_t<tuple_size<remove_reference_t<_Tuples>>::value>{}...,
+                                         ::cuda::std::forward<_Tuples>(__tuples)...);
   }
-
-  template <class _Tuple0, class _Tuple1, class... _Tuples>
-  _CCCL_API constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&, _Tuple1&&, _Tuples&&...>::type
-  _CCCL_STATIC_CALL_OPERATOR([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
+  else
   {
-    using _T0 _CCCL_NODEBUG = remove_reference_t<_Tuple0>;
-    using _T1 _CCCL_NODEBUG = remove_reference_t<_Tuple1>;
-    return __tuple_cat<tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_J0, _T0>>&&...>,
-                       __make_tuple_indices_t<sizeof...(_Types) + tuple_size<_T0>::value>,
-                       __make_tuple_indices_t<tuple_size<_T1>::value>>()(
-      ::cuda::std::forward_as_tuple(::cuda::std::forward<_Types>(::cuda::std::get<_I0>(__t))...,
-                                    // clang-tidy incorrectly reports "'__t0' used after it was forwarded".
-                                    // Each expansion forwards the tuple only to select get<I>'s cvref-qualified
-                                    // overload for a distinct element.
-                                    // NOLINTNEXTLINE(bugprone-use-after-move)
-                                    ::cuda::std::get<_J0>(::cuda::std::forward<_Tuple0>(__t0))...),
-      ::cuda::std::forward<_Tuple1>(__t1),
-      ::cuda::std::forward<_Tuples>(__tpls)...);
+    using _TupleSize0 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<0, _Tuples...>>>::value>;
+    using _TupleSize1 = __make_tuple_indices_t<tuple_size<remove_reference_t<__type_index_c<1, _Tuples...>>>::value>;
+    return ::cuda::std::__tuple_cat_impl(_TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...);
   }
-};
-
-template <class _Tuple0, class... _Tuples>
-_CCCL_API constexpr typename __tuple_cat_return<_Tuple0, _Tuples...>::type tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)
-{
-  using _T0 _CCCL_NODEBUG = remove_reference_t<_Tuple0>;
-  return __tuple_cat<tuple<>, __tuple_indices<>, __make_tuple_indices_t<tuple_size<_T0>::value>>()(
-    tuple<>(), ::cuda::std::forward<_Tuple0>(__t0), ::cuda::std::forward<_Tuples>(__tpls)...);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
