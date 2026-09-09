@@ -242,12 +242,11 @@ def _jit_op_adapter_factory():
 
 
 # Resolved lazily on the first Python-callable operator (see
-# _get_jit_op_adapter) so that `import cuda.compute` never imports numba.
-# Importing numba eagerly would make every consumer pay its import cost, would
-# turn a broken numba installation into a package-wide import failure, and on
-# free-threaded CPython would re-enable the GIL for the whole process before
-# any user code runs -- even for users who only ever pass OpKind/RawOp
-# operators.
+# _get_jit_op_adapter) so that `import cuda.compute` never imports the JIT
+# backend. Importing it eagerly would make every consumer pay its import cost,
+# would turn a broken backend installation into a package-wide import failure,
+# and would fail outright on the minimal extras, which do not install it --
+# even for users who only ever pass OpKind/RawOp operators.
 _jit_adapter = None
 
 

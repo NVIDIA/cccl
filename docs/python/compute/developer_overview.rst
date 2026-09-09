@@ -560,9 +560,13 @@ The free-threading design is constrained by the following requirements:
 
 Tests that require a free-threaded interpreter carry the ``free_threading``
 marker (and ``thread_unsafe`` when they drive their own worker threads). The CI
-test payloads select them by marker, and run a pytest-run-parallel sweep of the
-functional suite, whenever the lane's interpreter is a free-threaded build, so
-a new suite needs no CI changes beyond the marker.
+test payloads run them whenever the lane's interpreter is a free-threaded
+build. The full-extras payload selects them by marker and then runs a
+pytest-run-parallel sweep of the functional suite, so a new suite on the full
+extras needs no CI change beyond the marker. The minimal and ThreadSanitizer
+payloads can only import what the minimal extras install, so they name the
+stress file by path and sweep the ``no_numba`` modules; a suite that must also
+run there has to be added to those payloads.
 
 Build and validation requirements
 +++++++++++++++++++++++++++++++++

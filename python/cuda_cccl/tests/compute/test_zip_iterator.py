@@ -498,6 +498,9 @@ def test_zip_iterator_of_transform_iterator_kind():
     assert it1.kind != it2.kind
 
 
+@pytest.mark.thread_unsafe(
+    reason="Clears and counts hits on the process-wide compile cache, which a concurrent instance perturbs."
+)
 def test_caching_zip_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
     from cuda.compute._cpp_compile import compile_cpp_op_code
@@ -575,6 +578,9 @@ def test_caching_zip_iterator():
     assert len(set(kinds)) == 1, "Same CountingIterator types should have same kind"
 
 
+@pytest.mark.thread_unsafe(
+    reason="Clears and counts hits on the process-wide compile cache, which a concurrent instance perturbs."
+)
 def test_compilation_caching_across_iterator_types():
     """Test that compilation caching works across different iterator types."""
     from cuda.compute import ConstantIterator

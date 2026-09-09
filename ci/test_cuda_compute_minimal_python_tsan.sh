@@ -62,8 +62,12 @@ else
   wheelhouse_dir="${repo_root}/wheelhouse"
 fi
 
-# minimal-cu* extra intentionally avoids numba/numba-cuda (which re-enable the
-# GIL). pytest-run-parallel drives the concurrent sweep.
+# The minimal-cu* extra installs no JIT backend, which this lane requires:
+# numba-cuda-mlir DEEPBIND-preloads its bundled LLVM/MLIR libraries, and
+# RTLD_DEEPBIND is incompatible with sanitizer runtimes
+# (https://github.com/google/sanitizers/issues/611), so only the backend-free
+# (no_numba) tests can run under TSan. pytest-run-parallel drives the
+# concurrent sweep.
 CUDA_CCCL_WHEEL_PATH="$(ls "${wheelhouse_dir}"/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[minimal-cu${cuda_major_version}]"
 python -m pip install pytest pytest-xdist pytest-run-parallel
