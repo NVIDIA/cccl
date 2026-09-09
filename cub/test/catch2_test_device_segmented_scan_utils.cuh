@@ -224,6 +224,7 @@ struct device_buffer_equals_matcher : Catch::Matchers::MatcherGenericBase
     return comparison_result.actual_size == comparison_result.expected_size && comparison_result.total_mismatches == 0;
   }
 
+protected:
   std::string describe() const override
   {
     std::stringstream ss;
