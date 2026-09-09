@@ -17,6 +17,14 @@ from cuda.compute import (
 )
 from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 
+# Replaces a former autouse fixture that monkeypatched _cccl_interop._check_sass
+# to False for every test here. The marker is equivalent -- conftest's verify_sass
+# returns early on it -- and keeps monkeypatch out of the fixture closure, which
+# pytest-run-parallel would otherwise treat as thread-unsafe and serialize.
+pytestmark = pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+
 DTYPE_LIST = [
     np.uint8,
     np.uint16,
@@ -49,15 +57,6 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
 select_params = [
     (dt, 2**log_size) for dt in DTYPE_LIST for log_size in [2, 4, 6, 8, 10, 16, 20]
 ]
-
-
-@pytest.fixture(scope="function", autouse=True)
-def disable_sass_check(monkeypatch):
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
 
 
 def _host_select(h_in: np.ndarray, cond):
@@ -155,7 +154,7 @@ def test_select_all_pass(dtype):
 
 
 @pytest.mark.parametrize("dtype", DTYPE_LIST)
-def test_select_none_pass(monkeypatch, dtype):
+def test_select_none_pass(dtype):
     num_items = 1000
     h_in = random_array(num_items, dtype, max_value=100)
 
@@ -400,7 +399,7 @@ def test_select_with_struct(dtype):
     assert np.array_equal(got["y"], expected["y"])
 
 
-def test_select_with_zip_iterator(monkeypatch):
+def test_select_with_zip_iterator():
     """Test select with ZipIterator input and output"""
 
     dtype = np.int32

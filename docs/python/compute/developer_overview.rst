@@ -317,7 +317,7 @@ Fortunately, the kernel source is already being assembled as a string at
 runtime. That means we can also generate the type information needed by
 the CUDA C++ side.
 
-As a concrete example, suppose we want to pass a ``numba.complex128``
+As a concrete example, suppose we want to pass a ``types.complex128``
 value into the kernel. The C++ side does not see the original Python
 type definition, but that is not an issue. It only needs a storage
 type with matching size and alignment, and can type-erase everything
@@ -344,7 +344,7 @@ else.
             cuLaunchKernel((CUfunction)kernel, 1, 1, 1, 4, 1, 1, 0, 0, kernel_args, nullptr);
 
 In this version, the operator takes a type-erased pointer. On the
-Python side, we therefore pass a pointer to the ``numba.complex128``
+Python side, we therefore pass a pointer to the ``types.complex128``
 value, together with the size and alignment needed to construct a
 matching storage type on the C++ side:
 
@@ -376,7 +376,7 @@ matching storage type on the C++ side:
         bindings.launcher(type_erased_value_ptr, size, alignment, ltoir, len(ltoir))
 
 In this example, we obtain the size and alignment of
-``numba.complex128`` from Numba's type system. The remaining detail is
+``types.complex128`` from numba-cuda-mlir's type system. The remaining detail is
 how to pass the value to ``cuLaunchKernel``. Kernel arguments are
 described to ``cuLaunchKernel`` as pointers to host memory from which
 the launch parameters are copied. In Python, that host-memory pointer
@@ -558,19 +558,11 @@ The free-threading design is constrained by the following requirements:
 * Same-key concurrent cold builds should build once; waiters should receive the
   same result or observe the same exception.
 
-The current free-threading support boundary is the ``minimal-cu12`` and
-``minimal-cu13`` extras. These extras omit Numba and Numba CUDA. Consequently,
-free-threaded support currently covers built-in ``OpKind`` operations and
-externally compiled ``RawOp`` operations, but not Python-callable operators.
-The full ``cu12`` and ``cu13`` extras remain
-outside the support claim until the Numba CUDA dependency is replaced by a
-free-threading-compatible implementation.
-
-CI runs ``test_free_threading_stress.py`` directly from the minimal test job.
-The v1 backend is covered across the supported CUDA 12 and 13 lanes, and a
-separate CTK 13.X minimal job runs the same suite against the v2 HostJIT
-backend. Pytest runs each suite in one process while the stress tests create
-and synchronize their own worker threads.
+Tests that require a free-threaded interpreter carry the ``free_threading``
+marker (and ``thread_unsafe`` when they drive their own worker threads). The CI
+test payloads select them by marker, and run a pytest-run-parallel sweep of the
+functional suite, whenever the lane's interpreter is a free-threaded build, so
+a new suite needs no CI changes beyond the marker.
 
 Build and validation requirements
 +++++++++++++++++++++++++++++++++

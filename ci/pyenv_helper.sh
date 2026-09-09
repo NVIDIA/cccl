@@ -41,6 +41,21 @@ setup_python_env() {
     end_group "🐍 Setting up Python ${py_version} (uv)"
 }
 
+# True when the *active* interpreter is a free-threaded (GIL-disabled) build.
+# Ask the interpreter rather than matching the py_version string ("3.14t"): a
+# string match silently stops firing the day a 3.15t appears, and the free-
+# threading coverage would vanish with no test failure to notice it.
+#
+# Mirrors _is_free_threaded_build() in the test suite: it reports what the build
+# supports, not whether the GIL happens to be on right now (PYTHON_GIL=1 can
+# re-enable it). Callers that need the GIL genuinely off assert that separately,
+# so a mis-set PYTHON_GIL fails loudly instead of silently skipping.
+#
+# Must be called after setup_python_env, so `python` is the venv's interpreter.
+is_free_threaded_python() {
+    python -c 'import sys, sysconfig; sys.exit(0 if sysconfig.get_config_var("Py_GIL_DISABLED") in (1, "1") else 1)'
+}
+
 # The lane's mode gate: accepts "pinned" (the default; empty also means pinned),
 # "latest" and "sysctk", and rejects anything else. Both halves of a lane call it
 # -- the entry point before it branches on the mode, the payload via

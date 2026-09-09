@@ -30,15 +30,56 @@ if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
 fi
 
 cd "${repo_root}/python/cuda_cccl/tests/"
-if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]]; then
+if [[ "${CCCL_PYTHON_USE_V2:-}" =~ ^(1|true|TRUE|on|ON)$ ]] && ! is_free_threaded_python; then
   # The test isolates itself in a fresh subprocess (LLVM initialization is
   # process-wide and only cold once), but it carries the free_threading marker,
-  # so it must be selected by node-id here or the sweeps below never run it.
+  # so on a GIL interpreter it must be selected by node-id or nothing runs it.
+  # On a free-threaded one the marker-selected block below covers it already.
   python -m pytest "${pytest_extra[@]}" -n 0 -v \
     compute/test_free_threading_stress.py::test_v2_concurrent_cold_llvm_initialization
 fi
 python -m pytest "${pytest_extra[@]}" -n 6 -v compute/ -m "not large and not free_threading"
 python -m pytest "${pytest_extra[@]}" -n 0 -v compute/ -m "large and not free_threading"
+
+# The free-threading suites carry the free_threading marker, so the sweeps above
+# exclude them -- on a GIL interpreter they would only skip themselves. Run them
+# here when the interpreter is genuinely free-threaded. On the full extras this
+# exercises test_free_threading_stress.py with Python-callable operators,
+# gpu_struct types and unannotated TransformIterator available, which the
+# minimal payload cannot.
+if is_free_threaded_python; then
+  # Fail loudly if the GIL is on anyway (wrong build / PYTHON_GIL=1) instead of
+  # letting each stress test fail separately with a less obvious message.
+  python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; free-threading tests have no signal'"
+
+  # -n 0: these spawn and barrier-synchronize their own worker threads, so
+  # pytest itself must stay in a single process. Selected by marker rather than
+  # by filename so a future free-threading suite is picked up automatically.
+  python -m pytest "${pytest_extra[@]}" -n 0 -v -m free_threading compute/
+
+  # Broad thread-safety sweep: re-run the functional suite with each test
+  # executed concurrently across threads (barrier-synchronized start), which
+  # stresses the process-wide build cache, single-flight coordination and the
+  # Cython bindings from many threads at once. Complements the hand-written
+  # suites above, which target specific shared-object scenarios.
+  #
+  # Same selector as the -n 6 run above. "not large" because those tests exist
+  # to make big device allocations and are already run at -n 0 for that reason
+  # (see the split above) -- sweeping them re-creates the memory pressure that
+  # split exists to avoid. "not free_threading" because they just ran, with
+  # their own workers; they also carry pytest.mark.thread_unsafe, so the plugin
+  # would demote them to one thread here anyway.
+  #
+  # --parallel-threads=2 matches CuPy's free-threading CI (the closest GPU
+  # precedent); a small fixed count bounds GPU-memory pressure and stays
+  # reproducible across runners, unlike =auto (the runner's core count).
+  #
+  # pytest-run-parallel is only used by this sweep, so install it here rather
+  # than carrying it in the test extras.
+  python -m pip install pytest-run-parallel
+  python -m pytest "${pytest_extra[@]}" -n 0 -v --parallel-threads=2 \
+    compute/ -m "not large and not free_threading"
+fi
 
 # The bfloat16 tests require ml_dtypes (the NumPy bfloat16 extension dtype),
 # which is deliberately not part of the test extras so that the sweeps above

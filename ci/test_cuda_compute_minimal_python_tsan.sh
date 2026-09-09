@@ -23,11 +23,13 @@ source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
 require_py_version "Usage: $0 -py-version <python_version>"
 
-if [[ "${py_version}" != *t ]]; then
-  echo "ERROR: the TSan lane requires a free-threaded (…t) interpreter; got '${py_version}'." >&2
-  echo "On a GIL interpreter the sweep serializes and TSan has no signal." >&2
-  exit 1
-fi
+require_free_threaded_interpreter() {
+  if ! is_free_threaded_python; then
+    echo "ERROR: the TSan lane requires a free-threaded interpreter; got '${py_version}'." >&2
+    echo "On a GIL interpreter the sweep serializes and TSan has no signal." >&2
+    exit 1
+  fi
+}
 
 # Instrument c.parallel when this script builds the wheel itself (local runs). In
 # CI the wheel is the pre-built `python_tsan` artifact, already instrumented; the
@@ -38,6 +40,7 @@ cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',
 
 # Setup Python environment
 setup_python_env "${py_version}"
+require_free_threaded_interpreter
 
 # Fetch or build the TSan-instrumented cuda_cccl wheel. Under project
 # `python_tsan`, get_wheel_artifact_name.sh resolves to the distinct `-tsan`
@@ -104,4 +107,7 @@ run_under_tsan python -m pytest -n 0 -v \
 # c.parallel algorithms under contention than the hand-written stress tests.
 # -n 0 so the threads share one interpreter; --parallel-threads=2 bounds
 # GPU-memory pressure and stays reproducible across runners.
-run_under_tsan python -m pytest -n 0 -v --parallel-threads=2 compute/test_no_numba.py
+# The swept files are the ones marked no_numba module-wide, i.e. everything the
+# minimal extras can run.
+run_under_tsan python -m pytest -n 0 -v --parallel-threads=2 \
+  compute/test_no_numba.py compute/test_raw_op.py

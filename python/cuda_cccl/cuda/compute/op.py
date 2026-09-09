@@ -226,7 +226,11 @@ def _jit_op_adapter_factory():
 
         return to_jit_op_adapter
     except ModuleNotFoundError as e:
-        if "numba" in str(e):
+        # The minimal extras ship no JIT backend at all, so this is the error a
+        # minimal-install user sees when they pass a Python callable. Prefer the
+        # structured module name; fall back to the message for errors raised
+        # without one.
+        if "numba_cuda_mlir" in (e.name or str(e)):
 
             def _missing_jit_adapter(op):
                 raise ImportError(
@@ -259,7 +263,7 @@ def _get_jit_op_adapter():
         _jit_adapter = _jit_op_adapter_factory()
         if gil_was_off and sys._is_gil_enabled():
             warnings.warn(
-                "Compiling a Python callable operator imported numba, which "
+                "Compiling a Python callable operator imported a module that "
                 "re-enabled the GIL for this process. To keep free-threaded "
                 "execution, use OpKind or RawOp (pre-compiled LTO-IR) "
                 "operators instead of Python callables.",

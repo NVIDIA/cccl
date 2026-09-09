@@ -268,16 +268,13 @@ def test_zip_iterator_with_scan(num_items):
 
 
 @pytest.mark.parametrize("num_items", [10, 1000])
-def test_output_zip_iterator_with_scan(monkeypatch, num_items):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_output_zip_iterator_with_scan(num_items):
     """Test ZipIterator as output iterator with scan operations."""
     # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
     cc_major, _ = get_compute_capability()
-    if cc_major >= 8:
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
 
     h_in1 = np.random.randint(0, 1000, num_items, dtype=np.int64)
     h_in2 = np.random.randint(0, 1000, num_items, dtype=np.int64)
@@ -438,14 +435,11 @@ def test_deeply_nested_zip_iterators():
         {"x": np.float64, "y": np.float32},
     ],
 )
-def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_nested_output_zip_iterator_with_scan(num_items, dtype_map):
     cc_major, _ = get_compute_capability()
-    if cc_major >= 8:
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
 
     Vec2 = gpu_struct(dtype_map)
 
