@@ -38,8 +38,9 @@ endfunction()
 
 function(thrust_wrap_bench_in_cpp cpp_file_var cu_file thrust_target)
   thrust_get_target_property(prefix ${thrust_target} PREFIX)
+  file(RELATIVE_PATH rel_cu_file "${CMAKE_CURRENT_LIST_DIR}" "${cu_file}")
   set(wrapped_source_file "${cu_file}")
-  set(cpp_file "${CMAKE_CURRENT_BINARY_DIR}/${prefix}/${cu_file}.cpp")
+  set(cpp_file "${CMAKE_CURRENT_BINARY_DIR}/${prefix}/${rel_cu_file}.cpp")
   configure_file(
     "${Thrust_SOURCE_DIR}/cmake/wrap_source_file.cpp.in"
     "${cpp_file}"
