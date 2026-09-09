@@ -304,7 +304,7 @@ enum class integrated_device_cache_state : unsigned char
 
   if (is_integrated_device(device))
   {
-    scoped_current_device guard{device};
+    const scoped_current_device guard{device};
     const auto status = check_free_device_memory(allocation_size);
     if (status != cudaSuccess)
     {
