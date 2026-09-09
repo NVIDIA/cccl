@@ -18,6 +18,7 @@
 #  include <cuda/launch>
 #  include <cuda/logical_endpoint>
 #  include <cuda/memory_pool>
+#  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/limits>
 #  include <cuda/std/span>
@@ -238,6 +239,10 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range",
   CHECK(ids_move.base_id() == ids.base_id());
   CHECK(ids_move.size() == ids.size());
 
+#  if TEST_HAS_EXCEPTIONS()
+  CHECK_THROWS_AS((cuda::unicast_logical_endpoint{ids, ids.size(), spec, bytes}), std::out_of_range);
+#  endif // TEST_HAS_EXCEPTIONS()
+
   cuda::unicast_logical_endpoint endpoint{ids, 0, spec, bytes};
   CHECK(endpoint.id() == ids[0]);
   CHECK(endpoint.size() == bytes);
@@ -349,7 +354,7 @@ C2H_CCCLRT_TEST("unicast logical endpoint honors reported maximum size", "[logic
 
 #  if TEST_HAS_EXCEPTIONS()
   REQUIRE(limits.max_size < cuda::std::numeric_limits<cuda::std::uint64_t>::max());
-  CHECK_THROWS_AS((cuda::unicast_logical_endpoint{spec, limits.max_size + 1}), std::invalid_argument);
+  CHECK_THROWS_AS((cuda::unicast_logical_endpoint{spec, limits.max_size + 1}), cuda::cuda_error);
 #  endif // TEST_HAS_EXCEPTIONS()
 }
 
@@ -851,7 +856,7 @@ C2H_CCCLRT_TEST("multicast logical endpoint honors reported maximum size", "[log
 
 #  if TEST_HAS_EXCEPTIONS()
   REQUIRE(limits.max_size < cuda::std::numeric_limits<cuda::std::uint64_t>::max());
-  CHECK_THROWS_AS((cuda::multicast_logical_endpoint{spec, limits.max_size + 1}), std::invalid_argument);
+  CHECK_THROWS_AS((cuda::multicast_logical_endpoint{spec, limits.max_size + 1}), cuda::cuda_error);
 #  endif // TEST_HAS_EXCEPTIONS()
 }
 
@@ -864,6 +869,10 @@ C2H_CCCLRT_TEST("multicast logical endpoint release from explicit ID has no reta
   auto bytes  = smoke_size(limits);
 
   cuda::logical_endpoint_id_range ids{1};
+#  if TEST_HAS_EXCEPTIONS()
+  CHECK_THROWS_AS((cuda::multicast_logical_endpoint{ids, ids.size(), spec, bytes}), std::out_of_range);
+#  endif // TEST_HAS_EXCEPTIONS()
+
   cuda::multicast_logical_endpoint endpoint{ids[0], spec, bytes};
   CHECK(endpoint.id() == ids[0]);
   CHECK(endpoint.size() == bytes);

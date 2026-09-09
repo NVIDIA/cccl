@@ -1226,11 +1226,19 @@ __logicalEndpointIdReleaseNoThrow(::CUlogicalEndpointId __base_le_id, ::cuuint32
   return static_cast<::cudaError_t>(__driver_fn(__base_le_id, __count));
 }
 
-_CCCL_HOST_API inline void __logicalEndpointCreate(::CUlogicalEndpointId __le_id, const ::CUlogicalEndpointProp* __prop)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointCreateNoThrow( // NOLINT(bugprone-exception-escape)
+  ::CUlogicalEndpointId __le_id,
+  const ::CUlogicalEndpointProp* __prop) noexcept
 {
   static auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointCreate, cuLogicalEndpointCreate, 13, 3);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to create a logical endpoint", __le_id, __prop);
+  return static_cast<::cudaError_t>(__driver_fn(__le_id, __prop));
+}
+
+_CCCL_HOST_API inline void __logicalEndpointCreate(::CUlogicalEndpointId __le_id, const ::CUlogicalEndpointProp* __prop)
+{
+  const auto __status = ::cuda::__driver::__logicalEndpointCreateNoThrow(__le_id, __prop);
+  ::cuda::__driver::__throw_if_cuda_error(__status, "Failed to create a logical endpoint");
 }
 
 _CCCL_HOST_API inline void __logicalEndpointAddDevice(::CUlogicalEndpointId __le_id, ::CUdevice __device)
@@ -1305,15 +1313,23 @@ __logicalEndpointUnbind(::CUlogicalEndpointId __le_id, ::CUdevice __device, ::cu
     __driver_fn, "Failed to unbind a logical endpoint range", __le_id, __device, __offset, __bytes);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::pair<::cuuint64_t, ::cuuint64_t>
-__logicalEndpointGetLimits(const ::CUlogicalEndpointProp* __prop)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointGetLimitsNoThrow( // NOLINT(bugprone-exception-escape)
+  ::cuuint64_t* __bind_alignment,
+  ::cuuint64_t* __max_size,
+  const ::CUlogicalEndpointProp* __prop) noexcept
 {
   static auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointGetLimits, cuLogicalEndpointGetLimits, 13, 3);
+  return static_cast<::cudaError_t>(__driver_fn(__bind_alignment, __max_size, __prop));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::pair<::cuuint64_t, ::cuuint64_t>
+__logicalEndpointGetLimits(const ::CUlogicalEndpointProp* __prop)
+{
   ::cuuint64_t __bind_alignment{};
   ::cuuint64_t __max_size{};
-  ::cuda::__driver::__call_driver_fn(
-    __driver_fn, "Failed to get logical endpoint limits", &__bind_alignment, &__max_size, __prop);
+  const auto __status = ::cuda::__driver::__logicalEndpointGetLimitsNoThrow(&__bind_alignment, &__max_size, __prop);
+  ::cuda::__driver::__throw_if_cuda_error(__status, "Failed to get logical endpoint limits");
   return {__bind_alignment, __max_size};
 }
 

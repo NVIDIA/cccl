@@ -211,7 +211,7 @@ public:
     ::cuda::std::uint32_t __index,
     const multicast_logical_endpoint_spec& __spec,
     ::cuda::std::uint64_t __bytes)
-      : __base(__range[__index])
+      : __base(::cuda::__detail::__checked_logical_endpoint_id(__range, __index))
   {
     this->__retain_id_range(__range);
     const auto __prop = ::cuda::__detail::__make_multicast_logical_endpoint_prop(__spec, __bytes);

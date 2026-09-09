@@ -388,6 +388,47 @@ __get_logical_endpoint_limits(const ::CUlogicalEndpointProp& __prop)
   return {static_cast<::cuda::std::uint64_t>(__limits.first), static_cast<::cuda::std::uint64_t>(__limits.second)};
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __get_logical_endpoint_limits_no_throw(
+  logical_endpoint_limits& __limits, const ::CUlogicalEndpointProp& __prop) noexcept
+{
+  ::cuuint64_t __bind_alignment{};
+  ::cuuint64_t __max_size{};
+  const auto __status = ::cuda::__driver::__logicalEndpointGetLimitsNoThrow(&__bind_alignment, &__max_size, &__prop);
+  if (__status == ::cudaSuccess)
+  {
+    __limits = {static_cast<::cuda::std::uint64_t>(__bind_alignment), static_cast<::cuda::std::uint64_t>(__max_size)};
+  }
+  return __status;
+}
+
+_CCCL_HOST_API inline void
+__throw_logical_endpoint_create_error(::cudaError_t __status, const ::CUlogicalEndpointProp& __prop)
+{
+  if (__status == ::cudaErrorInvalidValue)
+  {
+    logical_endpoint_limits __limits{};
+    if (::cuda::__detail::__get_logical_endpoint_limits_no_throw(__limits, __prop) == ::cudaSuccess
+        && __limits.max_size != 0 && __prop.size > __limits.max_size)
+    {
+      _CCCL_THROW(::cuda::cuda_error,
+                  __status,
+                  "Failed to create a logical endpoint. The requested endpoint size exceeds the device limit");
+    }
+  }
+
+  _CCCL_THROW(::cuda::cuda_error, __status, "Failed to create a logical endpoint");
+}
+
+[[nodiscard]] _CCCL_HOST_API inline logical_endpoint_id
+__checked_logical_endpoint_id(const logical_endpoint_id_range& __range, ::cuda::std::uint32_t __index)
+{
+  if (__index >= __range.size())
+  {
+    _CCCL_THROW(::std::out_of_range, "logical endpoint ID range index is out of bounds");
+  }
+  return __range[__index];
+}
+
 [[nodiscard]] _CCCL_HOST_API inline bool __is_logical_endpoint_supported(
   ::cuda::device_ref __device,
   ::CUdevice_attribute __endpoint_attr,
@@ -643,18 +684,18 @@ protected:
       _CCCL_THROW(::std::invalid_argument, "Logical endpoint property type does not match the endpoint type");
     }
 
-    const auto __limits = ::cuda::__detail::__get_logical_endpoint_limits(__prop);
-    if (__limits.max_size != 0 && __prop.size > __limits.max_size)
+    const auto __status = ::cuda::__driver::__logicalEndpointCreateNoThrow(this->native_handle(), &__prop);
+    if (__status != ::cudaSuccess)
     {
-      _CCCL_THROW(::std::invalid_argument, "Logical endpoint size exceeds the device limit");
+      ::cuda::__detail::__throw_logical_endpoint_create_error(__status, __prop);
     }
-
-    ::cuda::__driver::__logicalEndpointCreate(this->native_handle(), &__prop);
 
     __owns_endpoint_   = true;
     __size_            = __prop.size;
-    __bind_alignment_  = __limits.bind_alignment;
     __ipc_handle_type_ = static_cast<logical_endpoint_ipc_handle_type>(__prop.ipcHandleTypes);
+
+    const auto __limits = ::cuda::__detail::__get_logical_endpoint_limits(__prop);
+    __bind_alignment_   = __limits.bind_alignment;
   }
 
   [[nodiscard]] _CCCL_HOST_API constexpr bool __is_engaged() const noexcept
