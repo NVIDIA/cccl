@@ -661,7 +661,7 @@ CUB_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][devic
   auto d_in                                = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
   auto d_out                               = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
   auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, 1, cuda::no_init);
-  block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
+  const block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
   const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
 
   device_segmented_exclusive_scan(
@@ -682,7 +682,7 @@ CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][devic
   auto d_in                                = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
   auto d_out                               = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
   auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, 1, cuda::no_init);
-  block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
+  const block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
   const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
 
   device_segmented_inclusive_scan(d_in.data(), d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, env);
@@ -702,7 +702,7 @@ CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
   auto d_in                                = c2h::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
   auto d_out                               = c2h::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
   auto d_block_size                        = c2h::make_device_buffer<unsigned int>(stream, device, 1, cuda::no_init);
-  block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
+  const block_size_extracting_op<::cuda::std::plus<>> scan_op{d_block_size.data()};
   const auto env = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
 
   device_segmented_inclusive_scan_init(
