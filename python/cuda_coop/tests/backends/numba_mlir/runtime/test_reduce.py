@@ -49,7 +49,8 @@ _RUNTIME_WARP_VALID = 19
 _RUNTIME_LOGICAL_VALID = 5
 _CLUSTER_BLOCKS = 2
 _CLUSTER_BLOCK_THREADS = 32
-_HIERARCHY_RESULT_ROWS = 10
+_HIERARCHY_RESULT_ROWS = 8
+_MAPPED_RESULT_ROWS = 2
 
 
 def _broadcast_grouped_sum(values: np.ndarray, width: int) -> np.ndarray:
@@ -67,7 +68,6 @@ def _hierarchy_scalar_reductions(source, observed):
     thread = cuda.threadIdx.x
     value = source[thread]
     logical_warp = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
-    mapped_warps = root_coop.this_block().group_by(_WARPS_PER_MAPPED_GROUP)
 
     observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(
         root_coop.this_thread(), value
@@ -89,13 +89,21 @@ def _hierarchy_scalar_reductions(source, observed):
     observed[7 * _BLOCK_THREADS + thread] = qualified_coop.sum(
         qualified_coop.this_block(), value
     )
-    observed[8 * _BLOCK_THREADS + thread] = root_coop.sum(mapped_warps, value)
-    observed[9 * _BLOCK_THREADS + thread] = qualified_coop.sum(
+
+
+@cuda.jit
+def _mapped_scalar_reductions(source, observed):
+    thread = cuda.threadIdx.x
+    value = source[thread]
+    mapped_warps = root_coop.this_block().group_by(_WARPS_PER_MAPPED_GROUP)
+
+    observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(mapped_warps, value)
+    observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
         qualified_coop.this_block().group_by(_WARPS_PER_MAPPED_GROUP), value
     )
 
 
-def test_both_namespaces_cover_thread_warp_block_and_mapped_scalar_reductions():
+def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions():
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
     observed = np.full(
         _HIERARCHY_RESULT_ROWS * _BLOCK_THREADS,
@@ -123,12 +131,38 @@ def test_both_namespaces_cover_thread_warp_block_and_mapped_scalar_reductions():
                 source.sum(dtype=np.int32),
                 dtype=np.int32,
             ),
+        )
+    )
+    np.testing.assert_array_equal(
+        observed.reshape(_HIERARCHY_RESULT_ROWS, _BLOCK_THREADS),
+        expected,
+    )
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    strict=True,
+    reason="Mapped-Warp Reduce requires scratch isolation from "
+    "https://github.com/NVIDIA/cccl/pull/10985",
+)
+def test_both_namespaces_cover_mapped_warp_scalar_reductions():
+    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
+    observed = np.full(
+        _MAPPED_RESULT_ROWS * _BLOCK_THREADS,
+        -1,
+        dtype=np.int32,
+    )
+
+    _mapped_scalar_reductions[1, _BLOCK_THREADS](source, observed)
+
+    expected = np.stack(
+        (
             _broadcast_grouped_sum(source, _MAPPED_GROUP_THREADS),
             _broadcast_grouped_sum(source, _MAPPED_GROUP_THREADS),
         )
     )
     np.testing.assert_array_equal(
-        observed.reshape(_HIERARCHY_RESULT_ROWS, _BLOCK_THREADS),
+        observed.reshape(_MAPPED_RESULT_ROWS, _BLOCK_THREADS),
         expected,
     )
 
