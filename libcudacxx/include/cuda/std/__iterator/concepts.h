@@ -116,7 +116,7 @@ concept incrementable = regular<_Ip> && weakly_incrementable<_Ip> && requires(_I
 // [iterator.concept.iterator]
 template <class _Ip>
 concept input_or_output_iterator = requires(_Ip __i) {
-  { *__i } -> __can_reference;
+  { *__i } -> __referenceable;
 } && weakly_incrementable<_Ip>;
 
 // [iterator.concept.sentinel]
@@ -386,7 +386,7 @@ _CCCL_CONCEPT incrementable = _CCCL_REQUIRES_EXPR((_Ip), _Ip __i)(
 template <class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
   __input_or_output_iterator_,
-  requires(_Ip __i)(requires(weakly_incrementable<_Ip>), requires(__can_reference<decltype(*__i)>)));
+  requires(_Ip __i)(requires(weakly_incrementable<_Ip>), requires(__referenceable<decltype(*__i)>)));
 
 template <class _Ip>
 _CCCL_CONCEPT input_or_output_iterator = _CCCL_FRAGMENT(__input_or_output_iterator_, _Ip);

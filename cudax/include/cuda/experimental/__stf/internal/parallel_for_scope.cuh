@@ -37,9 +37,10 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -451,34 +452,6 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 }
 
 /**
- * @brief Resource wrapper for managing parallel_for host callback arguments
- *
- * This manages the memory allocated for parallel_for host callback arguments using the
- * ctx_resource system instead of manual delete in each callback.
- */
-template <typename ArgsType>
-class parallel_for_args_resource : public ctx_resource
-{
-public:
-  explicit parallel_for_args_resource(ArgsType* args)
-      : args_(args)
-  {}
-
-  bool can_release_in_callback() const noexcept override
-  {
-    return true;
-  }
-
-  void release_in_callback() noexcept override
-  {
-    delete args_;
-  }
-
-private:
-  ArgsType* args_;
-};
-
-/**
  * @brief Supporting class for the parallel_for construct
  *
  * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
@@ -608,7 +581,7 @@ public:
 
   /// @brief Constructor keeping the partitioner instance (required when
   /// ownership depends on the partitioner value; type-defined policies cost
-  /// nothing thanks to [[no_unique_address]])
+  /// nothing thanks to _CCCL_NO_UNIQUE_ADDRESS)
   parallel_for_scope(context& ctx, partitioner_t p, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
       : deps(mv(deps)...)
       , ctx(ctx)
@@ -1169,15 +1142,17 @@ public:
     // For stream contexts, delete immediately in callback (better memory efficiency)
     if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
-      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
-      ctx.add_resource(mv(resource));
+      // The context becomes responsible for `args` once add_resource() returns; `args` stays
+      // usable below as the pointer the graph node references.
+      ctx.add_resource(::std::make_shared<callback_args_resource<args_t>>(args));
     }
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
       // it.
-      on_throw(::std::abort) << [untyped_args] {
+      ON_THROW(abort)
+      {
         auto p = static_cast<decltype(args)>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);
@@ -1254,7 +1229,7 @@ private:
   {};
   using stored_partitioner_t =
     ::cuda::std::conditional_t<::cuda::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
-  [[no_unique_address]] stored_partitioner_t p_{};
+  _CCCL_NO_UNIQUE_ADDRESS stored_partitioner_t p_{};
 };
 } // end namespace reserved
 

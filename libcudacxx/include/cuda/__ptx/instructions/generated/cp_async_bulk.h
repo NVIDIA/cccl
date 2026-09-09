@@ -21,7 +21,7 @@ __device__ static inline void cp_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE_API void cp_async_bulk(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -53,7 +53,7 @@ __device__ static inline void cp_async_bulk(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE_API void cp_async_bulk(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -85,7 +85,7 @@ __device__ static inline void cp_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE_API void cp_async_bulk(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_shared_t,
   void* __dstMem,
@@ -123,7 +123,7 @@ __device__ static inline void cp_async_bulk_ignore_oob(
 */
 #if __cccl_ptx_isa >= 920
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_ignore_oob(
+_CCCL_DEVICE_API void cp_async_bulk_ignore_oob(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -161,7 +161,7 @@ __device__ static inline void cp_async_bulk(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE_API void cp_async_bulk(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   void* __dstMem,
@@ -192,7 +192,7 @@ __device__ static inline void cp_async_bulk_cp_mask(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_cp_mask(
+_CCCL_DEVICE_API void cp_async_bulk_cp_mask(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   void* __dstMem,
@@ -229,7 +229,7 @@ __device__ static inline void cp_async_bulk(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_space _Space, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE_API void cp_async_bulk(
   ::cuda::ptx::space_t<_Space> __space,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::report_mechanism_t<_Report_Mechanism> __report_mechanism,

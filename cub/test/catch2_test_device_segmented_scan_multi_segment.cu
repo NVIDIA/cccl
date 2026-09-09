@@ -228,8 +228,8 @@ struct numeric_op
   {
     using Up = typename cuda::std::make_unsigned<value_t>::type;
     const Up m{63};
-    Up r_a = static_cast<Up>(a) % m;
-    Up r_b = static_cast<Up>(b) % m;
+    const Up r_a = static_cast<Up>(a) % m;
+    const Up r_b = static_cast<Up>(b) % m;
     return (r_a + r_b) % m;
   }
 };
@@ -250,7 +250,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block>;
 
-  auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
+  const auto [device, copy_stream] = cub_test::make_current_device_and_owning_stream();
 
   const unsigned num_items = block_size * items_per_thread * 101 + 1;
   const auto h_offsets     = make_host_buffer<offset_t>(
@@ -283,7 +283,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   auto output  = c2h::make_device_buffer<pair_t>(copy_stream, device, h_input.size(), cuda::no_init);
   copy_stream.sync();
 
-  op_t op{};
+  const op_t op{};
   pair_t h_init{0, 0};
 
   for (offset_t segment_id = 0; segment_id < num_segments; ++segment_id)
@@ -298,7 +298,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   const int one_segment_per_worker = 1;
 
-  cub::NullType d_no_init{};
+  const cub::NullType d_no_init{};
 
   SECTION("worker-block, one segment per worker")
   {
@@ -397,8 +397,8 @@ CUB_TEST(
 
   auto h_expected = make_host_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
 
-  op_t op{};
-  value_t h_init{3};
+  const op_t op{};
+  const value_t h_init{3};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
@@ -412,7 +412,7 @@ CUB_TEST(
 
   const int segments_per_worker = 2;
 
-  d_init_t d_init_v{h_init};
+  const d_init_t d_init_v{h_init};
 
   SECTION("worker block")
   {
@@ -482,8 +482,8 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
 
   auto h_expected = make_host_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
 
-  op_t op{};
-  value_t h_init{0};
+  const op_t op{};
+  const value_t h_init{0};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
@@ -497,7 +497,7 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
 
   const int segments_per_worker = 4;
 
-  cub::NullType d_no_init{};
+  const cub::NullType d_no_init{};
 
   SECTION("worker-block")
   {
@@ -575,8 +575,8 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
 
   auto h_expected = make_host_buffer<value_t>(copy_stream, device, h_input.size(), cuda::no_init);
 
-  op_t op{};
-  value_t h_init{3};
+  const op_t op{};
+  const value_t h_init{3};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
@@ -588,7 +588,7 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
       h_init);
   }
 
-  d_init_t d_init_v{h_init};
+  const d_init_t d_init_v{h_init};
   const int segments_per_worker = 2;
 
   // pre-condition to ensure that incomplete tail tile case is tested
@@ -623,14 +623,14 @@ make_in_out_offsets(const std::vector<OffsetT>& sizes, OffsetT gap)
 {
   std::vector<OffsetT> offsets;
 
-  std::size_t segment_count = sizes.size();
+  const std::size_t segment_count = sizes.size();
 
   static constexpr OffsetT zero{0};
 
   offsets.resize(segment_count + 1);
   offsets[0] = zero;
 
-  cuda::std::plus<> plus_t{};
+  const cuda::std::plus<> plus_t{};
 
   compute_inclusive_scan_reference(sizes.begin(), sizes.end(), offsets.begin() + 1, plus_t, zero);
 
@@ -687,9 +687,9 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   constexpr int segments_per_worker = 2;
 
-  op_t op{};
-  value_t h_init_v{0};
-  cub::NullType d_no_init{};
+  const op_t op{};
+  const value_t h_init_v{0};
+  const cub::NullType d_no_init{};
 
   auto h_expected = make_host_buffer<value_t>(copy_stream, device, output.size(), canary);
 
@@ -796,9 +796,9 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
 
   constexpr int segments_per_worker = 2;
 
-  op_t op{};
-  value_t h_init_v{0};
-  cub::NullType d_no_init{};
+  const op_t op{};
+  const value_t h_init_v{0};
+  const cub::NullType d_no_init{};
 
   auto h_expected = make_host_buffer<value_t>(copy_stream, device, output.size(), canary);
 
@@ -927,7 +927,7 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
 
   CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
 
-  auto offsets = make_device_buffer_from_host(copy_stream, device, h_offsets);
+  const auto offsets = make_device_buffer_from_host(copy_stream, device, h_offsets);
 
   const auto input_it = cuda::make_transform_iterator(cuda::counting_iterator<value_t>(0), init_op<value_t>{});
 
@@ -957,8 +957,8 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
   const auto h_input = make_tabulated_host_buffer<value_t>(copy_stream, device, num_items, init_op<value_t>{});
   auto h_expected    = make_host_buffer<value_t>(copy_stream, device, num_items, cuda::no_init);
 
-  op_t op{};
-  value_t h_init{3};
+  const op_t op{};
+  const value_t h_init{3};
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
@@ -977,7 +977,7 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
     }
   }
 
-  d_init_t d_init_v{h_init};
+  const d_init_t d_init_v{h_init};
   const int segments_per_worker = 2;
 
   SECTION("worker block")

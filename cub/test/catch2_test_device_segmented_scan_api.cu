@@ -105,26 +105,26 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
   auto input = cuda::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
 
   // offsets to starts of each of 4 rows
-  constexpr size_t row_size = 4;
-  auto in_begin_offsets     = cuda::make_device_buffer<size_t>(stream, device, {0, row_size, 2 * row_size});
-  auto num_segments         = in_begin_offsets.size();
+  constexpr size_t row_size   = 4;
+  const auto in_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {0, row_size, 2 * row_size});
+  const auto num_segments     = in_begin_offsets.size();
   // Perform row-wise sum for 3-by-3 principal sub-matrix
   constexpr size_t segment_size = 3;
 
-  auto in_end_offsets = cuda::make_device_buffer<size_t>(
+  const auto in_end_offsets = cuda::make_device_buffer<size_t>(
     stream, device, {0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size});
 
-  auto output            = cuda::make_device_buffer<int>(stream, device, num_segments * segment_size, cuda::no_init);
-  auto out_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {0, segment_size, 2 * segment_size});
+  auto output = cuda::make_device_buffer<int>(stream, device, num_segments * segment_size, cuda::no_init);
+  const auto out_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {0, segment_size, 2 * segment_size});
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
 
-  auto d_in_beg_offsets  = in_begin_offsets.begin();
-  auto d_in_end_offsets  = in_end_offsets.begin();
-  auto d_out_beg_offsets = out_begin_offsets.begin();
+  auto d_in_beg_offsets  = in_begin_offsets.cbegin();
+  auto d_in_end_offsets  = in_end_offsets.cbegin();
+  auto d_out_beg_offsets = out_begin_offsets.cbegin();
 
-  auto d_in  = input.begin();
+  auto d_in  = input.cbegin();
   auto d_out = output.begin();
 
   // get size of required storage and allocate
@@ -297,13 +297,15 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
   auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   constexpr unsigned prime = 7;
-  auto input = cuda::make_device_buffer<unsigned>(stream, device, {2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
-                                                                   4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6});
+  const auto input         = cuda::make_device_buffer<unsigned>(
+    stream,
+    device,
+    {2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6});
 
   constexpr size_t row_size = static_cast<size_t>(prime);
-  auto row_offsets          = cuda::make_device_buffer<size_t>(
+  const auto row_offsets    = cuda::make_device_buffer<size_t>(
     stream, device, {0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size});
-  size_t num_segments = row_offsets.size() - 1;
+  const size_t num_segments = row_offsets.size() - 1;
 
   auto output = cuda::make_device_buffer<unsigned>(stream, device, input.size(), cuda::no_init);
 
@@ -314,7 +316,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
     const auto proj_v2 = (v2 % m_p);
     return (proj_v1 * proj_v2) % m_p;
   };
-  unsigned init_value = 1;
+  const unsigned init_value = 1;
 
   auto d_in  = input.begin();
   auto d_out = output.begin();
@@ -402,7 +404,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   auto scan_op = [] __host__ __device__(unsigned v1, unsigned v2) -> unsigned {
     return v1 ^ v2;
   };
-  unsigned init_value = 0u;
+  const unsigned init_value = 0u;
 
   // 128 input elements
   // auto input = cuda::make_device_buffer<unsigned>(stream, device, {0x64b40b1b, 0x7bf23c0c, 0xaa982e07, ... });
@@ -414,11 +416,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
 
-  auto d_in           = input.begin();
-  auto d_out          = output.begin();
-  auto begin_offsets  = offsets.begin();
-  auto end_offsets    = offsets.begin() + 1;
-  size_t num_segments = offsets.size() - 1;
+  auto d_in                 = input.begin();
+  auto d_out                = output.begin();
+  auto begin_offsets        = offsets.begin();
+  auto end_offsets          = offsets.begin() + 1;
+  const size_t num_segments = offsets.size() - 1;
 
   // inquire size of needed temporary storage and allocate
   auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(

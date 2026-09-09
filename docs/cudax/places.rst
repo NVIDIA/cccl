@@ -840,7 +840,7 @@ mapping can be **scored before any memory is committed**:
 
    // Dry run: same block-majority decision procedure as a real allocation
    localized_stats stats = evaluate_localized_placement(grid, part, sizeof(double));
-   // stats.bytes_per_place, stats.accuracy() (estimated fraction of local bytes),
+   // stats.bytes_per_place, stats.accuracy (estimated fraction of local bytes),
    // stats.nallocs, ... -- tune the spec, then allocate
 
 Placement through a structured partition

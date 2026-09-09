@@ -35,6 +35,10 @@ Checks:
   # This is just noise
   - '-bugprone-signed-char-misuse'
   - '-bugprone-multi-level-implicit-pointer-conversion'
+  - 'misc-*'
+  - '-misc-const-correctness'
+  - '-misc-use-anonymous-namespace'
+  - '-misc-use-internal-linkage'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -91,6 +95,23 @@ Checks:
   - '-bugprone-implicit-widening-of-multiplication-result'
   - '-misc-include-cleaner'
   - '-misc-header-include-cycle'
+  # Covered by -Wunused-parameter, which is the better tool here. clang-tidy analyzes a
+  # single target branch, so it reports parameters that are used only inside NV_IF_TARGET,
+  # NV_IF_ELSE_TARGET, or inline asm operands as unused. The compiler sees the branch it
+  # actually compiles and does not.
+  - '-misc-unused-parameters'
+  # This check fires whenever `const` is applied to a typedef that names a pointer type,
+  # claiming the author meant `const T*`. Every hit in CCCL is an opaque handle
+  # (cudaStream_t, ncclComm_t, stf_task_handle, ...) where a const *pointer* is exactly
+  # what was wanted: the handle is then passed to C APIs that take it non-const, so the
+  # suggested reading would not compile.
+  - '-misc-misplaced-const'
+  # This check flags any class with more than one non-pure-virtual base. CCCL relies on
+  # exactly that for the empty base optimization (__compressed_pair, __mdspan_ebco,
+  # __tuple_impl, counting_iterator, ...) and for CRTP policy mixins (custom_type_t). The
+  # _CCCL_DECLSPEC_EMPTY_BASES macro exists solely to make this pattern pack correctly on
+  # MSVC. Removing a base would add storage and break the ABI, so there is no fix to apply.
+  - '-misc-multiple-inheritance'
   - '-modernize-macro-to-enum'
   - '-cppcoreguidelines-macro-to-enum'
   - '-misc-no-recursion'
@@ -208,7 +229,6 @@ Checks:
   # REVIEW ME: This warns about any usage of operator[], suggesting usage of .at() instead. Could
   - '-cppcoreguidelines-pro-bounds-avoid-unchecked-container-access'
   - '-cppcoreguidelines-narrowing-conversions'
-  # Covered by misc-unconventional-assign-operator
   - '-cppcoreguidelines-c-copy-assignment-signature'
   # Covered by performance-noexcept-swap
   - '-cppcoreguidelines-noexcept-swap'

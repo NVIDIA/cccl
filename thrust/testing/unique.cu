@@ -18,7 +18,7 @@ void TestUniqueDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::unique(sys, vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -53,7 +53,7 @@ void TestUniqueCopyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::unique_copy(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -90,7 +90,7 @@ void TestUniqueCountDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::unique_count(sys, vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -171,7 +171,7 @@ struct TestUnique
     ASSERT_EQUAL(h_data, d_data);
   }
 };
-VariableUnitTest<TestUnique, IntegralTypes> TestUniqueInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUnique, IntegralTypes);
 
 template <typename Vector>
 void TestUniqueCopySimple()
@@ -225,7 +225,7 @@ struct TestUniqueCopy
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestUniqueCopy, IntegralTypes> TestUniqueCopyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopy, IntegralTypes);
 
 template <typename T>
 struct TestUniqueCopyToDiscardIterator
@@ -238,19 +238,19 @@ struct TestUniqueCopyToDiscardIterator
     thrust::host_vector<T> h_unique = h_data;
     h_unique.erase(thrust::unique(h_unique.begin(), h_unique.end()), h_unique.end());
 
-    thrust::discard_iterator<> reference(h_unique.size());
+    const thrust::discard_iterator<> reference(h_unique.size());
 
-    thrust::discard_iterator<> h_result =
+    const thrust::discard_iterator<> h_result =
       thrust::unique_copy(h_data.begin(), h_data.end(), thrust::make_discard_iterator());
 
-    thrust::discard_iterator<> d_result =
+    const thrust::discard_iterator<> d_result =
       thrust::unique_copy(d_data.begin(), d_data.end(), thrust::make_discard_iterator());
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
   }
 };
-VariableUnitTest<TestUniqueCopyToDiscardIterator, IntegralTypes> TestUniqueCopyToDiscardIteratorInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCopyToDiscardIterator, IntegralTypes);
 
 template <typename Vector>
 void TestUniqueCountSimple()
@@ -259,11 +259,11 @@ void TestUniqueCountSimple()
 
   Vector data{11, 11, 12, 20, 29, 21, 21, 31, 31, 37};
 
-  int count = thrust::unique_count(data.begin(), data.end());
+  const int count = thrust::unique_count(data.begin(), data.end());
 
   ASSERT_EQUAL(count, 7);
 
-  int div_10_count = thrust::unique_count(data.begin(), data.end(), is_equal_div_10_unique<T>());
+  const int div_10_count = thrust::unique_count(data.begin(), data.end(), is_equal_div_10_unique<T>());
 
   ASSERT_EQUAL(div_10_count, 3);
 }
@@ -286,7 +286,7 @@ struct TestUniqueCount
     ASSERT_EQUAL(h_count, d_count);
   }
 };
-VariableUnitTest<TestUniqueCount, IntegralTypes> TestUniqueCountInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestUniqueCount, IntegralTypes);
 
 template <typename T>
 struct TestUniqueMemoryAccess
@@ -297,4 +297,4 @@ struct TestUniqueMemoryAccess
     thrust::unique(v.begin(), v.end());
   }
 };
-SimpleUnitTest<TestUniqueMemoryAccess, unittest::type_list<int>> TestUniqueMemoryAccessInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestUniqueMemoryAccess, unittest::type_list<int>);

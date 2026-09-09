@@ -13,7 +13,7 @@ __device__ static inline void fabric_submit();
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_submit()
+_CCCL_DEVICE_API void fabric_submit()
 {
   asm volatile("fabric.submit;" : : : "memory");
 }
@@ -26,7 +26,7 @@ __device__ static inline void fabric_submit_op_restrict_fetching();
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_submit_op_restrict_fetching()
+_CCCL_DEVICE_API void fabric_submit_op_restrict_fetching()
 {
   asm volatile("fabric.submit.op_restrict::fetching;" : : : "memory");
 }

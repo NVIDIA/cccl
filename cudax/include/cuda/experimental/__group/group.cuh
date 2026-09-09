@@ -87,9 +87,6 @@ class group
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
 
-  // todo(dabayer): Allow groups stacking and remove this.
-  static_assert(__is_this_group_v<_ParentGroup>);
-
   using _Hierarchy           = typename _ParentGroup::hierarchy_type;
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   static_assert(__group_mapping_result<_MappingResult>);
@@ -119,6 +116,12 @@ public:
       , __synchronizer_instance_{
           ::cuda::experimental::__make_synchronizer_instance(__unit, __parent, __mapping_result_, __synchronizer)}
   {}
+
+  // Groups can't be copied, moved nor assigned.
+  group(const group&)            = delete;
+  group(group&&)                 = delete;
+  group& operator=(const group&) = delete;
+  group& operator=(group&&)      = delete;
 
   // todo(dabayer): Delete copy constructor.
   // group(const group&) = delete;

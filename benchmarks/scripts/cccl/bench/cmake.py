@@ -129,7 +129,7 @@ class CMake:
         cache.push_build(bench, build)
         return build
 
-    def clean():
+    def clean(self):
         cmd = ["cmake", "--build", ".", "--target", "clean"]
         p = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         p.wait()

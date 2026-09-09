@@ -15,8 +15,9 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-TEST_TILE_FUNC void test()
+__tile__ void test()
 {
+#if _CCCL_TILE_COMPILATION()
   using pair = cuda::std::pair<tile_only_type, tile_only_type>;
   { // default construction
     pair default_constructed{};
@@ -84,6 +85,7 @@ TEST_TILE_FUNC void test()
     assert(rhs.first == 1337);
     assert(rhs.second == 42);
   }
+#endif // _CCCL_TILE_COMPILATION()
 }
 
 __tile_global__ void test_kernel()

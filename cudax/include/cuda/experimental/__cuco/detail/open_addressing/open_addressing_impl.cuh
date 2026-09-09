@@ -239,7 +239,7 @@ public:
     {
       return;
     }
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "cuco: failed to clear slot storage",
       __slots.data(),
@@ -281,7 +281,7 @@ public:
     __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
       <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
         __first, __num_keys, __stencil, __pred, __counter.data(), __container_ref);
-    _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to insert keys");
+    _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert keys");
 
     return __read_counter(__counter, __stream);
   }
@@ -317,7 +317,8 @@ public:
     if constexpr (__cg_size == 1)
     {
       __open_addressing::__insert_if_fn __op{__first, __stencil, __pred, __container_ref};
-      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to insert keys", __num_keys, __op, __stream);
+      _CCCL_TRY_RUNTIME_API(
+        CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to insert keys", __num_keys, __op, __stream);
     }
     else
     {
@@ -326,7 +327,7 @@ public:
       __open_addressing::__insert_if_n<__cg_size, detail::__default_block_size>
         <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
           __first, __num_keys, __stencil, __pred, __container_ref);
-      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to insert keys");
+      _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert keys");
     }
   }
 
@@ -372,7 +373,7 @@ public:
     if constexpr (__cg_size == 1)
     {
       __open_addressing::__contains_if_fn __op{__first, __stencil, __pred, __output_begin, __container_ref};
-      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
+      _CCCL_TRY_RUNTIME_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
     }
     else
     {
@@ -381,7 +382,7 @@ public:
       __open_addressing::__contains_if_n<__cg_size, detail::__default_block_size>
         <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
           __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to query keys");
+      _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to query keys");
     }
   }
 
@@ -412,7 +413,7 @@ public:
     __open_addressing::__find_if_n<__cg_size, detail::__default_block_size>
       <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
         __first, __num_keys, __stencil, __pred, __output_begin, __container_ref);
-    _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to query keys");
+    _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to query keys");
   }
 
   //! @brief Asynchronously finds the payloads for keys in `[first, last)`.
@@ -455,7 +456,7 @@ public:
     const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
     const auto __env       = ::cuda::std::execution::env{__stream, __memory_resource};
 
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::If,
       "cuco: failed to retrieve all elements",
       __input_begin,

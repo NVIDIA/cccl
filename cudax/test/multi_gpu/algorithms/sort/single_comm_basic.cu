@@ -188,7 +188,7 @@ MULTI_GPU_TEST("sort single-comm, all ranks empty", sort_test_util::sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<std::vector<T>> input(comms.size());
+  const std::vector<std::vector<T>> input(comms.size());
 
   check_sort_case_sections(comms, input);
 }

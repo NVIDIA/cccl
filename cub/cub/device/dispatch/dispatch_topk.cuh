@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_topk.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
@@ -42,7 +43,7 @@ namespace detail::topk
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
-  int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
+  const int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
 }
 
@@ -78,7 +79,7 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
     {
       bits = ~bits;
     }
-    int bucket = (bits >> start_bit) & mask;
+    const int bucket = (bits >> start_bit) & mask;
     return bucket;
   }
 };
@@ -448,16 +449,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! @tparam DecomposerT
 //!   Implementation detail, do not specify directly, requirements on the content of this type are subject to breaking
 //!   change.
-template <select SelectDirection,
-          typename KeyInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueInputIteratorT,
-          typename ValueOutputIteratorT,
-          typename OffsetT,
-          typename OutOffsetT,
-          typename DecomposerT           = detail::identity_decomposer_t,
-          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyInputIteratorT>>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  select SelectDirection,
+  typename KeyInputIteratorT,
+  typename KeyOutputIteratorT,
+  typename ValueInputIteratorT,
+  typename ValueOutputIteratorT,
+  typename OffsetT,
+  typename OutOffsetT,
+  typename DecomposerT = detail::identity_decomposer_t,
+  typename PolicySelector =
+    policy_selector_from_types<it_value_t<KeyInputIteratorT>, it_value_t<ValueInputIteratorT>, OffsetT, OutOffsetT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -481,22 +484,23 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-    using key_in_t                             = it_value_t<KeyInputIteratorT>;
-    using value_in_t                           = it_value_t<ValueInputIteratorT>;
-    static constexpr bool keys_only            = ::cuda::std::is_same_v<value_in_t, NullType>;
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
+                           cc.major_cap(),
+                           cc.minor_cap(),
+                           ss.str().c_str());
+                 }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    log_dispatch("DeviceTopK", cc, active_policy);
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    using key_in_t                  = it_value_t<KeyInputIteratorT>;
+    using value_in_t                = it_value_t<ValueInputIteratorT>;
+    static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;
 
     // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long
     // long
@@ -538,7 +542,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const OffsetT candidate_buffer_length =
       (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
-    constexpr int allocations_array_size            = keys_only ? 4 : 6;
+    constexpr int allocations_array_size = keys_only ? 4 : 6;
+    // NOLINTNEXTLINE(misc-const-correctness)
     size_t allocation_sizes[allocations_array_size] = {
       size_counter,
       size_histogram,
@@ -607,11 +612,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
             (long long) stream,
             items_per_thread,
             main_kernel_blocks_per_sm);
+#else // CUB_DEBUG_LOG
+    log("Invoking topk_kernel<<<%d, %d, 0, "
+        "%lld>>>(), %d items per thread, %d SM occupancy\n",
+        topk_grid_size,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread,
+        main_kernel_blocks_per_sm);
 #endif // CUB_DEBUG_LOG
 
     // Initialize address variables
     counter_t* counter = static_cast<counter_t*>(allocations[0]);
-    OffsetT* histogram = static_cast<decltype(histogram)>(allocations[1]);
+    OffsetT* histogram = static_cast<decltype(histogram)>(allocations[1]); // NOLINT(misc-const-correctness)
 
     // Pass 0: dedicated histogram-only kernel over the full input
     {
@@ -635,7 +648,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const auto histogram_kernel_max_occupancy = static_cast<unsigned int>(histogram_kernel_blocks_per_sm * num_sms);
       const auto histogram_grid_size            = (::cuda::std::min) (histogram_kernel_max_occupancy, num_tiles);
 
-      extract_bin_op extract_op(0, total_bits, decomposer);
+      const extract_bin_op extract_op(0, total_bits, decomposer);
       if (const auto error = CubDebug(
             launcher_factory(histogram_grid_size, threads_per_block, 0, stream)
               .doit(histogram_kernel,
@@ -668,8 +681,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     int pass = 1;
     for (; pass < num_passes; pass++)
     {
-      extract_bin_op extract_op(pass, total_bits, decomposer);
-      identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
+      const extract_bin_op extract_op(pass, total_bits, decomposer);
+      const identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
 
       if (const auto error = CubDebug(
             launcher_factory(topk_grid_size, threads_per_block, 0, stream)
@@ -713,7 +726,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       key_in_t,
       identify_candidates_op>;
 
-    identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
+    const identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
     int last_filter_kernel_blocks_per_sm = 0;
     if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
           last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, threads_per_block)))

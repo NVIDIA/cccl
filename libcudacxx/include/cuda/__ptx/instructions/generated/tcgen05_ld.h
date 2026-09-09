@@ -15,7 +15,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x1.b32 {%0}, [%1];" : "=r"(__out_var[0]) : "r"(__taddr) : "memory");
@@ -31,7 +31,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x1.pack::16b.b32 {%0}, [%1];" : "=r"(__out_var[0]) : "r"(__taddr) : "memory");
@@ -47,7 +47,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x2.b32 {%0, %1}, [%2];"
@@ -66,7 +66,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x2.pack::16b.b32 {%0, %1}, [%2];"
@@ -85,7 +85,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x4.b32 {%0, %1, %2, %3}, [%4];"
@@ -104,7 +104,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x4.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
@@ -123,7 +123,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -149,7 +149,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -175,7 +175,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x16.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
@@ -210,7 +210,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x64b.x16.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
@@ -245,7 +245,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -297,7 +297,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -349,7 +349,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -435,7 +435,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -521,7 +521,7 @@ __device__ static inline void tcgen05_ld_16x64b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -674,7 +674,7 @@ __device__ static inline void tcgen05_ld_16x64b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x64b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -827,7 +827,7 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x1.b32 {%0, %1}, [%2];"
@@ -846,7 +846,7 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x1.pack::16b.b32 {%0, %1}, [%2];"
@@ -865,7 +865,7 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x2.b32 {%0, %1, %2, %3}, [%4];"
@@ -884,7 +884,7 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x2.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
@@ -903,7 +903,7 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x4.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -929,7 +929,7 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x4.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -955,7 +955,7 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
@@ -990,7 +990,7 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x128b.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
@@ -1025,7 +1025,7 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1077,7 +1077,7 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1129,7 +1129,7 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1215,7 +1215,7 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1301,7 +1301,7 @@ __device__ static inline void tcgen05_ld_16x128b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1454,7 +1454,7 @@ __device__ static inline void tcgen05_ld_16x128b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x128b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1607,7 +1607,7 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x256b.x1.b32 {%0, %1, %2, %3}, [%4];"
@@ -1626,7 +1626,7 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x256b.x1.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
@@ -1645,7 +1645,7 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x256b.x2.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -1671,7 +1671,7 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x256b.x2.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -1697,7 +1697,7 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x256b.x4.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
@@ -1732,7 +1732,7 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.16x256b.x4.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
@@ -1767,7 +1767,7 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1819,7 +1819,7 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1871,7 +1871,7 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -1957,7 +1957,7 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -2043,7 +2043,7 @@ __device__ static inline void tcgen05_ld_16x256b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -2196,7 +2196,7 @@ __device__ static inline void tcgen05_ld_16x256b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_16x256b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -2349,7 +2349,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x1.b32 {%0}, [%1];" : "=r"(__out_var[0]) : "r"(__taddr) : "memory");
@@ -2365,7 +2365,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x1.pack::16b.b32 {%0}, [%1];" : "=r"(__out_var[0]) : "r"(__taddr) : "memory");
@@ -2381,7 +2381,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x2.b32 {%0, %1}, [%2];"
@@ -2400,7 +2400,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x2.pack::16b.b32 {%0, %1}, [%2];"
@@ -2419,7 +2419,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x4.b32 {%0, %1, %2, %3}, [%4];"
@@ -2438,7 +2438,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x4.pack::16b.b32 {%0, %1, %2, %3}, [%4];"
@@ -2457,7 +2457,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x8.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -2483,7 +2483,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x8.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7}, [%8];"
@@ -2509,7 +2509,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x16.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15}, "
@@ -2544,7 +2544,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("tcgen05.ld.sync.aligned.32x32b.x16.pack::16b.b32 {%0, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, "
@@ -2579,7 +2579,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -2631,7 +2631,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -2683,7 +2683,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -2769,7 +2769,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -2855,7 +2855,7 @@ __device__ static inline void tcgen05_ld_32x32b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -3008,7 +3008,7 @@ __device__ static inline void tcgen05_ld_32x32b_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_ld_32x32b_pack_16b(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm(
@@ -3162,7 +3162,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3184,7 +3184,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[1], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3205,7 +3205,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3227,7 +3227,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[2], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3248,7 +3248,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3270,7 +3270,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[4], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3291,7 +3291,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3320,7 +3320,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[8], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3348,7 +3348,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3386,7 +3386,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[16], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3423,7 +3423,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3478,7 +3478,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[32], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3532,7 +3532,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3621,7 +3621,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[64], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3710,7 +3710,7 @@ __device__ static inline void tcgen05_ld_16x32bx2(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tcgen05_ld_16x32bx2(_B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -3866,7 +3866,7 @@ __device__ static inline void tcgen05_ld_16x32bx2_pack_16b(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true, int _N32>
-_CCCL_DEVICE static inline void tcgen05_ld_16x32bx2_pack_16b(
+_CCCL_DEVICE_API void tcgen05_ld_16x32bx2_pack_16b(
   _B32 (&__out_var)[128], ::cuda::std::uint32_t __taddr, ::cuda::ptx::n32_t<_N32> __immHalfSplitoff)
 {
   static_assert(sizeof(_B32) == 4, "");
@@ -4023,7 +4023,7 @@ __device__ static inline uint32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4058,7 +4058,7 @@ __device__ static inline int32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4093,7 +4093,7 @@ __device__ static inline float tcgen05_ld_red_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4128,7 +4128,7 @@ __device__ static inline float tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4163,7 +4163,7 @@ __device__ static inline uint32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4198,7 +4198,7 @@ __device__ static inline int32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4233,7 +4233,7 @@ __device__ static inline float tcgen05_ld_red_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4268,7 +4268,7 @@ __device__ static inline float tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4303,7 +4303,7 @@ __device__ static inline uint32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t
+_CCCL_DEVICE_API ::cuda::std::uint32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4354,7 +4354,7 @@ __device__ static inline int32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4405,7 +4405,7 @@ __device__ static inline float tcgen05_ld_red_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4456,7 +4456,7 @@ __device__ static inline float tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4507,7 +4507,7 @@ __device__ static inline uint32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4576,7 +4576,7 @@ __device__ static inline int32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4645,7 +4645,7 @@ __device__ static inline float tcgen05_ld_red_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4714,7 +4714,7 @@ __device__ static inline float tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4783,7 +4783,7 @@ __device__ static inline uint32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4886,7 +4886,7 @@ __device__ static inline int32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -4989,7 +4989,7 @@ __device__ static inline float tcgen05_ld_red_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -5092,7 +5092,7 @@ __device__ static inline float tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -5195,7 +5195,7 @@ __device__ static inline uint32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -5366,7 +5366,7 @@ __device__ static inline int32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t
+_CCCL_DEVICE_API ::cuda::std::int32_t
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -5537,7 +5537,7 @@ __device__ static inline float tcgen05_ld_red_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -5708,7 +5708,7 @@ __device__ static inline float tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -5879,7 +5879,7 @@ __device__ static inline uint32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -6184,7 +6184,7 @@ __device__ static inline int32_t tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_32x32b(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::int32_t (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -6489,7 +6489,7 @@ __device__ static inline float tcgen05_ld_red_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b_abs(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -6794,7 +6794,7 @@ __device__ static inline float tcgen05_ld_red_32x32b(
 */
 #if __cccl_ptx_isa >= 880
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float
+_CCCL_DEVICE_API float
 tcgen05_ld_red_32x32b(::cuda::ptx::op_t<_Op> __op, float (&__out_var)[128], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -7100,7 +7100,7 @@ __device__ static inline uint32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::uint32_t (&__out_var)[2],
   ::cuda::std::uint32_t __taddr,
@@ -7139,7 +7139,7 @@ __device__ static inline int32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::int32_t (&__out_var)[2],
   ::cuda::std::uint32_t __taddr,
@@ -7178,7 +7178,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[2],
   ::cuda::std::uint32_t __taddr,
@@ -7217,7 +7217,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[2],
   ::cuda::std::uint32_t __taddr,
@@ -7256,7 +7256,7 @@ __device__ static inline uint32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::uint32_t (&__out_var)[4],
   ::cuda::std::uint32_t __taddr,
@@ -7295,7 +7295,7 @@ __device__ static inline int32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::int32_t (&__out_var)[4],
   ::cuda::std::uint32_t __taddr,
@@ -7334,7 +7334,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[4],
   ::cuda::std::uint32_t __taddr,
@@ -7373,7 +7373,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[4],
   ::cuda::std::uint32_t __taddr,
@@ -7412,7 +7412,7 @@ __device__ static inline uint32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::uint32_t (&__out_var)[8],
   ::cuda::std::uint32_t __taddr,
@@ -7467,7 +7467,7 @@ __device__ static inline int32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::int32_t (&__out_var)[8],
   ::cuda::std::uint32_t __taddr,
@@ -7522,7 +7522,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[8],
   ::cuda::std::uint32_t __taddr,
@@ -7577,7 +7577,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[8],
   ::cuda::std::uint32_t __taddr,
@@ -7632,7 +7632,7 @@ __device__ static inline uint32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::uint32_t (&__out_var)[16],
   ::cuda::std::uint32_t __taddr,
@@ -7705,7 +7705,7 @@ __device__ static inline int32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::int32_t (&__out_var)[16],
   ::cuda::std::uint32_t __taddr,
@@ -7778,7 +7778,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[16],
   ::cuda::std::uint32_t __taddr,
@@ -7851,7 +7851,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[16],
   ::cuda::std::uint32_t __taddr,
@@ -7924,7 +7924,7 @@ __device__ static inline uint32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::uint32_t (&__out_var)[32],
   ::cuda::std::uint32_t __taddr,
@@ -8031,7 +8031,7 @@ __device__ static inline int32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::int32_t (&__out_var)[32],
   ::cuda::std::uint32_t __taddr,
@@ -8138,7 +8138,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[32],
   ::cuda::std::uint32_t __taddr,
@@ -8245,7 +8245,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[32],
   ::cuda::std::uint32_t __taddr,
@@ -8352,7 +8352,7 @@ __device__ static inline uint32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::uint32_t (&__out_var)[64],
   ::cuda::std::uint32_t __taddr,
@@ -8527,7 +8527,7 @@ __device__ static inline int32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::int32_t (&__out_var)[64],
   ::cuda::std::uint32_t __taddr,
@@ -8702,7 +8702,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[64],
   ::cuda::std::uint32_t __taddr,
@@ -8877,7 +8877,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[64],
   ::cuda::std::uint32_t __taddr,
@@ -9052,7 +9052,7 @@ __device__ static inline uint32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::uint32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::uint32_t (&__out_var)[128],
   ::cuda::std::uint32_t __taddr,
@@ -9361,7 +9361,7 @@ __device__ static inline int32_t tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API ::cuda::std::int32_t tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   ::cuda::std::int32_t (&__out_var)[128],
   ::cuda::std::uint32_t __taddr,
@@ -9670,7 +9670,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2_abs(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2_abs(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[128],
   ::cuda::std::uint32_t __taddr,
@@ -9979,7 +9979,7 @@ __device__ static inline float tcgen05_ld_red_16x32bx2(
 */
 #if __cccl_ptx_isa >= 880
 template <int _N32, ::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_16x32bx2(
+_CCCL_DEVICE_API float tcgen05_ld_red_16x32bx2(
   ::cuda::ptx::op_t<_Op> __op,
   float (&__out_var)[128],
   ::cuda::std::uint32_t __taddr,
@@ -10288,7 +10288,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b_abs(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10324,7 +10324,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[2], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10360,7 +10360,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b_abs(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10396,7 +10396,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[4], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10432,7 +10432,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b_abs(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10488,7 +10488,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[8], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10544,7 +10544,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b_abs(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10616,7 +10616,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[1], float (&__cdata)[16], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10688,7 +10688,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b_abs(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[2], float (&__cdata)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10798,7 +10798,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[2], float (&__cdata)[32], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -10908,7 +10908,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b_abs(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b_abs(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b_abs(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[4], float (&__cdata)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");
@@ -11088,7 +11088,7 @@ __device__ static inline float tcgen05_ld_red_spcompress_32x32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_op _Op>
-_CCCL_DEVICE static inline float tcgen05_ld_red_spcompress_32x32b(
+_CCCL_DEVICE_API float tcgen05_ld_red_spcompress_32x32b(
   ::cuda::ptx::op_t<_Op> __op, ::cuda::std::uint32_t (&__mdata)[4], float (&__cdata)[64], ::cuda::std::uint32_t __taddr)
 {
   static_assert(__op == op_min || __op == op_max, "");

@@ -205,7 +205,7 @@ c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T>& d_input,
 {
   c2h::host_vector<T> input = d_input;
 
-  int num_warps = cuda::ceil_div(static_cast<int>(d_input.size()), tile_size);
+  const int num_warps = cuda::ceil_div(static_cast<int>(d_input.size()), tile_size);
   for (int warp_id = 0; warp_id < num_warps; warp_id++)
   {
     const int warp_data_begin = tile_size * warp_id;

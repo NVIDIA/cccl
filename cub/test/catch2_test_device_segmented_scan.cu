@@ -222,17 +222,17 @@ bool check_segment(const ValueT* h_output, const ValueT* h_ref, OffsetT begin_of
     }
     else if constexpr (cuda::std::is_same_v<value_t, half_t> || cuda::std::is_same_v<value_t, bfloat16_t>)
     {
-      float ref_v = h_ref[pos];
-      float act_v = h_output[pos];
+      const float ref_v = h_ref[pos];
+      const float act_v = h_output[pos];
       if (cuda::std::isfinite(ref_v) && cuda::std::isfinite(act_v))
       {
-        float diff   = (ref_v - act_v);
-        float adiff  = (diff > float{0}) ? diff : -diff;
-        float ref_av = (ref_v > float{0}) ? ref_v : -ref_v;
-        float act_av = (act_v > float{0}) ? act_v : -act_v;
+        const float diff   = (ref_v - act_v);
+        const float adiff  = (diff > float{0}) ? diff : -diff;
+        const float ref_av = (ref_v > float{0}) ? ref_v : -ref_v;
+        const float act_av = (act_v > float{0}) ? act_v : -act_v;
 
-        float eps = float{1} / float{128};
-        correct   = correct && (adiff < 3 * eps + 5 * eps * (::cuda::std::max(ref_av, act_av)));
+        const float eps = float{1} / float{128};
+        correct         = correct && (adiff < 3 * eps + 5 * eps * (::cuda::std::max(ref_av, act_av)));
       }
     }
     else

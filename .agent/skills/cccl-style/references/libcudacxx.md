@@ -4,10 +4,6 @@ Use this reference for `libcudacxx/include/**/*` and `cudax/include/**/*`.
 
 ## Naming Style
 
-All non-public symbols must be C++ reserved identifiers:
-
-- `_` for macros and template parameters, e.g. `_MY_MACRO`, `_MyParameter`.
-- `__` for all other symbols, e.g. `__my_variable`.
 - Never use reserved keywords, such as `__in`, `__out`, or `__inout` as variables, parameters, or function names.
 - Avoid single-letter template parameter names. Wrong: `_T`; correct: `_Tp`.
 
@@ -45,7 +41,6 @@ All non-public symbols must be C++ reserved identifiers:
 
 ## Comments
 
-- Use Doxygen-style `//! @brief` comments.
 - Documented functions must include `//! @brief`, `//! @param[in/out/in,out]` for every parameter, and `//! @return` for non-void functions.
 - The `@brief/@param/@return` description must accurately reflect the current functionality of the function.
 

@@ -137,7 +137,7 @@ struct stream_registry_factory_t
   CUB_RUNTIME_FUNCTION cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
-    cudaError_t error = cudaGetDevice(&device_ordinal);
+    const cudaError_t error = cudaGetDevice(&device_ordinal);
     if (cudaSuccess != error)
     {
       return error;
@@ -169,7 +169,7 @@ struct stream_registry_factory_t
   CUB_RUNTIME_FUNCTION cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
     int device_ordinal{};
-    cudaError_t error = cudaGetDevice(&device_ordinal);
+    const cudaError_t error = cudaGetDevice(&device_ordinal);
     if (cudaSuccess != error)
     {
       return error;
@@ -317,7 +317,7 @@ void launch(ActionT action, Args... args)
   using tpl_t = cuda::std::tuple<Args...>;
   using env_t = cuda::std::tuple_element_t<env_idx, tpl_t>;
   tpl_t tuple(args...);
-  env_t env = cuda::std::get<env_idx>(tuple);
+  const env_t env = cuda::std::get<env_idx>(tuple);
 
   // Environment-based API should use default stream if not specified in the environment
   cudaStream_t stream{nullptr};
@@ -354,8 +354,8 @@ void launch(ActionT action, Args... args)
   cuda::std::apply(
     [stream, action](auto... args) {
       // Make sure specified stream is used
-      stream_scope scope(stream);
-      cudaError_t error = action(args...);
+      const stream_scope scope(stream);
+      const cudaError_t error = action(args...);
       REQUIRE(cudaSuccess == error);
     },
     fixed_args);
@@ -420,7 +420,7 @@ void launch(ActionT action, Args... args)
   using tpl_t = cuda::std::tuple<Args...>;
   using env_t = cuda::std::tuple_element_t<env_idx, tpl_t>;
   tpl_t tuple(args...);
-  env_t env = cuda::std::get<env_idx>(tuple);
+  const env_t env = cuda::std::get<env_idx>(tuple);
 
   static_assert(cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>,
                 "Unit tests using env launch wrappers (declared with DECLARE_LAUNCH_WRAPPER) must pass "
@@ -482,7 +482,7 @@ void launch(ActionT action, Args... args)
   using tpl_t = cuda::std::tuple<Args...>;
   using env_t = cuda::std::tuple_element_t<env_idx, tpl_t>;
   tpl_t tuple(args...);
-  env_t env = cuda::std::get<env_idx>(tuple);
+  const env_t env = cuda::std::get<env_idx>(tuple);
 
   // Environment-based API should use default stream if not specified in the environment
   cudaStream_t stream{nullptr};
@@ -528,9 +528,9 @@ void launch(ActionT action, Args... args)
   cuda::std::apply(
     [stream, kernels, action](auto... args) {
       // Make sure specified stream and kernels are used
-      stream_scope allowed_stream(stream);
-      kernel_scope allowed_kernels(kernels);
-      cudaError_t error = action(args...);
+      const stream_scope allowed_stream(stream);
+      const kernel_scope allowed_kernels(kernels);
+      const cudaError_t error = action(args...);
       REQUIRE(cudaSuccess == error);
     },
     fixed_args);

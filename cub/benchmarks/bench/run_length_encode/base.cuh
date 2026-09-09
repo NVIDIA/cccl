@@ -52,7 +52,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       cuda::execution::tune(bench_encode_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceRunLengthEncode::Encode,
       "Encode failed",
       d_in_keys,

@@ -75,7 +75,7 @@ int main()
          nplaces,
          stats.nblocks,
          stats.nallocs,
-         100.0 * stats.accuracy());
+         100.0 * stats.accuracy);
   for (const auto& entry : stats.bytes_per_place)
   {
     printf("  %s: %.2f MB\n", entry.first.c_str(), entry.second / (1024.0 * 1024.0));
