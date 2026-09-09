@@ -1026,7 +1026,7 @@ public:
     KeyIteratorT d_output_keys,
     NumItemsT num_items,
     CompareOpT compare_op,
-   const EnvT& env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     using offset_t = detail::choose_offset_t<NumItemsT>;
@@ -1588,7 +1588,7 @@ public:
     KeyIteratorT d_output_keys,
     NumItemsT num_items,
     CompareOpT compare_op,
-   const EnvT& env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
     using offset_t = detail::choose_offset_t<NumItemsT>;
