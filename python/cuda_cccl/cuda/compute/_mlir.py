@@ -176,6 +176,10 @@ def convert_number(value, target_type, *, from_signed, to_signed):
                 return arith.cmpf(arith.CmpFPredicate.UNE, value, zero)
             if not to_signed:
                 return arith.fptoui(out=target_type, in_=value)
+            # Going to an integer, it is the target's signedness that decides,
+            # not the source's -- a float source reports itself unsigned, which
+            # would otherwise ask for an unsigned conversion here.
+            return convert(value, target_type, signed=True)
     return convert(value, target_type, signed=from_signed)
 
 
