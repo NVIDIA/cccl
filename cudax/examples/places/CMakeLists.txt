@@ -2,6 +2,7 @@ set(
   places_example_sources
   thrust_device_data_place_allocator.cu
   sharded_reduce.cu
+  sharded_stream.cu
 )
 
 cccl_get_cudatoolkit()
