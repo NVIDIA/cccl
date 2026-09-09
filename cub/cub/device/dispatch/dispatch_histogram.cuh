@@ -315,7 +315,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   [[maybe_unused]] const int privatized_storage_grid_limit = histogram_sweep_occupancy;
   bool use_cooperative                                     = false;
   [[maybe_unused]] int cooperative_smem_bytes              = 0;
-  int cooperative_cache_slots_per_channel                  = 0;
+  [[maybe_unused]] int cooperative_cache_slots_per_channel = 0;
 
 #if _CCCL_HOSTED()
   NV_IF_TARGET(
