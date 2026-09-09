@@ -233,21 +233,24 @@ namespace __detail
 {
 struct __logical_endpoint_id_range_state
 {
-  logical_endpoint_id __base_id_{0};
   ::cuda::std::uint32_t __count_{};
+  logical_endpoint_id __base_id_{0};
 
   _CCCL_HOST_API explicit __logical_endpoint_id_range_state(::cuda::std::uint32_t __count)
-      : __count_(__count)
-  {
-    if (__count_ == 0)
-    {
-      _CCCL_THROW(::std::invalid_argument, "Cannot reserve an empty logical endpoint ID range");
-    }
-    __base_id_ = logical_endpoint_id{::cuda::__driver::__logicalEndpointIdReserve(__count_)};
-  }
+      : __count_([__count] {
+        if (__count == 0)
+        {
+          _CCCL_THROW(::std::invalid_argument, "Cannot reserve an empty logical endpoint ID range");
+        }
+        return __count;
+      }())
+      , __base_id_(::cuda::__driver::__logicalEndpointIdReserve(__count_))
+  {}
 
   __logical_endpoint_id_range_state(const __logical_endpoint_id_range_state&)            = delete;
   __logical_endpoint_id_range_state& operator=(const __logical_endpoint_id_range_state&) = delete;
+  __logical_endpoint_id_range_state(__logical_endpoint_id_range_state&&)                 = delete;
+  __logical_endpoint_id_range_state& operator=(__logical_endpoint_id_range_state&&)      = delete;
 
   _CCCL_HOST_API ~__logical_endpoint_id_range_state()
   {
@@ -278,12 +281,9 @@ struct __logical_endpoint_id_range_state
 private:
   _CCCL_HOST_API void __release_reserved_ids_no_throw() noexcept
   {
-    if (__count_ != 0)
-    {
-      [[maybe_unused]] const auto __status =
-        ::cuda::__driver::__logicalEndpointIdReleaseNoThrow(__base_id_.native_handle(), __count_);
-      __count_ = 0;
-    }
+    [[maybe_unused]] const auto __status =
+      ::cuda::__driver::__logicalEndpointIdReleaseNoThrow(__base_id_.native_handle(), __count_);
+    __count_ = 0;
   }
 };
 } // namespace __detail
@@ -657,6 +657,11 @@ protected:
     __ipc_handle_type_ = static_cast<logical_endpoint_ipc_handle_type>(__prop.ipcHandleTypes);
   }
 
+  [[nodiscard]] _CCCL_HOST_API constexpr bool __is_engaged() const noexcept
+  {
+    return __owns_endpoint_;
+  }
+
 public:
   using release_type = ::cuda::std::pair<logical_endpoint_id, ::cuda::std::optional<logical_endpoint_id_range>>;
 
@@ -695,20 +700,12 @@ public:
     this->__reset_no_throw();
   }
 
-  //! @brief Checks whether this object owns a created logical endpoint.
-  //!
-  //! @return `true` if this object owns an endpoint.
-  [[nodiscard]] _CCCL_HOST_API constexpr bool has_value() const noexcept
-  {
-    return __owns_endpoint_;
-  }
-
   //! @brief Queries whether the owned endpoint is ready.
   //!
   //! @return `true` if the endpoint is ready.
   [[nodiscard]] _CCCL_HOST_API bool is_ready() const
   {
-    _CCCL_ASSERT(has_value(), "Cannot query an empty logical endpoint");
+    _CCCL_ASSERT(__is_engaged(), "Cannot query an empty logical endpoint");
     return _Ref::is_ready();
   }
 
@@ -719,14 +716,14 @@ public:
   [[nodiscard]] _CCCL_HOST_API bool
   wait_until_ready(::cuda::std::chrono::nanoseconds __timeout = ::cuda::std::chrono::nanoseconds::zero()) const
   {
-    _CCCL_ASSERT(has_value(), "Cannot query an empty logical endpoint");
+    _CCCL_ASSERT(__is_engaged(), "Cannot query an empty logical endpoint");
     return _Ref::wait_until_ready(__timeout);
   }
 
   //! @brief Requires the owned endpoint to be ready.
   _CCCL_HOST_API void require_ready() const
   {
-    _CCCL_ASSERT(has_value(), "Cannot query an empty logical endpoint");
+    _CCCL_ASSERT(__is_engaged(), "Cannot query an empty logical endpoint");
     _Ref::require_ready();
   }
 
@@ -741,7 +738,7 @@ public:
                            void* __ptr,
                            ::cuda::std::uint64_t __bytes) const
   {
-    _CCCL_ASSERT(has_value(), "Cannot bind memory to an empty logical endpoint");
+    _CCCL_ASSERT(__is_engaged(), "Cannot bind memory to an empty logical endpoint");
     if (__ptr == nullptr)
     {
       _CCCL_THROW(::std::invalid_argument, "Cannot bind a null pointer to a logical endpoint");
@@ -766,14 +763,14 @@ public:
        ::cuda::std::uint64_t __bytes,
        unsigned int __bind_flags = 0) const
   {
-    _CCCL_ASSERT(has_value(), "Cannot bind memory to an empty logical endpoint");
+    _CCCL_ASSERT(__is_engaged(), "Cannot bind memory to an empty logical endpoint");
     _Ref::bind(__device, __endpoint_offset, __handle, __handle_offset, __bytes, __bind_flags);
   }
 
   _CCCL_HOST_API void
   unbind(::cuda::device_ref __device, ::cuda::std::uint64_t __endpoint_offset, ::cuda::std::uint64_t __bytes) const
   {
-    _CCCL_ASSERT(has_value(), "Cannot unbind memory from an empty logical endpoint");
+    _CCCL_ASSERT(__is_engaged(), "Cannot unbind memory from an empty logical endpoint");
     _Ref::unbind(__device, __endpoint_offset, __bytes);
   }
 
@@ -782,20 +779,26 @@ public:
   //! @return The endpoint ID and an optional retained ID range reservation.
   [[nodiscard]] _CCCL_HOST_API release_type release() noexcept
   {
-    _CCCL_ASSERT(has_value(), "Cannot release an empty logical endpoint");
-    if (!has_value())
+    _CCCL_ASSERT(__is_engaged(), "Cannot release an empty logical endpoint");
+    if (!__is_engaged())
     {
       return {logical_endpoint_id{0}, ::cuda::std::optional<logical_endpoint_id_range>{}};
     }
 
-    __owns_endpoint_ = false;
+    const auto __id           = this->id();
+    __owns_endpoint_          = false;
+    __size_                   = 0;
+    __bind_alignment_         = __default_bind_alignment;
+    __ipc_handle_type_        = logical_endpoint_ipc_handle_type::none;
+    static_cast<_Ref&>(*this) = _Ref{logical_endpoint_id{0}};
+
     if (__range_ref_)
     {
       auto __id_range =
         ::cuda::std::optional<logical_endpoint_id_range>{logical_endpoint_id_range{::cuda::std::move(__range_ref_)}};
-      return {this->id(), ::cuda::std::move(__id_range)};
+      return {__id, ::cuda::std::move(__id_range)};
     }
-    return {this->id(), ::cuda::std::optional<logical_endpoint_id_range>{}};
+    return {__id, ::cuda::std::optional<logical_endpoint_id_range>{}};
   }
 
   //! @brief Returns the endpoint size captured at creation.

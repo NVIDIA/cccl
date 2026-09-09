@@ -205,8 +205,6 @@ C2H_CCCLRT_TEST("logical endpoint validates host-only state without driver calls
 
   cuda::unicast_logical_endpoint unicast;
   cuda::multicast_logical_endpoint multicast;
-  CHECK(!unicast.has_value());
-  CHECK(!multicast.has_value());
   CHECK(unicast.size() == 0);
   CHECK(multicast.size() == 0);
   CHECK(unicast.bind_alignment() == 0);
@@ -214,10 +212,10 @@ C2H_CCCLRT_TEST("logical endpoint validates host-only state without driver calls
 
   cuda::unicast_logical_endpoint moved_unicast{cuda::std::move(unicast)};
   cuda::multicast_logical_endpoint moved_multicast{cuda::std::move(multicast)};
-  CHECK(!unicast.has_value());
-  CHECK(!multicast.has_value());
-  CHECK(!moved_unicast.has_value());
-  CHECK(!moved_multicast.has_value());
+  CHECK(unicast.size() == 0);
+  CHECK(multicast.size() == 0);
+  CHECK(moved_unicast.size() == 0);
+  CHECK(moved_multicast.size() == 0);
 }
 
 C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range", "[logical_endpoint]")
@@ -241,19 +239,18 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with caller-owned ID range",
   CHECK(ids_move.size() == ids.size());
 
   cuda::unicast_logical_endpoint endpoint{ids, 0, spec, bytes};
-  CHECK(endpoint.has_value());
   CHECK(endpoint.id() == ids[0]);
   CHECK(endpoint.size() == bytes);
   CHECK(endpoint.bind_alignment() == limits.bind_alignment);
   REQUIRE(endpoint.wait_until_ready(logical_endpoint_test::ready_timeout));
 
   cuda::unicast_logical_endpoint moved{cuda::std::move(endpoint)};
-  CHECK(!endpoint.has_value());
-  CHECK(moved.has_value());
+  CHECK(endpoint.size() == 0);
+  CHECK(moved.size() == bytes);
   CHECK(moved.id() == ids[0]);
 
   auto released = moved.release();
-  CHECK(!moved.has_value());
+  CHECK(moved.size() == 0);
   CHECK(released.first == ids[0]);
   REQUIRE(released.second.has_value());
   CHECK(released.second->base_id() == ids.base_id());
@@ -280,12 +277,12 @@ C2H_CCCLRT_TEST("logical endpoint retains caller-owned ID range after source ran
     endpoint      = cuda::unicast_logical_endpoint{ids, 0, spec, bytes};
   }
 
-  CHECK(endpoint.has_value());
   CHECK(endpoint.id() == expected_id);
+  CHECK(endpoint.size() == bytes);
   REQUIRE(endpoint.wait_until_ready(logical_endpoint_test::ready_timeout));
 
   auto released = endpoint.release();
-  CHECK(!endpoint.has_value());
+  CHECK(endpoint.size() == 0);
   CHECK(released.first == expected_id);
   REQUIRE(released.second.has_value());
   CHECK(released.second->base_id() == expected_id);
@@ -303,12 +300,11 @@ C2H_CCCLRT_TEST("unicast logical endpoint lifecycle with internally reserved ID"
   auto bytes  = smoke_size(limits);
 
   cuda::unicast_logical_endpoint endpoint{spec, bytes};
-  CHECK(endpoint.has_value());
   CHECK(endpoint.size() == bytes);
   REQUIRE(endpoint.wait_until_ready(logical_endpoint_test::ready_timeout));
 
   auto released = endpoint.release();
-  CHECK(!endpoint.has_value());
+  CHECK(endpoint.size() == 0);
   REQUIRE(released.second.has_value());
   CHECK(released.second->size() == 1);
 
@@ -325,12 +321,12 @@ C2H_CCCLRT_TEST("unicast logical endpoint release from explicit ID has no retain
 
   cuda::logical_endpoint_id_range ids{1};
   cuda::unicast_logical_endpoint endpoint{ids[0], spec, bytes};
-  CHECK(endpoint.has_value());
   CHECK(endpoint.id() == ids[0]);
+  CHECK(endpoint.size() == bytes);
   REQUIRE(endpoint.wait_until_ready(logical_endpoint_test::ready_timeout));
 
   auto released = endpoint.release();
-  CHECK(!endpoint.has_value());
+  CHECK(endpoint.size() == 0);
   CHECK(released.first == ids[0]);
   CHECK(!released.second.has_value());
 
@@ -831,7 +827,6 @@ C2H_CCCLRT_TEST("multicast logical endpoint adds device and becomes ready", "[lo
   auto bytes  = smoke_size(limits);
 
   cuda::multicast_logical_endpoint endpoint{spec, bytes};
-  CHECK(endpoint.has_value());
   CHECK(endpoint.size() == bytes);
   endpoint.add_device(device);
   endpoint.add_device(peer_device);
@@ -870,14 +865,14 @@ C2H_CCCLRT_TEST("multicast logical endpoint release from explicit ID has no reta
 
   cuda::logical_endpoint_id_range ids{1};
   cuda::multicast_logical_endpoint endpoint{ids[0], spec, bytes};
-  CHECK(endpoint.has_value());
   CHECK(endpoint.id() == ids[0]);
+  CHECK(endpoint.size() == bytes);
   endpoint.add_device(device);
   endpoint.add_device(peer_device);
   REQUIRE(endpoint.wait_until_ready(logical_endpoint_test::ready_timeout));
 
   auto released = endpoint.release();
-  CHECK(!endpoint.has_value());
+  CHECK(endpoint.size() == 0);
   CHECK(released.first == ids[0]);
   CHECK(!released.second.has_value());
 

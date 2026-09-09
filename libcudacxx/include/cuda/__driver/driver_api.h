@@ -1216,6 +1216,11 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
 __logicalEndpointIdReleaseNoThrow(::CUlogicalEndpointId __base_le_id, ::cuuint32_t __count) noexcept
 {
+  if (__count == 0)
+  {
+    return ::cudaSuccess;
+  }
+
   static auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointIdRelease, cuLogicalEndpointIdRelease, 13, 3);
   return static_cast<::cudaError_t>(__driver_fn(__base_le_id, __count));

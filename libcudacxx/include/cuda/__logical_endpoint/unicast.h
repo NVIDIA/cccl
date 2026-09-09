@@ -153,6 +153,9 @@ class unicast_logical_endpoint
   using __base = ::cuda::__detail::__logical_endpoint_owner_base<unicast_logical_endpoint_ref,
                                                                  ::cuda::__detail::__logical_endpoint_type::__unicast>;
 
+  friend _CCCL_HOST_API constexpr unicast_logical_endpoint_ref
+  transform_launch_argument(::cuda::stream_ref, const unicast_logical_endpoint&) noexcept;
+
 public:
   //! @brief Creates an empty logical endpoint owner.
   _CCCL_HOST_API unicast_logical_endpoint() noexcept
@@ -220,7 +223,7 @@ public:
 [[nodiscard]] _CCCL_HOST_API constexpr unicast_logical_endpoint_ref
 transform_launch_argument(::cuda::stream_ref, const unicast_logical_endpoint& __endpoint) noexcept
 {
-  _CCCL_ASSERT(__endpoint.has_value(), "Cannot pass an empty logical endpoint to a kernel");
+  _CCCL_ASSERT(__endpoint.__is_engaged(), "Cannot pass an empty logical endpoint to a kernel");
   return unicast_logical_endpoint_ref{__endpoint.id()};
 }
 

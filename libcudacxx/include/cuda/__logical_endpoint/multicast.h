@@ -156,6 +156,9 @@ class multicast_logical_endpoint
     ::cuda::__detail::__logical_endpoint_owner_base<multicast_logical_endpoint_ref,
                                                     ::cuda::__detail::__logical_endpoint_type::__multicast>;
 
+  friend _CCCL_HOST_API constexpr multicast_logical_endpoint_ref
+  transform_launch_argument(::cuda::stream_ref, const multicast_logical_endpoint&) noexcept;
+
 public:
   //! @brief Creates an empty logical endpoint owner.
   _CCCL_HOST_API multicast_logical_endpoint() noexcept
@@ -220,7 +223,7 @@ public:
   //! @param[in] __device The device to add to the endpoint.
   _CCCL_HOST_API void add_device(::cuda::device_ref __device) const
   {
-    _CCCL_ASSERT(this->has_value(), "Cannot add a device to an empty logical endpoint");
+    _CCCL_ASSERT(this->__is_engaged(), "Cannot add a device to an empty logical endpoint");
     multicast_logical_endpoint_ref{this->id()}.add_device(__device);
   }
 };
@@ -232,7 +235,7 @@ public:
 [[nodiscard]] _CCCL_HOST_API constexpr multicast_logical_endpoint_ref
 transform_launch_argument(::cuda::stream_ref, const multicast_logical_endpoint& __endpoint) noexcept
 {
-  _CCCL_ASSERT(__endpoint.has_value(), "Cannot pass an empty logical endpoint to a kernel");
+  _CCCL_ASSERT(__endpoint.__is_engaged(), "Cannot pass an empty logical endpoint to a kernel");
   return multicast_logical_endpoint_ref{__endpoint.id()};
 }
 

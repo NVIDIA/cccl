@@ -179,8 +179,6 @@ bool test_empty_owning_endpoints()
   cuda::unicast_logical_endpoint unicast;
   cuda::multicast_logical_endpoint multicast;
 
-  assert(!unicast.has_value());
-  assert(!multicast.has_value());
   assert(unicast.size() == 0);
   assert(multicast.size() == 0);
   assert(unicast.bind_alignment() == 0);
@@ -188,19 +186,19 @@ bool test_empty_owning_endpoints()
 
   cuda::unicast_logical_endpoint moved_unicast{cuda::std::move(unicast)};
   cuda::multicast_logical_endpoint moved_multicast{cuda::std::move(multicast)};
-  assert(!unicast.has_value());
-  assert(!multicast.has_value());
-  assert(!moved_unicast.has_value());
-  assert(!moved_multicast.has_value());
+  assert(unicast.size() == 0);
+  assert(multicast.size() == 0);
+  assert(moved_unicast.size() == 0);
+  assert(moved_multicast.size() == 0);
 
   cuda::unicast_logical_endpoint assigned_unicast;
   cuda::multicast_logical_endpoint assigned_multicast;
   assigned_unicast   = cuda::std::move(moved_unicast);
   assigned_multicast = cuda::std::move(moved_multicast);
-  assert(!assigned_unicast.has_value());
-  assert(!assigned_multicast.has_value());
-  assert(!moved_unicast.has_value());
-  assert(!moved_multicast.has_value());
+  assert(assigned_unicast.size() == 0);
+  assert(assigned_multicast.size() == 0);
+  assert(moved_unicast.size() == 0);
+  assert(moved_multicast.size() == 0);
 
   return true;
 }

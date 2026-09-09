@@ -186,7 +186,7 @@ struct fabric_try_put_smoke_kernel_t
 {
   template <class Config>
   TEST_DEVICE_FUNC void operator()(
-    Config config,
+    const Config config,
     cuda::unicast_logical_endpoint_ref endpoint,
     cuda::std::uint64_t endpoint_offset,
     cuda::std::uint32_t* status) const
@@ -239,7 +239,7 @@ struct fabric_try_put_counted_smoke_kernel_t
 {
   template <class Config>
   TEST_DEVICE_FUNC void operator()(
-    Config config,
+    const Config config,
     cuda::unicast_logical_endpoint_ref endpoint,
     cuda::std::uint64_t endpoint_offset,
     cuda::std::uint64_t counter_offset,
@@ -294,7 +294,7 @@ struct fabric_ring_put_kernel_t
 {
   template <class Config>
   TEST_DEVICE_FUNC void operator()(
-    Config config,
+    const Config config,
     cuda::unicast_logical_endpoint_ref endpoint,
     cuda::std::uint32_t rank,
     cuda::std::uint32_t* status) const
@@ -349,7 +349,7 @@ struct fabric_ring_signal_flag_kernel_t
 {
   template <class Config>
   TEST_DEVICE_FUNC void operator()(
-    Config config,
+    const Config config,
     cuda::unicast_logical_endpoint_ref endpoint,
     cuda::std::uint64_t flag_offset,
     cuda::std::uint32_t* local_flag,
@@ -409,7 +409,7 @@ struct fabric_ring_put_counted_kernel_t
 {
   template <class Config>
   TEST_DEVICE_FUNC void operator()(
-    Config config,
+    const Config config,
     cuda::unicast_logical_endpoint_ref endpoint,
     cuda::std::uint64_t counter_offset,
     cuda::std::uint64_t expected_bytes,
@@ -479,7 +479,7 @@ struct fabric_try_put_multimem_smoke_kernel_t
 {
   template <class Config>
   TEST_DEVICE_FUNC void operator()(
-    Config config,
+    const Config config,
     cuda::multicast_logical_endpoint_ref endpoint,
     cuda::std::uint64_t endpoint_offset,
     cuda::std::uint32_t* status) const
