@@ -233,7 +233,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i;
+          int item_offset = lane_id * ItemsPerThread + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -253,7 +253,7 @@ private:
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
-          int item_offset = strip_offset + linear_tid - slice_offset;
+          int item_offset = strip_offset + linear_tid - slice_offset; // NOLINT(misc-const-correctness)
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
             if constexpr (INSERT_PADDING)
@@ -462,7 +462,7 @@ private:
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
-          int item_offset = strip_offset + linear_tid - slice_offset;
+          int item_offset = strip_offset + linear_tid - slice_offset; // NOLINT(misc-const-correctness)
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
             if constexpr (INSERT_PADDING)
@@ -481,7 +481,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i;
+          int item_offset = lane_id * ItemsPerThread + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
@@ -657,7 +657,7 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = ranks[i] - slice_offset;
+        int item_offset = ranks[i] - slice_offset; // NOLINT(misc-const-correctness)
         if (item_offset >= 0 && item_offset < WARP_TIME_SLICED_ITEMS)
         {
           if constexpr (INSERT_PADDING)
@@ -675,7 +675,7 @@ private:
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
         {
-          int item_offset = lane_id * ItemsPerThread + i;
+          int item_offset = lane_id * ItemsPerThread + i; // NOLINT(misc-const-correctness)
           if constexpr (INSERT_PADDING)
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -765,7 +765,7 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ItemsPerThread; i++)
       {
-        int item_offset = ranks[i] - slice_offset;
+        int item_offset = ranks[i] - slice_offset; // NOLINT(misc-const-correctness)
         if (item_offset >= 0 && item_offset < WARP_TIME_SLICED_ITEMS)
         {
           if constexpr (INSERT_PADDING)
@@ -787,7 +787,7 @@ private:
 
         if (slice_offset < strip_oob && slice_oob > strip_offset)
         {
-          int item_offset = strip_offset + linear_tid - slice_offset;
+          int item_offset = strip_offset + linear_tid - slice_offset; // NOLINT(misc-const-correctness)
           if (item_offset >= 0 && item_offset < TIME_SLICED_ITEMS)
           {
             if constexpr (INSERT_PADDING)
@@ -1254,7 +1254,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = ranks[i];
+      int item_offset = ranks[i]; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1270,7 +1270,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid;
+      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1341,7 +1341,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = ranks[i];
+      int item_offset = ranks[i]; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
@@ -1357,7 +1357,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; i++)
     {
-      int item_offset = i * BLOCK_THREADS + linear_tid;
+      int item_offset = i * BLOCK_THREADS + linear_tid; // NOLINT(misc-const-correctness)
       if constexpr (INSERT_PADDING)
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
