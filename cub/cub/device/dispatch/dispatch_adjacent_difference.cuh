@@ -33,6 +33,7 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_empty.h>
 
 CUB_NAMESPACE_BEGIN
@@ -351,8 +352,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   using input_t  = detail::it_value_t<InputIteratorT>;
 
   using default_policy_selector_t = policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>;
-  using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, AdjacentDifferencePolicy, default_policy_selector_t>;
+  using policy_selector_t         = ::cuda::std::decay_t<
+    ::cuda::std::execution::__query_result_or_t<TuningEnvT, AdjacentDifferencePolicy, default_policy_selector_t>>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(adjacent_difference_policy_selector<policy_selector_t>,
                 "Invalid policy_selector_t for adjacent_difference::dispatch");

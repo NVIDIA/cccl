@@ -27,6 +27,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__type_traits/decay.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
@@ -218,7 +219,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 {
   using default_policy_selector_t = policy_selector_from_types<KeyIt1, ValueIt1, KeyIt2, ValueIt2, Offset>;
   using policy_selector_t =
-    ::cuda::std::execution::__query_result_or_t<TuningEnvT, MergePolicy, default_policy_selector_t>;
+    ::cuda::std::decay_t<::cuda::std::execution::__query_result_or_t<TuningEnvT, MergePolicy, default_policy_selector_t>>;
 #if _CCCL_HAS_CONCEPTS()
   static_assert(merge_policy_selector<policy_selector_t>);
 #endif // _CCCL_HAS_CONCEPTS()
