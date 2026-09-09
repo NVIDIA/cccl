@@ -922,11 +922,11 @@ template <
   typename KeyOutputItItT,
   typename ValueInputItItT,
   typename ValueOutputItItT,
-  typename SegmentSizeParameterT,
-  typename KParameterT,
+  typename SegmentSizeArgT,
+  typename KArgT,
   typename SelectDirectionT,
-  typename NumSegmentsParameterT,
-  typename TotalNumItemsGuaranteeT,
+  typename NumSegmentsArgT,
+  typename TotalNumItemsGuaranteeArgT,
   typename TuningEnvT            = ::cuda::std::execution::env<>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 _CCCL_HOST_API cudaError_t dispatch(
@@ -936,15 +936,28 @@ _CCCL_HOST_API cudaError_t dispatch(
   KeyOutputItItT d_key_segments_out_it,
   ValueInputItItT d_value_segments_it,
   ValueOutputItItT d_value_segments_out_it,
-  SegmentSizeParameterT segment_sizes,
-  KParameterT k,
+  SegmentSizeArgT segment_sizes_arg,
+  KArgT k_arg,
   SelectDirectionT select_direction,
-  NumSegmentsParameterT num_segments,
-  [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
+  NumSegmentsArgT num_segments_arg,
+  [[maybe_unused]] TotalNumItemsGuaranteeArgT total_num_items_guarantee_arg,
   cudaStream_t stream,
   const TuningEnvT&                      = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  // Rebuild the annotated parameters from the information that survives nvcc's host re-emission (see
+  // params::normalize_param) *before* any kernel or policy-selector type is named: from here on only the normalized
+  // parameters and their types take part in a kernel's identity. Types are derived through declval rather than from
+  // the variables so they can feed the constant initializers below (GCC 7, see the select-direction note).
+  using SegmentSizeParameterT = decltype(detail::params::normalize_param(::cuda::std::declval<SegmentSizeArgT>()));
+  using KParameterT           = decltype(detail::params::normalize_param(::cuda::std::declval<KArgT>()));
+  using NumSegmentsParameterT = decltype(detail::params::normalize_param(::cuda::std::declval<NumSegmentsArgT>()));
+  using TotalNumItemsGuaranteeT =
+    decltype(detail::params::normalize_param(::cuda::std::declval<TotalNumItemsGuaranteeArgT>()));
+  const SegmentSizeParameterT segment_sizes = detail::params::normalize_param(segment_sizes_arg);
+  const KParameterT k                       = detail::params::normalize_param(k_arg);
+  const NumSegmentsParameterT num_segments  = detail::params::normalize_param(num_segments_arg);
+
   // Both arms resolve `num_segments` on the host (allocation sizing, grid extent, empty-batch guard), so it must be a
   // host-known single value; device-resident counts are future work. Defensive: the public entry checks this too, but
   // `dispatch` is also called directly (tests / benchmarks).

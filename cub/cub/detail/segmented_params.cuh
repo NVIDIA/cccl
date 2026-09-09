@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h> // cmp_greater_equal, cmp_less_equal
 #include <cuda/std/__utility/forward.h>
@@ -270,6 +271,109 @@ __get_and_clamp_param_to_nonnegative(const _Arg& __arg, _SegmentIndexT __index) 
 template <typename _ParamT>
 using bounded_offset_t =
   detail::choose_offset_for_max_t<static_cast<::cuda::std::uint64_t>(::cuda::args::__traits<_ParamT>::highest)>;
+
+// =====================================================================
+// Kernel-identity normalization of annotated parameters
+// =====================================================================
+// nvcc 12.4 to 12.6 re-emit the host translation unit with a defect: the argument of an `auto` non-type template
+// parameter is printed as the untyped initializer of the variable that first named the specialization in the TU. With
+// `constexpr int64_t n = 384;`, `cuda::args::constant<n>` reaches the host compiler as `constant<384>` and deduces
+// `int`, while the device pass deduced `long`. A kernel whose identity contains such a type then has a host stub
+// without device code and fails to launch with cudaErrorInvalidDeviceFunction. The *value* of the argument and all
+// *type* template arguments survive the re-emission intact. The overloads below rebuild every wrapper that may reach a
+// kernel or policy-selector type from that surviving information only:
+//   * a `constant`'s element type is chosen from its value (the smallest of int32_t, int64_t, uint64_t that holds it),
+//     never from the deduced type of the argument,
+//   * static bounds are re-typed with the element type of the wrapped argument, which is a type argument.
+// Both compilation passes then name the same kernel. On unaffected toolkits this only makes `constant<int64_t{384}>`
+// and `constant<384>` select the same 32-bit kernel instead of two different ones.
+
+template <auto _Value>
+using __static_value_type_t = ::cuda::std::conditional_t<
+  ::cuda::std::in_range<::cuda::std::int32_t>(_Value),
+  ::cuda::std::int32_t,
+  ::cuda::std::
+    conditional_t<::cuda::std::in_range<::cuda::std::int64_t>(_Value), ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
+
+template <class _ElementT, class _StaticBounds>
+struct __retype_static_bounds
+{
+  using type = _StaticBounds; // no_bounds
+};
+
+template <class _ElementT, auto _Lowest, auto _Highest>
+struct __retype_static_bounds<_ElementT, ::cuda::args::static_bounds<_Lowest, _Highest>>
+{
+  using type = ::cuda::args::static_bounds<static_cast<_ElementT>(_Lowest), static_cast<_ElementT>(_Highest)>;
+};
+
+template <class _ElementT, class _StaticBounds>
+using __retype_static_bounds_t = typename __retype_static_bounds<_ElementT, _StaticBounds>::type;
+
+//! @brief Plain values carry no `auto` NTTP and pass through unchanged.
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::remove_cvref_t<_Tp> normalize_param(_Tp&& __arg) noexcept
+{
+  return ::cuda::std::forward<_Tp>(__arg);
+}
+
+//! @brief Compile-time constants: integer values are re-wrapped with a value-chosen element type. Everything else
+//! (enumerators, pointers) already spells its type in any constant expression and is kept as is.
+template <auto _Value, class _Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+normalize_param([[maybe_unused]] ::cuda::args::constant<_Value, _Tp> __arg) noexcept
+{
+  if constexpr (::cuda::std::__cccl_is_integer_v<::cuda::std::remove_cv_t<decltype(_Value)>>)
+  {
+    return ::cuda::args::constant<static_cast<__static_value_type_t<_Value>>(_Value)>{};
+  }
+  else
+  {
+    return __arg;
+  }
+}
+
+template <auto _Value>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto normalize_param(::cuda::args::__constant_sequence<_Value> __arg) noexcept
+{
+  return __arg;
+}
+
+template <class _Arg, class _StaticBounds>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+normalize_param(const ::cuda::args::immediate<_Arg, _StaticBounds>& __arg) noexcept
+{
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
+  return ::cuda::args::immediate<_Arg, __bounds_t>{::cuda::args::__access::__arg(__arg)};
+}
+
+template <class _Arg, class _StaticBounds>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+normalize_param(const ::cuda::args::__immediate_sequence<_Arg, _StaticBounds>& __arg) noexcept
+{
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
+  return ::cuda::args::__immediate_sequence<_Arg, __bounds_t>{
+    ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
+}
+
+template <class _Arg, class _StaticBounds>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+normalize_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg) noexcept
+{
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
+  return ::cuda::args::deferred<_Arg, __bounds_t>{
+    ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
+}
+
+template <class _Arg, class _StaticBounds>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+normalize_param(const ::cuda::args::deferred_sequence<_Arg, _StaticBounds>& __arg) noexcept
+{
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
+  return ::cuda::args::deferred_sequence<_Arg, __bounds_t>{
+    ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
+}
 
 // =====================================================================
 // Discrete parameter support
