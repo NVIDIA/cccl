@@ -35,13 +35,13 @@ struct memory_info
 // will be limited to this number of bytes.
 inline std::size_t get_device_memory_limit()
 {
-  static const std::size_t result = get_env_as_size("C2H_DEVICE_MEMORY_LIMIT");
+  static const std::size_t result = get_env_as_integer<std::size_t>("C2H_DEVICE_MEMORY_LIMIT");
   return result;
 }
 
 inline bool get_debug_checked_allocs()
 {
-  static const bool result = get_env_as_long_long("C2H_DEBUG_CHECKED_ALLOC_FAILURES") != 0;
+  static const bool result = get_env_as_integer<long long>("C2H_DEBUG_CHECKED_ALLOC_FAILURES") != 0;
   return result;
 }
 

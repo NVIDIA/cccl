@@ -59,16 +59,19 @@ CUB_TEST("c2h::device_policy throws when requested allocations exceed free devic
   thrust::detail::return_temporary_buffer(policy, buffer.first, buffer.second);
 }
 
-CUB_TEST("c2h size-valued environment parser rejects invalid sizes", "[c2h][checked_cuda_allocator][env]", CUB_SMALL)
+CUB_TEST("c2h integral environment parser rejects invalid values", "[c2h][checked_cuda_allocator][env]", CUB_SMALL)
 {
-  REQUIRE(c2h::detail::parse_env_size(nullptr) == 0);
-  REQUIRE(c2h::detail::parse_env_size("") == 0);
-  REQUIRE(c2h::detail::parse_env_size("0") == 0);
-  REQUIRE(c2h::detail::parse_env_size("1024") == 1024);
-  REQUIRE(c2h::detail::parse_env_size("-1") == 0);
-  REQUIRE(c2h::detail::parse_env_size(" -1") == 0);
-  REQUIRE(c2h::detail::parse_env_size("1x") == 0);
-  REQUIRE(c2h::detail::parse_env_size("18446744073709551616") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>(nullptr) == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("0") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("1024") == 1024);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("-1") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>(" -1") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("1x") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("18446744073709551616") == 0);
+
+  REQUIRE(c2h::detail::parse_env_integer<long long>("-1") == -1);
+  REQUIRE(c2h::detail::parse_env_integer<long long>("9223372036854775808") == 0);
 }
 
 CUB_TEST("c2h::checked_device_memory_resource supports device buffers and rejects invalid allocations",

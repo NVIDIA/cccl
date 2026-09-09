@@ -3,109 +3,51 @@
 
 #pragma once
 
-#include <cctype>
-#include <cerrno>
+#include <cuda/std/charconv>
+#include <cuda/std/type_traits>
+
 #include <cstddef>
 #include <cstdlib>
-#include <limits>
+#include <cstring>
 
 namespace c2h::detail
 {
-[[nodiscard]] inline long long parse_env_long_long(const char* value) noexcept
+template <typename T>
+[[nodiscard]] inline T parse_env_integer(const char* value) noexcept
 {
+  static_assert(::cuda::std::is_integral_v<T>);
+
   if (value == nullptr)
   {
-    return 0;
+    return T{};
   }
 
-  char* end = nullptr;
-  errno     = 0;
-
-  const long long result = std::strtoll(value, &end, 10);
-  if (value == end || *end != '\0' || errno == ERANGE)
+  const char* const end = value + ::std::strlen(value);
+  T result{};
+  const auto conversion_result = ::cuda::std::from_chars(value, end, result);
+  if (conversion_result.ec != ::cuda::std::errc{} || conversion_result.ptr != end)
   {
-    return 0;
+    return T{};
   }
 
   return result;
 }
 
-[[nodiscard]] inline std::size_t parse_env_size(const char* value) noexcept
-{
-  if (value == nullptr)
-  {
-    return 0;
-  }
-
-  const char* first = value;
-  while (std::isspace(static_cast<unsigned char>(*first)) != 0)
-  {
-    ++first;
-  }
-  if (*first == '-')
-  {
-    return 0;
-  }
-
-  char* end = nullptr;
-  errno     = 0;
-
-  const unsigned long long result = std::strtoull(value, &end, 10);
-  if (value == end || *end != '\0' || errno == ERANGE)
-  {
-    return 0;
-  }
-
-  if constexpr (sizeof(unsigned long long) > sizeof(std::size_t))
-  {
-    if (result > static_cast<unsigned long long>((std::numeric_limits<std::size_t>::max)()))
-    {
-      return 0;
-    }
-  }
-
-  return static_cast<std::size_t>(result);
-}
-
-[[nodiscard]] inline long long get_env_as_long_long(const char* name) noexcept
+template <typename T>
+[[nodiscard]] inline T get_env_as_integer(const char* name) noexcept
 {
 #ifdef _WIN32
-  char* buf       = nullptr;
-  std::size_t len = 0;
+  char* buf         = nullptr;
+  ::std::size_t len = 0;
   if (_dupenv_s(&buf, &len, name) || !buf)
   {
-    return 0;
+    return T{};
   }
-  const long long result = parse_env_long_long(buf);
-  std::free(buf);
+  const T result = parse_env_integer<T>(buf);
+  ::std::free(buf);
   return result;
 #else
-  if (const char* const v = std::getenv(name))
-  {
-    return parse_env_long_long(v);
-  }
-  return 0;
-#endif
-}
-
-[[nodiscard]] inline std::size_t get_env_as_size(const char* name) noexcept
-{
-#ifdef _WIN32
-  char* buf       = nullptr;
-  std::size_t len = 0;
-  if (_dupenv_s(&buf, &len, name) || !buf)
-  {
-    return 0;
-  }
-  const std::size_t result = parse_env_size(buf);
-  std::free(buf);
-  return result;
-#else
-  if (const char* const v = std::getenv(name))
-  {
-    return parse_env_size(v);
-  }
-  return 0;
+  return parse_env_integer<T>(::std::getenv(name));
 #endif
 }
 } // namespace c2h::detail
