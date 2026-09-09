@@ -347,6 +347,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   TuningEnvT                             = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  using offset_t = detail::choose_offset_t<NumItemsT>;
+  using input_t  = detail::it_value_t<InputIteratorT>;
+
   using default_policy_selector_t = policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>;
   using policy_selector_t =
     ::cuda::std::execution::__query_result_or_t<TuningEnvT, AdjacentDifferencePolicy, default_policy_selector_t>;
