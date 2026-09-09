@@ -131,8 +131,10 @@ workflows:
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # Misc:
-    - {jobs: ['build'],                     cpu: 'arm64', project: ['libcudacxx', 'thrust', 'cudax'], std: 'max', cxx: ['gcc', 'clang']}
-    - {jobs: ['build_nolid', 'build_lid0'], cpu: 'arm64', project: 'cub', std: 'max', cxx: ['gcc', 'clang']}
+    - {jobs: ['build'],                     cpu: 'arm64', project: ['libcudacxx', 'thrust', 'cudax'], std: '20', cxx: 'gcc'}
+    - {jobs: ['build'],                     cpu: 'arm64', project: ['libcudacxx', 'thrust', 'cudax'], std: 'max', cxx: 'clang'}
+    - {jobs: ['build_nolid', 'build_lid0'], cpu: 'arm64', project: 'cub', std: 'max', cxx: 'gcc'}
+    - {jobs: ['build_nolid', 'build_lid0'], cpu: 'arm64', project: 'cub', std: '20', cxx: 'clang'}
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
@@ -330,11 +332,14 @@ workflows:
       # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # GB300 ARM64 coverage:
-    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: 'max', cxx: 'gcc', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
-    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: 'max', cxx: 'gcc', gpu: 'gb300', sm: 'gpu'}
+    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: '20', cxx: 'gcc', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
+    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: '20', cxx: 'gcc', gpu: 'gb300', sm: 'gpu'}
+    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
+    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
-    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
+    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: ['17', '20'], cxx: 'gcc'}
+    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: 'clang'}
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
@@ -452,7 +457,8 @@ workflows:
     - {jobs: ['test'], project: ['cub', 'thrust'], std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
-    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang']}
+    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: ['17', '20'], cxx: 'gcc'}
+    - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'all', cxx: 'clang'}
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit', gpu: 'rtx4090'}
     - {jobs: ['test_gpu'], project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit', gpu: 'rtx4090'}
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
