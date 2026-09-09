@@ -46,112 +46,11 @@ using cub::detail::warp_threads;
 using cub::detail::WarpBitonicTopKAlgorithm;
 
 /**
- * @brief Kernel to dispatch to the appropriate WarpBitonicTopK member function, for keys-only.
+ * @brief Kernel to dispatch to the appropriate array-based WarpBitonicTopK member function.
  */
-template <WarpBitonicTopKAlgorithm Algo,
+template <int MaxK,
           int LogicalWarpThreads,
-          int MaxK,
-          int ItemsPerThread,
-          int TotalWarps,
-          typename KeyT,
-          typename ActionT>
-__global__ void array_kernel(KeyT* keys_in, KeyT* keys_out, int k, int num_items, ActionT action)
-{
-  using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, cub::NullType, Algo>;
-
-  // Get linear thread and warp index
-  const int tid     = threadIdx.x;
-  const int warp_id = tid / LogicalWarpThreads;
-  const int lane    = tid % LogicalWarpThreads;
-
-  // Test case of partially finished CTA
-  if (warp_id >= TotalWarps)
-  {
-    return;
-  }
-
-  // Thread-local storage
-  KeyT keys[ItemsPerThread];
-
-  // Instantiate warp-scope algorithm
-  __shared__ typename warp_topk_t::TempStorage temp_storage[TotalWarps];
-  warp_topk_t warp_topk{temp_storage[warp_id]};
-
-  // Load data
-  for (int i = 0; i < ItemsPerThread; ++i)
-  {
-    const int idx = i * LogicalWarpThreads + lane;
-    if (idx < num_items)
-    {
-      keys[i] = keys_in[num_items * warp_id + idx];
-    }
-  }
-
-  // Run bitonic top-k
-  action(warp_topk, keys, k, num_items);
-
-  // Store data
-  for (int i = 0; i < ItemsPerThread; ++i)
-  {
-    const int idx = i * LogicalWarpThreads + lane;
-    if (idx < k)
-    {
-      keys_out[k * warp_id + idx] = keys[i];
-    }
-  }
-}
-
-template <WarpBitonicTopKAlgorithm Algo,
-          int LogicalWarpThreads,
-          int MaxK,
-          int ItemsPerThread,
-          int TotalWarps,
-          typename KeyT,
-          typename ActionT>
-__global__ void iterator_kernel(KeyT* keys_in, KeyT* keys_out, int k, int num_items, ActionT action)
-{
-  using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, cub::NullType, Algo>;
-
-  // Get linear thread and warp index
-  const int tid     = threadIdx.x;
-  const int warp_id = tid / LogicalWarpThreads;
-  const int lane    = tid % LogicalWarpThreads;
-
-  // Test case of partially finished CTA
-  if (warp_id >= TotalWarps)
-  {
-    return;
-  }
-
-  // Thread-local storage
-  KeyT keys[MaxK / LogicalWarpThreads];
-
-  // Instantiate warp-scope algorithm
-  __shared__ typename warp_topk_t::TempStorage temp_storage[TotalWarps];
-  warp_topk_t warp_topk{temp_storage[warp_id]};
-
-  // Run bitonic top-k
-  const int in_offset = num_items * warp_id;
-  action(warp_topk, keys_in + in_offset, k, num_items, keys);
-
-  // Store data
-  for (int i = 0; i < MaxK / LogicalWarpThreads; ++i)
-  {
-    const int idx = i * LogicalWarpThreads + lane;
-    if (idx < k)
-    {
-      keys_out[k * warp_id + idx] = keys[i];
-    }
-  }
-}
-
-/**
- * @brief Kernel to dispatch to the appropriate WarpBitonicTopK member function, for key-value
- * pairs.
- */
-template <WarpBitonicTopKAlgorithm Algo,
-          int LogicalWarpThreads,
-          int MaxK,
+          WarpBitonicTopKAlgorithm Algo,
           int ItemsPerThread,
           int TotalWarps,
           typename KeyT,
@@ -160,10 +59,11 @@ template <WarpBitonicTopKAlgorithm Algo,
 __global__ void
 array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_out, int k, int num_items, ActionT action)
 {
-  using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, Algo>;
+  using warp_topk_t        = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, Algo>;
+  constexpr bool keys_only = cuda::std::is_same_v<ValueT, cub::NullType>;
 
   // Get linear thread and warp index
-  const int tid     = threadIdx.x;
+  const int tid     = static_cast<int>(threadIdx.x);
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
@@ -187,13 +87,23 @@ array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_ou
     const int idx = i * LogicalWarpThreads + lane;
     if (idx < num_items)
     {
-      keys[i]   = keys_in[num_items * warp_id + idx];
-      values[i] = values_in[num_items * warp_id + idx];
+      keys[i] = keys_in[num_items * warp_id + idx];
+      if constexpr (!keys_only)
+      {
+        values[i] = values_in[num_items * warp_id + idx];
+      }
     }
   }
 
   // Run bitonic top-k
-  action(warp_topk, keys, values, k, num_items);
+  if constexpr (keys_only)
+  {
+    action(warp_topk, keys, k, num_items);
+  }
+  else
+  {
+    action(warp_topk, keys, values, k, num_items);
+  }
 
   // Store data
   for (int i = 0; i < ItemsPerThread; ++i)
@@ -201,15 +111,21 @@ array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_ou
     const int idx = i * LogicalWarpThreads + lane;
     if (idx < k)
     {
-      keys_out[k * warp_id + idx]   = keys[i];
-      values_out[k * warp_id + idx] = values[i];
+      keys_out[k * warp_id + idx] = keys[i];
+      if constexpr (!keys_only)
+      {
+        values_out[k * warp_id + idx] = values[i];
+      }
     }
   }
 }
 
-template <WarpBitonicTopKAlgorithm Algo,
+/**
+ * @brief Kernel to dispatch to the appropriate iterator-based WarpBitonicTopK member function.
+ */
+template <int MaxK,
           int LogicalWarpThreads,
-          int MaxK,
+          WarpBitonicTopKAlgorithm Algo,
           int ItemsPerThread,
           int TotalWarps,
           typename KeyT,
@@ -218,10 +134,11 @@ template <WarpBitonicTopKAlgorithm Algo,
 __global__ void iterator_kernel(
   KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_out, int k, int num_items, ActionT action)
 {
-  using warp_topk_t = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, Algo>;
+  using warp_topk_t        = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, Algo>;
+  constexpr bool keys_only = cuda::std::is_same_v<ValueT, cub::NullType>;
 
   // Get linear thread and warp index
-  const int tid     = threadIdx.x;
+  const int tid     = static_cast<int>(threadIdx.x);
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
@@ -241,7 +158,14 @@ __global__ void iterator_kernel(
 
   // Run bitonic top-k
   const int in_offset = num_items * warp_id;
-  action(warp_topk, keys_in + in_offset, values_in + in_offset, k, num_items, keys, values);
+  if constexpr (keys_only)
+  {
+    action(warp_topk, keys_in + in_offset, k, num_items, keys);
+  }
+  else
+  {
+    action(warp_topk, keys_in + in_offset, values_in + in_offset, k, num_items, keys, values);
+  }
 
   // Store data
   for (int i = 0; i < MaxK / LogicalWarpThreads; ++i)
@@ -249,8 +173,11 @@ __global__ void iterator_kernel(
     const int idx = i * LogicalWarpThreads + lane;
     if (idx < k)
     {
-      keys_out[k * warp_id + idx]   = keys[i];
-      values_out[k * warp_id + idx] = values[i];
+      keys_out[k * warp_id + idx] = keys[i];
+      if constexpr (!keys_only)
+      {
+        values_out[k * warp_id + idx] = values[i];
+      }
     }
   }
 }
@@ -265,7 +192,7 @@ __global__ void iterator_kernel(
  */
 struct topk_keys_full_t
 {
-  template <int ItemsPerThread, typename KeyT, typename WarpTopKT>
+  template <typename WarpTopKT, typename KeyT, int ItemsPerThread>
   __device__ void operator()(WarpTopKT& warp_topk, KeyT (&thread_data)[ItemsPerThread], int k, int /*num_items*/) const
   {
     warp_topk.TopK(thread_data, CustomLess{}, k);
@@ -277,7 +204,7 @@ struct topk_keys_full_t
  */
 struct topk_keys_partial_oob_t
 {
-  template <int ItemsPerThread, typename KeyT, typename WarpTopKT>
+  template <typename WarpTopKT, typename KeyT, int ItemsPerThread>
   __device__ void operator()(WarpTopKT& warp_topk, KeyT (&thread_data)[ItemsPerThread], int k, int num_items) const
   {
     warp_topk.TopK(thread_data, CustomLess{}, k, num_items, CustomLess::get_oob_default<KeyT>());
@@ -289,16 +216,19 @@ struct topk_keys_partial_oob_t
  */
 struct topk_keys_partial_t
 {
-  template <int ItemsPerThread, typename KeyT, typename WarpTopKT>
+  template <typename WarpTopKT, typename KeyT, int ItemsPerThread>
   __device__ void operator()(WarpTopKT& warp_topk, KeyT (&thread_data)[ItemsPerThread], int k, int num_items) const
   {
     warp_topk.TopK(thread_data, CustomLess{}, k, num_items);
   }
 };
 
+/**
+ * @brief Delegate wrapper for WarpBitonicTopK::TopK on keys-only via iterator
+ */
 struct topk_keys_iterator_t
 {
-  template <int MaxKPerThread, typename KeyInputIteratorT, typename KeyT, typename WarpTopKT>
+  template <typename WarpTopKT, typename KeyInputIteratorT, typename KeyT, int MaxKPerThread>
   __device__ void operator()(
     WarpTopKT& warp_topk, KeyInputIteratorT keys_in, int k, int num_items, KeyT (&keys_out)[MaxKPerThread]) const
   {
@@ -311,7 +241,7 @@ struct topk_keys_iterator_t
  */
 struct topk_pairs_full_t
 {
-  template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpTopKT>
+  template <typename WarpTopKT, typename KeyT, typename ValueT, int ItemsPerThread>
   __device__ void operator()(
     WarpTopKT& warp_topk, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int k, int /*num_items*/) const
   {
@@ -324,7 +254,7 @@ struct topk_pairs_full_t
  */
 struct topk_pairs_partial_oob_t
 {
-  template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpTopKT>
+  template <typename WarpTopKT, typename KeyT, typename ValueT, int ItemsPerThread>
   __device__ void operator()(
     WarpTopKT& warp_topk, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int k, int num_items) const
   {
@@ -337,7 +267,7 @@ struct topk_pairs_partial_oob_t
  */
 struct topk_pairs_partial_t
 {
-  template <int ItemsPerThread, typename KeyT, typename ValueT, typename WarpTopKT>
+  template <typename WarpTopKT, typename KeyT, typename ValueT, int ItemsPerThread>
   __device__ void operator()(
     WarpTopKT& warp_topk, KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int k, int num_items) const
   {
@@ -345,14 +275,17 @@ struct topk_pairs_partial_t
   }
 };
 
+/**
+ * @brief Delegate wrapper for WarpBitonicTopK::TopK on key-value pairs via iterator
+ */
 struct topk_pairs_iterator_t
 {
-  template <int MaxKPerThread,
+  template <typename WarpTopKT,
             typename KeyInputIteratorT,
             typename ValueInputIteratorT,
             typename KeyT,
             typename ValueT,
-            typename WarpTopKT>
+            int MaxKPerThread>
   __device__ void operator()(
     WarpTopKT& warp_topk,
     KeyInputIteratorT keys_in,
@@ -369,9 +302,9 @@ struct topk_pairs_iterator_t
 /**
  * @brief Dispatch helper function for keys
  */
-template <WarpBitonicTopKAlgorithm Algo,
+template <int MaxK,
           int LogicalWarpThreads,
-          int MaxK,
+          WarpBitonicTopKAlgorithm Algo,
           int ItemsPerThread,
           int TotalWarps,
           typename KeyT,
@@ -381,17 +314,17 @@ void warp_bitonic_topk(c2h::device_vector<KeyT>& in, c2h::device_vector<KeyT>& o
   const auto kernel = [] {
     if constexpr (cuda::std::is_same_v<ActionT, topk_keys_iterator_t>)
     {
-      return &iterator_kernel<Algo, LogicalWarpThreads, MaxK, ItemsPerThread, TotalWarps, KeyT, ActionT>;
+      return &iterator_kernel<MaxK, LogicalWarpThreads, Algo, ItemsPerThread, TotalWarps, KeyT, cub::NullType, ActionT>;
     }
     else
     {
-      return &array_kernel<Algo, LogicalWarpThreads, MaxK, ItemsPerThread, TotalWarps, KeyT, ActionT>;
+      return &array_kernel<MaxK, LogicalWarpThreads, Algo, ItemsPerThread, TotalWarps, KeyT, cub::NullType, ActionT>;
     }
   }();
 
   // deliberately round up block dim to architectural warp size
   kernel<<<1, ::cuda::round_up(LogicalWarpThreads * TotalWarps, warp_threads)>>>(
-    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), k, num_items, action);
+    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), nullptr, nullptr, k, num_items, action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -400,9 +333,9 @@ void warp_bitonic_topk(c2h::device_vector<KeyT>& in, c2h::device_vector<KeyT>& o
 /**
  * @brief Dispatch helper function for key-value pairs
  */
-template <WarpBitonicTopKAlgorithm Algo,
+template <int MaxK,
           int LogicalWarpThreads,
-          int MaxK,
+          WarpBitonicTopKAlgorithm Algo,
           int ItemsPerThread,
           int TotalWarps,
           typename KeyT,
@@ -420,11 +353,11 @@ void warp_bitonic_topk(
   const auto kernel = [] {
     if constexpr (cuda::std::is_same_v<ActionT, topk_pairs_iterator_t>)
     {
-      return &iterator_kernel<Algo, LogicalWarpThreads, MaxK, ItemsPerThread, TotalWarps, KeyT, ValueT, ActionT>;
+      return &iterator_kernel<MaxK, LogicalWarpThreads, Algo, ItemsPerThread, TotalWarps, KeyT, ValueT, ActionT>;
     }
     else
     {
-      return &array_kernel<Algo, LogicalWarpThreads, MaxK, ItemsPerThread, TotalWarps, KeyT, ValueT, ActionT>;
+      return &array_kernel<MaxK, LogicalWarpThreads, Algo, ItemsPerThread, TotalWarps, KeyT, ValueT, ActionT>;
     }
   }();
 
@@ -502,7 +435,7 @@ void verify_topk_result(
   }
 }
 
-// List of key types to test
+// List of key types to test, limited to representative types to avoid excessive recursion during tests instantiation
 using key_types = c2h::type_list<std::uint8_t, float>;
 
 // List of value types
@@ -517,13 +450,13 @@ using extra_items_per_thread_list = c2h::enum_type_list<int, 0, 1, 2, 3, 4>;
 template <typename TestType>
 struct params_t
 {
-  using type = typename c2h::get<0, TestType>;
+  using key_type = typename c2h::get<0, TestType>;
 
   static constexpr WarpBitonicTopKAlgorithm algo = c2h::get<1, TestType>::value;
   static constexpr int logical_warp_threads      = c2h::get<2, TestType>::value;
-  static constexpr int max_k                     = logical_warp_threads * c2h::get<3, TestType>::value;
-  static constexpr int extra_items_per_thread    = c2h::get<4, TestType>::value;
-  static constexpr int items_per_thread          = max_k / logical_warp_threads + extra_items_per_thread;
+  static constexpr int max_k_per_thread          = c2h::get<3, TestType>::value;
+  static constexpr int max_k                     = logical_warp_threads * max_k_per_thread;
+  static constexpr int items_per_thread          = max_k_per_thread + c2h::get<4, TestType>::value;
   // When the logical warp is smaller than the architectural warp, deliberately leaves the last architectural warp
   // partially occupied
   static constexpr int total_warps =
@@ -534,7 +467,7 @@ template <typename TestType, typename ActionT>
 void test_topk_keys(int k, int num_items)
 {
   using params                       = params_t<TestType>;
-  using key_type                     = typename params::type;
+  using key_type                     = typename params::key_type;
   constexpr auto algo                = params::algo;
   constexpr int logical_warp_threads = params::logical_warp_threads;
   constexpr int max_k                = params::max_k;
@@ -547,7 +480,7 @@ void test_topk_keys(int k, int num_items)
   c2h::gen(C2H_SEED(5), d_keys_in);
 
   // Run test
-  warp_bitonic_topk<algo, logical_warp_threads, max_k, items_per_thread, total_warps>(
+  warp_bitonic_topk<max_k, logical_warp_threads, algo, items_per_thread, total_warps>(
     d_keys_in, d_keys_out, k, num_items, ActionT{});
 
   // Verify results
@@ -558,7 +491,7 @@ template <typename TestType, typename ActionT>
 void test_topk_pairs(int k, int num_items)
 {
   using params                       = params_t<TestType>;
-  using key_type                     = typename params::type;
+  using key_type                     = typename params::key_type;
   using value_type                   = typename c2h::get<5, TestType>;
   constexpr auto algo                = params::algo;
   constexpr int logical_warp_threads = params::logical_warp_threads;
@@ -575,7 +508,7 @@ void test_topk_pairs(int k, int num_items)
   c2h::gen(C2H_SEED(1), d_values_in);
 
   // Run test
-  warp_bitonic_topk<algo, logical_warp_threads, max_k, items_per_thread, total_warps>(
+  warp_bitonic_topk<max_k, logical_warp_threads, algo, items_per_thread, total_warps>(
     d_keys_in, d_keys_out, d_values_in, d_values_out, k, num_items, ActionT{});
 
   // Verify results
@@ -643,7 +576,8 @@ CUB_TEST("Warp top-k iterator on keys of a partial warp-tile works",
          c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
          logical_warp_threads_list,
          max_k_per_thread_list,
-         c2h::enum_type_list<int, 0>)
+         c2h::enum_type_list<int, 0> // extra_items_per_thread is not used by iterator overload
+)
 {
   using params        = params_t<TestType>;
   constexpr int max_k = params::max_k;
@@ -718,7 +652,7 @@ CUB_TEST("Warp top-k iterator on key-value pairs of a partial warp-tile works",
          c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
          logical_warp_threads_list,
          max_k_per_thread_list,
-         c2h::enum_type_list<int, 0>, // unused
+         c2h::enum_type_list<int, 0>, // extra_items_per_thread is not used by iterator overload
          value_types)
 {
   using params        = params_t<TestType>;
@@ -742,13 +676,26 @@ CUB_TEST("Warp top-k on custom key-value pairs works",
          c2h::enum_type_list<int, 2>, // max_k
          c2h::enum_type_list<int, 1>, // extra_items_per_thread
          c2h::type_list<custom_t>, // value_types,
-         c2h::type_list<topk_pairs_partial_oob_t, topk_pairs_partial_t, topk_pairs_iterator_t>)
+         c2h::type_list<topk_pairs_full_t, topk_pairs_partial_t, topk_pairs_iterator_t>)
 {
   using params        = params_t<TestType>;
+  constexpr auto algo = params::algo;
   constexpr int max_k = params::max_k;
+  using action_t      = typename c2h::get<6, TestType>;
 
-  const int k         = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
-  const int num_items = GENERATE_COPY(k, take(5, random(k, params::items_per_thread * params::logical_warp_threads)));
+  const int k = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
+  int num_items;
+  if constexpr (cuda::std::is_same_v<action_t, topk_pairs_full_t>)
+  {
+    num_items = params::items_per_thread * params::logical_warp_threads;
+  }
+  else
+  {
+    num_items = GENERATE_COPY(k, take(5, random(k, params::items_per_thread * params::logical_warp_threads)));
+  }
 
-  test_topk_pairs<TestType, topk_pairs_partial_t>(k, num_items);
+  if constexpr (!(algo == WarpBitonicTopKAlgorithm::eager && cuda::std::is_same_v<action_t, topk_pairs_iterator_t>) )
+  {
+    test_topk_pairs<TestType, action_t>(k, num_items);
+  }
 }
