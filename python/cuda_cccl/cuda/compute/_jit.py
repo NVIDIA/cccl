@@ -14,27 +14,12 @@ import textwrap
 from types import new_class
 from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
 
-import numba
-import numba.cuda
-import numba.np.numpy_support
-import numba.types
 import numpy as np
-from numba import types
-from numba.core import cgutils
-from numba.core.datamodel import models
-from numba.core.extending import (
-    as_numba_type,
-    make_attribute_wrapper,
-    overload,
-    register_model,
-    typeof_impl,
-)
-from numba.core.typeconv import Conversion
-from numba.core.typing import signature as nb_signature
-from numba.core.typing.templates import ConcreteTemplate
-from numba.cuda.cudadecl import registry as cuda_registry
-from numba.extending import lower_builtin, lower_cast
 
+# numba-cuda-mlir backend: used for op compilation, return-type inference, the
+# gpu_struct typing/lowering machinery, and the TypeDescriptor <-> numba type
+# conversions (see ._mlir).
+from . import _mlir
 from . import types as cccl_types
 from ._bindings import Op, OpKind, TypeEnum
 from ._caching import (
@@ -50,11 +35,12 @@ except ImportError:
     USING_V2 = False
 
 from ._odr_helpers import create_stateful_op_void_ptr_wrapper
-from ._utils import sanitize_identifier
+from ._target_cc import get_target_cc
 from ._utils.protocols import (
     get_data_pointer,
     get_dtype,
-    is_contiguous,
+    get_shape,
+    is_c_contiguous,
     is_device_array,
 )
 from .op import OpAdapter
@@ -63,34 +49,39 @@ if TYPE_CHECKING:
     from .typing import DeviceArrayLike
 
 
-def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
-    """Compile a Numba device op to LLVM bitcode (.bc) bytes.
+def _sanitize_extracted_llvm_ir(text_ir: str) -> str:
+    """Make numba-cuda-mlir's LLVM IR text consumable by the HostJIT.
 
-    Used on the v2 (HostJIT) backend, which prefers LLVM bitcode over NVRTC
-    LTO-IR — the JIT linker routes "BC"-magic blobs through LLVM's native
-    bitcode linker instead of nvJitLink's LTO codegen.
-
-    Numba's public ``cuda.compile`` only emits PTX or LTO-IR. To get LLVM IR
-    with the C-ABI wrapper (the form CUB's PTX references by name), we go one
-    layer deeper to ``_compile_pyfunc_with_fixup`` with ``abi="c"`` and pull
-    the LLVM string off the code library before NVVM lowering to PTX.
+    Drops the ``target datalayout`` line so the module adopts the HostJIT
+    module's layout when linked (matches the numba-cuda v1 path and avoids a
+    layout-mismatch warning that can lead to miscompiles).
     """
-    import os
     import re
 
-    import llvmlite.binding as llvm
-    from numba.cuda.compiler import _compile_pyfunc_with_fixup
+    return re.sub(r"(?m)^target datalayout =.*\n", "", text_ir)
+
+
+def _compile_op_to_llvm_ir(wrapped_op, wrapper_sig, cc=None) -> bytes:
+    """Compile a device op to LLVM IR text via numba-cuda-mlir.
+
+    Used on the v2 (HostJIT) backend, which links LLVM IR into the CUB module
+    with LLVM's own linker instead of running it through nvJitLink's LTO
+    codegen.  The IR is handed over as text: the reader accepts either the
+    textual or the bitcode encoding, so it needs no conversion.
+
+    numba-cuda-mlir's public ``cuda.compile`` only emits PTX or LTO-IR, so the
+    IR comes from its internal MLIR -> LLVM translation (one step before
+    libnvvm; see ``_mlir.compile_to_llvm_ir``).  The C-ABI wrapper is emitted
+    under the exact symbol ``wrapped_op.__name__`` that CUB's PTX references by
+    name.
+
+    ``cc`` is the target compute capability; passing it keeps compilation from
+    having to query the current device.
+    """
+    import os
 
     target_name = wrapped_op.__name__
-    lib, _ = _compile_pyfunc_with_fixup(
-        wrapped_op,
-        wrapper_sig,
-        device=True,
-        abi="c",
-        abi_info={"abi_name": target_name},
-        lto=False,
-    )
-    text_ir = lib.get_llvm_str()
+    text_ir = _mlir.compile_to_llvm_ir(wrapped_op, wrapper_sig, target_name, cc)
 
     debug_dir = os.environ.get("CCCL_JIT_DEBUG")
     if debug_dir:
@@ -98,46 +89,12 @@ def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
         with open(os.path.join(debug_dir, f"{target_name}.raw.ll"), "w") as f:
             f.write(text_ir)
 
-    # get_llvm_str joins all modules in the library with "\n\n". Split on
-    # ModuleID markers so each chunk parses standalone, then link them.
-    parts = [p for p in re.split(r"(?m)^(?=; ModuleID = )", text_ir) if p.strip()]
-    if not parts:
-        parts = [text_ir]
-
-    # Strip Numba's `target datalayout = ...` line — llvmlite ships with an
-    # older NVVM layout (`e-p:64:64:64-...`) that doesn't match the modern
-    # CUDA layout (`e-p6:32:32-...`) emitted by hostjit's Clang. Linking
-    # modules with mismatched layouts triggers LLVM warnings and can lead to
-    # miscompiles. Removing the line lets LLVM default to the target triple's
-    # canonical layout, which agrees with Clang.
-    parts = [re.sub(r"(?m)^target datalayout =.*\n", "", p) for p in parts]
-
-    modules = []
-    for i, part in enumerate(parts):
-        try:
-            m = llvm.parse_assembly(part)
-            m.verify()
-        except Exception as exc:
-            raise RuntimeError(
-                f"Failed to parse LLVM IR module {i} for '{target_name}': {exc}"
-            ) from exc
-        modules.append(m)
-
-    main = modules[0]
-    for m in modules[1:]:
-        main.link_in(m, preserve=True)
-
+    text_ir = _sanitize_extracted_llvm_ir(text_ir)
     if debug_dir:
-        with open(os.path.join(debug_dir, f"{target_name}.merged.ll"), "w") as f:
-            f.write(str(main))
-        with open(os.path.join(debug_dir, f"{target_name}.symbols.txt"), "w") as f:
-            f.write(f"target_name={target_name}\n")
-            for fn in main.functions:
-                f.write(
-                    f"  {fn.linkage} {'decl' if fn.is_declaration else 'def '} {fn.name}\n"
-                )
+        with open(os.path.join(debug_dir, f"{target_name}.sanitized.ll"), "w") as f:
+            f.write(text_ir)
 
-    return bytes(main.as_bitcode())
+    return text_ir.encode("utf-8")
 
 
 # -----------------------------------------------------------------------------
@@ -146,14 +103,127 @@ def _compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig) -> bytes:
 
 
 # Base class for all struct types, used for struct-to-struct cast matching.
-class _StructBase(numba.types.Type):
+class _StructBase(_mlir.types.Type):
     """Base class for all CCCL GPU struct types."""
 
     _field_spec: dict  # Mapping of field names to Numba types
 
 
+def _tuple_element_types(tuple_type, count):
+    """Element types of a numba tuple type, or ``None`` when it is not a tuple."""
+    if isinstance(tuple_type, _mlir.types.UniTuple):
+        return [tuple_type.dtype] * count
+    if isinstance(tuple_type, _mlir.types.BaseTuple):
+        return list(tuple_type.types)
+    return [None] * count
+
+
+def _can_build_field(typing_context, arg_type, field_type) -> bool:
+    """Whether a constructor argument can initialize a field of ``field_type``.
+
+    Numbers are accepted whenever the field is numeric: the lowering converts
+    each argument to its field type explicitly, and a narrowing conversion
+    (int64 into an int32 field) is not an implicit numba conversion even though
+    it is intended here -- arithmetic on narrow fields promotes, so
+    ``Struct(a.x + b.x, ...)`` legitimately arrives wider than declared.  A
+    struct field additionally accepts a tuple of its own field values, or
+    another struct that the registered cast handles.
+    """
+    if arg_type == field_type:
+        return True
+
+    if getattr(field_type, "_field_spec", None) is not None:
+        # A struct field takes its own field values as a tuple, or another
+        # struct.  A tuple's length is checked when the field is packed.
+        if isinstance(arg_type, _mlir.types.BaseTuple):
+            return True
+        arg_field_spec = getattr(arg_type, "_field_spec", None)
+        if arg_field_spec is None:
+            return False
+        # The struct-to-struct cast rebuilds the value field by field, so the
+        # two layouts have to line up.  Without this the call types cleanly and
+        # then fails while lowering, with no mention of the field involved.
+        field_types = list(field_type._field_spec.values())
+        if len(arg_field_spec) != len(field_types):
+            return False
+        return all(
+            _can_build_field(typing_context, arg_field, declared_field)
+            for arg_field, declared_field in zip(arg_field_spec.values(), field_types)
+        )
+
+    if isinstance(arg_type, _mlir.types.Number) and isinstance(
+        field_type, _mlir.types.Number
+    ):
+        # A complex value cannot initialize a real field: the conversion would
+        # drop the imaginary part rather than report anything.
+        return isinstance(field_type, _mlir.types.Complex) or not isinstance(
+            arg_type, _mlir.types.Complex
+        )
+
+    return typing_context.can_convert(arg_type, field_type) is not None
+
+
+def _field_storage_mlir_type(value_mlir_ty):
+    """MLIR type a field of ``value_mlir_ty`` occupies inside the struct.
+
+    Complex values are MLIR ``complex`` scalars in SSA but are stored as a
+    literal ``{real, imag}`` LLVM struct, which is how numba-cuda-mlir addresses
+    complex in its other storage paths and the only form the LLVM dialect
+    accepts as a struct member.
+    """
+    if _mlir.is_complex_type(value_mlir_ty):
+        return _mlir.get_llvm_struct_for_complex(value_mlir_ty)
+    return value_mlir_ty
+
+
+def _load_field(builder, struct_value, field_index, field_numba_type):
+    """Extract field ``field_index``, returned in its value representation."""
+    struct_mlir_ty = _mlir.llvm.StructType(struct_value.type)
+    stored = _mlir.llvm.extractvalue(
+        res=struct_mlir_ty.body[field_index],
+        container=struct_value,
+        position=_mlir.struct_field_position(field_index),
+    )
+    value_mlir_ty = builder.get_mlir_type(field_numba_type)
+    if _mlir.is_complex_type(value_mlir_ty):
+        return _mlir.llvm_struct_to_complex(stored, value_mlir_ty)
+    return stored
+
+
+def _is_signed(numba_type):
+    """True if ``numba_type`` is a signed integer.
+
+    Floats report ``False``; only the integer conversions consult this.
+    """
+    return bool(getattr(numba_type, "signed", False))
+
+
+def _convert_field(value, source_type, target_type, target_mlir_ty):
+    """Convert ``value`` into the representation stored in a field.
+
+    numba-cuda-mlir lowers every integer -- signed or unsigned -- to a signless
+    MLIR type, so a widening conversion zero-extends unless it is told that the
+    source was signed.  Without that, storing a negative value into a wider
+    field silently turns it into a large positive one.  Converting between an
+    integer and a float needs the same information, in whichever direction
+    reads it.
+    """
+    converted = _mlir.convert_number(
+        value,
+        target_mlir_ty,
+        from_signed=_is_signed(source_type),
+        to_signed=_is_signed(target_type),
+    )
+    if _mlir.is_complex_type(target_mlir_ty):
+        return _mlir.complex_to_llvm_struct(converted)
+    return converted
+
+
 # The struct registration logic is isolated here to avoid polluting other
-# modules with Numba-specific type plumbing.
+# modules with Numba-specific type plumbing.  Why these three layers are
+# registered by hand rather than using the backend's own value-semantic
+# aggregate is explained in the developer overview, under "Struct types
+# registered by cuda.compute".
 @functools.lru_cache(maxsize=256)
 def _make_struct_type(struct_class_or_name, field_names, field_types):
     """
@@ -180,12 +250,12 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
 
     raw_field_spec = dict(zip(field_names, numba_field_types))
     assert all(
-        _is_struct_type(tp) or isinstance(tp, types.Type)
+        _is_struct_type(tp) or isinstance(tp, _mlir.types.Type)
         for tp in raw_field_spec.values()
     )
 
     field_spec = {
-        name: as_numba_type(typ) if _is_struct_type(typ) else typ
+        name: _mlir.as_numba_type(typ) if _is_struct_type(typ) else typ
         for name, typ in raw_field_spec.items()
     }
 
@@ -201,12 +271,21 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
             self._field_spec = field_spec
 
         def can_convert_from(self, typingctx, other):
-            if isinstance(other, types.UniTuple):
+            if isinstance(other, _mlir.types.UniTuple):
                 tuple_size = other.count
                 if tuple_size == len(field_types):
-                    return Conversion.safe
+                    # Every element has the same type, but it still has to
+                    # convert to each field, as the heterogeneous branch below
+                    # checks.  Claiming otherwise types a call that then has no
+                    # lowering.
+                    all_compatible = all(
+                        typingctx.can_convert(other.dtype, tgt_type) is not None
+                        for tgt_type in field_spec.values()
+                    )
+                    if all_compatible:
+                        return _mlir.Conversion.safe
 
-            elif isinstance(other, types.Tuple):
+            elif isinstance(other, _mlir.types.Tuple):
                 tuple_size = len(other.types)
                 if tuple_size == len(field_types):
                     all_compatible = all(
@@ -214,7 +293,7 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
                         for src_type, tgt_type in zip(other.types, field_spec.values())
                     )
                     if all_compatible:
-                        return Conversion.safe
+                        return _mlir.Conversion.safe
 
             # Allow conversion from another StructType with identical field layout
             elif hasattr(other, "_field_spec"):
@@ -231,99 +310,298 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
                         )
                     )
                     if all_compatible:
-                        return Conversion.safe
+                        return _mlir.Conversion.safe
 
             return None
 
     numba_type = StructType()
     numba_type.python_type = struct_class
 
-    as_numba_type.register(struct_class, numba_type)
+    _mlir.as_numba_type.register(struct_class, numba_type)
 
-    @typeof_impl.register(struct_class)
+    @_mlir.typeof_impl.register(struct_class)
     def typeof_struct(val, c):
         return numba_type  # Must return the SAME instance, not a new StructType()
 
-    @register_model(StructType)
-    class StructModel(models.StructModel):
+    # Data model: the struct lowers to an LLVM struct whose members are the MLIR
+    # value types of the fields (numba-cuda-mlir builds backend types as MLIR).
+    # Use a *literal* (structural) struct rather than new_identified: the same
+    # logical gpu_struct is registered more than once (input type, constructed
+    # value, h_init, ...), and new_identified mints a fresh uniquely-named type
+    # each call, so casts between two registrations of the same struct fail. A
+    # literal struct compares equal by body, so all registrations agree.
+    @_mlir.register_model(StructType)
+    class StructModel(_mlir.PrimitiveModel):
         def __init__(self, dmm, fe_type):
-            members = [(name, typ) for name, typ in field_spec.items()]
-            super().__init__(dmm, fe_type, members)
-
-    for field_name in field_spec:
-        make_attribute_wrapper(StructType, field_name, field_name)
+            member_mlir_types = [
+                _field_storage_mlir_type(dmm.lookup(typ).get_value_type())
+                for typ in field_spec.values()
+            ]
+            be_type = _mlir.llvm.StructType.get_literal(member_mlir_types)
+            super().__init__(dmm, fe_type, be_type)
 
     field_names_list = list(field_spec.keys())
+    field_types_list = list(field_spec.values())
 
-    # Validate that all field names are valid Python identifiers before
-    # we exec any generated code that accesses them:
-    for name in field_names_list:
-        if not name.isidentifier():
-            raise ValueError(
-                f"Struct field name {name!r} is not a valid Python identifier"
+    # Field access typing: `struct.field` resolves to the field's type.  This
+    # replaces numba-cuda's make_attribute_wrapper, which has no MLIR equivalent;
+    # the matching lowering is the lower_getattr_generic below.
+    @_mlir.typing_registry.register_attr
+    class StructAttributeTemplate(_mlir.AttributeTemplate):
+        key = StructType
+
+        def generic_resolve(self, typ, attr):
+            return typ._field_spec.get(attr)
+
+    @_mlir.lowering_registry.lower_getattr_generic(StructType)
+    def lower_struct_getattr(context, builder, target, value, attr):
+        field_index = field_names_list.index(attr)
+        struct_value = builder.load_var(value)
+        field_value = _load_field(
+            builder, struct_value, field_index, field_types_list[field_index]
+        )
+        target_mlir_ty = builder.get_mlir_type(builder.get_numba_type(target.name))
+        builder.store_var(target, _mlir.convert(field_value, target_mlir_ty))
+
+    @_mlir.typing_registry.register_global(operator.getitem)
+    class StructGetItem(_mlir.AbstractTemplate):
+        """Types ``struct[i]``; the registered builder below implements it.
+
+        A signature is given directly rather than an implementation to lower,
+        because numba-cuda-mlir resolves getitem through the builder: an
+        implementation returned here would be compiled to obtain its signature
+        and then discarded.
+        """
+
+        # Without this the index arrives unliteralled, and a constant index
+        # would take the runtime branch below and report the unified type
+        # instead of the indexed field's own.
+        prefer_literal = True
+
+        def generic(self, args, kws):
+            if kws or len(args) != 2:
+                return None
+            struct_type, index_type = args
+            if not isinstance(struct_type, StructType):
+                return None
+            if not isinstance(index_type, _mlir.types.Integer):
+                return None
+
+            if isinstance(index_type, _mlir.types.IntegerLiteral):
+                position = index_type.literal_value
+                if position is None or not 0 <= position < len(field_names_list):
+                    raise _mlir.errors.TypingError(
+                        f"index {position} is out of range for "
+                        f"{struct_class.__name__}, which has "
+                        f"{len(field_names_list)} fields"
+                    )
+                return _mlir.signature(field_types_list[position], *args)
+
+            # A runtime index reads whichever field it selects, so the result
+            # takes the type they unify to, as any value that depends on a
+            # runtime condition does.
+            unified = self.context.unify_types(*field_types_list)
+            if unified is None:
+                raise _mlir.errors.TypingError(
+                    f"{struct_class.__name__} cannot be indexed with a runtime "
+                    f"value because its field types do not unify"
+                )
+            return _mlir.signature(unified, *args)
+
+    # getitem lowering: `struct[i]` yields field i.  numba-cuda-mlir resolves
+    # getitem through a registered builder rather than by lowering the
+    # implementation the overload returns, so the work is done here.
+    def lower_struct_getitem(builder, target, args, kwargs):
+        struct_var, index = args
+        # The index arrives as a plain int (static_getitem) or as an IR Var whose
+        # numba type is an IntegerLiteral when it is a constant.
+        if isinstance(index, int):
+            field_index = index
+        else:
+            index_type = builder.get_numba_type(index.name)
+            field_index = getattr(index_type, "literal_value", None)
+
+        struct_value = builder.load_var(struct_var)
+        target_type = builder.get_numba_type(target.name)
+        target_mlir_ty = builder.get_mlir_type(target_type)
+
+        def field_as_target(position):
+            """Field ``position`` converted to the result's type."""
+            value = _load_field(
+                builder, struct_value, position, field_types_list[position]
+            )
+            return _mlir.convert_number(
+                value,
+                target_mlir_ty,
+                from_signed=_is_signed(field_types_list[position]),
+                to_signed=_is_signed(target_type),
             )
 
-    @overload(operator.getitem)
-    def struct_getitem(struct_val, idx):
-        if not isinstance(struct_val, StructType):
+        if field_index is not None:
+            # Reported here rather than only from the overload: a constant index
+            # the overload rejected falls back to its non-literal signature,
+            # which cannot see the value, so this is where it surfaces.
+            if not 0 <= field_index < len(field_names_list):
+                raise _mlir.errors.TypingError(
+                    f"index {field_index} is out of range for "
+                    f"{struct_class.__name__}, which has "
+                    f"{len(field_names_list)} fields"
+                )
+            builder.store_var(target, field_as_target(field_index))
             return
 
-        if isinstance(idx, (types.IntegerLiteral)):
-            idx_val = getattr(idx, "literal_value", getattr(idx, "value", None))
-
-            if idx_val is None or not (0 <= idx_val < len(field_names_list)):
-
-                def error_impl(struct_val, idx):
-                    raise IndexError(
-                        f"Index out of range for struct with {len(field_names_list)} fields"
-                    )
-
-                return error_impl
-
-            field_name = field_names_list[idx_val]
-            exec(
-                f"def impl(struct_val, idx): return struct_val.{field_name}",
-                namespace := {},
+        # A runtime index: select among the fields.  Chained from the last field
+        # back, so it also stands in for an out-of-range index, which the fields
+        # cannot answer and which nothing here can report from device code.
+        index_value = builder.load_var(index)
+        selected = field_as_target(len(field_names_list) - 1)
+        for position in reversed(range(len(field_names_list) - 1)):
+            matches = _mlir.arith.cmpi(
+                _mlir.arith.CmpIPredicate.eq,
+                index_value,
+                _mlir.arith.constant(index_value.type, position),
             )
-            return namespace["impl"]
+            selected = _mlir.arith.select(matches, field_as_target(position), selected)
+        builder.store_var(target, selected)
 
-        conditions = "\n".join(
-            f"    {'if' if i == 0 else 'elif'} idx == {i}: return struct_val.{name}"
-            for i, name in enumerate(field_names_list)
-        )
-        exec(
-            f"def impl(struct_val, idx):\n{conditions}\n    else: raise IndexError('Index out of range')",
-            namespace := {},
-        )
-        return namespace["impl"]
+    _mlir.lowering_registry.lower(operator.getitem, StructType, _mlir.types.Integer)(
+        lower_struct_getitem
+    )
 
-    @cuda_registry.register
-    class StructConstructor(ConcreteTemplate):
+    # Constructor typing: StructClass(field0, field1, ...) -> struct.
+    # Use an AbstractTemplate (rather than a ConcreteTemplate keyed on the exact
+    # field types) so a call whose argument types merely *convert* to the field
+    # types still matches -- numba-cuda-mlir promotes e.g. int32 + int32 to
+    # int64, so `Struct(a.x + b.x, ...)` arrives with wider arg types.  The
+    # lowering converts each argument to its field type.
+    _struct_field_types = list(field_spec.values())
+
+    class StructConstructor(_mlir.AbstractTemplate):
         key = struct_class
-        cases = [nb_signature(numba_type, *list(field_spec.values()))]
 
-    cuda_registry.register_global(struct_class, numba.types.Function(StructConstructor))
+        def generic(self, args, kws):
+            if kws or len(args) != len(_struct_field_types):
+                return None
+            for position, (arg, field) in enumerate(zip(args, _struct_field_types)):
+                if not _can_build_field(self.context, arg, field):
+                    raise _mlir.errors.TypingError(
+                        f"cannot initialize field {field_names_list[position]!r} "
+                        f"of {struct_class.__name__} (declared {field}) from {arg}"
+                    )
+            return _mlir.signature(numba_type, *args)
 
-    def struct_constructor(context, builder, sig, args):
-        ty = sig.return_type
-        retval = cgutils.create_struct_proxy(ty)(context, builder)
-        for field_name, val in zip(field_spec.keys(), args):
-            setattr(retval, field_name, val)
-        return retval._getvalue()
+    _mlir.typing_registry.register_global(
+        struct_class, _mlir.types.Function(StructConstructor)
+    )
 
-    lower_builtin(struct_class, *list(field_spec.values()))(struct_constructor)
+    def _pack_fields(builder, struct_mlir_ty, field_mlir_values):
+        """Build an LLVM struct value from per-field MLIR values."""
+        result = _mlir.llvm.UndefOp(struct_mlir_ty)
+        for i, field_value in enumerate(field_mlir_values):
+            result = _mlir.llvm.insertvalue(
+                container=result,
+                value=field_value,
+                position=_mlir.struct_field_position(i),
+            )
+        return result
 
-    @lower_cast(types.BaseTuple, StructType)
+    def _coerce_to_field(builder, value, source_type, field_numba_type):
+        """Coerce a constructor argument value to its declared field type.
+
+        Scalars are converted directly.  A struct field may be supplied as a
+        tuple of its own field values (tuple-construction syntax, e.g.
+        ``Outer(x, (a, b))``); numba-cuda-mlir represents such a tuple as a
+        Python sequence of MLIR values, which we pack into the field's struct
+        (recursively, so nested tuple-construction works).
+        """
+        field_mlir_ty = builder.get_mlir_type(field_numba_type)
+        if isinstance(value, (tuple, list)):
+            nested_field_spec = getattr(field_numba_type, "_field_spec", None)
+            if nested_field_spec is None:
+                raise ValueError(
+                    f"Cannot initialize a {field_numba_type} field of "
+                    f"{struct_class.__name__} from a tuple; only a nested struct "
+                    f"field accepts tuple construction"
+                )
+            sub_field_types = list(nested_field_spec.values())
+            if len(value) != len(sub_field_types):
+                raise ValueError(
+                    f"Cannot initialize the {field_numba_type} field of "
+                    f"{struct_class.__name__} from a tuple of size {len(value)}; "
+                    f"it has {len(sub_field_types)} fields"
+                )
+            sub_source_types = _tuple_element_types(source_type, len(value))
+            sub_values = [
+                _coerce_to_field(builder, v, s, t)
+                for v, s, t in zip(value, sub_source_types, sub_field_types)
+            ]
+            return _pack_fields(
+                builder, _mlir.llvm.StructType(field_mlir_ty), sub_values
+            )
+        source_field_spec = getattr(source_type, "_field_spec", None)
+        nested_field_spec = getattr(field_numba_type, "_field_spec", None)
+        if source_field_spec is not None and nested_field_spec is not None:
+            # A struct field supplied as another struct.  Rebuild it field by
+            # field, the way the struct-to-struct cast does: the two layouts
+            # need not be identical (a narrower field converts to a wider one),
+            # and converting the aggregate as a whole has no lowering.
+            source_field_types = list(source_field_spec.values())
+            nested_field_types = list(nested_field_spec.values())
+            sub_values = [
+                _coerce_to_field(
+                    builder,
+                    _load_field(builder, value, i, source_field_types[i]),
+                    source_field_types[i],
+                    nested_field_types[i],
+                )
+                for i in range(len(nested_field_types))
+            ]
+            return _pack_fields(
+                builder, _mlir.llvm.StructType(field_mlir_ty), sub_values
+            )
+        return _convert_field(value, source_type, field_numba_type, field_mlir_ty)
+
+    # Constructor lowering: coerce each argument to its field type and pack into
+    # the LLVM struct (replaces cgutils.create_struct_proxy).
+    def struct_constructor(builder, target, args, kwargs):
+        struct_mlir_ty = _mlir.llvm.StructType(
+            builder.get_mlir_type(builder.get_numba_type(target.name))
+        )
+        field_values = [
+            _coerce_to_field(
+                builder,
+                builder.load_var(arg),
+                builder.get_numba_type(arg.name),
+                field_type,
+            )
+            for arg, field_type in zip(args, field_spec.values())
+        ]
+        builder.store_var(target, _pack_fields(builder, struct_mlir_ty, field_values))
+
+    # Register the constructor lowering as a catch-all on the struct class
+    # (variadic, any argument types) so it matches calls whose argument types
+    # were promoted (e.g. `Struct(a.x + b.x, ...)` arrives as int64 even though
+    # the field is int32).  The body converts each argument to its declared
+    # field type.  Registering for the exact field types (or for no arguments)
+    # would miss those promoted calls and fail with
+    # "NotImplemented lowering call to <struct>".
+    _mlir.lowering_registry.lower(struct_class, _mlir.types.VarArg(_mlir.types.Any))(
+        struct_constructor
+    )
+
+    # NOTE: the tuple->struct and struct->struct cast lowerings below mirror the
+    # numba-cuda implementation translated to MLIR.  numba-cuda-mlir routes
+    # aggregate-unification casts differently than numba-cuda, so these are the
+    # part of the migration most in need of validation against the struct test
+    # suite.
+    @_mlir.lower_cast(_mlir.types.BaseTuple, StructType)
     def tuple_to_struct_cast(context, builder, fromty, toty, val):
-        if isinstance(fromty, types.UniTuple):
+        if isinstance(fromty, _mlir.types.UniTuple):
             tuple_size = fromty.count
             element_types = [fromty.dtype] * tuple_size
-        elif isinstance(fromty, types.Tuple):
+        else:
             tuple_size = len(fromty.types)
             element_types = list(fromty.types)
-        else:
-            tuple_size = len(field_spec)
-            element_types = list(field_spec.values())
 
         if tuple_size != len(field_spec):
             raise ValueError(
@@ -331,76 +609,57 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
                 f"with {len(field_types)} fields"
             )
 
-        retval = cgutils.create_struct_proxy(toty)(context, builder)
-
-        for i, (field_name, target_type) in enumerate(field_spec.items()):
-            element = builder.extract_value(val, i)
-
-            source_type = element_types[i]
-            if source_type != target_type:
-                element = context.cast(builder, element, source_type, target_type)
-
-            setattr(retval, field_name, element)
-
-        return retval._getvalue()
-
-    @lower_cast(types.Tuple, StructType)
-    @lower_cast(types.UniTuple, StructType)
-    def cast_tuple_to_struct(context, builder, fromty, toty, val):
-        if isinstance(fromty, types.UniTuple):
-            if fromty.count != len(field_spec):
-                return None
-            tuple_types = [fromty.dtype] * fromty.count
+        # A numba-cuda-mlir tuple value is a Python sequence of MLIR values when
+        # not yet concretized; fall back to extractvalue for aggregate values.
+        if isinstance(val, (tuple, list)):
+            elements = list(val)
         else:
-            if len(fromty.types) != len(field_spec):
-                return None
-            tuple_types = list(fromty.types)
+            elements = [
+                _mlir.llvm.extractvalue(
+                    res=_field_storage_mlir_type(
+                        builder.get_mlir_type(element_types[i])
+                    ),
+                    container=val,
+                    position=_mlir.struct_field_position(i),
+                )
+                for i in range(tuple_size)
+            ]
 
-        struct_val = cgutils.create_struct_proxy(toty)(context, builder)
-        for i, (field_name, field_type) in enumerate(field_spec.items()):
-            elem = builder.extract_value(val, i)
-            elem = context.cast(builder, elem, tuple_types[i], field_type)
-            setattr(struct_val, field_name, elem)
+        struct_mlir_ty = _mlir.llvm.StructType(builder.get_mlir_type(toty))
+        field_values = [
+            _convert_field(
+                elements[i],
+                element_types[i],
+                field_type,
+                builder.get_mlir_type(field_type),
+            )
+            for i, field_type in enumerate(field_spec.values())
+        ]
+        return _pack_fields(builder, struct_mlir_ty, field_values)
 
-        return struct_val._getvalue()
-
-    @lower_cast(_StructBase, StructType)
+    @_mlir.lower_cast(_StructBase, StructType)
     def cast_struct_to_struct(context, builder, fromty, toty, val):
         """Cast from one CCCL struct type to another with identical layout."""
-        # Get field specs from both types
-        from_field_spec = fromty._field_spec
-        to_field_spec = toty._field_spec
+        from_field_types = list(fromty._field_spec.values())
+        to_field_types = list(toty._field_spec.values())
 
-        if len(from_field_spec) != len(to_field_spec):
+        if len(from_field_types) != len(to_field_types):
             return None
 
-        from_field_types = list(from_field_spec.values())
-        from_field_names = list(from_field_spec.keys())
-        to_field_types = list(to_field_spec.values())
-        to_field_names = list(to_field_spec.keys())
+        struct_mlir_ty = _mlir.llvm.StructType(builder.get_mlir_type(toty))
+        field_values = []
+        for i, (from_type, to_type) in enumerate(zip(from_field_types, to_field_types)):
+            elem = _load_field(builder, val, i, from_type)
+            field_values.append(
+                _convert_field(elem, from_type, to_type, builder.get_mlir_type(to_type))
+            )
+        return _pack_fields(builder, struct_mlir_ty, field_values)
 
-        # Create struct proxy for source value
-        from_struct = cgutils.create_struct_proxy(fromty)(context, builder, value=val)
-
-        # Create struct proxy for target value
-        to_struct = cgutils.create_struct_proxy(toty)(context, builder)
-
-        # Copy and cast each field by position
-        for i, (to_name, to_type) in enumerate(zip(to_field_names, to_field_types)):
-            from_name = from_field_names[i]
-            from_type = from_field_types[i]
-
-            # Get the field value from source struct
-            elem = getattr(from_struct, from_name)
-
-            # Cast if types differ
-            if from_type != to_type:
-                elem = context.cast(builder, elem, from_type, to_type)
-
-            # Set the field in target struct
-            setattr(to_struct, to_name, elem)
-
-        return to_struct._getvalue()
+    # The typing/target contexts are built and frozen on the first compile, so
+    # this newly-registered struct type is invisible to any later compilation
+    # until we re-read the registries into them.  (lru_cache keeps this to one
+    # refresh per distinct struct type.)
+    _mlir.refresh_contexts()
 
     return struct_class
 
@@ -415,7 +674,7 @@ def _register_struct_with_numba(struct_class):
         tuple(field_spec.values()),
     )
 
-    return as_numba_type(registered_class)
+    return _mlir.as_numba_type(registered_class)
 
 
 # -----------------------------------------------------------------------------
@@ -431,17 +690,17 @@ def type_descriptor_to_numba(td):
     Handles:
     - PointerTypeDescriptor: creates CPointer to the pointee's numba type
     - StructTypeDescriptor: registers a struct class for the layout
-    - POD TypeDescriptor: uses numba.from_dtype
+    - POD TypeDescriptor: uses numba-cuda-mlir's from_dtype
     - Numba types: pass through
     """
 
-    # Pass through if already a Numba type
-    if isinstance(td, numba.types.Type):
+    # Pass through if already a numba-cuda-mlir type
+    if isinstance(td, _mlir.types.Type):
         return td
 
     # Handle PointerTypeDescriptor (must check before TypeDescriptor since it's a subclass)
     if isinstance(td, cccl_types.PointerTypeDescriptor):
-        return types.CPointer(type_descriptor_to_numba(td.pointee))
+        return _mlir.types.CPointer(type_descriptor_to_numba(td.pointee))
 
     # Handle TypeDescriptor (includes StructTypeDescriptor)
     if isinstance(td, cccl_types.TypeDescriptor):
@@ -467,8 +726,8 @@ def _convert_type_descriptor_to_numba(td):
         struct_class._type_descriptor = _get_struct_type_descriptor(struct_class)
         struct_class.dtype = _get_struct_record_dtype(struct_class)
         try:
-            return as_numba_type(struct_class)
-        except numba.core.errors.NumbaError:
+            return _mlir.as_numba_type(struct_class)
+        except _mlir.errors.NumbaError:
             return _register_struct_with_numba(struct_class)
 
     # Numba has no bfloat16 support; fail with a clear message rather than a
@@ -481,7 +740,7 @@ def _convert_type_descriptor_to_numba(td):
         )
 
     # For POD types
-    return numba.from_dtype(td.dtype)
+    return _mlir.from_numpy_dtype(td.dtype)
 
 
 def _is_gpu_struct_class(obj):
@@ -513,8 +772,8 @@ def _ensure_function_structs_registered(py_func):
 
     def _register_if_needed(struct_class):
         try:
-            return as_numba_type(struct_class)
-        except numba.core.errors.NumbaError:
+            return _mlir.as_numba_type(struct_class)
+        except _mlir.errors.NumbaError:
             return _register_struct_with_numba(struct_class)
 
     for value in _iter_function_objects(py_func):
@@ -535,7 +794,7 @@ def _numba_type_to_type_descriptor(numba_type):
         return numba_type.python_type._type_descriptor
 
     # POD type - convert via numpy dtype
-    dtype = numba.np.numpy_support.as_dtype(numba_type)
+    dtype = _mlir.as_numpy_dtype(numba_type)
     return cccl_types.from_numpy_dtype(dtype)
 
 
@@ -565,17 +824,32 @@ def _infer_return_type_impl(py_func, input_types):
     # Ensure any gpu_struct classes referenced in the function are registered
     _ensure_function_structs_registered(py_func)
 
-    # Compile to infer return type
-    from ._utils import sanitize_identifier
-
-    sanitized_name = sanitize_identifier(py_func.__name__)
-    unique_suffix = hex(id(py_func))[2:]
-    abi_name = f"{sanitized_name}_{unique_suffix}"
+    # The return type follows from typing alone, so this stops before code
+    # generation; it needs no target arch and no device.
     input_numba_types = tuple(type_descriptor_to_numba(t) for t in input_types)
-    _, return_type = numba.cuda.compile(
-        py_func, input_numba_types, abi_info={"abi_name": abi_name}
-    )
+    return_type = _mlir.infer_return_type(py_func, input_numba_types)
     return _numba_type_to_type_descriptor(return_type)
+
+
+def _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, cc):
+    """Compile a generated wrapper to the device code the backend links.
+
+    The v2 (HostJIT) backend links LLVM IR; v1 (NVRTC) links LTO-IR.
+    """
+    from ._device_code import DeviceCode
+
+    if USING_V2:
+        return DeviceCode(
+            op_bytes=_compile_op_to_llvm_ir(wrapped_op, wrapper_sig, cc),
+            kind="llvm_ir",
+        )
+
+    return DeviceCode(
+        op_bytes=_mlir.compile_to_ltoir(
+            wrapped_op, wrapper_sig, wrapped_op.__name__, cc
+        ),
+        kind="ltoir",
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -591,10 +865,10 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
         cachable_op: CachableFunction wrapper around the operator
         input_types_tuple: Tuple of input TypeDescriptors
         output_type: Output TypeDescriptor
-        cc: Target compute capability ``(major, minor)`` for the LTO-IR, or None
-            to use Numba's configured default PTX compute capability
-            (``config.CUDA_DEFAULT_PTX_CC``). Part of the cache key so the same
-            operator compiled for different arches does not collide.
+        cc: Target compute capability ``(major, minor)`` for the device code, or
+            None to target the current device (which requires a GPU to be
+            present). Part of the cache key so the same operator compiled for
+            different arches does not collide.
     """
     from ._bindings import Op, OpKind
     from ._odr_helpers import create_op_void_ptr_wrapper
@@ -618,18 +892,7 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
     sig = numba_output_type(*numba_input_types)
     wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
 
-    from ._device_code import DeviceCode
-
-    if USING_V2:
-        code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
-            kind="llvm_ir",
-        )
-    else:
-        ltoir, _ = numba.cuda.compile(
-            wrapped_op, sig=wrapper_sig, output="ltoir", cc=cc
-        )
-        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
+    code = _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, cc)
 
     return Op(
         operator_type=OpKind.STATELESS,
@@ -650,8 +913,6 @@ def compile_op(op, input_types, output_type=None):
     from ._caching import CachableFunction
 
     cachable_op = CachableFunction(op)
-    from ._target_cc import get_target_cc
-
     return _compile_op_impl(
         cachable_op, tuple(input_types), output_type, get_target_cc()
     )
@@ -905,36 +1166,31 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Ensure any gpu_struct classes referenced in the op are registered
     _ensure_function_structs_registered(op)
 
-    # Validate all state arrays are contiguous
-    for i, state_array in enumerate(state_arrays):
-        if not is_contiguous(state_array):
-            raise ValueError(f"state array {i} must be contiguous")
-
-    # Convert input types to Numba types
+    # Convert input types to numba-cuda-mlir types
     numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
 
-    # Create Numba array types for state arrays
+    # State arrays are passed to the (transformed) op as real device Arrays: the
+    # wrapper rebuilds each packed pointer with carray so the op body can use
+    # array operations (state[i], len, .shape, cuda.atomic).  The array shape is
+    # baked into the wrapper, so it is also part of the op cache key (see
+    # _JitOpState.get_cache_key).  See _odr_helpers.create_stateful_op_void_ptr_wrapper.
+    state_dtypes = [_mlir.from_numpy_dtype(get_dtype(s)) for s in state_arrays]
+    state_shapes = [tuple(get_shape(s)) for s in state_arrays]
     state_array_types = [
-        numba.types.Array(numba.from_dtype(get_dtype(s)), 1, "A") for s in state_arrays
+        _mlir.types.Array(dt, len(shape), "C")
+        for dt, shape in zip(state_dtypes, state_shapes)
     ]
 
     # Infer output type if needed
     if output_type is None:
-        # Compile with Numba to infer return type
-        # The transformed function expects (state_arrays..., regular_args...)
-        all_numba_input_types = tuple(state_array_types) + numba_input_types
-        sanitized_name = sanitize_identifier(op.__name__)
-        unique_suffix = hex(id(op))[2:]
-        abi_name = f"{sanitized_name}_{unique_suffix}"
-        _, return_type = numba.cuda.compile(
-            op, all_numba_input_types, abi_info={"abi_name": abi_name}
-        )
-        # Convert return type to TypeDescriptor
-        output_type = cccl_types.from_numpy_dtype(
-            numba.np.numpy_support.as_dtype(return_type)
+        # The return type follows from typing alone, as on the stateless path:
+        # inferring it needs no code generation, no target arch and no device.
+        # The transformed function expects (state_arrays..., regular_args...).
+        output_type = _numba_type_to_type_descriptor(
+            _mlir.infer_return_type(op, tuple(state_array_types) + numba_input_types)
         )
 
-    # Convert output type to Numba type
+    # Convert output type to numba-cuda-mlir type
     numba_output_type = type_descriptor_to_numba(output_type)
 
     # Build full signature: output_type(state_arrays..., regular_args...)
@@ -943,40 +1199,15 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Get state pointers - pointers to the device array data
     state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
 
-    # Get shape and itemsize from each state array
-    state_info = []
-    for state_array in state_arrays:
-        state_info.append(
-            {
-                "shape": len(state_array),
-                "itemsize": get_dtype(state_array).itemsize,
-                "strides": get_dtype(state_array).itemsize,
-            }
-        )
-
     # All pointers have the same alignment, use pointer-sized int alignment
     state_alignment = np.dtype(np.intp).alignment
 
-    # Create the stateful wrapper (constructs arrays from pointers)
+    # Create the stateful wrapper (unpacks the packed state pointers).
     wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(
-        op, sig, state_array_types, state_info
+        op, sig, state_dtypes, state_shapes
     )
 
-    # Compile the wrapper — LLVM bitcode for v2 (HostJIT), LTO-IR for v1 (NVRTC).
-    from ._device_code import DeviceCode
-
-    if USING_V2:
-        code = DeviceCode(
-            op_bytes=_compile_op_to_llvm_bitcode(wrapped_op, wrapper_sig),
-            kind="llvm_ir",
-        )
-    else:
-        from ._target_cc import get_target_cc
-
-        ltoir, _ = numba.cuda.compile(
-            wrapped_op, sig=wrapper_sig, output="ltoir", cc=get_target_cc()
-        )
-        code = DeviceCode(op_bytes=ltoir, kind="ltoir")
+    code = _compile_wrapper_to_device_code(wrapped_op, wrapper_sig, get_target_cc())
 
     # Pack all data pointers as bytes (sequentially)
     state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
@@ -993,11 +1224,27 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
 
 class _JitOpState:
     def __init__(self, names: List[str], arrays: List[DeviceArrayLike]):
+        # The wrapper rebuilds each state array with carray, which addresses the
+        # data in C order, so a multi-dimensional Fortran-ordered array would be
+        # read with the wrong strides.  Validate here, where the state is bound
+        # on every call: the compiled wrapper is cached under a key that cannot
+        # describe the layout, so a check on the compile path alone would be
+        # skipped for an array whose shape matches one already compiled for.
+        for i, array in enumerate(arrays):
+            if not is_c_contiguous(array):
+                raise ValueError(f"state array {i} must be C-contiguous")
         self.names = names
         self.arrays = arrays
 
     def get_cache_key(self) -> Hashable:
-        return (tuple(self.names), tuple(get_dtype(s) for s in self.arrays))
+        # Include shapes: the stateful wrapper bakes each state array's shape
+        # into a carray(...) call, so two otherwise-identical ops that capture
+        # differently-shaped state compile to different device code.
+        return (
+            tuple(self.names),
+            tuple(get_dtype(s) for s in self.arrays),
+            tuple(tuple(get_shape(s)) for s in self.arrays),
+        )
 
     def to_bytes(self):
         state_ptrs = [get_data_pointer(arr) for arr in self.arrays]

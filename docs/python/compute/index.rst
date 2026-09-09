@@ -134,17 +134,28 @@ Features and Restrictions
 +++++++++++++++++++++++++
 
 User-defined operations are just-in-time (JIT) compiled into device code using
-`Numba CUDA <https://nvidia.github.io/numba-cuda/>`_, so they inherit many
-of the same features and restrictions as Numba CUDA functions:
+`numba-cuda-mlir <https://nvidia.github.io/numba-cuda-mlir/>`_, which follows
+Numba CUDA's programming model, so they inherit many of the same features and
+restrictions as Numba CUDA functions:
 
 * `Python features <https://nvidia.github.io/numba-cuda/user/cudapysupported.html>`_
   and `atomic operations <https://nvidia.github.io/numba-cuda/user/intrinsics.html>`_
   supported by Numba CUDA are also supported within user-defined operators.
-* Nested functions must be decorated with ``@numba.cuda.jit``.
+* Nested functions must be decorated with ``@numba_cuda_mlir.cuda.jit``.
 * Variables captured in closures or globals follow
   `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
   scalars and host arrays are captured by value (as constants),
   while device arrays are captured by reference.
+* Indexing a :func:`gpu_struct <cuda.compute.gpu_struct>` with a value only
+  known at run time, such as a loop variable, gives a result of the type the
+  fields unify to, rather than the indexed field's own type. Indexing with a
+  constant, or accessing a field by name, gives the field's declared type.
+* A multi-dimensional device array captured as operator state must be
+  C-contiguous; a Fortran-ordered one is rejected with an error.
+* Storing a float into a captured array, or a ``cuda.local.array``, of boolean
+  type truncates the value instead of asking whether it is non-zero, so ``1.25``
+  is stored as false. Compare against zero yourself, or keep the types the same.
+  A value *returned* from an operator converts correctly.
 
 
 .. _cuda.compute.iterators:
