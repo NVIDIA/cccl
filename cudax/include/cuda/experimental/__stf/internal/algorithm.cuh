@@ -249,17 +249,11 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
-    // Speaking of which. clear() is documented throwing (its deallocations
-    // and the final stream synchronization go through cuda_try), so the two
-    // exits part ways: on success a failure to release propagates to the
-    // caller as an ordinary exception; on the exception path a secondary
-    // failure is reported and aborts (guard bodies run under
-    // on_throw(abort)) rather than reaching std::terminate bare.
-    SCOPE(success)
-    {
-      adapter.clear();
-    };
-    SCOPE(fail)
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
+    SCOPE(exit)
     {
       adapter.clear();
     };
@@ -318,17 +312,11 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
-    // Speaking of which. clear() is documented throwing (its deallocations
-    // and the final stream synchronization go through cuda_try), so the two
-    // exits part ways: on success a failure to release propagates to the
-    // caller as an ordinary exception; on the exception path a secondary
-    // failure is reported and aborts (guard bodies run under
-    // on_throw(abort)) rather than reaching std::terminate bare.
-    SCOPE(success)
-    {
-      adapter.clear();
-    };
-    SCOPE(fail)
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
+    SCOPE(exit)
     {
       adapter.clear();
     };

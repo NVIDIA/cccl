@@ -38,7 +38,7 @@ __device__ void test_take(Config config)
       static_assert(cuda::std::is_trivially_default_constructible_v<Mapping>);
       static_assert(cuda::std::is_empty_v<Mapping>);
 
-      Mapping mapping;
+      const Mapping mapping;
       CHECK(mapping.unit_count() == n);
     }
 
@@ -106,7 +106,7 @@ __device__ void test_take(Config config)
     {
       static_assert(cuda::std::is_nothrow_default_constructible_v<Mapping>);
 
-      Mapping mapping;
+      const Mapping mapping;
       CHECK(mapping.unit_count() == 0);
     }
 
@@ -114,6 +114,7 @@ __device__ void test_take(Config config)
     {
       static_assert(cuda::std::is_nothrow_constructible_v<Mapping, unsigned>);
 
+      // NOLINTNEXTLINE(misc-const-correctness): decltype must not be const-qualified
       cudax::take mapping{n};
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
       CHECK(mapping.unit_count() == n);

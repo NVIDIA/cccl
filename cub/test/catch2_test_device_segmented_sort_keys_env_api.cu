@@ -22,8 +22,8 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
   auto keys_out = thrust::device_vector<int>(7);
   auto offsets  = thrust::device_vector<int>{0, 3, 7};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::SortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -38,7 +38,7 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
     std::cerr << "cub::DeviceSegmentedSort::SortKeys failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end sort-keys-env
 
   stream.sync();
@@ -53,8 +53,8 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
   auto keys_out = thrust::device_vector<int>(7);
   auto offsets  = thrust::device_vector<int>{0, 3, 7};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::SortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -69,7 +69,7 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
     std::cerr << "cub::DeviceSegmentedSort::SortKeysDescending failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end sort-keys-descending-env
 
   stream.sync();
@@ -86,8 +86,8 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::SortKeys(
     d_keys,
@@ -101,12 +101,12 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
     std::cerr << "cub::DeviceSegmentedSort::SortKeys (DoubleBuffer) failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end sort-keys-db-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -121,8 +121,8 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::SortKeysDescending(
     d_keys,
@@ -136,12 +136,12 @@ CUB_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
     std::cerr << "cub::DeviceSegmentedSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end sort-keys-descending-db-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -152,8 +152,8 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
   auto keys_out = thrust::device_vector<int>(7);
   auto offsets  = thrust::device_vector<int>{0, 3, 7};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -168,7 +168,7 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
     std::cerr << "cub::DeviceSegmentedSort::StableSortKeys failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end stable-sort-keys-env
 
   stream.sync();
@@ -183,8 +183,8 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
   auto keys_out = thrust::device_vector<int>(7);
   auto offsets  = thrust::device_vector<int>{0, 3, 7};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -199,7 +199,7 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
     std::cerr << "cub::DeviceSegmentedSort::StableSortKeysDescending failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end stable-sort-keys-descending-env
 
   stream.sync();
@@ -216,8 +216,8 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeys(
     d_keys,
@@ -231,12 +231,12 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
     std::cerr << "cub::DeviceSegmentedSort::StableSortKeys (DoubleBuffer) failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  const thrust::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
   // example-end stable-sort-keys-db-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 
@@ -251,8 +251,8 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceSegmentedSort::StableSortKeysDescending(
     d_keys,
@@ -267,12 +267,12 @@ CUB_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
       << "cub::DeviceSegmentedSort::StableSortKeysDescending (DoubleBuffer) failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  const thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
   // example-end stable-sort-keys-descending-db-env
 
   stream.sync();
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  const thrust::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
   REQUIRE(result == expected);
 }
 

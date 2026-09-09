@@ -301,16 +301,16 @@ template <class _Tp>
   // Avoid floating point operations that are invalid during constant evaluation
   _CCCL_IF_CONSTEVAL
   {
-    bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
-    bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
-    bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
-    bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
-    bool __z_nan  = !__z_inf
-                 && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
-                     || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
-    bool __w_nan  = !__w_inf
-                 && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
-                     || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
+    const bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
+    const bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
+    const bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
+    const bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
+    const bool __z_nan  = !__z_inf
+                       && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b))
+                           || (::cuda::std::isnan(__a) && __b == _Tp(0)) || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
+    const bool __w_nan  = !__w_inf
+                       && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d))
+                           || (::cuda::std::isnan(__c) && __d == _Tp(0)) || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if (__z_nan || __w_nan)
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
@@ -323,8 +323,8 @@ template <class _Tp>
       }
       return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::infinity());
     }
-    bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
-    bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
+    const bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
+    const bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
     if (__z_nonzero_nan || __w_nonzero_nan)
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));

@@ -36,8 +36,8 @@ struct synchronous_memory_resource : cuda::mr::memory_resource_base<synchronous_
       throw std::invalid_argument("invalid alignment for synchronous_memory_resource");
     }
 
-    void* ptr          = nullptr;
-    cudaError_t status = cudaMalloc(&ptr, bytes);
+    void* ptr                = nullptr;
+    const cudaError_t status = cudaMalloc(&ptr, bytes);
     if (status != cudaSuccess)
     {
       throw std::runtime_error(cudaGetErrorString(status));

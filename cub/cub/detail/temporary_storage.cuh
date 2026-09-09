@@ -314,7 +314,7 @@ public:
 
     this->prepare_interface();
 
-    if (cudaError_t error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
+    if (const cudaError_t error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes))
     {
       return error;
     }

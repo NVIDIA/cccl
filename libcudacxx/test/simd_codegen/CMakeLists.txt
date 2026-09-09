@@ -96,6 +96,7 @@ if (libcudacxx_codegen_filecheck_simd_sass)
         REMOVE_ITEM simd_codegen_sass_tests
         "${CMAKE_CURRENT_SOURCE_DIR}/integer/arithmetic_u8x4.cu"
         "${CMAKE_CURRENT_SOURCE_DIR}/min_max/min_max_i8x4.cu"
+        "${CMAKE_CURRENT_SOURCE_DIR}/min_max/min_max_relu_i8x4.cu"
       )
     else()
       file(

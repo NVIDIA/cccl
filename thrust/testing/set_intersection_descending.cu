@@ -15,7 +15,7 @@ void TestSetIntersectionDescendingSimple()
 
   Vector result(2);
 
-  Iterator end =
+  const Iterator end =
     thrust::set_intersection(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
