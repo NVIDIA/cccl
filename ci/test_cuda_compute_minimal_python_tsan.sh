@@ -36,7 +36,15 @@ require_free_threaded_interpreter() {
 # export is harmless there.
 export CCCL_C_PARALLEL_SANITIZE_THREAD=1
 
-cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
+# Pin the pip cuda-toolkit wheels to the container's CTK minor (this also sets
+# cuda_major_version), like every other Python lane. This lane in particular
+# cannot run unpinned: the pip libnvrtc finds its libnvrtc-builtins through its
+# own RUNPATH, but under the preloaded TSan runtime dlopen is intercepted and
+# that RUNPATH is not honored, so the builtins are only found via the system
+# toolkit on LD_LIBRARY_PATH -- which only works when the pip NVRTC minor
+# matches the container's. Unpinned, a newer 13.x wheel on PyPI breaks every
+# compile with "failed to open libnvrtc-builtins.so.<minor>".
+pin_cuda_toolkit "${ctk_mode}"
 
 # Setup Python environment
 setup_python_env "${py_version}"
