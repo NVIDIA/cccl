@@ -71,6 +71,12 @@ namespace cudax = cuda::experimental;
 static constexpr int fpemu_drift_terms   = 1000;
 static constexpr double fpemu_drift_term = 1e-17;
 
+// The two values every operation below starts from. Named once so that both
+// representations, and every accuracy level within them, are demonstrably fed
+// the same inputs and the printed results can be compared directly.
+static constexpr double fpemu_input_a = 1.234567890123456789;
+static constexpr double fpemu_input_b = 9.876543210987654321;
+
 // One kernel result, as doubles so the host can print it without knowing which
 // representation produced it.
 struct fpemu_results
@@ -98,8 +104,8 @@ __host__ __device__ void fpemu_packed_operations(fpemu_results* out)
   // Construction. The packed form holds the same bit pattern a double would, so
   // every built-in arithmetic type converts implicitly, exactly as it would to
   // double.
-  const cudax::fp64emu a = 1.234567890123456789;
-  const cudax::fp64emu b = 9.876543210987654321;
+  const cudax::fp64emu a = fpemu_input_a;
+  const cudax::fp64emu b = fpemu_input_b;
   const cudax::fp64emu c = 2.71828182f;
   const cudax::fp64emu d = 5u;
 
@@ -136,12 +142,12 @@ __host__ __device__ void fpemu_packed_operations(fpemu_results* out)
   // Accuracy levels. Only the type differs; the expressions are the same. high
   // is correctly rounded, mid gives up a low bit or two, and low trades away
   // enough of the mantissa to be visible in the seventh decimal place.
-  const cudax::fp64emu_high a_high = 1.234567890123456789;
-  const cudax::fp64emu_high b_high = 9.876543210987654321;
-  const cudax::fp64emu_mid a_mid   = 1.234567890123456789;
-  const cudax::fp64emu_mid b_mid   = 9.876543210987654321;
-  const cudax::fp64emu_low a_low   = 1.234567890123456789;
-  const cudax::fp64emu_low b_low   = 9.876543210987654321;
+  const cudax::fp64emu_high a_high = fpemu_input_a;
+  const cudax::fp64emu_mid a_mid   = fpemu_input_a;
+  const cudax::fp64emu_low a_low   = fpemu_input_a;
+  const cudax::fp64emu_high b_high = fpemu_input_b;
+  const cudax::fp64emu_mid b_mid   = fpemu_input_b;
+  const cudax::fp64emu_low b_low   = fpemu_input_b;
 
   const cudax::fp64emu_high diff_high = a_high - b_high;
   const cudax::fp64emu_mid diff_mid   = a_mid - b_mid;
@@ -210,8 +216,8 @@ __host__ __device__ void fpemu_unpacked_operations(fpemu_results* out)
   // rather than in a double's layout, so it does not pretend to be a built-in
   // number: every conversion in is written out. Braces read best, and a cast
   // does the same job.
-  const cudax::fp64emu_unpacked a{1.234567890123456789};
-  const cudax::fp64emu_unpacked b{9.876543210987654321};
+  const cudax::fp64emu_unpacked a{fpemu_input_a};
+  const cudax::fp64emu_unpacked b{fpemu_input_b};
   const cudax::fp64emu_unpacked c{2.71828182f};
   const cudax::fp64emu_unpacked d{5u};
 
@@ -246,12 +252,12 @@ __host__ __device__ void fpemu_unpacked_operations(fpemu_results* out)
   // Accuracy levels, as above on the other representation. high and mid can
   // agree here where the packed ones did not: the guard bits absorb the
   // difference between the two algorithms before it reaches the stored value.
-  const cudax::fp64emu_unpacked_high a_high{1.234567890123456789};
-  const cudax::fp64emu_unpacked_high b_high{9.876543210987654321};
-  const cudax::fp64emu_unpacked_mid a_mid{1.234567890123456789};
-  const cudax::fp64emu_unpacked_mid b_mid{9.876543210987654321};
-  const cudax::fp64emu_unpacked_low a_low{1.234567890123456789};
-  const cudax::fp64emu_unpacked_low b_low{9.876543210987654321};
+  const cudax::fp64emu_unpacked_high a_high{fpemu_input_a};
+  const cudax::fp64emu_unpacked_mid a_mid{fpemu_input_a};
+  const cudax::fp64emu_unpacked_low a_low{fpemu_input_a};
+  const cudax::fp64emu_unpacked_high b_high{fpemu_input_b};
+  const cudax::fp64emu_unpacked_mid b_mid{fpemu_input_b};
+  const cudax::fp64emu_unpacked_low b_low{fpemu_input_b};
 
   const cudax::fp64emu_unpacked_high diff_high = a_high - b_high;
   const cudax::fp64emu_unpacked_mid diff_mid   = a_mid - b_mid;
