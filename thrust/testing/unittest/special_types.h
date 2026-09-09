@@ -149,6 +149,15 @@ public:
     fill(0);
   }
 
+#if _CCCL_COMPILER(MSVC2019)
+  // MSVC 2019's __is_constructible intrinsic can fail to detect the templated overload below sometimes, which happens
+  // e.g. in cuda::std::tuple's variadic converting constructor, called in the thrust.cpp.cuda.test.tuple.
+  _CCCL_HOST_DEVICE custom_numeric(int i)
+  {
+    fill(i);
+  }
+#endif // _CCCL_COMPILER(MSVC2019)
+
   // Allow construction from any integral numeric.
   template <typename T, typename = typename ::cuda::std::enable_if<::cuda::std::is_integral<T>::value>::type>
   _CCCL_HOST_DEVICE custom_numeric(const T& i)
