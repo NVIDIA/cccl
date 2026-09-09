@@ -506,9 +506,9 @@ struct policy_selector
           const auto rp = ReducePassPolicy{
             sm107_tuning->threads,
             sm107_tuning->items,
-            sm107_tuning->items_per_vec_load,
+            1 << sm107_tuning->items_per_vec_load,
             BLOCK_REDUCE_WARP_REDUCTIONS,
-            LOAD_LDG};
+            LOAD_DEFAULT};
           return {rp, rp};
         }
       }
