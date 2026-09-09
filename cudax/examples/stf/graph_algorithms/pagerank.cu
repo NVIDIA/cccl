@@ -67,8 +67,14 @@ int main()
   std::vector<float> page_rank(num_vertices, init_rank);
   std::vector<float> new_page_rank(num_vertices);
 
-  auto loffsets       = ctx.logical_data(&offsets[0], offsets.size());
-  auto lnonzeros      = ctx.logical_data(&nonzeros[0], nonzeros.size());
+  auto loffsets  = ctx.logical_data(&offsets[0], offsets.size());
+  auto lnonzeros = ctx.logical_data(&nonzeros[0], nonzeros.size());
+
+  // The CSR graph topology is one object: a bundle of the two constant arrays.
+  // Tasks depend on `graph` as a whole and receive one tuple of (const) views.
+  bundle<field<slice<int>, constant>, field<slice<int>, constant>> graph(loffsets, lnonzeros);
+  graph.set_symbol("graph");
+
   auto lpage_rank     = ctx.logical_data(&page_rank[0], page_rank.size());
   auto lnew_page_rank = ctx.logical_data(&new_page_rank[0], new_page_rank.size());
   auto lmax_diff      = ctx.logical_data(shape_of<scalar_view<float>>());
@@ -77,14 +83,9 @@ int main()
   {
     // Calculate Current Iteration PageRank
     ctx.parallel_for(
-      box(num_vertices),
-      loffsets.read(),
-      lnonzeros.read(),
-      lpage_rank.rw(),
-      lnew_page_rank.rw(),
-      lmax_diff.reduce(reducer::maxval<float>{}))
-        ->*[init_rank] __device__(
-             size_t idx, auto loffsets, auto lnonzeros, auto lpage_rank, auto lnew_page_rank, auto& max_diff) {
+      box(num_vertices), graph.read(), lpage_rank.rw(), lnew_page_rank.rw(), lmax_diff.reduce(reducer::maxval<float>{}))
+        ->*[init_rank] __device__(size_t idx, auto graph, auto lpage_rank, auto lnew_page_rank, auto& max_diff) {
+              auto& [loffsets, lnonzeros] = graph;
               calculating_pagerank(idx, loffsets, lnonzeros, lpage_rank, lnew_page_rank, init_rank);
               max_diff = ::std::max(max_diff, lnew_page_rank[idx] - lpage_rank[idx]);
             };
