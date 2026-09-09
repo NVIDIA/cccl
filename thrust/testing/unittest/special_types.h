@@ -2,12 +2,12 @@
 
 #include <thrust/execution_policy.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
-#include <cstdint>
 #include <limits>
 #include <ostream>
-#include <type_traits>
 
 template <typename T, unsigned int N>
 struct FixedVector
@@ -150,7 +150,7 @@ public:
   }
 
   // Allow construction from any integral numeric.
-  template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+  template <typename T, typename = typename ::cuda::std::enable_if<::cuda::std::is_integral<T>::value>::type>
   _CCCL_HOST_DEVICE custom_numeric(const T& i)
   {
     fill(static_cast<int>(i));
@@ -358,13 +358,13 @@ struct my_tag : THRUST_NS_QUALIFIER::device_execution_policy<my_tag>
 
 namespace unittest
 {
-using std::int16_t;
-using std::int32_t;
-using std::int64_t;
-using std::int8_t;
+using ::cuda::std::int16_t;
+using ::cuda::std::int32_t;
+using ::cuda::std::int64_t;
+using ::cuda::std::int8_t;
 
-using std::uint16_t;
-using std::uint32_t;
-using std::uint64_t;
-using std::uint8_t;
+using ::cuda::std::uint16_t;
+using ::cuda::std::uint32_t;
+using ::cuda::std::uint64_t;
+using ::cuda::std::uint8_t;
 } // namespace unittest
