@@ -152,12 +152,10 @@ restrictions as Numba CUDA functions:
   constant, or accessing a field by name, gives the field's declared type.
 * A multi-dimensional device array captured as operator state must be
   C-contiguous; a Fortran-ordered one is rejected with an error.
-* Storing a value into a captured array, or into a ``cuda.local.array``, of a
-  different numeric type is currently unsafe: the conversion ignores whether the
-  value is signed, so a negative value widened into a larger integer type
-  becomes a large positive one, and an unsigned value converted to a float
-  becomes negative. Convert explicitly to the destination's type first, or keep
-  the types the same.
+* Storing a float into a captured array, or a ``cuda.local.array``, of boolean
+  type truncates the value instead of asking whether it is non-zero, so ``1.25``
+  is stored as false. Compare against zero yourself, or keep the types the same.
+  A value *returned* from an operator converts correctly.
 
 
 .. _cuda.compute.iterators:
