@@ -60,3 +60,36 @@ def test_DeviceCopyImpl_copy_into_rejects_same_size_different_dtype(
 
     with pytest.raises(TypeError, match="dtypes must match"):
         device_copy_impl._copy_into(source, destination)
+
+
+@pytest.mark.parametrize("prepared", [False, True])
+def test_DeviceCopyImpl_assume_non_overlapping_allows_disjoint_interleaved_views(
+    cp, device_copy_impl, prepared
+):
+    values = cp.arange(32, dtype=cp.int32)
+    source = values[::2]
+    destination = values[1::2]
+    expected = source.copy()
+
+    with pytest.raises(ValueError, match="bounding memory spans overlap"):
+        if prepared:
+            device_copy_impl._make_device_copy(source, destination)
+        else:
+            device_copy_impl._copy_into(source, destination)
+
+    if prepared:
+        with device_copy_impl._make_device_copy(
+            source,
+            destination,
+            assume_non_overlapping=True,
+        ) as device_copy:
+            device_copy(source, destination)
+    else:
+        device_copy_impl._copy_into(
+            source,
+            destination,
+            assume_non_overlapping=True,
+        )
+
+    cp.cuda.Device().synchronize()
+    cp.testing.assert_array_equal(destination, expected)

@@ -38,6 +38,7 @@ cdef extern from "dlpack/dlpack.h":
     cdef enum:
         DLPACK_MAJOR_VERSION
         DLPACK_MINOR_VERSION
+        DLPACK_FLAG_BITMASK_READ_ONLY
 
     ctypedef enum DLDeviceType:
         kDLCUDA
@@ -196,6 +197,15 @@ cdef uint64_t _as_uint64(object value, str name) except *:
     if index > 0xFFFFFFFFFFFFFFFF:
         raise OverflowError(f"{name} does not fit in uint64_t")
     return <uint64_t>index
+
+
+cdef int32_t _as_nonnegative_int32(object value, str name) except *:
+    cdef object index = _as_index(value, name)
+    if index < 0:
+        raise ValueError(f"{name} must be non-negative, got {value}")
+    if index > 0x7FFFFFFF:
+        raise OverflowError(f"{name} does not fit in int32_t")
+    return <int32_t>index
 
 
 cdef uintptr_t _as_uintptr(object value, str name) except *:
@@ -442,6 +452,11 @@ cdef int64_t* _device_copy_copy_native_strides(
 cdef class _PreparedDeviceCopyView:
     cdef object _owner
     cdef object _dtype_key
+    cdef DLDeviceType _device_type
+    cdef int32_t _device_id
+    cdef uint64_t _flags
+    cdef bint _flags_known
+    cdef bint _read_only
     cdef size_t _rank
     cdef size_t _itemsize
     cdef size_t _alignment
@@ -453,6 +468,11 @@ cdef class _PreparedDeviceCopyView:
     def __cinit__(self):
         self._owner = None
         self._dtype_key = None
+        self._device_type = kDLCUDA
+        self._device_id = 0
+        self._flags = 0
+        self._flags_known = False
+        self._read_only = False
         self._rank = 0
         self._itemsize = 0
         self._alignment = 0
@@ -468,6 +488,12 @@ cdef class _PreparedDeviceCopyView:
         object byte_offset,
         object shape,
         object strides=None,
+        *,
+        object device_type=kDLCUDA,
+        object device_id=0,
+        object flags=0,
+        object flags_known=False,
+        object read_only=False,
     ):
         self._rank = _validate_rank(shape, "shape")
         if len(shape) == 0:
@@ -481,6 +507,15 @@ cdef class _PreparedDeviceCopyView:
             )
 
         self._owner = owner
+        self._device_type = <DLDeviceType>_as_nonnegative_int32(device_type, "device_type")
+        if self._device_type != kDLCUDA and self._device_type != kDLCUDAManaged:
+            raise ValueError(f"expected a CUDA device type, got {<int>self._device_type}")
+        self._device_id = _as_nonnegative_int32(device_id, "device_id")
+        self._flags = _as_uint64(flags, "flags")
+        self._flags_known = bool(flags_known)
+        self._read_only = bool(read_only) or (
+            self._flags_known and bool(self._flags & DLPACK_FLAG_BITMASK_READ_ONLY)
+        )
         self._data_ptr = _as_uintptr(data_ptr, "data_ptr")
         self._byte_offset = _as_uint64(byte_offset, "byte_offset")
         self._shape = _copy_int64_sequence(shape, self._rank, "shape", True)
@@ -495,6 +530,10 @@ cdef class _PreparedDeviceCopyView:
         size_t rank,
         const int64_t* shape,
         const int64_t* strides,
+        DLDeviceType device_type,
+        int32_t device_id,
+        uint64_t flags,
+        bint flags_known,
     ) except *:
         cdef int64_t* copied_shape = NULL
         cdef int64_t* copied_strides = NULL
@@ -535,6 +574,11 @@ cdef class _PreparedDeviceCopyView:
 
         try:
             self._owner = owner
+            self._device_type = device_type
+            self._device_id = device_id
+            self._flags = flags
+            self._flags_known = flags_known
+            self._read_only = flags_known and bool(flags & DLPACK_FLAG_BITMASK_READ_ONLY)
             self._rank = native_rank
             self._data_ptr = data_ptr
             self._byte_offset = byte_offset
@@ -602,6 +646,26 @@ cdef class _PreparedDeviceCopyView:
         return self._dtype_key
 
     @property
+    def device_type(self):
+        return <int>self._device_type
+
+    @property
+    def device_id(self):
+        return self._device_id
+
+    @property
+    def flags(self):
+        return self._flags
+
+    @property
+    def flags_known(self):
+        return bool(self._flags_known)
+
+    @property
+    def read_only(self):
+        return bool(self._read_only)
+
+    @property
     def shape(self):
         return _int64_tuple(self._shape, self._rank)
 
@@ -623,6 +687,8 @@ cdef class _PreparedDeviceCopyView:
             f"{type(self).__name__}("
             f"data_ptr=0x{self._data_ptr:x}, "
             f"byte_offset={self._byte_offset}, "
+            f"device=({<int>self._device_type}, {self._device_id}), "
+            f"read_only={bool(self._read_only)!r}, "
             f"shape={self.shape!r}, "
             f"strides={self.strides!r})"
         )
@@ -1442,8 +1508,20 @@ cdef extern from "cuda.h":
     ctypedef enum _CUresult "CUresult":
         _CUDA_SUCCESS "CUDA_SUCCESS"
 
+    ctypedef int _CUdevice "CUdevice"
+    ctypedef uintptr_t _CUdeviceptr "CUdeviceptr"
+
+    ctypedef struct _CUctx_st "CUctx_st":
+        pass
+
+    ctypedef _CUctx_st* _CUcontext "CUcontext"
+
     ctypedef enum _CUstreamCaptureStatus "CUstreamCaptureStatus":
         _CU_STREAM_CAPTURE_STATUS_NONE "CU_STREAM_CAPTURE_STATUS_NONE"
+
+    ctypedef enum _CUpointer_attribute "CUpointer_attribute":
+        _CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL "CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL"
+        _CU_POINTER_ATTRIBUTE_IS_MANAGED "CU_POINTER_ATTRIBUTE_IS_MANAGED"
 
     ctypedef struct _CUstream_st "CUstream_st":
         pass
@@ -1453,6 +1531,18 @@ cdef extern from "cuda.h":
     _CUresult cuStreamIsCapturing(
         _CUstream stream,
         _CUstreamCaptureStatus* capture_status,
+    )
+
+    _CUresult cuCtxGetCurrent(_CUcontext* context)
+
+    _CUresult cuCtxGetDevice(_CUdevice* device)
+
+    _CUresult cuStreamGetCtx(_CUstream stream, _CUcontext* context)
+
+    _CUresult cuPointerGetAttribute(
+        void* data,
+        _CUpointer_attribute attribute,
+        _CUdeviceptr pointer,
     )
 
     _CUresult cuStreamSynchronize(_CUstream stream) noexcept nogil
@@ -1630,6 +1720,46 @@ cdef _CUstream _device_copy_stream(object stream_handle) except *:
     return <_CUstream><uintptr_t>stream_handle
 
 
+cdef int32_t _device_copy_execution_device(_CUstream stream) except? -1:
+    cdef _CUcontext current_context = NULL
+    cdef _CUcontext stream_context = NULL
+    cdef _CUdevice device
+    cdef _CUresult status
+
+    status = cuCtxGetCurrent(&current_context)
+    _device_copy_check_cuda(status, "cuCtxGetCurrent")
+    if current_context == NULL:
+        raise RuntimeError("device copy requires a current CUDA context")
+
+    status = cuStreamGetCtx(stream, &stream_context)
+    _device_copy_check_cuda(status, "cuStreamGetCtx")
+    if stream_context != current_context:
+        raise ValueError("device copy stream must belong to the current CUDA context")
+
+    status = cuCtxGetDevice(&device)
+    _device_copy_check_cuda(status, "cuCtxGetDevice")
+    return <int32_t>device
+
+
+cdef void _device_copy_validate_execution_location(
+    object source,
+    object destination,
+    _CUstream stream,
+) except *:
+    cdef int32_t execution_device = _device_copy_execution_device(stream)
+
+    if (
+        _device_copy_view_device_type(source) == kDLCUDA
+        and _device_copy_view_device_id(source) != execution_device
+    ):
+        raise ValueError("device copy source is not on the execution device")
+    if (
+        _device_copy_view_device_type(destination) == kDLCUDA
+        and _device_copy_view_device_id(destination) != execution_device
+    ):
+        raise ValueError("device copy destination is not on the execution device")
+
+
 def _drain_device_copy_owner_releases():
     return _device_copy_drain_completed_owners_impl()
 
@@ -1666,14 +1796,6 @@ cdef object _device_copy_array_dtype_key(object array):
     return ("numpy", dtype.str)
 
 
-cdef int64_t _device_copy_initial_element_offset(uint64_t byte_offset, size_t itemsize) except? -1:
-    if itemsize == 0:
-        raise ValueError("device copy item size must be non-zero")
-    if byte_offset % <uint64_t>itemsize != 0:
-        return 0
-    return _copy_plan_checked_i64(byte_offset // <uint64_t>itemsize, "array byte offset is too large")
-
-
 ctypedef struct _DeviceCopyByteOffsetSplit:
     int64_t element_offset
     uint64_t byte_offset
@@ -1697,28 +1819,16 @@ cdef _DeviceCopyByteOffsetSplit _device_copy_split_byte_offset(uint64_t byte_off
     return result
 
 
-cdef int64_t _device_copy_apply_byte_offset_split(
-    int64_t element_offset, _DeviceCopyByteOffsetSplit byte_offset
-) except? -1:
-    return _copy_plan_checked_add(
-        element_offset,
-        byte_offset.element_offset,
-        "device copy element offset is too large",
-    )
+cdef int64_t _device_copy_initial_element_offset(uint64_t byte_offset, size_t itemsize) except? -1:
+    cdef _DeviceCopyByteOffsetSplit split
+    split = _device_copy_split_byte_offset(byte_offset, itemsize)
+    return split.element_offset
 
 
 cdef uint64_t _device_copy_residual_byte_offset(uint64_t byte_offset, size_t itemsize) except? -1:
     cdef _DeviceCopyByteOffsetSplit split
     split = _device_copy_split_byte_offset(byte_offset, itemsize)
     return split.byte_offset
-
-
-cdef int64_t _device_copy_folded_element_offset(
-    int64_t element_offset, uint64_t byte_offset, size_t itemsize
-) except? -1:
-    cdef _DeviceCopyByteOffsetSplit split
-    split = _device_copy_split_byte_offset(byte_offset, itemsize)
-    return _device_copy_apply_byte_offset_split(element_offset, split)
 
 
 cdef uint64_t _device_copy_checked_byte_offset(
@@ -1741,6 +1851,27 @@ cdef _PreparedDeviceCopyView _device_copy_prepared_view(object view):
     if isinstance(view, _PreparedDeviceCopyView):
         return <_PreparedDeviceCopyView>view
     return None
+
+
+cdef DLDeviceType _device_copy_view_device_type(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._device_type
+    return <DLDeviceType><int>view.device_type
+
+
+cdef int32_t _device_copy_view_device_id(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._device_id
+    return <int32_t>view.device_id
+
+
+cdef bint _device_copy_view_read_only(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._read_only
+    return bool(view.read_only)
 
 
 cdef size_t _device_copy_view_rank(object view) except *:
@@ -1819,6 +1950,8 @@ cdef void _device_copy_check_views_compatible(
 ) except *:
     cdef _PreparedDeviceCopyView prepared_source = _device_copy_prepared_view(source)
     cdef _PreparedDeviceCopyView prepared_destination = _device_copy_prepared_view(destination)
+    cdef DLDeviceType source_device_type
+    cdef DLDeviceType destination_device_type
 
     if source_dtype_key != destination_dtype_key:
         raise TypeError("source and destination dtypes must match")
@@ -1826,6 +1959,18 @@ cdef void _device_copy_check_views_compatible(
         raise TypeError("source and destination item sizes must match")
     if <size_t>source.alignment != <size_t>destination.alignment:
         raise TypeError("source and destination alignments must match")
+    if _device_copy_view_read_only(destination):
+        raise ValueError("device copy destination is read-only")
+
+    source_device_type = _device_copy_view_device_type(source)
+    destination_device_type = _device_copy_view_device_type(destination)
+    if (
+        source_device_type == kDLCUDA
+        and destination_device_type == kDLCUDA
+        and _device_copy_view_device_id(source) != _device_copy_view_device_id(destination)
+    ):
+        raise ValueError("source and destination CUDA arrays must be on the same device")
+
     if prepared_source is not None and prepared_destination is not None:
         if not _device_copy_prepared_shapes_equal(prepared_source, prepared_destination):
             raise ValueError("source and destination shapes must match")
@@ -1852,12 +1997,210 @@ cdef void _device_copy_check_runtime_contract(
         raise TypeError("device copy was built for a different alignment")
 
 
+cdef uintptr_t _device_copy_view_data_ptr(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._data_ptr
+    return <uintptr_t>view.data_ptr
+
+
+cdef uint64_t _device_copy_view_byte_offset(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._byte_offset
+    return <uint64_t>view.byte_offset
+
+
+cdef void _device_copy_plan_element_interval(
+    _DeviceCopyPlan plan,
+    bint source,
+    int64_t* minimum,
+    int64_t* maximum,
+) except *:
+    cdef const int64_t* strides
+    cdef int64_t delta
+    cdef size_t axis
+
+    if source:
+        minimum[0] = plan._source_element_offset
+        strides = plan._source_strides
+    else:
+        minimum[0] = plan._destination_element_offset
+        strides = plan._destination_strides
+    maximum[0] = minimum[0]
+
+    for axis in range(plan._rank):
+        delta = _copy_plan_axis_delta(
+            plan._shape[axis],
+            strides[axis],
+            "device copy memory span is too large",
+        )
+        if delta < 0:
+            minimum[0] = _copy_plan_checked_add(
+                minimum[0],
+                delta,
+                "device copy memory span is too large",
+            )
+        else:
+            maximum[0] = _copy_plan_checked_add(
+                maximum[0],
+                delta,
+                "device copy memory span is too large",
+            )
+
+
+cdef uintptr_t _device_copy_interval_address(
+    uintptr_t data_ptr,
+    uint64_t residual_byte_offset,
+    int64_t element_offset,
+    size_t itemsize,
+    bint end,
+) except? 0:
+    cdef uintptr_t uintptr_max = <uintptr_t>-1
+    cdef uintptr_t element_bytes
+    cdef uintptr_t relative_address
+    cdef uintptr_t result
+
+    if element_offset < 0:
+        raise ValueError("device copy memory span begins before its allocation base")
+    if residual_byte_offset > uintptr_max:
+        raise OverflowError("device copy memory span address is too large")
+    if element_offset != 0 and itemsize > uintptr_max // <uintptr_t>element_offset:
+        raise OverflowError("device copy memory span address is too large")
+
+    element_bytes = <uintptr_t>element_offset * itemsize
+    if residual_byte_offset > uintptr_max - element_bytes:
+        raise OverflowError("device copy memory span address is too large")
+    relative_address = element_bytes + <uintptr_t>residual_byte_offset
+    if data_ptr > uintptr_max - relative_address:
+        raise OverflowError("device copy memory span address is too large")
+    result = data_ptr + relative_address
+
+    if end:
+        if itemsize > uintptr_max - result:
+            raise OverflowError("device copy memory span address is too large")
+        result += itemsize
+    return result
+
+
+cdef void _device_copy_validate_no_overlap(
+    object source,
+    object destination,
+    _DeviceCopyPlan plan,
+    size_t itemsize,
+) except *:
+    cdef int64_t source_minimum
+    cdef int64_t source_maximum
+    cdef int64_t destination_minimum
+    cdef int64_t destination_maximum
+    cdef uint64_t source_residual
+    cdef uint64_t destination_residual
+    cdef uintptr_t source_start
+    cdef uintptr_t source_end
+    cdef uintptr_t destination_start
+    cdef uintptr_t destination_end
+
+    if plan._empty:
+        return
+
+    _device_copy_plan_element_interval(plan, True, &source_minimum, &source_maximum)
+    _device_copy_plan_element_interval(plan, False, &destination_minimum, &destination_maximum)
+    source_residual = _device_copy_residual_byte_offset(
+        _device_copy_view_byte_offset(source),
+        itemsize,
+    )
+    destination_residual = _device_copy_residual_byte_offset(
+        _device_copy_view_byte_offset(destination),
+        itemsize,
+    )
+    source_start = _device_copy_interval_address(
+        _device_copy_view_data_ptr(source),
+        source_residual,
+        source_minimum,
+        itemsize,
+        False,
+    )
+    source_end = _device_copy_interval_address(
+        _device_copy_view_data_ptr(source),
+        source_residual,
+        source_maximum,
+        itemsize,
+        True,
+    )
+    destination_start = _device_copy_interval_address(
+        _device_copy_view_data_ptr(destination),
+        destination_residual,
+        destination_minimum,
+        itemsize,
+        False,
+    )
+    destination_end = _device_copy_interval_address(
+        _device_copy_view_data_ptr(destination),
+        destination_residual,
+        destination_maximum,
+        itemsize,
+        True,
+    )
+
+    if source_start < destination_end and destination_start < source_end:
+        raise ValueError(
+            "source and destination bounding memory spans overlap; "
+            "set assume_non_overlapping=True only when the accessed elements are disjoint"
+        )
+
+
+cdef tuple _device_copy_protocol_location(object array, uintptr_t data_ptr):
+    cdef object device
+    cdef object device_type_obj
+    cdef object device_id_obj
+    cdef int32_t device_type
+    cdef int32_t device_id
+    cdef int is_managed = 0
+    cdef _CUresult status
+
+    try:
+        device = array.__dlpack_device__()
+    except AttributeError:
+        if data_ptr == 0:
+            return (<int>kDLCUDA, cccl.current_device_id())
+
+        status = cuPointerGetAttribute(
+            &device_id,
+            _CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
+            <_CUdeviceptr>data_ptr,
+        )
+        _device_copy_check_cuda(status, "cuPointerGetAttribute(CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL)")
+        status = cuPointerGetAttribute(
+            &is_managed,
+            _CU_POINTER_ATTRIBUTE_IS_MANAGED,
+            <_CUdeviceptr>data_ptr,
+        )
+        _device_copy_check_cuda(status, "cuPointerGetAttribute(CU_POINTER_ATTRIBUTE_IS_MANAGED)")
+        return (<int>(kDLCUDAManaged if is_managed else kDLCUDA), device_id)
+
+    try:
+        device_type_obj, device_id_obj = device
+    except (TypeError, ValueError):
+        raise TypeError("__dlpack_device__ must return a (device_type, device_id) pair") from None
+
+    device_type = _as_nonnegative_int32(device_type_obj, "DLPack device type")
+    device_id = _as_nonnegative_int32(device_id_obj, "DLPack device id")
+    if device_type != <int32_t>kDLCUDA and device_type != <int32_t>kDLCUDAManaged:
+        raise BufferError(f"expected a CUDA device, got DLPack device type {device_type}")
+    return (device_type, device_id)
+
+
 class _DeviceCopyProtocolView:
     __slots__ = (
         "owner",
         "data",
         "data_ptr",
         "byte_offset",
+        "device_type",
+        "device_id",
+        "flags",
+        "flags_known",
+        "read_only",
         "shape",
         "strides",
         "itemsize",
@@ -1866,11 +2209,29 @@ class _DeviceCopyProtocolView:
         "dtype_key",
     )
 
-    def __init__(self, owner, data_ptr, byte_offset, shape, strides, itemsize, alignment, dtype_key=None):
+    def __init__(
+        self,
+        owner,
+        data_ptr,
+        byte_offset,
+        device_type,
+        device_id,
+        read_only,
+        shape,
+        strides,
+        itemsize,
+        alignment,
+        dtype_key=None,
+    ):
         self.owner = owner
         self.data = data_ptr
         self.data_ptr = data_ptr
         self.byte_offset = byte_offset
+        self.device_type = device_type
+        self.device_id = device_id
+        self.flags = DLPACK_FLAG_BITMASK_READ_ONLY if read_only else 0
+        self.flags_known = False
+        self.read_only = read_only
         self.shape = shape
         self.strides = strides
         self.itemsize = itemsize
@@ -2032,17 +2393,30 @@ def _device_copy_shape_size(shape):
 
 cdef tuple _device_copy_protocol_view_and_dtype_key(object array):
     import numpy as np
-    from cuda.compute._utils.protocols import get_data_pointer, get_dtype, get_shape
+    from cuda.compute._utils.protocols import get_dtype, get_shape
 
     cdef object dtype = np.dtype(get_dtype(array))
     cdef object shape = tuple(int(extent) for extent in get_shape(array))
     cdef object cai = getattr(array, "__cuda_array_interface__", None)
+    cdef object data
+    cdef uintptr_t data_ptr
+    cdef bint read_only
+    cdef tuple location
     cdef object raw_strides
     cdef object strides
     cdef object dtype_key
 
     if cai is None:
         raise TypeError("object does not provide DLPack or __cuda_array_interface__")
+
+    try:
+        data = cai["data"]
+        data_ptr = _as_uintptr(data[0], "__cuda_array_interface__ data pointer")
+        read_only = bool(data[1])
+    except (KeyError, IndexError, TypeError):
+        raise TypeError("__cuda_array_interface__ data must be a (pointer, read_only) pair") from None
+
+    location = _device_copy_protocol_location(array, data_ptr)
 
     raw_strides = cai.get("strides")
     if raw_strides is None:
@@ -2057,8 +2431,11 @@ cdef tuple _device_copy_protocol_view_and_dtype_key(object array):
     return (
         _DeviceCopyProtocolView(
             array,
-            get_data_pointer(array),
+            data_ptr,
             0,
+            location[0],
+            location[1],
+            read_only,
             shape,
             strides,
             dtype.itemsize,
@@ -2069,7 +2446,11 @@ cdef tuple _device_copy_protocol_view_and_dtype_key(object array):
     )
 
 
-cdef tuple _device_copy_prepare_view_and_dtype_key(object array, object stream_handle):
+cdef tuple _device_copy_prepare_view_and_dtype_key(
+    object array,
+    object stream_handle,
+    bint destination=False,
+):
     cdef object dtype_key
     cdef _PreparedDeviceCopyView view
 
@@ -2078,7 +2459,11 @@ cdef tuple _device_copy_prepare_view_and_dtype_key(object array, object stream_h
     except (AttributeError, TypeError, BufferError):
         return _device_copy_protocol_view_and_dtype_key(array)
 
-    view = _prepare_dlpack_view(array, stream=stream_handle)
+    view = _prepare_dlpack_view(
+        array,
+        stream=stream_handle,
+        require_flags=destination,
+    )
     view._set_dtype_metadata(
         _device_copy_dtype_key_itemsize(dtype_key),
         _device_copy_dtype_key_alignment(dtype_key),
@@ -2389,8 +2774,6 @@ cdef class _DeviceCopyBuild:
         object source,
         object destination,
         _DeviceCopyPlan plan,
-        uint64_t source_byte_offset_base,
-        uint64_t destination_byte_offset_base,
         object stream_handle,
     ) except *:
         cdef _cccl_device_copy_source_view_t source_view
@@ -2401,8 +2784,6 @@ cdef class _DeviceCopyBuild:
         cdef const int64_t* destination_strides
         cdef uint64_t source_byte_offset
         cdef uint64_t destination_byte_offset
-        cdef _DeviceCopyByteOffsetSplit source_byte_offset_split
-        cdef _DeviceCopyByteOffsetSplit destination_byte_offset_split
         cdef _CUresult status
         cdef _CUresult retention_status
         cdef _CUresult synchronize_status
@@ -2427,17 +2808,19 @@ cdef class _DeviceCopyBuild:
             destination_strides = plan._native_destination_strides()
 
         source_byte_offset = _device_copy_checked_byte_offset(
-            _device_copy_residual_byte_offset(<uint64_t>source.byte_offset, <size_t>source.itemsize),
-            _device_copy_folded_element_offset(
-                plan._native_source_element_offset(), <uint64_t>source.byte_offset, <size_t>source.itemsize
+            _device_copy_residual_byte_offset(
+                _device_copy_view_byte_offset(source),
+                <size_t>source.itemsize,
             ),
+            plan._native_source_element_offset(),
             <size_t>source.itemsize,
         )
         destination_byte_offset = _device_copy_checked_byte_offset(
-            _device_copy_residual_byte_offset(<uint64_t>destination.byte_offset, <size_t>destination.itemsize),
-            _device_copy_folded_element_offset(
-                plan._native_destination_element_offset(), <uint64_t>destination.byte_offset, <size_t>destination.itemsize
+            _device_copy_residual_byte_offset(
+                _device_copy_view_byte_offset(destination),
+                <size_t>destination.itemsize,
             ),
+            plan._native_destination_element_offset(),
             <size_t>destination.itemsize,
         )
 
@@ -2557,7 +2940,7 @@ cdef class _DeviceCopyExecutable:
         object stream_handle,
     ) except *:
         cdef _DeviceCopyBuild build = self._resolve_build()
-        build._copy(source, destination, plan, 0, 0, stream_handle)
+        build._copy(source, destination, plan, stream_handle)
 
     def _get_cubin(self):
         return self._resolve_build()._get_cubin()
@@ -2581,6 +2964,7 @@ cdef class _DeviceCopy:
     cdef object _compute_capability
     cdef size_t _max_rank
     cdef bint _use_cached_builds
+    cdef bint _assume_non_overlapping
     cdef bint _closed
 
     cdef _DeviceCopyBuild _build
@@ -2599,6 +2983,7 @@ cdef class _DeviceCopy:
         object compute_capability=None,
         object compile_spec=None,
         object precompile=None,
+        bint assume_non_overlapping=False,
     ):
         cdef object stream_handle
         cdef object source_view
@@ -2622,7 +3007,11 @@ cdef class _DeviceCopy:
         if not self._use_cached_builds and precompile != "max":
             raise ValueError("device copy precompile is only supported for default dynamic builds")
         source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
-        destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(destination, stream_handle)
+        destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(
+            destination,
+            stream_handle,
+            True,
+        )
 
         _device_copy_check_views_compatible(
             source_view,
@@ -2636,6 +3025,15 @@ cdef class _DeviceCopy:
         self._alignment = <size_t>source_view.alignment
         self._plan = _device_copy_make_plan_from_views(source_view, destination_view, self._itemsize)
         self._empty = self._plan._empty
+        self._assume_non_overlapping = assume_non_overlapping
+        if not self._assume_non_overlapping:
+            _device_copy_validate_no_overlap(source_view, destination_view, self._plan, self._itemsize)
+        if not self._empty:
+            _device_copy_validate_execution_location(
+                source_view,
+                destination_view,
+                _device_copy_stream(stream_handle),
+            )
 
         self._build = _DeviceCopyBuild()
         self._closed = False
@@ -2678,12 +3076,14 @@ cdef class _DeviceCopy:
         cdef object source_dtype_key
         cdef object destination_dtype_key
         cdef _DeviceCopyPlan plan
-        cdef uint64_t source_byte_offset_base
-        cdef uint64_t destination_byte_offset_base
 
         stream_handle = _device_copy_stream_handle(stream)
         source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
-        destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(destination, stream_handle)
+        destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(
+            destination,
+            stream_handle,
+            True,
+        )
 
         _device_copy_check_runtime_contract(
             source_view,
@@ -2695,6 +3095,14 @@ cdef class _DeviceCopy:
             self._alignment,
         )
         plan = _device_copy_make_plan_from_views(source_view, destination_view, self._itemsize)
+        if not self._assume_non_overlapping:
+            _device_copy_validate_no_overlap(source_view, destination_view, plan, self._itemsize)
+        if not plan._empty:
+            _device_copy_validate_execution_location(
+                source_view,
+                destination_view,
+                _device_copy_stream(stream_handle),
+            )
         if self._use_cached_builds:
             if self._closed:
                 raise RuntimeError("DeviceCopy object is closed")
@@ -2719,16 +3127,10 @@ cdef class _DeviceCopy:
         elif _device_copy_call_rank(plan) != _device_copy_call_rank(self._plan):
             raise ValueError("device copy was built for a different simplified rank")
 
-        destination_byte_offset_split = _device_copy_split_byte_offset(
-            <uint64_t>destination_view.byte_offset,
-            self._itemsize,
-        )
         self._build._copy(
             source_view,
             destination_view,
             plan,
-            _device_copy_residual_byte_offset(<uint64_t>source_view.byte_offset, self._itemsize),
-            _device_copy_residual_byte_offset(<uint64_t>destination_view.byte_offset, self._itemsize),
             stream_handle,
         )
 
@@ -2775,6 +3177,7 @@ def _make_device_copy(
     object compute_capability=None,
     object compile_spec=None,
     object precompile=None,
+    bint assume_non_overlapping=False,
 ):
     return _DeviceCopy(
         source,
@@ -2783,6 +3186,7 @@ def _make_device_copy(
         compute_capability=compute_capability,
         compile_spec=compile_spec,
         precompile=precompile,
+        assume_non_overlapping=assume_non_overlapping,
     )
 
 
@@ -2791,6 +3195,7 @@ cdef void _device_copy_cached_copy_into(
     object destination,
     object stream,
     object compute_capability,
+    bint assume_non_overlapping,
 ) except *:
     cdef object stream_handle
     cdef object source_view
@@ -2803,7 +3208,11 @@ cdef void _device_copy_cached_copy_into(
 
     stream_handle = _device_copy_stream_handle(stream)
     source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
-    destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(destination, stream_handle)
+    destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(
+        destination,
+        stream_handle,
+        True,
+    )
 
     _device_copy_check_views_compatible(
         source_view,
@@ -2813,8 +3222,20 @@ cdef void _device_copy_cached_copy_into(
     )
 
     plan = _device_copy_make_plan_from_views(source_view, destination_view, <size_t>source_view.itemsize)
+    if not assume_non_overlapping:
+        _device_copy_validate_no_overlap(
+            source_view,
+            destination_view,
+            plan,
+            <size_t>source_view.itemsize,
+        )
     if plan._empty:
         return
+    _device_copy_validate_execution_location(
+        source_view,
+        destination_view,
+        _device_copy_stream(stream_handle),
+    )
 
     rank = _device_copy_call_rank(plan)
     executable = _make_device_copy_executable(
@@ -2832,11 +3253,18 @@ def _copy_into(
     object stream=None,
     object compute_capability=None,
     object compile_spec=None,
+    bint assume_non_overlapping=False,
 ):
     cdef object device_copy
 
     if compile_spec is None:
-        _device_copy_cached_copy_into(source, destination, stream, compute_capability)
+        _device_copy_cached_copy_into(
+            source,
+            destination,
+            stream,
+            compute_capability,
+            assume_non_overlapping,
+        )
         return
 
     device_copy = _DeviceCopy(
@@ -2845,6 +3273,7 @@ def _copy_into(
         stream=stream,
         compute_capability=compute_capability,
         compile_spec=compile_spec,
+        assume_non_overlapping=assume_non_overlapping,
     )
     try:
         device_copy(source, destination, stream=stream)
@@ -2949,6 +3378,8 @@ cdef void _validate_dlpack_tensor(DLTensor* tensor) except *:
         raise BufferError("DLPack tensor pointer must not be null")
     if tensor.device.device_type != kDLCUDA and tensor.device.device_type != kDLCUDAManaged:
         raise BufferError(f"expected a CUDA DLPack tensor, got device type {tensor.device.device_type}")
+    if tensor.device.device_id < 0:
+        raise BufferError("DLPack tensor device id must be non-negative")
     if tensor.ndim < 0:
         raise BufferError("DLPack tensor rank must be non-negative")
     if tensor.ndim != 0 and tensor.shape == NULL:
@@ -2969,7 +3400,12 @@ cdef void _validate_dlpack_tensor(DLTensor* tensor) except *:
         raise BufferError("non-empty DLPack tensor must have a data pointer")
 
 
-cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_tensor(object owner, DLTensor* tensor):
+cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_tensor(
+    object owner,
+    DLTensor* tensor,
+    uint64_t flags,
+    bint flags_known,
+):
     cdef _PreparedDeviceCopyView view
 
     _validate_dlpack_tensor(tensor)
@@ -2981,26 +3417,38 @@ cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_tensor(object owner, DLTe
         <size_t>tensor.ndim,
         tensor.shape,
         tensor.strides,
+        tensor.device.device_type,
+        tensor.device.device_id,
+        flags,
+        flags_known,
     )
     return view
 
 
 cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_owner(_DLPackManagedTensorOwner owner):
-    return _prepare_view_from_dlpack_tensor(owner, owner._tensor())
+    if owner._versioned != NULL:
+        return _prepare_view_from_dlpack_tensor(
+            owner,
+            owner._tensor(),
+            owner._versioned.flags,
+            True,
+        )
+    return _prepare_view_from_dlpack_tensor(owner, owner._tensor(), 0, False)
 
 
 cdef _PreparedDeviceCopyView _prepare_dlpack_view_from_c_exchange(
     object obj,
     DLPackExchangeAPI* api,
+    bint require_flags,
 ):
     cdef DLTensor tensor
     cdef DLManagedTensorVersioned* managed_tensor
     cdef _DLPackManagedTensorOwner owner
 
-    if api.dltensor_from_py_object_no_sync != NULL:
+    if not require_flags and api.dltensor_from_py_object_no_sync != NULL:
         if api.dltensor_from_py_object_no_sync(<void*><PyObject*>obj, &tensor) != 0:
             raise BufferError("DLPack C exchange dltensor_from_py_object_no_sync failed")
-        return _prepare_view_from_dlpack_tensor(obj, &tensor)
+        return _prepare_view_from_dlpack_tensor(obj, &tensor, 0, False)
 
     if api.managed_tensor_from_py_object_no_sync != NULL:
         managed_tensor = NULL
@@ -3014,21 +3462,61 @@ cdef _PreparedDeviceCopyView _prepare_dlpack_view_from_c_exchange(
             raise BufferError(f"unsupported DLPack major version {managed_tensor.version.major}")
         return _prepare_view_from_dlpack_owner(owner)
 
+    if require_flags:
+        raise BufferError("DLPack C exchange API cannot expose destination access flags")
     raise BufferError("DLPack C exchange API does not provide tensor export")
 
 
-def _prepare_dlpack_view(object obj, object stream=None):
+cdef bint _device_copy_c_exchange_stream_matches(
+    DLPackExchangeAPI* api,
+    _PreparedDeviceCopyView view,
+    object stream,
+) except *:
+    cdef void* producer_stream = NULL
+    cdef uintptr_t requested_stream = 0
+
+    if api.current_work_stream == NULL:
+        return False
+    if api.current_work_stream(
+        view._device_type,
+        view._device_id,
+        &producer_stream,
+    ) != 0:
+        raise BufferError("DLPack C exchange current_work_stream failed")
+    if stream is not None:
+        requested_stream = _as_uintptr(stream, "stream")
+    return <uintptr_t>producer_stream == requested_stream
+
+
+def _prepare_dlpack_view(
+    object obj,
+    object stream=None,
+    bint require_flags=False,
+):
     cdef DLPackExchangeAPI* api
     cdef object capsule
     cdef _DLPackManagedTensorOwner owner
+    cdef _PreparedDeviceCopyView view
+    cdef uint64_t exchange_flags = 0
+    cdef bint exchange_flags_known = False
 
     api = _dlpack_exchange_api(obj)
     if api != NULL:
-        return _prepare_dlpack_view_from_c_exchange(obj, api)
+        view = _prepare_dlpack_view_from_c_exchange(obj, api, require_flags)
+        if _device_copy_c_exchange_stream_matches(api, view, stream):
+            return view
+        exchange_flags = view._flags
+        exchange_flags_known = view._flags_known
+        view = None
 
     capsule = _dlpack_capsule_from_object(obj, stream)
     owner = _consume_dlpack_capsule(capsule)
-    return _prepare_view_from_dlpack_owner(owner)
+    view = _prepare_view_from_dlpack_owner(owner)
+    if exchange_flags_known:
+        view._flags = exchange_flags
+        view._flags_known = True
+        view._read_only = bool(exchange_flags & DLPACK_FLAG_BITMASK_READ_ONLY)
+    return view
 
 
 def _make_runtime_axis_metadata(object rank):
@@ -3041,5 +3529,22 @@ def _prepare_runtime_strided_view(
     object byte_offset,
     object shape,
     object strides=None,
+    *,
+    object device_type=kDLCUDA,
+    object device_id=0,
+    object flags=0,
+    object flags_known=False,
+    object read_only=False,
 ):
-    return _PreparedDeviceCopyView(owner, data_ptr, byte_offset, shape, strides)
+    return _PreparedDeviceCopyView(
+        owner,
+        data_ptr,
+        byte_offset,
+        shape,
+        strides,
+        device_type=device_type,
+        device_id=device_id,
+        flags=flags,
+        flags_known=flags_known,
+        read_only=read_only,
+    )

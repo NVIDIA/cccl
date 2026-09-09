@@ -93,6 +93,7 @@ def device_copy_impl():
 
 DLPACK_MAJOR_VERSION = 1
 DLPACK_MINOR_VERSION = 3
+DLPACK_FLAG_BITMASK_READ_ONLY = 1
 K_DLCUDA = 2
 K_DLCUDA_MANAGED = 13
 
@@ -179,6 +180,14 @@ DLPACK_MANAGED_TENSOR_FROM_PY_OBJECT_NO_SYNC = ctypes.CFUNCTYPE(
 )
 
 
+DLPACK_CURRENT_WORK_STREAM = ctypes.CFUNCTYPE(
+    ctypes.c_int,
+    ctypes.c_int32,
+    ctypes.c_int32,
+    ctypes.POINTER(ctypes.c_void_p),
+)
+
+
 class DLPackExchangeAPI(ctypes.Structure):
     _fields_ = [
         ("header", DLPackExchangeAPIHeader),
@@ -210,12 +219,13 @@ def _dltensor(
     data=0x1000,
     byte_offset=0,
     device_type=K_DLCUDA,
+    device_id=0,
 ):
     shape_array = _int64_array(shape) if shape is not None else None
     strides_array = _int64_array(strides) if strides is not None else None
     tensor = DLTensor(
         ctypes.c_void_p(data),
-        DLDevice(device_type, 0),
+        DLDevice(device_type, device_id),
         0 if shape is None else len(shape),
         DLDataType(0, 32, 1),
         shape_array,
@@ -240,6 +250,11 @@ def test_prepare_dlpack_view_from_versioned_capsule(device_copy_impl):
 
     assert view.data_ptr == 0x1000
     assert view.byte_offset == 24
+    assert view.device_type == K_DLCUDA
+    assert view.device_id == 0
+    assert view.flags == 7
+    assert view.flags_known is True
+    assert view.read_only is True
     assert view.rank == 2
     assert view.shape == (2, 3)
     assert view.strides == (3, -1)
@@ -257,6 +272,9 @@ def test_prepare_dlpack_view_from_legacy_capsule_with_compact_strides(
     view = device_copy_impl._prepare_dlpack_view(capsule)
 
     assert view.rank == 3
+    assert view.flags == 0
+    assert view.flags_known is False
+    assert view.read_only is False
     assert view.shape == (2, 4, 5)
     assert view.strides == (20, 5, 1)
     assert shape is not None
@@ -318,11 +336,18 @@ def test_prepare_dlpack_view_calls_dlpack_with_latest_supported_version(
 def test_prepare_dlpack_view_uses_c_exchange_api(device_copy_impl):
     tensor, shape, strides = _dltensor([4, 5], [5, 1], data=0x1234, byte_offset=8)
     calls = []
+    stream_calls = []
 
     @DLPACK_DLTENSOR_FROM_PY_OBJECT_NO_SYNC
     def export_tensor(_py_object, out):
         calls.append(True)
         out[0] = tensor
+        return 0
+
+    @DLPACK_CURRENT_WORK_STREAM
+    def current_work_stream(device_type, device_id, out):
+        stream_calls.append((device_type, device_id))
+        out[0] = None
         return 0
 
     api = DLPackExchangeAPI(
@@ -334,7 +359,7 @@ def test_prepare_dlpack_view_uses_c_exchange_api(device_copy_impl):
         None,
         None,
         ctypes.cast(export_tensor, ctypes.c_void_p),
-        None,
+        ctypes.cast(current_work_stream, ctypes.c_void_p),
     )
 
     class CExchangeProducer:
@@ -349,6 +374,7 @@ def test_prepare_dlpack_view_uses_c_exchange_api(device_copy_impl):
     producer = CExchangeProducer()
     producer.api = api
     producer.export_tensor = export_tensor
+    producer.current_work_stream = current_work_stream
     producer.shape = shape
     producer.strides = strides
     producer.tensor = tensor
@@ -356,11 +382,212 @@ def test_prepare_dlpack_view_uses_c_exchange_api(device_copy_impl):
     view = device_copy_impl._prepare_dlpack_view(producer)
 
     assert calls == [True]
+    assert stream_calls == [(K_DLCUDA, 0)]
     assert view.data_ptr == 0x1234
     assert view.byte_offset == 8
     assert view.rank == 2
     assert view.shape == (4, 5)
     assert view.strides == (5, 1)
+
+
+def test_prepare_dlpack_destination_uses_versioned_c_exchange_flags(
+    device_copy_impl,
+):
+    tensor, shape, strides = _dltensor(
+        [4],
+        [1],
+        data=0x1234,
+        device_id=3,
+    )
+    managed = DLManagedTensorVersioned(
+        DLPackVersion(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION),
+        None,
+        None,
+        DLPACK_FLAG_BITMASK_READ_ONLY,
+        tensor,
+    )
+    direct_calls = []
+    managed_calls = []
+    stream_calls = []
+
+    @DLPACK_DLTENSOR_FROM_PY_OBJECT_NO_SYNC
+    def export_tensor(_py_object, out):
+        direct_calls.append(True)
+        out[0] = tensor
+        return 0
+
+    @DLPACK_MANAGED_TENSOR_FROM_PY_OBJECT_NO_SYNC
+    def export_managed_tensor(_py_object, out):
+        managed_calls.append(True)
+        out[0] = ctypes.pointer(managed)
+        return 0
+
+    @DLPACK_CURRENT_WORK_STREAM
+    def current_work_stream(device_type, device_id, out):
+        stream_calls.append((device_type, device_id))
+        out[0] = None
+        return 0
+
+    api = DLPackExchangeAPI(
+        DLPackExchangeAPIHeader(
+            DLPackVersion(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION),
+            ctypes.POINTER(DLPackExchangeAPIHeader)(),
+        ),
+        None,
+        ctypes.cast(export_managed_tensor, ctypes.c_void_p),
+        None,
+        ctypes.cast(export_tensor, ctypes.c_void_p),
+        ctypes.cast(current_work_stream, ctypes.c_void_p),
+    )
+
+    class CExchangeProducer:
+        __dlpack_c_exchange_api__ = _capsule(
+            ctypes.addressof(api),
+            b"dlpack_exchange_api",
+        )
+
+    producer = CExchangeProducer()
+    producer.api = api
+    producer.export_tensor = export_tensor
+    producer.export_managed_tensor = export_managed_tensor
+    producer.current_work_stream = current_work_stream
+    producer.managed = managed
+    producer.shape = shape
+    producer.strides = strides
+
+    view = device_copy_impl._prepare_dlpack_view(producer, require_flags=True)
+
+    assert direct_calls == []
+    assert managed_calls == [True]
+    assert stream_calls == [(K_DLCUDA, 3)]
+    assert view.device_id == 3
+    assert view.flags == DLPACK_FLAG_BITMASK_READ_ONLY
+    assert view.flags_known is True
+    assert view.read_only is True
+
+
+def test_prepare_dlpack_view_falls_back_when_c_exchange_stream_differs(
+    device_copy_impl,
+):
+    tensor, shape, strides = _dltensor([4], [1])
+    managed = DLManagedTensorVersioned(
+        DLPackVersion(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION),
+        None,
+        None,
+        0,
+        tensor,
+    )
+    direct_calls = []
+    dlpack_calls = []
+
+    @DLPACK_DLTENSOR_FROM_PY_OBJECT_NO_SYNC
+    def export_tensor(_py_object, out):
+        direct_calls.append(True)
+        out[0] = tensor
+        return 0
+
+    @DLPACK_CURRENT_WORK_STREAM
+    def current_work_stream(_device_type, _device_id, out):
+        out[0] = 0x55
+        return 0
+
+    api = DLPackExchangeAPI(
+        DLPackExchangeAPIHeader(
+            DLPackVersion(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION),
+            ctypes.POINTER(DLPackExchangeAPIHeader)(),
+        ),
+        None,
+        None,
+        None,
+        ctypes.cast(export_tensor, ctypes.c_void_p),
+        ctypes.cast(current_work_stream, ctypes.c_void_p),
+    )
+
+    class CExchangeProducer:
+        __dlpack_c_exchange_api__ = _capsule(
+            ctypes.addressof(api),
+            b"dlpack_exchange_api",
+        )
+
+        def __dlpack__(self, **kwargs):
+            dlpack_calls.append(kwargs)
+            return _capsule(ctypes.addressof(managed), b"dltensor_versioned")
+
+    producer = CExchangeProducer()
+    producer.api = api
+    producer.export_tensor = export_tensor
+    producer.current_work_stream = current_work_stream
+    producer.managed = managed
+    producer.shape = shape
+    producer.strides = strides
+
+    view = device_copy_impl._prepare_dlpack_view(producer)
+
+    assert direct_calls == [True]
+    assert dlpack_calls == [
+        {"max_version": (DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION)}
+    ]
+    assert view.shape == (4,)
+
+
+def test_prepare_dlpack_destination_preserves_flags_across_stream_fallback(
+    device_copy_impl,
+):
+    tensor, shape, strides = _dltensor([4], [1])
+    versioned = DLManagedTensorVersioned(
+        DLPackVersion(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION),
+        None,
+        None,
+        DLPACK_FLAG_BITMASK_READ_ONLY,
+        tensor,
+    )
+    legacy = DLManagedTensor(tensor, None, None)
+
+    @DLPACK_MANAGED_TENSOR_FROM_PY_OBJECT_NO_SYNC
+    def export_managed_tensor(_py_object, out):
+        out[0] = ctypes.pointer(versioned)
+        return 0
+
+    @DLPACK_CURRENT_WORK_STREAM
+    def current_work_stream(_device_type, _device_id, out):
+        out[0] = 0x55
+        return 0
+
+    api = DLPackExchangeAPI(
+        DLPackExchangeAPIHeader(
+            DLPackVersion(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION),
+            ctypes.POINTER(DLPackExchangeAPIHeader)(),
+        ),
+        None,
+        ctypes.cast(export_managed_tensor, ctypes.c_void_p),
+        None,
+        None,
+        ctypes.cast(current_work_stream, ctypes.c_void_p),
+    )
+
+    class CExchangeProducer:
+        __dlpack_c_exchange_api__ = _capsule(
+            ctypes.addressof(api),
+            b"dlpack_exchange_api",
+        )
+
+        def __dlpack__(self, **_kwargs):
+            return _capsule(ctypes.addressof(legacy), b"dltensor")
+
+    producer = CExchangeProducer()
+    producer.api = api
+    producer.export_managed_tensor = export_managed_tensor
+    producer.current_work_stream = current_work_stream
+    producer.versioned = versioned
+    producer.legacy = legacy
+    producer.shape = shape
+    producer.strides = strides
+
+    view = device_copy_impl._prepare_dlpack_view(producer, require_flags=True)
+
+    assert view.flags == DLPACK_FLAG_BITMASK_READ_ONLY
+    assert view.flags_known is True
+    assert view.read_only is True
 
 
 def test_prepare_dlpack_view_rejects_non_cuda_tensor(device_copy_impl):
@@ -381,6 +608,24 @@ def test_prepare_dlpack_view_rejects_non_cuda_tensor(device_copy_impl):
     assert strides is not None
 
 
+def test_prepare_dlpack_view_rejects_negative_device_id(device_copy_impl):
+    tensor, shape, strides = _dltensor([1], [1], device_id=-1)
+    managed = DLManagedTensorVersioned(
+        DLPackVersion(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION),
+        None,
+        None,
+        0,
+        tensor,
+    )
+    capsule = _capsule(ctypes.addressof(managed), b"dltensor_versioned")
+
+    with pytest.raises(BufferError, match="device id must be non-negative"):
+        device_copy_impl._prepare_dlpack_view(capsule)
+
+    assert shape is not None
+    assert strides is not None
+
+
 class Indexable:
     def __init__(self, value):
         self._value = value
@@ -391,6 +636,78 @@ class Indexable:
 
 class Owner:
     pass
+
+
+class CudaArrayInterfaceProducer:
+    def __init__(
+        self,
+        data_ptr,
+        shape,
+        strides,
+        *,
+        device_type=K_DLCUDA,
+        device_id=0,
+        read_only=False,
+    ):
+        self.dtype = "int32"
+        self.shape = shape
+        self.device_type = device_type
+        self.device_id = device_id
+        self.__cuda_array_interface__ = {
+            "data": (data_ptr, read_only),
+            "shape": shape,
+            "strides": strides,
+            "typestr": "<i4",
+            "version": 3,
+        }
+
+    def __dlpack_device__(self):
+        return self.device_type, self.device_id
+
+
+def test_DeviceCopy_rejects_read_only_destination(device_copy_impl):
+    source = CudaArrayInterfaceProducer(0x1000, (0,), (4,))
+    destination = CudaArrayInterfaceProducer(
+        0x2000,
+        (0,),
+        (4,),
+        read_only=True,
+    )
+
+    with pytest.raises(ValueError, match="destination is read-only"):
+        device_copy_impl._make_device_copy(source, destination)
+
+
+def test_DeviceCopy_rejects_different_cuda_devices(device_copy_impl):
+    source = CudaArrayInterfaceProducer(0x1000, (0,), (4,), device_id=0)
+    destination = CudaArrayInterfaceProducer(0x2000, (0,), (4,), device_id=1)
+
+    with pytest.raises(ValueError, match="same device"):
+        device_copy_impl._make_device_copy(source, destination)
+
+
+def test_DeviceCopy_allows_managed_memory_with_a_different_device_id(
+    device_copy_impl,
+):
+    source = CudaArrayInterfaceProducer(0, (0,), (4,), device_id=0)
+    destination = CudaArrayInterfaceProducer(
+        0,
+        (0,),
+        (4,),
+        device_type=K_DLCUDA_MANAGED,
+        device_id=1,
+    )
+
+    device_copy = device_copy_impl._make_device_copy(source, destination)
+    device_copy.close()
+
+
+def test_DeviceCopy_rejects_overlapping_memory_ranges(device_copy_impl):
+    source = CudaArrayInterfaceProducer(0x1000, (4,), (4,))
+    destination = CudaArrayInterfaceProducer(0x1008, (4,), (4,))
+
+    with pytest.raises(ValueError, match="bounding memory spans overlap"):
+        device_copy_impl._make_device_copy(source, destination)
 
 
 @pytest.mark.parametrize(
@@ -432,6 +749,11 @@ def test_prepare_runtime_strided_view(device_copy_impl):
 
     assert view.data_ptr == 0x1000
     assert view.byte_offset == 32
+    assert view.device_type == K_DLCUDA
+    assert view.device_id == 0
+    assert view.flags == 0
+    assert view.flags_known is False
+    assert view.read_only is False
     assert view.rank == 3
     assert view.shape == (2, 3, 4)
     assert view.strides == (12, -4, 1)
