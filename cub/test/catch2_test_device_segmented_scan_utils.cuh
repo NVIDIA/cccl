@@ -279,14 +279,4 @@ template <typename T, typename GeneratorT>
   }
   return result;
 }
-
-template <typename Actual, typename Expected>
-void require_ranges_equal(const Actual& actual, const Expected& expected)
-{
-  REQUIRE(actual.size() == expected.size());
-  for (std::size_t i = 0; i < expected.size(); ++i)
-  {
-    REQUIRE(actual[i] == expected[i]);
-  }
-}
 } // namespace segmented_scan_test

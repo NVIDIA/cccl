@@ -87,11 +87,10 @@ struct populate_input
 };
 }; // namespace impl
 
-using segmented_scan_test::copy_to_host;
+using segmented_scan_test::Equals;
 using segmented_scan_test::make_device_buffer_from_host;
 using segmented_scan_test::make_host_buffer;
 using segmented_scan_test::make_tabulated_host_buffer;
-using segmented_scan_test::require_ranges_equal;
 
 CUB_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]", CUB_SMALL)
 {
@@ -153,9 +152,6 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
     stream.get());
   REQUIRE(cudaSuccess == status2);
 
-  auto h_output = make_host_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
-  copy_to_host(stream, output, h_output);
-
   auto h_expected = make_host_buffer<pair_t>(stream, device, h_input.size(), cuda::no_init);
 
   for (std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
@@ -168,5 +164,5 @@ CUB_TEST("Device inclusive segmented scan works with non-commutative operator", 
       pair_t{0, 0});
   }
 
-  require_ranges_equal(h_expected, h_output);
+  REQUIRE_THAT_QUIET(output, Equals(stream, h_expected));
 }

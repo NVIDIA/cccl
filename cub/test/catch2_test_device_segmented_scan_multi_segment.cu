@@ -81,12 +81,11 @@ struct populate_bicyclic_monoid_input
 
 namespace
 {
-using segmented_scan_test::copy_to_host;
 using segmented_scan_test::enqueue_copy_to_device;
+using segmented_scan_test::Equals;
 using segmented_scan_test::make_device_buffer_from_host;
 using segmented_scan_test::make_host_buffer;
 using segmented_scan_test::make_tabulated_host_buffer;
-using segmented_scan_test::require_ranges_equal;
 
 template <typename T>
 constexpr unsigned int get_max_elems()
@@ -313,10 +312,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       d_no_init,
       one_segment_per_worker);
 
-    auto h_output = make_host_buffer<pair_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-
-    require_ranges_equal(h_expected, h_output);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 
   const int two_segments_per_worker = 2;
@@ -334,10 +330,7 @@ CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       d_no_init,
       two_segments_per_worker);
 
-    auto h_output = make_host_buffer<pair_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-
-    require_ranges_equal(h_expected, h_output);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 }
 
@@ -427,9 +420,7 @@ CUB_TEST(
       d_init_v,
       segments_per_worker);
 
-    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-    require_ranges_equal(h_expected, h_output);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 }
 
@@ -512,9 +503,7 @@ CUB_TEST("Segmented inclusive scan works correctly for integer types",
       d_no_init,
       segments_per_worker);
 
-    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-    require_ranges_equal(h_expected, h_output);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 }
 
@@ -607,9 +596,7 @@ CUB_TEST("Segmented inclusive scan with init works for integer types",
       d_init_v,
       segments_per_worker);
 
-    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-    require_ranges_equal(h_expected, h_output);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 }
 
@@ -740,9 +727,7 @@ CUB_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
       d_no_init,
       segments_per_worker);
 
-    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-    require_ranges_equal(h_output, h_expected);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 }
 
@@ -849,9 +834,7 @@ CUB_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_s
       d_no_init,
       segments_per_worker);
 
-    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-    require_ranges_equal(h_output, h_expected);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 }
 
@@ -993,8 +976,6 @@ CUB_TEST("segmented inclusive scan works correctly with fancy iterators", "[mult
       d_init_v,
       segments_per_worker);
 
-    auto h_output = make_host_buffer<value_t>(copy_stream, device, output.size(), cuda::no_init);
-    copy_to_host(copy_stream, output, h_output);
-    require_ranges_equal(h_expected, h_output);
+    REQUIRE_THAT_QUIET(output, Equals(copy_stream, h_expected));
   }
 }

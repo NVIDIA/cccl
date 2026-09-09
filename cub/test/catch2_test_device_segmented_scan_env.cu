@@ -45,7 +45,6 @@ namespace stdexec = cuda::std::execution;
 
 using segmented_scan_test::Equals;
 using segmented_scan_test::make_host_buffer;
-using segmented_scan_test::read_single;
 
 #if TEST_LAUNCH == 0
 
@@ -633,7 +632,7 @@ CUB_TEST("Device segmented exclusive sum can be tuned", "[segmented_scan][device
   const auto env                           = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
 
   device_segmented_exclusive_sum(d_in, d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
-  REQUIRE(read_single(stream, d_block_size) == target_block_size);
+  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented inclusive sum can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
@@ -649,7 +648,7 @@ CUB_TEST("Device segmented inclusive sum can be tuned", "[segmented_scan][device
   const auto env                           = cuda::execution::tune(segmented_scan_tuning<target_block_size>{});
 
   device_segmented_inclusive_sum(d_in, d_out.data(), d_offsets_it, d_offsets_it + 1, num_segments, env);
-  REQUIRE(read_single(stream, d_block_size) == target_block_size);
+  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
@@ -670,7 +669,7 @@ CUB_TEST("Device segmented exclusive scan can be tuned", "[segmented_scan][devic
 
   const auto expected = make_host_buffer<int>(stream, device, {100, 108, 114, 121, 100, 103, 103, 100, 101});
   REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
-  REQUIRE(read_single(stream, d_block_size) == target_block_size);
+  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
@@ -690,7 +689,7 @@ CUB_TEST("Device segmented inclusive scan can be tuned", "[segmented_scan][devic
 
   const auto expected = make_host_buffer<int>(stream, device, {8, 14, 21, 26, 3, 3, 12, 1, 3});
   REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
-  REQUIRE(read_single(stream, d_block_size) == target_block_size);
+  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
 }
 
 CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][device]", CUB_SMALL, block_sizes)
@@ -711,7 +710,7 @@ CUB_TEST("Device segmented inclusive scan init can be tuned", "[segmented_scan][
 
   const auto expected = make_host_buffer<int>(stream, device, {108, 114, 121, 126, 103, 103, 112, 101, 103});
   REQUIRE_THAT_QUIET(d_out, Equals(stream, expected));
-  REQUIRE(read_single(stream, d_block_size) == target_block_size);
+  REQUIRE(segmented_scan_test::read_single(stream, d_block_size) == target_block_size);
 }
 
 #endif // TEST_LAUNCH != 1
