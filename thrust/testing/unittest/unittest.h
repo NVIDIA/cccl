@@ -11,13 +11,12 @@
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/cmath>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdlib>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <cmath>
-#include <cstddef>
-#include <cstdlib>
-#include <limits>
 #include <string>
 #include <typeinfo>
 #include <vector>
@@ -30,9 +29,9 @@
 #include <unittest/random.h>
 #include <unittest/special_types.h>
 
-#ifdef __GNUC__
+#if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #  include <cxxabi.h>
-#endif // __GNUC__
+#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 
 // workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
 #if _CCCL_COMPILER(NVHPC)
@@ -178,7 +177,7 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
     const auto vec_ref = ::unittest::detail::to_approx(::unittest::detail::to_vec(X));                                \
     const auto vec_out = ::unittest::detail::to_approx(::unittest::detail::to_vec(Y));                                \
     REQUIRE(vec_ref.size() == vec_out.size());                                                                        \
-    for (std::size_t i = 0; i < vec_ref.size(); ++i)                                                                  \
+    for (::cuda::std::size_t i = 0; i < vec_ref.size(); ++i)                                                          \
     {                                                                                                                 \
       const double a_ = static_cast<double>(vec_ref[i]);                                                              \
       const double b_ = static_cast<double>(vec_out[i]);                                                              \
@@ -186,7 +185,7 @@ std::vector<T> to_approx(std::vector<Complex<T>> const& v)
       /* Legacy tolerance test: not-equal only if the difference exceeds absolute + relative tolerance. Written as */ \
       /* !(diff > tol) rather than (diff <= tol) so that NaN compares equal to NaN, matching the old framework and */ \
       /* letting degenerate complex results (e.g. complex_plane(0) == NaN) pass. */                                   \
-      REQUIRE_FALSE(std::abs(a_ - b_) > 1e-4 * (std::abs(a_) + std::abs(b_)) + 1e-4);                                 \
+      REQUIRE_FALSE(::cuda::std::abs(a_ - b_) > 1e-4 * (::cuda::std::abs(a_) + ::cuda::std::abs(b_)) + 1e-4);         \
     }                                                                                                                 \
   }
 
@@ -275,7 +274,7 @@ inline constexpr size_t default_threshold = 1 << 16; //  64K
 inline constexpr size_t large_threshold   = 1 << 20; //   1M
 inline constexpr size_t huge_threshold    = 1 << 24; //  16M
 inline constexpr size_t epic_threshold    = 1 << 26; //  64M
-inline constexpr size_t max_threshold     = (std::numeric_limits<size_t>::max)();
+inline constexpr size_t max_threshold     = (::cuda::std::numeric_limits<size_t>::max)();
 
 inline std::vector<size_t> test_sizes = [] {
   std::vector<size_t> v;
@@ -451,7 +450,7 @@ namespace unittest
 inline std::string demangle(const char* name)
 {
   // for demangling the result of type_info.name() with msvc, type_info.name() is already demangled
-#if __GNUC__ && !_NVHPC_CUDA
+#if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
   int status     = 0;
   char* realname = abi::__cxa_demangle(name, nullptr, nullptr, &status);
   if (realname == nullptr)
@@ -459,7 +458,7 @@ inline std::string demangle(const char* name)
     return name;
   }
   std::string result(realname);
-  std::free(realname);
+  ::cuda::std::free(realname);
   return result;
 #else
   return name;
@@ -475,7 +474,7 @@ std::string type_name()
 // Use this with counting_iterator to avoid generating a range larger than we can represent.
 // TODO: This probably won't work for `half`.
 template <typename T>
-T truncate_to_max_representable(std::size_t n)
+T truncate_to_max_representable(::cuda::std::size_t n)
 {
   if constexpr (::cuda::std::is_floating_point_v<T>)
   {
@@ -483,8 +482,8 @@ T truncate_to_max_representable(std::size_t n)
   }
   else
   {
-    return static_cast<T>(
-      ::cuda::std::min<std::size_t>(n, static_cast<std::size_t>(::cuda::std::numeric_limits<T>::max())));
+    return static_cast<T>(::cuda::std::min<::cuda::std::size_t>(
+      n, static_cast<::cuda::std::size_t>(::cuda::std::numeric_limits<T>::max())));
   }
 }
 } // namespace unittest
