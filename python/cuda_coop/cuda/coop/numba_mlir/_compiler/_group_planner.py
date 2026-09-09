@@ -14,6 +14,18 @@ from enum import Enum
 import cuda.coop._core.api._dispatch as _portable_dispatch
 
 from .._thread_data import ThreadData
+from ._group_errors import (
+    CyclicArrayProvenanceError,
+    EscapingGroupDescriptorError,
+    InconsistentArrayExtentError,
+    InconsistentLoopPayloadExtentError,
+    InconsistentLoopTupleExtentError,
+    InconsistentTupleExtentError,
+    InvalidGroupSelectorError,
+    NonConstantGroupArgumentError,
+    NonConstantThreadGroupError,
+    UnknownResultExtentError,
+)
 from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _NAME_COUNTER,
@@ -158,9 +170,7 @@ class _GroupCallPlanner:
         try:
             return self.func_ir.infer_constant(value)
         except Exception as exc:
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir group arguments that shape provider specialization must be compile-time constants; got {value.name!r}"
-            ) from exc
+            raise NonConstantGroupArgumentError(value.name) from exc
 
     def _try_constant(self, value: Any) -> tuple[bool, Any]:
         """Resolve a constant without requesting dispatcher specialization."""
@@ -233,9 +243,7 @@ class _GroupCallPlanner:
         token = token.strip().lower().replace("-", "_")
         if token not in allowed:
             choices = ", ".join(sorted(allowed))
-            raise ValueError(
-                f"cuda.coop.{operation} {parameter} must be one of: {choices}; use a backend-qualified import for backend-only controls"
-            )
+            raise InvalidGroupSelectorError(operation, parameter, choices)
         return token
 
     def _hierarchy(self, value: Any) -> ThreadHierarchy | None:
@@ -628,9 +636,7 @@ class _GroupCallPlanner:
     def _array_operand_state(self, operation: str, value: Any) -> bool:
         state = self._is_array_value(value)
         if state is None:
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} could not resolve cyclic array provenance to a concrete scalar or array value"
-            )
+            raise CyclicArrayProvenanceError(operation)
         return state
 
     def _thread_data_operand_state(
@@ -657,9 +663,7 @@ class _GroupCallPlanner:
             if extent is not None:
                 extents.add(extent)
         if len(extents) > 1:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir array aliases have inconsistent items_per_thread extents"
-            )
+            raise InconsistentArrayExtentError()
         return next(iter(extents), None)
 
     def _array_extent_tuple_item(
@@ -682,9 +686,7 @@ class _GroupCallPlanner:
             is not None
         }
         if len(extents) > 1:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir tuple projections have inconsistent items_per_thread extents"
-            )
+            raise InconsistentTupleExtentError()
         return next(iter(extents), None)
 
     def _array_extent_tuple_item_definition(
@@ -708,9 +710,7 @@ class _GroupCallPlanner:
                 is not None
             }
             if len(extents) > 1:
-                raise GroupRewriteError(
-                    "cuda.coop.numba_mlir loop-carried tuple payloads have inconsistent items_per_thread extents"
-                )
+                raise InconsistentLoopTupleExtentError()
             return next(iter(extents), None)
         if definition.op == "build_tuple":
             items = tuple(getattr(definition, "items", ()))
@@ -746,9 +746,7 @@ class _GroupCallPlanner:
                 if (extent := self._array_extent(incoming, seen=set(seen))) is not None
             }
             if len(extents) > 1:
-                raise GroupRewriteError(
-                    "cuda.coop.numba_mlir loop-carried payloads have inconsistent items_per_thread extents"
-                )
+                raise InconsistentLoopPayloadExtentError()
             return next(iter(extents), None)
         if definition.op in {"getitem", "static_getitem"}:
             index = getattr(definition, "index", None)
@@ -828,10 +826,7 @@ class _GroupCallPlanner:
             else self._array_extent(source)
         )
         if extent is None:
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} could not infer a static "
-                "items_per_thread extent for its non-mutating result"
-            )
+            raise UnknownResultExtentError(operation)
         for item_index in range(extent):
             index = self._value_var(
                 statements,
@@ -960,9 +955,7 @@ class _GroupCallPlanner:
             )
         group = self._group(bound.arguments["group"])
         if group is None:
-            raise GroupRewriteError(
-                f"cuda.coop.numba_mlir.{operation} requires a compile-time ThreadGroup from this_*()"
-            )
+            raise NonConstantThreadGroupError(operation)
         is_common_root = _is_common_root_operation(function, operation)
         if is_common_root:
             _portable_dispatch._validate_portable_operation_group(operation, group)
@@ -1053,9 +1046,7 @@ class _GroupCallPlanner:
                     ):
                         continue
                 names = ", ".join(sorted(used_names))
-                raise GroupRewriteError(
-                    f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are compile-time descriptors and may only feed this_*(), group_by(), or group-first primitives; descriptor use involving {names!r} would escape to runtime"
-                )
+                raise EscapingGroupDescriptorError(names)
 
     def run(self) -> bool:
         self._mark_descriptor_calls()
