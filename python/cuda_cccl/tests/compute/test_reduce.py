@@ -934,7 +934,15 @@ def test_reduce_transform_output_iterator(floating_array):
     )
 
     expected = np.sqrt(np.sum(floating_array))
-    np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-6)
+    # Parallel float32 plus-reduction can differ from NumPy by ~1 ULP after sqrt
+    # (~2e-6 around sqrt(500)), which exceeds default rtol=1e-7 with only atol=1e-6.
+    # Keep float64 on the default relative tolerance so a broken transform still fails.
+    if dtype == np.float32:
+        np.testing.assert_allclose(
+            d_output.copy_to_host(), expected, rtol=1e-6, atol=1e-6
+        )
+    else:
+        np.testing.assert_allclose(d_output.copy_to_host(), expected, atol=1e-6)
 
 
 def test_reduce_with_not_guaranteed_determinism(floating_array):
