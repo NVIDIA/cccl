@@ -310,16 +310,15 @@ _CCCL_HOST_DEVICE_API constexpr auto get_sum_sm107_tuning(type_t accum_t, int of
 _CCCL_HOST_DEVICE_API constexpr auto get_extremum_sm107_tuning(type_t accum_t, int accum_size) noexcept
   -> ::cuda::std::optional<sm100_tuning_values>
 {
+  // only int16/uint16 were covered by the tuning search; __half and __nv_bfloat16 are deliberately
+  // excluded so they keep the default policy (verified unchanged)
   if (accum_size == 2 && (accum_t == type_t::int16 || accum_t == type_t::uint16))
   {
     // ipt_16.tpb_128.ipv_2  2^16 1.217  2^20 1.115  2^24 1.142  2^28 1.038
     return sm100_tuning_values{16, 128, 2};
   }
-  if (accum_size == 4)
-  {
-    // ipt_22.tpb_512.ipv_1  2^28: float 1.026, int32 1.034
-    return sm100_tuning_values{22, 512, 1};
-  }
+  // 4-byte accumulators: the best candidate traded a ~2% gain at 2^28 for 6-9% regressions at small
+  // problem sizes, so they are intentionally left untuned
   if (accum_size == 8)
   {
     if (accum_t == type_t::float64)
