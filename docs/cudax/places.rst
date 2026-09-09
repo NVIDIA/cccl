@@ -397,6 +397,50 @@ green-context places) ignore the registry and return their own embedded pool
 instead, so the user-provided ``cudaStream_t`` / ``CUgreenCtx`` must outlive
 any place that wraps it.
 
+.. _places-place-group:
+
+Place groups
+------------
+
+A grid of places (or a ``std::vector<exec_place>``) is a pure value naming
+*where* things can run. ``place_group`` bundles a set of places with *what it
+takes* to run there: lazily created per-place stream pools and per-place
+memory resources, with a well-defined teardown order. Two groups over the same
+places are two deliberately distinct isolation scopes — mirroring the MPI
+precedent of ``MPI_Group`` (membership) versus ``MPI_Comm`` (membership plus
+attached state).
+
+.. code:: cpp
+
+    #include <cuda/experimental/places.cuh>
+    using namespace cuda::experimental::places;
+
+    // One place per locality domain of every device (whole devices where
+    // domains are unsupported)
+    auto group = place_group::by_locality_domains();
+
+    // Alternatives: one place per device, an explicit vector, or a grid
+    auto by_dev    = place_group::by_devices();
+    auto from_grid = place_group{make_locality_domain_grid(0)};
+
+    // Per-place streams (stable per (place, color)) and memory resources
+    cudaStream_t s = group.get_stream(/*place_idx=*/0, /*color=*/0);
+    auto mr        = group.memory_resource(0);
+
+    // Environments for CUB single-call algorithms: stream + the place's
+    // memory resource, so temporaries land where the work runs
+    auto env = group.env(0);
+
+A standalone ``place_group`` owns its stream-pool registry. When it coexists
+with a CUDASTF context, it can *borrow* the context's
+``async_resources_handle`` pools instead, so exactly one pool owner exists:
+
+.. code:: cpp
+
+    cuda::experimental::stf::context ctx;
+    std::vector<exec_place> places{exec_place::device(0)};
+    place_group group{places, ctx.async_resources()};
+
 .. _places-memory-allocation:
 
 Memory allocation with data places
