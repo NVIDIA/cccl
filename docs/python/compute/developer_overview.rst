@@ -820,9 +820,9 @@ caches through a weak registry of live thread cache containers, the shared
 build-result cache, and the compiled-device-code memos (JIT-compiled Python
 operators in ``_jit`` and NVRTC-compiled iterator wrappers in
 ``_cpp_compile``), so the next build is cold end to end. The struct
-registration caches are deliberately left alone: they memoize registrations
-into the JIT backend, which must not be repeated. Separate Python processes
-build and cache independently.
+registration caches are left alone, since re-registering the same types would
+be overhead with no benefit. Separate Python processes build and cache
+independently.
 
 Calling ``clear_all_caches()`` concurrently with active factory calls or
 algorithm execution is not supported unless the caller synchronizes externally.

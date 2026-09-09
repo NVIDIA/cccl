@@ -905,8 +905,8 @@ def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type, cc=None
 
 # Keep clear_all_caches() covering compiled operators: this is the memo a build
 # must miss after a clear for the JIT to actually run again. (The struct
-# registration caches above are deliberately not registered -- they memoize
-# side effects on the backend's registries, which must not be redone.)
+# registration caches above stay unregistered: clearing them would only make the
+# next build re-register the same types, overhead with no benefit.)
 _process_wide_cache_registry["_jit._compile_op_impl"] = _compile_op_impl
 
 
