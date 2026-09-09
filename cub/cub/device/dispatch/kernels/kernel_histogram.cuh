@@ -21,6 +21,7 @@
 
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__bit/countl.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
@@ -45,16 +46,12 @@ struct fast_divide_by_constant
 
   [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int count_leading_zeros(::cuda::std::uint64_t value)
   {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return value == 0 ? 64 : __clzll(static_cast<long long>(value));),
-                      (return value == 0 ? 64 : __builtin_clzll(value);));
+    return ::cuda::std::countl_zero(value);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int count_leading_zeros(::cuda::std::uint32_t value)
   {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return value == 0 ? 32 : __clz(static_cast<int>(value));),
-                      (return value == 0 ? 32 : __builtin_clz(value);));
+    return ::cuda::std::countl_zero(value);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int ceil_log2(UInt divisor)
@@ -1373,8 +1370,11 @@ struct AgentHistogramCooperative
     auto* cache_keys = reinterpret_cast<::cuda::std::uint32_t*>(dynamic_smem);
     CounterT* cache_counts =
       reinterpret_cast<CounterT*>(cache_keys + static_cast<size_t>(NumActiveChannels) * cache_slots_per_channel);
-    const int cache_mask    = cache_slots_per_channel > 0 ? cache_slots_per_channel - 1 : 0;
-    const int cache_log2    = cache_slots_per_channel > 0 ? 31 - __clz(cache_slots_per_channel) : 0;
+    const int cache_mask = cache_slots_per_channel > 0 ? cache_slots_per_channel - 1 : 0;
+    const int cache_log2 =
+      cache_slots_per_channel > 0
+        ? 31 - ::cuda::std::countl_zero(static_cast<::cuda::std::uint32_t>(cache_slots_per_channel))
+        : 0;
     const int thread_idx    = static_cast<int>(threadIdx.x);
     const int block_threads = static_cast<int>(blockDim.x);
 
@@ -1409,7 +1409,6 @@ struct AgentHistogramCooperative
     const OffsetT step          = static_cast<OffsetT>(total_threads);
     const OffsetT chunk         = static_cast<OffsetT>(unroll) * step;
     const OffsetT chunk_count   = ::cuda::ceil_div(total_pixels, chunk);
-    const unsigned int lane_id  = threadIdx.x & 0x1f;
     const bool contiguous_input = num_rows == 1;
 
     PrivatizedDecodeOpT decode_op[NumActiveChannels];
@@ -1421,12 +1420,12 @@ struct AgentHistogramCooperative
     }
 
     constexpr bool use_mru_cache = NumActiveChannels == 1 && PrivatizedDecodeOpT::is_range_transform;
-    typename PrivatizedDecodeOpT::BracketCacheT bracket_cache[NumActiveChannels];
+    [[maybe_unused]] typename PrivatizedDecodeOpT::BracketCacheT bracket_cache[NumActiveChannels];
     ::cuda::std::uint32_t* channel_keys[NumActiveChannels];
     CounterT* thread_counts[NumActiveChannels];
-    CounterT* private_histograms[NumActiveChannels];
-    int pending_bin[NumActiveChannels];
-    CounterT pending_count[NumActiveChannels];
+    [[maybe_unused]] CounterT* private_histograms[NumActiveChannels];
+    [[maybe_unused]] int pending_bin[NumActiveChannels];
+    [[maybe_unused]] CounterT pending_count[NumActiveChannels];
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -1493,6 +1492,7 @@ struct AgentHistogramCooperative
       if constexpr (coalesce_before_probe
                     || policy.high_bin_aggregation == HistogramAggregationAlgorithm::warp_coalesced)
       {
+        const unsigned int lane_id = threadIdx.x & 0x1f;
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_70,
           (const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
