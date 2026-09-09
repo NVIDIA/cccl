@@ -399,8 +399,7 @@ struct lookahead_scan_closure
     const int valid_threads_this_warp =
       cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
     const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
-    // valid_warps can be 0 for exclusive scans where the last tile consists of a single element
-    _CCCL_ASSERT(0 <= valid_warps && valid_warps <= squad.warpCount(), "");
+    _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
 
     // Load tile from shared memory and reduce across thread and warp
     AccumT regThreadAggr;
@@ -413,6 +412,16 @@ struct lookahead_scan_closure
         reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes);
       // in the last tile, we load some invalid elements, but don't process them later
       warpspeed::squadLoadSmem(squad, regInput, smem_data_start);
+
+      if constexpr (!isInclusive)
+      {
+        if (is_last_tile)
+        {
+          // the last element was not loaded to smem, so replace it by init value. Its actual value doesn't matter,
+          // since the aggregate of the last tile is never used, but it must not be garbage passed to scan_op
+          replaceSingleItem(squad, regInput, valid_items - 1, static_cast<AccumT>(real_init_value));
+        }
+      }
 
       // Reduce across thread and warp
       if (is_last_tile)
@@ -850,7 +859,7 @@ struct lookahead_scan_closure
           squad,
           phaseInOutRW,
           phaseThreadAndWarpAggrW,
-          load_items,
+          valid_items,
           is_first_tile,
           is_last_tile,
           loadInfo,

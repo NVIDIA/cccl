@@ -240,8 +240,12 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
         (local_aggr =
            warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);))
 
-      // We never initialized aggrExclusiveCtaCur when starting look ahead at tile 0
-      aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+      // We never initialized aggrExclusiveCtaCur when starting look ahead at tile 0.
+      // The reduction result and aggrExclusiveCtaCur are only valid in lane 0, so only lane 0 may call scan_op on them.
+      if (laneIdx == 0)
+      {
+        aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+      }
       idxTileCur += warp_right_aggregates_count;
 
       // we can only continue on the next 32 tile states, if we consumed all 32 of this iteration
@@ -310,16 +314,24 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
       const AccumT value      = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
       const AccumT local_aggr = warp_reduce_t{temp_storage}.Reduce(value, scan_op);
 
+      // The reduction result and aggrExclusiveCtaCur are only valid in lane 0, so only lane 0 may call scan_op on them.
       if (expected_count == 32)
       {
-        aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+        if (laneIdx == 0)
+        {
+          aggrExclusiveCtaCur = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
+        }
         idxTileCur += 32;
       }
       else
       {
-        const AccumT full_aggr = idxTileCur == 0 ? local_aggr : scan_op(aggrExclusiveCtaCur, local_aggr);
-        idxTilePrev            = idxTileCur;
-        aggrExclusiveCtaPrev   = aggrExclusiveCtaCur;
+        AccumT full_aggr = local_aggr; // must only be valid in lane_0
+        if (laneIdx == 0 && idxTileCur != 0)
+        {
+          full_aggr = scan_op(aggrExclusiveCtaCur, local_aggr);
+        }
+        idxTilePrev          = idxTileCur;
+        aggrExclusiveCtaPrev = aggrExclusiveCtaCur;
         return full_aggr;
       }
     }
