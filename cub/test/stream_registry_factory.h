@@ -137,8 +137,7 @@ struct stream_registry_factory_t
 
   template <typename Kernel, typename... Args>
   CUB_RUNTIME_FUNCTION cudaError_t LaunchCooperative(
-    dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, Kernel kernel, Args const&... args) const
-  {
+    dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, Kernel kernel, Args const&... args) const {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
                         if (get_stream_registry_factory_state()->m_stream)
@@ -149,11 +148,10 @@ struct stream_registry_factory_t
                         return cudaLaunchCooperativeKernel(
                           reinterpret_cast<void const*>(kernel), grid, block, kernel_args, shared_mem, stream);
                       }),
-                      ({ return cudaErrorNotSupported; }))
-  }
+                      ({ return cudaErrorNotSupported; }))}
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
-  MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
+    MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
   {
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (get_stream_registry_factory_state()->m_stream)
