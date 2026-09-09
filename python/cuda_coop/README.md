@@ -24,10 +24,10 @@ Python 3.10 through 3.14 is supported. Importing the portable `cuda.coop`
 package does not require loading a compiler backend.
 
 The Numba backend is intentionally limited to
-`numba-cuda-mlir>=0.5.0,<0.6`. It currently uses a guarded compatibility shim
-for private 0.5.x compiler registration APIs, so another runtime series is
-rejected before compiler registries are changed. Replacing that shim with an
-upstream public API is follow-up work.
+`numba-cuda-mlir>=0.5.0,<0.6`. Its private compiler API module
+provides access to overload templates, IR, datamodels, and the registries
+needed to roll back a failed activation. It does not adapt between runtime
+versions. Other runtime series are rejected before compiler registries change.
 
 When using the portable namespace with Numba-CUDA-MLIR, import the compiler
 runtime first so `cuda.coop` can activate its compiler hooks automatically:
@@ -74,7 +74,9 @@ Runtime configuration is controlled by these environment variables:
 | --- | --- |
 | `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit qualified-backend import still works. |
 | `CUDA_COOP_CCCL_ROOT` | Selects a CCCL source checkout or a `cuda-coop` header bundle. An invalid configured root is an error; resolution does not fall back to another CCCL source. |
-| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache under `~/.cache/cccl`. The value is read when the backend cache module is imported. |
+| `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
+| `XDG_CACHE_HOME` | On Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
+| `LOCALAPPDATA` | On Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
 | `CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR` | Writes content-addressed pre-NVRTC CUDA source files to this directory for compiler diagnostics. |
 | `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
