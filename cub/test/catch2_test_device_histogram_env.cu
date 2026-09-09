@@ -1661,22 +1661,22 @@ template <cub::HistogramHighBinAlgorithm Algorithm,
           cub::HistogramCacheAlgorithm Cache,
           cub::HistogramSpillAlgorithm Spill,
           cub::HistogramAggregationAlgorithm Aggregation,
-          int CacheEntriesPerChannel = 512>
+          int CacheBytesPerChannel = 6144>
 struct high_bin_histogram_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
-    auto policy                               = histogram_tuning<128>{}(cuda::compute_capability{});
-    policy.high_bin_algorithm                 = Algorithm;
-    policy.high_bin_cache                     = Cache;
-    policy.high_bin_spill                     = Spill;
-    policy.high_bin_aggregation               = Aggregation;
-    policy.high_bin_cache_entries_per_channel = CacheEntriesPerChannel;
-    policy.high_bin_cache_count_replicas      = 2;
-    policy.high_bin_cache_cuckoo_max_bins     = 4096;
-    policy.high_bin_pixels_per_thread         = 2;
-    policy.high_bin_threads_per_block         = 128;
-    policy.high_bin_min_histogram_bytes       = 0;
+    auto policy                                      = histogram_tuning<128>{}(cuda::compute_capability{});
+    policy.high_bin_algorithm                        = Algorithm;
+    policy.high_bin_cache                            = Cache;
+    policy.high_bin_spill                            = Spill;
+    policy.high_bin_aggregation                      = Aggregation;
+    policy.high_bin_cache_bytes_per_channel          = CacheBytesPerChannel;
+    policy.high_bin_cache_count_replicas             = 2;
+    policy.high_bin_cache_cuckoo_max_histogram_bytes = 16384;
+    policy.high_bin_pixels_per_thread                = 2;
+    policy.high_bin_threads_per_block                = 128;
+    policy.high_bin_min_histogram_bytes              = 0;
     return policy;
   }
 };
@@ -1864,7 +1864,7 @@ CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histo
                                 cub::HistogramCacheAlgorithm::cuckoo,
                                 cub::HistogramSpillAlgorithm::output,
                                 cub::HistogramAggregationAlgorithm::warp_coalesced,
-                                8192>{});
+                                98304>{});
 }
 
 CUB_TEST("DeviceHistogram high-bin cooperative strategy handles strided rows", "[histogram][device]", CUB_SMALL)
@@ -1976,10 +1976,10 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
        ", .high_bin_cache = HistogramCacheAlgorithm::single_probe"
        ", .high_bin_spill = HistogramSpillAlgorithm::global_memory_privatized"
        ", .high_bin_aggregation = HistogramAggregationAlgorithm::rle"
-       ", .high_bin_cache_entries_per_channel = 2048"
-       ", .high_bin_cache_count_replicas = 1, .high_bin_cache_cuckoo_max_bins = 262144"
+       ", .high_bin_cache_bytes_per_channel = 16384"
+       ", .high_bin_cache_count_replicas = 1, .high_bin_cache_cuckoo_max_histogram_bytes = 1048576"
        ", .high_bin_pixels_per_thread = 4, .high_bin_threads_per_block = 0"
-       ", .high_bin_interpolation_min_bins = 512, .high_bin_min_histogram_bytes = 0"
+       ", .high_bin_interpolation_min_level_bytes = 2052, .high_bin_min_histogram_bytes = 0"
        ", .high_bin_blocks_per_sm = 0, .high_bin_grid_pixels_per_block = 0 }");
 
   constexpr auto high_bin_policy = [] {
@@ -1992,6 +1992,11 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   STATIC_REQUIRE(p1.high_bin_threads() == p1.threads_per_block);
   STATIC_REQUIRE(high_bin_policy.high_bin_grid_pixels() == 512 * high_bin_policy.high_bin_pixels_per_thread);
   STATIC_REQUIRE(p1.high_bin_grid_pixels() == p1.high_bin_threads() * p1.high_bin_pixels_per_thread);
+  STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(0, 8) == 0);
+  STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(255, 8) == 16);
+  STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(256, 8) == 32);
+  STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(511, 8) == 32);
+  STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(512, 8) == 64);
 
   constexpr auto sm100 = cuda::compute_capability{10, 0};
   constexpr auto single_channel_even_policy =

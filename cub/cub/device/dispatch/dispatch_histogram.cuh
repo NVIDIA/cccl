@@ -83,6 +83,18 @@ struct local_counter<policy_selector_from_types<SampleT, OutputCounterT, NumChan
 template <typename PolicySelector, typename OutputCounterT, typename OffsetT>
 using local_counter_t = typename local_counter<PolicySelector, OutputCounterT, OffsetT>::type;
 
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int cache_slots_from_bytes(int cache_bytes, int bytes_per_slot) noexcept
+{
+  int slots  = bytes_per_slot > 0 ? cache_bytes / bytes_per_slot : 0;
+  int result = 0;
+  while (slots > 0)
+  {
+    result = result == 0 ? 1 : result * 2;
+    slots /= 2;
+  }
+  return result;
+}
+
 // Maximum number of bins per channel for which we will use a privatized smem strategy
 static constexpr int max_privatized_smem_bins = 256;
 
@@ -161,7 +173,7 @@ struct DeviceHistogramKernelSource
   }
 
   /// Returns the policy-configurable cooperative high-bin histogram kernel.
-  template <typename PolicyT, typename PrivatizedDecodeOpT>
+  template <typename PolicyT, typename PrivatizedDecodeOpT, typename ProbeOp, typename SpillOp>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramCooperativeKernel()
   {
     using LocalCounterT = local_counter_t<PolicyT, CounterT, OffsetT>;
@@ -175,7 +187,9 @@ struct DeviceHistogramKernelSource
       LocalCounterT,
       CounterT,
       PrivatizedDecodeOpT,
-      OffsetT>;
+      OffsetT,
+      ProbeOp,
+      SpillOp>;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
@@ -209,6 +223,76 @@ struct DeviceHistogramKernelSource
     }
   }
 };
+
+template <typename PolicySelector, typename DecodeOpT, typename KernelSource>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto select_histogram_cooperative_kernel(
+  HistogramPolicy policy, bool disable_cuckoo_second_probe, KernelSource kernel_source)
+{
+  using kernel_t =
+    decltype(kernel_source
+               .template HistogramCooperativeKernel<PolicySelector, DecodeOpT, no_cache_probe, output_atomic_spill>());
+  kernel_t kernel{};
+  const auto select_spill = [&](auto probe_op) {
+    using probe_op_t = decltype(probe_op);
+    if (policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized)
+    {
+      if (policy.high_bin_aggregation == HistogramAggregationAlgorithm::warp_coalesced)
+      {
+        kernel = kernel_source.template HistogramCooperativeKernel<PolicySelector,
+                                                                   DecodeOpT,
+                                                                   probe_op_t,
+                                                                   warp_coalesced_spill<private_block_spill>>();
+      }
+      else if (policy.high_bin_aggregation == HistogramAggregationAlgorithm::rle)
+      {
+        kernel =
+          kernel_source
+            .template HistogramCooperativeKernel<PolicySelector, DecodeOpT, probe_op_t, rle_spill<private_block_spill>>();
+      }
+      else
+      {
+        kernel = kernel_source
+                   .template HistogramCooperativeKernel<PolicySelector, DecodeOpT, probe_op_t, private_block_spill>();
+      }
+    }
+    else if (policy.high_bin_aggregation == HistogramAggregationAlgorithm::warp_coalesced)
+    {
+      kernel = kernel_source.template HistogramCooperativeKernel<PolicySelector,
+                                                                 DecodeOpT,
+                                                                 probe_op_t,
+                                                                 warp_coalesced_spill<output_atomic_spill>>();
+    }
+    else if (policy.high_bin_aggregation == HistogramAggregationAlgorithm::rle)
+    {
+      kernel =
+        kernel_source
+          .template HistogramCooperativeKernel<PolicySelector, DecodeOpT, probe_op_t, rle_spill<output_atomic_spill>>();
+    }
+    else
+    {
+      kernel =
+        kernel_source.template HistogramCooperativeKernel<PolicySelector, DecodeOpT, probe_op_t, output_atomic_spill>();
+    }
+  };
+
+  if (policy.high_bin_cache == HistogramCacheAlgorithm::none)
+  {
+    select_spill(no_cache_probe{});
+  }
+  else if (policy.high_bin_cache == HistogramCacheAlgorithm::single_probe)
+  {
+    select_spill(single_probe_cache{});
+  }
+  else if (!disable_cuckoo_second_probe)
+  {
+    select_spill(cuckoo_cache_probe<>{});
+  }
+  else
+  {
+    select_spill(cuckoo_cache_probe<true>{});
+  }
+  return kernel;
+}
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
@@ -333,17 +417,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           }
           if (use_cooperative)
           {
-            using privatized_decode_op_t = typename CooperativeSecondLevelArrayT::value_type;
-            const auto cooperative_kernel =
-              kernel_source.template HistogramCooperativeKernel<PolicySelector, privatized_decode_op_t>();
-            cooperative_cache_slots_per_channel =
-              active_policy.high_bin_cache == HistogramCacheAlgorithm::none
-                ? 0
-                : active_policy.high_bin_cache_entries_per_channel;
-            const int cache_bytes_per_slot =
-              NUM_ACTIVE_CHANNELS
-              * (int{sizeof(::cuda::std::uint32_t)}
-                 + active_policy.high_bin_cache_count_replicas * int{sizeof(LocalCounterT)});
+            using privatized_decode_op_t     = typename CooperativeSecondLevelArrayT::value_type;
+            const size_t max_histogram_bytes = static_cast<size_t>(max_num_output_bins) * sizeof(LocalCounterT);
+            const bool disable_cuckoo_second_probe =
+              max_histogram_bytes >= static_cast<size_t>(active_policy.high_bin_cache_cuckoo_max_histogram_bytes);
+            const auto cooperative_kernel = select_histogram_cooperative_kernel<PolicySelector, privatized_decode_op_t>(
+              active_policy, disable_cuckoo_second_probe, kernel_source);
+
+            const int cache_bytes_per_channel_slot =
+              int{sizeof(::cuda::std::uint32_t)}
+              + active_policy.high_bin_cache_count_replicas * int{sizeof(LocalCounterT)};
+            const int cache_bytes_per_slot = NUM_ACTIVE_CHANNELS * cache_bytes_per_channel_slot;
 
             int max_dynamic_smem_bytes = 0;
             if (const auto error =
@@ -351,8 +435,20 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             {
               return error;
             }
-            const int max_slots_by_smem = cache_bytes_per_slot == 0 ? 0 : max_dynamic_smem_bytes / cache_bytes_per_slot;
-            if (cooperative_cache_slots_per_channel > max_slots_by_smem)
+            if (active_policy.high_bin_cache == HistogramCacheAlgorithm::none)
+            {
+              cooperative_cache_slots_per_channel = 0;
+            }
+            else
+            {
+              const int requested_slots =
+                cache_slots_from_bytes(active_policy.high_bin_cache_bytes_per_channel, cache_bytes_per_channel_slot);
+              const int max_slots_by_smem = max_dynamic_smem_bytes / cache_bytes_per_slot;
+              cooperative_cache_slots_per_channel =
+                (::cuda::std::min) (requested_slots, cache_slots_from_bytes(max_slots_by_smem, 1));
+            }
+            if (active_policy.high_bin_cache != HistogramCacheAlgorithm::none
+                && cooperative_cache_slots_per_channel < 32)
             {
               use_cooperative = false;
             }
@@ -486,11 +582,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   {
     if (use_cooperative && blocks_per_row > 0 && blocks_per_col > 0)
     {
-      using privatized_decode_op_t = typename CooperativeSecondLevelArrayT::value_type;
-
+      using privatized_decode_op_t     = typename CooperativeSecondLevelArrayT::value_type;
+      const size_t max_histogram_bytes = static_cast<size_t>(max_num_output_bins) * sizeof(LocalCounterT);
+      const bool disable_cuckoo_second_probe =
+        max_histogram_bytes >= static_cast<size_t>(active_policy.high_bin_cache_cuckoo_max_histogram_bytes);
+      const auto cooperative_kernel = select_histogram_cooperative_kernel<PolicySelector, privatized_decode_op_t>(
+        active_policy, disable_cuckoo_second_probe, kernel_source);
       const dim3 cooperative_grid_dims{static_cast<unsigned int>(num_thread_blocks), 1u, 1u};
-      const auto cooperative_kernel =
-        kernel_source.template HistogramCooperativeKernel<PolicySelector, privatized_decode_op_t>();
       if (const auto error = CubDebug(launcher_factory.LaunchCooperative(
             cooperative_grid_dims,
             dim3{static_cast<unsigned int>(high_bin_threads_per_block)},
@@ -1324,16 +1422,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
 
     if (max_num_output_bins > max_privatized_smem_bins)
     {
-      constexpr int PRIVATIZED_SMEM_BINS   = 0;
-      using PrivatizedDecodeOpT            = typename TransformsT::ScaleTransform;
-      using CooperativePrivatizedDecodeOpT = typename TransformsT::FastScaleTransform;
+      constexpr int PRIVATIZED_SMEM_BINS = 0;
+      using PrivatizedDecodeOpT          = typename TransformsT::ScaleTransform;
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      ::cuda::std::array<CooperativePrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> cooperative_privatized_decode_op{};
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
       {
         privatized_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]);
-        cooperative_privatized_decode_op[channel].Init(
-          num_output_levels[channel], upper_level[channel], lower_level[channel]);
       }
 
       if (const auto error = CubDebug(
@@ -1351,7 +1445,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
               num_output_levels,
               output_decode_op,
               privatized_decode_op,
-              cooperative_privatized_decode_op,
+              privatized_decode_op,
               max_num_output_bins,
               num_row_pixels,
               num_rows,
