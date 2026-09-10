@@ -91,7 +91,7 @@ struct atomic_ref : public ::cuda::std::__atomic_ref_impl<_Tp, _Sco>
 
   static constexpr size_t required_alignment = sizeof(_Tp);
 
-  static constexpr bool is_always_lock_free = sizeof(_Tp) <= 8;
+  static constexpr bool is_always_lock_free = ::cuda::std::__atomic_ref_impl<_Tp, _Sco>::is_always_lock_free;
 
   // P3323R1 requires is_always_lock_free for volatile T, but we intentionally keep
   // atomic_ref<volatile __int128> well-formed as an extension.
