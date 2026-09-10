@@ -54,9 +54,11 @@ inline cudaError_t get_device_memory(memory_info& info)
 
   if (device_memory_limit > 0)
   {
-    info.free  = (std::max) (std::size_t{0}, static_cast<std::size_t>(info.free - (info.total - device_memory_limit)));
-    info.total = device_memory_limit;
-    info.override = true;
+    const std::size_t limited_total     = (std::min) (info.total, device_memory_limit);
+    const std::size_t unavailable_bytes = info.total - limited_total;
+    info.free                           = info.free > unavailable_bytes ? info.free - unavailable_bytes : 0;
+    info.total                          = limited_total;
+    info.override                       = true;
   }
 
   return cudaSuccess;
