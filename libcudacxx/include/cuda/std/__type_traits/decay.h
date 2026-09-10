@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -58,34 +59,36 @@ using decay_t _CCCL_NODEBUG = _CCCL_BUILTIN_DECAY(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_DECAY ^^^ / vvv !_CCCL_BUILTIN_DECAY vvv
 
-template <class _Up, bool>
-struct __decay_impl
-{
-  using type _CCCL_NODEBUG = remove_cv_t<_Up>;
-};
-
 template <class _Up>
-struct __decay_impl<_Up, true>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __decay_impl() noexcept
 {
-public:
-  using type _CCCL_NODEBUG =
-    conditional_t<is_array_v<_Up>,
-                  remove_extent_t<_Up>*,
-                  conditional_t<is_function_v<_Up>, add_pointer_t<_Up>, remove_cv_t<_Up>>>;
-};
+  if constexpr (__referenceable<_Up> && is_array_v<_Up>)
+  {
+    return type_identity<remove_extent_t<_Up>*>{};
+  }
+  else if constexpr (__referenceable<_Up> && is_function_v<_Up>)
+  {
+    return type_identity<add_pointer_t<_Up>>{};
+  }
+  else
+  {
+    return type_identity<remove_cv_t<_Up>>{};
+  }
+}
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT decay
 {
-private:
-  using _Up _CCCL_NODEBUG = remove_reference_t<_Tp>;
-
-public:
-  using type _CCCL_NODEBUG = typename __decay_impl<_Up, __referenceable<_Up>>::type;
+  using type = typename decltype(::cuda::std::__decay_impl<remove_reference_t<_Tp>>())::type;
 };
 
+#  if _CCCL_COMPILER(MSVC) // MSVC treats does not treat the evaluation of the function return type as immediate context
 template <class _Tp>
 using decay_t _CCCL_NODEBUG = typename decay<_Tp>::type;
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
+template <class _Tp>
+using decay_t _CCCL_NODEBUG = typename decltype(::cuda::std::__decay_impl<remove_reference_t<_Tp>>())::type;
+#  endif // !_CCCL_COMPILER(MSVC)
 
 #endif // !_CCCL_BUILTIN_DECAY
 
