@@ -152,7 +152,17 @@ struct __tuple_constraints
     { // [tuple.cnstr]-12.1: negation<is_same<remove_cvref_t<U0>, tuple>> if sizeof...(Types) is 1
       using _U0 = __type_index_c<0, _UTypes...>;
       using _T0 = __type_index_c<0, _Types...>;
-      return !is_same_v<remove_cvref_t<_U0>, tuple<_T0>>;
+#if _CCCL_COMPILER(GCC, <, 8) // GCC7 fails due to recursive constraints
+      if constexpr (__is_tuple_of_iterator_references_v<remove_cvref_t<_U0>>
+                    && !__is_tuple_of_iterator_references_v<remove_cvref_t<_T0>>)
+      {
+        return false;
+      }
+      else
+#endif // _CCCL_COMPILER(GCC, <, 8)
+      {
+        return !is_same_v<remove_cvref_t<_U0>, tuple<_T0>>;
+      }
     }
     else if constexpr (sizeof...(_Types) == 2 || sizeof...(_Types) == 3)
     { // [tuple.cnstr]-12.2: otherwise, if sizeof...(Types) is 2 or 3
