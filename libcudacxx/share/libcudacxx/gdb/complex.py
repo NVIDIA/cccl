@@ -19,30 +19,46 @@ _COMPLEX_NAMES = frozenset({"cuda::complex", "cuda::std::complex"})
 _PACKED_BITS_FIELD = "__x"
 
 
-def decode_packed_half(bits: int, type_name: str) -> float:
-    """Decode the 16-bit pattern of a __half or __nv_bfloat16 into a float.
+def decode_packed_halves(
+    x_bits: int, y_bits: int, type_name: str
+) -> tuple[float, float]:
+    """Decode both 16-bit patterns of a packed complex into a pair of floats.
 
     A packed complex stores its parts as CUDA 16-bit floating-point types whose
     only member is the raw bit pattern, so the debugger would otherwise show an
     integer. Every __half and __nv_bfloat16 value is exactly representable as a
-    32-bit float: a __nv_bfloat16 is the upper half of one, and a __half is IEEE
-    binary16.
+    32-bit float: a __half is IEEE binary16, and a __nv_bfloat16 is the upper
+    half of a binary32 whose lower half the pad bytes below supply.
     """
-    bits &= 0xFFFF
     if "bfloat16" in type_name:
-        return struct.unpack("<f", struct.pack("<I", bits << 16))[0]
-    return struct.unpack("<e", struct.pack("<H", bits))[0]
+        return struct.unpack("<2f", struct.pack("<2xH2xH", x_bits, y_bits))
+    return struct.unpack("<2e", struct.pack("<2H", x_bits, y_bits))
 
 
-def _as_float(part: gdb.Value) -> gdb.Value:
-    """Return a packed __half / __nv_bfloat16 part as a float gdb.Value."""
+def _packed_bits(part: gdb.Value) -> int | None:
+    """Return the raw bit pattern of a packed part, or None if it has none."""
     part_type = cccl_common.canonical_type(part.type)
-    try:
-        bits = int(part[_PACKED_BITS_FIELD])
-    except gdb.error:
-        return part
-    decoded = decode_packed_half(bits, str(part_type))
-    return gdb.Value(decoded).cast(gdb.lookup_type("float"))
+    # A packed part is a class type, but fields() raises on anything scalar.
+    if part_type.code not in (gdb.TYPE_CODE_STRUCT, gdb.TYPE_CODE_UNION):
+        return None
+    if not any(field.name == _PACKED_BITS_FIELD for field in part_type.fields()):
+        return None
+    return int(part[_PACKED_BITS_FIELD])
+
+
+def _packed_parts(packed: gdb.Value) -> tuple[gdb.Value, gdb.Value]:
+    """Return the parts of a packed complex as floats, or unchanged."""
+    x = packed["x"]
+    y = packed["y"]
+    x_bits = _packed_bits(x)
+    y_bits = _packed_bits(y)
+    if x_bits is None or y_bits is None:
+        return x, y
+    real, imag = decode_packed_halves(
+        x_bits, y_bits, str(cccl_common.canonical_type(x.type))
+    )
+    float_type = gdb.lookup_type("float")
+    return gdb.Value(real).cast(float_type), gdb.Value(imag).cast(float_type)
 
 
 def _is_cuda_complex(value_type: gdb.Type) -> bool:
@@ -61,13 +77,12 @@ class ComplexPrinter:
         self.type_name = cccl_common.public_type_name(self.type)
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
-        try:
+        fields = {field.name for field in self.type.fields()}
+        if {"__re_", "__im_"} <= fields:
             real = self.value["__re_"]
             imag = self.value["__im_"]
-        except gdb.error:
-            packed = self.value["__repr_"]
-            real = _as_float(packed["x"])
-            imag = _as_float(packed["y"])
+        else:
+            real, imag = _packed_parts(self.value["__repr_"])
         yield "real", real
         yield "imag", imag
 
