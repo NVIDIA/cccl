@@ -435,7 +435,7 @@ CUB_TEST("DeviceFor::ForEachInExtents two-phase size-query is unambiguous", "[fo
 {
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  constexpr cuda::std::extents<int, 0> extents{};
+  const cuda::std::extents<int, 0> extents{}; // NOLINT(misc-const-correctness)
 
   REQUIRE(
     cudaSuccess == cub::DeviceFor::ForEachInExtents(d_temp_storage, temp_storage_bytes, extents, noop_extents_t{}));
@@ -456,7 +456,8 @@ CUB_TEST("DeviceFor::ForEachInLayout two-phase size-query is unambiguous", "[for
 // built. Reaches the compute path, unlike the size-query guards above.
 CUB_TEST("DeviceFor::ForEachInExtents handles an empty extent", "[for][device]", CUB_SMALL)
 {
-  constexpr cuda::std::extents<int, cuda::std::dynamic_extent> extents{0};
+  // NOLINTNEXTLINE(misc-const-correctness)
+  const cuda::std::extents<int, cuda::std::dynamic_extent> extents{0};
 
   REQUIRE(cudaSuccess == cub::DeviceFor::ForEachInExtents(extents, noop_extents_t{}));
 }
