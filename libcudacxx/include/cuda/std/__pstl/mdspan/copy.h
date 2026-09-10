@@ -38,10 +38,12 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _ExecutionPolicy, class _Src, class _Dst>
-_CCCL_CONCEPT __mdspan_copyable =
-  is_execution_policy_v<remove_cvref_t<_ExecutionPolicy>> && __is_cuda_std_mdspan_v<_Src>
-  && __is_cuda_std_mdspan_v<_Dst> && is_assignable_v<typename _Dst::reference, typename _Src::reference>
-  && is_constructible_v<typename _Src::extents_type, typename _Dst::extents_type>;
+_CCCL_CONCEPT __mdspan_copyable = _CCCL_REQUIRES_EXPR((_ExecutionPolicy, _Src, _Dst))(
+  requires(is_execution_policy_v<remove_cvref_t<_ExecutionPolicy>>),
+  requires(__is_cuda_std_mdspan_v<_Src>),
+  requires(__is_cuda_std_mdspan_v<_Dst>),
+  requires(is_assignable_v<typename _Dst::reference, typename _Src::reference>),
+  requires(is_constructible_v<typename _Src::extents_type, typename _Dst::extents_type>));
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
