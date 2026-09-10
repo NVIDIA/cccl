@@ -14,14 +14,15 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_reduce_sum);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Min, device_segmented_reduce_min);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Max, device_segmented_reduce_max);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMin, device_segmented_reduce_argmin);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::ArgMax, device_segmented_reduce_argmax);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::Sum, device_segmented_reduce_sum);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::Min, device_segmented_reduce_min);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::Max, device_segmented_reduce_max);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::ArgMin, device_segmented_reduce_argmin);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedReduce::ArgMax, device_segmented_reduce_argmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

@@ -18,10 +18,11 @@ struct stream_registry_factory_t;
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinMax, device_arg_minmax);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceReduce::ArgMinLastMax, device_arg_minlastmax);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

@@ -382,10 +382,37 @@ The wrapper allocates temporary storage and invokes the CUB API through whicheve
 three launch mechanisms matches the current ``TEST_LAUNCH`` value, checking return codes and
 launch errors along the way.
 
-For testing single phase environment-based APIs use ``catch2_test_env_launch_helper.h`` instead.
-It provides the same ``DECLARE_LAUNCH_WRAPPER``,
-but expects the wrapped API's last argument to be an execution environment.
+When stream-ordered setup and teardown must use the same stream as the CUB call,
+pass any type supported by ``cuda::get_stream`` as the wrapper's first argument:
+
+.. code-block:: c++
+
+    cub_reduce_sum(cuda::get_stream(stream), d_in, d_out, n);
+
+Host and graph launches pass that stream to the wrapped API.
+A device-side launch synchronizes it as a dependency boundary and invokes the wrapped API
+with its default stream because device code cannot consume a host stream handle.
+
+Under CUDA graph capture (``TEST_LAUNCH == 2``), the wrapper implicitly appends a ``stream`` argument to the call.
+If the wrapped API has default parameters before its ``stream`` parameter,
+specify those explicitly at all call sites so the injected stream argument lines up.
+
+For APIs that take template parameters, use ``DECLARE_TMPL_LAUNCH_WRAPPER`` instead,
+passing the template parameter list and the arguments to instantiate it with.
+Use the ``ESCAPE_LIST`` macro to protect commas inside each list from the preprocessor:
+
+.. code-block:: c++
+
+    DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
+                                multi_histogram_even,
+                                ESCAPE_LIST(int Channels, int ActiveChannels),
+                                ESCAPE_LIST(Channels, ActiveChannels));
+
+For testing single phase environment-based APIs use the ``DECLARE_LAUNCH_WRAPPER_ENV`` and
+``DECLARE_TMPL_LAUNCH_WRAPPER_ENV`` macros from the same header instead.
+They expect the wrapped API's last argument to be an execution environment.
 The helper injects a memory resource and stream into that env automatically.
+Consult ``test/catch2_test_launch_wrapper.cu`` for more usage examples.
 
 Since the whole file is compiled three times, any ``CUB_TEST`` in the same translation unit
 that does *not* go through a launch wrapper would otherwise be registered identically in all
