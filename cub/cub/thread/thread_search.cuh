@@ -82,22 +82,24 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
 template <typename InputIteratorT, typename OffsetT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
-  OffsetT retval = 0;
-  while (num_items > 0)
+  // The [lo, hi) formulation produces fewer instructions than tracking an offset and a shrinking length,
+  // especially for random-access iterators (see NVIDIA/cccl#11066)
+  OffsetT lo = 0;
+  OffsetT hi = num_items;
+  while (lo < hi)
   {
-    OffsetT half = num_items >> 1;
-    if (input[retval + half] < val)
+    const OffsetT mid = lo + ((hi - lo) >> 1);
+    if (input[mid] < val)
     {
-      retval    = retval + (half + 1);
-      num_items = num_items - (half + 1);
+      lo = mid + 1;
     }
     else
     {
-      num_items = half;
+      hi = mid;
     }
   }
 
-  return retval;
+  return lo;
 }
 
 /**
@@ -117,16 +119,19 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT 
 template <typename InputIteratorT, typename OffsetT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
-  OffsetT retval = 0;
-  while (num_items > 0)
+  // The [lo, hi) formulation produces fewer instructions than tracking an offset and a shrinking length,
+  // especially for random-access iterators (see NVIDIA/cccl#11066)
+  OffsetT lo = 0;
+  OffsetT hi = num_items;
+  while (lo < hi)
   {
-    OffsetT half = num_items >> 1;
+    const OffsetT mid = lo + ((hi - lo) >> 1);
 
     bool lt;
 #if _CCCL_HAS_NVFP16()
     if constexpr (::cuda::std::is_same_v<T, __half>)
     {
-      lt = __hlt(val, input[retval + half]);
+      lt = __hlt(val, input[mid]);
     }
     else
 #endif // _CCCL_HAS_NVFP16()
@@ -134,27 +139,26 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
       if constexpr (::cuda::std::is_same_v<T, __nv_bfloat16>)
     {
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                        (lt = __hlt(val, input[retval + half]);),
-                        (lt = __bfloat162float(val) < __bfloat162float(input[retval + half]);));
+                        (lt = __hlt(val, input[mid]);),
+                        (lt = __bfloat162float(val) < __bfloat162float(input[mid]);));
     }
     else
 #endif // _CCCL_HAS_NVBF16()
     {
-      lt = val < input[retval + half];
+      lt = val < input[mid];
     }
 
     if (lt)
     {
-      num_items = half;
+      hi = mid;
     }
     else
     {
-      retval    = retval + (half + 1);
-      num_items = num_items - (half + 1);
+      lo = mid + 1;
     }
   }
 
-  return retval;
+  return lo;
 }
 
 CUB_NAMESPACE_END
