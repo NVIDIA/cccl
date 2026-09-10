@@ -352,3 +352,20 @@ def test_compile_impl_rejects_nvrtc_version_change_before_compilation(
                 include_dirs=("/cccl/include", "/cuda/toolkit/include"),
             ),
         )
+
+
+def test_shared_source_dump_runs_before_provider_cache_lookup(tmp_path, monkeypatch):
+    source = 'extern "C" __device__ int probe() { return 1; }\n'
+    monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", str(tmp_path))
+
+    def cached(**kwargs):
+        dumped = tuple(tmp_path.glob("cuda_coop_numba_mlir_*.cu"))
+        assert len(dumped) == 1
+        assert dumped[0].read_bytes() == source.encode("utf-8")
+        return b"cached"
+
+    monkeypatch.setattr(_nvrtc, "compile_impl", cached)
+    _, result = _nvrtc.compile(
+        cpp=source, cc=90, rdc=True, code="lto", context=_context()
+    )
+    assert result == b"cached"
