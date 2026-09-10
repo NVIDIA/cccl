@@ -3,6 +3,7 @@ set(
   thrust_device_data_place_allocator.cu
   sharded_reduce.cu
   sharded_stream.cu
+  sharded_relational.cu
 )
 
 cccl_get_cudatoolkit()
