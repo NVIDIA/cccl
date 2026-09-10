@@ -18,7 +18,7 @@ Header inclusion
 ~~~~~~~~~~~~~~~~
 
 #. Any source file must include all headers providing the symbols that they are using.
-   Relying on transitive header inclusion is discouraged,
+   Relying on transitive header inclusion is not allowed,
    as it leads to fragile code and frequent breakage during refactoring.
 #. Don't include any unneeded headers, since it unnecessarily increases compile time.
 #. Prefer including the smallest possible libcu++ detail headers (starting with ``__``) to reduce compile time.
