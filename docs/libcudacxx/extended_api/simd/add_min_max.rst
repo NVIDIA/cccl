@@ -33,17 +33,14 @@ For each element ``i``, the functions are equivalent to:
    add_max(a, b, c)[i] == cuda::std::max(a[i] + b[i], c[i])
    add_min(a, b, c)[i] == cuda::std::min(a[i] + b[i], c[i])
 
-A ReLU form can be obtained by composing the addition with
-:ref:`cuda::simd::min_relu and cuda::simd::max_relu <libcudacxx-extended-api-simd-min-max-relu>`:
+A ReLU form can be obtained by composing the addition with :ref:`cuda::simd::min_relu and cuda::simd::max_relu <libcudacxx-extended-api-simd-min-max-relu>`:
 
 .. code:: cuda
 
    auto maximum_relu = cuda::simd::max_relu(a + b, c);
    auto minimum_relu = cuda::simd::min_relu(a + b, c);
 
-On supported GPU architectures, the optimized device paths map to
-`Dynamic Programming eXtension (DPX) <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#dynamic-programming-extension-dpx-instructions>`__
-instructions.
+On supported GPU architectures, the optimized device paths map to `Dynamic Programming eXtension (DPX) <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#dynamic-programming-extension-dpx-instructions>`__ instructions.
 
 **Parameters**
 

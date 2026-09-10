@@ -52,7 +52,7 @@ template <typename _Tp>
 struct __add_max_operation
 {
   template <typename _Storage>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
+  [[nodiscard]] _CCCL_DEVICE_API _Storage
   _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
     const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);
@@ -67,7 +67,7 @@ template <typename _Tp>
 struct __add_min_operation
 {
   template <typename _Storage>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Storage
+  [[nodiscard]] _CCCL_DEVICE_API _Storage
   _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
     const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);

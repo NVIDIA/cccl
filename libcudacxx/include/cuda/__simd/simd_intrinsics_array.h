@@ -40,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 #  if _CCCL_HAS_SIMD_SAT()
 
 template <typename _Tp, ::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vadd_sat_16bit_x2(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vadd_sat_16bit_x2(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
 {
   ::cuda::std::simd::__array_u32_t<_Np> __result_u;
@@ -60,7 +60,7 @@ template <typename _Tp, ::cuda::std::size_t _Np>
 }
 
 template <typename _Tp, ::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vadd_sat_8bit_x4(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vadd_sat_8bit_x4(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
 {
   ::cuda::std::simd::__array_u32_t<_Np> __result_u;
@@ -195,7 +195,7 @@ template <typename _Tp, typename _Up, typename _AccumT, ::cuda::std::size_t _N16
 #  if _CCCL_HAS_SIMD_VABSDIFF()
 
 template <typename _Tp, ::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vabsdiff_8bit_x4(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vabsdiff_8bit_x4(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
@@ -221,7 +221,7 @@ template <typename _Tp, ::cuda::std::size_t _Np>
 #  if _CCCL_HAS_SIMD_ADD_MIN_MAX()
 
 template <typename _Tp, ::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __viaddmax_16bit_x2(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmax_16bit_x2(
   const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
@@ -243,7 +243,7 @@ template <typename _Tp, ::cuda::std::size_t _Np>
 }
 
 template <typename _Tp, ::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __viaddmin_16bit_x2(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmin_16bit_x2(
   const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
@@ -271,7 +271,7 @@ template <typename _Tp, ::cuda::std::size_t _Np>
 #    if _CCCL_HAS_SIMD_8BIT_PTX()
 
 template <::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmax_relu_8bit_x4(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vmax_relu_8bit_x4(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
 {
   ::cuda::std::simd::__array_u32_t<_Np> __result_u;
@@ -284,7 +284,7 @@ template <::cuda::std::size_t _Np>
 }
 
 template <::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmin_relu_8bit_x4(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vmin_relu_8bit_x4(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
 {
   ::cuda::std::simd::__array_u32_t<_Np> __result_u;
@@ -299,7 +299,7 @@ template <::cuda::std::size_t _Np>
 #    endif // _CCCL_HAS_SIMD_8BIT_PTX()
 
 template <::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmax_relu_16bit_x2(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vmax_relu_16bit_x2(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
 {
   ::cuda::std::simd::__array_u32_t<_Np> __result_u;
@@ -312,7 +312,7 @@ template <::cuda::std::size_t _Np>
 }
 
 template <::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmin_relu_16bit_x2(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vmin_relu_16bit_x2(
   const ::cuda::std::simd::__array_u32_t<_Np>& __lhs_u, const ::cuda::std::simd::__array_u32_t<_Np>& __rhs_u) noexcept
 {
   ::cuda::std::simd::__array_u32_t<_Np> __result_u;
@@ -325,7 +325,7 @@ template <::cuda::std::size_t _Np>
 }
 
 template <::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmax3_relu_16bit_x2(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vmax3_relu_16bit_x2(
   const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
@@ -340,7 +340,7 @@ template <::cuda::std::size_t _Np>
 }
 
 template <::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::simd::__array_u32_t<_Np> __vmin3_relu_16bit_x2(
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __vmin3_relu_16bit_x2(
   const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
   const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
