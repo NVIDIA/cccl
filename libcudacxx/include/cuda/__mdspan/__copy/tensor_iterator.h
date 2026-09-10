@@ -41,8 +41,8 @@ template <typename _ExtentT, ::cuda::std::size_t _Size, ::cuda::std::size_t... _
 __extents_fast_div_mod_impl(const ::cuda::std::array<_ExtentT, _Size>& __extents,
                             ::cuda::std::index_sequence<_Rp...> = {}) noexcept
 {
-  using __fast_mod_div_t = ::cuda::fast_mod_div<_ExtentT>;
-  using __array_t        = ::cuda::std::array<__fast_mod_div_t, sizeof...(_Rp)>;
+  using __fast_mod_div_t _CCCL_NODEBUG = ::cuda::fast_mod_div<_ExtentT>;
+  using __array_t _CCCL_NODEBUG        = ::cuda::std::array<__fast_mod_div_t, sizeof...(_Rp)>;
   return __array_t{__fast_mod_div_t(__extents[_Rp])...};
 }
 
@@ -54,7 +54,7 @@ template <typename _ExtentT, ::cuda::std::size_t _Size>
 [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
 __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noexcept
 {
-  using __seq_t = ::cuda::std::make_index_sequence<_Size>;
+  using __seq_t _CCCL_NODEBUG = ::cuda::std::make_index_sequence<_Size>;
   return ::cuda::__extents_fast_div_mod_impl(__extents, __seq_t{});
 }
 
@@ -66,9 +66,9 @@ __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noe
 template <typename _ExtentT, ::cuda::std::size_t _Rank>
 struct __tensor_coord_iterator
 {
-  using __unsigned_extent_t = ::cuda::std::make_unsigned_t<_ExtentT>;
-  using __fast_mod_div_t    = ::cuda::fast_mod_div<__unsigned_extent_t>;
-  using __array_t           = ::cuda::std::array<__fast_mod_div_t, _Rank>;
+  using __unsigned_extent_t _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_ExtentT>;
+  using __fast_mod_div_t _CCCL_NODEBUG    = ::cuda::fast_mod_div<__unsigned_extent_t>;
+  using __array_t _CCCL_NODEBUG           = ::cuda::std::array<__fast_mod_div_t, _Rank>;
 
   __array_t __extents_;
 

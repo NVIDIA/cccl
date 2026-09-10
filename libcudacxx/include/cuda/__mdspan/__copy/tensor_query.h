@@ -56,8 +56,8 @@ __same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __
   {
     return false;
   }
-  using __raw_tensor_t = __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
   for (__rank_t __i = 0; __i < __tensor_in.__rank; ++__i)
   {
     if (__tensor_in.__extents[__i] != __tensor_out.__extents[__i])
@@ -109,10 +109,10 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
-  const auto __rank    = __tensor.__rank;
-  const auto __perm    = ::cuda::__stride_order(__tensor);
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
+  const auto __rank                  = __tensor.__rank;
+  const auto __perm                  = ::cuda::__stride_order(__tensor);
 
   __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank, {}, {}};
   for (__rank_t __i = 0; __i < __rank; ++__i)
@@ -140,13 +140,13 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
 {
   if constexpr (_Extents::rank() > 0)
   {
-    const auto __tensor   = ::cuda::__to_raw_tensor(__mdspan);
-    const auto __sorted   = ::cuda::__sort_by_stride(__tensor);
-    using __stride_t      = decltype(__sorted.__strides[0]);
-    using __rank_t        = typename _Extents::rank_type;
-    const auto& __extents = __sorted.__extents;
-    const auto& __strides = __sorted.__strides;
-    const auto __rank     = __sorted.__rank;
+    const auto __tensor            = ::cuda::__to_raw_tensor(__mdspan);
+    const auto __sorted            = ::cuda::__sort_by_stride(__tensor);
+    using __stride_t _CCCL_NODEBUG = decltype(__sorted.__strides[0]);
+    using __rank_t _CCCL_NODEBUG   = typename _Extents::rank_type;
+    const auto& __extents          = __sorted.__extents;
+    const auto& __strides          = __sorted.__strides;
+    const auto __rank              = __sorted.__rank;
     for (__rank_t __i = 0; __i < __rank; ++__i)
     {
       if (__extents[__i] > 1 && __strides[__i] == 0)

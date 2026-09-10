@@ -66,9 +66,9 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_dst_contiguous_kernel(
   _CCCL_GRID_CONSTANT const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter,
   _CCCL_GRID_CONSTANT const _ExtentT __tensor_size)
 {
-  using __partial_tensor_src = __partial_tensor<const _TpSrc, _StrideT, _Rank, _SrcAccessor>;
-  const auto __idx           = ::cuda::gpu_thread.rank_as<_ExtentT>(::cuda::grid, __config);
-  const auto __stride        = ::cuda::gpu_thread.count_as<_ExtentT>(::cuda::grid, __config);
+  using __partial_tensor_src _CCCL_NODEBUG = __partial_tensor<const _TpSrc, _StrideT, _Rank, _SrcAccessor>;
+  const auto __idx                         = ::cuda::gpu_thread.rank_as<_ExtentT>(::cuda::grid, __config);
+  const auto __stride                      = ::cuda::gpu_thread.count_as<_ExtentT>(::cuda::grid, __config);
   const __partial_tensor_src __src{__src_ptr, __src_strides, __src_accessor};
 
   for (auto __i = __idx; __i < __tensor_size; __i += __stride)

@@ -43,8 +43,8 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
   __raw_tensor_t __result{__tensor.__data, __tensor.__rank, {}, {}};
   _CCCL_ASSERT(__tensor.__rank > 0, "cuda::reverse_modes: input tensor must have rank > 0");
   for (__rank_t __i = 0; __i < __tensor.__rank; ++__i)
@@ -91,10 +91,10 @@ template <typename _ExtentT,
 _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_ExtentT, _SrcStrideT, _TpSrc, _MaxRank>& __src,
                                             __raw_tensor<_ExtentT, _DstStrideT, _TpDst, _MaxRank>& __dst) noexcept
 {
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _SrcStrideT, _TpSrc, _MaxRank>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
-  using __mode_t       = ::cuda::std::tuple<_ExtentT, _SrcStrideT, _DstStrideT>;
-  const auto __rank    = __src.__rank;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _SrcStrideT, _TpSrc, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
+  using __mode_t _CCCL_NODEBUG       = ::cuda::std::tuple<_ExtentT, _SrcStrideT, _DstStrideT>;
+  const auto __rank                  = __src.__rank;
   _CCCL_ASSERT(::cuda::__same_extents(__src, __dst), "Source and destination tensors must have the same extents");
   ::cuda::std::array<__mode_t, _MaxRank> __modes{};
   for (__rank_t __i = 0; __i < __rank; ++__i)
@@ -130,8 +130,8 @@ _CCCL_HOST_API void __flip_negative_strides_paired(
 {
   if constexpr (::cuda::std::is_signed_v<_SrcStrideT> && ::cuda::std::is_signed_v<_DstStrideT>)
   {
-    using __raw_tensor_t = __raw_tensor<_ExtentT, _SrcStrideT, _TpSrc, _MaxRank>;
-    using __rank_t       = typename __raw_tensor_t::__rank_t;
+    using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _SrcStrideT, _TpSrc, _MaxRank>;
+    using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
     _CCCL_ASSERT(::cuda::__same_extents(__src, __dst),
                  "cuda::flip_negative_strides_paired: Source and destination tensors must have the same extents");
     for (__rank_t __i = 0; __i < __src.__rank; ++__i)
@@ -173,9 +173,9 @@ _CCCL_HOST_API void __coalesce_paired(__raw_tensor<_ExtentT, _SrcStrideT, _TpSrc
   {
     return;
   }
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _SrcStrideT, _TpSrc, _MaxRank>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
-  __rank_t __out_r     = 1;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _SrcStrideT, _TpSrc, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
+  __rank_t __out_r                   = 1;
   for (__rank_t __i = 1; __i < __src.__rank; ++__i)
   {
     const auto __src_prev_extent = static_cast<_SrcStrideT>(__src.__extents[__out_r - 1]);

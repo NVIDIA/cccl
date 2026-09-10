@@ -37,13 +37,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _LayoutPolicy, typename _Mapping>
 struct __mapping_stride_type
 {
-  using __type = typename _Mapping::index_type;
+  using __type _CCCL_NODEBUG = typename _Mapping::index_type;
 };
 
 template <typename _Mapping>
 struct __mapping_stride_type<::cuda::layout_stride_relaxed, _Mapping>
 {
-  using __type = typename _Mapping::offset_type;
+  using __type _CCCL_NODEBUG = typename _Mapping::offset_type;
 };
 
 //! @brief Convenience alias: stride type of a layout mapping for given extents and layout policy.
@@ -51,11 +51,12 @@ struct __mapping_stride_type<::cuda::layout_stride_relaxed, _Mapping>
 //! For `layout_stride_relaxed`, uses `offset_type` (signed) since strides can be negative.
 //! For other layouts, uses `stride_type` if available, otherwise `index_type`.
 template <typename _LayoutPolicy, typename _Mapping>
-using __mdspan_stride_t = typename __mapping_stride_type<_LayoutPolicy, ::cuda::std::remove_cvref_t<_Mapping>>::__type;
+using __mdspan_stride_t _CCCL_NODEBUG =
+  typename __mapping_stride_type<_LayoutPolicy, ::cuda::std::remove_cvref_t<_Mapping>>::__type;
 
 //! @brief Convenience alias: `__raw_tensor` type produced by @ref __to_raw_tensor for a given mdspan.
 template <typename _MdspanCVRef, typename _Mdspan = ::cuda::std::remove_cvref_t<_MdspanCVRef>>
-using __to_raw_tensor_t =
+using __to_raw_tensor_t _CCCL_NODEBUG =
   __raw_tensor<typename _Mdspan::index_type,
                __mdspan_stride_t<typename _Mdspan::layout_type, typename _Mdspan::mapping_type>,
                typename _Mdspan::element_type,
@@ -79,9 +80,9 @@ _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
 {
   static_assert(_MaxRank >= _Extents::rank(), "_MaxRank must be at least _Extents::rank()");
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __rank_t       = typename _Extents::rank_type;
-  auto* __data         = __mdspan.data_handle();
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename _Extents::rank_type;
+  auto* __data                       = __mdspan.data_handle();
   if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicy>)
   {
     __data += __mdspan.mapping().offset();
@@ -121,8 +122,8 @@ _CCCL_HOST_API constexpr auto
 __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
   -> __to_raw_tensor_t<decltype(__mdspan)>
 {
-  using __extent_t = typename _Extents::index_type;
-  using __stride_t = __mdspan_stride_t<_LayoutPolicy, decltype(__mdspan.mapping())>;
+  using __extent_t _CCCL_NODEBUG = typename _Extents::index_type;
+  using __stride_t _CCCL_NODEBUG = __mdspan_stride_t<_LayoutPolicy, decltype(__mdspan.mapping())>;
   return ::cuda::__to_raw_tensor<__extent_t, __stride_t, _Extents::rank()>(__mdspan);
 }
 

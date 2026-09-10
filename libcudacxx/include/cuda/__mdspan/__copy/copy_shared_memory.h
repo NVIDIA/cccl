@@ -178,16 +178,16 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
   }
 
   // Dispatch to Full-tile or Boundary case
-  const auto __tid           = ::cuda::gpu_thread.rank_as<int>(::cuda::block, __config);
-  const auto __block_stride  = ::cuda::gpu_thread.count_as<int>(::cuda::block, __config);
-  using __partial_tensor_src = __partial_tensor<const _TpSrc, _StrideTIn, _MaxRankUZ, _SrcAccessor>;
-  using __partial_tensor_dst = __partial_tensor<_TpDst, _StrideTOut, _MaxRankUZ, _DstAccessor>;
+  const auto __tid                         = ::cuda::gpu_thread.rank_as<int>(::cuda::block, __config);
+  const auto __block_stride                = ::cuda::gpu_thread.count_as<int>(::cuda::block, __config);
+  using __partial_tensor_src _CCCL_NODEBUG = __partial_tensor<const _TpSrc, _StrideTIn, _MaxRankUZ, _SrcAccessor>;
+  using __partial_tensor_dst _CCCL_NODEBUG = __partial_tensor<_TpDst, _StrideTOut, _MaxRankUZ, _DstAccessor>;
 
   //--------------------------------------------------------------------------------------------------------------------
   // Full-tile shared-memory transpose
   if (__is_full_tile)
   {
-    using _Tp = ::cuda::std::remove_cv_t<_TpSrc>;
+    using _Tp _CCCL_NODEBUG = ::cuda::std::remove_cv_t<_TpSrc>;
     constexpr bool __use_rank2_padded_smem =
       _UseOptimizedSmemLayout && _MaxRankUZ == 2 && (sizeof(_Tp) == 1 || sizeof(_Tp) == 2);
 
@@ -197,7 +197,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
     // (1) load src to shared memory by using the src/tile-permuted ordering
     if constexpr (__use_rank2_padded_smem)
     {
-      using __src_value_type = ::cuda::std::remove_const_t<_TpSrc>;
+      using __src_value_type _CCCL_NODEBUG = ::cuda::std::remove_const_t<_TpSrc>;
       for (auto __i = __tid; __i < __tile_total_size; __i += __block_stride)
       {
         const auto __inner      = static_cast<__tile_extent_t>(__i) % __max_tile_size_32;
@@ -211,7 +211,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
     }
     else
     {
-      using __partial_tensor_smem =
+      using __partial_tensor_smem _CCCL_NODEBUG =
         __partial_tensor<_Tp, __tile_extent_t, _MaxRankUZ, ::cuda::std::default_accessor<_Tp>>;
       const __partial_tensor_src __src_tensor{__src_ptr, __src_perm_src_strides, __src_accessor};
       const __partial_tensor_smem __smem_tensor{
@@ -243,7 +243,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
     }
     else
     {
-      using __partial_tensor_smem =
+      using __partial_tensor_smem _CCCL_NODEBUG =
         __partial_tensor<_Tp, __tile_extent_t, _MaxRankUZ, ::cuda::std::default_accessor<_Tp>>;
       const __partial_tensor_dst __dst_tensor{__dst_ptr, __dst_perm_dst_strides, __dst_accessor};
       const __partial_tensor_smem __smem_dst_tensor{
@@ -263,7 +263,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
   // Boundary direct-copy (no shared memory)
   else
   {
-    using __uextent_t = ::cuda::std::make_unsigned_t<_ExtentT>;
+    using __uextent_t _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_ExtentT>;
     const __partial_tensor_src __src_tensor{__src_ptr, __src_strides, __src_accessor};
     const __partial_tensor_dst __dst_tensor{__dst_ptr, __dst_strides, __dst_accessor};
 
@@ -451,7 +451,7 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
 
   //--------------------------------------------------------------------------------------------------------------------
   // Launch the kernel
-  using __value_type                = ::cuda::std::remove_cv_t<_TpIn>;
+  using __value_type _CCCL_NODEBUG  = ::cuda::std::remove_cv_t<_TpIn>;
   constexpr int __thread_block_size = 256;
 
   const auto __config = ::cuda::make_config(

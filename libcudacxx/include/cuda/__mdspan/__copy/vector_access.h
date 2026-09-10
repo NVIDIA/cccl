@@ -49,7 +49,7 @@ inline constexpr auto __max_vector_access = 16;
 #if !_CCCL_COMPILER(NVRTC)
 
 template <::cuda::std::size_t _VectorBytes>
-using __vector_access_t = __vector_access<_VectorBytes>;
+using __vector_access_t _CCCL_NODEBUG = __vector_access<_VectorBytes>;
 
 //! @brief Query the maximum vector access width supported by the current GPU architecture.
 //!

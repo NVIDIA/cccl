@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 struct __raw_tensor
 {
-  using __rank_t = ::cuda::std::size_t;
+  using __rank_t _CCCL_NODEBUG = ::cuda::std::size_t;
 
   _Tp* __data;
   __rank_t __rank;

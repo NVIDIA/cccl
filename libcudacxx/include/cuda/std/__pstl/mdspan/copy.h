@@ -49,10 +49,10 @@ _CCCL_HOST_API void copy(_ExecutionPolicy&& __policy, const _Src& __src, const _
   _CCCL_ASSERT(__src.extents() == __dst.extents(), "__src and __dst extents must match");
   _CCCL_ASSERT(__dst.is_unique(), "__dst's mapping must be unique");
 
-  using __policy_t              = remove_cvref_t<_ExecutionPolicy>;
-  constexpr auto __tag          = ::cuda::std::execution::__pstl_algorithm::__mdspan_copy;
-  constexpr auto __dispatch     = ::cuda::std::execution::__pstl_select_dispatch<__tag, __policy_t>();
-  constexpr bool __can_dispatch = ::cuda::std::execution::__pstl_can_dispatch<remove_cvref_t<decltype(__dispatch)>>;
+  using __policy_t _CCCL_NODEBUG = remove_cvref_t<_ExecutionPolicy>;
+  constexpr auto __tag           = ::cuda::std::execution::__pstl_algorithm::__mdspan_copy;
+  constexpr auto __dispatch      = ::cuda::std::execution::__pstl_select_dispatch<__tag, __policy_t>();
+  constexpr bool __can_dispatch  = ::cuda::std::execution::__pstl_can_dispatch<remove_cvref_t<decltype(__dispatch)>>;
   static_assert(__can_dispatch, "Parallel cuda::std::copy for mdspan requires at least one selected backend");
 
   _CCCL_NVTX_RANGE_SCOPE("cuda::std::copy");

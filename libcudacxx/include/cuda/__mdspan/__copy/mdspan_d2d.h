@@ -180,8 +180,8 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     _CCCL_THROW(::std::invalid_argument, "mdspans must not overlap in memory");
   }
 
-  using __default_accessor_in  = ::cuda::std::default_accessor<_TpIn>;
-  using __default_accessor_out = ::cuda::std::default_accessor<_TpOut>;
+  using __default_accessor_in _CCCL_NODEBUG  = ::cuda::std::default_accessor<_TpIn>;
+  using __default_accessor_out _CCCL_NODEBUG = ::cuda::std::default_accessor<_TpOut>;
   constexpr bool __have_default_accessors =
     ::cuda::std::is_convertible_v<_AccessorPolicyIn, __default_accessor_in>
     && ::cuda::std::is_convertible_v<_AccessorPolicyOut, __default_accessor_out>;
@@ -210,13 +210,13 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
   {
     // use the most efficient type for device code
-    using __src_extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, int>;
-    using __dst_extent_t = ::cuda::std::common_type_t<typename _ExtentsOut::index_type, int>;
-    using __common_extent_t =
+    using __src_extent_t _CCCL_NODEBUG = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, int>;
+    using __dst_extent_t _CCCL_NODEBUG = ::cuda::std::common_type_t<typename _ExtentsOut::index_type, int>;
+    using __common_extent_t _CCCL_NODEBUG =
       ::cuda::std::conditional_t<(sizeof(__src_extent_t) < sizeof(__dst_extent_t)), __src_extent_t, __dst_extent_t>;
-    using __src_stride_t =
+    using __src_stride_t _CCCL_NODEBUG =
       ::cuda::std::common_type_t<::cuda::__mdspan_stride_t<_LayoutPolicyIn, decltype(__src.mapping())>, int>;
-    using __dst_stride_t =
+    using __dst_stride_t _CCCL_NODEBUG =
       ::cuda::std::common_type_t<::cuda::__mdspan_stride_t<_LayoutPolicyOut, decltype(__dst.mapping())>, int>;
 
     constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());

@@ -60,8 +60,8 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 __max_alignment(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
   using ::cuda::std::size_t;
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
   if (__tensor.__strides[0] != 1)
   {
@@ -87,7 +87,7 @@ __max_alignment(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
 }
 
 template <::cuda::std::size_t _VectorBytes, typename _Tp>
-using __reshape_vector_type =
+using __reshape_vector_type _CCCL_NODEBUG =
   ::cuda::std::conditional_t<::cuda::std::is_const_v<_Tp>,
                              const ::cuda::__vector_access_t<_VectorBytes>,
                              ::cuda::__vector_access_t<_VectorBytes>>;
@@ -106,8 +106,8 @@ template <::cuda::std::size_t _VectorBytes, typename _ExtentT, typename _StrideT
 _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, __reshape_vector_type<_VectorBytes, _Tp>, _MaxRank>
 __reshape_vectorized(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __vector_t = __reshape_vector_type<_VectorBytes, _Tp>;
-  using __rank_t   = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
+  using __vector_t _CCCL_NODEBUG = __reshape_vector_type<_VectorBytes, _Tp>;
+  using __rank_t _CCCL_NODEBUG   = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
   static_assert(_VectorBytes % sizeof(_Tp) == 0, "vector size must be a multiple of element size");
 
   constexpr auto __elems_per_vector = _VectorBytes / sizeof(_Tp);
@@ -139,9 +139,9 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]]
 _CCCL_HOST_API _ExtentT __total_size(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __raw_tensor_t  = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __rank_t        = typename __raw_tensor_t::__rank_t;
-  _ExtentT __total_size = 1;
+  using __raw_tensor_t _CCCL_NODEBUG = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t _CCCL_NODEBUG       = typename __raw_tensor_t::__rank_t;
+  _ExtentT __total_size              = 1;
   for (__rank_t __i = 0; __i < __tensor.__rank; ++__i)
   {
     __total_size *= __tensor.__extents[__i];

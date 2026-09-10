@@ -64,8 +64,9 @@ struct __pstl_dispatch<__pstl_algorithm::__mdspan_copy, __execution_backend::__c
     const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     [[maybe_unused]] const auto __ctx = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
-    using __src_mdspan_t = ::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn>;
-    using __dst_mdspan_t = ::cuda::device_mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut>;
+    using __src_mdspan_t _CCCL_NODEBUG = ::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn>;
+    using __dst_mdspan_t _CCCL_NODEBUG =
+      ::cuda::device_mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut>;
     const __src_mdspan_t __device_src{__src.data_handle(), __src.mapping(), __src.accessor()};
     const __dst_mdspan_t __device_dst{__dst.data_handle(), __dst.mapping(), __dst.accessor()};
 
@@ -99,10 +100,10 @@ _CCCL_HOST_API void copy(_ExecutionPolicy&& __policy,
                          const ::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn>& __src,
                          const ::cuda::device_mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut>& __dst)
 {
-  using __src_accessor_t = ::cuda::device_accessor<_AccessorPolicyIn>;
-  using __dst_accessor_t = ::cuda::device_accessor<_AccessorPolicyOut>;
-  using __src_base_t     = ::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, __src_accessor_t>;
-  using __dst_base_t     = ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, __dst_accessor_t>;
+  using __src_accessor_t _CCCL_NODEBUG = ::cuda::device_accessor<_AccessorPolicyIn>;
+  using __dst_accessor_t _CCCL_NODEBUG = ::cuda::device_accessor<_AccessorPolicyOut>;
+  using __src_base_t _CCCL_NODEBUG     = ::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, __src_accessor_t>;
+  using __dst_base_t _CCCL_NODEBUG     = ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, __dst_accessor_t>;
 
   ::cuda::std::copy(::cuda::std::forward<_ExecutionPolicy>(__policy),
                     static_cast<const __src_base_t&>(__src),

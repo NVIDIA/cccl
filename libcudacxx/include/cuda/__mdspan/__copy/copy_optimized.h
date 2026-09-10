@@ -69,10 +69,10 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_optimized_kernel(
   _CCCL_GRID_CONSTANT const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter,
   _CCCL_GRID_CONSTANT const _ExtentT __tensor_size)
 {
-  using __partial_tensor_src = __partial_tensor<const _TpSrc, _StrideTIn, _Rank, _SrcAccessor>;
-  using __partial_tensor_dst = __partial_tensor<_TpDst, _StrideTOut, _Rank, _DstAccessor>;
-  const auto __idx           = ::cuda::gpu_thread.rank_as<_ExtentT>(::cuda::grid, __config);
-  const auto __stride        = ::cuda::gpu_thread.count_as<_ExtentT>(::cuda::grid, __config);
+  using __partial_tensor_src _CCCL_NODEBUG = __partial_tensor<const _TpSrc, _StrideTIn, _Rank, _SrcAccessor>;
+  using __partial_tensor_dst _CCCL_NODEBUG = __partial_tensor<_TpDst, _StrideTOut, _Rank, _DstAccessor>;
+  const auto __idx                         = ::cuda::gpu_thread.rank_as<_ExtentT>(::cuda::grid, __config);
+  const auto __stride                      = ::cuda::gpu_thread.count_as<_ExtentT>(::cuda::grid, __config);
   const __partial_tensor_src __src{__src_ptr, __src_strides, __src_accessor};
   const __partial_tensor_dst __dst{__dst_ptr, __dst_strides, __dst_accessor};
 

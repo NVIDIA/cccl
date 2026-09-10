@@ -41,7 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 inline constexpr ::cuda::std::size_t __max_shared_mem_kernel_rank = 8;
 
 //! A tile size is always representable by an unsigned integer.
-using __tile_extent_t = unsigned;
+using __tile_extent_t _CCCL_NODEBUG = unsigned;
 
 //! @brief Copy a raw tensor descriptor into one with a narrower static maximum rank.
 //!
@@ -72,7 +72,7 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
 __num_contiguous_dimensions(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __rank_t = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
+  using __rank_t _CCCL_NODEBUG = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
   if (__tensor.__rank == 0 || __tensor.__strides[0] != 1)
   {
     return 0;
