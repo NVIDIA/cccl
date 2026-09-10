@@ -23,7 +23,8 @@ struct stream_registry_factory_t;
 #include <algorithm>
 #include <numeric>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:2
 
