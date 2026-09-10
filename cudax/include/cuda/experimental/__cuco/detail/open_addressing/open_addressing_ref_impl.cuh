@@ -1152,20 +1152,6 @@ public:
   }
 
   //!
-  //! @brief Returns whether this storage supports publishing a slot with one atomic CAS.
-  [[nodiscard]] _CCCL_DEVICE_API bool __can_use_packed_cas() const noexcept
-  {
-    if constexpr (__has_packable_representation)
-    {
-      return __storage_ref.__is_packed_cas_aligned();
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-  //!
   //! @brief Attempts to insert an element into a slot.
   //!
   //! @note Dispatches the correct implementation depending on the container
@@ -1186,7 +1172,7 @@ public:
     {
       if constexpr (__has_packable_representation)
       {
-        if (__can_use_packed_cas())
+        if (__storage_ref.__is_packed_cas_aligned())
         {
           return packed_cas(__address, __expected, __desired);
         }
@@ -1227,7 +1213,7 @@ public:
     {
       if constexpr (__has_packable_representation)
       {
-        if (__can_use_packed_cas())
+        if (__storage_ref.__is_packed_cas_aligned())
         {
           return packed_cas(__address, __expected, __desired);
         }
@@ -1272,10 +1258,14 @@ public:
   {
     if constexpr (__has_payload)
     {
-      if (!__can_use_packed_cas())
+      if constexpr (__has_packable_representation)
       {
-        __wait_for_payload(__slot_ptr->second, empty_value_sentinel());
+        if (__storage_ref.__is_packed_cas_aligned())
+        {
+          return;
+        }
       }
+      __wait_for_payload(__slot_ptr->second, empty_value_sentinel());
     }
   }
 #endif // _CCCL_CUDA_COMPILATION()
