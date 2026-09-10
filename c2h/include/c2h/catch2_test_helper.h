@@ -611,7 +611,8 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_IMPL(ID, NAME, TAG, ...)                                  \
   using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(                                    \
+    ::c2h::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST(NAME, TAG, ...) C2H_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
@@ -624,7 +625,8 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
   using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
-  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
+  CATCH_TEMPLATE_LIST_TEST_CASE_METHOD(                            \
+    ::c2h::detail::nvtx_fixture, C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
 #define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 

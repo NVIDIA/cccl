@@ -9,7 +9,7 @@
 
 #include <catch2/interfaces/catch_interfaces_capture.hpp>
 
-namespace detail
+namespace c2h::detail
 {
 struct nvtx_c2h_domain
 {
@@ -23,4 +23,4 @@ class nvtx_fixture
   ::nvtx3::v1::scoped_range_in<nvtx_c2h_domain> nvtx_range{Catch::getResultCapture().getCurrentTestName()};
 #endif // _CCCL_HAS_NVTX3()
 };
-} // namespace detail
+} // namespace c2h::detail
