@@ -54,7 +54,7 @@ struct memory_info
 inline std::size_t get_device_memory_limit()
 {
   static std::optional<std::string> override_str = get_env("C2H_DEVICE_MEMORY_LIMIT");
-  static std::size_t result =
+  static const std::size_t result =
     override_str ? static_cast<std::size_t>(std::strtoll(override_str->c_str(), nullptr, 10)) : 0;
   return result;
 }
@@ -62,15 +62,15 @@ inline std::size_t get_device_memory_limit()
 inline bool get_debug_checked_allocs()
 {
   static std::optional<std::string> debug_checked_allocs = get_env("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
-  static bool result = debug_checked_allocs && (std::strtol(debug_checked_allocs->c_str(), nullptr, 10) != 0);
+  static const bool result = debug_checked_allocs && (std::strtol(debug_checked_allocs->c_str(), nullptr, 10) != 0);
   return result;
 }
 
 inline cudaError_t get_device_memory(memory_info& info)
 {
-  static std::size_t device_memory_limit = get_device_memory_limit();
+  static const std::size_t device_memory_limit = get_device_memory_limit();
 
-  cudaError_t status = cudaMemGetInfo(&info.free, &info.total);
+  const cudaError_t status = cudaMemGetInfo(&info.free, &info.total);
   if (status != cudaSuccess)
   {
     return status;
@@ -89,7 +89,7 @@ inline cudaError_t get_device_memory(memory_info& info)
 inline cudaError_t check_free_device_memory(std::size_t bytes)
 {
   memory_info info;
-  cudaError_t status = get_device_memory(info);
+  const cudaError_t status = get_device_memory(info);
   if (status != cudaSuccess)
   {
     return status;

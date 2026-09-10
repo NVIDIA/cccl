@@ -47,7 +47,7 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    if: ${{ github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private' }}
     permissions:
       contents: read
     outputs:

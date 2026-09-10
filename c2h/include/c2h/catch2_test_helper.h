@@ -32,6 +32,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_exception.hpp>
 #include <catch2/matchers/catch_matchers_templated.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 
@@ -297,6 +298,9 @@ struct CustomEqualsRangeMatcher : Catch::Matchers::MatcherBase<Range>
     return std::equal(begin(range), end(range), begin(other), Pred{});
   }
 
+  // Catch2 matchers must expose describe() publicly so that composing matchers
+  // (AllMatch, Contains, SizeIs, ...) can call it on a member matcher.
+  // NOLINTNEXTLINE(misc-override-with-different-visibility)
   std::string describe() const override
   {
     return "Equals: " + Catch::rangeToString(range);
@@ -398,7 +402,7 @@ auto compare_host_ranges(const LhsRange& actual, const RhsRange& expected) -> ve
   result.total_mismatches = mismatches.size();
 
   // Handle first mismatches
-  size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
+  const size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
   result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
 
   // Handle last mismatches
@@ -503,6 +507,8 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
     return comparison_result.total_mismatches == 0;
   }
 
+  // See the note on CustomEqualsRangeMatcher::describe above.
+  // NOLINTNEXTLINE(misc-override-with-different-visibility)
   std::string describe() const override
   {
     std::stringstream ss;
@@ -657,7 +663,7 @@ inline std::size_t get_override_seed_count()
 
 inline std::size_t adjust_seed_count(std::size_t requested)
 {
-  static std::size_t override_seeds = get_override_seed_count();
+  static const std::size_t override_seeds = get_override_seed_count();
   return override_seeds != 0 ? override_seeds : requested;
 }
 } // namespace c2h

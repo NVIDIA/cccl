@@ -69,16 +69,16 @@ struct __atomic_storage
   }
 };
 
-#define _CCCL_DISPATCH_ATOMIC_BACKEND(_Fn, ...)                               \
-  NV_DISPATCH_TARGET(NV_IS_DEVICE,                                            \
-                     (return _Fn(__cuda_atomic_ptx_backend{}, __VA_ARGS__);), \
-                     NV_IS_HOST,                                              \
+#define _CCCL_DISPATCH_ATOMIC_BACKEND(_Fn, ...)                                  \
+  NV_DISPATCH_TARGET(NV_IS_DEVICE,                                               \
+                     (return _Fn(__cuda_atomic_device_backend{}, __VA_ARGS__);), \
+                     NV_IS_HOST,                                                 \
                      (return _Fn(__cuda_atomic_host_backend{}, __VA_ARGS__);))
 
-#define _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(_Fn, _Scope, ...)                        \
-  NV_DISPATCH_TARGET(NV_IS_DEVICE,                                                    \
-                     (return _Fn(__cuda_atomic_ptx_backend{}, __VA_ARGS__, _Scope);), \
-                     NV_IS_HOST,                                                      \
+#define _CCCL_DISPATCH_SCOPED_ATOMIC_BACKEND(_Fn, _Scope, ...)                           \
+  NV_DISPATCH_TARGET(NV_IS_DEVICE,                                                       \
+                     (return _Fn(__cuda_atomic_device_backend{}, __VA_ARGS__, _Scope);), \
+                     NV_IS_HOST,                                                         \
                      (return _Fn(__cuda_atomic_host_backend{}, __VA_ARGS__, __thread_scope_tag{});))
 
 _CCCL_HOST_DEVICE_API inline void __atomic_thread_fence_dispatch(memory_order __order)

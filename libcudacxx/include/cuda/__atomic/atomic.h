@@ -145,15 +145,15 @@ atomic_thread_fence(memory_order __m, [[maybe_unused]] thread_scope _Scope = thr
     (switch (_Scope) {
       case thread_scope::thread_scope_system:
         ::cuda::std::__cuda_atomic_thread_fence(
-          ::cuda::std::__cuda_atomic_ptx_backend{}, __m, __thread_scope_system_tag{});
+          ::cuda::std::__cuda_atomic_device_backend{}, __m, __thread_scope_system_tag{});
         break;
       case thread_scope::thread_scope_device:
         ::cuda::std::__cuda_atomic_thread_fence(
-          ::cuda::std::__cuda_atomic_ptx_backend{}, __m, __thread_scope_device_tag{});
+          ::cuda::std::__cuda_atomic_device_backend{}, __m, __thread_scope_device_tag{});
         break;
       case thread_scope::thread_scope_block:
         ::cuda::std::__cuda_atomic_thread_fence(
-          ::cuda::std::__cuda_atomic_ptx_backend{}, __m, __thread_scope_block_tag{});
+          ::cuda::std::__cuda_atomic_device_backend{}, __m, __thread_scope_block_tag{});
         break;
       // Atomics scoped to themselves do not require fencing
       case thread_scope::thread_scope_thread:

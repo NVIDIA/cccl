@@ -404,8 +404,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Number of input tiles
-      int tile_size = threads_per_block * items_per_thread;
-      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+      const int tile_size = threads_per_block * items_per_thread;
+      const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
       // The amount of virtual shared memory to allocate
       const auto vsmem_size = num_tiles * vsmem_helper_t::vsmem_per_block;
@@ -417,7 +417,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       {
         break; // bytes needed for tile status descriptors
       }
-      size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
+      const size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
 
       // Compute allocation pointers into the single storage blob (or compute
       // the necessary size of the blob)
@@ -445,7 +445,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
@@ -499,7 +499,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+      const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
         // Log reduce_by_key_kernel configuration
@@ -766,8 +766,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
-    void* allocations[2]       = {};
+    const size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
+    void* allocations[2]             = {};
 
     if (const auto error =
           CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))

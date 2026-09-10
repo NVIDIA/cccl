@@ -49,7 +49,7 @@ try
       cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceScan::ExclusiveScan,
       "ExclusiveScan failed",
       d_input,

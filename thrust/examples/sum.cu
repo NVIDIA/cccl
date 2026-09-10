@@ -24,13 +24,13 @@ int main()
   thrust::device_vector<int> d_vec = h_vec;
 
   // initial value of the reduction
-  int init = 0;
+  const int init = 0;
 
   // binary operation used to reduce values
-  cuda::std::plus<int> binary_op;
+  const cuda::std::plus<int> binary_op;
 
   // compute sum on the device
-  int sum = thrust::reduce(d_vec.begin(), d_vec.end(), init, binary_op);
+  const int sum = thrust::reduce(d_vec.begin(), d_vec.end(), init, binary_op);
 
   // print the sum
   std::cout << "sum is " << sum << '\n';

@@ -393,7 +393,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
         : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
 
     // Number of input tiles
-    int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
+    const int max_num_tiles = static_cast<int>(::cuda::ceil_div(max_num_items_per_invocation, tile_size));
 
     // Specify temporary storage allocation requirements
     size_t allocation_sizes[3];
@@ -424,8 +424,8 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
     // Iterate over the partitions until all input is processed
     for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
     {
-      global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
-      global_offset_t current_num_items =
+      const global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
+      const global_offset_t current_num_items =
         (partition_idx + 1 == num_partitions)
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
@@ -442,7 +442,7 @@ struct CCCL_DEPRECATED_BECAUSE("Please use DeviceRunLengthEncode") DeviceRleDisp
       }
 
       // Log init_kernel configuration
-      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
+      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
@@ -752,8 +752,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
   {
-    global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
-    global_offset_t current_num_items =
+    const global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
+    const global_offset_t current_num_items =
       (partition_idx + 1 == num_partitions) ? (num_items - current_partition_offset) : capped_num_items_per_invocation;
 
     const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));

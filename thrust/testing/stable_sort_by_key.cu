@@ -14,7 +14,7 @@ void TestStableSortByKeyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::stable_sort_by_key(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -97,7 +97,7 @@ struct TestStableSortByKey
     ASSERT_EQUAL(h_values, d_values);
   }
 };
-VariableUnitTest<TestStableSortByKey, SignedIntegralTypes> TestStableSortByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestStableSortByKey, SignedIntegralTypes);
 
 template <typename T>
 struct TestStableSortByKeySemantics
@@ -117,6 +117,5 @@ struct TestStableSortByKeySemantics
     ASSERT_EQUAL(h_values, d_values);
   }
 };
-VariableUnitTest<TestStableSortByKeySemantics,
-                 unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t>>
-  TestStableSortByKeySemanticsInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(
+  TestStableSortByKeySemantics, unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t>);
