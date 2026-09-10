@@ -317,9 +317,9 @@ Fortunately, the kernel source is already being assembled as a string at
 runtime. That means we can also generate the type information needed by
 the CUDA C++ side.
 
-As a concrete example, suppose we want to pass a ``types.complex128``
-value into the kernel. The C++ side does not see the original Python
-type definition, but that is not an issue. It only needs a storage
+As a concrete example, suppose we want to pass a value of numba-cuda-mlir's
+``types.complex128`` into the kernel. The C++ side does not see the original
+Python type definition, but that is not an issue. It only needs a storage
 type with matching size and alignment, and can type-erase everything
 else.
 
@@ -376,7 +376,7 @@ matching storage type on the C++ side:
         bindings.launcher(type_erased_value_ptr, size, alignment, ltoir, len(ltoir))
 
 In this example, we obtain the size and alignment of
-``types.complex128`` from numba-cuda-mlir's type system. The remaining detail is
+``types.complex128``. The remaining detail is
 how to pass the value to ``cuLaunchKernel``. Kernel arguments are
 described to ``cuLaunchKernel`` as pointers to host memory from which
 the launch parameters are copied. In Python, that host-memory pointer
@@ -558,16 +558,6 @@ The free-threading design is constrained by the following requirements:
 * Same-key concurrent cold builds should build once; waiters should receive the
   same result or observe the same exception.
 
-Tests that require a free-threaded interpreter carry the ``free_threading``
-marker (and ``thread_unsafe`` when they drive their own worker threads). The CI
-test payloads run them whenever the lane's interpreter is a free-threaded
-build. The full-extras payload selects them by marker and then runs a
-pytest-run-parallel sweep of the functional suite, so a new suite on the full
-extras needs no CI change beyond the marker. The minimal and ThreadSanitizer
-payloads can only import what the minimal extras install, so they name the
-stress file by path and sweep the ``no_numba`` modules; a suite that must also
-run there has to be added to those payloads.
-
 Build and validation requirements
 +++++++++++++++++++++++++++++++++
 
@@ -592,6 +582,28 @@ criteria for a free-threaded build are:
 * importing ``cuda.compute`` does not re-enable the GIL;
 * the free-threading stress suite passes without forcing ``PYTHON_GIL=0`` or
   ``-X gil=0``.
+
+CI enforces the last criterion as follows.
+
+Tests that require a free-threaded interpreter carry the ``free_threading``
+marker. When the Python interpreter is a free-threaded build, the CI test
+payload adds two steps after the regular suite has run. First, it runs the
+tests selected by the ``free_threading`` marker. Second, it runs the regular
+suite a second time under pytest-run-parallel, a plugin that executes each
+individual test in two threads simultaneously -- the same test body running
+twice, concurrently, in one process -- to expose races on shared state that a
+single-threaded run cannot. The pytest-run-parallel re-run is an extra form of
+stress testing: the hand-written stress suite targets specific shared-object
+scenarios, whereas the re-run applies the same kind of concurrency to every
+functional test, so the whole surface of algorithms, iterators and operators is
+exercised under contention without a dedicated test for each.
+
+The two-thread re-run with pytest-run-parallel is what the ``thread_unsafe``
+marker is for. Some tests must not run concurrently with a second copy of
+themselves, because they spawn and synchronize their own worker threads (the
+stress suites) or mutate process-wide state, for example by calling
+``clear_all_caches()`` or asserting on compile-cache hit counts. Marking them
+``thread_unsafe`` makes the plugin run them once, single-threaded, instead.
 
 
 Device keying
