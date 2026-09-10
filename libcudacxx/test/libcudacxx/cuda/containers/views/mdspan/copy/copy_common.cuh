@@ -23,7 +23,7 @@
 using cuda::std::layout_left;
 using cuda::std::layout_right;
 
-static const cuda::stream stream{cuda::device_ref{0}};
+static const cuda::stream copy_stream{cuda::device_ref{0}};
 
 template <typename T>
 thrust::host_vector<T> make_iota(int n)
@@ -54,8 +54,8 @@ void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>
   const cuda::device_mdspan<T, extents_t, SrcLayout> src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
   const cuda::device_mdspan<T, extents_t, DstLayout> dst(thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
 
-  cuda::copy(src, dst, stream);
-  stream.sync();
+  cuda::copy(src, dst, copy_stream);
+  copy_stream.sync();
 
   const thrust::host_vector<T> result(d_dst);
   REQUIRE(result == expected);
@@ -98,8 +98,8 @@ void test_copy_strided(
   const cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> dst(
     thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
 
-  cuda::copy(src, dst, stream);
-  stream.sync();
+  cuda::copy(src, dst, copy_stream);
+  copy_stream.sync();
 
   const thrust::host_vector<T> result(d_dst);
   REQUIRE(result == expected);
@@ -166,8 +166,8 @@ void test_copy_stride_relaxed(
   const cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> src(src_ptr, src_map);
   const cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> dst(dst_ptr, dst_map);
 
-  cuda::copy(src, dst, stream);
-  stream.sync();
+  cuda::copy(src, dst, copy_stream);
+  copy_stream.sync();
 
   const thrust::host_vector<T> result(d_dst);
   REQUIRE(result == expected);
