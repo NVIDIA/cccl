@@ -137,6 +137,90 @@ def _validate_initial_value(
         )
 
 
+def _validate_prefix_state(
+    context: GroupRewriteContext,
+    inference: PayloadInference,
+    *,
+    index: int,
+) -> int:
+    from .._stateful_function import StatefulFunction
+
+    prefix_callback = inference.factory_kwargs.get("prefix_op")
+    has_state = bool(inference.factory_kwargs.get("prefix_state"))
+    stateful = isinstance(prefix_callback, StatefulFunction)
+
+    if prefix_callback is None:
+        if has_state:
+            raise CoopSinglePhaseRewriteError(
+                "coop scan prefix_state requires a prefix callback"
+            )
+        return index
+    initial = inference.factory_kwargs.get("initial_value")
+    if isinstance(initial, ArgumentBinding) and initial.kind is not BindingKind.OMITTED:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan initial_value and prefix callbacks are mutually exclusive"
+        )
+    if inference.factory_kwargs.get("block_aggregate"):
+        raise CoopSinglePhaseRewriteError(
+            "coop scan block_aggregate and prefix callbacks are mutually exclusive"
+        )
+    if stateful and not has_state:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan StatefulFunction prefix callbacks require prefix_state"
+        )
+    if not stateful and has_state:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan stateless prefix callbacks do not accept prefix_state"
+        )
+    if not stateful:
+        if not callable(prefix_callback):
+            raise CoopSinglePhaseRewriteError(
+                "coop scan prefix_op must be a stateless device callable or "
+                "StatefulFunction"
+            )
+        return index
+    if index >= len(inference.runtime_args):
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state is missing its runtime value"
+        )
+
+    state = inference.runtime_args[index]
+    spec = context.thread_data(state)
+    if spec is None:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state must be a one-item ThreadData or local array"
+        )
+    if spec.items_per_thread != 1:
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state must contain exactly one item"
+        )
+    try:
+        descriptor_dtype = _validate_common_numeric_dtype(
+            prefix_callback.dtype,
+            operation="scan",
+            parameter="prefix_state",
+        )
+        state_dtype = _payload_dtype(context, state, spec)
+        if state_dtype is not None:
+            state_dtype = _validate_common_numeric_dtype(
+                state_dtype,
+                operation="scan",
+                parameter="prefix_state",
+            )
+    except (TypeError, ValueError) as exc:
+        raise CoopSinglePhaseRewriteError(str(exc)) from exc
+    if state_dtype is not None and not _dtype_values_match(
+        state_dtype,
+        descriptor_dtype,
+    ):
+        raise CoopSinglePhaseRewriteError(
+            "coop scan prefix_state dtype must exactly match StatefulFunction "
+            f"dtype {descriptor_dtype}; got {state_dtype}"
+        )
+    context.record_thread_data_dtype(state, descriptor_dtype)
+    return index + 1
+
+
 def infer_scan_payload(
     context: GroupRewriteContext,
     inference: PayloadInference,
@@ -227,6 +311,11 @@ def infer_scan_payload(
     cursor = base_count
     if _runtime_binding(inference.factory_kwargs.get("initial_value")):
         cursor += 1
+    cursor = _validate_prefix_state(
+        context,
+        inference,
+        index=cursor,
+    )
     if _runtime_binding(inference.factory_kwargs.get("valid_items")):
         cursor += 1
     aggregate_name = (

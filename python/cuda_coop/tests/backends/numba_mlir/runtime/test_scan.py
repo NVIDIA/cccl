@@ -44,6 +44,9 @@ _LOGICAL_WARP_THREADS = 8
 _ITEMS_PER_THREAD = 2
 _TILE_ITEMS = _BLOCK_THREADS * _ITEMS_PER_THREAD
 _RUNTIME_VALID_ITEMS = 5
+_PREFIX_TILE_COUNT = 4
+_PREFIX_INITIAL_STATE = 17
+_DYNAMIC_STORAGE_BYTES = 64 * 1024
 
 
 def _exclusive_sum(values: np.ndarray, initial: int = 0) -> np.ndarray:
@@ -180,6 +183,174 @@ def _maximum(left, right):
 
 
 _device_maximum = cuda.jit(device=True)(_maximum)
+
+
+@cuda.jit(device=True)
+def _prefix_after_block_aggregate(block_aggregate):
+    return block_aggregate + 7
+
+
+@cuda.jit(device=True)
+def _running_prefix_int64(state, block_aggregate):
+    previous = state[0]
+    state[0] = previous + block_aggregate
+    return previous
+
+
+_RUNNING_PREFIX_INT64 = qualified_coop.StatefulFunction(
+    _running_prefix_int64,
+    types.int64,
+    name="cuda_coop_test_running_prefix_int64",
+)
+
+
+@cuda.jit
+def _block_scan_prefix(source, output):
+    thread = cuda.threadIdx.x
+    values = cuda.local.array(_ITEMS_PER_THREAD, dtype=types.int32)
+    for item in range(_ITEMS_PER_THREAD):
+        index = thread * _ITEMS_PER_THREAD + item
+        values[item] = source[index]
+
+    scanned = qualified_coop.exclusive_scan(
+        qualified_coop.this_block(),
+        values,
+        scan_op=_device_maximum,
+        prefix_op=_prefix_after_block_aggregate,
+        algorithm="raking_memoize",
+    )
+    for item in range(_ITEMS_PER_THREAD):
+        index = thread * _ITEMS_PER_THREAD + item
+        output[index] = scanned[item]
+
+
+def test_stateless_prefix_custom_array_scan_without_initial():
+    source = ((np.arange(_TILE_ITEMS, dtype=np.int32) * 19) % 101) - 37
+    output = np.full_like(source, -1)
+
+    _block_scan_prefix[1, _BLOCK_THREADS](source, output)
+
+    expected = np.full_like(source, source.max() + 7)
+    np.testing.assert_array_equal(output, expected)
+
+
+@cache
+def _stateful_prefix_kernel(algorithm: str, storage_mode: str):
+    if storage_mode == "caller":
+
+        @cuda.jit
+        def kernel(source, output, final_state):
+            thread = cuda.threadIdx.x
+            state = qualified_coop.ThreadData(1, dtype=types.int64)
+            state[0] = _PREFIX_INITIAL_STATE
+            storage = qualified_coop.TempStorage(sharing="shared")
+            for tile in range(_PREFIX_TILE_COUNT):
+                index = tile * _BLOCK_THREADS + thread
+                output[index] = qualified_coop.inclusive_sum(
+                    qualified_coop.this_block(),
+                    source[index],
+                    state,
+                    prefix_op=_RUNNING_PREFIX_INT64,
+                    algorithm=algorithm,
+                    temp_storage=storage,
+                )
+            if thread == 0:
+                final_state[0] = state[0]
+
+    elif storage_mode == "dynamic":
+
+        @cuda.jit
+        def kernel(source, output, final_state):
+            thread = cuda.threadIdx.x
+            state = cuda.local.array(1, dtype=types.int64)
+            state[0] = _PREFIX_INITIAL_STATE
+            storage = qualified_coop.TempStorage(
+                _DYNAMIC_STORAGE_BYTES,
+                alignment=16,
+            )
+            for tile in range(_PREFIX_TILE_COUNT):
+                index = tile * _BLOCK_THREADS + thread
+                output[index] = qualified_coop.exclusive_sum(
+                    qualified_coop.this_block(),
+                    source[index],
+                    state,
+                    prefix_op=_RUNNING_PREFIX_INT64,
+                    algorithm=algorithm,
+                    temp_storage=storage,
+                )
+            if thread == 0:
+                final_state[0] = state[0]
+
+    else:
+
+        @cuda.jit
+        def kernel(source, output, final_state):
+            thread = cuda.threadIdx.x
+            state = qualified_coop.ThreadData(1, dtype=types.int64)
+            state[0] = _PREFIX_INITIAL_STATE
+            storage = qualified_coop.TempStorage(
+                sharing="shared",
+                auto_sync=False,
+            )
+            for tile in range(_PREFIX_TILE_COUNT):
+                index = tile * _BLOCK_THREADS + thread
+                output[index] = qualified_coop.exclusive_sum(
+                    qualified_coop.this_block(),
+                    source[index],
+                    state,
+                    prefix_op=_RUNNING_PREFIX_INT64,
+                    algorithm=algorithm,
+                    temp_storage=storage,
+                )
+                cuda.syncthreads()
+            if thread == 0:
+                final_state[0] = state[0]
+
+    return kernel
+
+
+@pytest.mark.parametrize(
+    ("algorithm", "storage_mode"),
+    (
+        pytest.param("raking", "caller", id="raking-caller-storage"),
+        pytest.param(
+            "raking_memoize",
+            "dynamic",
+            id="raking-memoize-dynamic-storage",
+        ),
+        pytest.param(
+            "warp_scans",
+            "manual-sync",
+            id="warp-scans-auto-sync-false",
+        ),
+    ),
+)
+def test_stateful_prefix_tracks_repeated_scans_across_modes_and_storage(
+    algorithm: str,
+    storage_mode: str,
+):
+    source = (
+        (np.arange(_PREFIX_TILE_COUNT * _BLOCK_THREADS, dtype=np.int32) * 7) % 23
+    ) + 1
+    output = np.full_like(source, -1)
+    final_state = np.full(1, -1, dtype=np.int64)
+    dispatcher = _stateful_prefix_kernel(algorithm, storage_mode)
+
+    dispatcher[1, _BLOCK_THREADS](source, output, final_state)
+
+    expected = (
+        _PREFIX_INITIAL_STATE + np.cumsum(source, dtype=np.int32)
+        if storage_mode == "caller"
+        else _exclusive_sum(source, _PREFIX_INITIAL_STATE)
+    )
+    np.testing.assert_array_equal(output, expected)
+    assert final_state[0] == _PREFIX_INITIAL_STATE + source.sum(dtype=np.int64)
+    if storage_mode == "dynamic":
+        compiled = next(iter(dispatcher._launch_config_overloads.values()))
+        assert (
+            compiled.metadata["required_dynamic_shared_memory"]
+            == _DYNAMIC_STORAGE_BYTES
+        )
 
 
 @cuda.jit
