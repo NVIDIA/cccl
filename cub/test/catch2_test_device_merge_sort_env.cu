@@ -18,15 +18,16 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairs, device_merge_sort_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortKeys, device_merge_sort_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortPairs, device_merge_stable_sort_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeys, device_merge_stable_sort_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortPairsCopy, device_merge_sort_pairs_copy);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::SortKeysCopy, device_merge_sort_keys_copy);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_stable_sort_keys_copy);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::SortPairs, device_merge_sort_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::SortKeys, device_merge_sort_keys);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::StableSortPairs, device_merge_stable_sort_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::StableSortKeys, device_merge_stable_sort_keys);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::SortPairsCopy, device_merge_sort_pairs_copy);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::SortKeysCopy, device_merge_sort_keys_copy);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMergeSort::StableSortKeysCopy, device_merge_stable_sort_keys_copy);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

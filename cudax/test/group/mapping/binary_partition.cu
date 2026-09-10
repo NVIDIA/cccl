@@ -68,12 +68,11 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
                       cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        !noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping{Pred{}};
+      Mapping mapping{Pred{}};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
@@ -109,12 +108,11 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
                       cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+      static_assert(noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping{Pred{}};
+      Mapping mapping{Pred{}};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
@@ -150,12 +148,11 @@ __device__ void test_binary_partition(Config config)
       const cudax::this_warp parent_group{config};
       const ThreadsInWarpMappingResult prev_mapping_result;
 
-      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
+      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<Mapping>().map(
                       cuda::gpu_thread, parent_group, prev_mapping_result))>);
-      static_assert(
-        !noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
+      static_assert(!noexcept(cuda::std::declval<Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const Mapping mapping{Pred{}};
+      Mapping mapping{Pred{}};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 

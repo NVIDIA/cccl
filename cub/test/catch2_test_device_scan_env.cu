@@ -20,14 +20,15 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
+#include "block_size_extracting_helpers.h"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_env_launch_helper.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_scan_exclusive);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_scan_exclusive_sum);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_scan_inclusive);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_scan_inclusive_sum);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_scan_inclusive_init);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveScan, device_scan_exclusive);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveSum, device_scan_exclusive_sum);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveScan, device_scan_inclusive);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveSum, device_scan_inclusive_sum);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::InclusiveScanInit, device_scan_inclusive_init);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

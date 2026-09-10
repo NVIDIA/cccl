@@ -228,7 +228,7 @@ C2H_TEST_LIST(
     if constexpr (sizeof(TestType) != 1)
     {
       constexpr size_t max_element_count = static_cast<size_t>(-1) / sizeof(TestType);
-      cuda::stream new_stream{cuda::device_ref{0}};
+      const cuda::stream new_stream{cuda::device_ref{0}};
 
       REQUIRE_THROWS_MATCHES(
         (buf.__replace_allocation(new_stream, max_element_count + 1)),
