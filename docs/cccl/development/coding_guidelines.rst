@@ -21,7 +21,7 @@ General
    A change is breaking if it can lead to a compilation failure in any consumer code using CCCL,
    or change the behavior or meaning of user code in any other way.
 #. Before an API is removed at a major release,
-   the effected entity should be marked as ``[[deprecated("...")]]`` with rational and workaround,
+   the affected entity must be marked as ``[[deprecated("...")]]`` with rationale and workaround,
    adding a Doxygen comment ``//! Deprecated [Since X.Y]`` with the CCCL version introducing the deprecation,
    in at least one preceding release.
 
