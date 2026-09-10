@@ -273,6 +273,8 @@ using bounded_offset_t =
   detail::choose_offset_for_max_t<static_cast<::cuda::std::uint64_t>(::cuda::args::__traits<_ParamT>::highest)>;
 
 // =====================================================================
+// TODO(gevtushenko): drop this once we drop support for CTK 12.6
+//
 // Kernel-identity normalization of annotated parameters
 // =====================================================================
 // nvcc 12.4 to 12.6 re-emit the host translation unit with a defect: the argument of an `auto` non-type template
@@ -326,6 +328,7 @@ normalize_param([[maybe_unused]] ::cuda::args::constant<_Value, _Tp> __arg) noex
 {
   if constexpr (::cuda::std::__cccl_is_integer_v<::cuda::std::remove_cv_t<decltype(_Value)>>)
   {
+    // For integral types, we discard the `_Tp` type and normalize the type based on the `_Value`'s value
     return ::cuda::args::constant<static_cast<__static_value_type_t<_Value>>(_Value)>{};
   }
   else
