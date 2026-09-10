@@ -34,10 +34,10 @@
  * Usage: sharded_stream [log2_elements=27] [reps=7]
  */
 
-#include <cuda/experimental/sharded.cuh>
-
 #include <thrust/execution_policy.h>
 #include <thrust/transform.h>
+
+#include <cuda/experimental/sharded.cuh>
 
 #include <algorithm>
 #include <chrono>
@@ -52,7 +52,8 @@ using cuda::experimental::places::place_group;
 
 namespace
 {
-using T = double; // canonical STREAM element; float overstates the locality ratio (narrow elements pay the stitch latency)
+using T = double; // canonical STREAM element; float overstates the locality ratio (narrow elements pay the stitch
+                  // latency)
 constexpr T scalar = T{3};
 
 struct copy_op
@@ -142,10 +143,10 @@ void print(const row& r, std::size_t n)
 
 int main(int argc, char** argv)
 {
-  const int log2n       = argc > 1 ? atoi(argv[1]) : 27;
-  const int reps        = argc > 2 ? atoi(argv[2]) : 7;
-  const std::size_t n   = std::size_t{1} << log2n;
-  const double bytes_rw = 2.0 * sizeof(T); // copy, scale: one read + one write per element
+  const int log2n        = argc > 1 ? atoi(argv[1]) : 27;
+  const int reps         = argc > 2 ? atoi(argv[2]) : 7;
+  const std::size_t n    = std::size_t{1} << log2n;
+  const double bytes_rw  = 2.0 * sizeof(T); // copy, scale: one read + one write per element
   const double bytes_rrw = 3.0 * sizeof(T); // add, triad: two reads + one write
 
   auto group = place_group{make_locality_domain_grid()};
@@ -159,7 +160,8 @@ int main(int argc, char** argv)
   std::vector<T> host(n);
 
   // ---- whole-device arm: one interleaved allocation per array, one stream ----
-  row rows[4] = {{"copy", bytes_rw, 0, 0}, {"scale", bytes_rw, 0, 0}, {"add", bytes_rrw, 0, 0}, {"triad", bytes_rrw, 0, 0}};
+  row rows[4] = {
+    {"copy", bytes_rw, 0, 0}, {"scale", bytes_rw, 0, 0}, {"add", bytes_rrw, 0, 0}, {"triad", bytes_rrw, 0, 0}};
   {
     cudaStream_t s = nullptr;
     cuda_safe_call(cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking));
@@ -177,7 +179,8 @@ int main(int argc, char** argv)
     thrust::transform(pol, c, c + n, b, scale_op{});
     thrust::transform(pol, a, a + n, b, c, add_op{});
     thrust::transform(pol, b, b + n, c, a, triad_op{});
-    cuda_safe_call(cudaStreamSynchronize(s)); // non-blocking stream: the legacy-stream memcpy below does not wait for it
+    cuda_safe_call(cudaStreamSynchronize(s)); // non-blocking stream: the legacy-stream memcpy below does not wait for
+                                              // it
     cuda_safe_call(cudaMemcpy(host.data(), a, n * sizeof(T), cudaMemcpyDeviceToHost));
     ok = all_equal(host, T{15}, "whole-device triad") && ok;
 
