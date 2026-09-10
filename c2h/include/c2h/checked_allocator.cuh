@@ -3,9 +3,10 @@
 
 #pragma once
 
+#include <cuda/std/detail/__config>
+
 #include <thrust/device_allocator.h>
 #include <thrust/mr/new.h>
-#include <thrust/system/cuda/memory.h>
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/system/cuda/pointer.h>
 
@@ -54,18 +55,24 @@ public:
 
 struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_delete_resource_base
 {
-  void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
+  [[nodiscard]] _CCCL_HOST_API void*
+  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
   {
     // Some systems with integrated host/device memory have issues with allocating more memory
     // than is available. Check the amount of free memory before attempting to allocate on
     // integrated systems.
     int device = 0;
-    CubDebugExit(cudaGetDevice(&device));
-    cudaDeviceProp prop;
-    CubDebugExit(cudaGetDeviceProperties(&prop, device));
-    if (prop.integrated)
+    if (cudaGetDevice(&device) != cudaSuccess)
     {
-      auto status = detail::check_free_device_memory(bytes + alignment + sizeof(std::size_t));
+      throw std::bad_alloc{};
+    }
+
+    // Validate allocation-size arithmetic before delegating to new_delete_resource_base.
+    const std::size_t allocation_size = detail::checked_host_allocation_size(bytes, alignment);
+
+    if (detail::is_integrated_device(device))
+    {
+      const auto status = detail::check_free_device_memory(allocation_size);
       if (status != cudaSuccess)
       {
         throw std::bad_alloc{};

@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#pragma once
+
 #include <cuda/std/complex>
+#include <cuda/stream>
 #include <cuda/type_traits>
 
 #include <c2h/generator_common.h>
@@ -13,6 +16,9 @@ void init_generator();
 
 // sets the seed and resizes the distribution vector, fills it, and returns a pointer the start of the data
 float* prepare_random_data(seed_t seed, std::size_t num_items);
+
+// sets the seed and resizes the distribution vector, fills it on stream, and returns a pointer the start of the data
+float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items);
 
 // called once before main returns to clean up the generator state
 void cleanup_generator();
