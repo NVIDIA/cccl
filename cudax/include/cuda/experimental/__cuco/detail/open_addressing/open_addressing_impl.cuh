@@ -487,7 +487,7 @@ public:
     const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
     const auto __env       = ::cuda::std::execution::env{__stream, __memory_resource};
 
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
       "cuco: failed to get the number of elements",
       __input_begin,
