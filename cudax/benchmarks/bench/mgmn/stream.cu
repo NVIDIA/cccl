@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! The STREAM benchmark, distributed over one device, with every kernel expressed through
-//! `cuda::mgmn::transform`. The "Locality" axis runs each variant over the locality domains of the
+//! `cudax::mgmn::transform`. The "Locality" axis runs each variant over the locality domains of the
 //! device, and over the whole device as a single logical device.
 
 #include <cuda/__device/logical_device_ref.h>
@@ -126,7 +126,7 @@ void add_summary(nvbench::state& state, cuda::std::size_t num_domains)
   throw std::runtime_error{"Unknown locality kind: " + std::to_string(static_cast<cuda::std::int8_t>(loc))};
 }
 
-[[nodiscard]] std::vector<cuda::mgmn::nccl_communicator>
+[[nodiscard]] std::vector<cudax::mgmn::nccl_communicator>
 make_communicators(cuda::device_ref device, cuda::std::span<const cuda::__logical_device_ref> domains)
 {
   std::vector<ncclComm_t> raw_comms(domains.size());
@@ -138,12 +138,12 @@ make_communicators(cuda::device_ref device, cuda::std::span<const cuda::__logica
     throw std::runtime_error(std::string{"ncclCommInitAll: "} + ncclGetErrorString(status));
   }
 
-  std::vector<cuda::mgmn::nccl_communicator> comms;
+  std::vector<cudax::mgmn::nccl_communicator> comms;
 
   comms.reserve(domains.size());
   for (cuda::std::size_t domain = 0; domain < domains.size(); ++domain)
   {
-    comms.push_back(cuda::mgmn::nccl_communicator::from_native_handle(raw_comms[domain], domains[domain]));
+    comms.push_back(cudax::mgmn::nccl_communicator::from_native_handle(raw_comms[domain], domains[domain]));
   }
 
   return comms;
@@ -239,7 +239,7 @@ void copy(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     run_forked_iteration(cuda::stream_ref{launch.get_stream().get_stream()}, a, fork, join, [&] {
-      cuda::mgmn::transform(
+      cudax::mgmn::transform(
         cudax::distributed,
         comms,
         c | cuda::std::views::transform([](auto& buf) {
@@ -287,7 +287,7 @@ void mul(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     run_forked_iteration(cuda::stream_ref{launch.get_stream().get_stream()}, b, fork, join, [&] {
-      cuda::mgmn::transform(
+      cudax::mgmn::transform(
         cudax::distributed,
         comms,
         b | cuda::std::views::transform([](auto& buf) {
@@ -344,7 +344,7 @@ void add(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     run_forked_iteration(cuda::stream_ref{launch.get_stream().get_stream()}, c, fork, join, [&] {
-      cuda::mgmn::transform(
+      cudax::mgmn::transform(
         cudax::distributed,
         comms,
         c | cuda::std::views::transform([](auto& buf) {
@@ -402,7 +402,7 @@ void triad(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     run_forked_iteration(cuda::stream_ref{launch.get_stream().get_stream()}, a, fork, join, [&] {
-      cuda::mgmn::transform(
+      cudax::mgmn::transform(
         cudax::distributed,
         comms,
         a | cuda::std::views::transform([](auto& buf) {
