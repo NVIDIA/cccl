@@ -1678,9 +1678,9 @@ struct dispatch_impl
     {
       return error;
     }
-    if (runs_on_guarantee.has_value() && runs_on_guarantee->description().__has_max_sms())
+    if (runs_on_guarantee.has_value() && runs_on_guarantee->description().__max_sms_.has_value())
     {
-      sm_count = ::cuda::std::min(sm_count, static_cast<int>(runs_on_guarantee->description().__max_sms_));
+      sm_count = ::cuda::std::min(sm_count, static_cast<int>(*runs_on_guarantee->description().__max_sms_));
     }
 
     // Init regular and alternate-digit kernel configurations
