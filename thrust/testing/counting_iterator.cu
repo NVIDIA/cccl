@@ -322,6 +322,43 @@ void TestCountingIteratorStaticStride()
 }
 DECLARE_UNITTEST(TestCountingIteratorStaticStride);
 
+void TestCountingIteratorDynamicStrideDistance()
+{
+  auto first = thrust::make_counting_iterator(0, 2);
+  auto last  = thrust::make_counting_iterator(10, 2);
+
+  ASSERT_EQUAL(last - first, 5);
+  ASSERT_EQUAL((first + (last - first)) == last, true);
+
+  auto rfirst = thrust::make_counting_iterator(10, 2);
+  auto rlast  = thrust::make_counting_iterator(0, 2);
+
+  ASSERT_EQUAL(rlast - rfirst, -5);
+}
+DECLARE_UNITTEST(TestCountingIteratorDynamicStrideDistance);
+
+void TestCountingIteratorStaticStrideDistance()
+{
+  auto first = thrust::make_counting_iterator<3>(1);
+  auto last  = thrust::make_counting_iterator<3>(13);
+
+  ASSERT_EQUAL(last - first, 4);
+  ASSERT_EQUAL((first + (last - first)) == last, true);
+}
+DECLARE_UNITTEST(TestCountingIteratorStaticStrideDistance);
+
+void TestCountingIteratorPointerStrideDistance()
+{
+  int arr[10];
+
+  auto first = thrust::make_counting_iterator(arr, 3);
+  auto last  = thrust::make_counting_iterator(arr + 9, 3);
+
+  ASSERT_EQUAL(last - first, 3);
+  ASSERT_EQUAL((first + (last - first)) == last, true);
+}
+DECLARE_UNITTEST(TestCountingIteratorPointerStrideDistance);
+
 void TestCountingIteratorPointer()
 {
   int arr[11];
@@ -359,3 +396,12 @@ void TestCountingIteratorFloatDistanceTo()
   ASSERT_EQUAL(iter2 - iter1, 5);
 }
 DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);
+
+void TestCountingIteratorFloatStrideDistance()
+{
+  auto first = thrust::make_counting_iterator(0.0f, 0.5f);
+  auto last  = thrust::make_counting_iterator(2.5f, 0.5f);
+
+  ASSERT_EQUAL(last - first, 5);
+}
+DECLARE_UNITTEST(TestCountingIteratorFloatStrideDistance);
