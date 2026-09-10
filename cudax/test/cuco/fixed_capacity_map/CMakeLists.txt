@@ -36,6 +36,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_targe
   test_capacity.cu
 )
 
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.size ${cudax_target}
+  test_size.cu
+)
+
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.shared_memory ${cudax_target}
   test_shared_memory.cu
 )
