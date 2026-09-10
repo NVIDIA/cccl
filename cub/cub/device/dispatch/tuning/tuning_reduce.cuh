@@ -15,8 +15,10 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
@@ -85,6 +87,17 @@ struct ReducePolicy
   }
 #endif // _CCCL_HOSTED()
 };
+
+namespace detail
+{
+// The arg-extremum operators are distinct reduction algorithms and take distinct tunings, so they classify as their
+// own operation kinds rather than op_kind_t::other.
+template <typename PredicateT>
+inline constexpr auto classify_op<arg_reduce_op<PredicateT>> = op_kind_t::arg_extremum;
+
+template <typename CompareOpT, bool LastMax>
+inline constexpr auto classify_op<arg_minmax_reduce_op<CompareOpT, LastMax>> = op_kind_t::argminmax;
+} // namespace detail
 
 namespace detail::reduce
 {
@@ -162,6 +175,18 @@ _CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
+
+// Classifies the element type carried inside an arg-extremum accumulator, so that tunings can be keyed per input
+// type even where the accumulator sizes coincide (KeyValuePair<int, T> shares 8 bytes across I8..F32 inputs and
+// argminmax_accum_t shares 12/24 bytes across I8/I16 and I64/F64 inputs, respectively).
+template <typename AccumT>
+inline constexpr auto classify_accum_input = type_t::other;
+
+template <typename KeyT, typename ValueT>
+inline constexpr auto classify_accum_input<KeyValuePair<KeyT, ValueT>> = classify_type<ValueT>;
+
+template <typename T, typename IndexT>
+inline constexpr auto classify_accum_input<argminmax_accum_t<T, IndexT>> = classify_type<T>;
 
 template <class AccumT,
           class OffsetT,
@@ -250,10 +275,12 @@ get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
 // tunings from cub/benchmarks/bench/reduce/arg_extrema.cu. These are raw measured values and must not be passed
 // through scale_mem_bound.
 _CCCL_HOST_DEVICE_API constexpr auto
-get_argextremum_sm107_tuning(type_t accum_t, int offset_size, int accum_size) noexcept
+get_argextremum_sm107_tuning(type_t accum_t, int offset_size, int accum_size, type_t input_t) noexcept
   -> ::cuda::std::optional<sm100_tuning_values>
 {
-  if (accum_t != type_t::other || offset_size != 4)
+  // the entries were measured for built-in input types only; custom payloads (input_t == other) fall through to the
+  // default policy
+  if (accum_t != type_t::other || offset_size != 4 || input_t == type_t::other)
   {
     return {};
   }
@@ -445,6 +472,7 @@ struct policy_selector
   int offset_size;
   int accum_size;
   __determinism_t determinism = __determinism_t::__run_to_run;
+  type_t input_t              = type_t::other; // element type inside arg-extremum accumulators
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_deterministic_tuning(::cuda::compute_capability cc) const
     -> ReducePolicy
@@ -497,10 +525,9 @@ struct policy_selector
   {
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
-      // arg-extremum operators classify as op_kind_t::other
-      if (operation_t == op_kind_t::other)
+      if (operation_t == op_kind_t::arg_extremum)
       {
-        if (const auto sm107_tuning = get_argextremum_sm107_tuning(accum_t, offset_size, accum_size))
+        if (const auto sm107_tuning = get_argextremum_sm107_tuning(accum_t, offset_size, accum_size, input_t))
         {
           const auto rp = ReducePassPolicy{
             sm107_tuning->threads,
@@ -609,7 +636,12 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ReducePolicy
   {
     constexpr auto policies = policy_selector{
-      classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}, Determinism};
+      classify_type<AccumT>,
+      classify_op<ReductionOpT>,
+      int{sizeof(OffsetT)},
+      int{sizeof(AccumT)},
+      Determinism,
+      classify_accum_input<AccumT>};
     return policies(cc);
   }
 };
