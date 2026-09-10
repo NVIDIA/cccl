@@ -178,6 +178,7 @@ def test_installed_wheel_import_order_compiles_block_load(
     environment["PYTHONPATH"] = str(_PACKAGE_ROOT)
     environment.pop("CUDA_COOP_CCCL_ROOT", None)
     environment.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
+    environment.pop("CUDA_COOP_SOURCE_DUMP_DIR", None)
     environment.pop("CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR", None)
 
     result = subprocess.run(
