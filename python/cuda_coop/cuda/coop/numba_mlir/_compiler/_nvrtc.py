@@ -9,11 +9,11 @@ from __future__ import annotations
 import functools
 import hashlib
 import os
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from cuda.coop._core._source_dump import dump_source
 from cuda.coop._headers import resolve_include_paths
 from cuda.coop._headers._identity import include_dirs_identity
 from cuda.coop._headers._toolkit import (
@@ -109,35 +109,12 @@ def CHECK_NVRTC(err, prog, *, nvrtc=None):
 
 
 def _dump_source(cpp, cc, code, compiler_options):
-    """Dump one content-addressed pre-NVRTC source file when requested."""
-
-    dump_dir = os.environ.get(_NVRTC_DUMP_DIR_ENV)
-    if not dump_dir:
-        return None
-    root = Path(dump_dir).expanduser().resolve()
-    root.mkdir(mode=0o700, parents=True, exist_ok=True)
-    digest = hashlib.sha256()
-    for value in (str(cc), str(code), repr(compiler_options), cpp):
-        digest.update(value.encode("utf-8", errors="surrogateescape"))
-        digest.update(b"\0")
-    suffix = "lto" if code == "lto" else "ptx"
-    destination = root / (
-        f"cuda_coop_numba_mlir_{digest.hexdigest()[:16]}_cc{cc}_{suffix}.cu"
+    return dump_source(
+        cpp,
+        backend="numba_mlir",
+        identity=(cc, code, compiler_options),
+        legacy_env=_NVRTC_DUMP_DIR_ENV,
     )
-    if destination.is_file():
-        return destination
-    fd, temporary = tempfile.mkstemp(
-        dir=root, prefix=f".{destination.name}.", text=True
-    )
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as source_file:
-            source_file.write(cpp)
-            source_file.flush()
-            os.fsync(source_file.fileno())
-        os.replace(temporary, destination)
-    finally:
-        Path(temporary).unlink(missing_ok=True)
-    return destination
 
 
 def _include_options(include_dirs: tuple[str, ...]) -> list[bytes]:
