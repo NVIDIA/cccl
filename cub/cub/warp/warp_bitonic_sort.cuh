@@ -33,6 +33,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+enum class WarpBitonicTopKAlgorithm;
+
 //! @rst
 //! The WarpBitonicSort class provides methods for sorting items partitioned across a CUDA warp
 //! using a bitonic sorting network.
@@ -304,6 +306,8 @@ public:
 private:
   template <typename, int, int, typename>
   friend class WarpBitonicSort;
+  template <int, typename, int, typename, WarpBitonicTopKAlgorithm>
+  friend class WarpBitonicTopK;
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
@@ -516,6 +520,8 @@ public:
 private:
   template <typename, int, int, typename>
   friend class WarpBitonicSort;
+  template <int, typename, int, typename, WarpBitonicTopKAlgorithm>
+  friend class WarpBitonicTopK;
 
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
