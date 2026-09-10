@@ -14,13 +14,10 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <limits>
 #include <new>
-#include <optional>
-#include <string>
 
 #include <cuda_runtime_api.h>
 
@@ -39,16 +36,13 @@ struct memory_info
 // will be limited to this number of bytes.
 inline std::size_t get_device_memory_limit()
 {
-  static std::optional<std::string> override_str = get_env("C2H_DEVICE_MEMORY_LIMIT");
-  static const std::size_t result =
-    override_str ? static_cast<std::size_t>(std::strtoll(override_str->c_str(), nullptr, 10)) : 0;
+  static const std::size_t result = get_env_as_integer<std::size_t>("C2H_DEVICE_MEMORY_LIMIT");
   return result;
 }
 
 inline bool get_debug_checked_allocs()
 {
-  static std::optional<std::string> debug_checked_allocs = get_env("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
-  static const bool result = debug_checked_allocs && (std::strtol(debug_checked_allocs->c_str(), nullptr, 10) != 0);
+  static const bool result = get_env_as_integer<long long>("C2H_DEBUG_CHECKED_ALLOC_FAILURES") != 0;
   return result;
 }
 

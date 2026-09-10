@@ -17,6 +17,7 @@
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
 #include <c2h/checked_memory_resource.cuh>
+#include <c2h/detail/env.cuh>
 
 namespace
 {
@@ -34,6 +35,21 @@ namespace
   return alloc_bytes;
 }
 } // namespace
+
+CUB_TEST("c2h integral environment parser rejects invalid values", "[c2h][buffers][env]", CUB_SMALL)
+{
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>(nullptr) == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("0") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("1024") == 1024);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("-1") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>(" -1") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("1x") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("18446744073709551616") == 0);
+
+  REQUIRE(c2h::detail::parse_env_integer<long long>("-1") == -1);
+  REQUIRE(c2h::detail::parse_env_integer<long long>("9223372036854775808") == 0);
+}
 
 CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buffers][device_resource]", CUB_SMALL)
 {
