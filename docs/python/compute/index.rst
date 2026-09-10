@@ -311,10 +311,10 @@ does not select the device itself.
 Free-threaded Python
 ++++++++++++++++++++
 
-Every extra supports free-threaded Python, including the full ``cu12`` and
-``cu13`` extras. Their JIT backend, ``numba-cuda-mlir``, publishes
-free-threaded (``cp314t``) wheels and keeps the GIL disabled, so
-Python-callable operators, ``gpu_struct`` types and unannotated
+Every optional dependency package supports free-threaded Python, including the
+full ``cu12`` and ``cu13`` extras. Their JIT backend, ``numba-cuda-mlir``,
+publishes free-threaded wheels and keeps the GIL disabled, so Python-callable
+operators, ``gpu_struct`` types and unannotated
 :class:`TransformIterator <cuda.compute.iterators.TransformIterator>` all work
 on a free-threaded interpreter:
 

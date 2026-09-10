@@ -375,8 +375,9 @@ matching storage type on the C++ side:
         bindings.launcher.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
         bindings.launcher(type_erased_value_ptr, size, alignment, ltoir, len(ltoir))
 
-In this example, we obtain the size and alignment of
-``types.complex128``. The remaining detail is
+In this example, we obtain the size and alignment from the corresponding NumPy
+dtype, ``np.dtype(np.complex128)``, since that is the layout the C++ storage
+type has to match. The remaining detail is
 how to pass the value to ``cuLaunchKernel``. Kernel arguments are
 described to ``cuLaunchKernel`` as pointers to host memory from which
 the launch parameters are copied. In Python, that host-memory pointer
