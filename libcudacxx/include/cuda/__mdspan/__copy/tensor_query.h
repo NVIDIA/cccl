@@ -94,9 +94,8 @@ __stride_order(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) 
   {
     __perm[__i] = __i;
   }
-  ::cuda::std::stable_sort(__perm.begin(),
-                           __perm.begin() + __tensor.__rank,
-                           __stride_compare<_StrideT, _MaxRank>{__tensor.__strides}); // NOLINT
+  ::cuda::std::stable_sort(
+    __perm.begin(), __perm.begin() + __tensor.__rank, __stride_compare<_StrideT, _MaxRank>{__tensor.__strides});
   return __perm;
 }
 
