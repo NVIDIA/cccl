@@ -103,6 +103,9 @@ class take;
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer;
 
+template <class _Range>
+class interwarp_synchronizer;
+
 class lane_synchronizer;
 
 class level_synchronizer;
