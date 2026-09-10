@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Use CI branch POC
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+    inputs: &workflow_inputs
+      source_ref:
+        description: "Full source commit SHA to test. Empty uses the triggering commit SHA."
+        required: false
+        default: ""
+        type: string
+      workflows:
+        description: "Space-separated matrix workflows to run. The empty public override is a resolution-only smoke test."
+        required: false
+        default: override
+        type: string
+      matrix_ref:
+        description: "Ref in the caller repository containing an alternate ci/matrix.yaml."
+        required: false
+        default: ""
+        type: string
+  workflow_dispatch:
+    inputs: *workflow_inputs
+
+jobs:
+  ci:
+    name: Run CI from orphan branch
+    permissions:
+      contents: read
+      id-token: write
+    uses: NVIDIA/cccl/.github/workflows/ci-matrix-build.yml@ci
+    with:
+      workflows: ${{ inputs.workflows || 'override' }}
+      source_ref: ${{ inputs.source_ref || github.sha }}
+      matrix_ref: ${{ inputs.matrix_ref }}
