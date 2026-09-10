@@ -11,6 +11,7 @@ set(
   algorithms/elementwise.cu
   algorithms/generic_tier.cu
   algorithms/reduce_into.cu
+  algorithms/reduce_lanes.cu
   algorithms/reduce_scan.cu
   algorithms/zip_transform.cu
   algorithms/count_histogram.cu

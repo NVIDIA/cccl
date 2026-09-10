@@ -17,6 +17,27 @@
  *
  * Algorithm temporaries are drawn from each shard's own place through the
  * group's per-place memory resources, so scratch lands where the work runs.
+ *
+ * Init contract (all forms): `result = init (+) fold(all elements)` — the
+ * `std::reduce` contract, with the initial value incorporated EXACTLY ONCE.
+ * Every shard's `cub::DeviceReduce` runs with `cub::detail::reduce::no_init`
+ * (CUB seeds the shard's partial from its first element; an empty shard runs
+ * nothing and writes nothing), and the single global fold starts from `init`
+ * and applies the operator over the PRESENT partials only, in shard order.
+ * An all-empty view yields `init`.
+ *
+ * Three delivery forms:
+ * - `reduce`       — synchronous, returns the value (host fold);
+ * - `reduce_into`  — asynchronous, ONE output on the CALL stream: the
+ *                    combine-bearing terminator; pick it when the caller
+ *                    consumes the scalar on its own stream (a solver loop's
+ *                    residual copied to pinned memory, a graph-conditional);
+ * - `reduce_into_lanes` — asynchronous, P outputs, one per LANE, each written
+ *                    on that lane's own stream (the MGMN "broadcast" output):
+ *                    no call stream, no call-stream edges; pick it when the
+ *                    scalar is consumed BY THE LANES (a per-shard rescale by
+ *                    a global norm, a convergence test feeding lane-ordered
+ *                    work) — the pipeline stays lane-ordered end to end.
  */
 
 #pragma once
@@ -118,9 +139,10 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
   {
     h_partials = static_cast<_Tp*>(reserved::__pinned_staging(num_shards * sizeof(_Tp)));
   }
-  ::std::fill(h_partials, h_partials + num_shards, init_value);
 
-  // Phase 1: local reduce per shard on the shard's environment
+  // Phase 1: local reduce per shard on the shard's environment. Every shard
+  // reduces with `no_init` (partial = fold of the shard's own elements); the
+  // initial value enters once, in the host fold below.
   struct __scratch
   {
     void* ptr;
@@ -143,16 +165,20 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
     _Tp* d_out   = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
     d_outputs[g] = __scratch{d_out, sizeof(_Tp)};
 
-    cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_out, s.size, reduce_op, init_value, env));
+    cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_out, s.size, reduce_op, cub::detail::reduce::no_init, env));
     cuda_safe_call(cudaMemcpyAsync(&h_partials[g], d_out, sizeof(_Tp), cudaMemcpyDeviceToHost, shard_stream.get()));
   }
 
-  // Phase 2: synchronize and combine in shard order (deterministic)
+  // Phase 2: synchronize and combine in shard order (deterministic): init
+  // first, then every PRESENT partial (empty shards contribute nothing).
   barrier(envs);
   _Tp result = init_value;
   for (const auto g : each(num_shards))
   {
-    result = reduce_op(result, h_partials[g]);
+    if (d_outputs[g].ptr != nullptr)
+    {
+      result = reduce_op(result, h_partials[g]);
+    }
   }
 
   // Release scratch (stream-ordered; safe after the syncs above)
@@ -178,8 +204,10 @@ namespace reserved
 {
 //! @brief Deterministic cross-shard combine: one thread folds the per-shard
 //! partials in shard order and writes the aggregate through @p out exactly
-//! once. Shards absent from @p mask (empty shards) contribute @p init — the
-//! same fold the synchronous form performs on the host, bit for bit.
+//! once. The fold starts from @p init and applies the operator over the
+//! partials PRESENT in @p mask only (empty shards ran no reduce and wrote no
+//! partial; they contribute nothing) — the same fold the synchronous form
+//! performs on the host, bit for bit. All-empty writes @p init.
 //!
 //! @p _OutIt is any device-writable output iterator; the write may be a
 //! store, or an action (a sink functor, a graph-conditional predicate, ...).
@@ -192,11 +220,90 @@ __global__ void __fold_partials_kernel(
     _Tp __acc = __init;
     for (unsigned __i = 0; __i < __n; ++__i)
     {
-      __acc = __op(__acc, ((__mask >> __i) & 1u) ? __partials[__i] : __init);
+      if ((__mask >> __i) & 1u)
+      {
+        __acc = __op(__acc, __partials[__i]);
+      }
     }
     *__out = __acc;
   }
 }
+
+//! @brief Maximum shard count of the mask-based folds (64-bit presence mask).
+inline constexpr unsigned __max_fold_shards = 64;
+
+//! @brief The per-lane partial slots of `reduce_into_lanes`, passed to the
+//! broadcast fold by value (one pointer per shard; absent shards are null).
+template <typename _Tp>
+struct __partial_slots
+{
+  const _Tp* __p[__max_fold_shards];
+};
+
+//! @brief Broadcast fold for `reduce_into_lanes`: same fold as
+//! `__fold_partials_kernel` (init, then the present partials in shard order),
+//! reading one slot per shard through @p __slots; launched once PER LANE, on
+//! that lane's stream, writing that lane's output.
+template <typename _Tp, typename _ReduceOp, typename _OutIt>
+__global__ void __fold_partial_slots_kernel(
+  __partial_slots<_Tp> __slots, ::cuda::std::uint64_t __mask, unsigned __n, _ReduceOp __op, _Tp __init, _OutIt __out)
+{
+  if (blockIdx.x == 0 && threadIdx.x == 0)
+  {
+    _Tp __acc = __init;
+    for (unsigned __i = 0; __i < __n; ++__i)
+    {
+      if ((__mask >> __i) & 1u)
+      {
+        __acc = __op(__acc, *__slots.__p[__i]);
+      }
+    }
+    *__out = __acc;
+  }
+}
+
+//! @brief A transient event per lane: recorded once, waited on by any number
+//! of streams, destroyed after the waits are enqueued (the driver defers the
+//! release until completion; capture-legal — record/wait become graph edges).
+//! Plain create/record/destroy per call (~1 us each; no shared event pool
+//! exists at this tier — `fork_join_event_pool` is per container).
+struct __lane_events
+{
+  ::std::vector<cudaEvent_t> __ev;
+
+  explicit __lane_events(::std::size_t __n)
+      : __ev(__n, nullptr)
+  {}
+  __lane_events(const __lane_events&)            = delete;
+  __lane_events& operator=(const __lane_events&) = delete;
+  ~__lane_events()
+  {
+    for (cudaEvent_t __e : __ev)
+    {
+      if (__e != nullptr)
+      {
+        (void) cudaEventDestroy(__e);
+      }
+    }
+  }
+
+  //! Record lane @p __g's event on @p __stream (created under the stream's
+  //! device, which `stream_scope` must have made current).
+  void __record(::std::size_t __g, cudaStream_t __stream)
+  {
+    cuda_safe_call(cudaEventCreateWithFlags(&__ev[__g], cudaEventDisableTiming));
+    cuda_safe_call(cudaEventRecord(__ev[__g], __stream));
+  }
+
+  //! Make @p __stream wait for lane @p __g's event (no-op when never recorded).
+  void __wait(::std::size_t __g, cudaStream_t __stream) const
+  {
+    if (__ev[__g] != nullptr)
+    {
+      cuda_safe_call(cudaStreamWaitEvent(__stream, __ev[__g], 0));
+    }
+  }
+};
 } // namespace reserved
 
 /**
@@ -204,10 +311,11 @@ __global__ void __fold_partials_kernel(
  * through an output iterator: the value-returning form's stream-ordered
  * sibling.
  *
- * Per-shard `cub::DeviceReduce` writes each shard's partial directly into a
- * P-element scratch buffer; a single deterministic fold kernel (fixed shard
- * order, identical to the synchronous form's host fold) then writes the
- * aggregate through @p out on the call environment's stream. This is a
+ * Per-shard `cub::DeviceReduce` (with `no_init`) writes each shard's partial
+ * directly into a P-element scratch buffer; a single deterministic fold
+ * kernel (`init`, then the present partials in fixed shard order — identical
+ * to the synchronous form's host fold) then writes the aggregate through
+ * @p out on the call environment's stream. This is a
  * combine-bearing TERMINATOR, so unlike the map family its call-stream
  * edges are definitional, not the composition bracket: the entry edge
  * orders the stream-ordered scratch allocation before the shards' writes,
@@ -242,7 +350,7 @@ _CCCL_HOST_API void reduce_into(
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: fewer environments than shards");
   }
-  if (num_shards > 64)
+  if (num_shards > reserved::__max_fold_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: more than 64 shards not supported");
   }
@@ -283,7 +391,10 @@ _CCCL_HOST_API void reduce_into(
     // caller's timeline
     __detail::__wait_stream_on(shard_stream.get(), call_stream.get());
     stream_scope scope(shard_stream.get());
-    cuda_safe_call(cub::DeviceReduce::Reduce(s.data, d_partials + g, s.size, reduce_op, init_value, env));
+    // `no_init`: the partial is the fold of the shard's own elements; the
+    // initial value enters exactly once, in the fold kernel.
+    cuda_safe_call(
+      cub::DeviceReduce::Reduce(s.data, d_partials + g, s.size, reduce_op, cub::detail::reduce::no_init, env));
   }
   for (const auto g : each(num_shards))
   {
@@ -314,6 +425,156 @@ reduce_into(const _S& data, _OutIt out, _ReduceOp reduce_op, _Tp init_value, con
 {
   const auto envs = default_envs(data);
   sharded::reduce_into(data, envs, out, reduce_op, init_value, call_env);
+}
+
+/**
+ * @brief Asynchronous LANE-RESIDENT reduce over any `sharded_view`: the
+ * aggregate is delivered P times, once per lane, each copy written on ITS
+ * OWN lane's stream — the multi-GPU "broadcast" output shape. No call
+ * stream, no call-stream edges, no host synchronization.
+ *
+ * After the call, `outs[g]` holds the full aggregate in stream order on lane
+ * g's timeline: lane-ordered work enqueued next on `envs[g]` (a rescale of
+ * shard g by a global norm, a per-lane convergence test) consumes it with
+ * no further edges, and the lanes never join a foreign stream. Prefer
+ * `reduce_into` when the CALLER needs the scalar on its own stream.
+ *
+ * Design (P lanes, P at most 64):
+ * - per lane g, on `envs[g]`'s stream and from `envs[g]`'s memory
+ *   resource: a 1-element partial slot is allocated and the shard's
+ *   `cub::DeviceReduce` (with `no_init`) writes it; event E_g is recorded.
+ *   Per-lane slots — rather than one P-slot scratch on lane 0 — keep the
+ *   heavy phase INDEPENDENT across lanes: lane g's reduce starts as soon as
+ *   lane g is ready, never behind lane 0's timeline (the lanes only meet at
+ *   the fold, where they must). Empty shards allocate nothing and record no
+ *   E_g (they contribute nothing to the fold).
+ * - lane g waits on E_h for every other present lane h (P(P-1) waits), then
+ *   launches the broadcast fold on its own stream: `init`, then the present
+ *   partials in shard order (the P slot pointers travel by value), writing
+ *   `outs[g]`; event F_g is recorded after the fold.
+ * - lifetime: slot g is read by every lane's fold, so lane g waits on F_h
+ *   for every other lane h (P(P-1) waits) before its stream-ordered
+ *   deallocate. Edge count per call: P E-records + P F-records +
+ *   2 P (P-1) waits; events are transient (created/destroyed per call, no
+ *   pool at this tier).
+ *
+ * CUDA graph capture: legal in the same way as every lane-ordered call —
+ * the cross-lane event waits require all lanes to be capturing into the
+ * SAME graph, i.e. forked from the capture origin beforehand
+ * (`sharded_array::fork_from(origin)` or entry edges of the caller's own)
+ * and joined back before `cudaStreamEndCapture`; the slot allocation/free
+ * are stream-ordered and enclosed. A mix of capturing and non-capturing
+ * lanes is a CUDA error at the first cross-lane wait.
+ *
+ * @param outs Random-access iterator over P device-writable output
+ *             positions (`outs[g]` written exactly once by lane g). Device
+ *             memory, or pinned host memory read after synchronizing the
+ *             lane of interest.
+ *
+ * Requirements: allocating environments (`sharded_alloc_env_range`), one
+ * per shard; at most 64 shards (mask-width limit).
+ *
+ * @throws std::invalid_argument on fewer environments than shards or more
+ *         than 64 shards.
+ */
+_CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _OutIt)
+_CCCL_REQUIRES(
+  sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>)
+_CCCL_HOST_API void
+reduce_into_lanes(const _S& data, const _Envs& envs, _OutIt outs, _ReduceOp reduce_op, _Tp init_value)
+{
+  const ::std::size_t num_shards = reserved::__shard_count(data);
+  if (reserved::__env_count(envs) < num_shards)
+  {
+    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into_lanes: fewer environments than shards");
+  }
+  if (num_shards > reserved::__max_fold_shards)
+  {
+    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into_lanes: more than 64 shards not supported");
+  }
+  if (num_shards == 0)
+  {
+    return; // no lanes, no outputs
+  }
+
+  reserved::__partial_slots<_Tp> slots{};
+  ::cuda::std::uint64_t mask = 0;
+  reserved::__lane_events reduced(num_shards); // E_g: lane g's partial is written
+  reserved::__lane_events folded(num_shards); // F_g: lane g's fold has read every slot
+
+  // Phase 1 (independent across lanes): slot + per-shard reduce, on the lane
+  for (const auto g : each(num_shards))
+  {
+    const auto& s = data.shard(g);
+    if (s.size == 0)
+    {
+      continue;
+    }
+    mask |= ::cuda::std::uint64_t{1} << g;
+    const auto& env                       = envs[g];
+    const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
+    stream_scope scope(shard_stream.get());
+    auto mr      = ::cuda::mr::get_memory_resource(env);
+    _Tp* slot    = static_cast<_Tp*>(mr.allocate(shard_stream, sizeof(_Tp), alignof(_Tp)));
+    slots.__p[g] = slot;
+    cuda_safe_call(cub::DeviceReduce::Reduce(s.data, slot, s.size, reduce_op, cub::detail::reduce::no_init, env));
+    reduced.__record(g, shard_stream.get());
+  }
+
+  // Phase 2 (per lane): wait for every other present partial, fold on the
+  // lane, publish F_g. All-empty: every lane writes init with no waits.
+  for (const auto g : each(num_shards))
+  {
+    const cudaStream_t lane_stream = ::cuda::get_stream(envs[g]).get();
+    stream_scope scope(lane_stream);
+    for (const auto h : each(num_shards))
+    {
+      if (h != g)
+      {
+        reduced.__wait(h, lane_stream);
+      }
+    }
+    reserved::__fold_partial_slots_kernel<<<1, 1, 0, lane_stream>>>(
+      slots, mask, static_cast<unsigned>(num_shards), reduce_op, init_value, outs + g);
+    cuda_safe_call(cudaGetLastError());
+    folded.__record(g, lane_stream);
+  }
+
+  // Phase 3 (per present lane): release slot g once every lane's fold has
+  // read it (stream-ordered on lane g, after the F_h edges)
+  for (const auto g : each(num_shards))
+  {
+    if (((mask >> g) & 1u) == 0)
+    {
+      continue;
+    }
+    const auto& env                       = envs[g];
+    const ::cuda::stream_ref shard_stream = ::cuda::get_stream(env);
+    stream_scope scope(shard_stream.get());
+    for (const auto h : each(num_shards))
+    {
+      if (h != g)
+      {
+        folded.__wait(h, shard_stream.get());
+      }
+    }
+    auto mr = ::cuda::mr::get_memory_resource(env);
+    mr.deallocate(shard_stream, const_cast<_Tp*>(slots.__p[g]), sizeof(_Tp), alignof(_Tp));
+  }
+  // `reduced` / `folded` destroy their events here; the enqueued waits keep
+  // the driver-side references alive until they complete.
+}
+
+/**
+ * @brief Lane-resident reduce over a self-bound sharded structure:
+ * environments derived via `default_envs`.
+ */
+_CCCL_TEMPLATE(class _S, class _Tp, class _ReduceOp, class _OutIt)
+_CCCL_REQUIRES(self_bound<::cuda::std::remove_cvref_t<_S>>)
+_CCCL_HOST_API void reduce_into_lanes(const _S& data, _OutIt outs, _ReduceOp reduce_op, _Tp init_value)
+{
+  const auto envs = default_envs(data);
+  sharded::reduce_into_lanes(data, envs, outs, reduce_op, init_value);
 }
 
 /**
