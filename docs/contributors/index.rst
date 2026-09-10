@@ -201,7 +201,7 @@ Further recommended reading for successful PR reviews:
 We welcome the use of AI tools to assist in code authoring and code review.
 However, at the end of the day, the (human) CCCL maintainers need to understand a contribution
 and its impact in order to maintain it.
-Effectively, we meed to own the change.
+Effectively, we need to own the change.
 Therefore, it is the responsibility of the author to motivate the change
 and help the (human) reviewer build a mental model of the proposed change.
 This may include additional resources, such as drawings, charts, benchmarks, slides, or talks,
