@@ -793,6 +793,9 @@ def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
 
 
 @requires_serialization
+@pytest.mark.thread_unsafe(
+    reason="Asserts the process-wide AOT build result is still unloaded before executing it; a concurrent instance's execution loads it first."
+)
 def test_compile_only_then_lazy_load_and_execute():
     cc = current_device_cc_key()
 

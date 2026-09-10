@@ -103,6 +103,7 @@ __all__ = [
     "compile_to_ltoir",
     "infer_return_type",
     "refresh_contexts",
+    "global_compiler_lock",
 ]
 
 

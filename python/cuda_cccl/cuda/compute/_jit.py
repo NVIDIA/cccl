@@ -668,13 +668,35 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
 def _register_struct_with_numba(struct_class):
     field_spec = struct_class._type_descriptor.fields
 
-    registered_class = _make_struct_type(
-        struct_class,
-        tuple(field_spec.keys()),
-        tuple(field_spec.values()),
-    )
+    # Registration writes several global registries in sequence and then
+    # refreshes the typing/target contexts. Hold the backend's (reentrant)
+    # compiler lock across all of it: typing and lowering hold the same lock, so
+    # no thread can be compiling against a half-registered struct meanwhile.
+    with _mlir.global_compiler_lock:
+        registered_class = _make_struct_type(
+            struct_class,
+            tuple(field_spec.keys()),
+            tuple(field_spec.values()),
+        )
 
-    return _mlir.as_numba_type(registered_class)
+        return _mlir.as_numba_type(registered_class)
+
+
+def _numba_type_for_struct(struct_class):
+    """Return the struct's numba type, registering the struct first if needed.
+
+    The probe and the registration must be one atomic step. as_numba_type is
+    the *first* registry _make_struct_type writes, so without the lock a thread
+    probing while another thread is mid-registration sees success, skips
+    registering, and goes on to type an operator against a struct whose typeof,
+    data model and templates are not in place yet. Under the compiler lock the
+    probe waits for the registration to complete.
+    """
+    with _mlir.global_compiler_lock:
+        try:
+            return _mlir.as_numba_type(struct_class)
+        except _mlir.errors.NumbaError:
+            return _register_struct_with_numba(struct_class)
 
 
 # -----------------------------------------------------------------------------
@@ -725,10 +747,7 @@ def _convert_type_descriptor_to_numba(td):
         struct_class._field_spec = dict(layout_key)
         struct_class._type_descriptor = _get_struct_type_descriptor(struct_class)
         struct_class.dtype = _get_struct_record_dtype(struct_class)
-        try:
-            return _mlir.as_numba_type(struct_class)
-        except _mlir.errors.NumbaError:
-            return _register_struct_with_numba(struct_class)
+        return _numba_type_for_struct(struct_class)
 
     # Numba has no bfloat16 support; fail with a clear message rather than a
     # cryptic numba error deep in the compilation pipeline.
@@ -770,15 +789,9 @@ def _ensure_function_structs_registered(py_func):
     they're registered with Numba before compilation.
     """
 
-    def _register_if_needed(struct_class):
-        try:
-            return _mlir.as_numba_type(struct_class)
-        except _mlir.errors.NumbaError:
-            return _register_struct_with_numba(struct_class)
-
     for value in _iter_function_objects(py_func):
         if _is_gpu_struct_class(value):
-            _register_if_needed(value)
+            _numba_type_for_struct(value)
 
 
 def _numba_type_to_type_descriptor(numba_type):

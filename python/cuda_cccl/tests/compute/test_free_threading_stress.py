@@ -1946,11 +1946,10 @@ def test_concurrent_cold_gpu_struct_registration(jit_compute_module):
     That path registers into numba-cuda-mlir's global registries
     (as_numba_type, typeof_impl, register_model, overload, lower_cast) and then
     calls refresh_contexts(), which rebuilds the process-wide typing and target
-    contexts. functools.lru_cache does not coalesce concurrent misses, so several
-    threads really do run that body at once. The test passes not because that
-    is prevented but because it is survivable: struct identity is structural,
-    so the duplicate StructTypes are equal by shape. Under nominal identity this
-    test would fail for a real reason.
+    contexts. functools.lru_cache does not coalesce concurrent misses, so
+    without serialization several threads run that body at once, and a thread
+    whose as_numba_type probe lands mid-registration skips registering and
+    types its operator against a half-registered struct.
     """
     cc = jit_compute_module
 
