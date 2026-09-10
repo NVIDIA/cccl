@@ -31,6 +31,8 @@
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -461,7 +463,7 @@ public:
     const auto __new_capacity = __compute_num_buckets(__capacity) * _BucketSize;
     ::cuda::device_buffer<__value_type> __new_slots{__stream, __memory_resource, __new_capacity, ::cuda::no_init};
 
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "cuco: failed to initialize rehashed slot storage",
       __new_slots.data(),
@@ -479,9 +481,13 @@ public:
       const auto __new_ref     = __container.ref();
       const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
 
-      __open_addressing::__rehash<__block_size>
-        <<<static_cast<unsigned>(__grid_size), __block_size, 0, __stream.get()>>>(__old_storage, __new_ref, __is_filled);
-      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to rehash");
+      using __new_ref_type   = decltype(__container.ref());
+      using __predicate_type = __slot_is_filled<__has_payload, __key_type>;
+      const auto __config =
+        ::cuda::make_config(::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<__block_size>());
+      const auto& __kernel =
+        __open_addressing::__rehash<__block_size, __storage_ref_type, __new_ref_type, __predicate_type>;
+      ::cuda::launch(__stream, __config, __kernel, __old_storage, __new_ref, __is_filled);
     }
 
     __new_slots.destroy(__stream);
