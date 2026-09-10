@@ -44,7 +44,7 @@ class composite_mapping
 
   template <::cuda::std::size_t _Ip = 0, class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto __map_impl(
-    const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
+    const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept
   {
     const auto __result = ::cuda::std::get<_Ip>(__mappings_).map(__unit, __parent, __prev_mapping_result);
     if constexpr (_Ip + 1 < sizeof...(_Mappings))
@@ -70,7 +70,7 @@ public:
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const noexcept
+  map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept
   {
     return __map_impl(__unit, __parent, __prev_mapping_result);
   }
