@@ -96,6 +96,36 @@ struct policy_selector
     constexpr int nominal_4b_items_per_thread = 4;
     const int bits_per_pass                   = calc_bits_per_pass(key_size);
 
+    // tunings from cub/benchmarks/bench/topk/keys.cu. These are raw measured values; items_per_thread already
+    // accounts for the key size. Only configurations that won for their exact key type and offset width during
+    // verification are encoded; everything else intentionally falls through.
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && value_size == 0)
+    {
+      if (offset_size == 8)
+      {
+        if (key_type == type_t::float64)
+        {
+          // ipt_9.tpb_128.ld_0
+          return topk_policy{128, 4, BLOCK_LOAD_DIRECT, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+        if (key_type == type_t::float32)
+        {
+          // ipt_6.tpb_320.ld_0
+          return topk_policy{320, 6, BLOCK_LOAD_DIRECT, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+        if (key_type == type_t::int8 || key_type == type_t::uint8)
+        {
+          // ipt_3.tpb_384.ld_2
+          return topk_policy{384, 12, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+      }
+      if (offset_size == 4 && key_type == type_t::int128)
+      {
+        // ipt_9.tpb_480.ld_2
+        return topk_policy{480, 2, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{9, 0})
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
