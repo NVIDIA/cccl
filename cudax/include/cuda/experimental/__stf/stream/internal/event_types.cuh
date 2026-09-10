@@ -23,6 +23,7 @@
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__utility/unstable_unique.cuh>
 
@@ -121,26 +122,40 @@ public:
     };
   }
 
-  void insert_event()
+  //! \brief Record the event that marks this stream position. Never throws.
+  //!
+  //! Every failure here is unrecoverable in practice. The CUDA calls fail either because we are
+  //! out of resources or -- far more often -- because a sticky error from earlier asynchronous
+  //! work is only now surfacing, since this is the next place we touch CUDA. Neither leaves a
+  //! usable context, and callers run this from task teardown where there is nothing to fall back
+  //! on. Report and abort rather than propagate.
+  //!
+  //! The wrap covers the whole body on purpose: get_device_from_stream and the device switch in
+  //! exec_place::operator->* throw too (cuda_try, plus bad_alloc from constructing the
+  //! exec_place), so converting only the two event calls would leave those uncovered.
+  void insert_event() noexcept
   {
-    // If needed, compute the underlying device
-    if (dstream.dev_id == -1)
+    ON_THROW(abort)
     {
-      dstream.dev_id = get_device_from_stream(dstream.stream);
-    }
-
-    // Save the current device
-    exec_place::device(dstream.dev_id)->*[&] {
-      // Disable timing to avoid implicit barriers
-      cudaEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
-      SCOPE(fail)
+      // If needed, compute the underlying device
+      if (dstream.dev_id == -1)
       {
-        cuda_safe_call(cudaEventDestroy(cudaEvent));
-        cudaEvent = nullptr;
+        dstream.dev_id = get_device_from_stream(dstream.stream);
+      }
+
+      // Save the current device
+      exec_place::device(dstream.dev_id)->*[&] {
+        // Disable timing to avoid implicit barriers
+        cudaEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
+        SCOPE(fail)
+        {
+          cuda_safe_call(cudaEventDestroy(cudaEvent));
+          cudaEvent = nullptr;
+        };
+        // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
+        assert(cudaEvent);
+        cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
       };
-      // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
-      assert(cudaEvent);
-      cuda_try<cudaEventRecord>(cudaEvent, dstream.stream);
     };
   }
 

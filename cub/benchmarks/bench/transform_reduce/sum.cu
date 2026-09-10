@@ -64,7 +64,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       cuda::execution::tune(policy_selector<cuda::std::__accumulator_t<reduction_op_t, T, init_value_t>>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceReduce::TransformReduce,
       "TransformReduce failed",
       d_in,

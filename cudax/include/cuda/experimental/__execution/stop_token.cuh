@@ -61,7 +61,7 @@ struct __inplace_stop_callback_base
   }
 
 protected:
-  using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__inplace_stop_callback_base*) noexcept;
+  using __execute_fn_t _CCCL_NODEBUG = void(__inplace_stop_callback_base*) noexcept;
 
   _CCCL_HOST_DEVICE_API constexpr explicit __inplace_stop_callback_base(
     const inplace_stop_source* __source, __execute_fn_t* __execute) noexcept
@@ -118,7 +118,7 @@ private:
 
 public:
   template <class>
-  using callback_type _CCCL_NODEBUG_ALIAS = __callback_type;
+  using callback_type _CCCL_NODEBUG = __callback_type;
 
   _CCCL_HOST_DEVICE_API static constexpr auto stop_requested() noexcept -> bool
   {
@@ -191,7 +191,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_token
 {
 public:
   template <class _Fun>
-  using callback_type _CCCL_NODEBUG_ALIAS = inplace_stop_callback<_Fun>;
+  using callback_type _CCCL_NODEBUG = inplace_stop_callback<_Fun>;
 
   _CCCL_HIDE_FROM_ABI inplace_stop_token() = default;
 
@@ -479,7 +479,7 @@ struct __on_stop_request
 };
 
 template <class _Token, class _Callback>
-using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
+using stop_callback_for_t _CCCL_NODEBUG = typename _Token::template callback_type<_Callback>;
 
 namespace __detail
 {

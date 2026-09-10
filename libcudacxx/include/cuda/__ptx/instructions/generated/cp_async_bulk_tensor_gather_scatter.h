@@ -22,7 +22,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -65,7 +65,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -128,7 +128,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -175,7 +175,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -238,7 +238,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_scatter4(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_scatter4(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_scatter4(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -282,7 +282,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -509,7 +509,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4_multicast_32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4_multicast_32b(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4_multicast_32b(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -749,7 +749,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -990,7 +990,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_gather4_multicast_32b_ov
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4_multicast_32b_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_gather4_multicast_32b_override(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -1247,7 +1247,7 @@ __device__ static inline void cp_async_bulk_tensor_tile_scatter4_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_scatter4_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_tile_scatter4_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,

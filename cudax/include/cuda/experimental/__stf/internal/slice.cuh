@@ -33,9 +33,9 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <iostream>
 

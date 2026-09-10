@@ -1,27 +1,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// %RANGE% TUNE_BIF_BIAS bif -16:16:4
-// for filling, we can only use the prefetch and the vectorized algorithm
-// %RANGE% TUNE_ALGORITHM alg 0:2:1
+// We only ever want to tune the vectorized implementation of cub::DeviceTransform for this benchmark, so no dedicated
+// tuning benchmark exists
+
+#define TUNE_ALGORITHM 1
+// fill has no inputs, so no need to bias min_bytes_in_flight
+#define TUNE_BIF_BIAS 0
+
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-
-// for TUNE_ALGORITHM == 1 (vectorized), this is the number of vectors per thread, which is similar in spirit
 // %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
-
-// those parameters only apply if TUNE_ALGORITHM == 0 (prefetch)
-// %RANGE% TUNE_ITEMS_PER_THREAD_NO_INPUT ipt 1:32:1
-
-// those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
 // %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
-
-#if !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_ITEMS_PER_THREAD_NO_INPUT != 1)
-#  error "Non-prefetch algorithms require the no input items per thread to be 1 since they ignore the parameters"
-#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
-
-#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
-#  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
-#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 
 #include "common.h"
 

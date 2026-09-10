@@ -29,6 +29,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
+#  include <cuda/std/__fwd/hash.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -48,7 +49,7 @@ struct stream : stream_ref
   _CCCL_HOST_API explicit stream(device_ref __dev, int __priority = default_priority)
       : stream_ref(::cuda::__invalid_stream())
   {
-    [[maybe_unused]] __ensure_current_context __ctx_setter(__dev);
+    const __ensure_current_context __ctx_setter(__dev);
     __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
   }
 
@@ -102,14 +103,13 @@ struct stream : stream_ref
 
   //! Destroy the `stream` object
   //!
-  //! @note If the stream fails to be destroyed, the error is silently ignored.
+  //! @note If the stream fails to be destroyed, the error is silently ignored or an assertion is triggered when
+  //! enabled.
   _CCCL_HOST_API ~stream()
   {
     if (__stream != ::cuda::__invalid_stream())
     {
-      // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
-      // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto status = ::cuda::__driver::__streamDestroyNoThrow(__stream);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__streamDestroyNoThrow, "Failed to destroy stream", __stream);
     }
   }
 
@@ -167,6 +167,16 @@ private:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <>
+struct hash<::cuda::stream> : hash<::cuda::stream_ref>
+{};
+
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
 
 #  include <cuda/std/__cccl/epilogue.h>
 

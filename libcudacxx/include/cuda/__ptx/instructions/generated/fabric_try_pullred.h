@@ -27,7 +27,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -71,7 +71,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -115,7 +115,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -159,7 +159,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -203,7 +203,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -247,7 +247,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -291,7 +291,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -335,7 +335,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -379,7 +379,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -423,7 +423,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -467,7 +467,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -511,7 +511,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -555,7 +555,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -599,7 +599,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -644,7 +644,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #  if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -690,7 +690,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #  if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -736,7 +736,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #  if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -782,7 +782,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #  if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -827,7 +827,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -871,7 +871,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -916,7 +916,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #  if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -962,7 +962,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #  if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -1007,7 +1007,7 @@ __device__ static inline void fabric_try_pullred(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred(
+_CCCL_DEVICE_API void fabric_try_pullred(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -1054,7 +1054,7 @@ __device__ static inline void fabric_try_pullred_acc_f32(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred_acc_f32(
+_CCCL_DEVICE_API void fabric_try_pullred_acc_f32(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -1102,7 +1102,7 @@ __device__ static inline void fabric_try_pullred_acc_f32(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_pullred_acc_f32(
+_CCCL_DEVICE_API void fabric_try_pullred_acc_f32(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,

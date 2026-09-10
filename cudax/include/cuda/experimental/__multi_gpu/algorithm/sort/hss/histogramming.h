@@ -275,34 +275,34 @@ struct __update_intervals_fn
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 template <class _Tp, class _Env, class _BinaryOp>
-template <class _CommRange, class _EnvRange>
+template <class _EnvRange>
 [[nodiscard]]
 _CCCL_HOST_API ::cuda::std::pair<
   ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_sampling_scratch_type>,
   ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::__per_comm_histogramming_result_type>>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__allocate_histogramming_buffers(
-  const __local_setup_result_type& __setup, _CommRange&& __comms, _EnvRange&& __envs)
+  const __local_setup_result_type& __setup, _EnvRange&& __envs)
 {
-  const auto __comm_size        = __setup.__comm_size;
-  const auto __N                = __setup.__N;
-  const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
+  const auto __comm_size = __setup.__comm_size;
+  const auto __N         = __setup.__N;
 
   ::std::vector<__per_comm_sampling_scratch_type> __local_scratch;
   ::std::vector<__per_comm_histogramming_result_type> __local_hist_results;
 
-  __local_scratch.reserve(__num_local_inputs);
-  __local_hist_results.reserve(__num_local_inputs);
-
-  auto __comm_it = ::cuda::std::ranges::begin(__comms);
-  auto __env_it  = ::cuda::std::ranges::begin(__envs);
-
-  for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
   {
-    const auto __stream  = ::cuda::get_stream(*__env_it);
+    const auto __num_local_inputs = __setup.__all_local_sizes.size();
+
+    __local_scratch.reserve(__num_local_inputs);
+    __local_hist_results.reserve(__num_local_inputs);
+  }
+
+  for (auto&& __env : __envs)
+  {
+    const auto __stream  = ::cuda::get_stream(__env);
     const auto __n_split = __comm_size - 1;
 
-    auto&& __resource   = ::cuda::experimental::__detail::__resource_from_env(*__env_it, __comm_it->logical_device());
-    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(*__env_it);
+    auto&& __resource   = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
+    auto&& __buffer_env = ::cuda::experimental::__detail::__sanitize_buffer_env(__env);
 
     __local_scratch.emplace_back(__per_comm_sampling_scratch_type{
       /*__all_samples=*/
@@ -375,9 +375,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__exchange_sample_counts(
     __samples_size.stream(),
     __samples_size,
     __h_recvcounts,
-    ::cuda::copy_configuration{::cuda::std::ranges::begin(__comms)->logical_device().underlying_device(),
-                               ::cuda::host_memory_location,
-                               ::cuda::source_access_order::stream});
+    ::cuda::copy_configuration{
+      __samples_size.stream().device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
 
   // Need to sync here because __gather_merge_probes() needs these on the host for comms. Could
   // potentially move this sync there
@@ -427,16 +426,13 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
 
   // Every rank merges the p sorted runs into one sorted probe set
   {
-    auto __comm_it = ::cuda::std::ranges::begin(__comms);
-    auto __env_it  = ::cuda::std::ranges::begin(__envs);
+    auto __env_it = ::cuda::std::ranges::begin(__envs);
 
-    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
+    for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__env_it)
     {
       auto& __probes = (*__local_hist_results)[__idx].__splitters.__probes;
 
       __merge_k_way(
-        *__comm_it,
         *__env_it,
         (*__local_scratch)[__idx].__all_samples,
         __h_recvcounts,
@@ -461,13 +457,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
   {
-    auto __comm_it      = ::cuda::std::ranges::begin(__comms);
     auto __env_it       = ::cuda::std::ranges::begin(__envs);
     auto __keys_it      = ::cuda::std::ranges::begin(__key_iters);
     auto __num_items_it = ::cuda::std::ranges::begin(__num_items_range);
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
-         (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__keys_it, (void) ++__num_items_it)
+         (void) ++__idx, (void) ++__env_it, (void) ++__keys_it, (void) ++__num_items_it)
     {
       auto& __hist               = (*__local_hist_results)[__idx].__hist;
       auto& __probes             = (*__local_hist_results)[__idx].__splitters.__probes;
@@ -484,7 +479,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
                           _BinaryOp>{__keys_first, __keys_first + *__num_items_it, __probes_first, __num_probes, __cmp};
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm_it->logical_device(),
+        __hist.stream(),
         CUB_NS_QUALIFIER::DeviceTransform::Transform,
         ::cuda::counting_iterator<::cuda::std::uint64_t>{},
         __hist.data(),
@@ -538,7 +533,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
     auto __op = __update_intervals_fn<_Tp>{__probes.data(), __hist.data(), __probes.size()};
 
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm_it->logical_device(),
+      __I_j.stream(),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       ::cuda::std::make_tuple(::cuda::std::move(__in), __I_j.data()),
       __I_j.data(),
@@ -562,7 +557,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
 {
   const auto __comm_size                       = __setup.__comm_size;
   const auto __N                               = __setup.__N;
-  auto [__local_scratch, __local_hist_results] = __allocate_histogramming_buffers(__setup, __comms, __envs);
+  auto [__local_scratch, __local_hist_results] = __allocate_histogramming_buffers(__setup, __envs);
 
   // Host scratch for the sample gather, hoisted out of the sampling loop so it is sized once
   // per sort instead of once per round. Every rank all-gathers the same counts, so one set of

@@ -127,11 +127,11 @@ _CCCL_HOST_API void transform(
 
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::transform");
 
-  for (auto&& [__comm, __env, __input_it, __num_items, __output_it] :
+  for ([[maybe_unused]] auto&& [__comm, __env, __input_it, __num_items, __output_it] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __num_items_range, __output_iters))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      ::cuda::get_stream(__env),
       CUB_NS_QUALIFIER::DeviceTransform::Transform,
       __input_it,
       __output_it,

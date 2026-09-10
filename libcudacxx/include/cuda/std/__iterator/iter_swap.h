@@ -63,8 +63,8 @@ _CCCL_CONCEPT __readable_swappable = _CCCL_REQUIRES_EXPR((_T1, _T2))(
   requires(!__unqualified_iter_swap<_T1, _T2>),
   requires(indirectly_readable<_T1>),
   requires(indirectly_readable<_T2>),
-  requires(__can_reference<iter_reference_t<_T1>>),
-  requires(__can_reference<iter_reference_t<_T2>>),
+  requires(__referenceable<iter_reference_t<_T1>>),
+  requires(__referenceable<iter_reference_t<_T2>>),
   requires(swappable_with<iter_reference_t<_T1>, iter_reference_t<_T2>>));
 
 #if _CCCL_HAS_NOEXCEPT_MANGLING() // older GCC cannot use noexcept inside a requires clause

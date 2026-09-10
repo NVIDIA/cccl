@@ -291,7 +291,7 @@ public:
       }
 
       n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
-      unsigned n_chunks        = ::cuda::ceil_div(n_segments, threads_per_block);
+      const unsigned n_chunks  = ::cuda::ceil_div(n_segments, threads_per_block);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
@@ -428,7 +428,7 @@ private:
         if constexpr (has_init)
         {
           const packer_iv<ScanOpT, AccumT> packer_op{scan_op, initial_value};
-          multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
+          const multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
 
           if (chunk_size == tile_items)
           {
@@ -442,7 +442,7 @@ private:
         else
         {
           constexpr packer<AccumT> packer_op{};
-          multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
+          const multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
 
           if (chunk_size == tile_items)
           {
@@ -488,7 +488,7 @@ private:
         if constexpr (is_inclusive)
         {
           constexpr projector<AccumT> projector_op{};
-          multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
+          const multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
 
           if (chunk_size == tile_items)
           {
@@ -502,7 +502,7 @@ private:
         else
         {
           const projector_iv<AccumT> projector_op{initial_value};
-          multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
+          const multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
           if (chunk_size == tile_items)
           {
             storer.Store(it_out, thread_flag_values);
@@ -654,7 +654,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
 
     using IdT             = decltype(work_id);
     const auto end_offset = ::cuda::std::min<IdT>(suggested_end_offset, n_segments);
-    int size              = end_offset - start_offset;
+    const int size        = end_offset - start_offset;
 
     auto worker_input_begin_idx_it  = begin_offset_d_in + start_offset;
     auto worker_input_end_idx_it    = end_offset_d_in + start_offset;

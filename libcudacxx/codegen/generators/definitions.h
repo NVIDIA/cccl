@@ -153,6 +153,18 @@ inline std::string semantic_tag(Semantic sem)
   return sem_map[sem];
 }
 
+inline std::string ptx_semantic_tag(Semantic sem)
+{
+  static std::map sem_map = {
+    std::pair{Semantic::Relaxed, "__cuda_atomic_ptx_order_relaxed"},
+    std::pair{Semantic::Release, "__cuda_atomic_ptx_order_release"},
+    std::pair{Semantic::Acquire, "__cuda_atomic_ptx_order_acquire"},
+    std::pair{Semantic::Acq_Rel, "__cuda_atomic_ptx_order_acq_rel"},
+    std::pair{Semantic::Volatile, "__cuda_atomic_order_volatile"},
+  };
+  return sem_map[sem];
+}
+
 enum class Scope
 {
   Thread,

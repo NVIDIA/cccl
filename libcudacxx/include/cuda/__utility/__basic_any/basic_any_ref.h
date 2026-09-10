@@ -57,7 +57,7 @@ struct __ireference : ::cuda::std::remove_const_t<_Interface>
   static constexpr size_t __align_     = alignof(void*);
   static constexpr bool __is_const_ref = ::cuda::std::is_const_v<_Interface>;
 
-  using interface _CCCL_NODEBUG_ALIAS = ::cuda::std::remove_const_t<_Interface>;
+  using interface _CCCL_NODEBUG = ::cuda::std::remove_const_t<_Interface>;
 };
 
 //!
@@ -208,7 +208,7 @@ private:
   template <class _SrcCvAny>
   _CCCL_HOST_DEVICE_API void __convert_from(_SrcCvAny&& __from)
   {
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type;
+    using __src_interface_t _CCCL_NODEBUG = typename ::cuda::std::remove_reference_t<_SrcCvAny>::interface_type;
     if (!__from.has_value())
     {
       __throw_bad_any_cast();

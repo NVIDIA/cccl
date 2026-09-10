@@ -300,7 +300,7 @@ CUB_TEST("Device scan works complex accumulator types", "[scan][device]", CUB_SM
 {
   constexpr int num_items = 2 * 1024 * 1024;
 
-  custom_accumulator_t init{};
+  const custom_accumulator_t init{};
 
   c2h::device_vector<custom_input_t> d_input(static_cast<size_t>(num_items), custom_input_t{1});
   c2h::device_vector<custom_output_t> d_output{static_cast<size_t>(num_items), custom_output_t{nullptr, 0}};

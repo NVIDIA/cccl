@@ -246,6 +246,42 @@ def _deterministic_suffix(kind: Hashable) -> str:
     return hashlib.sha256(kind_str.encode()).hexdigest()[:16]
 
 
+def compose_state_blobs(
+    blobs: list[tuple[bytes, int]],
+) -> tuple[bytes, int, list[int]]:
+    """
+    Concatenate raw (state_bytes, state_alignment) blobs with proper padding.
+
+    Args:
+        blobs: List of (state_bytes, state_alignment) pairs to compose
+
+    Returns:
+        Tuple of:
+        - combined_state_bytes: Concatenated state bytes with padding
+        - combined_alignment: Maximum alignment requirement
+        - offsets: List of byte offsets for each blob
+    """
+    if not blobs:
+        return (b"", 1, [])
+
+    offsets = []
+    current_offset = 0
+    combined = b""
+
+    for state, align in blobs:
+        # Add padding to meet alignment requirement
+        padding = (align - (current_offset % align)) % align
+        combined += b"\x00" * padding
+        current_offset += padding
+
+        offsets.append(current_offset)
+        combined += state
+        current_offset += len(state)
+
+    max_alignment = max(align for _, align in blobs)
+    return (combined, max_alignment, offsets)
+
+
 def compose_iterator_states(
     iterators: list[IteratorBase],
 ) -> tuple[bytes, int, list[int]]:
@@ -264,28 +300,9 @@ def compose_iterator_states(
         - combined_alignment: Maximum alignment requirement
         - offsets: List of byte offsets for each iterator's state
     """
-    if not iterators:
-        return (b"", 1, [])
-
-    states = [bytes(memoryview(it.state)) for it in iterators]
-    alignments = [it.state_alignment for it in iterators]
-
-    offsets = []
-    current_offset = 0
-    combined = b""
-
-    for state, align in zip(states, alignments):
-        # Add padding to meet alignment requirement
-        padding = (align - (current_offset % align)) % align
-        combined += b"\x00" * padding
-        current_offset += padding
-
-        offsets.append(current_offset)
-        combined += state
-        current_offset += len(state)
-
-    max_alignment = max(alignments)
-    return (combined, max_alignment, offsets)
+    return compose_state_blobs(
+        [(bytes(memoryview(it.state)), it.state_alignment) for it in iterators]
+    )
 
 
 cache_with_registered_key_functions.register(IteratorBase, lambda it: it.kind)
