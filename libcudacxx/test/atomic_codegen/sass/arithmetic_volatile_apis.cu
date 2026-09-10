@@ -27,11 +27,12 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom, i
   return atom.OP(value, ORDER);
 }
 
+// clang-format off
 /*
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{(\.S32)?}}{{.*}}
 ; ADD-NOT: {{.*}}{{(IADD3|IADD|IMAD\.MOV)}} {{R[0-9]+}}, {{.*}}-{{R[0-9]+}}{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
@@ -42,16 +43,17 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom, i
 ; NON_SEQ_CST-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_MEMBAR-NOT: {{.*}}MEMBAR.{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
-; ADD_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
-; ADD_NON_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
-; SUB_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, [[OPERAND]]{{.*}}
-; SUB_NON_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, [[OPERAND]]{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{(\.S32)?}}{{.*}}
+; ADD_BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
+; ADD_NON_BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, {{R[0-9]+}}{{.*}}
+; SUB_BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, [[OPERAND]]{{.*}}
+; SUB_NON_BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, {{R[0-9]+}}, {{.*}}, [[OPERAND]]{{.*}}
 ; NON_BLOCK_ACQUIRE: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; NO_ACQUIRE-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{(\.S32)?}}{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */
+// clang-format on

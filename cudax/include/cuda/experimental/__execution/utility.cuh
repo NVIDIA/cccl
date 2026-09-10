@@ -130,7 +130,7 @@ template <class _Ty>
 [[nodiscard]] _CCCL_HOST_API inline auto __get_pointer_attributes(const void* __pv) -> ::cudaPointerAttributes
 {
   ::cudaPointerAttributes __attrs;
-  _CCCL_TRY_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrs, __pv);
+  _CCCL_TRY_RUNTIME_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrs, __pv);
   return __attrs;
 }
 
@@ -183,7 +183,7 @@ struct __managed_box : private __immovable
   _CCCL_HOST_API static auto operator new(size_t __size) -> void*
   {
     void* __ptr = nullptr;
-    _CCCL_TRY_CUDA_API(::cudaMallocManaged, "cudaMallocManaged failed", &__ptr, __size);
+    _CCCL_TRY_RUNTIME_API(::cudaMallocManaged, "cudaMallocManaged failed", &__ptr, __size);
     ::cuda::std::ignore = ::cudaDeviceSynchronize(); // Ensure the memory is allocated before returning it.
     return __ptr;
   }

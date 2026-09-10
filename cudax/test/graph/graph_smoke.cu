@@ -24,7 +24,7 @@ struct empty_node_descriptor
   cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, ::cuda::std::span<cudaGraphNode_t> deps) const
   {
     cudaGraphNode_t node;
-    _CCCL_TRY_CUDA_API(cudaGraphAddEmptyNode, "cudaGraphAddEmptyNode failed", &node, graph, deps.data(), deps.size());
+    _CCCL_TRY_RUNTIME_API(cudaGraphAddEmptyNode, "cudaGraphAddEmptyNode failed", &node, graph, deps.data(), deps.size());
     return cuda::experimental::graph_node_ref{node, graph};
   }
 };
@@ -32,7 +32,7 @@ struct empty_node_descriptor
 
 C2H_TEST("can default construct a graph and destroy it", "[graph]")
 {
-  cuda::experimental::graph_builder g;
+  cuda::experimental::graph_builder g; // NOLINT(misc-const-correctness)
   REQUIRE(g.get() != nullptr);
 }
 
@@ -81,7 +81,7 @@ C2H_TEST("can instantiate and launch a graph", "[graph]")
   REQUIRE(exec.get() != nullptr);
 
   // Create a stream and launch the graph
-  cuda::experimental::stream s{cuda::device_ref{0}};
+  const cuda::experimental::stream s{cuda::device_ref{0}};
   exec.launch(s);
 
   // Wait for completion
@@ -103,7 +103,7 @@ C2H_TEST("graph_node_ref comparison operators work correctly", "[graph]")
   REQUIRE_FALSE(node1 != node1);
 
   // Test null comparison
-  cuda::experimental::graph_node_ref null_ref;
+  const cuda::experimental::graph_node_ref null_ref;
   REQUIRE_FALSE(node1 == null_ref);
   REQUIRE(node1 != null_ref);
   REQUIRE_FALSE(null_ref == node1);
@@ -156,7 +156,7 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
 
 C2H_TEST("Path builder with kernel nodes", "[graph]")
 {
-  cudax::stream s{cuda::device_ref{0}};
+  const cudax::stream s{cuda::device_ref{0}};
   cuda::mr::legacy_managed_memory_resource mr{};
   int* ptr = static_cast<int*>(mr.allocate_sync(sizeof(int)));
   *ptr     = 0;

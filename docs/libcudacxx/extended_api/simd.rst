@@ -7,7 +7,10 @@ SIMD
    :hidden:
    :maxdepth: 1
 
+   simd/dot
    simd/saturating_add
+   simd/abs_diff
+   simd/min_max_relu
 
 .. list-table::
    :widths: 25 45 30 30
@@ -22,3 +25,18 @@ SIMD
      - Performs element-wise saturating addition of two ``basic_vec`` objects
      - CCCL 3.5.0
      - CUDA 13.5
+
+   * - :ref:`cuda::simd::dot <libcudacxx-extended-api-simd-dot>`
+     - Computes the dot product of two ``basic_vec`` objects and an accumulator
+     - CCCL 3.6.0
+     - CUDA 13.6
+
+   * - :ref:`cuda::simd::abs_diff <libcudacxx-extended-api-simd-abs-diff>`
+     - Performs element-wise absolute difference of two integer ``basic_vec`` objects
+     - CCCL 3.6.0
+     - CUDA 13.6
+
+   * - :ref:`cuda::simd::min_relu and cuda::simd::max_relu <libcudacxx-extended-api-simd-min-max-relu>`
+     - Perform rectified element-wise minimum or maximum of two or three signed integer ``basic_vec`` objects
+     - CCCL 3.6.0
+     - CUDA 13.6

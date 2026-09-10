@@ -541,8 +541,20 @@ public:
   // Implicit conversion from a single FpType (lo == 0).
   // constexpr so float/double constants flow into constexpr coefficient
   // tables without forcing callers to materialise the (hi, lo) pair.
-  _CCCL_HOST_DEVICE_API constexpr fpmp2(_FpType __f) noexcept
-      : __mp2_hi_{__f}
+  //
+  // Constrained to sources that _FpType alone already represents exactly, which is what
+  // makes zeroing lo correct: _FpType itself, float widening into a double pair, and any
+  // integer no wider than one significand. Taking _FpType unconstrained would instead let
+  // any arithmetic type reach this constructor through a standard conversion (double ->
+  // float, long long -> double), which silently zeroes a low limb that was needed and
+  // defeats CCCL_FPMP_EXPLICIT_CASTS: marking the accurate narrowing constructors
+  // `explicit` only removes them from copy-initialization, leaving this one as the sole
+  // candidate. With the constraint, a narrowing source has no implicit path at all and
+  // copy-initialization is a compile error, as intended.
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_lossless_fp_v<_Tp, _FpType> || __fpmp2_int_fits_limb_v<_Tp, _FpType>)
+  _CCCL_HOST_DEVICE_API constexpr fpmp2(_Tp __f) noexcept
+      : __mp2_hi_{static_cast<_FpType>(__f)}
       , __mp2_lo_{(_FpType) 0}
   {}
 
@@ -613,32 +625,44 @@ public:
 #endif // _CCCL_FPMP_FP128_ENABLE == 1
 
   // Constructor from any standard integer type (int / long / long long + unsigned).
-  // The value is canonicalized to the fixed-width builtin: the target width comes from
-  // __num_bits_v and the signedness-correct fixed-width type from __make_nbit_int_t, so
-  // the static_cast selects the matching overloaded setter (signed vs unsigned) below.
-  // Every integer type is thus handled unambiguously and portably (LP64 and LLP64).
-  // bool / character types are excluded by __cccl_is_integer_v.
+  // __set_from_integer canonicalizes the value to the fixed-width builtin and fills both
+  // limbs, so every integer type is handled unambiguously and portably (LP64 and LLP64).
+  // bool / character types are excluded by __cccl_is_integer_v and handled below.
+  //
+  // Split in two by __fpmp2_is_lossless_int_v because the two halves differ in
+  // explicitness, which C++17 cannot express on one declaration; collapse this into
+  // explicit(!__fpmp2_is_lossless_int_v<_Tp, _FpType>) once C++20 is the baseline.
+  // An integer that the pair represents exactly for every value of its type stays
+  // implicit, so the ordinary `fp64mp2 acc = 0;` spelling keeps working. A wider one
+  // (int64_t into a float pair) can need bits neither limb has, so it is gated by
+  // CCCL_FPMP_EXPLICIT_CASTS like the narrowing floating-point conversions.
+  //
+  // __fpmp2_int_fits_limb_v is excluded from both: those need no low limb at all and are
+  // handled by the cheaper single-component constructor above. The three constraints are
+  // mutually exclusive, so no source is ambiguous.
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __fpmp2_is_lossless_int_v<_Tp, _FpType> _CCCL_AND(
+    !__fpmp2_int_fits_limb_v<_Tp, _FpType>))
+  _CCCL_HOST_DEVICE_API fpmp2(_Tp __i) noexcept
+  {
+    __set_from_integer(__i);
+  }
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND(!__fpmp2_is_lossless_int_v<_Tp, _FpType>))
   _CCCL_HOST_DEVICE_API _CCCL_FPMP_EXPLICIT fpmp2(_Tp __i) noexcept
   {
-    if constexpr (::cuda::std::__num_bits_v<_Tp> <= 32)
-    {
-      __set_from_int32(static_cast<::cuda::std::__make_nbit_int_t<32, ::cuda::std::is_signed_v<_Tp>>>(__i));
-    }
-    else
-    {
-      __set_from_int64(static_cast<::cuda::std::__make_nbit_int_t<64, ::cuda::std::is_signed_v<_Tp>>>(__i));
-    }
+    __set_from_integer(__i);
   }
   // bool and character types are excluded from __cccl_is_integer_v, but `1.0 + true`
   // and `1.0 + 'a'` are valid for double, so mirror that behavior by delegating to the
   // integer constructor above. The widened type keeps the source's signedness, which
   // matters for char32_t: it is unsigned and as wide as int32_t, so a plain cast to
-  // int32_t would turn values above 2^31 - 1 into negative ones.
+  // int32_t would turn values above 2^31 - 1 into negative ones. No explicitness split
+  // is needed: the widest of these is char32_t at 32 bits, which both pair widths hold
+  // exactly, so the delegate is always the implicit overload.
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp> _CCCL_AND(!::cuda::std::__cccl_is_integer_v<_Tp>))
-  _CCCL_HOST_DEVICE_API _CCCL_FPMP_EXPLICIT fpmp2(_Tp __i) noexcept
+  _CCCL_HOST_DEVICE_API fpmp2(_Tp __i) noexcept
       : fpmp2(static_cast<::cuda::std::__make_nbit_int_t<(::cuda::std::__num_bits_v<_Tp> <= 32) ? 32 : 64,
                                                          ::cuda::std::is_signed_v<_Tp>>>(__i))
   {}
@@ -742,13 +766,8 @@ public:
   _CCCL_HOST_DEVICE_API explicit operator __uint128_t() const volatile = delete;
 #endif // _CCCL_HAS_INT128()
 
-  // (renormalize)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API friend fpmp2 renormalize(const fpmp2& __x) noexcept
-  {
-    fpmp2 __res;
-    __fpmp2_renormalize(__x.__mp2_hi_, __x.__mp2_lo_, &__res.__mp2_hi_, &__res.__mp2_lo_);
-    return __res;
-  }
+  // (renormalize) is a plain free function at namespace scope, with the other
+  // standard-named ones further down this header.
 
   /*
   // Arithmetic operations:
@@ -830,8 +849,15 @@ public:
   // Uses specialized __fpmp2_acc functions which are more efficient than
   // full mp2+mp2 addition (saves ~6 operations by avoiding low-part 2Sum).
   */
-  _CCCL_HOST_DEVICE_API fpmp2& operator+=(const _FpType __c) noexcept
+  // Constrained for the same reason as the single-component constructor: a bare _FpType
+  // parameter would win overload resolution against operator+=(const fpmp2&) for any
+  // narrowing arithmetic source, since a standard conversion beats a user-defined one, and
+  // would then accumulate a value that had already lost its low limb.
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_lossless_fp_v<_Tp, _FpType>)
+  _CCCL_HOST_DEVICE_API fpmp2& operator+=(const _Tp __c_in) noexcept
   {
+    const _FpType __c = static_cast<_FpType>(__c_in);
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
       __fpmp2_low_acc(__c, &__mp2_hi_, &__mp2_lo_);
@@ -846,8 +872,11 @@ public:
     }
     return *this;
   }
-  _CCCL_HOST_DEVICE_API fpmp2& operator-=(const _FpType __c) noexcept
+  _CCCL_TEMPLATE(typename _Tp)
+  _CCCL_REQUIRES(__fpmp2_is_lossless_fp_v<_Tp, _FpType>)
+  _CCCL_HOST_DEVICE_API fpmp2& operator-=(const _Tp __c_in) noexcept
   {
+    const _FpType __c = static_cast<_FpType>(__c_in);
     if constexpr (_TypeAcc == fpmp2_accuracy::low)
     {
       __fpmp2_low_acc(-__c, &__mp2_hi_, &__mp2_lo_);
@@ -1105,6 +1134,20 @@ private:
     __fpmp2_from_ull(__i, &__mp2_hi_, &__mp2_lo_);
   }
 
+  // Shared body of the two integer constructors, which differ only in explicitness.
+  template <class _Tp>
+  _CCCL_HOST_DEVICE_API void __set_from_integer(_Tp __i) noexcept
+  {
+    if constexpr (::cuda::std::__num_bits_v<_Tp> <= 32)
+    {
+      __set_from_int32(static_cast<::cuda::std::__make_nbit_int_t<32, ::cuda::std::is_signed_v<_Tp>>>(__i));
+    }
+    else
+    {
+      __set_from_int64(static_cast<::cuda::std::__make_nbit_int_t<64, ::cuda::std::is_signed_v<_Tp>>>(__i));
+    }
+  }
+
   // Signedness-overloaded integer getters (mirror of the setters): the width-canonical
   // type from the conversion operator selects the matching signed/unsigned builtin, so
   // the operator body needs no signedness branch. Static + (hi, lo) by value so a single
@@ -1170,12 +1213,38 @@ template <typename _FpType, fpmp2_accuracy _TypeAcc>
 inline constexpr bool __fpmp_is_fpmp2_v<fpmp2<_FpType, _TypeAcc>> = true;
 
 /*********************************************************************
- * Standard-named math free functions (sqrt / rsqrt / fma / mad). These
- * are plain non-friend free functions: they read the operands through
- * the public hi()/lo() accessors and build the result with the public
- * (hi, lo) constructor, so they need no friendship.
- * (The arithmetic/comparison operators and renormalize remain friends.)
+ * Standard-named free functions (renormalize / sqrt / rsqrt / fma /
+ * mad). These are plain non-friend free functions: they read the
+ * operands through the public hi()/lo() accessors and build the result
+ * with the public (hi, lo) constructor, so they need no friendship.
+ * (The arithmetic/comparison operators remain friends.)
+ *
+ * The ones that share a name with a math function on double - sqrt,
+ * rsqrt, fma, mad - are meant to be called unqualified, so that code
+ * being ported keeps its call sites when double is swapped for fpmp2:
+ * ADL finds them, and they beat the <cmath> overloads because taking
+ * the operand as-is is an exact match while reaching ::sqrt(double)
+ * costs a user-defined conversion.
+ *
+ * They are at namespace scope rather than being hidden friends so that
+ * the qualified spelling works too, which is what renormalize needs:
+ * having no counterpart on double, it only ever appears in code written
+ * against this header, where cuda::experimental::renormalize(x) is the
+ * clearer form. The accuracy-selecting add/sub/mul/div/fma below have no
+ * choice in the matter - a call that spells out its template argument,
+ * add<fpmp2_accuracy::high>(a, b), needs the name found by ordinary
+ * lookup to parse as a template-id before C++20 - and being SDK-specific
+ * too, they are written qualified for the same reason.
  *********************************************************************/
+
+template <typename _FpType, fpmp2_accuracy _TypeAcc>
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc>
+renormalize(const fpmp2<_FpType, _TypeAcc>& __x) noexcept
+{
+  _FpType __rhi, __rlo;
+  __fpmp2_renormalize(__x.hi(), __x.lo(), &__rhi, &__rlo);
+  return fpmp2<_FpType, _TypeAcc>(__rhi, __rlo);
+}
 
 template <typename _FpType, fpmp2_accuracy _TypeAcc>
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline fpmp2<_FpType, _TypeAcc> sqrt(const fpmp2<_FpType, _TypeAcc>& __x) noexcept

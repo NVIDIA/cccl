@@ -177,7 +177,7 @@ MULTI_GPU_TEST("sort, no communicators", sort_test_util::sort_types)
   using T = typename c2h::get<0, TestType>;
 
   const auto comms = cuda::std::span<cudax::nccl_communicator_ref>{};
-  std::vector<std::vector<T>> input(comms.size());
+  const std::vector<std::vector<T>> input(comms.size());
 
   check_sort_case_sections(comms, input);
 }
@@ -187,7 +187,7 @@ MULTI_GPU_TEST("sort, all ranks empty", sort_test_util::sort_types)
   using T = typename c2h::get<0, TestType>;
 
   auto comms = this->communicators();
-  std::vector<std::vector<T>> input(comms.size());
+  const std::vector<std::vector<T>> input(comms.size());
 
   check_sort_case_sections(comms, input);
 }

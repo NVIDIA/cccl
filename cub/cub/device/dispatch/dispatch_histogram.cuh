@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_histogram.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -32,8 +33,6 @@
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__functional/proclaim_return_type.h>
@@ -209,6 +208,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceHistogram", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
@@ -251,7 +252,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get device occupancy for sweep_kernel
-  int histogram_sweep_occupancy = histogram_sweep_sm_occupancy * sm_count;
+  const int histogram_sweep_occupancy = histogram_sweep_sm_occupancy * sm_count;
 
   if (num_row_pixels * NUM_CHANNELS == row_stride_samples)
   {
@@ -262,14 +263,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
-  int pixels_per_tile = threads_per_block * pixels_per_thread;
-  int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
-  int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
-  int blocks_per_col =
+  const int pixels_per_tile = threads_per_block * pixels_per_thread;
+  const int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
+  const int blocks_per_row  = ::cuda::std::min(histogram_sweep_occupancy, tiles_per_row);
+  const int blocks_per_col =
     (blocks_per_row > 0)
       ? int(::cuda::std::min(static_cast<OffsetT>(histogram_sweep_occupancy / blocks_per_row), num_rows))
       : 0;
-  int num_thread_blocks = blocks_per_row * blocks_per_col;
+  const int num_thread_blocks = blocks_per_row * blocks_per_col;
 
   dim3 sweep_grid_dims;
   sweep_grid_dims.x = (unsigned int) blocks_per_row;
@@ -304,7 +305,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Construct the grid queue descriptor
-  GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
+  const GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
 
   // Wrap arrays so we can pass them by-value to the kernel
   ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
@@ -322,15 +323,20 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
   constexpr int histogram_init_threads_per_block = 256;
-  int histogram_init_grid_dims =
+  const int histogram_init_grid_dims =
     (max_num_output_bins + histogram_init_threads_per_block - 1) / histogram_init_threads_per_block;
 
-// Log DeviceHistogramInitKernel configuration
+  // Log DeviceHistogramInitKernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
           histogram_init_grid_dims,
           histogram_init_threads_per_block,
           (long long) stream);
+#else // CUB_DEBUG_LOG
+  log("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
+      histogram_init_grid_dims,
+      histogram_init_threads_per_block,
+      (long long) stream);
 #endif // CUB_DEBUG_LOG
 
   // Invoke histogram_init_kernel
@@ -351,7 +357,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-// Log histogram_sweep_kernel configuration
+  // Log histogram_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
           "per thread, %d SM occupancy\n",
@@ -362,6 +368,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           (long long) stream,
           pixels_per_thread,
           histogram_sweep_sm_occupancy);
+#else // CUB_DEBUG_LOG
+  log("Invoking histogram_sweep_kernel<<<{%d, %d, %d}, %d, 0, %lld>>>(), %d pixels "
+      "per thread, %d SM occupancy\n",
+      sweep_grid_dims.x,
+      sweep_grid_dims.y,
+      sweep_grid_dims.z,
+      threads_per_block,
+      (long long) stream,
+      pixels_per_thread,
+      histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   if (const auto error = CubDebug(
@@ -822,7 +838,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
 
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+    const ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
 
@@ -836,7 +852,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
         max_levels = num_output_levels[channel];
       }
     }
-    int max_num_output_bins = max_levels - 1;
+    const int max_num_output_bins = max_levels - 1;
 
     constexpr int PRIVATIZED_SMEM_BINS = 256;
 
@@ -878,7 +894,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
     ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    const ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
 
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -889,7 +905,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
         max_levels = num_output_levels[channel];
       }
     }
-    int max_num_output_bins = max_levels - 1;
+    const int max_num_output_bins = max_levels - 1;
 
     // Dispatch
     if (max_num_output_bins > max_privatized_smem_bins)
@@ -1004,7 +1020,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+    const ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
     ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
 
@@ -1012,7 +1028,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     {
       num_privatized_levels[channel] = 257;
 
-      int num_levels = num_output_levels[channel];
+      const int num_levels = num_output_levels[channel];
       if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
@@ -1029,7 +1045,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
         max_levels = num_levels;
       }
     }
-    int max_num_output_bins = max_levels - 1;
+    const int max_num_output_bins = max_levels - 1;
 
     constexpr int PRIVATIZED_SMEM_BINS = 256;
 
@@ -1073,12 +1089,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
     ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    const ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
     int max_levels = num_output_levels[0];
 
     for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
     {
-      int num_levels = num_output_levels[channel];
+      const int num_levels = num_output_levels[channel];
       if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
       {
         if (!d_temp_storage)
@@ -1095,7 +1111,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
         max_levels = num_levels;
       }
     }
-    int max_num_output_bins = max_levels - 1;
+    const int max_num_output_bins = max_levels - 1;
 
     if (max_num_output_bins > max_privatized_smem_bins)
     {
