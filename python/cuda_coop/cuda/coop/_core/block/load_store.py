@@ -11,7 +11,7 @@ from enum import Enum
 from numbers import Integral
 from typing import Any
 
-from .._algorithm import Algorithm, AlgorithmSpec
+from .._algorithm import Algorithm, AlgorithmSpec, TypeDefinition
 from .._bindings import (
     ArgumentBinding,
     BindingKind,
@@ -73,6 +73,81 @@ _STORE_ALGORITHM_CPP = {
         "::cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED"
     ),
 }
+_TRANSPOSE_ALGORITHMS = frozenset(
+    {
+        BlockLoadStoreAlgorithm.TRANSPOSE,
+        BlockLoadStoreAlgorithm.WARP_TRANSPOSE,
+        BlockLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+    }
+)
+_PRESERVING_BLOCK_LOAD = TypeDefinition(
+    name="cuda_coop_block_load_preserving_invalid",
+    code=r"""
+namespace cub {
+template <typename T,
+          int BlockDimX,
+          int ItemsPerThread,
+          BlockLoadAlgorithm Algorithm,
+          int BlockDimY,
+          int BlockDimZ>
+class CudaCoopBlockLoadPreservingInvalid
+{
+  using primitive_type =
+    BlockLoad<T, BlockDimX, ItemsPerThread, Algorithm, BlockDimY, BlockDimZ>;
+
+  primitive_type primitive;
+
+public:
+  using TempStorage = typename primitive_type::TempStorage;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE CudaCoopBlockLoadPreservingInvalid()
+      : primitive()
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE
+  CudaCoopBlockLoadPreservingInvalid(TempStorage& temp_storage)
+      : primitive(temp_storage)
+  {}
+
+  template <typename InputIteratorT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(
+    InputIteratorT block_iterator,
+    T (&items)[ItemsPerThread])
+  {
+    primitive.Load(block_iterator, items);
+  }
+
+  template <typename InputIteratorT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Load(
+    InputIteratorT block_iterator,
+    T (&items)[ItemsPerThread],
+    int valid_items)
+  {
+    T original[ItemsPerThread];
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      original[item] = items[item];
+    }
+
+    primitive.Load(block_iterator, items, valid_items);
+
+    const int linear_tid = static_cast<int>(threadIdx.x)
+                         + BlockDimX * (static_cast<int>(threadIdx.y)
+                         + BlockDimY * static_cast<int>(threadIdx.z));
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < ItemsPerThread; ++item)
+    {
+      if (linear_tid * ItemsPerThread + item >= valid_items)
+      {
+        items[item] = original[item];
+      }
+    }
+  }
+};
+} // namespace cub
+""".strip(),
+)
 _T = Dependency("T")
 _ITEMS_PER_THREAD = Dependency("ITEMS_PER_THREAD")
 _TEMPLATE_PARAMETERS = (
@@ -388,13 +463,24 @@ def make_block_load_store_spec(
             "requires a block size that is a multiple of 32"
         )
     title = call.kind.value.title()
+    preserve_invalid_items = (
+        call.kind is BlockLoadStoreKind.LOAD
+        and call.has_valid_items
+        and not call.has_oob_default
+        and call.algorithm in _TRANSPOSE_ALGORITHMS
+    )
     specialization = Algorithm(
-        struct_name=f"Block{title}",
+        struct_name=(
+            "CudaCoopBlockLoadPreservingInvalid"
+            if preserve_invalid_items
+            else f"Block{title}"
+        ),
         method_name=title,
         c_name=f"block_{call.kind.value}",
         includes=(f"cub/block/block_{call.kind.value}.cuh",),
         template_parameters=_TEMPLATE_PARAMETERS,
         parameters=call.parameters,
+        type_definitions=((_PRESERVING_BLOCK_LOAD,) if preserve_invalid_items else ()),
     ).specialize(
         {
             "T": dtype,
@@ -412,6 +498,7 @@ def make_block_load_store_spec(
             "oob_default": call.has_oob_default,
             "full_tile": call.has_full_tile,
             "pointer_offset": call.has_pointer_offset,
+            "preserves_invalid_items": preserve_invalid_items,
         },
     )
     return BlockLoadStoreSpec(
