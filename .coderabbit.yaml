@@ -83,7 +83,7 @@ reviews:
         CUDA error handling, synchronization, memory access safety, performance regressions, and test coverage.
         Prefer comments that catch real correctness, API, compile-time, or performance risks.
         For arch-scoped tuning/policy changes and other SM-specific optimizations or perf changes, use
-        .agent/skills/cccl-style/references/common.md (Arch/SM-Scoped Perf Changes section) as context.
+        .agent/skills/cccl-style/references/cub.md (Arch/SM-Scoped Perf Changes section) as context.
 
     - path: "thrust/**/*"
       instructions: |
@@ -130,6 +130,7 @@ knowledge_base:
       - "AGENTS.md"
       - ".agent/skills/cccl-style/SKILL.md"
       - ".agent/skills/cccl-style/references/common.md"
+      - ".agent/skills/cccl-style/references/cub.md"
       - ".agent/skills/cccl-style/references/libcudacxx.md"
       - ".agent/skills/cccl-test/SKILL.md"
       - ".agent/skills/cccl-test/references/common.md"

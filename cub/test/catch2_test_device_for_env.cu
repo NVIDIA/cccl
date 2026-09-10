@@ -25,8 +25,10 @@ struct stream_registry_factory_t;
 #include <cstdint>
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include <block_size_extracting_helpers.h>
+
 #include "cub_test_macros.h"
+#include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
