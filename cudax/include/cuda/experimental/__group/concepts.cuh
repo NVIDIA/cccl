@@ -48,6 +48,10 @@ _CCCL_CONCEPT is_group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Grou
   // todo: add __sub_unit_queryable and __super_unit_queryable
 );
 
+// Semantic requirement: is_always_contiguous() is true only if each group
+// occupies a contiguous range of physical units and unit_rank() numbers them
+// in ascending physical order, starting at zero. This must hold after mapping
+// composition as well; contiguous membership alone is insufficient.
 template <class _Tp>
 _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v)(
   requires(::cuda::std::is_copy_constructible_v<_Tp>),

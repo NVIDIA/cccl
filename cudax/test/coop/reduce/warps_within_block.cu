@@ -96,6 +96,9 @@ __device__ void run_multi_group_reductions(const Group& group, const Block& bloc
   const int thread_rank = cuda::gpu_thread.rank_as<int>(block);
   constexpr int stride  = Broadcasted ? multi_group_size : multi_group_count;
 
+  // Contiguous mappings preserve physical warp order through nesting and views.
+  REQUIRE(cuda::warp.rank_as<int>(group) == (thread_rank / warp_size) % nwarps_in_group);
+
   for (int repeat = 0; repeat < multi_group_repeats; ++repeat)
   {
     int thread_data[1] = {repeat + group_rank + 1};
