@@ -128,8 +128,10 @@ Runtime environment variables
    Supplies ``<value>/include`` after ``CUDA_HOME`` under the same fallback
    rule.
 
-If those mechanisms do not resolve CUDA headers,
-``/usr/local/cuda/include`` is tried last.
+On Linux and other POSIX systems, ``/usr/local/cuda/include`` is tried last.
+Windows uses ``cuda-pathfinder`` or the configured toolkit roots above; it
+does not try the Unix fallback. If no valid CUDA include directory is found,
+compilation reports a header-resolution error.
 
 For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
 ``no``, ``off``, and the empty string are false.
