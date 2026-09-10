@@ -102,8 +102,10 @@ Runtime configuration is controlled by these environment variables:
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
 | `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
 
-If those mechanisms do not resolve CUDA headers, `/usr/local/cuda/include` is
-tried last.
+On POSIX, `/usr/local/cuda/include` is tried last. Windows uses
+`cuda-pathfinder` or the configured toolkit roots above, without the Unix
+fallback. Compilation reports a header-resolution error if none resolves
+valid CUDA headers.
 
 The build recognizes these CMake cache variables:
 
