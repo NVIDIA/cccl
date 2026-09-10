@@ -19,6 +19,10 @@ General
    unless the next release will be a major release.
    If in doubt, consult a library maintainer.
    A change is breaking if it can lead to a compilation failure in any consumer code using CCCL.
+#. Before an API is removed at a major release,
+   the effected entity should be marked as ``[[deprecated("...")]]`` with rational and workaround,
+   adding a Doxygen comment ``//! Deprecated [Since X.Y]`` with the CCCL version introducing the deprecation,
+   in at least one preceding minor release.
 
 Header inclusion
 ~~~~~~~~~~~~~~~~
