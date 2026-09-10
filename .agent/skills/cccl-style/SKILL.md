@@ -14,6 +14,6 @@ description: Use when editing or reviewing CCCL code for style conventions; read
 5. For `cub/cub/block/**/*`, also read the documentation at `docs/cub/developer/block_scope.rst`.
 6. For `cub/cub/warp/**/*`, also read the documentation at `docs/cub/developer/warp_level.rst`.
 7. For `cub/cub/thread/**/*`, also read the documentation at `docs/cub/developer/thread_level.rst`.
-8. For `cub/test/**/*`, also read the documentation at `docs/cub/developer/test_overview.md`.
+8. For `cub/test/**/*`, also read the documentation at `docs/cub/developer/test_overview.rst`.
 9. If no path-specific reference exists, follow nearby code and repository docs. Do not import rules from another subproject.
 10. Apply each reference only to its stated scope. Rules for one CCCL subproject do not automatically apply to another.
