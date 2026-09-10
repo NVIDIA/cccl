@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from cuda.coop._core import (
+    INT64,
     ArgumentBinding,
     ArgumentKind,
     GroupLoadStoreAlgorithm,
@@ -19,6 +20,7 @@ from cuda.coop._core import (
     LaunchFactOrigin,
     LaunchFacts,
     ParameterRole,
+    PointerOffset,
     PreconditionEnforcement,
     ResultVisibility,
     StorageOwnership,
@@ -127,8 +129,25 @@ def test_portable_load_store_validate_block_payloads_and_options(monkeypatch):
             api.load(this_block(), object(), _ThreadData(dtype=np.float16))
         with pytest.raises(TypeError, match="portable API"):
             api.store(this_block(), object(), np.complex64(1))
-        with pytest.raises(NotImplementedError, match="group kind 'physical_warp'"):
-            api.load(this_warp(), object(), _ThreadData())
+        warp_output = _ThreadData()
+        assert api.load(this_warp(), object(), warp_output) is warp_output
+        api.store(this_warp(), object(), _ReadonlyThreadData())
+        with pytest.raises(NotImplementedError, match="threads_within_warp"):
+            api.load(this_warp().group_by(8), object(), _ThreadData())
+        with pytest.raises(ValueError, match="supported only for block groups"):
+            api.load(
+                this_warp(),
+                object(),
+                _ThreadData(),
+                algorithm="warp_transpose",
+            )
+        with pytest.raises(ValueError, match="not supported for physical Warp"):
+            api.store(
+                this_warp(),
+                object(),
+                _ReadonlyThreadData(),
+                temp_storage=_TempStorage(),
+            )
 
 
 @pytest.mark.parametrize(
@@ -231,6 +250,181 @@ def test_partial_transpose_load_records_preserving_wrapper_provenance():
     )
 
     assert plan.provenance.cpp_class == ("cub::CudaCoopBlockLoadPreservingInvalid")
+
+
+def test_physical_warp_load_store_select_complete_cub_contracts():
+    load = _plan(
+        this_warp(),
+        _load_store("load", items_per_thread=3),
+        (64, 1, 1),
+    )
+    store = _plan(
+        this_warp(),
+        _load_store("store", items_per_thread=3),
+        (64, 1, 1),
+    )
+
+    assert load.target is GroupLoweringTarget.CUB_WARP
+    assert load.provenance.header == "cub/warp/warp_load.cuh"
+    assert load.provenance.cpp_class == "cub::WarpLoad"
+    assert load.result.result_items_per_thread == 3
+    assert store.target is GroupLoweringTarget.CUB_WARP
+    assert store.provenance.cpp_class == "cub::WarpStore"
+    assert store.result is None
+    assert load.topology.group_kind == "warp"
+    assert load.topology.logical_width == 32
+    assert load.topology.instances == 2
+    assert load.topology.instance_index == "linear_thread_rank / 32"
+    assert load.topology.thread_rank == "linear_thread_rank % 32"
+    assert load.topology.execution_scope is SynchronizationScope.WARP
+    assert load.temp_storage.ownership is StorageOwnership.NONE
+    assert load.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+
+
+@pytest.mark.parametrize("kind", ("load", "store"))
+@pytest.mark.parametrize(
+    "algorithm",
+    (
+        GroupLoadStoreAlgorithm.DIRECT,
+        GroupLoadStoreAlgorithm.STRIPED,
+        GroupLoadStoreAlgorithm.VECTORIZE,
+        GroupLoadStoreAlgorithm.TRANSPOSE,
+    ),
+)
+def test_physical_warp_algorithm_storage_contract_matches_cub(kind, algorithm):
+    plan = _plan(this_warp(), _load_store(kind, algorithm=algorithm), 64)
+    storage_free = algorithm is not GroupLoadStoreAlgorithm.TRANSPOSE
+
+    assert plan.temp_storage.ownership is (
+        StorageOwnership.NONE if storage_free else StorageOwnership.IMPLEMENTATION
+    )
+    assert plan.temp_storage.instances == (None if storage_free else 2)
+    assert plan.temp_storage.instance_index == (
+        None if storage_free else "linear_thread_rank / 32"
+    )
+    assert plan.synchronization.storage_reuse_barrier is (
+        SynchronizationScope.NONE if storage_free else SynchronizationScope.WARP
+    )
+
+
+def test_partial_physical_warp_transpose_load_records_preserving_wrapper():
+    plan = _plan(
+        this_warp(),
+        _load_store(
+            "load",
+            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+            valid_items=ArgumentBinding.runtime(),
+        ),
+        64,
+    )
+
+    assert plan.provenance.cpp_class == ("cub::CudaCoopWarpLoadPreservingInvalid")
+    assert plan.implementation.metadata["preserves_invalid_items"]
+
+
+def test_physical_warp_plan_preserves_user_offset_and_requires_effective_offset():
+    operation = _load_store(offset=ArgumentBinding.static(7))
+    plan = _plan(this_warp(), operation, 64)
+
+    assert plan.call.operation.offset == ArgumentBinding.static(7)
+    assert plan.implementation.metadata["requires_runtime_effective_offset"]
+    assert plan.implementation.metadata["effective_offset_origin"] == ("group_instance")
+    assert plan.implementation.metadata["effective_offset_stride"] == 64
+    provider_offset = plan.implementation.parameters[0][-1]
+    assert provider_offset == PointerOffset(
+        INT64,
+        name="offset",
+        pointer_arg_index=0,
+    )
+    offset_precondition = plan.participation.argument_preconditions[0]
+    assert (offset_precondition.minimum, offset_precondition.maximum) == (
+        0,
+        (1 << 63) - 1 - 64,
+    )
+    assert offset_precondition.enforcement is (
+        PreconditionEnforcement.PLANNER_VALIDATED
+    )
+
+    with pytest.raises(ValueError, match="tile origin must fit"):
+        _plan(
+            this_warp(),
+            _load_store(offset=ArgumentBinding.static((1 << 63) - 1)),
+            64,
+        )
+
+
+def test_physical_warp_valid_items_is_per_warp_tile():
+    for value in (0, 64):
+        plan = _plan(
+            this_warp(),
+            _load_store(valid_items=ArgumentBinding.static(value)),
+            64,
+        )
+        condition = plan.participation.argument_preconditions[0]
+        assert (condition.minimum, condition.maximum) == (0, 64)
+        assert condition.enforcement is PreconditionEnforcement.PLANNER_VALIDATED
+
+    with pytest.raises(ValueError, match=r"group tile size \(64\)"):
+        _plan(
+            this_warp(),
+            _load_store(valid_items=ArgumentBinding.static(65)),
+            64,
+        )
+
+    runtime = _plan(
+        this_warp(),
+        _load_store(valid_items=ArgumentBinding.runtime()),
+        64,
+    )
+    condition = runtime.participation.argument_preconditions[0]
+    assert (condition.minimum, condition.maximum) == (0, 64)
+    assert condition.enforcement is PreconditionEnforcement.CALLER
+
+
+def test_physical_warp_transpose_carries_per_instance_caller_storage_contract():
+    plan = _plan(
+        this_warp(),
+        _load_store(
+            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+            storage_ownership=StorageOwnership.CALLER,
+            storage_sharing="shared",
+            storage_size_in_bytes=256,
+            storage_alignment=16,
+            storage_auto_sync=True,
+        ),
+        64,
+    )
+
+    assert plan.temp_storage.ownership is StorageOwnership.CALLER
+    assert plan.temp_storage.instances == 2
+    assert plan.temp_storage.instance_index == "linear_thread_rank / 32"
+    assert plan.temp_storage.exact_layout_required
+    assert plan.synchronization.storage_reuse_barrier is SynchronizationScope.WARP
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    (
+        GroupLoadStoreAlgorithm.WARP_TRANSPOSE,
+        GroupLoadStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+    ),
+)
+def test_physical_warp_rejects_block_only_algorithms(algorithm):
+    plan = _plan(this_warp(), _load_store(algorithm=algorithm), 64)
+
+    assert plan.target is GroupLoweringTarget.UNSUPPORTED
+    assert plan.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
+    assert "does not support algorithm" in plan.unsupported.message
+
+
+def test_load_store_rejects_logical_and_incomplete_physical_warps():
+    logical = _plan(this_warp().group_by(8), _load_store(), 64)
+    incomplete = _plan(this_warp(), _load_store(), 48)
+
+    assert logical.target is GroupLoweringTarget.UNSUPPORTED
+    assert logical.unsupported.code is UnsupportedReasonCode.GROUP_KIND
+    assert incomplete.target is GroupLoweringTarget.UNSUPPORTED
+    assert incomplete.unsupported.code is UnsupportedReasonCode.PARTIAL_PHYSICAL_WARP
 
 
 def test_every_block_algorithm_has_distinct_plan_and_artifact_identity():

@@ -117,10 +117,11 @@ class EscapingGroupDescriptorError(GroupRewriteError):
 
 
 class InvalidLoadStoreAlgorithmError(ValueError):
-    def __init__(self, operation, choices):
+    def __init__(self, operation, choices, group_kind=None):
+        group = "" if group_kind is None else f" for {group_kind} groups"
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir.{operation} algorithm must be one of: {choices}",
+                f"cuda.coop.numba_mlir.{operation} algorithm{group} must be one of: {choices}",
             )
         )
 

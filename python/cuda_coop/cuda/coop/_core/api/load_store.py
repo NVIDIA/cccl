@@ -43,6 +43,14 @@ _PORTABLE_LOAD_STORE_ALGORITHMS = frozenset(
         "warp_transpose_timesliced",
     }
 )
+_WARP_LOAD_STORE_ALGORITHMS = frozenset(
+    {
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+    }
+)
 
 
 def _validate_portable_load_store_options(
@@ -105,11 +113,23 @@ def _validate_portable_load_store_options(
                 f"cuda.coop.{operation} offset must be between 0 and "
                 "9223372036854775807"
             )
-    if temp_storage is not None:
+    if group.kind == "warp":
+        if algorithm not in _WARP_LOAD_STORE_ALGORITHMS:
+            raise ValueError(
+                f"cuda.coop.{operation} algorithm {algorithm!r} is supported "
+                "only for block groups"
+            )
+        if temp_storage is not None:
+            raise ValueError(
+                f"cuda.coop.{operation} temp_storage is not supported for "
+                "physical Warp groups; omit it so the implementation can "
+                "provide per-Warp storage"
+            )
+    elif temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)
 
 
-@_portable_group_operation("load", group_kinds=("block",))
+@_portable_group_operation("load", group_kinds=("block", "warp"))
 def load(
     group: ThreadGroup,
     source: Any,
@@ -162,7 +182,7 @@ def load(
     )
 
 
-@_portable_group_operation("store", group_kinds=("block",))
+@_portable_group_operation("store", group_kinds=("block", "warp"))
 def store(
     group: ThreadGroup,
     destination: Any,

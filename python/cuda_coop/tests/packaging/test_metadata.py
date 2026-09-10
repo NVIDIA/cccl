@@ -24,6 +24,10 @@ def test_project_metadata_declares_the_supported_python_range() -> None:
     project = _metadata()["project"]
 
     assert project["name"] == "cuda-coop"
+    assert (
+        project["description"]
+        == "Cooperative CUDA Block and Warp Load and Store for Python DSLs"
+    )
     assert project["requires-python"] == ">=3.10"
     assert set(project["classifiers"]) >= {
         f"Programming Language :: Python :: 3.{minor}" for minor in range(10, 15)
@@ -73,7 +77,6 @@ def test_excluded_python_implementations_are_absent() -> None:
     forbidden = (
         "_aot_cli.py",
         "cutlass",
-        "_core/warp",
         "_core/block/reduce.py",
         "_core/block/scan.py",
         "_core/group/reduce.py",
@@ -94,3 +97,10 @@ def test_excluded_python_implementations_are_absent() -> None:
     )
 
     assert not [relative for relative in forbidden if (package / relative).exists()]
+
+    warp_files = {
+        path.relative_to(package / "_core" / "warp").as_posix()
+        for path in (package / "_core" / "warp").rglob("*")
+        if path.is_file() and path.suffix in {".py", ".pyi"}
+    }
+    assert warp_files == {"__init__.py", "load_store.py"}
