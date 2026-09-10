@@ -178,7 +178,7 @@ C2H_TEST("fixed_capacity_map rehash", "[container]", key_types, mapped_types, cg
   constexpr mapped_type empty_value       = mapped_type{-1};
   constexpr ::cuda::std::size_t requested = num_keys * 2;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr    = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
   const auto pairs = ::cuda::transform_iterator(::cuda::counting_iterator<int>{0}, iota_pair<value_type>{});
 
