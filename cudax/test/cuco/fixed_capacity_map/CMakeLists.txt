@@ -32,6 +32,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.retrieve_all ${cudax_t
   test_retrieve_all.cu
 )
 
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.for_each ${cudax_target}
+  test_for_each.cu
+)
+
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}
   test_capacity.cu
 )

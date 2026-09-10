@@ -31,6 +31,8 @@
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -434,6 +436,39 @@ public:
       ::cuda::std::identity{},
       __output_begin,
       __container_ref);
+  }
+
+  //! @brief Asynchronously applies `__callback_op` to a copy of every slot matching each key in
+  //! `[__first, __last)`.
+  //!
+  //! @note The return value of `__callback_op`, if any, is ignored.
+  //!
+  //! @throws cuda_error if the query operation fails to launch
+  template <class _InputIt, class _CallbackOp, class _Ref>
+  _CCCL_HOST_API void for_each_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _CallbackOp __callback_op, _Ref __container_ref)
+    const
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    if constexpr (__cg_size == 1)
+    {
+      __open_addressing::__for_each_fn __op{__first, __callback_op, __container_ref};
+      _CCCL_TRY_RUNTIME_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
+    }
+    else
+    {
+      const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      const auto& __kernel =
+        __open_addressing::__for_each_n<__cg_size, detail::__default_block_size, _InputIt, _CallbackOp, _Ref>;
+      ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __callback_op, __container_ref);
+    }
   }
 
   //! @brief Retrieves all elements in the container.
