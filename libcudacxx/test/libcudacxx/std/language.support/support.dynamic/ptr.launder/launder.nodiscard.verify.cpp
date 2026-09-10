@@ -12,8 +12,15 @@
 
 #include <cuda/std/__new_>
 
+#include "test_macros.h"
+
 TEST_FUNC void f()
 {
   int* p = nullptr;
   cuda::std::launder(p); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
+}
+
+int main(int, char**)
+{
+  return 0;
 }

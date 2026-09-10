@@ -21,12 +21,14 @@
 #include <cuda/std/__memory_>
 #include <cuda/std/cstddef>
 
+#include "test_macros.h"
+
 template <class T>
 struct A
 {
   using value_type = T;
-  value_type* allocate(cuda::std::size_t n);
-  value_type* allocate(cuda::std::size_t n, const void* p);
+  TEST_FUNC value_type* allocate(cuda::std::size_t n);
+  TEST_FUNC value_type* allocate(cuda::std::size_t n, const void* p);
 };
 
 void f()
