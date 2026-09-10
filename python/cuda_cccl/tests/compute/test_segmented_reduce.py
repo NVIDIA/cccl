@@ -54,9 +54,24 @@ def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
     assert input_array.ndim == 1
     sz = input_array.size
     rng = np.random.default_rng()
-    n_segments = 16
+    # The input_array fixture uses [-5, 5] for signed integers and [0, 7]
+    # for unsigned integers. Cap segment sizes so even partial sums fit.
+    # All 1000 fixture values can be summed safely in the other dtypes.
+    max_segment_size = {
+        np.dtype("int8"): 25,
+        np.dtype("uint8"): 36,
+    }.get(input_array.dtype, sz)
+
+    sizes = []
+    remaining = sz
+    while remaining:
+        size = int(rng.integers(1, min(max_segment_size, remaining) + 1))
+        sizes.append(size)
+        remaining -= size
+
+    n_segments = len(sizes)
     h_offsets = np.zeros(n_segments + 1, dtype="int64")
-    h_offsets[1:] = rng.multinomial(sz, [1 / n_segments] * n_segments)
+    h_offsets[1:] = sizes
 
     offsets = np.cumsum(np.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
 
