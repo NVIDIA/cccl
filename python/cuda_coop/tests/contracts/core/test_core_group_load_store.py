@@ -23,6 +23,7 @@ from cuda.coop._core import (
     ResultVisibility,
     StorageOwnership,
     SynchronizationScope,
+    TempStorageContract,
     UnsupportedReasonCode,
     make_group_primitive_call,
     plan_group_primitive,
@@ -568,6 +569,77 @@ def test_algorithm_storage_contract_matches_cub(kind, algorithm):
     assert plan.synchronization.storage_reuse_barrier is (
         SynchronizationScope.NONE if storage_free else SynchronizationScope.BLOCK
     )
+
+
+@pytest.mark.parametrize(
+    ("instances", "instance_index", "message"),
+    [
+        pytest.param(None, "cta", "positive instance count", id="missing-count"),
+        pytest.param(0, "cta", "positive instance count", id="zero-count"),
+        pytest.param(True, "cta", "positive instance count", id="boolean-count"),
+        pytest.param(1, None, "non-empty instance index", id="missing-index"),
+        pytest.param(1, "", "non-empty instance index", id="empty-index"),
+    ],
+)
+def test_storage_bearing_contract_requires_instance_layout(
+    instances,
+    instance_index,
+    message,
+):
+    with pytest.raises(ValueError, match=message):
+        TempStorageContract(
+            ownership=StorageOwnership.IMPLEMENTATION,
+            address_space="shared",
+            cpp_type="TestStorage",
+            instances=instances,
+            instance_index=instance_index,
+            exact_layout_required=False,
+        )
+
+
+@pytest.mark.parametrize(
+    ("contract", "message"),
+    [
+        pytest.param("topology-kind", "resolved group kind", id="topology-kind"),
+        pytest.param(
+            "participation-kind",
+            "resolved group kind",
+            id="participation-kind",
+        ),
+        pytest.param("topology-width", "resolved group size", id="topology-width"),
+        pytest.param(
+            "participation-width",
+            "resolved group size",
+            id="participation-width",
+        ),
+        pytest.param("block-dim", "resolved group", id="block-dim"),
+    ],
+)
+def test_supported_plan_contracts_must_describe_resolved_group(contract, message):
+    plan = _plan(this_block(), _load_store())
+    changes = {
+        "topology-kind": {
+            "topology": replace(plan.topology, group_kind="warp"),
+        },
+        "participation-kind": {
+            "participation": replace(plan.participation, group_kind="warp"),
+        },
+        "topology-width": {
+            "topology": replace(plan.topology, logical_width=32),
+        },
+        "participation-width": {
+            "participation": replace(plan.participation, exact_group_size=32),
+        },
+        "block-dim": {
+            "participation": replace(
+                plan.participation,
+                exact_block_dim=(32, 1, 1),
+            ),
+        },
+    }[contract]
+
+    with pytest.raises(ValueError, match=message):
+        replace(plan, **changes)
 
 
 @pytest.mark.parametrize(

@@ -27,7 +27,11 @@ from ._group_planner_support import (
     _typed_group_payload_like,
     ir,
 )
-from ._operations import StorageABI, factory_operation
+from ._operations import (
+    _GROUP_LOWERING_PLAN_KWARG,
+    StorageABI,
+    factory_operation,
+)
 from ._parameters import (
     _python_scalar_dtype,
     _scalar_cast_dtype,
@@ -129,6 +133,8 @@ class GroupPlanningContext:
     def _validate_provider_contract(
         lowering_plan: GroupLoweringPlan,
         factory: Any,
+        *,
+        runtime_temp_storage_supplied: bool | None = None,
     ) -> None:
         if not isinstance(lowering_plan, GroupLoweringPlan):
             raise TypeError("lowering_plan must be a GroupLoweringPlan")
@@ -143,19 +149,94 @@ class GroupPlanningContext:
                 "cuda.coop.numba_mlir lowering plan selected an unregistered "
                 "provider factory"
             )
-        assert lowering_plan.topology is not None
-        assert lowering_plan.synchronization is not None
-        assert lowering_plan.temp_storage is not None
+        topology = lowering_plan.topology
+        participation = lowering_plan.participation
+        synchronization = lowering_plan.synchronization
+        storage = lowering_plan.temp_storage
+        if (
+            topology is None
+            or participation is None
+            or synchronization is None
+            or storage is None
+        ):
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir provider selection requires complete "
+                "group topology, participation, synchronization, and storage "
+                "contracts"
+            )
+        if topology.execution_scope is SynchronizationScope.GROUP:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir provider execution scope 'group' has no "
+                "storage or synchronization emitter"
+            )
+        storage_bearing = storage.ownership is not StorageOwnership.NONE
+        if storage_bearing:
+            if storage.address_space != "shared":
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir storage-bearing providers require "
+                    "shared-address-space TempStorage"
+                )
+            if (
+                storage.instances != topology.instances
+                or storage.instance_index != topology.instance_index
+            ):
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir TempStorage layout disagrees with "
+                    "its group topology"
+                )
+            exact_block_dim = participation.exact_block_dim
+            if exact_block_dim is None:
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir storage-bearing providers require "
+                    "exact block dimensions"
+                )
+            block_threads = exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
+            if topology.logical_width * topology.instances != block_threads:
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir group topology does not cover the "
+                    "exact block dimensions"
+                )
+        caller_owned = storage.ownership is StorageOwnership.CALLER
+        if (
+            storage_bearing
+            and runtime_temp_storage_supplied is not None
+            and (caller_owned != runtime_temp_storage_supplied)
+        ):
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir TempStorage ownership disagrees with "
+                "the provider call arguments"
+            )
+        if caller_owned and (
+            topology.execution_scope is not SynchronizationScope.BLOCK
+            or topology.instances != 1
+        ):
+            if topology.execution_scope is SynchronizationScope.WARP:
+                raise GroupRewriteError(
+                    "cuda.coop.numba_mlir caller-owned TempStorage is not "
+                    "supported for warp-scoped cooperative primitives; omit "
+                    "temp_storage so the implementation can provide one "
+                    "aligned slice per group instance"
+                )
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir caller-owned TempStorage is supported "
+                "only for single-instance block-scoped cooperative primitives"
+            )
+        expected_reuse_barrier = (
+            topology.execution_scope
+            if storage_bearing and storage.auto_sync
+            else SynchronizationScope.NONE
+        )
+        if synchronization.storage_reuse_barrier is not expected_reuse_barrier:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir TempStorage automatic synchronization "
+                "disagrees with the planned storage-reuse barrier"
+            )
         expected = {
             "storage_abi": (
-                StorageABI.NONE
-                if lowering_plan.temp_storage.ownership is StorageOwnership.NONE
-                else StorageABI.LEADING_POINTER
+                StorageABI.LEADING_POINTER if storage_bearing else StorageABI.NONE
             ),
-            "execution_scope": lowering_plan.topology.execution_scope,
-            "synchronization_scope": (
-                lowering_plan.synchronization.storage_reuse_barrier
-            ),
+            "execution_scope": topology.execution_scope,
+            "synchronization_scope": synchronization.storage_reuse_barrier,
         }
         mismatches = [
             f"{name}={getattr(metadata, name).value!r} (plan {planned.value!r})"
@@ -171,8 +252,8 @@ class GroupPlanningContext:
         # enabled.
         if (
             planned_synchronization is SynchronizationScope.NONE
-            and lowering_plan.temp_storage.ownership is StorageOwnership.CALLER
-            and not lowering_plan.temp_storage.auto_sync
+            and caller_owned
+            and not storage.auto_sync
         ):
             allowed_synchronization.add(expected["execution_scope"])
         if metadata.synchronization_scope not in allowed_synchronization:
@@ -199,7 +280,19 @@ class GroupPlanningContext:
         return_alias: ir.Var | tuple[ir.Var, ...] | None = None,
         common_root_operation: str | None = None,
     ) -> list[Any]:
-        self._validate_provider_contract(lowering_plan, factory)
+        self._validate_provider_contract(
+            lowering_plan,
+            factory,
+            runtime_temp_storage_supplied="temp_storage" in kwargs,
+        )
+        if _GROUP_LOWERING_PLAN_KWARG in kwargs:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir family lowering used a reserved provider keyword"
+            )
+        kwargs = {
+            **kwargs,
+            _GROUP_LOWERING_PLAN_KWARG: lowering_plan,
+        }
         return self.__planner._rewritten_call(
             inst,
             factory=factory,
