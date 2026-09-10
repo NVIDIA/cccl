@@ -140,8 +140,49 @@ struct stream_registry_factory_t
     return cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
 
+  CUB_RUNTIME_FUNCTION cudaError_t CooperativeLaunchSupported(bool& supported) const
+  {
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({
+        int device_ordinal = 0;
+        if (const auto error = cudaGetDevice(&device_ordinal))
+        {
+          return error;
+        }
+
+        int attribute = 0;
+        if (const auto error = cudaDeviceGetAttribute(&attribute, cudaDevAttrCooperativeLaunch, device_ordinal))
+        {
+          return error;
+        }
+
+        supported = attribute != 0;
+        return cudaSuccess;
+      }),
+      ({
+        supported = false;
+        return cudaSuccess;
+      }))
+  }
+
+  template <typename Kernel, typename... Args>
+  CUB_RUNTIME_FUNCTION cudaError_t LaunchCooperative(
+    dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, Kernel kernel, Args const&... args) const {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        if (get_stream_registry_factory_state()->m_stream)
+                        {
+                          REQUIRE(stream == get_stream_registry_factory_state()->m_stream);
+                        }
+                        void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+                        return cudaLaunchCooperativeKernel(
+                          reinterpret_cast<void const*>(kernel), grid, block, kernel_args, shared_mem, stream);
+                      }),
+                      ({ return cudaErrorNotSupported; }))}
+
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
-  MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
+    MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
   {
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (get_stream_registry_factory_state()->m_stream)
