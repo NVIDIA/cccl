@@ -11,8 +11,10 @@ General
 -------
 
 #. Use the latest C++ features available.
-  The repository supports C++17 but many newer library features are available through backports.
-
+   The repository supports C++17 but many newer library features are available through backports.
+#. All user-defined names for entities should use ``snake_case``, except for template parameters, which
+   use ``PascalCase``, and macros, which use ``ALL_CAPS``.
+#. Headers must use ``#pragma once`` over include guards, except for libcudacxx and cudax.
 
 Header inclusion
 ~~~~~~~~~~~~~~~~
@@ -111,14 +113,6 @@ Compiler Compatibility
 #. Remove any unused files, code, or entities like variables, functions, types, template parameters, etc.
 #. Guard host-only code with ``#if !_CCCL_COMPILER(NVRTC)`` or ``#if _CCCL_HOSTED()``.
 
-
-Other
-~~~~~
-
-#. All user-defined names for entities should use ``snake_case``, except for template parameters, which
-   use ``PascalCase``, and macros, which use ``ALL_CAPS``.
-#. Headers should prefer ``#pragma once`` over include guards.
-
 libcu++
 -------
 
@@ -135,7 +129,7 @@ These rules also include cudax.
    and with ``_`` when they use ``PascalCase`` or ``ALL_CAPS``.
    This turns them into C++ reserved identifiers to avoid name collisions with user code and macros.
 #. Avoid single-letter template parameter names. Wrong: ``_T``; correct: ``_Tp``.
-#. Non-static data member names must be postfixed by ``_``, e.g. ``class __myclass { int __data_; };``.
+#. Data member names must be postfixed by ``_``, e.g. ``class __myclass { int __data_; };``.
 #. Constructor parameter names should match class data member names without the postfix ``_``,
    e.g. ``class __myclass { __myclass(int __data) : __data_(__data) {} };``.
 #. Headers use include guards with names derived from the uppercase full path and closing ``#endif`` comments repeating the guard name.
