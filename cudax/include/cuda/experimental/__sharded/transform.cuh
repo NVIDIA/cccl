@@ -138,61 +138,23 @@ _CCCL_REQUIRES(
 _CCCL_HOST_API void zip_transform(_SOut&& out, const _Envs& envs, _Op op, const _CallEnv& call_env, const _SIn&... ins)
 {
   static_assert(sizeof...(_SIn) >= 1, "zip_transform needs at least one input view");
-  const ::std::size_t num_shards = reserved::__shard_count(out);
-  if (reserved::__env_count(envs) < num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::zip_transform: fewer environments than shards");
-  }
   (reserved::__check_copartitioned(out, ins, "sharded::zip_transform"), ...);
 
-  constexpr bool __is_async = async_call_env<_CallEnv>;
-
-  if constexpr (!__is_async)
-  {
-    // Refusals first, before any CUDA call: this form synchronizes at the end.
-    require_sync_allowed(call_env, "sharded::zip_transform (synchronous form)");
-    places::check_not_capturing(nullptr, "sharded::zip_transform");
-    for (const auto g : each(num_shards))
-    {
-      places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::zip_transform");
-    }
-  }
-
-  for (const auto g : each(num_shards))
-  {
-    const auto& s_out = out.shard(g);
-    if (s_out.size == 0)
-    {
-      continue;
-    }
-    const ::cuda::stream_ref shard_stream = ::cuda::get_stream(envs[g]);
-    if constexpr (__is_async)
-    {
-      __detail::__wait_stream_on(shard_stream.get(), ::cuda::get_stream(call_env).get());
-    }
-    stream_scope scope(shard_stream.get());
-    cuda_safe_call(cub::DeviceTransform::Transform(
-      ::cuda::std::tuple{ins.shard(g).data...},
-      ::cuda::std::tuple{s_out.data},
-      s_out.size,
-      reserved::__tuple_result_op<_Op>{op},
-      envs[g]));
-  }
-  if constexpr (__is_async)
-  {
-    for (const auto g : each(num_shards))
-    {
-      if (out.shard(g).size != 0)
-      {
-        __detail::__wait_stream_on(::cuda::get_stream(call_env).get(), ::cuda::get_stream(envs[g]).get());
-      }
-    }
-  }
-
-  if constexpr (!__is_async)
-  {
-    barrier(envs);
-  }
+  // Same driver as the rest of the map family (`transform`, `fill`, ...):
+  // environment-count refusal, the synchronous no-stream form, and the
+  // asynchronous contract — LANE-ORDERED by default (no edges against the
+  // call stream), fork/join edges only under `composition::bracketed`, and
+  // the capture-time refusal of a lane-ordered call whose lanes are not
+  // capturing. The shard index selects the co-partitioned input shards.
+  __detail::__generic_map(
+    out, envs, call_env, "sharded::zip_transform", [&](::std::size_t g, const auto& s_out, cudaStream_t) {
+      cuda_safe_call(cub::DeviceTransform::Transform(
+        ::cuda::std::tuple{ins.shard(g).data...},
+        ::cuda::std::tuple{s_out.data},
+        s_out.size,
+        reserved::__tuple_result_op<_Op>{op},
+        envs[g]));
+    });
 }
 
 /**
