@@ -31,6 +31,8 @@
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -456,16 +458,16 @@ public:
     if constexpr (__cg_size == 1)
     {
       __open_addressing::__for_each_fn __op{__first, __callback_op, __container_ref};
-      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
+      _CCCL_TRY_RUNTIME_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
     }
     else
     {
       const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
-
-      __open_addressing::__for_each_n<__cg_size, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, __callback_op, __container_ref);
-      _CCCL_TRY_CUDA_API(::cudaGetLastError, "cuco: failed to query keys");
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      const auto& __kernel =
+        __open_addressing::__for_each_n<__cg_size, detail::__default_block_size, _InputIt, _CallbackOp, _Ref>;
+      ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __callback_op, __container_ref);
     }
   }
 

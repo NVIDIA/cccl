@@ -75,6 +75,21 @@ struct record_visit
   }
 };
 
+// Same as `record_visit`, but with a non-const call operator, so a callback carrying mutable state is
+// accepted by both the scalar and the cooperative-group host paths.
+template <class Value>
+struct record_visit_mutable
+{
+  int* visits;
+  int calls = 0;
+
+  __device__ void operator()(Value slot) noexcept
+  {
+    ++calls;
+    record_visit<Value>{visits}(slot);
+  }
+};
+
 // Keys in [0, num_keys) are present and must be visited exactly once; keys beyond that are absent
 // and must never be visited.
 struct visited_once_iff_present
@@ -173,6 +188,19 @@ C2H_TEST("fixed_capacity_map for_each", "[container]", key_types, mapped_types, 
     cuda::counting_iterator<int>{0},
     cuda::counting_iterator<int>{2 * num_keys},
     visited_once_iff_present{visits.data(), num_keys}));
+
+  // A callback with a non-const call operator is accepted
+  auto mutable_visits = ::cuda::make_buffer<int>(stream, mr, 2 * num_keys, 0);
+  map.for_each(stream,
+               cuda::counting_iterator<key_type>{0},
+               cuda::counting_iterator<key_type>{2 * num_keys},
+               record_visit_mutable<value_type>{mutable_visits.data()});
+
+  REQUIRE(::thrust::all_of(
+    ::thrust::cuda::par.on(stream.get()),
+    cuda::counting_iterator<int>{0},
+    cuda::counting_iterator<int>{2 * num_keys},
+    visited_once_iff_present{mutable_visits.data(), num_keys}));
 
   // An empty query range is a no-op
   auto empty_visits = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);

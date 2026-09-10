@@ -92,7 +92,7 @@ struct __for_each_fn
   _CallbackOp __callback_op;
   _Ref __ref;
 
-  _CCCL_DEVICE_API void operator()(detail::__index_type __idx) const
+  _CCCL_DEVICE_API void operator()(detail::__index_type __idx)
   {
     __ref.for_each(*(__first + __idx), __callback_op);
   }
