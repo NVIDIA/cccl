@@ -222,6 +222,21 @@ public:
     clear_async(__stream);
   }
 
+  //! @brief Copy-constructs an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl(const __open_addressing_impl&) = default;
+
+  //! @brief Move-constructs an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl(__open_addressing_impl&&) = default;
+
+  __open_addressing_impl& operator=(const __open_addressing_impl&) = delete;
+
+  //! @brief Move-assigns an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl& operator=(__open_addressing_impl&&) = default;
+
+  // NVCC requires a non-defaulted destructor to honor the host annotation. The slot buffer must
+  // be destroyed on the host. Explicitly default the other special members to preserve their behavior.
+  _CCCL_HOST_API ~__open_addressing_impl() {} // NOLINT(modernize-use-equals-default)
+
   //! @brief Fills all slots with the empty sentinel.
   _CCCL_HOST_API void clear(::cuda::stream_ref __stream)
   {
