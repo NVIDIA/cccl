@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import atexit
 import os
+import sys
 from collections.abc import Iterable
 from contextlib import ExitStack
 from dataclasses import dataclass
@@ -179,7 +180,8 @@ def _cuda_include_paths() -> tuple[Path, ...]:
         for env_name in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT")
         if (root := os.environ.get(env_name))
     )
-    return _select_cuda_include_path((*configured, Path("/usr/local/cuda/include")))
+    fallback = (Path("/usr/local/cuda/include"),) if sys.platform != "win32" else ()
+    return _select_cuda_include_path((*configured, *fallback))
 
 
 def _validate_required_headers(

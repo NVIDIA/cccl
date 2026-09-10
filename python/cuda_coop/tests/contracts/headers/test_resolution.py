@@ -107,3 +107,36 @@ if unexpected:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("platform", ("linux", "win32"))
+@pytest.mark.parametrize("configured", (False, True))
+def test_cuda_header_fallback_respects_platform(
+    tmp_path, monkeypatch, platform, configured
+):
+    from types import SimpleNamespace
+
+    import cuda.pathfinder
+
+    monkeypatch.setattr(headers, "sys", SimpleNamespace(platform=platform))
+    monkeypatch.setattr(cuda.pathfinder, "find_nvidia_header_directory", lambda _: None)
+    for name in ("CUDA_PATH", "CUDA_HOME", "CUDA_ROOT"):
+        monkeypatch.delenv(name, raising=False)
+    include = tmp_path / "CUDA Toolkit" / "include"
+    if configured:
+        include.mkdir(parents=True)
+        (include / "cuda_runtime.h").touch()
+        monkeypatch.setenv("CUDA_PATH", str(include.parent))
+    calls = []
+    select = headers._select_cuda_include_path
+
+    def record(paths):
+        paths = tuple(paths)
+        calls.append(paths)
+        # Avoid relying on this host's fallback toolkit installation.
+        return select(path for path in paths if path == include)
+
+    monkeypatch.setattr(headers, "_select_cuda_include_path", record)
+    assert headers._cuda_include_paths() == ((include,) if configured else ())
+    fallback = (Path("/usr/local/cuda/include"),) if platform == "linux" else ()
+    assert calls[-1] == ((include,) if configured else ()) + fallback
