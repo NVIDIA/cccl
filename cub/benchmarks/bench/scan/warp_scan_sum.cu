@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <nvbench_helper.cuh>
@@ -18,12 +18,12 @@ using value_types = nvbench::type_list<
   __nv_bfloat16,
 #endif
   float,
-  double,
+  double
 #if _CCCL_HAS_FLOAT128()
-  __float128,
+  ,
+  __float128
 #endif
-  cuda::std::complex<float>,
-  cuda::std::complex<double>>;
+  >;
 
 using op_t = ::cuda::std::plus<>;
-#include "warp_reduce_base.cuh"
+#include "warp_scan_base.cuh"

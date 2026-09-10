@@ -25,8 +25,10 @@ struct stream_registry_factory_t;
 #include <cstdint>
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include <block_size_extracting_helpers.h>
+
 #include "cub_test_macros.h"
+#include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -167,7 +169,7 @@ static_assert(cuda::std::__is_callable_v<cuda::get_stream_t, const non_copyable_
 template <class TestFn>
 void test_env_kinds(TestFn test_fn)
 {
-  cuda::stream stream       = make_current_device_stream();
+  const cuda::stream stream = make_current_device_stream();
   const auto default_stream = cuda::stream_ref{cudaStream_t{}};
 
   SECTION("default environment")
@@ -197,7 +199,7 @@ void test_env_kinds(TestFn test_fn)
 
   SECTION("non-copyable wrapper convertible to cudaStream_t")
   {
-    non_copyable_stream_wrapper wrapper{stream.get()};
+    const non_copyable_stream_wrapper wrapper{stream.get()};
     test_fn(wrapper, cuda::stream_ref{stream});
   }
 
@@ -286,7 +288,7 @@ struct stream_capture_guard
 template <class LaunchFn>
 void test_env_stream_routing(LaunchFn launch)
 {
-  cuda::stream stream = make_current_device_stream();
+  const cuda::stream stream = make_current_device_stream();
 
   // allocation is not capturable, so everything the launches touch is set up before capture begins
   c2h::device_vector<int> vec(coords_extents{}.extent(0) * coords_extents{}.extent(1), 1);
@@ -323,7 +325,7 @@ void test_env_stream_routing(LaunchFn launch)
 
   SECTION("non-copyable wrapper convertible to cudaStream_t")
   {
-    non_copyable_stream_wrapper wrapper{stream.get()};
+    const non_copyable_stream_wrapper wrapper{stream.get()};
     launch(args, wrapper);
   }
 

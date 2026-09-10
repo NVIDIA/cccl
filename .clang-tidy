@@ -38,6 +38,7 @@ Checks:
   - 'misc-*'
   - '-misc-use-anonymous-namespace'
   - '-misc-use-internal-linkage'
+  - 'core-*'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
