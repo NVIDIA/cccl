@@ -15,6 +15,15 @@ General
 #. All user-defined names for entities should use ``snake_case``, except for template parameters, which
    use ``PascalCase``, and macros, which use ``ALL_CAPS``.
 #. Headers must use ``#pragma once`` over include guards, except for libcudacxx and cudax.
+#. API breaking changes of any public entity must be avoided,
+   unless the next release will be a major release.
+   If in doubt, consult a library maintainer.
+   A change is breaking if it can lead to a compilation failure in any consumer code using CCCL,
+   or change the behavior or meaning of user code in any other way.
+#. Before an API is removed at a major release,
+   the affected entity must be marked as ``[[deprecated("...")]]`` with rationale and workaround,
+   adding a Doxygen comment ``//! Deprecated [Since X.Y]`` with the CCCL version introducing the deprecation,
+   in at least one preceding release.
 
 Header inclusion
 ~~~~~~~~~~~~~~~~
@@ -119,18 +128,22 @@ libcu++
 
 These rules also include cudax.
 
-#. Always fully qualify calls to free functions, even to functions in the same namespace. This avoids ADL.
-   This does not apply to examples, tests, benchmarks, and documentation.
-#. Always fully qualify type names unless they are declared in the current namespace or an enclosing one.
-#. Defaulted constructors should be marked with ``_CCCL_HIDE_FROM_ABI``
-#. libcu++ headers like ``<cuda/foo>`` are strict supersets of ``<cuda/std/foo>`` and thus always
-   include the corresponding ``<cuda/std/...>`` header.
+#. Any entity inside the namespace ``cuda``, including all nested namespaces,
+   unless the entity is prefixed with ``_``,
+   is considered part of the public API.
 #. All user-defined names for entities which are not part of the public API
    must be prefixed with ``__`` when they use ``snake_case``,
    and with ``_`` when they use ``PascalCase`` or ``ALL_CAPS``.
    This turns them into C++ reserved identifiers to avoid name collisions with user code and macros.
 #. Avoid single-letter template parameter names. Wrong: ``_T``; correct: ``_Tp``.
 #. Data member names must be postfixed by ``_``, e.g. ``class __myclass { int __data_; };``.
+#. Always fully qualify calls to free functions, even to functions in the same namespace. This avoids ADL.
+   This does not apply to examples, tests, benchmarks, and documentation.
+#. Always fully qualify type names unless they are declared in the current namespace or an enclosing one.
+#. Defaulted constructors should be marked with ``_CCCL_HIDE_FROM_ABI``
+#. libcu++ headers like ``<cuda/foo>`` are strict supersets of ``<cuda/std/foo>`` and thus always
+   include the corresponding ``<cuda/std/...>`` header.
+
 #. Constructor parameter names should match class data member names without the postfix ``_``,
    e.g. ``class __myclass { __myclass(int __data) : __data_(__data) {} };``.
 #. Headers use include guards with names derived from the uppercase full path and closing ``#endif`` comments repeating the guard name.
@@ -155,8 +168,12 @@ These rules also include cudax.
 CUB and Thrust
 --------------
 
-#. Non-public entities, which are not macros, should be put inside a ``detail`` namespace (preferred)
+#. Any entity inside the namespace ``cub`` or ``thrust``, including all nested namespaces,
+   unless any namespace is named ``detail``, or the entity is prefixed with ``__``,
+   is considered part of the public API.
+#. Non-public entities, except macros, should be put inside a ``detail`` namespace (preferred)
    or prefixed with ``__``.
+   Non-public macros should be prefixed with ``_``.
 #. Any full qualification of a CUB or Thrust entity must use ``THRUST_NS_QUALIFIER::`` instead of ``::thrust::``,
    and ``CUB_NS_QUALIFIER::`` instead of ``::cub::``.
    This avoids lookup failures when a user defines a wrapped namespace.
