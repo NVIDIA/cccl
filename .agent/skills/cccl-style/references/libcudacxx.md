@@ -2,7 +2,7 @@
 
 ## Naming Style
 
-- Never use reserved keywords as variables, parameters, or function names, such as:
+- Never use reserved identifiers as variables, parameters, or function names, such as:
   `__in`, `__out`, `__inout`, `__input`, `__output`
 
 ## Functions
