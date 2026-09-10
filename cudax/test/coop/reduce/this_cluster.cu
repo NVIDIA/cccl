@@ -77,7 +77,7 @@ struct RepeatedReduceKernel
   template <class Config>
   __device__ void operator()(Config config, int* d_out)
   {
-    cudax::this_cluster cluster{config};
+    const cudax::this_cluster cluster{config};
 
     for (int repeat = 0; repeat < reuse_repeats; ++repeat)
     {
@@ -292,6 +292,6 @@ C2H_TEST("reduce/this_cluster can reuse scratch", "[reduce][this_cluster]")
     return;
   }
 
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
   run_repeated_reduce_kernel(stream);
 }

@@ -80,7 +80,7 @@ struct RepeatedReduceKernel
   template <class Config>
   __device__ void operator()(Config config, int* d_out)
   {
-    cudax::this_block block{config};
+    const cudax::this_block block{config};
     const int thread_rank = cuda::gpu_thread.rank_as<int>(block);
     constexpr int stride  = Broadcasted ? reuse_block_size : 1;
 
@@ -287,7 +287,7 @@ C2H_TEST("reduce/this_block Broadcasted", "[reduce][this_block]", integral_type_
 
 C2H_TEST("reduce/this_block can reuse scratch", "[reduce][this_block]")
 {
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
 
   run_repeated_reduce_kernel<false>(stream);
   run_repeated_reduce_kernel<true>(stream);

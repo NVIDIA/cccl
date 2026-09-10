@@ -127,13 +127,13 @@ struct MultiGroupReduceKernel
   template <class Config>
   __device__ void operator()(Config config, int* d_out)
   {
-    cudax::this_block block{config};
+    const cudax::this_block block{config};
 
     using Barriers = cuda::barrier<cuda::thread_scope_block>[multi_group_count];
     __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
-    cudax::group parent{
+    const cudax::group parent{
       cuda::warp, block, cudax::group_by<nwarps_in_group, false>{}, cudax::barrier_synchronizer{barriers}};
 
     if (!cuda::gpu_thread.is_part_of(parent))
@@ -144,10 +144,10 @@ struct MultiGroupReduceKernel
     const int group_rank = parent.template rank_as<int>(block);
     if constexpr (Nested)
     {
-      cudax::virtual_group group{cuda::warp, parent, cudax::identity_mapping{}};
+      const cudax::virtual_group group{cuda::warp, parent, cudax::identity_mapping{}};
       if constexpr (Viewed)
       {
-        cudax::group_view view{group};
+        const cudax::group_view view{group};
         run_multi_group_reductions<Broadcasted>(view, block, group_rank, d_out);
       }
       else
@@ -361,7 +361,7 @@ C2H_TEST("reduce/warps_within_block Broadcasted", "[reduce][warps_within_block]"
 
 C2H_TEST("reduce/warps_within_block isolates scratch with static extents", "[reduce][warps_within_block]")
 {
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
 
   run_multi_group_reduce_kernel<false, false, false>(stream);
   run_multi_group_reduce_kernel<true, false, false>(stream);
@@ -373,7 +373,7 @@ C2H_TEST("reduce/warps_within_block isolates scratch with static extents", "[red
 
 C2H_TEST("reduce/warps_within_block isolates scratch with dynamic extents", "[reduce][warps_within_block]")
 {
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
 
   run_multi_group_reduce_kernel<false, false, true>(stream);
   run_multi_group_reduce_kernel<true, false, true>(stream);
