@@ -137,10 +137,10 @@ def test_func_caching_with_global_variable():
 
 
 def test_func_caching_wrapped_cuda_jit_function():
-    import numba.cuda
+    from numba_cuda_mlir import cuda as backend_cuda
 
     def make_func():
-        @numba.cuda.jit
+        @backend_cuda.jit
         def inner(x):
             return x
 
@@ -150,7 +150,7 @@ def test_func_caching_wrapped_cuda_jit_function():
         return func
 
     def make_func2():
-        @numba.cuda.jit
+        @backend_cuda.jit
         def inner(x):
             return 2 * x
 
