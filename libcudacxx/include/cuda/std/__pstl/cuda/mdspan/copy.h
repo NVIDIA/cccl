@@ -61,7 +61,7 @@ struct __pstl_dispatch<__pstl_algorithm::__mdspan_copy, __execution_backend::__c
     const ::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, ::cuda::device_accessor<_AccessorPolicyIn>>& __src,
     const ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, ::cuda::device_accessor<_AccessorPolicyOut>>& __dst)
   {
-    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
+    const auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
     [[maybe_unused]] const auto __ctx = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     using __src_mdspan_t _CCCL_NODEBUG = ::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn>;

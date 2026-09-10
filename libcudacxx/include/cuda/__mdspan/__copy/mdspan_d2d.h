@@ -48,6 +48,7 @@
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__type_traits/common_type.h>
 #  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/is_assignable.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -143,7 +144,10 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
                          ::cuda::device_mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut> __dst,
                          ::cuda::stream_ref __stream)
 {
-  static_assert(::cuda::std::is_convertible_v<_TpIn, _TpOut>, "TpIn must be convertible to TpOut");
+  using __src_reference _CCCL_NODEBUG = typename decltype(__src)::reference;
+  using __dst_reference _CCCL_NODEBUG = typename decltype(__dst)::reference;
+  static_assert(::cuda::std::is_assignable_v<__dst_reference, __src_reference>,
+                "destination mdspan reference must be assignable from source mdspan reference");
   static_assert(!::cuda::std::is_const_v<_TpOut>, "TpOut must not be const");
   static_assert(::cuda::__is_cuda_mdspan_layout_v<_LayoutPolicyIn>,
                 "LayoutPolicyIn must be a predefined layout policy");
@@ -219,9 +223,9 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     using __dst_stride_t _CCCL_NODEBUG =
       ::cuda::std::common_type_t<::cuda::__mdspan_stride_t<_LayoutPolicyOut, decltype(__dst.mapping())>, int>;
 
-    constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
-    const auto __src_raw      = ::cuda::__to_raw_tensor<__common_extent_t, __src_stride_t, __max_rank>(__src);
-    const auto __dst_raw      = ::cuda::__to_raw_tensor<__common_extent_t, __dst_stride_t, __max_rank>(__dst);
+    static constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
+    const auto __src_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __src_stride_t, __max_rank>(__src);
+    const auto __dst_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __dst_stride_t, __max_rank>(__dst);
     if (!::cuda::__same_extents(__src_raw, __dst_raw))
     {
       _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");

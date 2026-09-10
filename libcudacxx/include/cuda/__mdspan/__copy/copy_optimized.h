@@ -49,6 +49,8 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @param[in]  __dst_accessor  Accessor for writing destination elements
 //! @param[in]  __coord_iter    Coordinate iterator for multi-dimensional index mapping
 //! @param[in]  __tensor_size   Total number of elements to copy
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 template <typename _Config,
           typename _TpSrc,
           typename _TpDst,
@@ -86,6 +88,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_optimized_kernel(
     }
   }
 }
+_CCCL_DIAG_POP
 
 //! @brief Launch a naive element-wise copy kernel for strided tensor data.
 //!

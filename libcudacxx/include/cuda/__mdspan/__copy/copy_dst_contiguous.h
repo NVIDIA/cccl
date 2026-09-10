@@ -48,6 +48,8 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @param[in]  __dst_accessor  Accessor for writing destination elements
 //! @param[in]  __coord_iter    Coordinate iterator for the source tensor
 //! @param[in]  __tensor_size   Total number of elements to copy
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 template <typename _Config,
           typename _TpSrc,
           typename _TpDst,
@@ -81,6 +83,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_dst_contiguous_kernel(
     }
   }
 }
+_CCCL_DIAG_POP
 
 //! @brief Launch an element-wise copy kernel specialized for a contiguous destination.
 //!

@@ -114,6 +114,8 @@ template <bool _UseOptimizedSmemLayout, typename _Tp, ::cuda::std::size_t _MaxRa
 //! @param[in]  __tile_sizes             Per-dimension tile extents
 //! @param[in]  __extents                Per-dimension tensor extents (for partial-tile bounds)
 //! @param[in]  __src_strides            Per-dimension source strides (for partial-tile access)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 template <bool _UseOptimizedSmemLayout,
           typename _Config,
           ::cuda::std::size_t _MaxRankUZ,
@@ -294,6 +296,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
     }
   }
 }
+_CCCL_DIAG_POP
 
 #if !_CCCL_COMPILER(NVRTC)
 
