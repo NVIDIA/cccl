@@ -31,6 +31,7 @@ Header inclusion
 #. All header inclusions must use angle brackets, e.g. ``<path/header>``.
    Relative includes using quotes are only allowed in tests, examples, and benchmarks.
 #. Never include headers from ``cuda/std/__cccl/*`` directly, include ``__cccl_config`` instead.
+   ``cuda/std/__cccl/prologue.h`` and ``cuda/std/__cccl/epilogue.h`` are only allowed in library headers.
 #. Never include headers from ``cuda/std/__internal/*`` directly, include ``cuda/std/detail/__config`` instead.
 #. Never include headers from ``thread/detail/config/*`` directly, include ``thrust/detail/config.h`` instead.
 
