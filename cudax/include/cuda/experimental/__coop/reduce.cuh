@@ -139,6 +139,8 @@ template <bool _Broadcasted, class _Hierarchy, class _Tp, cuda::std::size_t _Np,
     }
     __group.sync_aligned();
     const auto __broadcast_result = __scratch.__bcast_;
+    // Every thread must finish reading shared scratch before another reduction
+    // can reuse it, even though each thread returns its own local copy.
     __group.sync_aligned();
     return __broadcast_result;
   }
@@ -420,6 +422,7 @@ _CCCL_REQUIRES(::cuda::std::is_same_v<warp_level, typename _Group::unit_type>
     }
     __group.sync_aligned();
     const auto __broadcast_result = __values[__first_warp_rank];
+    // Wait for every shared read before the next reduction can overwrite it.
     __group.sync_aligned();
     return __broadcast_result;
   }
