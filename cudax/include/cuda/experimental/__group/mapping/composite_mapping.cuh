@@ -72,7 +72,14 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit& __unit, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept
   {
-    return __map_impl(__unit, __parent, __prev_mapping_result);
+    if constexpr (sizeof...(_Mappings) > 0)
+    {
+      return __map_impl(__unit, __parent, __prev_mapping_result);
+    }
+    else
+    {
+      return __prev_mapping_result;
+    }
   }
 };
 
