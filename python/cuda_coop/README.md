@@ -78,13 +78,15 @@ Runtime configuration is controlled by these environment variables:
 | `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
 | `XDG_CACHE_HOME` | On Linux and other POSIX systems, sets the cache base directory; entries are stored in `<value>/cccl`. Unset, empty, or relative values fall back to `~/.cache/cccl`. Read when the backend cache module is imported. |
 | `LOCALAPPDATA` | On Windows, sets the cache base directory; entries are stored in `<value>\cccl`. Unset, empty, or relative values fall back to `~\AppData\Local\cccl`. Read when the backend cache module is imported. |
-| `CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR` | Writes content-addressed pre-NVRTC CUDA source files to this directory for compiler diagnostics. |
+| `CUDA_COOP_SOURCE_DUMP_DIR` | Writes generated CUDA source as `cuda_coop_<backend>_<hash>.cu` files. Set before compiling; Numba provider cache hits also dump source. The previous `CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR` name is a fallback only when this variable is unset. An empty shared value disables dumping. |
 | `CUDA_PATH` | Supplies `<value>/include` as a CUDA header candidate if `cuda-pathfinder` does not resolve one. |
 | `CUDA_HOME` | Supplies `<value>/include` after `CUDA_PATH` under the same fallback rule. |
 | `CUDA_ROOT` | Supplies `<value>/include` after `CUDA_HOME` under the same fallback rule. |
 
-If those mechanisms do not resolve CUDA headers, `/usr/local/cuda/include` is
-tried last.
+On POSIX, `/usr/local/cuda/include` is tried last. Windows uses
+`cuda-pathfinder` or the configured toolkit roots above, without the Unix
+fallback. Compilation reports a header-resolution error if none resolves
+valid CUDA headers.
 
 The build recognizes these CMake cache variables:
 

@@ -109,9 +109,13 @@ Runtime environment variables
    ``<value>\cccl``. Unset, empty, or relative values fall back to
    ``~\AppData\Local\cccl``. Read when the backend cache module is imported.
 
-``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR``
-   Writes content-addressed pre-NVRTC CUDA source files to this directory for
-   compiler diagnostics.
+``CUDA_COOP_SOURCE_DUMP_DIR``
+   Writes generated CUDA source to this directory for compiler diagnostics.
+   Files use ``cuda_coop_<backend>_<hash>.cu`` names so different backends can
+   share a directory. Set it before compiling; the Numba backend also writes
+   the source when its provider compilation cache is hit. The previous
+   ``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR`` name remains a fallback when the
+   shared variable is unset. An empty shared value disables dumping.
 
 ``CUDA_PATH``
    Supplies ``<value>/include`` as a CUDA header candidate if
@@ -125,8 +129,10 @@ Runtime environment variables
    Supplies ``<value>/include`` after ``CUDA_HOME`` under the same fallback
    rule.
 
-If those mechanisms do not resolve CUDA headers,
-``/usr/local/cuda/include`` is tried last.
+On Linux and other POSIX systems, ``/usr/local/cuda/include`` is tried last.
+Windows uses ``cuda-pathfinder`` or the configured toolkit roots above; it
+does not try the Unix fallback. If no valid CUDA include directory is found,
+compilation reports a header-resolution error.
 
 For the two Boolean switches, values are case-insensitive; ``0``, ``false``,
 ``no``, ``off``, and the empty string are false.
