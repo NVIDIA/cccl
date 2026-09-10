@@ -25,6 +25,7 @@
 #include <cuda/__functional/always_true_false.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__nvtx/nvtx.h>
+#include <cuda/std/__concepts/relation.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -833,13 +834,15 @@ struct DeviceFind
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
   //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
-  template <typename RangeIteratorT,
-            typename RangeNumItemsT,
-            typename ValuesIteratorT,
-            typename ValuesNumItemsT,
-            typename OutputIteratorT,
-            typename CompareOpT,
-            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_TEMPLATE(typename RangeIteratorT,
+                 typename RangeNumItemsT,
+                 typename ValuesIteratorT,
+                 typename ValuesNumItemsT,
+                 typename OutputIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::std::strict_weak_order<CompareOpT, detail::it_value_t<RangeIteratorT>, detail::it_value_t<ValuesIteratorT>>)
   CUB_RUNTIME_FUNCTION static cudaError_t LowerBoundSortedValues(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1085,13 +1088,15 @@ struct DeviceFind
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
   //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
-  template <typename RangeIteratorT,
-            typename RangeNumItemsT,
-            typename ValuesIteratorT,
-            typename ValuesNumItemsT,
-            typename OutputIteratorT,
-            typename CompareOpT,
-            typename EnvT = ::cuda::std::execution::env<>>
+  _CCCL_TEMPLATE(typename RangeIteratorT,
+                 typename RangeNumItemsT,
+                 typename ValuesIteratorT,
+                 typename ValuesNumItemsT,
+                 typename OutputIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::std::strict_weak_order<CompareOpT, detail::it_value_t<RangeIteratorT>, detail::it_value_t<ValuesIteratorT>>)
   CUB_RUNTIME_FUNCTION static cudaError_t UpperBoundSortedValues(
     void* d_temp_storage,
     size_t& temp_storage_bytes,

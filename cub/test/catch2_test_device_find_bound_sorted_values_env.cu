@@ -67,7 +67,7 @@ CUB_TEST_CASE("Device UpperBoundSortedValues works with default environment", "[
   REQUIRE(d_output == expected);
 }
 
-#endif
+#endif // TEST_LAUNCH == 0
 
 CUB_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
 {
@@ -103,14 +103,50 @@ CUB_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binar
   REQUIRE(d_output == expected);
 }
 
+CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
+{
+  auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
+  auto d_output = c2h::device_vector<int>(4);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceFind::UpperBoundSortedValues(
+      nullptr,
+      expected_bytes_allocated,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      cuda::std::less{}));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_upper_bound_sorted_values(
+    d_range.begin(),
+    static_cast<int>(d_range.size()),
+    d_values.begin(),
+    static_cast<int>(d_values.size()),
+    d_output.begin(),
+    cuda::std::less{},
+    env);
+
+  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  REQUIRE(d_output == expected);
+}
+
+#if TEST_LAUNCH == 0
+
 CUB_TEST("Device LowerBoundSortedValues works with user provided memory and environment",
          "[find][device][binary-search]",
          CUB_SMALL)
 {
-  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                    = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output                    = c2h::device_vector<int>(4);
-  c2h::device_vector<int> expected = {0, 2, 2, 4};
+  auto d_range                           = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                          = c2h::device_vector<int>{0, 3, 4, 7};
+  auto d_output                          = c2h::device_vector<int>(4);
+  const c2h::device_vector<int> expected = {0, 2, 2, 4};
 
   size_t expected_bytes_allocated{};
   auto error = cub::DeviceFind::LowerBoundSortedValues(
@@ -202,48 +238,14 @@ CUB_TEST("Device LowerBoundSortedValues works with user provided memory and envi
   }
 }
 
-CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
-{
-  auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output = c2h::device_vector<int>(4);
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceFind::UpperBoundSortedValues(
-      nullptr,
-      expected_bytes_allocated,
-      d_range.begin(),
-      static_cast<int>(d_range.size()),
-      d_values.begin(),
-      static_cast<int>(d_values.size()),
-      d_output.begin(),
-      cuda::std::less{}));
-
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
-
-  device_upper_bound_sorted_values(
-    d_range.begin(),
-    static_cast<int>(d_range.size()),
-    d_values.begin(),
-    static_cast<int>(d_values.size()),
-    d_output.begin(),
-    cuda::std::less{},
-    env);
-
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
-  REQUIRE(d_output == expected);
-}
-
 CUB_TEST("Device UpperBoundSortedValues works with user provided memory and environment",
          "[find][device][binary-search]",
          CUB_SMALL)
 {
-  auto d_range                     = c2h::device_vector<int>{0, 2, 4, 6, 8};
-  auto d_values                    = c2h::device_vector<int>{0, 3, 4, 7};
-  auto d_output                    = c2h::device_vector<int>(4);
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  auto d_range                           = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                          = c2h::device_vector<int>{0, 3, 4, 7};
+  auto d_output                          = c2h::device_vector<int>(4);
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
 
   size_t expected_bytes_allocated{};
   auto error = cub::DeviceFind::UpperBoundSortedValues(
@@ -334,6 +336,174 @@ CUB_TEST("Device UpperBoundSortedValues works with user provided memory and envi
     test_upper_bound_sorted_values(policy);
   }
 }
+
+template <int ThreadsPerBlock>
+struct find_bound_sorted_values_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::FindBoundSortedValuesPolicy
+  {
+    return {ThreadsPerBlock, 15, cub::LOAD_LDG};
+  }
+};
+
+using block_size_extracting_predicate_t = block_size_extracting_op<::cuda::always_false>;
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+CUB_TEST("LowerBoundSortedValues can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  auto d_range                                   = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                                  = c2h::device_vector<int>{0, 3, 4, 7};
+  auto d_output                                  = c2h::device_vector<int>(4, thrust::no_init);
+  auto d_block_size                              = c2h::device_vector<unsigned int>(1, 0);
+  const c2h::device_vector<int> d_expected_lower = {0, 0, 0, 0};
+
+  block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
+
+  SECTION("lower_bound_sorted_values can be tuned")
+  {
+    auto error = cub::DeviceFind::LowerBoundSortedValues(
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      predicate,
+      env);
+
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_output == d_expected_lower); // predicate never matches
+    REQUIRE(d_block_size[0] == target_block_size);
+  }
+
+  SECTION("lower_bound_sorted_values can be tuned with user provided memory")
+  {
+    size_t num_bytes = 0;
+
+    auto error = cub::DeviceFind::LowerBoundSortedValues(
+      nullptr,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      predicate,
+      env);
+
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    d_block_size[0] = 0; // reset to 0 for phase 2
+
+    auto temp          = c2h::device_vector<uint8_t>(num_bytes, thrust::no_init);
+    void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+    error = cub::DeviceFind::LowerBoundSortedValues(
+      temp_storage,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      predicate,
+      env);
+
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_output == d_expected_lower); // predicate never matches
+    REQUIRE(d_block_size[0] == target_block_size);
+  }
+}
+
+CUB_TEST("UpperBoundSortedValues can be tuned", "[find][device][binary-search]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  auto d_range                                   = c2h::device_vector<int>{0, 2, 4, 6, 8};
+  auto d_values                                  = c2h::device_vector<int>{0, 3, 4, 7};
+  auto d_output                                  = c2h::device_vector<int>(4, thrust::no_init);
+  auto d_block_size                              = c2h::device_vector<unsigned int>(1, 0);
+  const c2h::device_vector<int> d_expected_upper = {5, 5, 5, 5};
+
+  block_size_extracting_predicate_t predicate{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(find_bound_sorted_values_tuning<target_block_size>{});
+
+  SECTION("upper_bound_sorted_values can be tuned")
+  {
+    auto error = cub::DeviceFind::UpperBoundSortedValues(
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      predicate,
+      env);
+
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_output == d_expected_upper); // predicate never matches
+    REQUIRE(d_block_size[0] == target_block_size);
+  }
+
+  SECTION("upper_bound_sorted_values can be tuned with user provided memory")
+  {
+    size_t num_bytes = 0;
+
+    auto error = cub::DeviceFind::UpperBoundSortedValues(
+      nullptr,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      predicate,
+      env);
+
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    d_block_size[0] = 0; // reset to 0 for phase 2
+
+    auto temp          = c2h::device_vector<uint8_t>(num_bytes, thrust::no_init);
+    void* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+    error = cub::DeviceFind::UpperBoundSortedValues(
+      temp_storage,
+      num_bytes,
+      d_range.begin(),
+      static_cast<int>(d_range.size()),
+      d_values.begin(),
+      static_cast<int>(d_values.size()),
+      d_output.begin(),
+      predicate,
+      env);
+
+    REQUIRE(error == cudaSuccess);
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+    REQUIRE(d_output == d_expected_upper); // predicate never matches
+    REQUIRE(d_block_size[0] == target_block_size);
+  }
+}
+
+#endif // TEST_LAUNCH == 0
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test FindBoundSortedValuesPolicy properties", "[find][device][binary-search]", CUB_SMALL)
