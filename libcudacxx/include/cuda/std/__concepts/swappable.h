@@ -100,11 +100,6 @@ inline constexpr bool __swappable_arrays = false;
 template <class _Tp, class _Up, class = void>
 inline constexpr bool __noexcept_swappable_arrays = false;
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   // 2.1   `S` is `(void)swap(E1, E2)`* if `E1` or `E2` has class or enumeration type and...
@@ -139,10 +134,6 @@ struct __fn
     __y = ::cuda::std::exchange(__x, ::cuda::std::move(__y));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 #if !_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVHPC)
 template <class _Tp, class _Up, class _Size>

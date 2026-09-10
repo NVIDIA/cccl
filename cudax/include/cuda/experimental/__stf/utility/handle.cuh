@@ -11,6 +11,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -88,10 +90,10 @@ public:
   /// @brief Default constructor.
   handle()
   {
-    static_assert(!::std::is_constructible_v<T>, "T's default constructor must be protected.");
+    static_assert(!::cuda::std::is_constructible_v<T>, "T's default constructor must be protected.");
     if constexpr (f & handle_flags::non_null)
     {
-      static_assert(!::std::is_abstract_v<T>,
+      static_assert(!::cuda::std::is_abstract_v<T>,
                     "A non-nullable handle of an abstract type cannot have a default constructor.");
       impl = ::std::make_shared<Derived<T>>();
     }
@@ -111,9 +113,9 @@ public:
   /// @brief Variadic template constructor for creating a handle.
   template <typename... Args>
   handle(Args&&... args)
-      : impl(make(::std::forward<Args>(args)...))
+      : impl(make(::cuda::std::forward<Args>(args)...))
   {
-    static_assert(!::std::is_constructible_v<T, Args...>, "T's constructors must be protected.");
+    static_assert(!::cuda::std::is_constructible_v<T, Args...>, "T's constructors must be protected.");
   }
 
   /// @brief Constructs a handle from another handle with static_cast.
@@ -227,7 +229,7 @@ public:
     if (auto p = wp.lock())
     {
       handle h{mv(p)};
-      ::std::forward<Fun>(fun)(mv(h));
+      ::cuda::std::forward<Fun>(fun)(mv(h));
       return true;
     }
     return false;
@@ -244,20 +246,20 @@ private:
   {
     template <typename... Args>
     Derived(Args&&... args)
-        : U(::std::forward<Args>(args)...)
+        : U(::cuda::std::forward<Args>(args)...)
     {}
   };
 
   template <typename Arg, typename... Args>
   static auto make(Arg&& arg, Args&&... args)
   {
-    if constexpr (sizeof...(args) == 0 && ::std::is_convertible_v<Arg, ::std::shared_ptr<T>>)
+    if constexpr (sizeof...(args) == 0 && ::cuda::std::is_convertible_v<Arg, ::std::shared_ptr<T>>)
     {
-      return ::std::forward<Arg>(arg);
+      return ::cuda::std::forward<Arg>(arg);
     }
     else
     {
-      return ::std::make_shared<Derived<T>>(::std::forward<Arg>(arg), ::std::forward<Args>(args)...);
+      return ::std::make_shared<Derived<T>>(::cuda::std::forward<Arg>(arg), ::cuda::std::forward<Args>(args)...);
     }
   }
 

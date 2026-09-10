@@ -135,7 +135,7 @@ CUB_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][devic
   CAPTURE(c2h::type_name<index_type>());
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
 // MSVC error: C3546: '...': there are no parameter packs available to expand in
 //             make_tuple_types.h:__make_tuple_types_flat
@@ -153,14 +153,14 @@ CUB_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][
   auto X                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Y                              = GENERATE_COPY(take(3, random(2, 10)));
   auto Z                              = GENERATE_COPY(take(3, random(2, 10)));
-  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
+  const cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
+  const c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
 #if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);

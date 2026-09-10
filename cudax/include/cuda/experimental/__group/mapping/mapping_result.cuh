@@ -25,6 +25,7 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 
@@ -39,10 +40,10 @@ namespace cuda::experimental
 template <::cuda::std::size_t _StaticGroupCount, ::cuda::std::size_t _StaticCount, bool _IsExhaustive, bool _IsContiguous>
 struct __mapping_result
 {
-  unsigned __group_count_;
-  unsigned __group_rank_;
-  unsigned __unit_count_;
-  unsigned __unit_rank_;
+  ::cuda::std::uint32_t __group_count_;
+  ::cuda::std::uint32_t __group_rank_;
+  ::cuda::std::uint32_t __unit_count_;
+  ::cuda::std::uint32_t __unit_rank_;
   ::cuda::device::lane_mask __lane_mask_;
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result invalid() noexcept
@@ -55,7 +56,7 @@ struct __mapping_result
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
-  invalid_with_group_count(unsigned __group_count) noexcept
+  invalid_with_group_count(::cuda::std::uint32_t __group_count) noexcept
   {
     return {__group_count,
             __invalid_count_or_rank,
@@ -69,11 +70,11 @@ struct __mapping_result
     return _StaticGroupCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
   {
     if constexpr (_StaticGroupCount != ::cuda::std::dynamic_extent)
     {
-      return static_cast<unsigned>(_StaticGroupCount);
+      return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
     }
     else
     {
@@ -86,7 +87,7 @@ struct __mapping_result
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_rank() const noexcept
   {
     if constexpr (!_IsExhaustive)
     {
@@ -100,11 +101,11 @@ struct __mapping_result
     return _StaticCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_count() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
   {
     if constexpr (_StaticCount != ::cuda::std::dynamic_extent)
     {
-      return static_cast<unsigned>(_StaticCount);
+      return static_cast<::cuda::std::uint32_t>(_StaticCount);
     }
     else
     {
@@ -116,7 +117,7 @@ struct __mapping_result
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API unsigned unit_rank() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_rank() const noexcept
   {
     if constexpr (!_IsExhaustive)
     {
@@ -158,8 +159,8 @@ struct __mapping_result
 };
 
 template <bool _IsContiguous>
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::device::lane_mask
-__make_lane_mask_for_n(::cuda::device::lane_mask __prev_lane_mask, unsigned __n, unsigned __rank) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::device::lane_mask __make_lane_mask_for_n(
+  ::cuda::device::lane_mask __prev_lane_mask, ::cuda::std::uint32_t __n, ::cuda::std::uint32_t __rank) noexcept
 {
   if constexpr (_IsContiguous)
   {

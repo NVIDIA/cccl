@@ -139,10 +139,10 @@ TEST_HOST_DEVICE_FUNC bool test_runtime()
   test_type<__half, 1>();
   test_type<__half, 4>();
 #endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _LIBCUDACXX_HAS_NVBF16() && !TEST_CUDA_COMPILER(NVCC, <, 13) // precision issues with __nv_bfloat16
   test_type<__nv_bfloat16, 1>();
   test_type<__nv_bfloat16, 4>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16()&& !TEST_CUDA_COMPILER(NVCC, <, 13
   return true;
 }
 

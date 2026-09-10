@@ -22,17 +22,65 @@
 #endif // no system header
 
 #include <cuda/__bit/bitmask.h>
+#include <cuda/std/__bit/shl.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __bit_repeat_impl_generic(_Tp __v, int __n) noexcept(false)
+{
+  constexpr auto __width = __num_bits_v<_Tp>;
+  if (__n >= __width)
+  {
+    return __v;
+  }
+
+  _Tp __ret = static_cast<_Tp>(__v & ::cuda::bitmask<_Tp>(0, __n));
+
+  for (int __i = __n; __i < __width; __i *= 2)
+  {
+    __ret = (__ret << __i) | __ret;
+  }
+  return __ret;
+}
+
+#if _CCCL_CUDA_COMPILATION()
+template <class _Tp>
+[[nodiscard]] _CCCL_DEVICE_API _Tp __bit_repeat_impl_device(const _Tp __v, const int __n) noexcept(false)
+{
+  if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
+  {
+    using _Up = conditional_t<sizeof(_Tp) < sizeof(uint32_t), uint32_t, _Tp>;
+
+    constexpr auto __width = unsigned{__num_bits_v<_Tp>};
+    const auto __bounded_n = ::min(static_cast<unsigned>(__n), __width);
+
+    _Up __ret = __v & ::cuda::bitmask<_Up>(0, __bounded_n);
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (unsigned __i = 1; __i < __width; __i *= 2)
+    {
+      __ret = ::cuda::std::shl(__ret, __bounded_n * __i) | __ret;
+    }
+    return static_cast<_Tp>(__ret);
+  }
+  else
+  {
+    return static_cast<_Tp>(::cuda::std::__bit_repeat_impl_generic(__v, __n));
+  }
+}
+#endif // _CCCL_CUDA_COMPILATION()
+
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp bit_repeat(_Tp __v, int __n) noexcept(false)
+[[nodiscard]] _CCCL_API constexpr _Tp bit_repeat(const _Tp __v, const int __n) noexcept(false)
 {
   // If __n <= 0, the function must fail during constant evaluation.
   _CCCL_IF_CONSTEVAL_DEFAULT
@@ -44,20 +92,11 @@ _CCCL_REQUIRES(__cccl_is_unsigned_integer_v<_Tp>)
     _CCCL_ASSERT(__n > 0, "__n must be greater than 0");
   }
 
-  constexpr int __width = __num_bits_v<_Tp>;
-  if (__n >= __width)
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return __v;
+    NV_IF_TARGET(NV_IS_DEVICE, ({ return ::cuda::std::__bit_repeat_impl_device(__v, __n); }))
   }
-
-  const auto __pattern = static_cast<_Tp>(__v & ::cuda::bitmask<_Tp>(0, __n));
-  _Tp __ret            = __pattern;
-  for (int __i = __n; __i < __width; __i += __n)
-  {
-    __ret <<= __n;
-    __ret |= __pattern;
-  }
-  return __ret;
+  return ::cuda::std::__bit_repeat_impl_generic(__v, __n);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -61,6 +61,15 @@ cdef extern from "<cuda.h>":
 # types.h does not define.
 include "_bindings_op_code_type.pxi"
 
+# Backend-conditional cccl_build_config + _get_build_config / _pch_cache_dir_impl.
+# Every build entry point below takes a fresh per-build config from
+# `_get_build_config()`, holds it in a local, and passes its pointer into the
+# `_build_ex` call; what that config carries is the one thing that differs
+# between backends. v2 enables precompiled headers at the current cache
+# directory; v1 leaves it zeroed (NVRTC has no PCH cache, and cuda.compute wants
+# none of v1's other fields).
+include "_bindings_build_config.pxi"
+
 
 cdef extern from "cccl/c/types.h":
     cpdef enum cccl_type_enum:
@@ -77,6 +86,7 @@ cdef extern from "cccl/c/types.h":
         FLOAT64 "CCCL_FLOAT64"
         STORAGE "CCCL_STORAGE"
         BOOLEAN "CCCL_BOOLEAN"
+        BFLOAT16 "CCCL_BFLOAT16"
 
     cpdef enum cccl_op_kind_t:
        STATELESS "CCCL_STATELESS"
@@ -978,6 +988,21 @@ cdef class CommonData:
     def libcudacxx_path(self):
         return self.encoded_libcudacxx_path.decode("utf-8")
 
+
+
+
+def pch_cache_dir():
+    """The on-disk precompiled-header cache directory, or None.
+
+    Reports the path last supplied via ``set_pch_cache_dir()``. The resolution
+    chain (CCCL_PCH_CACHE_DIR, XDG_CACHE_HOME, the home cache, a uid-scoped temp
+    directory) lives in ``cuda.compute._pch.resolve_cache_dir()``, not here.
+    Returns None on the v1 (NVRTC) backend, which has no PCH cache, and until a
+    build has configured one.
+    """
+    return _pch_cache_dir_impl()
+
+
 # --------------
 #   DeviceReduce
 # --------------
@@ -988,14 +1013,16 @@ cdef extern from "cccl/c/reduce.h":
         size_t payload_size
         cccl_determinism_t determinism
 
-    cdef CUresult cccl_device_reduce_build(
+    cdef CUresult cccl_device_reduce_build_ex(
         cccl_device_reduce_build_result_t*,
         cccl_iterator_t,
         cccl_iterator_t,
         cccl_op_t,
-        cccl_value_t,
+        cccl_type_info,
+        cccl_init_kind_t,
         cccl_determinism_t,
-        int, int, const char*, const char*, const char*, const char*
+        int, int, const char*, const char*, const char*, const char*,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_reduce(
@@ -1045,7 +1072,8 @@ cdef class DeviceReduceBuildResult:
         Iterator d_in,
         Iterator d_out,
         Op op,
-        Value h_init,
+        TypeInfo init_type,
+        cccl_init_kind_t init_kind,
         cccl_determinism_t determinism,
         CommonData common_data
     ):
@@ -1057,13 +1085,16 @@ cdef class DeviceReduceBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_reduce_build(
+            status = cccl_device_reduce_build_ex(
                 &self.build_data,
                 d_in.iter_data,
                 d_out.iter_data,
                 op.op_data,
-                h_init.value_data,
+                init_type.type_info,
+                init_kind,
                 determinism,
                 cc_major,
                 cc_minor,
@@ -1071,6 +1102,7 @@ cdef class DeviceReduceBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -1100,6 +1132,13 @@ cdef class DeviceReduceBuildResult:
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
+        # h_init is None for CCCL_NO_INIT builds; the C entry point ignores the
+        # init argument for those, so pass a zero-initialized value.
+        cdef cccl_value_t h_init_data
+        memset(&h_init_data, 0, sizeof(cccl_value_t))
+        if h_init is not None:
+            h_init_data = h_init.value_data
+
         with nogil:
             status = cccl_device_reduce(
                 self.build_data,
@@ -1109,7 +1148,7 @@ cdef class DeviceReduceBuildResult:
                 d_out.iter_data,
                 <uint64_t>num_items,
                 op.op_data,
-                h_init.value_data,
+                h_init_data,
                 c_stream
             )
         if status != 0:
@@ -1194,7 +1233,7 @@ cdef extern from "cccl/c/scan.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_scan_build(
+    cdef CUresult cccl_device_scan_build_ex(
         cccl_device_scan_build_result_t*,
         cccl_iterator_t,
         cccl_iterator_t,
@@ -1202,7 +1241,8 @@ cdef extern from "cccl/c/scan.h":
         cccl_type_info,
         _Bool,
         cccl_init_kind_t,
-        int, int, const char*, const char*, const char*, const char*
+        int, int, const char*, const char*, const char*, const char*,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_exclusive_scan(
@@ -1295,8 +1335,10 @@ cdef class DeviceScanBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_scan_build(
+            status = cccl_device_scan_build_ex(
                 &self.build_data,
                 d_in.iter_data,
                 d_out.iter_data,
@@ -1310,6 +1352,7 @@ cdef class DeviceScanBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(f"Error {status} building scan")
@@ -1522,7 +1565,7 @@ cdef extern from "cccl/c/segmented_reduce.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_segmented_reduce_build(
+    cdef CUresult cccl_device_segmented_reduce_build_ex(
         cccl_device_segmented_reduce_build_result_t*,
         cccl_iterator_t,
         cccl_iterator_t,
@@ -1530,7 +1573,8 @@ cdef extern from "cccl/c/segmented_reduce.h":
         cccl_iterator_t,
         cccl_op_t,
         cccl_value_t,
-        int, int, const char*, const char*, const char*, const char*
+        int, int, const char*, const char*, const char*, const char*,
+        cccl_build_config*
     ) nogil
 
     # `cccl_device_segmented_reduce` (the execute entry point) is declared in the
@@ -1576,8 +1620,10 @@ cdef class DeviceSegmentedReduceBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_segmented_reduce_build(
+            status = cccl_device_segmented_reduce_build_ex(
                 &self.build_data,
                 d_in.iter_data,
                 d_out.iter_data,
@@ -1591,6 +1637,7 @@ cdef class DeviceSegmentedReduceBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -1676,14 +1723,15 @@ cdef extern from "cccl/c/merge_sort.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_merge_sort_build(
+    cdef CUresult cccl_device_merge_sort_build_ex(
         cccl_device_merge_sort_build_result_t *bld_ptr,
         cccl_iterator_t d_in_keys,
         cccl_iterator_t d_in_items,
         cccl_iterator_t d_out_keys,
         cccl_iterator_t d_out_items,
         cccl_op_t,
-        int, int, const char*, const char*, const char*, const char*
+        int, int, const char*, const char*, const char*, const char*,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_merge_sort(
@@ -1729,8 +1777,10 @@ cdef class DeviceMergeSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_merge_sort_build(
+            status = cccl_device_merge_sort_build_ex(
                 &self.build_data,
                 d_in_keys.iter_data,
                 d_in_items.iter_data,
@@ -1743,6 +1793,7 @@ cdef class DeviceMergeSortBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -1825,7 +1876,7 @@ cdef extern from "cccl/c/unique_by_key.h":
         size_t payload_size
 
 
-    cdef CUresult cccl_device_unique_by_key_build(
+    cdef CUresult cccl_device_unique_by_key_build_ex(
         cccl_device_unique_by_key_build_result_t *build_ptr,
         cccl_iterator_t d_keys_in,
         cccl_iterator_t d_values_in,
@@ -1833,7 +1884,8 @@ cdef extern from "cccl/c/unique_by_key.h":
         cccl_iterator_t d_values_out,
         cccl_iterator_t d_num_selected_out,
         cccl_op_t comparison_op,
-        int, int, const char *, const char *, const char *, const char *
+        int, int, const char *, const char *, const char *, const char *,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_unique_by_key(
@@ -1881,8 +1933,10 @@ cdef class DeviceUniqueByKeyBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_unique_by_key_build(
+            status = cccl_device_unique_by_key_build_ex(
                 &self.build_data,
                 d_keys_in.iter_data,
                 d_values_in.iter_data,
@@ -1896,6 +1950,7 @@ cdef class DeviceUniqueByKeyBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -1979,14 +2034,15 @@ cdef extern from "cccl/c/radix_sort.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_radix_sort_build(
+    cdef CUresult cccl_device_radix_sort_build_ex(
         cccl_device_radix_sort_build_result_t *build_ptr,
         cccl_sort_order_t sort_order,
         cccl_iterator_t d_keys_in,
         cccl_iterator_t d_values_in,
         cccl_op_t decomposer,
         const char* decomposer_return_type,
-        int, int, const char *, const char *, const char *, const char *
+        int, int, const char *, const char *, const char *, const char *,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_radix_sort(
@@ -2043,8 +2099,10 @@ cdef class DeviceRadixSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_radix_sort_build(
+            status = cccl_device_radix_sort_build_ex(
                 &self.build_data,
                 order,
                 d_keys_in.iter_data,
@@ -2057,6 +2115,7 @@ cdef class DeviceRadixSortBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -2140,12 +2199,13 @@ cdef extern from "cccl/c/transform.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_unary_transform_build(
+    cdef CUresult cccl_device_unary_transform_build_ex(
         cccl_device_transform_build_result_t *build_ptr,
         cccl_iterator_t d_in,
         cccl_iterator_t d_out,
         cccl_op_t op,
-        int, int, const char *, const char *, const char *, const char *
+        int, int, const char *, const char *, const char *, const char *,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_unary_transform(
@@ -2156,13 +2216,14 @@ cdef extern from "cccl/c/transform.h":
       cccl_op_t op,
       CUstream stream) nogil
 
-    cdef CUresult cccl_device_binary_transform_build(
+    cdef CUresult cccl_device_binary_transform_build_ex(
       cccl_device_transform_build_result_t* build_ptr,
       cccl_iterator_t d_in1,
       cccl_iterator_t d_in2,
       cccl_iterator_t d_out,
       cccl_op_t op,
-      int, int, const char *, const char *, const char *, const char *
+      int, int, const char *, const char *, const char *, const char *,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_binary_transform(
@@ -2202,8 +2263,10 @@ cdef class DeviceUnaryTransform:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_unary_transform_build(
+            status = cccl_device_unary_transform_build_ex(
                 &self.build_data,
                 d_in.iter_data,
                 d_out.iter_data,
@@ -2214,6 +2277,7 @@ cdef class DeviceUnaryTransform:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError("Failed to build unary transform")
@@ -2295,8 +2359,10 @@ cdef class DeviceBinaryTransform:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_binary_transform_build(
+            status = cccl_device_binary_transform_build_ex(
                 &self.build_data,
                 d_in1.iter_data,
                 d_in2.iter_data,
@@ -2308,6 +2374,7 @@ cdef class DeviceBinaryTransform:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError("Failed to build binary transform")
@@ -2374,7 +2441,7 @@ cdef extern from "cccl/c/histogram.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_histogram_build(
+    cdef CUresult cccl_device_histogram_build_ex(
         cccl_device_histogram_build_result_t *build_ptr,
         int num_channels,
         int num_active_channels,
@@ -2385,7 +2452,8 @@ cdef extern from "cccl/c/histogram.h":
         int64_t num_rows,
         int64_t row_stride_samples,
         bint is_evenly_segmented,
-        int, int, const char *, const char *, const char *, const char *
+        int, int, const char *, const char *, const char *, const char *,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_histogram_even(
@@ -2445,8 +2513,10 @@ cdef class DeviceHistogramBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_histogram_build(
+            status = cccl_device_histogram_build_ex(
                 &self.build_data,
                 num_channels,
                 num_active_channels,
@@ -2463,6 +2533,7 @@ cdef class DeviceHistogramBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -2541,14 +2612,15 @@ include "_bindings_binary_search_backend.pxi"
 
 cdef extern from "cccl/c/binary_search.h":
 
-    cdef CUresult cccl_device_binary_search_build(
+    cdef CUresult cccl_device_binary_search_build_ex(
         cccl_device_binary_search_build_result_t*,
         cccl_binary_search_mode_t,
         cccl_iterator_t,
         cccl_iterator_t,
         cccl_iterator_t,
         cccl_op_t,
-        int, int, const char*, const char*, const char*, const char*
+        int, int, const char*, const char*, const char*, const char*,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_binary_search(
@@ -2599,8 +2671,10 @@ cdef class DeviceBinarySearchBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_binary_search_build(
+            status = cccl_device_binary_search_build_ex(
                 &self.build_data,
                 mode,
                 d_data.iter_data,
@@ -2613,6 +2687,7 @@ cdef class DeviceBinarySearchBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -2676,7 +2751,7 @@ cdef extern from "cccl/c/three_way_partition.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_three_way_partition_build(
+    cdef CUresult cccl_device_three_way_partition_build_ex(
         cccl_device_three_way_partition_build_result_t *build_ptr,
         cccl_iterator_t d_in,
         cccl_iterator_t d_first_part_out,
@@ -2685,7 +2760,8 @@ cdef extern from "cccl/c/three_way_partition.h":
         cccl_iterator_t d_num_selected_out,
         cccl_op_t select_first_part_op,
         cccl_op_t select_second_part_op,
-        int, int, const char *, const char *, const char *, const char *
+        int, int, const char *, const char *, const char *, const char *,
+        cccl_build_config*
     ) nogil
 
     CUresult cccl_device_three_way_partition(
@@ -2743,8 +2819,10 @@ cdef class DeviceThreeWayPartitionBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_three_way_partition_build(
+            status = cccl_device_three_way_partition_build_ex(
                 &self.build_data,
                 d_in.iter_data,
                 d_first_part_out.iter_data,
@@ -2759,6 +2837,7 @@ cdef class DeviceThreeWayPartitionBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(
@@ -2837,14 +2916,15 @@ cdef extern from "cccl/c/segmented_sort.h":
         const char* payload
         size_t payload_size
 
-    cdef CUresult cccl_device_segmented_sort_build(
+    cdef CUresult cccl_device_segmented_sort_build_ex(
         cccl_device_segmented_sort_build_result_t *build_ptr,
         cccl_sort_order_t sort_order,
         cccl_iterator_t d_keys_in,
         cccl_iterator_t d_keys_out,
         cccl_iterator_t begin_offset_in,
         cccl_iterator_t end_offset_in,
-        int, int, const char *, const char *, const char *, const char *
+        int, int, const char *, const char *, const char *, const char *,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_segmented_sort(
@@ -2900,8 +2980,10 @@ cdef class DeviceSegmentedSortBuildResult:
         cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
         cdef const char *ctk_path = common_data.ctk_path_get_c_str()
 
+        cdef _BuildConfig _bc = _get_build_config()
+        cdef cccl_build_config* _cfg = _bc.ptr()
         with nogil:
-            status = cccl_device_segmented_sort_build(
+            status = cccl_device_segmented_sort_build_ex(
                 &self.build_data,
                 order,
                 d_keys_in.iter_data,
@@ -2914,6 +2996,7 @@ cdef class DeviceSegmentedSortBuildResult:
                 thrust_path,
                 libcudacxx_path,
                 ctk_path,
+                _cfg,
             )
         if status != 0:
             raise RuntimeError(

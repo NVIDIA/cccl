@@ -135,10 +135,10 @@ using make_it_t          = __type_cartesian_product<make_counting_t, make_transf
 TEMPLATE_LIST_TEST_CASE("iterator system and traversal propagation - any system", "[iterators]", make_it_t)
 {
   using namespace cuda::std;
-  __type_at_c<0, TestType> make_counting_iterator;
-  __type_at_c<1, TestType> make_transform_iterator;
-  __type_at_c<2, TestType> make_zip_iterator;
-  __type_at_c<3, TestType> make_permutation_iterator;
+  const __type_at_c<0, TestType> make_counting_iterator;
+  const __type_at_c<1, TestType> make_transform_iterator;
+  const __type_at_c<2, TestType> make_zip_iterator;
+  const __type_at_c<3, TestType> make_permutation_iterator;
 
   auto counting_it = make_counting_iterator(0);
   STATIC_REQUIRE(is_same_v<thrust::iterator_system_t<decltype(counting_it)>, thrust::any_system_tag>);
@@ -167,8 +167,8 @@ TEMPLATE_LIST_TEST_CASE("iterator system and traversal propagation - vectors", "
 {
   using namespace cuda::std;
   __type_at_c<0, TestType> vec{};
-  __type_at_c<1, TestType> make_transform_iterator;
-  __type_at_c<2, TestType> make_zip_iterator;
+  const __type_at_c<1, TestType> make_transform_iterator;
+  const __type_at_c<2, TestType> make_zip_iterator;
 
   using tag = decltype(expected_tag(vec));
 
@@ -192,8 +192,8 @@ TEMPLATE_LIST_TEST_CASE(
 {
   using namespace cuda::std;
   __type_at_c<0, TestType> vec{};
-  __type_at_c<1, TestType> make_counting_iterator;
-  __type_at_c<2, TestType> make_zip_iterator;
+  const __type_at_c<1, TestType> make_counting_iterator;
+  const __type_at_c<2, TestType> make_zip_iterator;
 
   using vec_tag = decltype(expected_tag(vec));
 

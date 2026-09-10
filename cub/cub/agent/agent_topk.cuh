@@ -137,7 +137,7 @@ set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int b
   {
     using bits_t        = typename Traits<KeyT>::UnsignedBits;
     const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
-    bits_t bucket       = bin_index;
+    const bits_t bucket = bin_index;
     prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
   }
   else
@@ -657,8 +657,8 @@ struct AgentTopK
     bool is_last_block = false;
     if (threadIdx.x == 0)
     {
-      unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
-      is_last_block         = (finished == (gridDim.x - 1));
+      const unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
+      is_last_block               = (finished == (gridDim.x - 1));
     }
 
     // syncthreads ensures that the BlockLoad for loading the global histogram can reuse the temporary storage

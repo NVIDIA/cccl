@@ -21,15 +21,15 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Runs each op through the fp64emu operators and the builtins, and verifies both
 // track the native double reference within tolerance. Returns true on success.
 TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
 {
-  fp64emu ex = dx;
-  fp64emu ey = dy;
-  fp64emu ez = dz;
+  cudax::fp64emu ex = dx;
+  cudax::fp64emu ey = dy;
+  cudax::fp64emu ez = dz;
 
   const double ref[5] = {dx * dy, dx + dy, dx / dy, dx - dy, dx * dy + dz};
 
@@ -42,11 +42,11 @@ TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
   };
 
   const double bi[5] = {
-    (double) __dmul_rn(ex, ey),
-    (double) __dadd_rn(ex, ey),
-    (double) __ddiv_rn(ex, ey),
-    (double) __dsub_rn(ex, ey),
-    (double) __fma_rn(ex, ey, ez),
+    (double) cudax::__dmul_rn(ex, ey),
+    (double) cudax::__dadd_rn(ex, ey),
+    (double) cudax::__ddiv_rn(ex, ey),
+    (double) cudax::__dsub_rn(ex, ey),
+    (double) cudax::__fma_rn(ex, ey, ez),
   };
 
   const double tol = 1e-10;

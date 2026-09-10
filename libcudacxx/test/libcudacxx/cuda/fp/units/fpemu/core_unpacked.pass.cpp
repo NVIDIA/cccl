@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 #define C0 (1.0)
 #define C1 (1.0 / 2.0)
@@ -42,57 +42,65 @@ TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz, double dw)
   };
 
   // Packed cores on __fpbits64.
-  __fpbits64 ex = __fp64emu_from_double(dx);
-  __fpbits64 ey = __fp64emu_from_double(dy);
-  __fpbits64 ez = __fp64emu_from_double(dz);
-  __fpbits64 ew = __fp64emu_from_double(dw);
+  cudax::__fpbits64 ex = cudax::__fp64emu_from_double(dx);
+  cudax::__fpbits64 ey = cudax::__fp64emu_from_double(dy);
+  cudax::__fpbits64 ez = cudax::__fp64emu_from_double(dz);
+  cudax::__fpbits64 ew = cudax::__fp64emu_from_double(dw);
 
-  __fpbits64 pmul        = __fp64emu_mid_dmul_rn(__fp64emu_mid_dmul_rn(__fp64emu_mid_dmul_rn(ex, ey), ez), ew);
-  __fpbits64 padd        = __fp64emu_mid_dadd_rn(__fp64emu_mid_dadd_rn(__fp64emu_mid_dadd_rn(ex, ey), ez), ew);
-  __fpbits64 pmad        = __fp64emu_mid_mad_rn(ex, ey, ez);
-  __fpbits64 pdot        = __fp64emu_mid_dot_rn(ex, ez, ey, ew);
-  __fpbits64 ppoly       = __fp64emu_dmul_rn(ex, __fp64emu_from_double(C7));
-  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C6)), ex);
-  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C5)), ex);
-  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C4)), ex);
-  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C3)), ex);
-  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C2)), ex);
-  ppoly                  = __fp64emu_dmul_rn(__fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C1)), ex);
-  ppoly                  = __fp64emu_dadd_rn(ppoly, __fp64emu_from_double(C0));
+  cudax::__fpbits64 pmul =
+    cudax::__fp64emu_mid_dmul_rn(cudax::__fp64emu_mid_dmul_rn(cudax::__fp64emu_mid_dmul_rn(ex, ey), ez), ew);
+  cudax::__fpbits64 padd =
+    cudax::__fp64emu_mid_dadd_rn(cudax::__fp64emu_mid_dadd_rn(cudax::__fp64emu_mid_dadd_rn(ex, ey), ez), ew);
+  cudax::__fpbits64 pmad  = cudax::__fp64emu_mid_mad_rn(ex, ey, ez);
+  cudax::__fpbits64 pdot  = cudax::__fp64emu_mid_dot_rn(ex, ez, ey, ew);
+  cudax::__fpbits64 ppoly = cudax::__fp64emu_dmul_rn(ex, cudax::__fp64emu_from_double(C7));
+  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C6)), ex);
+  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C5)), ex);
+  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C4)), ex);
+  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C3)), ex);
+  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C2)), ex);
+  ppoly = cudax::__fp64emu_dmul_rn(cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C1)), ex);
+  ppoly = cudax::__fp64emu_dadd_rn(ppoly, cudax::__fp64emu_from_double(C0));
   const double packed[5] = {
-    __fp64emu_to_double(pmul),
-    __fp64emu_to_double(padd),
-    __fp64emu_to_double(pmad),
-    __fp64emu_to_double(pdot),
-    __fp64emu_to_double(ppoly),
+    cudax::__fp64emu_to_double(pmul),
+    cudax::__fp64emu_to_double(padd),
+    cudax::__fp64emu_to_double(pmad),
+    cudax::__fp64emu_to_double(pdot),
+    cudax::__fp64emu_to_double(ppoly),
   };
 
   // Unpacked cores on __fpbits64_unpacked.
-  __fpbits64_unpacked ux = __fp64emu_unpacked_from_double(dx);
-  __fpbits64_unpacked uy = __fp64emu_unpacked_from_double(dy);
-  __fpbits64_unpacked uz = __fp64emu_unpacked_from_double(dz);
-  __fpbits64_unpacked uw = __fp64emu_unpacked_from_double(dw);
+  cudax::__fpbits64_unpacked ux = cudax::__fp64emu_unpacked_from_double(dx);
+  cudax::__fpbits64_unpacked uy = cudax::__fp64emu_unpacked_from_double(dy);
+  cudax::__fpbits64_unpacked uz = cudax::__fp64emu_unpacked_from_double(dz);
+  cudax::__fpbits64_unpacked uw = cudax::__fp64emu_unpacked_from_double(dw);
 
-  __fpbits64_unpacked umul =
-    __fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dmul(ux, uy), uz), uw);
-  __fpbits64_unpacked uadd =
-    __fp64emu_unpacked_mid_dadd(__fp64emu_unpacked_mid_dadd(__fp64emu_unpacked_mid_dadd(ux, uy), uz), uw);
-  __fpbits64_unpacked umad  = __fp64emu_unpacked_mid_mad(ux, uy, uz);
-  __fpbits64_unpacked udot  = __fp64emu_unpacked_mid_dot(ux, uz, uy, uw);
-  __fpbits64_unpacked upoly = __fp64emu_unpacked_mid_dmul(ux, __fp64emu_unpacked_from_double(C7));
-  upoly = __fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dadd(upoly, __fp64emu_unpacked_from_double(C6)), ux);
-  upoly = __fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dadd(upoly, __fp64emu_unpacked_from_double(C5)), ux);
-  upoly = __fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dadd(upoly, __fp64emu_unpacked_from_double(C4)), ux);
-  upoly = __fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dadd(upoly, __fp64emu_unpacked_from_double(C3)), ux);
-  upoly = __fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dadd(upoly, __fp64emu_unpacked_from_double(C2)), ux);
-  upoly = __fp64emu_unpacked_mid_dmul(__fp64emu_unpacked_mid_dadd(upoly, __fp64emu_unpacked_from_double(C1)), ux);
-  upoly = __fp64emu_unpacked_mid_dadd(upoly, __fp64emu_unpacked_from_double(C0));
+  cudax::__fpbits64_unpacked umul = cudax::__fp64emu_unpacked_mid_dmul(
+    cudax::__fp64emu_unpacked_mid_dmul(cudax::__fp64emu_unpacked_mid_dmul(ux, uy), uz), uw);
+  cudax::__fpbits64_unpacked uadd = cudax::__fp64emu_unpacked_mid_dadd(
+    cudax::__fp64emu_unpacked_mid_dadd(cudax::__fp64emu_unpacked_mid_dadd(ux, uy), uz), uw);
+  cudax::__fpbits64_unpacked umad  = __fp64emu_unpacked_mid_mad(ux, uy, uz);
+  cudax::__fpbits64_unpacked udot  = __fp64emu_unpacked_mid_dot(ux, uz, uy, uw);
+  cudax::__fpbits64_unpacked upoly = cudax::__fp64emu_unpacked_mid_dmul(ux, cudax::__fp64emu_unpacked_from_double(C7));
+  upoly                            = cudax::__fp64emu_unpacked_mid_dmul(
+    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C6)), ux);
+  upoly = cudax::__fp64emu_unpacked_mid_dmul(
+    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C5)), ux);
+  upoly = cudax::__fp64emu_unpacked_mid_dmul(
+    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C4)), ux);
+  upoly = cudax::__fp64emu_unpacked_mid_dmul(
+    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C3)), ux);
+  upoly = cudax::__fp64emu_unpacked_mid_dmul(
+    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C2)), ux);
+  upoly = cudax::__fp64emu_unpacked_mid_dmul(
+    cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C1)), ux);
+  upoly                    = cudax::__fp64emu_unpacked_mid_dadd(upoly, cudax::__fp64emu_unpacked_from_double(C0));
   const double unpacked[5] = {
-    __fp64emu_unpacked_to_double(umul),
-    __fp64emu_unpacked_to_double(uadd),
-    __fp64emu_unpacked_to_double(umad),
-    __fp64emu_unpacked_to_double(udot),
-    __fp64emu_unpacked_to_double(upoly),
+    cudax::__fp64emu_unpacked_to_double(umul),
+    cudax::__fp64emu_unpacked_to_double(uadd),
+    cudax::__fp64emu_unpacked_to_double(umad),
+    cudax::__fp64emu_unpacked_to_double(udot),
+    cudax::__fp64emu_unpacked_to_double(upoly),
   };
 
   const double tol = 1e-10;

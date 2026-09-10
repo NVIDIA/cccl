@@ -61,7 +61,7 @@
 (const cuda::stream &) <address> handle=invalid, unique_id=unavailable
 =============== stream.moved_from end ===============
 =============== stream.summary begin ===============
-(const std::vector<cuda::stream_ref> &) <address> size=3: {
+(const cuda::std::array<cuda::stream_ref, 3> &) <address>: {
   [0] = handle=<address>, unique_id=<id> {
     device = 0
     priority = 0

@@ -69,11 +69,6 @@ struct __rotate_copy_fn
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__cuda>
 {
@@ -101,7 +96,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
 
     // Determine temporary device storage requirements for cub::DevicePartition::Flagged
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::Flagged,
       "__pstl_cuda_rotate_copy: determination of device storage for cub::DevicePartition::Flagged failed",
       static_cast<void*>(nullptr),
@@ -118,7 +113,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel, we use the flagged kernel because we know the exact ordering we want
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::Flagged,
         "__pstl_cuda_rotate_copy: kernel launch of cub::DevicePartition::Flagged failed",
         __storage.__get_temp_storage(),
@@ -178,10 +173,6 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
     }
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

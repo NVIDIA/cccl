@@ -32,7 +32,6 @@
 */
 
 #include <cuda/__fp/fpmp_impl.h>
-#include <cuda/__fp/fpmp_impl_muladd.h> // div/sqrt reuse __fpmp2_low_mul (muladd family)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -44,6 +43,14 @@ namespace cuda::experimental
  * Division operations
  * --------------------------------------------------------------------
  */
+/* Compute a low-accuracy quotient: the Nagai iteration of __fpmp2_div below, stopped after
+the first residual correction and without the closing renormalization. The hi word is the
+native quotient estimate and the lo word carries the residual a - b*q divided by b, which
+puts the pair in the same precision class as the mid-accuracy quotient for about half the
+arithmetic, at the cost of leaving it unnormalized - as the low accuracy level does
+throughout. The residual itself is exact: q is within an ulp or two of a_hi/b_hi, so the
+subtraction inside the fma cancels without rounding.
+*/
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   const _FpType __a_hi,
@@ -53,31 +60,15 @@ _CCCL_FPMP_CORE_API void __fpmp2_low_div(
   _FpType* __res_hi,
   _FpType* __res_lo) noexcept
 {
-  // Get an estimate from *this->hi:
-  _FpType __recip_hi = __fpmp_rcp_rn(__b_hi);
+  const _FpType __r = __fpmp_rcp_rn(__b_hi);
+  const _FpType __q = __fpmp_mul_rn(__a_hi, __r);
 
-  // Do a Newton-Raphson iteration:
-  // This line can break for some uninvestigated reason,
-  // Use the one below:
-  // recip_hi = recip_hi*(2.0 - (x.get_hi())*recip_hi);
-  _FpType __two = static_cast<_FpType>(2.0);
-  __recip_hi    = __fpmp_fma_rn(-__b_hi * __recip_hi, __recip_hi, __two * __recip_hi);
+  _FpType __e = __fpmp_fma_rn(__b_hi, -__q, __a_hi);
+  __e         = __fpmp_add_rn(__a_lo, __e);
+  __e         = __fpmp_fma_rn(__b_lo, -__q, __e);
 
-  _FpType __recip2_hi = __recip_hi * __recip_hi;
-  _FpType __recip2_lo = __fpmp_fma_rn(__recip_hi, __recip_hi, -__recip2_hi);
-
-  // recip^2 * this->(hi/lo), Dekker multiplication:
-  _FpType __mul_hi = __recip2_hi * (__b_hi);
-  _FpType __mul_lo = __fpmp_fma_rn(__recip2_hi, (__b_hi), -__mul_hi);
-  __mul_lo += (__recip2_hi * (__b_lo) + __recip2_lo * (__b_hi));
-
-  // Our answer is now 2*recip_hi + mul_hi + mul_lo
-  _FpType __final_recip_hi = __two * __recip_hi - __mul_hi;
-  _FpType __final_recip_lo = __two * __recip_hi - __fpmp_add_rn(__final_recip_hi, __mul_hi);
-  __final_recip_lo -= __mul_lo;
-
-  // Multiply the reciprocal by the numerator
-  __fpmp2_low_mul(__a_hi, __a_lo, __final_recip_hi, __final_recip_lo, __res_hi, __res_lo);
+  *__res_hi = __q;
+  *__res_lo = __fpmp_mul_rn(__r, __e);
 } // __fpmp2_low_div
 
 /* Compute high-accuracy quotient, using Newton-

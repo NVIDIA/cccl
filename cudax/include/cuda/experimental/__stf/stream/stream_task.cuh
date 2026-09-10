@@ -18,6 +18,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -31,7 +33,7 @@
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <deque>
 
@@ -206,7 +208,8 @@ public:
     auto& dot = ctx.get_dot();
     // DOT tracing and set_ready_prereqs must not leave the task half-started;
     // abort instead of letting an exception escape.
-    on_throw(::std::abort) << [&] {
+    ON_THROW(abort)
+    {
       if (dot->is_tracing())
       {
         dot->template add_vertex<task, logical_data_untyped>(*this);
@@ -244,32 +247,44 @@ public:
   }
 
   /* End the task, but do not clear its data structures yet */
-  stream_task<>& end_uncleared()
+  //! \brief Finish the task without clearing it. Never throws.
+  //!
+  //! Resuming after a failure here is not an option: acquire() has locked this task's
+  //! logical-data mutexes, and release() below is what unlocks them, so returning early would
+  //! leave them held and deadlock the next task touching that data. The failures available are
+  //! an allocation failure (the standing ruling is to abort) or a CUDA error from
+  //! insert_dependency / event creation, which in practice means a sticky error has poisoned
+  //! the context. Report and abort.
+  stream_task<>& end_uncleared() noexcept
   {
-    assert(get_task_phase() == task::phase::running);
-
-    event_list end_list;
-
-    const auto& e_place = get_exec_place();
-
-    if (e_place.size() > 1)
+    ON_THROW(abort)
     {
-      // s0 depends on all other streams
-      for (size_t i = 1; i < stream_grid.size(); i++)
+      assert(get_task_phase() == task::phase::running);
+
+      event_list end_list;
+
+      const auto& e_place = get_exec_place();
+
+      if (e_place.size() > 1)
       {
-        stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        // s0 depends on all other streams
+        for (size_t i = 1; i < stream_grid.size(); i++)
+        {
+          stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        }
       }
-    }
 
-    auto se = submitted_events.end_as_event(ctx);
-    end_list.add(se);
+      auto se = submitted_events.end_as_event(ctx);
+      end_list.add(se);
 
-    release(ctx, end_list);
+      release(ctx, end_list);
+    };
 
     return *this;
   }
 
-  stream_task<>& end()
+  //! \brief Finish the task. Never throws, because neither of its steps does.
+  stream_task<>& end() noexcept
   {
     end_uncleared();
     clear();
@@ -333,7 +348,7 @@ public:
       clear();
     };
 
-    // And if they don't, just end the task.
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
     SCOPE(fail)
     {
       end();
@@ -350,13 +365,13 @@ public:
     }
 
     // Default for the first argument is a `cudaStream_t`.
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t>)
     {
-      ::std::forward<Fun>(fun)(get_stream());
+      ::cuda::std::forward<Fun>(fun)(get_stream());
     }
     else
     {
-      ::std::forward<Fun>(fun)(*this);
+      ::cuda::std::forward<Fun>(fun)(*this);
     }
   }
 
@@ -590,7 +605,7 @@ public:
       clear();
     };
 
-    // And if they don't, just end the task.
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
     SCOPE(fail)
     {
       end();
@@ -606,21 +621,21 @@ public:
       cuda_try<cudaEventRecord>(start_event, get_stream());
     }
 
-    if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
+    if constexpr (::cuda::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
       // Invoke passing this task's stream as the first argument, followed by the slices
       auto t = tuple_prepend(get_stream(), typed_deps());
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      return ::std::apply(::cuda::std::forward<Fun>(fun), t);
     }
     else if constexpr (reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Data...>>)
     {
       // Use the filtered tuple
       auto t = tuple_prepend(get_stream(), reserved::remove_void_interface(typed_deps()));
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      return ::std::apply(::cuda::std::forward<Fun>(fun), t);
     }
     else
     {
-      constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(*this), Data...>;
+      constexpr bool fun_invocable_task_deps = ::cuda::std::is_invocable_v<Fun, decltype(*this), Data...>;
       constexpr bool fun_invocable_task_non_void_deps =
         reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<decltype(*this), Data...>>;
 
@@ -630,11 +645,11 @@ public:
 
       if constexpr (fun_invocable_task_deps)
       {
-        return ::std::apply(::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
+        return ::std::apply(::cuda::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
       }
       else if constexpr (fun_invocable_task_non_void_deps)
       {
-        return ::std::apply(::std::forward<Fun>(fun),
+        return ::std::apply(::cuda::std::forward<Fun>(fun),
                             tuple_prepend(*this, reserved::remove_void_interface(typed_deps())));
       }
     }

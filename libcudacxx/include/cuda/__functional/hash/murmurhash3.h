@@ -35,7 +35,7 @@
 #include <cuda/__functional/hash/utils.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__bit/rotl.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -107,8 +107,7 @@ public:
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::uint32_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder _CCCL_NODEBUG_ALIAS =
-      __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
+    using _Holder _CCCL_NODEBUG = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
@@ -291,8 +290,7 @@ public:
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder _CCCL_NODEBUG_ALIAS =
-      __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
+    using _Holder _CCCL_NODEBUG = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint32_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 
@@ -636,8 +634,7 @@ public:
   //! @return The resulting hash value
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __uint128_t operator()(const _Key& __key) const noexcept
   {
-    using _Holder _CCCL_NODEBUG_ALIAS =
-      __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
+    using _Holder _CCCL_NODEBUG = __byte_holder<sizeof(_Key), __chunk_size, __block_size, false, ::cuda::std::uint64_t>;
     return __compute_hash(::cuda::std::bit_cast<_Holder>(__key));
   }
 

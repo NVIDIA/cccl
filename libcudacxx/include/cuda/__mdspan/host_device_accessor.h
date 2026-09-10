@@ -349,7 +349,7 @@ public:
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      bool __is_valid = true;
+      bool __is_valid = true; // NOLINT(misc-const-correctness)
       NV_IF_TARGET(NV_IS_HOST, (__is_valid = __is_device_accessible_pointer_from_host(__p);))
       _CCCL_ASSERT(__is_valid,
                    "device_accessor (mdspan): data handle doesn't point to a valid device or managed memory");
@@ -470,7 +470,7 @@ public:
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      bool __is_valid = true;
+      bool __is_valid = true; // NOLINT(misc-const-correctness)
       NV_IF_ELSE_TARGET(NV_IS_HOST, (__is_valid = __is_managed_pointer(__p);), (return true;))
       _CCCL_ASSERT(__is_valid, "managed_accessor (mdspan): data handle doesn't point to a valid managed memory");
       return !__is_valid;

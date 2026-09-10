@@ -52,9 +52,6 @@ class ArraySyntheticProvider:
     def has_children(self) -> bool:
         return self.size != 0
 
-    def get_type_name(self) -> str:
-        return self.type_name
-
     def get_child_index(self, name: str) -> int:
         if name.startswith("[") and name.endswith("]"):
             try:

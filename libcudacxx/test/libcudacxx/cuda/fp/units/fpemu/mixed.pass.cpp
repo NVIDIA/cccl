@@ -21,16 +21,16 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
 {
   constexpr double c1 = 9.876;
   constexpr int c2    = -6;
 
-  fp64emu ex = dx;
-  fp64emu ey = dy;
-  fp64emu ez = dz;
+  cudax::fp64emu ex = dx;
+  cudax::fp64emu ey = dy;
+  cudax::fp64emu ez = dz;
 
   // Complex expression: native double reference vs fp64emu.
   const double ref0 = (dx < dy) ? c2 + (dx * dy + dz) * c2 + cuda::std::fma(dz, dy, dx) / (dz - dx) + c1
@@ -41,11 +41,11 @@ TEST_HOST_DEVICE_FUNC void test(double dx, double dy, double dz)
   // Mixed-type builtins: one fp64emu operand, one plain arithmetic operand.
   const double ref[5] = {dx + 2.5, 2.5 + dx, dx * c2, dx - 1.0, c2 + dy};
   const double got[5] = {
-    (double) __dadd_rn(ex, 2.5),
-    (double) __dadd_rn(2.5, ex),
-    (double) __dmul_rn(ex, c2),
-    (double) __dsub_rn(ex, 1.0),
-    (double) __dadd_rn(c2, ey),
+    (double) cudax::__dadd_rn(ex, 2.5),
+    (double) cudax::__dadd_rn(2.5, ex),
+    (double) cudax::__dmul_rn(ex, c2),
+    (double) cudax::__dsub_rn(ex, 1.0),
+    (double) cudax::__dadd_rn(c2, ey),
   };
 
   const double tol = 1e-10;

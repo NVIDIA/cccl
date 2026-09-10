@@ -500,7 +500,7 @@ def test_select_stateful_threshold():
 
 def test_select_stateful_atomic():
     """Test stateful select with atomic operations to count rejected items"""
-    from numba import cuda as numba_cuda
+    from numba_cuda_mlir import cuda as numba_cuda
 
     num_items = 1000
     h_in = random_array(num_items, np.int32, max_value=100)
@@ -554,7 +554,7 @@ def test_select_stateful_atomic():
 
 def test_select_with_side_effect_counting_rejects():
     """Select with side effect that counts rejected items"""
-    from numba import cuda as numba_cuda
+    from numba_cuda_mlir import cuda as numba_cuda
 
     h_in = np.arange(100, dtype=np.int32)
     d_in = DeviceArray.from_numpy(h_in)

@@ -15,6 +15,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -50,7 +52,7 @@ compute_occupancy_result compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 
   // Miss. Compute into a local first so a thrown cuda_try does not leave
   // a default-initialized entry behind in the cache.
   compute_occupancy_result result;
-  if constexpr (::std::is_same_v<::std::decay_t<Kernel>, CUfunction>)
+  if constexpr (::cuda::std::is_same_v<::cuda::std::decay_t<Kernel>, CUfunction>)
   {
     cuda_try(cuOccupancyMaxPotentialBlockSize(
       &result.min_grid_size, &result.block_size, f, nullptr, dynamicSMemSize, blockSizeLimit));
@@ -85,7 +87,7 @@ struct cuda_kernel_limits_result
 template <typename Fun>
 cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem_bytes, bool cooperative)
 {
-  static_assert(::std::is_function<typename ::std::remove_pointer<Fun>::type>::value,
+  static_assert(::cuda::std::is_function<typename ::cuda::std::remove_pointer<Fun>::type>::value,
                 "Template parameter Fun must be a pointer to a function type.");
 
   cuda_kernel_limits_result res;
@@ -100,7 +102,7 @@ cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem
     static const int sm_count = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, 0);
 
     // TODO there could be more than 1 block per SM, but we do not know the actual block sizes for now ...
-    res.min_grid_size = ::std::min(res.min_grid_size, sm_count);
+    res.min_grid_size = ::cuda::std::min(res.min_grid_size, sm_count);
   }
 
   res.max_block_size = occupancy_res.block_size;

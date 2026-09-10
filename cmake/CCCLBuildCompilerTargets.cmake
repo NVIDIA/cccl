@@ -232,6 +232,10 @@ function(cccl_build_compiler_targets)
       "-Wno-gnu-zero-variadic-macro-arguments"
       cxx_compile_options
     )
+    # clang added this to -Wall in LLVM 23, but it's basically unusable for GPU code
+    # because NVCC will make all the kernel call stubs static. So we must disable it. See
+    # https://github.com/llvm/llvm-project/issues/219968.
+    append_option_if_available("-Wno-unused-template" cxx_compile_options)
 
     # This complains about functions in CUDA system headers when used with nvcc.
     append_option_if_available("-Wno-unused-function" cxx_compile_options)

@@ -173,7 +173,7 @@ public:
 template <typename Pointer>
 _CCCL_HOST_DEVICE bool operator==(const memory_resource<Pointer>& lhs, const memory_resource<Pointer>& rhs) noexcept
 {
-  return &lhs == &rhs || rhs.is_equal(rhs);
+  return &lhs == &rhs || lhs.is_equal(rhs);
 }
 
 /*! Compares the memory resources for inequality, first by identity, then by \p is_equal.

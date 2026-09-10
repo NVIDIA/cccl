@@ -30,7 +30,6 @@
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
-#include "reduce_common.cuh"
 #include <c2h/catch2_test_helper.h>
 
 namespace

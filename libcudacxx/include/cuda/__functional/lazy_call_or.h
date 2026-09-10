@@ -30,11 +30,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 _CCCL_BEGIN_NAMESPACE_CPO(__lazy_call_or_ns)
 //! @brief `__lazy_call_or` is like `__call_or` except that the fallback value is computed
 //! lazily.
@@ -64,17 +59,13 @@ struct __fn
 };
 _CCCL_END_NAMESPACE_CPO
 
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto __lazy_call_or = __lazy_call_or_ns::__fn{};
 } // namespace __cpo
 
 template <class _Fn, class _FallbackCallable, class... _Args>
-using __lazy_call_result_or_t _CCCL_NODEBUG_ALIAS =
+using __lazy_call_result_or_t _CCCL_NODEBUG =
   ::cuda::std::__call_result_t<__lazy_call_or_ns::__fn, _Fn, _FallbackCallable, _Args...>;
 
 _CCCL_END_NAMESPACE_CUDA

@@ -506,7 +506,7 @@
 // Re-enable sm_107a support in nvcc.
 #  undef NV_HAS_FEATURE_SM_107a
 #  define NV_HAS_FEATURE_SM_107a __NV_HAS_FEATURE_SM_107a
-#  if defined(__CUDA_ARCH_FEAT_SM103_ALL) || _NV_TARGET_CHECK_ARCH_SPECIFIC(10, 7)
+#  if defined(__CUDA_ARCH_FEAT_SM107_ALL) || _NV_TARGET_CHECK_ARCH_SPECIFIC(10, 7)
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_107a 1
 #  else
 #    define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_107a 0

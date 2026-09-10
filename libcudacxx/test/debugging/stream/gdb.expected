@@ -61,17 +61,21 @@ cuda::stream_ref handle=invalid, unique_id=unavailable
 cuda::stream handle=invalid, unique_id=unavailable
 =============== stream.moved_from end ===============
 =============== stream.summary begin ===============
-std::vector of length 3, capacity 3 = {[0] = cuda::stream_ref handle=<address>, unique_id=<id> = {
+cuda::std::array<cuda::stream_ref, 3> = {
+  [0] = cuda::stream_ref handle=<address>, unique_id=<id> = {
     device = 0,
     priority = 0,
     is_capturing = false,
     flags = 1
-  }, [1] = cuda::stream_ref handle=default, unique_id=<id> = {
+  },
+  [1] = cuda::stream_ref handle=default, unique_id=<id> = {
     device = 0,
     priority = 0,
     is_capturing = false,
     flags = 0
-  }, [2] = cuda::stream_ref handle=invalid, unique_id=unavailable}
+  },
+  [2] = cuda::stream_ref handle=invalid, unique_id=unavailable
+}
 =============== stream.summary end ===============
 =============== stream.update.before begin ===============
 cuda::stream_ref handle=default, unique_id=<id> = {

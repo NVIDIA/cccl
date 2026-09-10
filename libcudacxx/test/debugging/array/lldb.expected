@@ -1,21 +1,21 @@
 =============== array.normal begin ===============
-(cuda::std::array<int, 3>) <address> ([0] = -7, [1] = 0, [2] = 42)
+(const cuda::std::array<int, 3> &) <address> ([0] = -7, [1] = 0, [2] = 42)
 =============== array.normal end ===============
 =============== array.empty begin ===============
-(cuda::std::array<int, 0>) <address>
+(const cuda::std::array<int, 0> &) <address>
 =============== array.empty end ===============
 =============== array.nested begin ===============
-(cuda::std::array<cuda::std::array<int, 2>, 2>) <address>: {
+(const cuda::std::array<cuda::std::array<int, 2>, 2> &) <address>: {
   [0] = ([0] = 13, [1] = -5)
   [1] = ([0] = 0, [1] = 88)
 }
 =============== array.nested end ===============
 =============== array.alias begin ===============
-(cuda::std::array<int, 4>) <address> ([0] = -31, [1] = 17, [2] = 8, [3] = -64)
+(const array_alias &) <address> ([0] = -31, [1] = 17, [2] = 8, [3] = -64)
 =============== array.alias end ===============
 =============== array.update.before begin ===============
-(cuda::std::array<int, 3>) <address> ([0] = 6, [1] = -91, [2] = 52)
+(const cuda::std::array<int, 3> &) <address> ([0] = 6, [1] = -91, [2] = 52)
 =============== array.update.before end ===============
 =============== array.update.after begin ===============
-(cuda::std::array<int, 3>) <address> ([0] = 3, [1] = 85, [2] = -12)
+(const cuda::std::array<int, 3> &) <address> ([0] = 3, [1] = 85, [2] = -12)
 =============== array.update.after end ===============

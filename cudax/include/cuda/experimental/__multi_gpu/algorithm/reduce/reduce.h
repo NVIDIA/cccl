@@ -67,18 +67,8 @@ template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, 
   const _BinaryOp& __op,
   const _Tp& __ident)
 {
-  const auto& __logical_device = __comm.logical_device();
-  // Workaround for the case where:
-  //
-  // 1. The stream is the NULL stream.
-  // 2. The resource is the default per-device memory resource.
-  // 3. There is no current context set.
-  //
-  // In this case cuMemAllocFromPool fails with INVALID_CONTEXT because the driver cannot pick
-  // an appropriate context to tie the allocation to.
-  const auto _                = ::cuda::__ensure_current_context{__logical_device.context()};
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource = ::cuda::experimental::__detail::__resource_from_env(__env, __logical_device.underlying_device());
+  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
 
   // Allocate enough storage so that we can use the buffer directly in an in-place comm all
   // gather/all reduce call. Those calls require that the receive buffer is of size nranks *
@@ -90,7 +80,7 @@ template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, 
   const auto __rank = __comm.rank();
 
   __CUDAX_MULTI_GPU_DISPATCH(
-    __logical_device,
+    __stream,
     CUB_NS_QUALIFIER::DeviceReduce::Reduce,
     __input_it,
     // Similarly to above, prepare for the comm calls later. In order for those to be
@@ -146,7 +136,7 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
        ::cuda::std::ranges::views::zip(__comms, __envs, *__partials, __outputs))
   {
     __CUDAX_MULTI_GPU_DISPATCH(
-      __comm.logical_device(),
+      __buffer.stream(),
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
       __buffer.begin(),
       __out,

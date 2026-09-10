@@ -23,6 +23,7 @@
 
 #include <cuda/hierarchy>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 
@@ -61,77 +62,74 @@ _CCCL_DEVICE_API void __block_sync() noexcept
   }
 }
 
-template <>
-struct level_synchronizer::__synchronizer_instance<thread_level>
+template <class _Level>
+struct level_synchronizer::__synchronizer_instance
 {
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
+  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
+    {
+    }
+    else if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
+    {
+      ::__syncwarp();
+    }
+    else if constexpr (::cuda::std::is_same_v<_Level, block_level>)
+    {
+      ::cuda::experimental::__block_sync</*is-aligned*/ false>();
+    }
+    else if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
+    {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                        ({
+                          ::__cluster_barrier_arrive();
+                          ::__cluster_barrier_wait();
+                        }),
+                        ({ ::cuda::experimental::__block_sync</*is-aligned*/ false>(); }))
+    }
+    else
+    {
+      static_assert(::cuda::std::__always_false_v<_Level>, "Unsupported level");
+    }
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
+    {
+    }
+    else if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
+    {
+      ::__syncwarp();
+    }
+    else if constexpr (::cuda::std::is_same_v<_Level, block_level>)
+    {
+      ::cuda::experimental::__block_sync</*is-aligned*/ true>();
+    }
+    else if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
+    {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                        ({
+                          asm volatile("barrier.cluster.arrive.aligned;");
+                          asm volatile("barrier.cluster.wait.aligned;");
+                        }),
+                        ({ ::cuda::experimental::__block_sync</*is-aligned*/ true>(); }))
+    }
+    else
+    {
+      static_assert(::cuda::std::__always_false_v<_Level>, "Unsupported level");
+    }
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) noexcept
   {}
 
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void
-  do_sync_aligned(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
-  {}
-};
-
-template <>
-struct level_synchronizer::__synchronizer_instance<warp_level>
-{
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance view() const noexcept
   {
-    ::__syncwarp();
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void
-  do_sync_aligned(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
-  {
-    ::__syncwarp();
-  }
-};
-
-template <>
-struct level_synchronizer::__synchronizer_instance<block_level>
-{
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
-  {
-    ::cuda::experimental::__block_sync<false>();
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void
-  do_sync_aligned(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
-  {
-    ::cuda::experimental::__block_sync<true>();
-  }
-};
-
-template <>
-struct level_synchronizer::__synchronizer_instance<cluster_level>
-{
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
-  {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      ({
-                        ::__cluster_barrier_arrive();
-                        ::__cluster_barrier_wait();
-                      }),
-                      ({ ::cuda::experimental::__block_sync<false>(); }))
-  }
-
-  template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void
-  do_sync_aligned(const _MappingResult&, const level_synchronizer&, const _Hierarchy&) const noexcept
-  {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      ({
-                        asm volatile("barrier.cluster.arrive.aligned;");
-                        asm volatile("barrier.cluster.wait.aligned;");
-                      }),
-                      ({ ::cuda::experimental::__block_sync<true>(); }))
+    return *this;
   }
 };
 
@@ -141,17 +139,15 @@ template <>
 struct level_synchronizer::__synchronizer_instance<grid_level>
 {
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void
-  do_sync(const _MappingResult&, const level_synchronizer&, const _Hierarchy& __hier) const noexcept
+  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy& __hier) const noexcept
   {
-    __sync_impl<false>(__hier);
+    __sync_impl</*is-aligned*/ false>(__hier);
   }
 
   template <class _MappingResult, class _Hierarchy>
-  _CCCL_DEVICE_API void
-  do_sync_aligned(const _MappingResult&, const level_synchronizer&, const _Hierarchy& __hier) const noexcept
+  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy& __hier) const noexcept
   {
-    __sync_impl<true>(__hier);
+    __sync_impl</*is-aligned*/ true>(__hier);
   }
 
   template <bool _Aligned, class _Hierarchy>
@@ -159,8 +155,8 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
   {
     struct __grid_workspace
     {
-      unsigned __size_;
-      unsigned __barrier_;
+      ::cuda::std::uint32_t __size_;
+      ::cuda::std::uint32_t __barrier_;
     };
 
     __grid_workspace* __grid_workspace_ptr;
@@ -177,16 +173,16 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
     const auto __thread_idx = gpu_thread.index(block, __hier);
     if ((__thread_idx.x | __thread_idx.y | __thread_idx.z) == 0)
     {
-      const auto __expected = block.count_as<unsigned>(grid, __hier);
-      unsigned __nblocks    = 1;
+      const auto __expected           = block.count_as<::cuda::std::uint32_t>(grid, __hier);
+      ::cuda::std::uint32_t __nblocks = 1;
 
       const auto __block_idx = block.index(grid, __hier);
       if ((__block_idx.x | __block_idx.y | __block_idx.z) == 0)
       {
-        __nblocks = unsigned{::cuda::std::numeric_limits<int>::min()} - (__expected - 1);
+        __nblocks = ::cuda::std::uint32_t{::cuda::std::numeric_limits<int>::min()} - (__expected - 1);
       }
 
-      unsigned __old_barrier_value;
+      ::cuda::std::uint32_t __old_barrier_value;
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
       __old_barrier_value =
         __nv_atomic_fetch_add(__barrier_ptr, __nblocks, __NV_ATOMIC_RELEASE, __NV_THREAD_SCOPE_DEVICE);
@@ -196,7 +192,7 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
                    : "l"(__barrier_ptr), "r"(__nblocks)
                    : "memory");
 #  endif // ^^^ !_CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^
-      unsigned __curr_barrier_value;
+      ::cuda::std::uint32_t __curr_barrier_value;
       do
       {
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
@@ -209,6 +205,15 @@ struct level_synchronizer::__synchronizer_instance<grid_level>
 
     // Wait for the thread 0 to finish the inter block synchronization.
     ::cuda::experimental::__block_sync<_Aligned>();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) noexcept
+  {}
+
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance view() const noexcept
+  {
+    return *this;
   }
 };
 } // namespace cuda::experimental

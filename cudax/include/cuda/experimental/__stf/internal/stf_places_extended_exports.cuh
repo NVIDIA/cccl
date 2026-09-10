@@ -68,6 +68,7 @@ using ::cuda::experimental::places::is_stream_capturing;
 using ::cuda::experimental::places::k_no_stream_id;
 using ::cuda::experimental::places::locality_domain_count;
 using ::cuda::experimental::places::locality_domain_helper;
+using ::cuda::experimental::places::locality_domain_sm_split;
 using ::cuda::experimental::places::locality_domain_view;
 using ::cuda::experimental::places::localized_array;
 using ::cuda::experimental::places::make_locality_domain_grid;

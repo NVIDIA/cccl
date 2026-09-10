@@ -272,7 +272,7 @@ struct __format_arg_store
     }
   }
 
-  using _Storage _CCCL_NODEBUG_ALIAS =
+  using _Storage _CCCL_NODEBUG =
     conditional_t<::cuda::std::__fmt_use_packed_format_arg_store(sizeof...(_Args)),
                   __packed_format_arg_store<_Context, sizeof...(_Args)>,
                   __unpacked_format_arg_store<_Context, sizeof...(_Args)>>;

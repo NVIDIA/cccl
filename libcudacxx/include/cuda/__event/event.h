@@ -91,14 +91,12 @@ public:
 
   //! @brief Destroy the `event` object
   //!
-  //! @note If the event fails to be destroyed, the error is silently ignored.
+  //! @note If the event fails to be destroyed, the error is silently ignored or an assertion is triggered when enabled.
   _CCCL_HOST_API ~event()
   {
     if (__event_ != nullptr)
     {
-      // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
-      // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto __status = ::cuda::__driver::__eventDestroyNoThrow(__event_);
+      _CCCL_ASSERT_DRIVER_API(::cuda::__driver::__eventDestroyNoThrow, "Failed to destroy event", __event_);
     }
   }
 
@@ -157,7 +155,7 @@ private:
   _CCCL_HOST_API explicit event(device_ref __device, unsigned __flags)
       : event_ref(::cudaEvent_t{})
   {
-    [[maybe_unused]] __ensure_current_context __ctx_setter(__device);
+    [[maybe_unused]] const __ensure_current_context __ctx_setter(__device);
     __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
   }
 };

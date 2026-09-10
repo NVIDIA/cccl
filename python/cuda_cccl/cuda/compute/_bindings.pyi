@@ -51,6 +51,7 @@ class TypeEnum(IntEnum):
     FLOAT64 = ...
     STORAGE = ...
     BOOLEAN = ...
+    BFLOAT16 = ...
 
 class IteratorKind(IntEnum):
     _value_: int
@@ -204,7 +205,8 @@ class DeviceReduceBuildResult:
         d_in: Iterator,
         d_out: Iterator,
         binary_op: Op,
-        h_init: Value,
+        init_type: TypeInfo,
+        init_kind: InitKind,
         determinism: Determinism,
         info: CommonData,
     ): ...
@@ -216,7 +218,7 @@ class DeviceReduceBuildResult:
         d_out: Iterator,
         num_items: int,
         binary_op: Op,
-        h_init: Value,
+        h_init: Value | None,
         stream,
     ) -> int: ...
     def compute_nondeterministic(

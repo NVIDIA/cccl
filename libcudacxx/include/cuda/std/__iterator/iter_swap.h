@@ -63,8 +63,8 @@ _CCCL_CONCEPT __readable_swappable = _CCCL_REQUIRES_EXPR((_T1, _T2))(
   requires(!__unqualified_iter_swap<_T1, _T2>),
   requires(indirectly_readable<_T1>),
   requires(indirectly_readable<_T2>),
-  requires(__can_reference<iter_reference_t<_T1>>),
-  requires(__can_reference<iter_reference_t<_T2>>),
+  requires(__referenceable<iter_reference_t<_T1>>),
+  requires(__referenceable<iter_reference_t<_T2>>),
   requires(swappable_with<iter_reference_t<_T1>, iter_reference_t<_T2>>));
 
 #if _CCCL_HAS_NOEXCEPT_MANGLING() // older GCC cannot use noexcept inside a requires clause
@@ -108,11 +108,6 @@ inline constexpr bool __noexcept_movable_storable<_T1, _T2, true> =
   && noexcept(*::cuda::std::declval<_T1>() = ::cuda::std::declval<iter_value_t<_T2>>());
 #endif // !_CCCL_HAS_NOEXCEPT_MANGLING()
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -143,10 +138,6 @@ struct __fn
     *::cuda::std::forward<_T1>(__x) = ::cuda::std::move(__old);
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 

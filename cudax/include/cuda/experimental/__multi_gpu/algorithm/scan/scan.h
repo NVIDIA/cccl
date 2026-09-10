@@ -180,7 +180,7 @@ _CCCL_HOST_API void __scan(
       // that only happens once, we can probably reasonably fuse these kernels. If it happens
       // multiple times, we need to cache the result.
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __prefix.stream(),
         CUB_NS_QUALIFIER::DeviceReduce::Reduce,
         __part.begin(),
         __prefix.begin(),
@@ -198,7 +198,7 @@ _CCCL_HOST_API void __scan(
                                                           typename __properties::__buffer_type::iterator>;
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __prefix.stream(),
         CUB_NS_QUALIFIER::DeviceScan::ExclusiveScan,
         __input_it,
         __out,
@@ -210,7 +210,7 @@ _CCCL_HOST_API void __scan(
     else
     {
       __CUDAX_MULTI_GPU_DISPATCH(
-        __comm.logical_device(),
+        __prefix.stream(),
         CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
         __input_it,
         __out,

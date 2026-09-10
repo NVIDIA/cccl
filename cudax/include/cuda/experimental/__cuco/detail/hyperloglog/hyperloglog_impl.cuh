@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
@@ -228,7 +230,7 @@ public:
         // We make use of the occupancy calculator to get the minimum number of blocks which still
         // saturates the GPU. This reduces the shmem initialization overhead and atomic contention
         // on the final register array during the merge phase.
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           ::cudaOccupancyMaxPotentialBlockSize,
           "cudaOccupancyMaxPotentialBlockSize failed",
           &__grid_size,
@@ -240,7 +242,7 @@ public:
         void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
                                  const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                  reinterpret_cast<void*>(this)};
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           ::cudaLaunchKernel,
           "cudaLaunchKernel failed",
           __kernel,
@@ -260,7 +262,7 @@ public:
                                reinterpret_cast<void*>(this)};
       if (__try_reserve_shmem(__kernel, __shmem_bytes))
       {
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           ::cudaOccupancyMaxPotentialBlockSize,
           "cudaOccupancyMaxPotentialBlockSize failed",
           &__grid_size,
@@ -268,7 +270,7 @@ public:
           __kernel,
           __shmem_bytes);
 
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           ::cudaLaunchKernel,
           "cudaLaunchKernel failed",
           __kernel,
@@ -285,7 +287,7 @@ public:
         __kernel = reinterpret_cast<const void*>(
           ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, __hyperloglog_impl>);
 
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           ::cudaOccupancyMaxPotentialBlockSize,
           "cudaOccupancyMaxPotentialBlockSize failed",
           &__grid_size,
@@ -293,7 +295,7 @@ public:
           __kernel,
           0);
 
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           ::cudaLaunchKernel,
           "cudaLaunchKernel failed",
           __kernel,
@@ -451,10 +453,17 @@ public:
   {
     const auto __num_regs = __sketch.size();
 
-    ::cuda::host_buffer<__register_type> __host_sketch_buf{__stream, __host_mr, __sketch.size(), ::cuda::no_init};
+    ::cuda::host_buffer<__register_type> __host_sketch_buf{__stream, __host_mr, __num_regs, ::cuda::no_init};
 
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    ::cuda::copy_configuration __config{};
+    __config.src_access_order = ::cuda::source_access_order::stream;
+
+    ::cuda::copy_bytes(__stream, __sketch, __host_sketch_buf, __config);
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
     ::cuda::__driver::__memcpyAsync(
       __host_sketch_buf.data(), __sketch.data(), sizeof(__register_type) * __num_regs, __stream.get());
+#endif // _CCCL_CTK_BELOW(13, 0)
     __stream.sync();
 
     __fp_type __sum               = 0;
@@ -585,9 +594,9 @@ private:
   [[nodiscard]] _CCCL_HOST_API constexpr bool __try_reserve_shmem(_Kernel __kernel, int __shmem_bytes) const
   {
     int __device = -1;
-    _CCCL_TRY_CUDA_API(::cudaGetDevice, "cudaGetDevice failed", &__device);
+    _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "cudaGetDevice failed", &__device);
     int __max_shmem_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       ::cudaDeviceGetAttribute,
       "cudaDeviceGetAttribute failed",
       &__max_shmem_bytes,
@@ -596,7 +605,7 @@ private:
 
     if (__shmem_bytes <= __max_shmem_bytes)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaFuncSetAttribute,
         "cudaFuncSetAttribute failed",
         reinterpret_cast<const void*>(__kernel),

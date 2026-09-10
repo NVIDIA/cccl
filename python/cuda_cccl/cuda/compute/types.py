@@ -10,7 +10,10 @@ import numpy as np
 
 from ._bindings import TypeEnum, TypeInfo
 
-_ENUM_TO_DTYPE: dict[TypeEnum, np.dtype] = {
+# A None value means the type has no NumPy representation in this environment;
+# the corresponding TypeDescriptor still describes the type for codegen
+# purposes, but host-side data cannot be represented as NumPy arrays.
+_ENUM_TO_DTYPE: dict[TypeEnum, np.dtype | None] = {
     TypeEnum.INT8: np.dtype("int8"),
     TypeEnum.INT16: np.dtype("int16"),
     TypeEnum.INT32: np.dtype("int32"),
@@ -23,7 +26,16 @@ _ENUM_TO_DTYPE: dict[TypeEnum, np.dtype] = {
     TypeEnum.FLOAT32: np.dtype("float32"),
     TypeEnum.FLOAT64: np.dtype("float64"),
     TypeEnum.BOOLEAN: np.dtype("bool"),
+    TypeEnum.BFLOAT16: None,
 }
+
+# NumPy has no native bfloat16; the optional ml_dtypes package provides one.
+try:
+    import ml_dtypes
+
+    _ENUM_TO_DTYPE[TypeEnum.BFLOAT16] = np.dtype(ml_dtypes.bfloat16)
+except ImportError:
+    pass
 
 
 class TypeDescriptor:
@@ -45,8 +57,9 @@ class TypeDescriptor:
         return self._type_info.alignment
 
     @property
-    def dtype(self) -> np.dtype:
-        """Return the numpy dtype for this type."""
+    def dtype(self) -> np.dtype | None:
+        """The numpy dtype for this type, or None if it has no NumPy
+        representation (e.g. bfloat16 without the ml_dtypes package)."""
         return self._dtype
 
     def pointer(self) -> "PointerTypeDescriptor":
@@ -136,6 +149,13 @@ def _build_struct_dtype(
 ) -> np.dtype:
     dtype_list = []
     for field_name, field_type in fields.items():
+        if field_type.dtype is None:
+            # Without this check, np.dtype would silently interpret None as
+            # float64, giving the field the wrong size and layout.
+            raise TypeError(
+                f"struct field '{field_name}' has no NumPy representation "
+                "(bfloat16 fields require the ml_dtypes package to be installed)"
+            )
         dtype_list.append((field_name, field_type.dtype))
     return np.dtype(dtype_list, align=True)
 
@@ -199,6 +219,7 @@ uint64 = TypeDescriptor(8, 8, TypeEnum.UINT64)
 
 # Floating point types
 float16 = TypeDescriptor(2, 2, TypeEnum.FLOAT16)
+bfloat16 = TypeDescriptor(2, 2, TypeEnum.BFLOAT16)
 float32 = TypeDescriptor(4, 4, TypeEnum.FLOAT32)
 float64 = TypeDescriptor(8, 8, TypeEnum.FLOAT64)
 
@@ -221,6 +242,9 @@ _DTYPE_TO_TD: dict[np.dtype, TypeDescriptor] = {
     np.dtype("float64"): float64,
     np.dtype("bool"): boolean,
 }
+
+if bfloat16.dtype is not None:
+    _DTYPE_TO_TD[bfloat16.dtype] = bfloat16
 
 
 def to_ctypes_type(td: TypeDescriptor):
@@ -282,6 +306,7 @@ __all__ = [
     "uint32",
     "uint64",
     "float16",
+    "bfloat16",
     "float32",
     "float64",
     "boolean",

@@ -16,7 +16,12 @@
 #define CUB_STDERR
 
 #include <cub/device/device_radix_sort.cuh>
-#include <cub/util_allocator.cuh>
+
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_pool>
+#include <cuda/std/cstddef>
+#include <cuda/stream>
 
 #include <algorithm>
 #include <cstdio>
@@ -30,7 +35,6 @@ using namespace cub;
 //---------------------------------------------------------------------
 
 bool g_verbose = false; // Whether to display input/output to console
-CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
 // Test generation
@@ -109,15 +113,16 @@ int main(int argc, char** argv)
   {
     printf("%s "
            "[--n=<input items> "
-           "[--device=<device-id>] "
            "[--v] "
            "\n",
            argv[0]);
     exit(0);
   }
 
-  // Initialize device
-  CubDebugExit(args.DeviceInit());
+  // Set up device, stream, and memory resource
+  const auto device                 = cuda::devices[0];
+  const auto stream                 = cuda::stream{device};
+  const auto device_memory_resource = cuda::device_default_memory_pool(device);
 
   printf("cub::DeviceRadixSort::SortPairs() %d items (%d-byte keys %d-byte values)\n",
          num_items,
@@ -134,31 +139,27 @@ int main(int argc, char** argv)
   // Initialize problem and solution on host
   Initialize(h_keys, h_values, h_reference_keys, h_reference_values, num_items);
 
-  // Allocate device arrays
-  DoubleBuffer<float> d_keys;
-  DoubleBuffer<int> d_values;
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[0], sizeof(float) * num_items));
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[1], sizeof(float) * num_items));
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_values.d_buffers[0], sizeof(int) * num_items));
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_values.d_buffers[1], sizeof(int) * num_items));
+  // Allocate and initialize device arrays
+  auto d_keys_0   = cuda::make_buffer<float>(stream, device_memory_resource, h_keys, h_keys + num_items);
+  auto d_keys_1   = cuda::make_buffer<float>(stream, device_memory_resource, num_items, cuda::no_init);
+  auto d_values_0 = cuda::make_buffer<int>(stream, device_memory_resource, h_values, h_values + num_items);
+  auto d_values_1 = cuda::make_buffer<int>(stream, device_memory_resource, num_items, cuda::no_init);
+  DoubleBuffer<float> d_keys{d_keys_0.data(), d_keys_1.data()};
+  DoubleBuffer<int> d_values{d_values_0.data(), d_values_1.data()};
 
   // Allocate temporary storage
   size_t temp_storage_bytes = 0;
-  void* d_temp_storage      = nullptr;
-
-  CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
-  CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
-
-  // Initialize device arrays
-  CubDebugExit(
-    cudaMemcpy(d_keys.d_buffers[d_keys.selector], h_keys, sizeof(float) * num_items, cudaMemcpyHostToDevice));
-  CubDebugExit(
-    cudaMemcpy(d_values.d_buffers[d_values.selector], h_values, sizeof(int) * num_items, cudaMemcpyHostToDevice));
+  CubDebugExit(DeviceRadixSort::SortPairs(
+    nullptr, temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(float) * 8, stream.get()));
+  auto d_temp_storage =
+    cuda::make_buffer<cuda::std::byte>(stream, device_memory_resource, temp_storage_bytes, cuda::no_init);
 
   // Run
-  CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
+  CubDebugExit(DeviceRadixSort::SortPairs(
+    d_temp_storage.data(), temp_storage_bytes, d_keys, d_values, num_items, 0, sizeof(float) * 8, stream.get()));
 
   // Check for correctness (and display results, if specified)
+  stream.sync();
   int compare = CompareDeviceResults(h_reference_keys, d_keys.Current(), num_items, true, g_verbose);
   printf("\t Compare keys (selector %d): %s\n", d_keys.selector, compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
@@ -182,27 +183,6 @@ int main(int argc, char** argv)
   if (h_reference_values)
   {
     delete[] h_reference_values;
-  }
-
-  if (d_keys.d_buffers[0])
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[0]));
-  }
-  if (d_keys.d_buffers[1])
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_keys.d_buffers[1]));
-  }
-  if (d_values.d_buffers[0])
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[0]));
-  }
-  if (d_values.d_buffers[1])
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_values.d_buffers[1]));
-  }
-  if (d_temp_storage)
-  {
-    CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
   }
 
   printf("\n\n");

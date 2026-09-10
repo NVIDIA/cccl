@@ -65,7 +65,7 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 template <typename F>
 [[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(F&& f)
 {
-  if constexpr (proclaims_copyable_arguments<F>::value)
+  if constexpr (proclaims_copyable_arguments_v<F>)
   { // If F is already marked then we do not need to wrap it
     return f;
   }

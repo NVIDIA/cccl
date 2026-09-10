@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/mapping/mapping_result.cuh>
@@ -45,7 +46,7 @@ class binary_partition
 {
   static_assert(::cuda::std::is_move_constructible_v<_Fn>, "_Fn must be move constructible");
 
-  mutable _Fn __fn_;
+  _Fn __fn_;
 
 public:
   _CCCL_DEVICE_API explicit binary_partition(_Fn __fn) noexcept(::cuda::std::is_nothrow_move_constructible_v<_Fn>)
@@ -54,8 +55,8 @@ public:
 
   template <class _Unit, class _ParentGroup, class _PrevMappingResult>
   [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) const
-    noexcept(::cuda::std::is_nothrow_invocable_v<_Fn, const _PrevMappingResult&>)
+  map(const _Unit&, const _ParentGroup& __parent, const _PrevMappingResult& __prev_mapping_result) noexcept(
+    ::cuda::std::is_nothrow_invocable_v<_Fn&, const _PrevMappingResult&>)
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "binary_partition can only group threads");
     static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, warp_level>,
@@ -86,8 +87,8 @@ public:
     return _MappingResult{
       __prev_mapping_result.group_count() * 2,
       __prev_mapping_result.group_rank() + ((__pred) ? __prev_mapping_result.group_count() : 0u),
-      static_cast<unsigned>(::cuda::std::popcount(__match_mask)),
-      static_cast<unsigned>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
+      static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask)),
+      static_cast<::cuda::std::uint32_t>(::cuda::std::popcount(__match_mask & ::cuda::ptx::get_sreg_lanemask_lt())),
       ::cuda::device::lane_mask{__match_mask}};
   }
 };

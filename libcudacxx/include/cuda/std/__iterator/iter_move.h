@@ -87,11 +87,6 @@ template <class _Tp>
 _CCCL_CONCEPT __just_deref = _CCCL_FRAGMENT(__just_deref_, _Tp);
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 // [iterator.cust.move]
 
 struct __fn
@@ -126,15 +121,13 @@ struct __fn
   }
 };
 
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 _CCCL_END_NAMESPACE_CPO
+
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iter_move = __iter_move::__fn{};
 } // namespace __cpo
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -142,7 +135,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_CONCEPTS()
 template <__dereferenceable _Tp>
   requires requires(_Tp& __t) {
-    { ::cuda::std::ranges::iter_move(__t) } -> __can_reference;
+    { ::cuda::std::ranges::iter_move(__t) } -> __referenceable;
   }
 using iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::std::declval<_Tp&>()));
 
@@ -151,7 +144,7 @@ using iter_rvalue_reference_t = decltype(::cuda::std::ranges::iter_move(::cuda::
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
                        requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
-                                          requires(__can_reference<decltype(::cuda::std::ranges::iter_move(__t))>)));
+                                          requires(__referenceable<decltype(::cuda::std::ranges::iter_move(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);

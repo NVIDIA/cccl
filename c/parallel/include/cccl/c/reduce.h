@@ -35,6 +35,7 @@ typedef struct cccl_device_reduce_build_result_t
   CUkernel single_tile_second_kernel;
   CUkernel reduction_kernel;
   cccl_determinism_t determinism;
+  cccl_init_kind_t init_kind;
   void* runtime_policy;
   size_t runtime_policy_size;
   char* single_tile_kernel_lowered_name;
@@ -42,13 +43,16 @@ typedef struct cccl_device_reduce_build_result_t
   char* reduction_kernel_lowered_name;
 } cccl_device_reduce_build_result_t;
 
+// `init` describes the accumulator type and must be a valid type even with
+// CCCL_NO_INIT (pass the input value type). CCCL_FUTURE_VALUE_INIT is not supported.
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
 CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -63,7 +67,8 @@ CCCL_C_API CUresult cccl_device_reduce_build_ex(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -78,7 +83,8 @@ CCCL_C_API CUresult cccl_device_reduce_compile(
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,

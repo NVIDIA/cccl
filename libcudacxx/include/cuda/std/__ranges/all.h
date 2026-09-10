@@ -48,11 +48,6 @@ _CCCL_CONCEPT __to_owning_view = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __t)(
   requires(!__to_ref_view<_Tp>),
   (::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}));
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn : __range_adaptor_closure<__fn>
 {
   _CCCL_TEMPLATE(class _Tp)
@@ -80,10 +75,6 @@ struct __fn : __range_adaptor_closure<__fn>
     return ::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)};
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 

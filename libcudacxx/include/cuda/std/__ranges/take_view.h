@@ -71,9 +71,9 @@ public:
   template <bool _Const>
   class __sentinel
   {
-    using _Base _CCCL_NODEBUG_ALIAS = __maybe_const<_Const, _View>;
+    using _Base _CCCL_NODEBUG = __maybe_const<_Const, _View>;
     template <bool _OtherConst>
-    using _Iter _CCCL_NODEBUG_ALIAS                  = counted_iterator<iterator_t<__maybe_const<_OtherConst, _View>>>;
+    using _Iter _CCCL_NODEBUG                        = counted_iterator<iterator_t<__maybe_const<_OtherConst, _View>>>;
     _CCCL_NO_UNIQUE_ADDRESS sentinel_t<_Base> __end_ = sentinel_t<_Base>();
 
     template <bool>
@@ -318,24 +318,24 @@ struct __passthrough_type;
 template <class _Tp, size_t _Extent>
 struct __passthrough_type<span<_Tp, _Extent>>
 {
-  using type _CCCL_NODEBUG_ALIAS = span<_Tp>;
+  using type _CCCL_NODEBUG = span<_Tp>;
 };
 
 template <class _CharT, class _Traits>
 struct __passthrough_type<basic_string_view<_CharT, _Traits>>
 {
-  using type = _CCCL_NODEBUG_ALIAS basic_string_view<_CharT, _Traits>;
+  using type = _CCCL_NODEBUG basic_string_view<_CharT, _Traits>;
 };
 
 template <class _Iter, class _Sent, ::cuda::std::ranges::subrange_kind _Kind>
 struct __passthrough_type<::cuda::std::ranges::subrange<_Iter, _Sent, _Kind>,
                           void_t<typename ::cuda::std::ranges::subrange<_Iter>>>
 {
-  using type = _CCCL_NODEBUG_ALIAS ::cuda::std::ranges::subrange<_Iter>;
+  using type = _CCCL_NODEBUG ::cuda::std::ranges::subrange<_Iter>;
 };
 
 template <class _Tp>
-using __passthrough_type_t _CCCL_NODEBUG_ALIAS = typename __passthrough_type<_Tp>::type;
+using __passthrough_type_t _CCCL_NODEBUG = typename __passthrough_type<_Tp>::type;
 
 template <class _Range, class _Np>
 _CCCL_CONCEPT __use_empty = _CCCL_REQUIRES_EXPR((_Range, _Np))(
@@ -363,11 +363,6 @@ _CCCL_CONCEPT __use_generic = _CCCL_REQUIRES_EXPR((_Range, _Np))(
   requires(!__is_repeat_specialization<remove_cvref_t<_Range>>),
   requires(!__use_passthrough<_Range, _Np>),
   requires(!__use_iota<_Range, _Np>));
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
 
 struct __fn
 {
@@ -459,10 +454,6 @@ struct __fn
     return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Np>(__n)));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 

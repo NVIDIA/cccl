@@ -174,8 +174,16 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_data_place_handle stf_data_place_managed()
     stf_data_place_handle stf_data_place_affine()
     uint32_t stf_locality_domain_count(int dev_id)
+    ctypedef enum stf_locality_domain_sm_split:
+        STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL
+        STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED
+        STF_LOCALITY_DOMAIN_SM_SPLIT_FINE
     stf_exec_place_handle stf_exec_place_locality_domain(int dev_id, int domain_id)
+    stf_exec_place_handle stf_exec_place_locality_domain_split(
+        int dev_id, int domain_id, stf_locality_domain_sm_split split)
     stf_exec_place_handle stf_exec_place_locality_domain_grid(int dev_id)
+    stf_exec_place_handle stf_exec_place_locality_domain_grid_split(
+        int dev_id, stf_locality_domain_sm_split split)
     stf_data_place_handle stf_data_place_locality_domain(int dev_id, int domain_id)
     stf_data_place_handle stf_data_place_replicated(stf_exec_place_handle grid)
     stf_data_place_handle stf_data_place_replicated_deferred()
@@ -191,6 +199,44 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void* stf_data_place_allocate(stf_data_place_handle h, ptrdiff_t size, cudaStream_t stream)
     void stf_data_place_deallocate(stf_data_place_handle h, void* ptr, size_t size, cudaStream_t stream)
     int stf_data_place_allocation_is_stream_ordered(stf_data_place_handle h)
+    void* stf_data_place_allocate_nd(stf_data_place_handle h, const stf_dim4* data_dims, uint64_t elemsize, cudaStream_t stream)
+
+    #
+    # Placement (structured partitions + evaluation)
+    #
+    ctypedef struct stf_cute_partition_opaque_t
+    ctypedef stf_cute_partition_opaque_t* stf_cute_partition_handle
+
+    ctypedef struct stf_placement_stats:
+        uint64_t total_bytes
+        uint64_t vm_bytes
+        uint64_t block_size
+        uint64_t nblocks
+        uint64_t nallocs
+        double accuracy
+
+    ctypedef struct stf_partition_dim_spec:
+        int policy
+        int mesh_axis
+        uint64_t block
+
+    int stf_placement_evaluate(stf_exec_place_handle grid, stf_get_executor_fn mapper, const stf_dim4* data_dims, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+    int stf_placement_evaluate_partition(stf_exec_place_handle grid, stf_cute_partition_handle partition, uint64_t elemsize, uint64_t probes, uint64_t block_size, stf_placement_stats* out_stats, uint64_t* bytes_per_grid_index)
+    stf_cute_partition_handle stf_cute_partition_create(const stf_dim4* true_dims, const stf_dim4* grid_dims, const stf_partition_dim_spec* spec, size_t rank)
+    stf_cute_partition_handle stf_cute_partition_from_leaves(const uint64_t* place_extents, const int64_t* place_strides, const int* place_axes, size_t num_place_leaves, const uint64_t* local_extents, const int64_t* local_strides, size_t num_local_leaves, const stf_dim4* padded_dims, const stf_dim4* true_dims, const stf_dim4* grid_dims)
+    void stf_cute_partition_destroy(stf_cute_partition_handle h)
+    void stf_cute_partition_true_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+    void stf_cute_partition_padded_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+    void stf_cute_partition_grid_dims(stf_cute_partition_handle h, stf_dim4* out_dims)
+    size_t stf_cute_partition_num_place_leaves(stf_cute_partition_handle h)
+    size_t stf_cute_partition_num_local_leaves(stf_cute_partition_handle h)
+    void stf_cute_partition_get_place_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides, int* axes)
+    void stf_cute_partition_get_local_leaves(stf_cute_partition_handle h, uint64_t* extents, int64_t* strides)
+    uint64_t stf_cute_partition_place_offset(stf_cute_partition_handle h, uint64_t place_index)
+    int stf_cute_partition_owner(stf_cute_partition_handle h, const stf_pos4* data_coords, stf_pos4* out_grid_pos)
+    stf_data_place_handle stf_data_place_composite_cute(stf_exec_place_handle grid, stf_cute_partition_handle partition)
+    stf_get_executor_fn stf_partition_fn_blocked(int dim)
+    stf_get_executor_fn stf_partition_fn_cyclic()
 
     #
     # Logical data
@@ -406,10 +452,11 @@ class _MapperCallbackState:
     drove the mapping and re-raise instead of silently misplacing data.
     """
 
-    __slots__ = ("mapper", "error", "callback", "c_ptr")
+    __slots__ = ("mapper", "data_rank", "error", "callback", "c_ptr")
 
-    def __init__(self, mapper):
+    def __init__(self, mapper, data_rank):
         self.mapper = mapper
+        self.data_rank = data_rank
         self.error = None      # first BaseException raised inside the callback
         self.callback = None   # ctypes callback object (kept alive here)
         self.c_ptr = 0
@@ -422,15 +469,26 @@ class _MapperCallbackState:
             raise exc
 
 
-def _make_mapper_callback(mapper):
+def _make_mapper_callback(mapper, data_rank, grid_rank):
     """Wrap a Python partitioner as a C function pointer for stf_data_place_composite.
+
+    The Python mapper sees the public C-order contract: it receives
+    ``(data_coords, data_dims, grid_dims)`` as C-order tuples of ``data_rank``
+    (respectively ``grid_rank``) entries, and returns the owning place's grid
+    coordinates as a C-order tuple of ``grid_rank`` entries (or a plain int
+    for a 1-D grid). The trampoline converts to and from the native
+    dimension-0-fastest representation.
 
     Returns an owned :class:`_MapperCallbackState`. The caller must keep it alive
     for the lifetime of the composite data place (it retains the ctypes callback)
     and should call :meth:`_MapperCallbackState.raise_if_error` after the
     synchronous submission that triggered mapping.
     """
-    state = _MapperCallbackState(mapper)
+    if not 1 <= data_rank <= 4:
+        raise ValueError(f"data_rank must be between 1 and 4, got {data_rank}")
+    if not 1 <= grid_rank <= 4:
+        raise ValueError(f"grid_rank must be between 1 and 4, got {grid_rank}")
+    state = _MapperCallbackState(mapper, data_rank)
 
     def _trampoline(result_ptr, c_coords, c_data_dims, c_grid_dims):
         # Leave a valid in-range fallback (place 0) so STF never reads
@@ -440,21 +498,39 @@ def _make_mapper_callback(mapper):
         result_ptr[0].z = 0
         result_ptr[0].t = 0
         try:
-            coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)
-            data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
-            grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)
-            rx, ry, rz, rt = mapper(coords, data_dims, grid_dims)
-            out = (int(rx), int(ry), int(rz), int(rt))
+            native_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
+            # A declared rank that is too small is provably wrong: the data has
+            # a real (extent > 1) dimension the mapper would never see. The
+            # converse (data_rank too large) is undetectable here -- a public
+            # (n,) tensor and a public (1, n) tensor have identical native
+            # dims -- so it is a documented contract instead.
+            if any(e > 1 for e in native_dims[data_rank:]):
+                raise ValueError(
+                    f"composite mapper was created with data_rank={data_rank}, but the "
+                    f"partitioned data has a higher rank (native dims {native_dims}); "
+                    f"data_rank must equal the tensor's number of dimensions"
+                )
+            coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)[:data_rank][::-1]
+            data_dims = native_dims[:data_rank][::-1]
+            grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)[:grid_rank][::-1]
+            result = mapper(coords, data_dims, grid_dims)
+            if isinstance(result, _numbers.Integral):
+                result = (result,)
+            if len(result) != grid_rank:
+                raise ValueError(
+                    f"mapper returned {len(result)} grid coordinates, expected {grid_rank}")
+            out = tuple(int(c) for c in result)
             for value, extent in zip(out, grid_dims):
                 if value < 0 or (extent > 0 and value >= extent):
                     raise ValueError(
                         f"partition mapper returned out-of-range coordinate {out} "
                         f"for grid dims {grid_dims}"
                     )
-            result_ptr[0].x = out[0]
-            result_ptr[0].y = out[1]
-            result_ptr[0].z = out[2]
-            result_ptr[0].t = out[3]
+            native = out[::-1]
+            result_ptr[0].x = native[0]
+            result_ptr[0].y = native[1] if grid_rank > 1 else 0
+            result_ptr[0].z = native[2] if grid_rank > 2 else 0
+            result_ptr[0].t = native[3] if grid_rank > 3 else 0
         except BaseException as exc:  # noqa: BLE001 - must not escape into C
             if state.error is None:
                 state.error = exc
@@ -1108,6 +1184,28 @@ def locality_domain_count(int dev_id=0):
     return int(n)
 
 
+# SM split methods for locality-domain execution places (see the
+# ``sm_split`` parameter of ``exec_place.locality_domain`` /
+# ``exec_place_grid.locality_domains``): "backfill" covers the whole device
+# (each place is padded with SMs from outside its domain), while "aligned"
+# and "fine" are strictly per-domain (see the docstrings for the tradeoffs).
+_SM_SPLIT_METHODS = {
+    "backfill": STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL,
+    "aligned": STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED,
+    "fine": STF_LOCALITY_DOMAIN_SM_SPLIT_FINE,
+}
+
+
+cdef stf_locality_domain_sm_split _sm_split_from_str(sm_split) except *:
+    try:
+        return _SM_SPLIT_METHODS[sm_split]
+    except (KeyError, TypeError):
+        raise ValueError(
+            f"unknown sm_split {sm_split!r}; expected one of "
+            f"{sorted(_SM_SPLIT_METHODS)}"
+        ) from None
+
+
 def machine_init():
     """Initialize machine topology (P2P access, device memory pools).
 
@@ -1346,12 +1444,30 @@ cdef class exec_place:
         return p
 
     @staticmethod
-    def locality_domain(int dev_id, int domain_id):
+    def locality_domain(int dev_id, int domain_id, sm_split="backfill"):
         """Execution place pinned to one locality domain of a device (the
         whole device with the fallback backend). Ordinals are identity
-        tokens, validated lazily at use."""
+        tokens, validated lazily at use.
+
+        ``sm_split`` selects how the place's SM partition is carved out of
+        the device (native backend only; other backends ignore it):
+
+        - ``"backfill"`` (default): an even share of the device total,
+          backfilled by the driver to whole-device coverage across the
+          domain places. Backfilled SMs may sit outside the place's domain
+          (no memory affinity with it), and the partition does not support
+          launching thread-block clusters.
+        - ``"aligned"``: only SMs of the domain that form complete
+          co-scheduled groups at the device's default alignment; strictly
+          domain-affine and cluster-capable, but incomplete groups and SMs
+          outside any domain are left out.
+        - ``"fine"``: all of the domain's SMs at the finest co-scheduling
+          granularity; strictly domain-affine, at the cost of thread-block
+          cluster launches.
+        """
+        cdef stf_locality_domain_sm_split split = _sm_split_from_str(sm_split)
         cdef exec_place p = exec_place.__new__(exec_place)
-        p._h = stf_exec_place_locality_domain(dev_id, domain_id)
+        p._h = stf_exec_place_locality_domain_split(dev_id, domain_id, split)
         if p._h == NULL:
             raise RuntimeError("failed to create locality-domain exec place")
         return p
@@ -1613,7 +1729,8 @@ cdef class exec_place_grid(exec_place):
     """Grid of execution places (a subclass of exec_place).
 
     Use wherever an exec_place is expected.  Create with ``from_devices()``
-    or ``create()``.
+    or ``create()``. Grid shapes and axes follow the public C-order contract;
+    the grid's rank is stored at creation.
     """
     cdef object _mapper_keep_alive  # prevent GC of ctypes callback if mapper was set
     cdef int _grid_rank
@@ -1683,11 +1800,17 @@ cdef class exec_place_grid(exec_place):
         return g
 
     @staticmethod
-    def locality_domains(int dev_id=0):
+    def locality_domains(int dev_id=0, sm_split="backfill"):
         """Grid with one execution place per locality domain of a device
-        (a single whole-device place with the fallback backend)."""
+        (a single whole-device place with the fallback backend).
+
+        ``sm_split`` selects the SM split method applied to every place of
+        the grid (see ``exec_place.locality_domain``): with the default
+        ``"backfill"`` the grid members together cover the whole device,
+        while ``"aligned"`` and ``"fine"`` are strictly per-domain."""
+        cdef stf_locality_domain_sm_split split = _sm_split_from_str(sm_split)
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
-        g._h = stf_exec_place_locality_domain_grid(dev_id)
+        g._h = stf_exec_place_locality_domain_grid_split(dev_id, split)
         if g._h == NULL:
             raise RuntimeError("failed to create locality-domain grid")
         return g
@@ -1717,21 +1840,29 @@ cdef class exec_place_grid(exec_place):
         return g
 
     @staticmethod
-    def create(places, grid_dims=None, mapper=None):
+    def create(places, grid_dims=None, mapper=None, *, data_rank=None):
         """Create a grid from a list of exec_place objects.
 
         Parameters
         ----------
         places : list of exec_place
-            Individual execution places that form the grid.
+            Individual execution places that form the grid, enumerated in
+            C-order linear order over ``grid_dims``.
         grid_dims : tuple of int, optional
-            Shape of the grid as ``(x, y, z, t)``.  If *None*, a 1-D
-            grid of length ``len(places)`` is used.
+            C-order shape of the grid.  If *None*, a 1-D grid of length
+            ``len(places)`` is used.
         mapper : callable, optional
             If provided, a composite data place is created from this
             partitioner and set as the grid's affine data place so that
             dependencies with ``data_place.affine()`` resolve automatically.
-            Signature: ``(data_coords, data_dims, grid_dims) -> (x, y, z, t)``.
+            Signature: ``(data_coords, data_dims, grid_dims) -> grid_coords``,
+            all C-order tuples (see :meth:`data_place.composite`).
+        data_rank : int, keyword-only
+            Rank of the tensors the mapper partitions; must equal their
+            number of dimensions. Required when ``mapper`` is a Python
+            callable (the callback is shape-free, so the rank cannot be
+            inferred); rejected for a native partitioner (see
+            :meth:`data_place.composite`).
         """
         cdef size_t n = len(places)
         if n == 0:
@@ -1778,7 +1909,7 @@ cdef class exec_place_grid(exec_place):
             g._add_owner(ep)
 
         if mapper is not None:
-            dplace = data_place.composite(g, mapper)
+            dplace = data_place.composite(g, mapper, data_rank=data_rank)
             g.set_affine_data_place(dplace)
             g._mapper_keep_alive = dplace
 
@@ -1791,6 +1922,468 @@ cdef int _exec_place_grid_rank(exec_place place):
     if isinstance(place, exec_place_grid):
         return (<exec_place_grid>place)._grid_rank
     return 1
+
+
+def _public_axis_to_native(axis, int rank, what="axis"):
+    """Map a public C-order axis to the native dimension index."""
+    if isinstance(axis, bool) or not isinstance(axis, int):
+        raise TypeError(f"{what} must be an int, got {axis!r}")
+    if not 0 <= axis < rank:
+        raise ValueError(f"{what} {axis} is out of range for rank {rank}")
+    return rank - 1 - axis
+
+
+# Private construction token: native_partition_fn wraps a raw C function
+# pointer that the bindings later INVOKE, so a forged value (e.g.
+# native_partition_fn(123)) would crash the interpreter instead of raising.
+# Only the trusted factories below hold the token; foreign pointers must go
+# through the explicitly-unsafe from_raw_pointer().
+_NATIVE_PARTITION_FN_TOKEN = object()
+
+
+class native_partition_fn:
+    """A native (C++) partition function, as returned by
+    :func:`partition_fn_blocked` and :func:`partition_fn_cyclic`.
+
+    Wraps the raw function pointer so APIs taking a partitioner can tell a
+    hardcoded native policy apart from a Python callable by type: native
+    policies run entirely in C++ on the native representation (no FFI
+    callback cost) and are shape-free, so they never take ``data_rank``.
+    ``int(fn)`` exposes the raw pointer for advanced FFI use.
+
+    Instances are only produced by the ``partition_fn_*`` factories: the
+    wrapped pointer is *called* as a C function, so this type is deliberately
+    not constructible from an arbitrary integer. A pointer obtained from a
+    foreign FFI layer can be wrapped with :meth:`from_raw_pointer`, whose
+    caller vouches for its validity.
+    """
+
+    __slots__ = ("_ptr",)
+
+    def __init__(self, ptr, *, _token=None):
+        if _token is not _NATIVE_PARTITION_FN_TOKEN:
+            raise TypeError(
+                "native_partition_fn cannot be constructed from a raw value; use the "
+                "partition_fn_* factories, or native_partition_fn.from_raw_pointer() "
+                "for a pointer whose validity you vouch for")
+        ptr = int(ptr)
+        if ptr == 0:
+            raise ValueError("native partition function pointer must not be NULL")
+        self._ptr = ptr
+
+    @classmethod
+    def from_raw_pointer(cls, ptr):
+        """Wrap a raw ``stf_get_executor_fn`` pointer obtained through a
+        foreign FFI layer. The pointer is invoked as a C function during
+        placement operations: passing anything else is undefined behavior.
+        """
+        return cls(ptr, _token=_NATIVE_PARTITION_FN_TOKEN)
+
+    def __index__(self):
+        return self._ptr
+
+    def __repr__(self):
+        return f"native_partition_fn(0x{self._ptr:x})"
+
+
+def partition_fn_blocked(int axis=0, data_rank=None):
+    """Native blocked partition function along a public (C-order) tensor
+    axis, as a :class:`native_partition_fn` usable wherever a partitioner is
+    expected (no FFI callback cost).
+
+    ``axis`` 0 (the outermost dimension) without ``data_rank`` uses the
+    native adaptive default: it splits along the outermost dimension whose
+    extent is greater than one. Whenever the public outermost extent is > 1
+    this is exactly public axis 0; for a degenerate tensor whose outermost
+    extent is 1 it distributes along the outermost non-unit axis instead of
+    producing a single chunk. Pass ``data_rank`` to pin public axis 0
+    exactly. Any other axis requires ``data_rank`` so the public axis can
+    be mapped to the native dimension.
+    """
+    if axis == 0 and data_rank is None:
+        # Native -1 selects the highest-rank dimension, which is always the
+        # public outermost axis regardless of rank.
+        return native_partition_fn(<uintptr_t>stf_partition_fn_blocked(-1), _token=_NATIVE_PARTITION_FN_TOKEN)
+    if data_rank is None:
+        raise ValueError("partition_fn_blocked requires data_rank for a nonzero axis")
+    return native_partition_fn(
+        <uintptr_t>stf_partition_fn_blocked(
+            <int>_public_axis_to_native(axis, data_rank, "partition_fn_blocked axis")),
+        _token=_NATIVE_PARTITION_FN_TOKEN)
+
+
+def partition_fn_cyclic():
+    """Native cyclic (round-robin) partition function, as a
+    :class:`native_partition_fn` usable wherever a partitioner is expected."""
+    return native_partition_fn(<uintptr_t>stf_partition_fn_cyclic(), _token=_NATIVE_PARTITION_FN_TOKEN)
+
+
+#: Per-dimension policies accepted by cute_partition.from_spec
+_DIM_POLICIES = {"whole": 0, "blocked": 1, "cyclic": 2, "block_cyclic": 3}
+
+
+cdef class cute_partition:
+    """A structured description of how a tensor is distributed over a grid of
+    places, as a CuTe-style two-mode strided layout over the padded extents.
+
+    Build one from a JAX-like per-dimension specification with
+    :meth:`from_spec`, or directly from flattened leaves with
+    :meth:`from_leaves`. All shapes, axes, and leaves use the public C/row-
+    major contract: axis 0 is the outermost (slowest) dimension and the last
+    leaf is the fastest. Strides are in linear element units over the padded
+    extents. The stored tensor and grid ranks make the conversion to the
+    native dimension-0-fastest representation exact (extent-1 dimensions are
+    preserved, never trimmed).
+    """
+
+    cdef stf_cute_partition_handle _h
+    cdef int _rank
+    cdef int _grid_rank
+
+    def __init__(self):
+        raise TypeError("use cute_partition.from_spec() or cute_partition.from_leaves()")
+
+    def __dealloc__(self):
+        if self._h != NULL:
+            stf_cute_partition_destroy(self._h)
+            self._h = NULL
+
+    @staticmethod
+    def from_spec(true_dims, spec, grid_dims):
+        """Build a partition from one entry per tensor dimension (C order).
+
+        Each entry is ``None`` (dimension not distributed) or a tuple:
+        ``("blocked", axis)``, ``("cyclic", axis)``, or
+        ``("block_cyclic", axis, block)``, where *axis* is the C-order grid
+        axis the dimension distributes over. ``spec`` must have exactly one
+        entry per dimension of ``true_dims``, in the same C order. Split
+        dimensions are padded up to divisibility (coordinates beyond the true
+        extents own no bytes).
+
+        Example - 3-D tensor, dimension 1 blocked over grid axis 0::
+
+            part = cute_partition.from_spec((nz, ny, nx), (None, ("blocked", 0), None), (nplaces,))
+        """
+        public_dims = _validate_extents(true_dims, "true_dims")
+        public_grid = _validate_extents(grid_dims, "grid_dims")
+        cdef int rank = len(public_dims)
+        cdef int grid_rank = len(public_grid)
+        if len(spec) != rank:
+            raise ValueError(
+                f"spec must have one entry per dimension of true_dims "
+                f"({rank}), got {len(spec)}")
+        cdef stf_dim4 td, gd
+        _fill_dim4_c_order(public_dims, &td, u"true_dims")
+        _fill_dim4_c_order(public_grid, &gd, u"grid_dims")
+        cdef stf_partition_dim_spec[4] c_spec
+        # Native dimension i describes public dimension rank-1-i: reverse the
+        # spec together with the extents, and remap each grid axis.
+        for i, entry in enumerate(reversed(tuple(spec))):
+            if entry is None:
+                c_spec[i].policy = 0
+                c_spec[i].mesh_axis = -1
+                c_spec[i].block = 0
+                continue
+            policy = _DIM_POLICIES.get(entry[0])
+            if policy is None:
+                raise ValueError(f"unknown policy {entry[0]!r}; expected one of {sorted(_DIM_POLICIES)}")
+            c_spec[i].policy = policy
+            c_spec[i].mesh_axis = _public_axis_to_native(entry[1], grid_rank, "grid axis")
+            c_spec[i].block = entry[2] if policy == 3 else 0
+        cdef cute_partition p = cute_partition.__new__(cute_partition)
+        p._h = stf_cute_partition_create(&td, &gd, c_spec, <size_t>rank)
+        if p._h == NULL:
+            raise ValueError("invalid partition specification (see stderr for the underlying error)")
+        p._rank = rank
+        p._grid_rank = grid_rank
+        return p
+
+    @staticmethod
+    def from_leaves(place_leaves, local_leaves, padded_dims, true_dims, grid_dims):
+        """Build a partition from flattened leaves (expert form, C order).
+
+        ``place_leaves`` is a sequence of ``(extent, stride, grid_axis)``
+        tuples and ``local_leaves`` of ``(extent, stride)`` tuples, the last
+        leaf fastest (matching a row-major reading). Grid axes are C-order.
+        The leaves must tile the padded extents exactly.
+        """
+        public_padded = _validate_extents(padded_dims, "padded_dims")
+        public_dims = _validate_extents(true_dims, "true_dims")
+        public_grid = _validate_extents(grid_dims, "grid_dims")
+        cdef int rank = len(public_dims)
+        cdef int grid_rank = len(public_grid)
+        if len(public_padded) != rank:
+            raise ValueError(
+                f"padded_dims rank {len(public_padded)} does not match true_dims rank {rank}")
+        cdef stf_dim4 pd, td, gd
+        _fill_dim4_c_order(public_padded, &pd, u"padded_dims")
+        _fill_dim4_c_order(public_dims, &td, u"true_dims")
+        _fill_dim4_c_order(public_grid, &gd, u"grid_dims")
+        cdef size_t np_ = len(place_leaves)
+        cdef size_t nl = len(local_leaves)
+        if np_ > 16 or nl > 16:
+            raise ValueError("at most 16 leaves are supported per mode")
+        cdef uint64_t[16] p_ext
+        cdef uint64_t[16] l_ext
+        cdef int64_t[16] p_str
+        cdef int64_t[16] l_str
+        cdef int[16] p_axes
+        # Public leaves are last-fastest; the native representation is
+        # leaf-0-fastest: reverse the leaf order and remap the grid axes.
+        for i, (e, st, a) in enumerate(reversed(tuple(place_leaves))):
+            p_ext[i] = <uint64_t>e
+            p_str[i] = <int64_t>st
+            p_axes[i] = <int>_public_axis_to_native(a, grid_rank, "place-leaf grid axis")
+        for i, (e, st) in enumerate(reversed(tuple(local_leaves))):
+            l_ext[i] = <uint64_t>e
+            l_str[i] = <int64_t>st
+        cdef cute_partition p = cute_partition.__new__(cute_partition)
+        p._h = stf_cute_partition_from_leaves(
+            p_ext, p_str, p_axes, np_, l_ext, l_str, nl, &pd, &td, &gd)
+        if p._h == NULL:
+            raise ValueError("leaves do not describe an exact partition of the padded extents")
+        p._rank = rank
+        p._grid_rank = grid_rank
+        return p
+
+    @property
+    def rank(self):
+        """Tensor rank (number of public dimensions)."""
+        return self._rank
+
+    @property
+    def grid_rank(self):
+        """Rank of the grid of places."""
+        return self._grid_rank
+
+    @property
+    def true_dims(self):
+        """True tensor extents (C-order tuple of :attr:`rank` entries)."""
+        cdef stf_dim4 d
+        stf_cute_partition_true_dims(self._h, &d)
+        return _native_to_public((d.x, d.y, d.z, d.t), self._rank)
+
+    @property
+    def padded_dims(self):
+        """Padded tensor extents the leaf strides refer to (C-order tuple)."""
+        cdef stf_dim4 d
+        stf_cute_partition_padded_dims(self._h, &d)
+        return _native_to_public((d.x, d.y, d.z, d.t), self._rank)
+
+    @property
+    def grid_dims(self):
+        """Extents of the grid of places (C-order tuple of :attr:`grid_rank`
+        entries)."""
+        cdef stf_dim4 d
+        stf_cute_partition_grid_dims(self._h, &d)
+        return _native_to_public((d.x, d.y, d.z, d.t), self._grid_rank)
+
+    @property
+    def place_leaves(self):
+        """Leaves of the place mode as ``(extent, stride, grid_axis)`` tuples,
+        last leaf fastest, grid axes C-order."""
+        cdef size_t n = stf_cute_partition_num_place_leaves(self._h)
+        cdef uint64_t[16] ext
+        cdef int64_t[16] str_
+        cdef int[16] axes
+        if n > 16:
+            raise ValueError("at most 16 leaves are supported per mode")
+        if n > 0:
+            stf_cute_partition_get_place_leaves(self._h, ext, str_, axes)
+        return [(ext[i], str_[i], self._grid_rank - 1 - axes[i])
+                for i in reversed(range(n))]
+
+    @property
+    def local_leaves(self):
+        """Leaves of the local mode as ``(extent, stride)`` tuples, last leaf
+        fastest."""
+        cdef size_t n = stf_cute_partition_num_local_leaves(self._h)
+        cdef uint64_t[16] ext
+        cdef int64_t[16] str_
+        if n > 16:
+            raise ValueError("at most 16 leaves are supported per mode")
+        if n > 0:
+            stf_cute_partition_get_local_leaves(self._h, ext, str_)
+        return [(ext[i], str_[i]) for i in reversed(range(n))]
+
+    def place_offset(self, place_index):
+        """Linear element offset (in the padded space) of a place's first
+        element, given the place's linear index in *place-mode* order (the
+        leaf order of :attr:`place_leaves`). Note this is not the execution
+        grid's linear place order when tensor dimensions map to grid axes in
+        a different order; see :meth:`grid_place_offset`.
+        """
+        if isinstance(place_index, bool) or not isinstance(place_index, _numbers.Integral):
+            raise TypeError(f"place_index must be an integer, got {place_index!r}")
+        place_index = int(place_index)
+        total = 1
+        for extent, _, _ in self.place_leaves:
+            total *= extent
+        if not 0 <= place_index < total:
+            raise ValueError(f"place_index {place_index} out of range for {total} places")
+        cdef uint64_t offset = stf_cute_partition_place_offset(self._h, <uint64_t>place_index)
+        if offset == 0xffffffffffffffff:
+            raise ValueError(f"place_offset query failed for place_index {place_index}")
+        return offset
+
+    def owner(self, coords):
+        """Grid coordinates of the place owning the element at ``coords``.
+
+        ``coords`` is a C-order tuple of :attr:`rank` entries (within the
+        padded extents); the result is a C-order tuple of :attr:`grid_rank`
+        entries. Ownership is closed-form (no sampling); note that physical
+        placement of an allocation is page-granular and may only approximate
+        this element-level ownership (see :func:`placement_evaluate`).
+        """
+        coords = tuple(coords) if not isinstance(coords, int) else (coords,)
+        if len(coords) != self._rank:
+            raise ValueError(f"expected {self._rank} coordinates, got {len(coords)}")
+        cdef stf_pos4 c_coords
+        rev = tuple(int(c) for c in coords)[::-1] + (0,) * (4 - len(coords))
+        c_coords.x = rev[0]
+        c_coords.y = rev[1]
+        c_coords.z = rev[2]
+        c_coords.t = rev[3]
+        cdef stf_pos4 out
+        if stf_cute_partition_owner(self._h, &c_coords, &out) != 0:
+            raise ValueError(f"owner query failed for coordinates {coords} (out of the padded extents?)")
+        return _native_to_public((out.x, out.y, out.z, out.t), self._grid_rank)
+
+    def grid_place_offset(self, place_index):
+        """Linear element offset (in the padded space) of the first element
+        owned by the place at linear index ``place_index`` in the execution
+        grid's C-order enumeration (identical to the native linear order).
+        """
+        cdef stf_dim4 gd
+        stf_cute_partition_grid_dims(self._h, &gd)
+        cdef uint64_t total = gd.x * gd.y * gd.z * gd.t
+        if not 0 <= place_index < total:
+            raise ValueError(f"place_index {place_index} out of range for {total} places")
+        # Decode the grid-linear index into native grid coordinates
+        # (dimension 0 fastest), then dot with the place leaves through their
+        # native grid-axis bindings.
+        cdef uint64_t rem = <uint64_t>place_index
+        native_extents = (gd.x, gd.y, gd.z, gd.t)
+        coords = []
+        for e in native_extents:
+            coords.append(rem % e)
+            rem //= e
+        cdef size_t n = stf_cute_partition_num_place_leaves(self._h)
+        cdef uint64_t[16] ext
+        cdef int64_t[16] str_
+        cdef int[16] axes
+        if n > 0:
+            stf_cute_partition_get_place_leaves(self._h, ext, str_, axes)
+        cdef int64_t offset = 0
+        for i in range(n):
+            offset += <int64_t>coords[axes[i]] * str_[i]
+        return offset
+
+
+class placement_stats:
+    """Statistics describing how a localized allocation (or a dry-run
+    evaluation of one) distributes a tensor over data places."""
+
+    def __init__(self, total_bytes, vm_bytes, block_size, nblocks, nallocs,
+                 accuracy, bytes_per_grid_index):
+        self.total_bytes = total_bytes
+        self.vm_bytes = vm_bytes
+        self.block_size = block_size
+        self.nblocks = nblocks
+        self.nallocs = nallocs
+        #: fraction of bytes local to their owner once ownership is quantized
+        #: to placement blocks (exact for a cute_partition, a sampled estimate
+        #: for a callable mapper)
+        self.accuracy = accuracy
+        #: bytes owned by each grid position (list indexed by linear grid index)
+        self.bytes_per_grid_index = bytes_per_grid_index
+
+    def __repr__(self):
+        return (f"placement_stats(total_bytes={self.total_bytes}, nblocks={self.nblocks}, "
+                f"nallocs={self.nallocs}, accuracy={self.accuracy:.3f}, "
+                f"bytes_per_grid_index={self.bytes_per_grid_index})")
+
+
+def placement_evaluate(exec_place grid, mapper, data_dims, elemsize, probes=0, block_size=0):
+    """Evaluate - without allocating - how a localized allocation would
+    distribute a tensor over the places of a grid.
+
+    Runs the exact same block-owner decision procedure as the allocation path
+    and returns a :class:`placement_stats`, so a candidate mapping can be
+    scored (and its parameters tuned) before committing memory.
+
+    ``mapper`` is a :class:`cute_partition`, a native partition function
+    (:class:`native_partition_fn`, see :func:`partition_fn_blocked`), or a
+    Python callable
+    ``(data_coords, data_dims, grid_dims) -> grid_coords`` where every tuple
+    is C-order (``data_coords``/``data_dims`` have ``len(data_dims)`` entries
+    and ``grid_dims``/``grid_coords`` the grid's rank). Note the callable
+    form crosses the GIL for every probe: the structured/native forms are the
+    fast path.
+
+    ``probes`` and ``block_size`` of 0 select the defaults (10 samples per
+    block; the allocation granularity queried on device 0, assumed uniform
+    across devices, or 2 MiB without a GPU).
+    """
+    cdef stf_dim4 dims
+    cdef stf_dim4 gd
+    cdef stf_placement_stats c_stats
+    if grid._h == NULL:
+        raise RuntimeError("exec_place handle is null")
+    stf_exec_place_get_dims(grid._h, &gd)
+    cdef size_t grid_size = gd.x * gd.y * gd.z * gd.t
+    cdef uint64_t* per_pos = <uint64_t*>malloc(grid_size * sizeof(uint64_t))
+    if per_pos == NULL:
+        raise MemoryError()
+
+    cdef uintptr_t ptr_val
+    cdef int rc
+    cdef cute_partition part
+    try:
+        if isinstance(mapper, cute_partition):
+            part = <cute_partition>mapper
+            if data_dims is not None and _validate_extents(data_dims, "data_dims") != tuple(part.true_dims):
+                raise ValueError(
+                    f"data_dims {data_dims} do not match the partition's true extents {part.true_dims} "
+                    "(pass None to use the partition's extents)")
+            rc = stf_placement_evaluate_partition(
+                grid._h, part._h, <uint64_t>elemsize, <uint64_t>probes, <uint64_t>block_size,
+                &c_stats, per_pos)
+        else:
+            public_dims = _validate_extents(data_dims, "data_dims")
+            _fill_dim4_c_order(public_dims, &dims, u"data_dims")
+            mapper_state = None
+            if isinstance(mapper, bool):
+                raise TypeError("mapper must not be a bool")
+            elif isinstance(mapper, native_partition_fn):
+                ptr_val = <uintptr_t>int(mapper)
+                if ptr_val == 0:
+                    raise ValueError("mapper function pointer must not be NULL")
+            elif callable(mapper):
+                mapper_state = _make_mapper_callback(
+                    mapper, len(public_dims), _exec_place_grid_rank(grid))
+                ptr_val = mapper_state.c_ptr
+            else:
+                raise TypeError(
+                    "mapper must be a cute_partition, a native_partition_fn, or a callable")
+            rc = stf_placement_evaluate(
+                grid._h, <stf_get_executor_fn>ptr_val, &dims, <uint64_t>elemsize,
+                <uint64_t>probes, <uint64_t>block_size, &c_stats, per_pos)
+            if mapper_state is not None and mapper_state.error is not None:
+                raise RuntimeError("the mapper raised during placement evaluation") from mapper_state.error
+        if rc != 0:
+            raise RuntimeError("placement evaluation failed (see stderr for the underlying error)")
+
+        return placement_stats(
+            c_stats.total_bytes,
+            c_stats.vm_bytes,
+            c_stats.block_size,
+            c_stats.nblocks,
+            c_stats.nallocs,
+            c_stats.accuracy,
+            [per_pos[i] for i in range(grid_size)])
+    finally:
+        free(per_pos)
 
 
 cdef class data_place:
@@ -1911,44 +2504,111 @@ cdef class data_place:
         return p
 
     @staticmethod
-    def composite(exec_place grid, object mapper):
+    def composite(exec_place grid, object mapper, *, data_rank=None):
         """Create a composite data place: grid of execution places + partition function.
 
         The partitioner (mapper) is a callable with signature::
 
-            (data_coords, data_dims, grid_dims) -> (x, y, z, t)
+            (data_coords, data_dims, grid_dims) -> grid_coords
 
-        Each argument/return is a 4-tuple of integers:
+        Every argument and the return value are C-order tuples of integers:
+        ``data_coords`` and ``data_dims`` have ``data_rank`` entries,
+        ``grid_dims`` and the returned ``grid_coords`` have the grid's rank
+        (a plain int is accepted for a 1-D grid).
 
         - *data_coords*: logical position in the data
         - *data_dims*: full shape of the data
         - *grid_dims*: shape of the execution place grid
         - return: position in the grid (which place owns this data element)
 
-        Example — blocked partition along first dimension::
+        Example — blocked partition along the outermost dimension::
 
             def blocked_1d(data_coords, data_dims, grid_dims):
                 n = data_dims[0]
                 nplaces = grid_dims[0]
                 part_size = max((n + nplaces - 1) // nplaces, 1)
-                place_x = min(data_coords[0] // part_size, nplaces - 1)
-                return (place_x, 0, 0, 0)
+                return min(data_coords[0] // part_size, nplaces - 1)
 
             grid = exec_place_grid.from_devices([0, 1])
-            dplace = data_place.composite(grid, blocked_1d)
+            dplace = data_place.composite(grid, blocked_1d, data_rank=1)
+
+        Three kinds of partitioner are accepted, distinguished by type:
+
+        ============================================  =============  ==============
+        partitioner                                   ``data_rank``  runs in
+        ============================================  =============  ==============
+        Python callable                               required       Python (FFI)
+        :class:`native_partition_fn`                  rejected       C++
+        :class:`cute_partition` (via
+        :meth:`composite_cute`)                       rejected       C++
+        ============================================  =============  ==============
+
+        ``data_rank`` is required for Python callables because the callback
+        API is shape-free: the tensor rank cannot be inferred, and it must
+        equal the partitioned tensor's number of dimensions. A too-small
+        value is detected and raises when the mapper runs; a too-large value
+        is indistinguishable from data with leading extent-1 axes and would
+        silently change which axes the mapper sees. Native partitioners (from
+        :func:`partition_fn_blocked` / :func:`partition_fn_cyclic`) are
+        shape-free by construction and reject ``data_rank``.
+
+        What the mapper partitions depends on how the place is used. Shaped
+        allocations (``allocate((extents, ...), elemsize=...)``, a
+        :class:`DeviceArray` on this place) invoke it with true element
+        coordinates of the declared rank. Task-backed logical data currently
+        reaches the native layer as a flat byte buffer
+        (``stf_logical_data(addr, nbytes)``), so that path accepts only a
+        ``data_rank=1`` Python mapper; higher-rank places are rejected instead
+        of silently interpreting byte offsets as element coordinates.
         """
-        if not callable(mapper):
-            raise TypeError(
-                "mapper must be callable: (data_coords, data_dims, grid_dims) -> (x, y, z, t)")
-        cdef object state = _make_mapper_callback(mapper)
         cdef data_place p = data_place.__new__(data_place)
-        p._mapper_callback = state
-        cdef uintptr_t ptr_val = state.c_ptr
+        cdef uintptr_t ptr_val
+        cdef object state
+        if isinstance(mapper, bool):
+            raise TypeError("mapper must be a partition function or a callable, not a bool")
+        if isinstance(mapper, native_partition_fn):
+            if data_rank is not None:
+                raise ValueError(
+                    "data_rank only applies to Python callables; a native partition "
+                    "function is shape-free")
+            ptr_val = <uintptr_t>int(mapper)
+            if ptr_val == 0:
+                raise ValueError("mapper function pointer must not be NULL")
+        elif callable(mapper):
+            if data_rank is None:
+                raise ValueError(
+                    "data_place.composite requires data_rank for a Python mapper "
+                    "(the callback is shape-free, so the tensor rank cannot be inferred)")
+            state = _make_mapper_callback(mapper, data_rank, _exec_place_grid_rank(grid))
+            p._mapper_callback = state
+            ptr_val = state.c_ptr
+        else:
+            raise TypeError(
+                "mapper must be callable (data_coords, data_dims, grid_dims) -> grid_coords "
+                "or a native_partition_fn")
         p._h = stf_data_place_composite(grid._h, <stf_get_executor_fn>ptr_val)
         if p._h == NULL:
             raise RuntimeError("failed to create composite data_place")
         # The composite place references the grid's sub-place handles and the
         # ctypes mapper closure; retain both for this place's lifetime.
+        p._add_owner(grid)
+        return p
+
+    @staticmethod
+    def composite_cute(exec_place grid, cute_partition partition):
+        """Create a composite data place backed by a structured partition.
+
+        Such a place is specific to one tensor (the partition's true extents):
+        allocate with ``allocate(dims, elemsize=...)`` using those extents.
+        """
+        cdef data_place p = data_place.__new__(data_place)
+        p._h = stf_data_place_composite_cute(grid._h, partition._h)
+        if p._h == NULL:
+            raise RuntimeError("failed to create cute composite data_place")
+        # The C++ place copies the exec_place (a shared handle) and the
+        # partition descriptor by value, so no retain is strictly required;
+        # keep the grid alive anyway so both composite constructors share
+        # the same lifetime story.
         p._add_owner(grid)
         return p
 
@@ -1961,17 +2621,22 @@ cdef class data_place:
     def device_id(self) -> int:
         return stf_data_place_get_device_ordinal(self._h)
 
-    def allocate(self, Py_ssize_t nbytes, stream=None):
-        """Allocate *nbytes* on this data place.
+    def allocate(self, size_or_dims, stream=None, *, elemsize=1):
+        """Allocate memory on this data place.
 
         Parameters
         ----------
-        nbytes : int
-            Number of bytes to allocate.
+        size_or_dims : int or sequence of int
+            Either a byte count, or the tensor extents (C order, at most 4
+            dimensions). Composite places require the extents form: their
+            partitioner maps element coordinates to places, which a byte
+            count alone cannot express.
         stream : optional
             CUDA stream for stream-ordered allocation (int, CudaStream, or
             any object implementing ``__cuda_stream__``).  ``None`` uses the
             default (null) stream.
+        elemsize : int, keyword-only
+            Size of one element in bytes (extents form only).
 
         Returns
         -------
@@ -1981,18 +2646,43 @@ cdef class data_place:
         Raises
         ------
         MemoryError
-            If the underlying place cannot allocate (out of memory, or
-            the place type does not support allocation).
+            If the underlying place cannot allocate (out of memory, missing
+            geometry on a composite place, or the place type does not
+            support allocation).
         ValueError
-            If ``nbytes`` is negative.
+            If a byte count is negative.
         """
-        if nbytes < 0:
-            raise ValueError(f"nbytes must be non-negative, got {nbytes}")
         cdef uintptr_t s_val = _get_stream_pointer(stream)
         cdef cudaStream_t s = <cudaStream_t>s_val
-        cdef void* ptr = stf_data_place_allocate(self._h, <ptrdiff_t>nbytes, s)
-        if ptr == NULL:
-            raise MemoryError(f"data_place.allocate failed for {nbytes} bytes")
+        cdef stf_dim4 dims
+        cdef void* ptr
+        if isinstance(size_or_dims, (tuple, list)):
+            _fill_dim4_c_order(size_or_dims, &dims, u"extents")
+            ptr = stf_data_place_allocate_nd(self._h, &dims, <uint64_t>elemsize, s)
+            # A Python mapper failure during a composite allocation cannot
+            # cross the C boundary: it is stashed in the callback state (the
+            # native side falls back to place 0). Surface it here, before the
+            # generic failure, so misuse raises instead of silently
+            # misplacing every block. The fallback-placed allocation, if any,
+            # is released first: the caller never sees its pointer.
+            if self._mapper_callback is not None and self._mapper_callback.error is not None:
+                if ptr != NULL:
+                    nbytes_alloc = <uint64_t>elemsize
+                    for e in size_or_dims:
+                        nbytes_alloc *= <uint64_t>e
+                    stf_data_place_deallocate(self._h, ptr, <size_t>nbytes_alloc, s)
+                self._mapper_callback.raise_if_error()
+            if ptr == NULL:
+                raise MemoryError(
+                    f"data_place.allocate failed for extents {tuple(size_or_dims)} x {elemsize} bytes")
+        else:
+            if elemsize != 1:
+                raise ValueError("elemsize is only meaningful with the extents form; pass a tuple of extents")
+            if size_or_dims < 0:
+                raise ValueError(f"byte count must be non-negative, got {size_or_dims}")
+            ptr = stf_data_place_allocate(self._h, <ptrdiff_t>size_or_dims, s)
+            if ptr == NULL:
+                raise MemoryError(f"data_place.allocate failed for {size_or_dims} bytes")
         return <uintptr_t>ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, stream=None):
@@ -2061,6 +2751,17 @@ cdef _raise_first_mapper_error(list states):
             st.raise_if_error()
 
 
+cdef _reject_ranked_mapper_on_task_path(list states):
+    """Reject Python mappers that need geometry the task path cannot carry."""
+    for st in states:
+        if st.data_rank > 1:
+            raise ValueError(
+                f"a data_rank={st.data_rank} Python partition mapper cannot be used "
+                "with task-backed logical data: that path currently exposes a flat "
+                "rank-1 byte buffer; use data_rank=1 or a native partition function"
+            )
+
+
 cdef class task:
     cdef stf_task_handle _t
     cdef stf_ctx_handle _ctx
@@ -2075,6 +2776,10 @@ cdef class task:
     # Composite-place mapper states referenced by this task's exec place or
     # deps; checked after start() so a mapper failure surfaces as a Python error.
     cdef list _mapper_states
+    # Mapper states inherited from the execution place's affine data place.
+    # These apply only to dependencies without an explicit data-place override.
+    cdef list _default_mapper_states
+    cdef bint _has_default_dplace_dep
     # Shared "alive" sentinel from the parent context. See context._alive.
     cdef _AliveFlag _alive
     # Grid rank of the exec place set through set_exec_place (1 = scalar)
@@ -2088,6 +2793,8 @@ cdef class task:
         self._lds_args = []
         self._owners = []
         self._mapper_states = []
+        self._default_mapper_states = []
+        self._has_default_dplace_dep = False
         self._alive = ctx._alive
         self._grid_rank = 1
 
@@ -2102,6 +2809,8 @@ cdef class task:
         self._t = NULL
 
     def start(self):
+        if self._has_default_dplace_dep:
+            _reject_ranked_mapper_on_task_path(self._default_mapper_states)
         # This is ignored if this is not a graph task
         stf_task_enable_capture(self._t)
 
@@ -2138,20 +2847,27 @@ cdef class task:
         cdef int           mode_int  = int(d.mode)
         cdef stf_access_mode mode_ce = <stf_access_mode> mode_int
         cdef data_place dp
+        cdef list states
 
         if ldata._ctx != self._ctx:
             raise ValueError("dep logical_data belongs to a different context")
 
         if d.dplace is None:
+            self._has_default_dplace_dep = True
             stf_task_add_dep(self._t, ldata._ld, mode_ce)
         else:
             if not isinstance(d.dplace, data_place):
                 raise TypeError("dep data_place override must be a data_place")
             dp = <data_place> d.dplace
+            states = []
+            _collect_mapper_states_from(dp, states, set())
+            _reject_ranked_mapper_on_task_path(states)
             stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, dp._h)
             # Retain the override data place for the task's lifetime.
             self._owners.append(dp)
-            _collect_mapper_states_from(dp, self._mapper_states, set())
+            for state in states:
+                if state not in self._mapper_states:
+                    self._mapper_states.append(state)
 
         self._lds_args.append(ldata)
 
@@ -2167,7 +2883,10 @@ cdef class task:
         self._grid_rank = _exec_place_grid_rank(ep)
         # Retain the exec place (and its owner chain) for the task's lifetime.
         self._owners.append(ep)
-        _collect_mapper_states_from(ep, self._mapper_states, set())
+        _collect_mapper_states_from(ep, self._default_mapper_states, set())
+        for state in self._default_mapper_states:
+            if state not in self._mapper_states:
+                self._mapper_states.append(state)
 
     def stream_ptr(self):
         """Return a :class:`CudaStream` for this task's CUDA stream.
@@ -2339,6 +3058,8 @@ cdef class cuda_kernel:
         self._k = NULL
 
     def start(self):
+        if self._lds_args:
+            _reject_ranked_mapper_on_task_path(self._mapper_states)
         stf_cuda_kernel_start(self._k)
         if self._mapper_states:
             try:

@@ -61,7 +61,7 @@ _CCCL_CONCEPT __integer_like_with_usable_difference_type =
   __signed_integer_like<_Tp> || (__integer_like<_Tp> && weakly_incrementable<_Tp>);
 
 template <class _Tp>
-using __repeat_view_iterator_difference_t _CCCL_NODEBUG_ALIAS = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
+using __repeat_view_iterator_difference_t _CCCL_NODEBUG = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp, semiregular _Bound = unreachable_sentinel_t>
@@ -86,7 +86,7 @@ public:
   {
     friend class repeat_view;
 
-    using _IndexT _CCCL_NODEBUG_ALIAS = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
+    using _IndexT _CCCL_NODEBUG = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
 
     _CCCL_API constexpr explicit __iterator(const _Tp* __value, _IndexT __bound_sentinel = _IndexT()) noexcept(
       is_nothrow_copy_constructible_v<_IndexT>)
@@ -305,14 +305,9 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _B
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
-_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 
+_CCCL_BEGIN_NAMESPACE_CPO(__repeat)
 struct __fn
 {
   template <class _Tp>
@@ -331,18 +326,14 @@ struct __fn
     return ranges::repeat_view(::cuda::std::forward<_Tp>(__value), ::cuda::std::forward<_Bound>(__bound_sentinel));
   }
 };
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto repeat = __repeat::__fn{};
 } // namespace __cpo
+
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 

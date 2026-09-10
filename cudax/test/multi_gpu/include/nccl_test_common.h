@@ -30,7 +30,7 @@ namespace cudax = ::cuda::experimental;
 namespace nccl_test_util
 {
 // One stream per rank, each current on its own device.
-[[nodiscard]] inline std::vector<cudax::stream> make_streams()
+[[nodiscard]] inline std::vector<cuda::stream> make_streams()
 {
   return {cuda::devices.begin(), cuda::devices.end()};
 }

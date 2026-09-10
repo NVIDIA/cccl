@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
@@ -135,7 +136,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.thr
     const BufferOffsetT buffer_id = block_buffer_id;
 
     // The relative offset of this tile within the buffer it's assigned to
-    BufferSizeT tile_offset_within_buffer =
+    const BufferSizeT tile_offset_within_buffer =
       static_cast<BufferSizeT>(tile_id - buffer_tile_offsets[buffer_id]) * TILE_SIZE;
 
     // If the tile has already reached beyond the work of the end of the last buffer
@@ -323,6 +324,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceBatchMemcpy", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   enum : uint32_t

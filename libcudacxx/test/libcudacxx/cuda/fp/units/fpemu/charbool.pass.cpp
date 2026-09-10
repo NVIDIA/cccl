@@ -22,19 +22,19 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // bool and character types must be constructible (mirrors double), while 128-bit
 // integers remain deleted.
-static_assert(cuda::std::is_constructible_v<fpemu<double>, bool>);
-static_assert(cuda::std::is_constructible_v<fpemu<double>, char>);
-static_assert(cuda::std::is_constructible_v<fpemu<double>, signed char>);
-static_assert(cuda::std::is_constructible_v<fpemu<double>, unsigned char>);
-static_assert(cuda::std::is_constructible_v<fpemu<double>, wchar_t>);
-static_assert(cuda::std::is_constructible_v<fpemu_unpacked<double>, bool>);
-static_assert(cuda::std::is_constructible_v<fpemu_unpacked<double>, char>);
-static_assert(cuda::std::is_constructible_v<fpemu_unpacked<double>, signed char>);
-static_assert(cuda::std::is_constructible_v<fpemu_unpacked<double>, unsigned char>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu<double>, bool>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu<double>, char>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu<double>, signed char>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu<double>, unsigned char>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu<double>, wchar_t>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, bool>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, char>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, signed char>);
+static_assert(cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, unsigned char>);
 
 template <class FP>
 TEST_HOST_DEVICE_FUNC void test()
@@ -73,8 +73,8 @@ TEST_HOST_DEVICE_FUNC void test()
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  test<fpemu<double>>();
-  test<fpemu_unpacked<double>>();
+  test<cudax::fpemu<double>>();
+  test<cudax::fpemu_unpacked<double>>();
 }
 
 int main(int, char**)

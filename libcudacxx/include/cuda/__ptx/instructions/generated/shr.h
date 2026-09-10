@@ -1,5 +1,8 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_SHR_H_
 #define _CUDA_PTX_GENERATED_SHR_H_
 
@@ -12,7 +15,7 @@ __device__ static inline B16 shr(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 shr(_B16 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _B16 shr(_B16 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   static_assert(sizeof(_B16) == 2);
   static_assert(sizeof(_B16) == 2);
@@ -37,7 +40,7 @@ template <
   typename _B32,
   ::cuda::std::enable_if_t<sizeof(_B32) == 4 && !(::cuda::std::is_integral_v<_B32> && ::cuda::std::is_signed_v<_B32>),
                            bool> = true>
-_CCCL_DEVICE static inline _B32 shr(_B32 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _B32 shr(_B32 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   ::cuda::std::uint32_t __dest;
   asm("shr.b32 %0, %1, %2;"
@@ -60,7 +63,7 @@ template <
   typename _B64,
   ::cuda::std::enable_if_t<sizeof(_B64) == 8 && !(::cuda::std::is_integral_v<_B64> && ::cuda::std::is_signed_v<_B64>),
                            bool> = true>
-_CCCL_DEVICE static inline _B64 shr(_B64 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _B64 shr(_B64 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   ::cuda::std::uint64_t __dest;
   asm("shr.b64 %0, %1, %2;"
@@ -80,7 +83,7 @@ __device__ static inline int16_t shr(
 */
 #if __cccl_ptx_isa >= 100
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::int16_t shr(::cuda::std::int16_t __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API ::cuda::std::int16_t shr(::cuda::std::int16_t __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   ::cuda::std::int16_t __dest;
   asm("shr.s16 %0, %1, %2;" : "=h"(__dest) : "h"(__a_reg), "r"(__b_reg) :);
@@ -99,7 +102,7 @@ __device__ static inline S32 shr(
 template <typename _S32,
           ::cuda::std::enable_if_t<sizeof(_S32) == 4 && ::cuda::std::is_integral_v<_S32>&& ::cuda::std::is_signed_v<_S32>,
                                    bool> = true>
-_CCCL_DEVICE static inline _S32 shr(_S32 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _S32 shr(_S32 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   ::cuda::std::int32_t __dest;
   asm("shr.s32 %0, %1, %2;"
@@ -121,7 +124,7 @@ __device__ static inline S64 shr(
 template <typename _S64,
           ::cuda::std::enable_if_t<sizeof(_S64) == 8 && ::cuda::std::is_integral_v<_S64>&& ::cuda::std::is_signed_v<_S64>,
                                    bool> = true>
-_CCCL_DEVICE static inline _S64 shr(_S64 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _S64 shr(_S64 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   ::cuda::std::int64_t __dest;
   asm("shr.s64 %0, %1, %2;"
@@ -131,5 +134,7 @@ _CCCL_DEVICE static inline _S64 shr(_S64 __a_reg, ::cuda::std::uint32_t __b_reg)
   return *reinterpret_cast<_S64*>(&__dest);
 }
 #endif // __cccl_ptx_isa >= 100
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_SHR_H_

@@ -168,6 +168,9 @@ public:
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> peers() const; // implemented in
                                                                                   // <cuda/__device/physical_device.h>
                                                                                   // to avoid circular dependency
+
+  // implemented in cuda/__device/physical_device.h> to avoid circular dependency
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref> __locality_domains() const;
 };
 
 _CCCL_DIAG_POP

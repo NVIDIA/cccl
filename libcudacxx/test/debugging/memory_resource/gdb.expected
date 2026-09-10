@@ -1,9 +1,54 @@
-=============== memory_resource.device begin ===============
-cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
-=============== memory_resource.device end ===============
+=============== memory_resource.in_situ begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=<address> (in-situ) = {
+  resource = <address>
+}
+=============== memory_resource.in_situ end ===============
+=============== memory_resource.heap begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=<address> (heap) = {
+  resource = <address>
+}
+=============== memory_resource.heap end ===============
+=============== memory_resource.synchronous begin ===============
+cuda::mr::any_synchronous_resource<cuda::mr::device_accessible> storage=<address> (in-situ) = {
+  resource = <address>
+}
+=============== memory_resource.synchronous end ===============
 =============== memory_resource.host_device begin ===============
-cuda::mr::any_resource<cuda::mr::device_accessible, cuda::mr::host_accessible> @ <address>
+cuda::mr::any_resource<cuda::mr::device_accessible, cuda::mr::host_accessible> storage=<address> (in-situ) = {
+  resource = <address>
+}
 =============== memory_resource.host_device end ===============
+=============== memory_resource.propertyless begin ===============
+cuda::mr::any_resource<> storage=<address> (in-situ) = {
+  resource = <address>
+}
+=============== memory_resource.propertyless end ===============
 =============== memory_resource.alias begin ===============
-cuda::mr::any_resource<cuda::mr::device_accessible> @ <address>
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=<address> (in-situ) = {
+  resource = <address>
+}
 =============== memory_resource.alias end ===============
+=============== memory_resource.empty begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=0x0
+=============== memory_resource.empty end ===============
+=============== memory_resource.reset.before begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=<address> (in-situ) = {
+  resource = <address>
+}
+=============== memory_resource.reset.before end ===============
+=============== memory_resource.reset.after begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=0x0
+=============== memory_resource.reset.after end ===============
+=============== memory_resource.move.before begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=<address> (heap) = {
+  resource = <address>
+}
+=============== memory_resource.move.before end ===============
+=============== memory_resource.move.after.source begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=0x0
+=============== memory_resource.move.after.source end ===============
+=============== memory_resource.move.after.target begin ===============
+cuda::mr::any_resource<cuda::mr::device_accessible> storage=<address> (heap) = {
+  resource = <address>
+}
+=============== memory_resource.move.after.target end ===============

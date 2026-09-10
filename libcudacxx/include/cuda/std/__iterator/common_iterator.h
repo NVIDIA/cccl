@@ -48,7 +48,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
 template <class _Iter>
-_CCCL_CONCEPT __postfix_can_reference = _CCCL_REQUIRES_EXPR((_Iter), _Iter& __it)(_Satisfies(__can_reference) * __it++);
+_CCCL_CONCEPT __postfix_can_reference = _CCCL_REQUIRES_EXPR((_Iter), _Iter& __it)(_Satisfies(__referenceable) * __it++);
 
 template <class _Iter>
 _CCCL_CONCEPT __use_postfix_proxy = _CCCL_REQUIRES_EXPR((_Iter), )(

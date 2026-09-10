@@ -26,9 +26,8 @@ git clone --depth 1 git@github.com:NVIDIA/cccl.git
 cd cccl
 
 # configure cmake
-mkdir build_perf
+cmake -S . -B build_perf --preset $benchmark_preset
 cd build_perf
-cmake .. --preset $benchmark_preset
 
 # run benchmarks
 export CUDA_VISIBLE_DEVICES=0

@@ -63,7 +63,7 @@ _CCCL_CONCEPT __transform_view_constraints = _CCCL_REQUIRES_EXPR((_View, _Fn))(
   requires(view<_View>),
   requires(is_object_v<_Fn>),
   requires(regular_invocable<_Fn&, range_reference_t<_View>>),
-  requires(__can_reference<invoke_result_t<_Fn&, range_reference_t<_View>>>));
+  requires(__referenceable<invoke_result_t<_Fn&, range_reference_t<_View>>>));
 
 template <class, class, class = void>
 struct __transform_view_iterator_category_base
@@ -505,13 +505,8 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES transform_view(_Range&&, _Fn)
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
+
 _CCCL_BEGIN_NAMESPACE_CPO(__transform)
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   template <class _Range, class _Fn>
@@ -530,11 +525,6 @@ struct __fn
     return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Fn>(__f)));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

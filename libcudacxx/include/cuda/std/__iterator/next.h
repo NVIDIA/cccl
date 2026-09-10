@@ -48,13 +48,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
 // [range.iter.op.next]
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
 _CCCL_BEGIN_NAMESPACE_CPO(__next)
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -94,11 +89,6 @@ struct __fn
     return __x;
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

@@ -20,7 +20,7 @@
 (cuda::timed_event) <address> (handle = 0x0000000000000000)
 =============== event.timed_no_init end ===============
 =============== event.nested begin ===============
-(cuda::std::array<cuda::event_ref, 2>) <address>: {
+(const cuda::std::array<cuda::event_ref, 2> &) <address>: {
   [0] = (handle = <address>)
   [1] = (handle = 0x0000000000000000)
 }

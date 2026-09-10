@@ -59,11 +59,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cuda>
 {
@@ -82,7 +77,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
 
     // Determine temporary device storage requirements for device_partition
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DevicePartition::If,
       "__pstl_cuda_partition: determination of device storage for cub::DevicePartition::If failed",
       static_cast<void*>(nullptr),
@@ -98,7 +93,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
       __temporary_storage<_OffsetType, value_type> __storage{__policy, __num_bytes, 1, __count};
 
       // Partition cannot run inplace, so we need to first copy the input into temporary storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
         "__pstl_cuda_partition: kernel launch of cub::DeviceTransform::TransformIf failed",
         tuple<_InputIterator>{__first},
@@ -109,7 +104,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __policy);
 
       // Run the kernel, the standard requires that the input and output range do not overlap
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DevicePartition::If,
         "__pstl_cuda_partition: kernel launch of cub::DevicePartition::If failed",
         __storage.__get_temp_storage(),
@@ -122,7 +117,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_partition: copy of result from device to host failed",
         ::cuda::std::addressof(__num_selected),
@@ -167,10 +162,6 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
     }
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

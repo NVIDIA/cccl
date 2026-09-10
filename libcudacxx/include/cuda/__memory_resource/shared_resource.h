@@ -254,7 +254,7 @@ private:
 //!
 //! @endrst
 template <class _Resource, class... _Args>
-_CCCL_HOST_API auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
+[[nodiscard]] _CCCL_HOST_API auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
   static_assert(::cuda::mr::synchronous_resource<_Resource>,
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");

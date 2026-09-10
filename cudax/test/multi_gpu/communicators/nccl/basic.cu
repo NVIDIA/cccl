@@ -95,12 +95,12 @@ C2H_TEST("nccl_communicator basic", "[multi_gpu][nccl]")
   {
     STATIC_REQUIRE(
       cuda::std::is_same_v<decltype(cudax::nccl_communicator::from_native_handle(
-                             cuda::std::declval<ncclComm_t>(), cuda::std::declval<cudax::logical_device>())),
+                             cuda::std::declval<ncclComm_t>(), cuda::std::declval<cuda::__logical_device_ref>())),
                            cudax::nccl_communicator>);
 
     //! [nccl_communicator_construction_with_logical_device]
     const ncclComm_t handle = make_nccl_communicator_handle();
-    const auto device       = cudax::logical_device{cuda::devices[0]};
+    const auto device       = cuda::__logical_device{cuda::devices[0]};
 
     auto comm = cudax::nccl_communicator::from_native_handle(handle, device);
 
@@ -215,9 +215,9 @@ MULTI_GPU_TEST("nccl_communicator_ref basic", )
   {
     if (cuda::devices.size() > 1)
     {
-      REQUIRE_THROWS_WITH(
-        cudax::nccl_communicator_ref(this->communicators()[0].native_handle(), cudax::logical_device{cuda::devices[1]}),
-        "Inconsistent devices, NCCL communicator device and provided logical device do not match");
+      REQUIRE_THROWS_WITH(cudax::nccl_communicator_ref(
+                            this->communicators()[0].native_handle(), cuda::__logical_device{cuda::devices[1]}),
+                          "Inconsistent devices, NCCL communicator device and provided logical device do not match");
     }
   }
 }

@@ -49,11 +49,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
 struct __zv_functors
@@ -204,7 +199,7 @@ public:
     else if constexpr (__zip_all_random_access</*const*/ false, _Views...>)
     {
       // MSVC cannot deal with iter_difference_t here
-      using __diff_t _CCCL_NODEBUG_ALIAS = common_type_t<range_difference_t<_Views>...>;
+      using __diff_t _CCCL_NODEBUG = common_type_t<range_difference_t<_Views>...>;
 
       return begin() + static_cast<__diff_t>(size());
     }
@@ -397,10 +392,6 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto zip = __zip::__fn{};
 } // namespace __cpo
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 

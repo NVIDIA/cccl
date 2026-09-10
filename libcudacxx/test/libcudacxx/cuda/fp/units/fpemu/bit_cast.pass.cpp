@@ -30,7 +30,7 @@
 
 #include "test_macros.h"
 
-using namespace cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
+namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Same-size (16-byte) mirror of the unpacked representation {sign, exponent, mantissa}.
 // fpemu_unpacked keeps its storage private and intentionally offers no size-changing
@@ -49,41 +49,41 @@ TEST_HOST_DEVICE_FUNC void test()
   const double packed_vals[6] = {1.5, -2.0, 0.0, -0.0, 42.0, 3.14159265358979323846};
   for (const double packed_val : packed_vals)
   {
-    const fpemu<double> p(packed_val);
+    const cudax::fpemu<double> p(packed_val);
     const uint64_t pbits = cuda::std::bit_cast<uint64_t>(p);
     // fpemu<double> is a faithful double, so its bits match the native double's.
     assert(pbits == cuda::std::bit_cast<uint64_t>(packed_val));
     // uint64_t -> fpemu<double> -> double round-trips the value exactly.
-    assert(static_cast<double>(cuda::std::bit_cast<fpemu<double>>(pbits)) == packed_val);
+    assert(static_cast<double>(cuda::std::bit_cast<cudax::fpemu<double>>(pbits)) == packed_val);
   }
 
   // Unpacked fpemu is layout-compatible with, and trivially copyable to, its raw
   // {sign, exponent, mantissa} representation, so an equal-size bit_cast is the
   // supported way to reach the storage (there is no size-changing overload).
-  static_assert(sizeof(fp64emu_unpacked) == sizeof(fpemu_unpacked_bits),
+  static_assert(sizeof(cudax::fp64emu_unpacked) == sizeof(fpemu_unpacked_bits),
                 "unpacked fpemu must be bit-compatible with its representation");
-  static_assert(cuda::std::is_trivially_copyable_v<fp64emu_unpacked>,
+  static_assert(cuda::std::is_trivially_copyable_v<cudax::fp64emu_unpacked>,
                 "unpacked fpemu must be trivially copyable for bit_cast");
 
   // Round-trip: double -> unpacked -> (equal-size) bits -> unpacked -> value.
   const double test_vals[5] = {1.5, -2.0, 0.0, 42.0, 3.14159265358979323846};
   for (const double test_val : test_vals)
   {
-    fp64emu_unpacked x(test_val);
+    cudax::fp64emu_unpacked x(test_val);
     const auto rep = cuda::std::bit_cast<fpemu_unpacked_bits>(x);
-    const auto y   = cuda::std::bit_cast<fp64emu_unpacked>(rep);
+    const auto y   = cuda::std::bit_cast<cudax::fp64emu_unpacked>(rep);
     assert(static_cast<double>(y) == test_val);
   }
 
   // Arithmetic result via value conversion: 2 * 3 + 1 == 7.
-  fp64emu_unpacked a(2.0), b(3.0), c(1.0);
+  cudax::fp64emu_unpacked a(2.0), b(3.0), c(1.0);
   assert(cuda::std::fabs(static_cast<double>(a * b + c) - 7.0) <= 1e-10);
 
   // A plain conversion produces an identical raw representation across accuracy levels.
   const double pi     = 3.14159265358979323846;
-  const auto rep_def  = cuda::std::bit_cast<fpemu_unpacked_bits>(fp64emu_unpacked(pi));
-  const auto rep_high = cuda::std::bit_cast<fpemu_unpacked_bits>(fp64emu_unpacked_high(pi));
-  const auto rep_low  = cuda::std::bit_cast<fpemu_unpacked_bits>(fp64emu_unpacked_low(pi));
+  const auto rep_def  = cuda::std::bit_cast<fpemu_unpacked_bits>(cudax::fp64emu_unpacked(pi));
+  const auto rep_high = cuda::std::bit_cast<fpemu_unpacked_bits>(cudax::fp64emu_unpacked_high(pi));
+  const auto rep_low  = cuda::std::bit_cast<fpemu_unpacked_bits>(cudax::fp64emu_unpacked_low(pi));
   assert(rep_def.sign == rep_high.sign);
   assert(rep_def.exponent == rep_high.exponent);
   assert(rep_def.mantissa == rep_high.mantissa);

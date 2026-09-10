@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
@@ -27,9 +28,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/underlying_type.h>
-#include <cuda/std/climits>
 
 #if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
@@ -41,11 +40,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStates);
+
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL ::cuda::std::size_t max_native_atomic_size() noexcept
 {
-#if !_CCCL_HAS_INT128()
-  return 8;
-#elif _CCCL_CUDA_COMPILER(NVHPC)
+#if _CCCL_CUDA_COMPILER(NVHPC)
   return 8;
 #else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)  vvv
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return 16;), (return 8;))
@@ -88,11 +87,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
     tile_state_t<AccumT> tmp{scanState, aggr};
 
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-    using __as_integer = ::cuda::std::__make_nbit_uint_t<sizeof(tile_state_t<AccumT>) * CHAR_BIT>;
-    __nv_atomic_store(reinterpret_cast<__as_integer*>(ptrTileStates + index),
-                      reinterpret_cast<__as_integer*>(&tmp),
-                      __NV_ATOMIC_RELAXED,
-                      __NV_THREAD_SCOPE_DEVICE);
+    __nv_atomic_store(ptrTileStates + index, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
 #  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.store(
       tmp, ::cuda::std::memory_order_relaxed);
@@ -118,11 +113,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
 #  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
-    using __as_integer = ::cuda::std::__make_nbit_uint_t<sizeof(tile_state_t<AccumT>) * CHAR_BIT>;
-    __nv_atomic_load(reinterpret_cast<__as_integer*>(ptrTileStates + index),
-                     reinterpret_cast<__as_integer*>(&res),
-                     __NV_ATOMIC_RELAXED,
-                     __NV_THREAD_SCOPE_DEVICE);
+    __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
 #  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     res = ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.load(
       ::cuda::std::memory_order_relaxed);
@@ -164,6 +155,7 @@ _CCCL_DEVICE_API void warpLoadLookahead(
   int idxTileNext,
   int num_tiles)
 {
+  _CCCL_IKET_RANGE_PUSH(LoadTileStates);
   for (int i = 0; i < numTileStatesPerThread; ++i)
   {
     const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
@@ -177,6 +169,7 @@ _CCCL_DEVICE_API void warpLoadLookahead(
       outTileStates[i].state = scan_state::empty;
     }
   }
+  _CCCL_IKET_RANGE_POP();
 }
 
 // warpIncrementalLookahead takes the latest known aggrExclusiveCtaPrev and its tile index, idxTilePrev (which's

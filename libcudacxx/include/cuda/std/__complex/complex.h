@@ -95,25 +95,19 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr complex& operator=(const complex&) noexcept(is_nothrow_copy_assignable_v<_Tp>) = default;
   _CCCL_HIDE_FROM_ABI constexpr complex& operator=(complex&&) noexcept(is_nothrow_move_assignable_v<_Tp>) = default;
 
-  template <class _Up,
-            enable_if_t<!__is_extended_floating_point_v<_Up>, int>                             = 0,
-            enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
+  template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _CCCL_API constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
 
   template <class _Up,
-            enable_if_t<!__is_extended_floating_point_v<_Up>, int>                              = 0,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0,
             enable_if_t<is_constructible_v<_Tp, _Up>, int>                                      = 0>
   _CCCL_API explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
-
-  template <class _Up, enable_if_t<__is_extended_floating_point_v<_Up>, int> = 0>
-  _CCCL_HOST_DEVICE_API complex(const complex<_Up>& __c);
 
   _CCCL_API constexpr complex& operator=(const value_type& __re)
   {
@@ -122,16 +116,13 @@ public:
     return *this;
   }
 
-  template <class _Up, enable_if_t<!__is_extended_floating_point_v<_Up>, int> = 0>
+  template <class _Up>
   _CCCL_API constexpr complex& operator=(const complex<_Up>& __c)
   {
     __re_ = __c.real();
     __im_ = __c.imag();
     return *this;
   }
-
-  template <class _Up, enable_if_t<__is_extended_floating_point_v<_Up>, int> = 0>
-  _CCCL_HOST_DEVICE_API constexpr complex& operator=(const complex<_Up>& __c);
 
 #if _CCCL_HOSTED()
   template <class _Up>
@@ -207,7 +198,7 @@ public:
     __im_ *= __re;
     return *this;
   }
-  _CCCL_API constexpr complex& operator/=(const value_type& __re)
+  _CCCL_HOST_DEVICE_API constexpr complex& operator/=(const value_type& __re)
   {
     __re_ /= __re;
     __im_ /= __re;
@@ -237,7 +228,7 @@ _CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, 
   return __lhs;
 }
 template <class _Tp, class _Up>
-_CCCL_HOST_DEVICE_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_CCCL_API _CCCL_CONSTEXPR_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
@@ -310,16 +301,16 @@ template <class _Tp>
   // Avoid floating point operations that are invalid during constant evaluation
   _CCCL_IF_CONSTEVAL
   {
-    bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
-    bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
-    bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
-    bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
-    bool __z_nan  = !__z_inf
-                 && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
-                     || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
-    bool __w_nan  = !__w_inf
-                 && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
-                     || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
+    const bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
+    const bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
+    const bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
+    const bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
+    const bool __z_nan  = !__z_inf
+                       && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b))
+                           || (::cuda::std::isnan(__a) && __b == _Tp(0)) || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
+    const bool __w_nan  = !__w_inf
+                       && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d))
+                           || (::cuda::std::isnan(__c) && __d == _Tp(0)) || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if (__z_nan || __w_nan)
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
@@ -332,8 +323,8 @@ template <class _Tp>
       }
       return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::infinity());
     }
-    bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
-    bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
+    const bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
+    const bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
     if (__z_nonzero_nan || __w_nonzero_nan)
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
@@ -724,7 +715,7 @@ template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -736,7 +727,7 @@ template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -753,7 +744,7 @@ template <::cuda::std::size_t _Ip, class _Tp>
 struct tuple_element<_Ip, ::cuda::std::complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<cuda::std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_STD

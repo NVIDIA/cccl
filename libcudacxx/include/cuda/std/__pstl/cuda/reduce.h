@@ -67,11 +67,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 {
@@ -90,7 +85,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
     // Determine temporary device storage requirements for reduce
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
       "__pstl_cuda_reduce: determination of device storage for cub::DeviceReduce::Reduce failed",
       __temp_storage,
@@ -105,7 +100,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       __temporary_storage<_Tp> __storage{__policy, __num_bytes, 1};
 
       // Run the reduction
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceReduce::Reduce,
         "__pstl_cuda_reduce: kernel launch of cub::DeviceReduce::Reduce failed",
         __storage.__get_temp_storage(),
@@ -118,7 +113,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         __stream.get());
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_reduce: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
@@ -174,10 +169,6 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__init), ::cuda::std::move(__func));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

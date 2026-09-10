@@ -11,6 +11,10 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/variant>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -33,9 +37,10 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -104,7 +109,7 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
     _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
     auto const explode_coords = [&](auto&&... coords) {
       // No move/forward for `data` because it's used multiple times.
-      f(::std::forward<decltype(coords)>(coords)..., data...);
+      f(::cuda::std::forward<decltype(coords)>(coords)..., data...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -148,9 +153,9 @@ class redux_vars
   };
 
   template <typename Ai>
-  struct get_owning_container_of<::std::monostate, Ai>
+  struct get_owning_container_of<::cuda::std::monostate, Ai>
   {
-    using type = ::std::monostate;
+    using type = ::cuda::std::monostate;
   };
 
   /**
@@ -182,12 +187,12 @@ public:
   // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for
   // reduction variables
   template <::std::size_t... Is>
-  __device__ auto make_targs(tuple_args& targs, ::std::index_sequence<Is...> = {})
+  __device__ auto make_targs(tuple_args& targs, ::cuda::std::index_sequence<Is...> = {})
   {
     if constexpr (sizeof...(Is) != size)
     {
       // simple idiom to avoid defining two functions - "recurse" with the correct index_sequence
-      return make_targs(targs, ::std::make_index_sequence<size>{});
+      return make_targs(targs, ::cuda::std::make_index_sequence<size>{});
     }
     else
     {
@@ -200,7 +205,7 @@ public:
   {
     unroll<size>([&](auto i) {
       using OpI = typename ::std::tuple_element_t<i, tuple_ops>::first_type;
-      if constexpr (!::std::is_same_v<OpI, ::std::monostate>)
+      if constexpr (!::cuda::std::is_same_v<OpI, ::cuda::std::monostate>)
       {
         // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
         OpI::init_op(::cuda::std::get<i>(tup));
@@ -212,7 +217,7 @@ public:
   {
     unroll<size>([&](auto i) {
       using ElementType = typename ::std::tuple_element_t<i, tuple_ops>::first_type;
-      if constexpr (!::std::is_same_v<ElementType, ::std::monostate>)
+      if constexpr (!::cuda::std::is_same_v<ElementType, ::cuda::std::monostate>)
       {
         // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
         ElementType::apply_op(::cuda::std::get<i>(tup), ::cuda::std::get<i>(src.get_tup()));
@@ -225,7 +230,7 @@ public:
   {
     unroll<size>([&](auto i) {
       using ElementType = typename ::std::tuple_element_t<i, tuple_ops>::first_type;
-      if constexpr (!::std::is_same_v<ElementType, ::std::monostate>)
+      if constexpr (!::cuda::std::is_same_v<ElementType, ::cuda::std::monostate>)
       {
         ::cuda::std::get<i>(tup) = ::cuda::std::get<i>(src.get_tup());
       }
@@ -240,20 +245,20 @@ public:
       // or accumulate the result of the reduction with the existing value if the
       // no_init{} value was used
       using op_is = ::std::tuple_element_t<i, tuple_ops>;
-      if constexpr (!::std::is_same_v<typename op_is::first_type, ::std::monostate>)
+      if constexpr (!::cuda::std::is_same_v<typename op_is::first_type, ::cuda::std::monostate>)
       {
         using arg_is = typename ::std::tuple_element_t<i, tuple_args>;
 
         // We have 2 cases here, op is a pair of Operation,boolean where the
         // boolean indicates if we should update the value or initialize it.
-        if constexpr (::std::is_same_v<typename op_is::second_type, ::std::true_type>)
+        if constexpr (::cuda::std::is_same_v<typename op_is::second_type, ::std::true_type>)
         {
           // We overwrite any value if needed
           owning_container_of<arg_is>::fill(::std::get<i>(targs), ::cuda::std::get<i>(tup));
         }
         else
         {
-          static_assert(::std::is_same_v<typename op_is::second_type, ::std::false_type>);
+          static_assert(::cuda::std::is_same_v<typename op_is::second_type, ::std::false_type>);
           // Read existing value
           auto res = owning_container_of<arg_is>::get_value(::std::get<i>(targs));
 
@@ -283,7 +288,7 @@ private:
   __device__ auto& select_element(tuple_args& targs)
   {
     using OpType = typename ::std::tuple_element_t<i, tuple_ops>;
-    if constexpr (::std::is_same_v<typename OpType::first_type, ::std::monostate>)
+    if constexpr (::cuda::std::is_same_v<typename OpType::first_type, ::cuda::std::monostate>)
     {
       return ::std::get<i>(targs); // Return reference to targs[i]
     }
@@ -351,7 +356,7 @@ __global__ void loop_redux(
     _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
     const auto explode_coords = [&](auto&&... coords) {
       // No move/forward for `data` because it's used multiple times.
-      f(::std::forward<decltype(coords)>(coords)..., data...);
+      f(::cuda::std::forward<decltype(coords)>(coords)..., data...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -447,34 +452,6 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 }
 
 /**
- * @brief Resource wrapper for managing parallel_for host callback arguments
- *
- * This manages the memory allocated for parallel_for host callback arguments using the
- * ctx_resource system instead of manual delete in each callback.
- */
-template <typename ArgsType>
-class parallel_for_args_resource : public ctx_resource
-{
-public:
-  explicit parallel_for_args_resource(ArgsType* args)
-      : args_(args)
-  {}
-
-  bool can_release_in_callback() const noexcept override
-  {
-    return true;
-  }
-
-  void release_in_callback() noexcept override
-  {
-    delete args_;
-  }
-
-private:
-  ArgsType* args_;
-};
-
-/**
  * @brief Supporting class for the parallel_for construct
  *
  * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
@@ -545,7 +522,7 @@ class parallel_for_scope
     if constexpr (J < sizeof...(deps_ops_t))
     {
       using dep_t = ::std::tuple_element_t<J, ::std::tuple<deps_ops_t...>>;
-      if constexpr (::std::is_same_v<typename dep_t::dep_type, void_interface>)
+      if constexpr (::cuda::std::is_same_v<typename dep_t::dep_type, void_interface>)
       {
         rebase_replicated_impl<J + 1, K>(instances, place_index);
       }
@@ -572,7 +549,7 @@ class parallel_for_scope
   {
     return make_tuple_indexwise<sizeof...(deps_ops_t)>([&](auto i) {
       auto& dep = ::std::get<i>(deps);
-      if constexpr (::std::is_same_v<decltype(dep.instance(t)), void_interface&>)
+      if constexpr (::cuda::std::is_same_v<decltype(dep.instance(t)), void_interface&>)
       {
         return ::std::ignore;
       }
@@ -604,7 +581,7 @@ public:
 
   /// @brief Constructor keeping the partitioner instance (required when
   /// ownership depends on the partitioner value; type-defined policies cost
-  /// nothing thanks to [[no_unique_address]])
+  /// nothing thanks to _CCCL_NO_UNIQUE_ADDRESS)
   parallel_for_scope(context& ctx, partitioner_t p, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
       : deps(mv(deps)...)
       , ctx(ctx)
@@ -613,8 +590,18 @@ public:
       , p_(mv(p))
   {}
 
-  parallel_for_scope(const parallel_for_scope&)            = delete;
-  parallel_for_scope(parallel_for_scope&&)                 = default;
+  parallel_for_scope(const parallel_for_scope&) = delete;
+
+  // nvcc infers __host__ __device__ for special members that are defaulted on their first
+  // declaration, and neither an explicit annotation nor defaulting out of class overrides that.
+  // A parallel_for_scope holds host-only state (a std::string, a host tuple of dependencies) and
+  // only ever lives on the host, so the members below are exempted from the execution space check.
+  _CCCL_EXEC_CHECK_DISABLE
+  parallel_for_scope(parallel_for_scope&&) = default;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  ~parallel_for_scope() = default;
+
   parallel_for_scope& operator=(const parallel_for_scope&) = delete;
 
   /**
@@ -674,7 +661,7 @@ public:
     assert(e_place.affine_data_place() == t.get_affine_data_place());
 
     // If there is a partitioner, we ensure there is a proper affine data place for this execution place
-    if constexpr (!::std::is_same_v<partitioner_t, null_partition>)
+    if constexpr (!::cuda::std::is_same_v<partitioner_t, null_partition>)
     {
       // Grids need a composite data place
       if (e_place.size() > 1)
@@ -721,7 +708,7 @@ public:
     SCOPE(success)
     {
       t.end_uncleared();
-      if constexpr (::std::is_same_v<context, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
       {
         if (record_time)
         {
@@ -751,7 +738,7 @@ public:
       t.end();
     };
 
-    if constexpr (::std::is_same_v<context, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
     {
       if (record_time)
       {
@@ -767,16 +754,18 @@ public:
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-    // With nvc++, all lambdas can run on host and device.
-    static constexpr bool is_extended_host_device_lambda_closure_type = true,
-                          is_extended_device_lambda_closure_type      = false;
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)
-    // With nvcpp, dedicated traits tell how a lambda can be executed.
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    // With nvcc, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC)
+    // Only nvcc offers those traits. The claim below holds for nvc++, where every lambda can
+    // indeed run on host and device. For clang-cuda it is provisional: a device-only lambda
+    // takes the host branch, so classifying it correctly is part of supporting that compiler.
+    static constexpr bool is_extended_host_device_lambda_closure_type = true,
+                          is_extended_device_lambda_closure_type      = false;
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC) ^^^
 
     // TODO redo cascade of tests
     if constexpr (need_reduction)
@@ -791,7 +780,7 @@ public:
       // Can run on both - decide dynamically
       if (e_place.is_host())
       {
-        return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
+        return do_parallel_for_host(::cuda::std::forward<Fun>(f), shape, t);
       }
       // Fall through for the device implementation
     }
@@ -805,7 +794,7 @@ public:
     {
       // Lambda can run only on the host - make sure they're not trying it elsewhere
       EXPECT(e_place.is_host(), "Attempt to run a host function on a device.");
-      return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
+      return do_parallel_for_host(::cuda::std::forward<Fun>(f), shape, t);
     }
 
     // Device land. Must use the supplemental if constexpr below to avoid compilation errors.
@@ -826,7 +815,7 @@ public:
       }
       else
       {
-        if constexpr (::std::is_same_v<partitioner_t, null_partition>)
+        if constexpr (::cuda::std::is_same_v<partitioner_t, null_partition>)
         {
           fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
           abort();
@@ -866,7 +855,7 @@ public:
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
     _CCCL_ASSERT(sub_exec_place != exec_place::device_auto(), "Internal CUDASTF error.");
 
-    using Fun_no_ref = ::std::remove_reference_t<Fun>;
+    using Fun_no_ref = ::cuda::std::remove_reference_t<Fun>;
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     auto arg_instances = get_arg_instances(deps, t);
@@ -877,7 +866,7 @@ public:
     // variables if necessary
     if (n == 0)
     {
-      if constexpr (::std::is_same_v<context, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
       {
         cudaStream_t stream = t.get_stream();
 
@@ -921,7 +910,7 @@ public:
     const auto max_blocks = (n + block_size - 1) / block_size;
 
     // TODO: improve this
-    size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
+    size_t blocks = ::cuda::std::min(min_blocks * 3 / 2, max_blocks);
 
     static const auto conf_finalize = [] {
       int minGridSize = 0, blockSize = 0;
@@ -945,7 +934,7 @@ public:
 
     // Get backend context and stream once
     [[maybe_unused]] cudaStream_t stream;
-    if constexpr (::std::is_same_v<context, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
     {
       stream = t.get_stream();
     }
@@ -963,7 +952,7 @@ public:
 
     // Context-specific kernel execution and completion event preparation
     event_list completion_event;
-    if constexpr (::std::is_same_v<context, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
     {
       // Synchronize stream with allocation events
       reserved::join_with_stream(ctx, augmented_stream(stream), alloc_events, "alloc_sync", false);
@@ -1029,7 +1018,7 @@ public:
     // dependencies
     allocator.deallocate(ctx, dplace, completion_event, d_redux_buffer, buffer_size);
 
-    if constexpr (::std::is_same_v<context, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
     {
       reserved::join_with_stream(ctx, augmented_stream(stream), completion_event, "dealloc_sync", false);
     }
@@ -1058,10 +1047,10 @@ public:
     if (sub_exec_place == exec_place::device_auto())
     {
       // We have all latitude - recurse with the current device.
-      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t, place_index);
+      return do_parallel_for(::cuda::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t, place_index);
     }
 
-    using Fun_no_ref = ::std::remove_reference_t<Fun>;
+    using Fun_no_ref = ::cuda::std::remove_reference_t<Fun>;
 
     static const auto conf = [] {
       // compute_kernel_limits will return the min number of blocks/max
@@ -1086,19 +1075,19 @@ public:
     const auto max_blocks = (n + block_size - 1) / block_size;
 
     // TODO: improve this
-    size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
+    size_t blocks = ::cuda::std::min(min_blocks * 3 / 2, max_blocks);
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     auto arg_instances = get_arg_instances(deps, t);
     rebase_replicated_instances(arg_instances, place_index);
 
-    if constexpr (::std::is_same_v<context, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
     {
       reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>
         <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream(place_index)>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances);
     }
-    else if constexpr (::std::is_same_v<context, graph_ctx>)
+    else if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
       // Put this kernel node in the child graph that implements the graph_task<>
       cudaKernelNodeParams kernel_params;
@@ -1151,17 +1140,19 @@ public:
 
     // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
     // For stream contexts, delete immediately in callback (better memory efficiency)
-    if constexpr (::std::is_same_v<context, graph_ctx>)
+    if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
-      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
-      ctx.add_resource(mv(resource));
+      // The context becomes responsible for `args` once add_resource() returns; `args` stays
+      // usable below as the pointer the graph node references.
+      ctx.add_resource(::std::make_shared<callback_args_resource<args_t>>(args));
     }
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       // The CUDA runtime calls this back, so an exception thrown by the user code must not leave
       // it.
-      on_throw(::std::abort) << [untyped_args] {
+      ON_THROW(abort)
+      {
         auto p = static_cast<decltype(args)>(untyped_args);
 
         auto& data               = ::std::get<0>(*p);
@@ -1173,7 +1164,7 @@ public:
         // this gets only the data instance types (eg. slice<double>)
         auto explode_coords = [&](size_t i, auto&&... data) {
           auto h = [&](auto&&... coords) {
-            f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
+            f(::cuda::std::forward<decltype(coords)>(coords)..., ::cuda::std::forward<decltype(data)>(data)...);
           };
           auto coords = shape.index_to_coords(i);
           if (!::cuda::experimental::stf::reserved::__shape_contains(shape, coords, 0))
@@ -1191,14 +1182,14 @@ public:
 
         // For stream contexts, delete immediately (no replay risk)
         // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-        if constexpr (!::std::is_same_v<context, graph_ctx>)
+        if constexpr (!::cuda::std::is_same_v<context, graph_ctx>)
         {
           delete p;
         }
       };
     };
 
-    if constexpr (::std::is_same_v<context, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<context, stream_ctx>)
     {
       // Stream path: the callback owns `args` once the launch succeeds, so delete
       // it if the enqueue throws. (Graph path hands ownership to a ctx resource
@@ -1209,7 +1200,7 @@ public:
       };
       cuda_try<cudaLaunchHostFunc>(t.get_stream(), host_func, args);
     }
-    else if constexpr (::std::is_same_v<context, graph_ctx>)
+    else if constexpr (::cuda::std::is_same_v<context, graph_ctx>)
     {
       cudaHostNodeParams params;
       params.userData = args;
@@ -1237,8 +1228,8 @@ private:
   struct no_partitioner_t
   {};
   using stored_partitioner_t =
-    ::std::conditional_t<::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
-  [[no_unique_address]] stored_partitioner_t p_{};
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<partitioner_t, null_partition>, no_partitioner_t, partitioner_t>;
+  _CCCL_NO_UNIQUE_ADDRESS stored_partitioner_t p_{};
 };
 } // end namespace reserved
 

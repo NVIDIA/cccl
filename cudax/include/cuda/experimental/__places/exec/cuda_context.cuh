@@ -32,6 +32,7 @@
 #endif // no system header
 
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/std/__exception/exception_macros.h>
 
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
@@ -175,7 +176,7 @@ protected:
     const int context_devid = static_cast<int>(cuda_try<cuCtxGetDevice>());
     if (devid >= 0 && devid != context_devid)
     {
-      throw ::std::invalid_argument("CUcontext device ordinal does not match devid");
+      _CCCL_THROW(::std::invalid_argument, "CUcontext device ordinal does not match devid");
     }
     return context_devid;
   }
@@ -192,7 +193,7 @@ inline exec_place exec_place::cuda_context(CUcontext ctx, int devid, size_t pool
     // Reject eagerly: with an explicit devid a null context would construct a
     // place that only fails (or silently unbinds the current context) at
     // activation time.
-    throw ::std::invalid_argument("exec_place::cuda_context requires a valid CUcontext");
+    _CCCL_THROW(::std::invalid_argument, "exec_place::cuda_context requires a valid CUcontext");
   }
   return exec_place(::std::make_shared<exec_place_cuda_ctx_impl>(ctx, devid, pool_size));
 }

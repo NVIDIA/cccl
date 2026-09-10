@@ -53,11 +53,6 @@ struct __not_pred
   }
 };
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_TEMPLATE(class _Ip, class _Sp, class _Pred, class _Proj = identity)
@@ -78,10 +73,6 @@ struct __fn
     return ::cuda::std::ranges::find_if(::cuda::std::forward<_Rp>(__r), __not_pred{__pred}, ::cuda::std::move(__proj));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 

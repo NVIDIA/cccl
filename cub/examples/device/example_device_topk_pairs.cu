@@ -11,7 +11,6 @@
 #define CUB_STDERR
 
 #include <cub/device/device_topk.cuh>
-#include <cub/util_allocator.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -105,10 +104,10 @@ int main(int argc, char** argv)
   // Allocate host arrays
   thrust::host_vector<float> h_keys_vector(num_items);
   thrust::host_vector<float> h_reference_keys_vector(k);
-  thrust::host_vector<float> h_res_keys_vector(k);
+  const thrust::host_vector<float> h_res_keys_vector(k);
   thrust::host_vector<int> h_values_vector(num_items);
   thrust::host_vector<int> h_reference_values_vector(k);
-  thrust::host_vector<int> h_res_values_vector(k);
+  const thrust::host_vector<int> h_res_values_vector(k);
 
   // Initialize problem and solution on host
   initialize(h_keys_vector.data(),
@@ -134,7 +133,7 @@ int main(int argc, char** argv)
   // Prepare CUDA stream
   cudaStream_t stream = nullptr;
   CubDebugExit(cudaStreamCreate(&stream));
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref stream_ref{stream};
 
   // Create the environment with the stream and requirements
   auto env = cuda::std::execution::env{stream_ref, requirements};

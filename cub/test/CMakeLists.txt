@@ -251,6 +251,13 @@ function(
         ${test_target}
         PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
       )
+      # NVRTC's frontend recurses deeply while parsing the block-level primitives compiled by this
+      # test and overflows MSVC's 1 MiB default stack, see NVIDIA/cccl#9612. Give the main thread the
+      # 8 MiB that Linux provides by default, which is the size libnvcc's frontend worker uses for the
+      # same reason, see c/parallel.v2/src/hostjit/libnvcc/compiler.cpp.
+      if (MSVC)
+        target_link_options(${test_target} PRIVATE "/STACK:8388608") # 8 MiB
+      endif()
     endif()
 
     if ("${test_src}" MATCHES "test_iterator\\.cu$")
@@ -329,7 +336,6 @@ function(
         cccl.c2h
     )
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
@@ -339,6 +345,7 @@ function(
       "${test_src}" MATCHES "test_future_arch\\.cu$"
       AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
       AND "${CMAKE_CUDA_COMPILER_VERSION}" VERSION_GREATER_EQUAL "13.0.0"
+      AND NOT "$ENV{CCCL_TEST_MODE}" MATCHES "^compute-sanitizer"
     )
       # In future arch test, we replace __CUDA_ARCH__ and __CUDA_ARCH_LIST__ with our own values. However, nvcc
       # preincludes <cuda_runtime.h> header, already working with __CUDA_ARCH__. So, we define the <cuda_runtime.h>'s
@@ -389,6 +396,25 @@ function(
 
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+  # The unsupported-arch xfail test omits the CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT define its siblings use, so it
+  # keeps the strict compile-time diagnostic. Its two %PARAM% variants pin their own arch lists (independent of the
+  # preset) so the diagnostic fires regardless: `arch_0` a single pre-SM90 arch (89-virtual, the highest without cluster
+  # support), and `arch_1` a mixed list adding a cluster-capable 90-virtual to show the diagnostic fires when *any*
+  # targeted arch is unsupported.
+  if ("${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_0$")
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual"
+    )
+  elseif (
+    "${test_target}" MATCHES "batched_topk_unsupported_arch_fail\\.arch_1$"
+  )
+    set_target_properties(
+      ${test_target}
+      PROPERTIES CUDA_ARCHITECTURES "89-virtual;90-virtual"
+    )
+  endif()
 
   # Disable clang-cuda >= 22 warnings regarding failed loop unrolling.
   if (
@@ -548,3 +574,4 @@ endforeach() # Source file
 
 add_subdirectory(cmake)
 add_subdirectory(cubin-check)
+add_subdirectory(logging)

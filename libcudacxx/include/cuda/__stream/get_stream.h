@@ -54,11 +54,6 @@ _CCCL_CONCEPT __has_query_get_stream = _CCCL_REQUIRES_EXPR((_Env), const _Env& _
   requires(!__has_member_stream<_Env>),
   requires(__convertible_to_stream_ref<decltype(__env.query(__cpo))>));
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 //! @brief `get_stream` is a customization point object that queries a type `T` for an associated stream
 struct get_stream_t
 {
@@ -108,10 +103,6 @@ struct get_stream_t
     return true;
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_GLOBAL_CONSTANT auto get_stream = get_stream_t{};
 

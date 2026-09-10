@@ -144,7 +144,7 @@ The functions allow to exchange data of any data size, including raw arrays, poi
 
 **References**
 
-- `CUDA Warp Shuffle Intrinsics <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#warp-shuffle>`_
+- `CUDA Warp Shuffle Intrinsics <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#warp-shuffle-functions>`_
 - `PTX Shfl.sync instruction <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`_
 
 Example

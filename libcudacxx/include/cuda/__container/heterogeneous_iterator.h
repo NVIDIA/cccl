@@ -208,12 +208,12 @@ class heterogeneous_iterator
     : public __heterogeneous_iterator_access<
         ::cuda::std::remove_const_t<_CvTp>,
         ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
-        ::cuda::mr::__memory_accessibility_from_properties<_Properties...>::value>
+        ::cuda::mr::__memory_accessibility_from_properties_v<_Properties...>>
 {
   using __base = __heterogeneous_iterator_access<
     ::cuda::std::remove_const_t<_CvTp>,
     ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
-    ::cuda::mr::__memory_accessibility_from_properties<_Properties...>::value>;
+    ::cuda::mr::__memory_accessibility_from_properties_v<_Properties...>>;
 
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;

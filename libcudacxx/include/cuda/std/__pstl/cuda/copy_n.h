@@ -66,11 +66,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
 {
@@ -82,7 +77,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     // We pass the policy as an environment to DeviceTransform
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
       "__pstl_cuda_copy_n: kernel launch of device_transform failed",
       tuple<_InputIterator>{::cuda::std::move(__first)},
@@ -137,10 +132,6 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     }
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

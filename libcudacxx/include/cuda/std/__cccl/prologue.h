@@ -334,6 +334,11 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++2b-extensions")
 #endif // ^^^ _CCCL_COMPILER(CLANG, <, 17) ^^^
 
+// Suppress `static operator()`-related warnings.
+_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
+
+_CCCL_DIAG_SUPPRESS_NVCC(342)
+
 // Suppress `if consteval`-related warnings.
 
 _CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_nonstandard)

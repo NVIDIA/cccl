@@ -57,11 +57,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cuda>
 {
@@ -77,7 +72,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
 
     // Determine temporary device storage requirements
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::If,
       "__pstl_cuda_select_if: determination of device storage for cub::DeviceSelect::If failed",
       static_cast<void*>(nullptr),
@@ -92,7 +87,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::If,
         "__pstl_cuda_select_if: kernel launch of cub::DeviceSelect::If failed",
         __storage.__get_temp_storage(),
@@ -104,7 +99,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
         __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_select_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
@@ -155,10 +150,6 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
     }
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

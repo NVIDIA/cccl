@@ -172,10 +172,56 @@ or composed with other properties:
 
 Temporary storage is allocated from the memory resource on the algorithm's stream before
 execution and released on the same stream afterwards. When no memory resource is present
-in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFree``  allocator
-(see :ref:`Default behavior <cub-environment-fallback>`).
+in the environment, CUB falls back to a stream-ordered ``cudaMallocAsync``/``cudaFreeAsync``
+allocator (see :ref:`Default behavior <cub-environment-fallback>`).
 
 .. TODO: Add Guarantees sub-section after #9278 is merged.
+
+.. _cub-env-memory-resource-precondition:
+
+Devices without ``cudaMallocAsync`` support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+   The environment-based API assumes the device supports ``cudaMallocAsync``, which the
+   default memory resource uses to allocate temporary storage. Where that is not the
+   case (e.g. TCC driver mode on Windows), the default resource fails with
+   ``cudaErrorNotSupported``.
+
+CUB deliberately does not fall back to ``cudaMalloc``/``cudaFree`` on such devices.
+``cudaFree`` synchronizes the entire device, so a hidden fallback would silently change
+the synchronization semantics of every algorithm call depending on the machine it runs
+on, with no indication in the calling code.
+
+On devices without ``cudaMallocAsync`` support, pass a memory resource explicitly. The
+example below defines a synchronous memory resource on top of ``cudaMalloc``/``cudaFree``
+and selects between it and the default memory pool based on device support. Passing the
+resulting resource through the environment makes the synchronization behavior a visible,
+deliberate choice (the required declarations are provided by ``<cuda/devices>``,
+``<cuda/memory_pool>``, ``<cuda/memory_resource>``, and ``<cuda/stream>``):
+
+.. literalinclude:: ../../cub/examples/device/example_device_env_memory_resource.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-mr-fallback-definition
+   :end-before: example-end env-mr-fallback-definition
+
+The resource returned by ``make_device_resource`` can be passed to any algorithm that
+accepts an environment:
+
+.. literalinclude:: ../../cub/examples/device/example_device_env_memory_resource.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-mr-fallback-run
+   :end-before: example-end env-mr-fallback-run
+
+On devices without memory pool support, every allocation made through this resource
+blocks the calling thread, and every deallocation additionally synchronizes the device.
+That cost is inherent to ``cudaMalloc``/``cudaFree``; the explicit opt-in only makes it
+visible.
+Note that ``cudaMalloc`` allocates on the device that is *current* at the time of the
+call, so use the resource on the device it was created for.
 
 .. _cub-environment-reuse:
 
@@ -228,7 +274,9 @@ is passed at all):
      - The default CUDA stream (``cudaStream_t{}``).
    * - Memory resource
      - A stream-ordered allocator based on ``cudaMallocAsync``. Temporary storage is
-       allocated on the stream the algorithm runs on.
+       allocated on the stream the algorithm runs on. Requires device support for
+       ``cudaMallocAsync``; see
+       :ref:`Devices without cudaMallocAsync support <cub-env-memory-resource-precondition>`.
    * - Determinism
      - Algorithm-specific. See :ref:`cub-determinism`.
    * - Policy selector

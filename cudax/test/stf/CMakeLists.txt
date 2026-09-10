@@ -22,6 +22,7 @@ set(
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
+  error_checks/dim4_get_index_bounds.cu
   error_checks/double_finalize.cu
   error_checks/erase_frozen.cu
   error_checks/misformed_tasks_dbl_end.cu
@@ -73,6 +74,7 @@ set(
   local_stf/stackable_read_only.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
+  local_stf/stackable_while_token.cu
   local_stf/stackable_write_back.cu
   local_stf/stackable_redundant_deps.cu
   local_stf/stackable_tmp.cu
@@ -81,6 +83,7 @@ set(
   places/affinity_gc.cu
   places/replicated_data_place.cu
   places/replicated_frozen_import.cu
+  places/cute_block_owners.cu
   places/cute_parallel_for.cu
   places/locality_domain_alloc.cu
   places/locality_domain_enumeration.cu
@@ -90,6 +93,7 @@ set(
   places/locality_domain_grid.cu
   places/locality_domain_helper.cu
   places/locality_domain_localized_disabled.cu
+  places/locality_domain_split_method.cu
   places/locality_domain_task.cu
   places/managed.cu
   places/managed_from_user.cu
@@ -122,6 +126,7 @@ set(
   stress/task_bench.cu
   threads/axpy-threads-2.cu
   # threads/axpy-threads.cu
+  utility/exception_policy_c_headers.cu
   utility/timing_with_fences.cu
   utility/source_location_map.cu
 )
@@ -244,7 +249,7 @@ set(
   cuda/experimental/__stf/utility/handle.cuh
   cuda/experimental/__stf/utility/hash.cuh
   cuda/experimental/__stf/utility/memory.cuh
-  cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/exception_policy.cuh
   cuda/experimental/__stf/utility/source_location.cuh
   cuda/experimental/__stf/stackable/stackable_ctx.cuh
   cuda/experimental/__stf/utility/unittest.cuh

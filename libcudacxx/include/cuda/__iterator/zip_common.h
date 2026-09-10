@@ -45,11 +45,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class... _Iterators>
 struct __zip_iter_constraints
 {
@@ -284,10 +279,6 @@ template <class _Iter>
 using __zip_maybe_proxy_reference_t = typename __zip_maybe_proxy_helper<_Iter>::reference;
 template <class _Iter>
 using __zip_maybe_proxy_value_type_t = typename __zip_maybe_proxy_helper<_Iter>::value_type;
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CUDA
 

@@ -72,22 +72,38 @@ template <>
 inline constexpr size_t __complex_alignment_v<__half> = alignof(__half2);
 
 template <>
-struct __type_to_vector<__half>
-{
-  using __type = __half2;
-};
-
-template <>
 struct __cccl_complex_overload_traits<__half, false, false>
 {
   using _ValueType   = __half;
   using _ComplexType = complex<__half>;
 };
 
+#  if _CCCL_TILE_COMPILATION()
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) __complex_fake_half2
+{
+  _CCCL_HIDE_FROM_ABI __complex_fake_half2() noexcept = default;
+  _CCCL_API __complex_fake_half2(__half x, __half y) noexcept
+      : x(x)
+      , y(y)
+  {}
+  __half x;
+  __half y;
+};
+using __complex_half_repr_t = __complex_fake_half2;
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
+template <>
+struct __type_to_vector<__half>
+{
+  using __type = __half2;
+};
+
+using __complex_half_repr_t = __half2;
+#  endif // !_CCCL_TILE_COMPILATION()
+
 template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__half>
 {
-  __half2 __repr_;
+  __complex_half_repr_t __repr_;
 
   template <class _Up>
   friend class complex;
@@ -96,17 +112,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__ha
   friend struct __get_complex_impl;
 
   template <class _Tp>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static __half __convert_to_half(const _Tp& __value) noexcept
+  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const _Tp& __value) noexcept
   {
     return __value;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static __half __convert_to_half(const float& __value) noexcept
+  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const float& __value) noexcept
   {
     return ::__float2half(__value);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline static __half __convert_to_half(const double& __value) noexcept
+  [[nodiscard]] _CCCL_API inline static __half __convert_to_half(const double& __value) noexcept
   {
     return ::__double2half(__value);
   }
@@ -114,8 +130,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__ha
 public:
   using value_type = __half;
 
-  _CCCL_HOST_DEVICE_API inline complex(const value_type& __re = value_type(),
-                                       const value_type& __im = value_type()) noexcept
+  _CCCL_API inline complex(const value_type& __re = value_type(), const value_type& __im = value_type()) noexcept
       : __repr_(__re, __im)
   {}
 
@@ -132,18 +147,18 @@ public:
 #  endif // !_CCCL_COMPILER(GCC, <, 10)
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
-  _CCCL_HOST_DEVICE_API inline complex(const complex<_Up>& __c)
+  _CCCL_API inline complex(const complex<_Up>& __c)
       : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}
 
   template <class _Up,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
             enable_if_t<is_constructible_v<value_type, _Up>, int>                                      = 0>
-  _CCCL_HOST_DEVICE_API inline explicit complex(const complex<_Up>& __c)
+  _CCCL_API inline explicit complex(const complex<_Up>& __c)
       : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}
 
-  _CCCL_HOST_DEVICE_API inline complex& operator=(const value_type& __re)
+  _CCCL_API inline complex& operator=(const value_type& __re)
   {
     __repr_.x = __re;
     __repr_.y = value_type();
@@ -151,7 +166,7 @@ public:
   }
 
   template <class _Up>
-  _CCCL_HOST_DEVICE_API inline complex& operator=(const complex<_Up>& __c)
+  _CCCL_API inline complex& operator=(const complex<_Up>& __c)
   {
     __repr_.x = __convert_to_half(__c.real());
     __repr_.y = __convert_to_half(__c.imag());
@@ -160,12 +175,12 @@ public:
 
 #  if _CCCL_HOSTED()
   template <class _Up>
-  _CCCL_HOST_DEVICE_API inline complex(const ::std::complex<_Up>& __other)
+  _CCCL_API inline complex(const ::std::complex<_Up>& __other)
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
   {}
 
   template <class _Up>
-  _CCCL_HOST_DEVICE_API inline complex& operator=(const ::std::complex<_Up>& __other)
+  _CCCL_API inline complex& operator=(const ::std::complex<_Up>& __other)
   {
     __repr_.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
     __repr_.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
@@ -178,51 +193,51 @@ public:
   }
 #  endif // _CCCL_HOSTED()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type real() const
+  [[nodiscard]] _CCCL_API inline value_type real() const
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type imag() const
+  [[nodiscard]] _CCCL_API inline value_type imag() const
   {
     return __repr_.y;
   }
 
-  _CCCL_HOST_DEVICE_API inline void real(value_type __re)
+  _CCCL_API inline void real(value_type __re)
   {
     __repr_.x = __re;
   }
-  _CCCL_HOST_DEVICE_API inline void imag(value_type __im)
+  _CCCL_API inline void imag(value_type __im)
   {
     __repr_.y = __im;
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type real() const volatile
+  [[nodiscard]] _CCCL_API inline value_type real() const volatile
   {
     return __repr_.x;
   }
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline value_type imag() const volatile
+  [[nodiscard]] _CCCL_API inline value_type imag() const volatile
   {
     return __repr_.y;
   }
 
-  _CCCL_HOST_DEVICE_API inline complex& operator+=(const value_type& __re)
+  _CCCL_API inline complex& operator+=(const value_type& __re)
   {
     __repr_.x = ::__hadd(__repr_.x, __re);
     return *this;
   }
-  _CCCL_HOST_DEVICE_API inline complex& operator-=(const value_type& __re)
+  _CCCL_API inline complex& operator-=(const value_type& __re)
   {
     __repr_.x = ::__hsub(__repr_.x, __re);
     return *this;
   }
-  _CCCL_HOST_DEVICE_API inline complex& operator*=(const value_type& __re)
+  _CCCL_API inline complex& operator*=(const value_type& __re)
   {
     __repr_.x = ::__hmul(__repr_.x, __re);
     __repr_.y = ::__hmul(__repr_.y, __re);
     return *this;
   }
-  _CCCL_HOST_DEVICE_API inline complex& operator/=(const value_type& __re)
+  _CCCL_API inline complex& operator/=(const value_type& __re)
   {
     __repr_.x = ::__hdiv(__repr_.x, __re);
     __repr_.y = ::__hdiv(__repr_.y, __re);
@@ -230,41 +245,55 @@ public:
   }
 
   // We can utilize vectorized operations for those operators
-  _CCCL_HOST_DEVICE_API inline friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
+  _CCCL_API inline friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
   {
+#  if _CCCL_TILE_COMPILATION()
+    __lhs.__repr_.x = ::__hadd(__lhs.__repr_.x, __rhs.__repr_.x);
+    __lhs.__repr_.y = ::__hadd(__lhs.__repr_.y, __rhs.__repr_.y);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
     __lhs.__repr_ = ::__hadd2(__lhs.__repr_, __rhs.__repr_);
+#  endif // !_CCCL_TILE_COMPILATION()
     return __lhs;
   }
 
-  _CCCL_HOST_DEVICE_API inline friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
+  _CCCL_API inline friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
   {
+#  if _CCCL_TILE_COMPILATION()
+    __lhs.__repr_.x = ::__hsub(__lhs.__repr_.x, __rhs.__repr_.x);
+    __lhs.__repr_.y = ::__hsub(__lhs.__repr_.y, __rhs.__repr_.y);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
     __lhs.__repr_ = ::__hsub2(__lhs.__repr_, __rhs.__repr_);
+#  endif // !_CCCL_TILE_COMPILATION()
     return __lhs;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API inline friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
+  [[nodiscard]] _CCCL_API inline friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
+#  if _CCCL_TILE_COMPILATION()
+    return ::__heq(__lhs.__repr_.x, __rhs.__repr_.x) && ::__heq(__lhs.__repr_.y, __rhs.__repr_.y);
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION()
     return ::__hbeq2(__lhs.__repr_, __rhs.__repr_);
+#  endif // !_CCCL_TILE_COMPILATION()
   }
 };
 
 template <> // complex<float>
 template <> // complex<__half>
-_CCCL_HOST_DEVICE_API inline complex<float>::complex(const complex<__half>& __c)
+_CCCL_API inline complex<float>::complex(const complex<__half>& __c)
     : __re_(::__half2float(__c.real()))
     , __im_(::__half2float(__c.imag()))
 {}
 
 template <> // complex<double>
 template <> // complex<__half>
-_CCCL_HOST_DEVICE_API inline complex<double>::complex(const complex<__half>& __c)
+_CCCL_API inline complex<double>::complex(const complex<__half>& __c)
     : __re_(::__half2float(__c.real()))
     , __im_(::__half2float(__c.imag()))
 {}
 
 template <> // complex<float>
 template <> // complex<__half>
-_CCCL_HOST_DEVICE_API inline complex<float>& complex<float>::operator=(const complex<__half>& __c)
+_CCCL_API inline complex<float>& complex<float>::operator=(const complex<__half>& __c)
 {
   __re_ = ::__half2float(__c.real());
   __im_ = ::__half2float(__c.imag());
@@ -273,60 +302,36 @@ _CCCL_HOST_DEVICE_API inline complex<float>& complex<float>::operator=(const com
 
 template <> // complex<double>
 template <> // complex<__half>
-_CCCL_HOST_DEVICE_API inline complex<double>& complex<double>::operator=(const complex<__half>& __c)
+_CCCL_API inline complex<double>& complex<double>::operator=(const complex<__half>& __c)
 {
   __re_ = ::__half2float(__c.real());
   __im_ = ::__half2float(__c.imag());
   return *this;
-}
-
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half real(const complex<__half>& __c) noexcept
-{
-  return __c.real();
-}
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half imag(const complex<__half>& __c) noexcept
-{
-  return __c.imag();
-}
-
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<__half> conj(const complex<__half>& __c)
-{
-  return complex<__half>(__c.real(), ::__hneg(__c.imag()));
-}
-
-[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<__half> proj(const complex<__half>& __c)
-{
-  complex<__half> __r = __c;
-  if (::cuda::std::isinf(__c.real()) || ::cuda::std::isinf(__c.imag()))
-  {
-    __r = complex<__half>(numeric_limits<__half>::infinity(), ::cuda::std::copysign(::__float2half(0.0f), __c.imag()));
-  }
-  return __r;
 }
 
 template <>
 struct __get_complex_impl<__half>
 {
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr __half& get(complex<__half>& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr __half& get(complex<__half>& __z) noexcept
   {
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
   }
 
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr __half&& get(complex<__half>&& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr __half&& get(complex<__half>&& __z) noexcept
   {
     return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr const __half& get(const complex<__half>& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr const __half& get(const complex<__half>& __z) noexcept
   {
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
   }
 
   template <size_t _Index>
-  [[nodiscard]] static _CCCL_HOST_DEVICE_API constexpr const __half&& get(const complex<__half>&& __z) noexcept
+  [[nodiscard]] static _CCCL_API constexpr const __half&& get(const complex<__half>&& __z) noexcept
   {
     return ::cuda::std::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }

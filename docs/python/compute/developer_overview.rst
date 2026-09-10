@@ -73,16 +73,18 @@ CUDA C++. The same technique later applies to user-provided reduction
 operators.
 
 We can compile such a Python function to PTX using
-`Numba-CUDA <https://nvidia.github.io/numba-cuda/>`_ as follows:
+`numba-cuda-mlir <https://nvidia.github.io/numba-cuda-mlir/>`_ as follows:
 
 .. code-block:: python
 
-    import numba.cuda
+    import numba_cuda_mlir
 
     def op(value):
         return 2 * value
 
-    ptx, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32))
+    ptx, _ = numba_cuda_mlir.cuda.compile(
+        op, sig=numba_cuda_mlir.types.int32(numba_cuda_mlir.types.int32)
+    )
 
 That'd give us the following PTX code:
 
@@ -145,12 +147,14 @@ Our Python code is now:
 .. code-block:: python
 
     import ctypes
-    import numba.cuda
+    import numba_cuda_mlir
 
     def op(value):
         return 2 * value
 
-    ptx, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32))
+    ptx, _ = numba_cuda_mlir.cuda.compile(
+        op, sig=numba_cuda_mlir.types.int32(numba_cuda_mlir.types.int32)
+    )
 
     bindings = ctypes.CDLL('./build/libkernel.so')
     bindings.launcher.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
@@ -270,7 +274,11 @@ change:
 
 .. code-block:: python
 
-    ltoir, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32), output="ltoir")
+    ltoir, _ = numba_cuda_mlir.cuda.compile(
+        op,
+        sig=numba_cuda_mlir.types.int32(numba_cuda_mlir.types.int32),
+        output="ltoir",
+    )
 
 On the C++ side, we make the same switch from PTX to LTO-IR:
 
@@ -343,18 +351,22 @@ matching storage type on the C++ side:
 .. code-block:: python
 
         import ctypes
-        import numba
-        import numba.cuda
+        import numba_cuda_mlir
         import numpy as np
 
-        def op(value):
-            return numba.int32(value[0].real + value[0].imag)
+        types = numba_cuda_mlir.types
 
-        value_type = numba.complex128
-        context = numba.cuda.descriptor.cuda_target.target_context
-        size = context.get_value_type(value_type).get_abi_size(context.target_data)
-        alignment = context.get_value_type(value_type).get_abi_alignment(context.target_data)
-        ltoir, _ = numba.cuda.compile(op, sig=numba.int32(numba.types.CPointer(value_type)), output='ltoir')
+        def op(value):
+            return types.int32(value[0].real + value[0].imag)
+
+        value_type = types.complex128
+        # The storage size and alignment the C++ side has to match are the
+        # NumPy dtype's.
+        size = np.dtype(np.complex128).itemsize
+        alignment = np.dtype(np.complex128).alignment
+        ltoir, _ = numba_cuda_mlir.cuda.compile(
+            op, sig=types.int32(types.CPointer(value_type)), output="ltoir"
+        )
 
         value = np.array([1 + 2j], dtype=np.complex128)
         type_erased_value_ptr = value.ctypes.data_as(ctypes.c_void_p)
@@ -724,6 +736,86 @@ lets later concurrent calls proceed without locking. Empty calls bypass the gate
 because they return before CUB initializes the static. This covers transform and
 binary search; other platforms keep thread-safe statics and need no gate.
 
+Precompiled headers (v2 HostJIT only)
+-------------------------------------
+
+Parsing the CUB / libcudacxx / Thrust bundle dominates a HostJIT build. The v2
+backend caches that parse as a pair of precompiled headers on disk — one device,
+one host. ``cuda.compute`` enables them for every build. A single pair
+serves all algorithms, because nothing per-algorithm or per-operator
+reaches the compiler's argument list: the user's operator is linked as bitcode
+*after* the frontend runs, and the entry-point name only drives post-compile
+LLVM passes.
+
+The cache is populated lazily: the first build that needs an entry generates it.
+Generating an entry happens once per (install, architecture, flag-set) — in practice
+about once per ``cuda.compute`` version on a given machine.
+
+The cache is keyed by a hash of the compiler arguments, not by architecture
+alone. This matters because a source-tree build and an installed wheel differ in
+their include paths and must not share an entry — clang validates a PCH against
+the command line it was built with, and a mismatch is an error, not a silent
+fallback. Header *contents* are not hashed, so an in-place CCCL upgrade leaves a
+stale entry behind; clang's size/mtime validation rejects it and the compile is
+retried once without a PCH, discarding the offending file. A PCH can therefore
+never fail a build, only fail to speed one up.
+
+Concurrency has three layers. Generation writes through a temp file and an
+atomic rename, so concurrent generators can never produce a torn entry. On top
+of that, generation is guarded by a lock (a directory, since ``create_directory``
+is an atomic test-and-set on both POSIX and Windows) so that N processes
+starting against a cold cache do not each spend seconds producing the same
+file. The lock is non-blocking by design: a process that cannot take it builds
+without a PCH rather than stalling behind the holder, which costs exactly what
+the build would have cost with PCH disabled. A lock left behind by a killed process is treated
+as abandoned after ten minutes, and swept along with any orphaned temp files
+when the cache directory is next resolved.
+
+Within a process, PCH generation runs its own ``CompilerInstance`` and so falls
+under the same thread-safety assumption as the compile stages generally (only
+the link stage is serialized — see *Backend-specific notes*).
+
+Inspecting and clearing the cache::
+
+    import cuda.compute as cc
+
+    cc.pch_cache_dir()     # -> Path, or None if there is no cache
+    cc.clear_pch_cache()   # -> number of files removed
+
+Both return ``None`` / ``0`` on the v1 backend, which has no PCH cache.
+
+``cuda/compute/_pch.py`` owns the cache: which directory to use, whether the
+feature is on, and when to prune. The backend generates and loads entries at the
+location it is given, so a build writes only where that module points it.
+
+Clearing only costs the time to regenerate. Reach for it to reclaim disk, or to
+force regeneration after changing something the cache key does not cover —
+notably an in-place CCCL header upgrade, which is otherwise detected only when
+clang rejects the stale entry and the build retries without it.
+
+Environment variables:
+
+``CCCL_ENABLE_PCH``
+  ``0`` disables precompiled headers. Builds then run exactly as they would
+  with no cache available.
+
+``CCCL_PCH_CACHE_DIR``
+  Cache location, used verbatim. When unset, the default differs by platform.
+  On Linux: ``$XDG_CACHE_HOME/cccl/hostjit_pch``, then
+  ``~/.cache/cccl/hostjit_pch``, then a uid-scoped directory under the system
+  temp directory. On Windows: ``%LOCALAPPDATA%\cccl\hostjit_pch``, then a
+  directory under the system temp directory — ``XDG_CACHE_HOME`` and ``HOME``
+  are not consulted there. Set this in CI, or in tests, to avoid touching the
+  shared user cache. The first writable candidate wins; if none is writable,
+  precompiled headers are simply off.
+
+``CCCL_PCH_CACHE_MAXSIZE``
+  Cache size cap, in bytes or with a ``K``/``M``/``G`` suffix. Default 1 GiB;
+  ``0`` disables eviction. Modelled on ``CUDA_CACHE_MAXSIZE``, whose 256 MiB
+  default is too small here — CUDA caches cubins of a few kilobytes, whereas a
+  single PCH is tens of megabytes. Applied after a build; entries carry the
+  mtime of their last use, so eviction is least-recently-used.
+
 Clearing caches
 +++++++++++++++
 
@@ -734,6 +826,33 @@ independently.
 
 Calling ``clear_all_caches()`` concurrently with active factory calls or
 algorithm execution is not supported unless the caller synchronizes externally.
+
+
+Struct types registered by ``cuda.compute``
+-------------------------------------------
+
+``gpu_struct`` types are registered with the JIT backend by hand — typing, data
+model and lowering — rather than by using the backend's own value-semantic
+aggregate (its experimental ``struct``/``AggregateType``). Value semantics is
+the only property of that aggregate ``cuda.compute`` needs, and it comes bound
+to three that do not suit it:
+
+#. **Nominal (name-based) identity.** Its type identity is tied to a unique type
+   *name*. The same logical struct is registered several times per build — the
+   operator's input type, the constructed return value, the output array's
+   element type, nested inline fields — and with name-based identity those split
+   into incompatible types, so casts between them fail. What is needed is
+   identity by *shape*.
+#. **Zero-argument construction only** (``s = S(); s.a = x``). The public API and
+   the tuple-reconstruction path both need positional ``S(a, b)``.
+#. **No by-index access** (``s[i]``) and no tuple-to-struct casts, both of which
+   ``cuda.compute`` relies on; a CUB operator returning a tuple becomes a struct.
+
+Numba's own ``Record`` type is value-adjacent but reference-semantic — a pointer
+into array memory — so it is not a substitute either.
+
+The registration itself is isolated in ``cuda/compute/_jit.py`` to keep
+Numba-specific type plumbing out of the other modules.
 
 
 Source map

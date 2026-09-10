@@ -56,11 +56,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
 {
@@ -104,10 +99,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   }
 };
 
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
@@ -143,9 +134,9 @@ template <class _Tp, class _Dp = default_delete<_Tp>>
 class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_ptr
 {
 public:
-  using element_type                = _Tp;
-  using deleter_type                = _Dp;
-  using pointer _CCCL_NODEBUG_ALIAS = typename __pointer<_Tp, deleter_type>::type;
+  using element_type          = _Tp;
+  using deleter_type          = _Dp;
+  using pointer _CCCL_NODEBUG = typename __pointer<_Tp, deleter_type>::type;
 
   static_assert(!is_rvalue_reference_v<deleter_type>, "the specified deleter type cannot be an rvalue reference");
 
@@ -157,31 +148,31 @@ private:
     int __for_bool_;
   };
 
-  using _DeleterSFINAE _CCCL_NODEBUG_ALIAS = __unique_ptr_deleter_sfinae<_Dp>;
+  using _DeleterSFINAE _CCCL_NODEBUG = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
-  using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
+  using _LValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
 
   template <bool _Dummy>
-  using _GoodRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
+  using _GoodRValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
 
   template <bool _Dummy>
-  using _BadRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
+  using _BadRValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
-  using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG_ALIAS =
+  using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG =
     typename enable_if<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>::type;
 
   template <class _ArgType>
-  using _EnableIfDeleterConstructible _CCCL_NODEBUG_ALIAS =
+  using _EnableIfDeleterConstructible _CCCL_NODEBUG =
     typename enable_if<is_constructible_v<deleter_type, _ArgType>>::type;
 
   template <class _UPtr, class _Up>
-  using _EnableIfMoveConvertible _CCCL_NODEBUG_ALIAS =
+  using _EnableIfMoveConvertible _CCCL_NODEBUG =
     typename enable_if<is_convertible_v<typename _UPtr::pointer, pointer> && !is_array_v<_Up>>::type;
 
   template <class _UDel>
-  using _EnableIfDeleterConvertible _CCCL_NODEBUG_ALIAS = typename enable_if<
+  using _EnableIfDeleterConvertible _CCCL_NODEBUG = typename enable_if<
     (is_reference_v<_Dp> && is_same_v<_Dp, _UDel>) || (!is_reference_v<_Dp> && is_convertible_v<_UDel, _Dp>)>::type;
 
   template <class _UDel>
@@ -337,37 +328,36 @@ private:
   using _DeleterSFINAE = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
-  using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
+  using _LValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
 
   template <bool _Dummy>
-  using _GoodRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
+  using _GoodRValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
 
   template <bool _Dummy>
-  using _BadRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
+  using _BadRValRefType _CCCL_NODEBUG = typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
-  using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG_ALIAS =
+  using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG =
     typename enable_if<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>::type;
 
   template <class _ArgType>
-  using _EnableIfDeleterConstructible _CCCL_NODEBUG_ALIAS =
+  using _EnableIfDeleterConstructible _CCCL_NODEBUG =
     typename enable_if<is_constructible_v<deleter_type, _ArgType>>::type;
 
   template <class _Pp>
-  using _EnableIfPointerConvertible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<_CheckArrayPointerConversion<_Pp>::value>::type;
+  using _EnableIfPointerConvertible _CCCL_NODEBUG = typename enable_if<_CheckArrayPointerConversion<_Pp>::value>::type;
 
   template <class _UPtr, class _Up, class _ElemT = typename _UPtr::element_type>
-  using _EnableIfMoveConvertible _CCCL_NODEBUG_ALIAS = typename enable_if<
+  using _EnableIfMoveConvertible _CCCL_NODEBUG = typename enable_if<
     is_array_v<_Up> && is_same_v<pointer, element_type*> && is_same_v<typename _UPtr::pointer, _ElemT*>
     && is_convertible_v<_ElemT (*)[], element_type (*)[]>>::type;
 
   template <class _UDel>
-  using _EnableIfDeleterConvertible _CCCL_NODEBUG_ALIAS =
+  using _EnableIfDeleterConvertible _CCCL_NODEBUG =
     enable_if_t<(is_reference_v<_Dp> && is_same_v<_Dp, _UDel>) || (!is_reference_v<_Dp> && is_convertible_v<_UDel, _Dp>)>;
 
   template <class _UDel>
-  using _EnableIfDeleterAssignable _CCCL_NODEBUG_ALIAS = enable_if_t<is_assignable_v<_Dp&, _UDel&&>>;
+  using _EnableIfDeleterAssignable _CCCL_NODEBUG = enable_if_t<is_assignable_v<_Dp&, _UDel&&>>;
 
 public:
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
@@ -496,6 +486,7 @@ public:
     return __t;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Pp, enable_if_t<_CheckArrayPointerConversion<_Pp>::value, int> = 0>
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 void reset(_Pp __p) noexcept
   {
@@ -507,6 +498,7 @@ public:
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 void reset(nullptr_t = nullptr) noexcept
   {
     pointer __tmp  = __ptr_.first();
@@ -734,12 +726,6 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash;
 
 #ifndef __cuda_std__
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <class _Tp, class _Dp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
 {
@@ -754,9 +740,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
     return hash<pointer>()(__ptr.get());
   }
 };
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 #endif // __cuda_std__
 
 _CCCL_END_NAMESPACE_CUDA_STD

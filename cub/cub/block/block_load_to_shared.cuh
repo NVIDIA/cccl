@@ -305,7 +305,7 @@ public:
   //!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
   //! @param[in] smem_dst
   //!   Destination buffer in shared memory that is aligned to `SharedBufferAlignBytes<T>()` and at least
-  //!   `SharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))` big.
+  //!   `SharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))` big.
   //! @param[in] gmem_src
   //!   Source range in global memory, determines the size of the transaction
   //! @return
@@ -322,9 +322,9 @@ public:
     static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
     constexpr bool bulk_aligned = GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align);
     // Avoid 64b multiplication in span::size_bytes()
-    const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
-    const auto dst_ptr  = data(smem_dst);
-    const auto src_ptr  = ::cuda::ptr_rebind<char>(data(gmem_src));
+    const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(::cuda::std::size(gmem_src));
+    const auto dst_ptr  = ::cuda::std::data(smem_dst);
+    const auto src_ptr  = ::cuda::ptr_rebind<char>(::cuda::std::data(gmem_src));
     _CCCL_ASSERT(dst_ptr == nullptr || ::cuda::device::is_address_from(dst_ptr, ::cuda::device::address_space::shared),
                  "Destination address needs to point to shared memory");
     _CCCL_ASSERT(src_ptr == nullptr || ::cuda::device::is_address_from(src_ptr, ::cuda::device::address_space::global),
@@ -337,9 +337,9 @@ public:
                  "End of global memory range needs to be aligned according to GmemAlign.");
     _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, cub::detail::LoadToSharedBufferAlignBytes<T>()),
                  "Shared memory needs to be 16 byte aligned.");
-    _CCCL_ASSERT(
-      (static_cast<int>(size(smem_dst)) >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))),
-      "Shared memory destination buffer must have enough space");
+    _CCCL_ASSERT((static_cast<int>(::cuda::std::size(smem_dst))
+                  >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(::cuda::std::size(gmem_src))),
+                 "Shared memory destination buffer must have enough space");
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy || state == State::ready_to_copy_or_commit,
                  "Wait() must be called before another CopyAsync()");

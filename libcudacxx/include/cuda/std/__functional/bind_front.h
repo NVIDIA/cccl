@@ -36,11 +36,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __bind_front_op
 {
   template <class... _Args>
@@ -51,10 +46,6 @@ struct __bind_front_op
     return ::cuda::std::invoke(::cuda::std::forward<_Args>(__args)...);
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <class _Fn, class... _BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>

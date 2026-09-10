@@ -1,0 +1,55 @@
+name: "CCCL CI Failure Analysis Renderer"
+description: "Render a structured CI failure analysis for one destination."
+
+inputs:
+  analysis_file:
+    description: "Normalized CI failure analysis JSON file."
+    required: true
+  format:
+    description: "Output format: github-comment, github-verbose-summary, or slack."
+    required: true
+
+outputs:
+  content:
+    description: "Rendered GitHub comment or Slack thread JSON; empty for verbose summaries."
+    value: ${{ steps.render.outputs.content }}
+  rendered_file:
+    description: "Path to the rendered content for use by later steps in this job."
+    value: ${{ steps.render.outputs.rendered_file }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Render failure analysis
+      id: render
+      env:
+        ANALYSIS_FILE: ${{ inputs.analysis_file }}
+        FORMAT: ${{ inputs.format }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        case "${FORMAT}" in
+          github-comment|github-verbose-summary|slack) ;;
+          *)
+            echo "Unsupported failure analysis format: ${FORMAT}" >&2
+            exit 1
+            ;;
+        esac
+
+        output_file="${RUNNER_TEMP}/ci-failure-analysis-${FORMAT}.out"
+        python3 "${GITHUB_ACTION_PATH}/../../../ci/util/ci_failure_analysis/render.py" \
+          --analysis-file "${ANALYSIS_FILE}" \
+          --format "${FORMAT}" \
+          --repository "${GITHUB_REPOSITORY}" \
+          --output "${output_file}"
+        test -s "${output_file}"
+
+        echo "rendered_file=${output_file}" >> "${GITHUB_OUTPUT}"
+
+        if [[ "${FORMAT}" != "github-verbose-summary" ]]; then
+          delimiter="EOF_$(openssl rand -hex 16)"
+          {
+            echo "content<<${delimiter}"
+            cat "${output_file}"
+            echo "${delimiter}"
+          } >> "${GITHUB_OUTPUT}"
+        fi

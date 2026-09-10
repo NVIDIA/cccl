@@ -55,22 +55,17 @@ struct __narrowing_check
   };
 
   template <class _Dest, class _Source>
-  using _Apply _CCCL_NODEBUG_ALIAS = typename __narrowing_check_impl<_Dest, _Source>::type;
+  using _Apply _CCCL_NODEBUG = typename __narrowing_check_impl<_Dest, _Source>::type;
 };
 
 template <class _Dest, class _Source>
-using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename conditional_t<
+using __check_for_narrowing _CCCL_NODEBUG = typename conditional_t<
 #ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
 #endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
     is_arithmetic_v<_Dest>,
   __narrowing_check,
   __no_narrowing_check>::template _Apply<_Dest, _Source>;
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
 
 template <class _Tp, size_t _Idx>
 struct __overload
@@ -86,10 +81,6 @@ struct __overload_bool
   _CCCL_API inline auto _CCCL_STATIC_CALL_OPERATOR(bool, _Up&&)
     -> enable_if_t<is_same_v<_Ap, bool>, type_identity<_Tp>>;
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 template <size_t _Idx>
 struct __overload<bool, _Idx> : __overload_bool<bool, _Idx>
@@ -118,11 +109,11 @@ template <size_t... _Idx>
 struct __make_overloads_imp<__tuple_indices<_Idx...>>
 {
   template <class... _Types>
-  using _Apply _CCCL_NODEBUG_ALIAS = __all_overloads<__overload<_Types, _Idx>...>;
+  using _Apply _CCCL_NODEBUG = __all_overloads<__overload<_Types, _Idx>...>;
 };
 
 template <class... _Types>
-using _MakeOverloads _CCCL_NODEBUG_ALIAS =
+using _MakeOverloads _CCCL_NODEBUG =
   typename __make_overloads_imp<__make_indices_imp<sizeof...(_Types), 0>>::template _Apply<_Types...>;
 
 template <class _Tp, class... _Types>

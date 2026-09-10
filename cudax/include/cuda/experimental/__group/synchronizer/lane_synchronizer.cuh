@@ -55,18 +55,25 @@ public:
     }
 
     template <class _MappingResult, class _Hierarchy>
-    _CCCL_DEVICE_API void
-    do_sync(const _MappingResult& __mapping_result, const lane_synchronizer&, const _Hierarchy&) const noexcept
+    _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result, const _Hierarchy&) const noexcept
     {
       ::__syncwarp(__mapping_result.lane_mask().value());
     }
 
     template <class _MappingResult, class _Hierarchy>
-    _CCCL_DEVICE_API void
-    do_sync_aligned(const _MappingResult& __mapping_result, const lane_synchronizer&, const _Hierarchy&) const noexcept
+    _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result, const _Hierarchy&) const noexcept
     {
       ::__syncwarp(__mapping_result.lane_mask().value());
     }
+
+    [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance view() const noexcept
+    {
+      return *this;
+    }
+
+    template <class _MappingResult, class _Hierarchy>
+    _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) noexcept
+    {}
   };
 
   _CCCL_HIDE_FROM_ABI explicit lane_synchronizer() = default;

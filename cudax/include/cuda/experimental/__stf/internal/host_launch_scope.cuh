@@ -18,6 +18,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -34,7 +36,7 @@
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <memory>
 #include <type_traits>
@@ -110,32 +112,6 @@ private:
   void (*dtor_)(void*) = nullptr; // optional destructor for user_data_buf_ contents
 };
 
-//! \brief Resource wrapper for managing host callback arguments
-//!
-//! This manages the memory allocated for host callback arguments using the
-//! ctx_resource system instead of manual delete in each callback.
-template <typename WrapperType>
-class host_callback_args_resource : public ctx_resource
-{
-public:
-  explicit host_callback_args_resource(WrapperType* wrapper)
-      : wrapper_(wrapper)
-  {}
-
-  bool can_release_in_callback() const noexcept override
-  {
-    return true;
-  }
-
-  void release_in_callback() noexcept override
-  {
-    delete wrapper_;
-  }
-
-private:
-  WrapperType* wrapper_;
-};
-
 /**
  * @brief Result of `host_launch` (below)
  *
@@ -162,7 +138,13 @@ public:
 
   host_launch_scope(const host_launch_scope&)            = delete;
   host_launch_scope& operator=(const host_launch_scope&) = delete;
-  // move-constructible
+
+  // move-constructible. nvcc infers __host__ __device__ for special members that are defaulted on
+  // their first declaration, and neither an explicit annotation nor defaulting out of class
+  // overrides that. A host_launch_scope holds host-only state (a std::string, host containers) and
+  // only ever lives on the host, so this one is exempted from the execution space check. The
+  // destructor above needs no exemption: written out, it is a host function like any other.
+  _CCCL_EXEC_CHECK_DISABLE
   host_launch_scope(host_launch_scope&&) = default;
 
   /**
@@ -228,7 +210,8 @@ public:
     // during is_invocable_v checks, which would cause hard errors for
     // typed lambdas like [](auto da){ da.data_handle(); }.
     constexpr bool fun_invocable_untyped =
-      ::std::conjunction_v<::std::bool_constant<sizeof...(Deps) == 0>, ::std::is_invocable<Fun, host_launch_deps&>>;
+      ::cuda::std::conjunction_v<::std::bool_constant<sizeof...(Deps) == 0>,
+                                 ::cuda::std::is_invocable<Fun, host_launch_deps&>>;
 
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
@@ -262,7 +245,7 @@ public:
     SCOPE(success)
     {
       t.end_uncleared();
-      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
       {
         if (start_event && end_event)
         {
@@ -294,7 +277,7 @@ public:
       t.end();
     };
 
-    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    if constexpr (::cuda::std::is_same_v<Ctx, stream_ctx>)
     {
       if (record_time)
       {
@@ -311,7 +294,7 @@ public:
     {
       // --- Untyped dispatch path ---
       auto resolved =
-        ::std::make_unique<::std::pair<Fun, host_launch_deps>>(::std::forward<Fun>(f), host_launch_deps{});
+        ::std::make_unique<::std::pair<Fun, host_launch_deps>>(::cuda::std::forward<Fun>(f), host_launch_deps{});
 
       auto& hld = resolved->second;
 
@@ -330,11 +313,12 @@ public:
       auto callback = [](void* raw) {
         // The CUDA runtime calls this back, so an exception thrown by the user code must not
         // leave it.
-        on_throw(::std::abort) << [raw] {
+        ON_THROW(abort)
+        {
           auto* w = static_cast<decltype(resolved.get())>(raw);
           SCOPE(exit)
           {
-            if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+            if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
             {
               delete w;
             }
@@ -343,25 +327,31 @@ public:
         };
       };
 
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
-        cudaHostNodeParams params = {.fn = callback, .userData = resolved.get()};
+        // Register *before* the node references the args, so there is no window in which a
+        // live graph node points at a freed payload. The resource is non-owning until the
+        // release() below runs, so a throw from add_resource() leaves this unique_ptr as the
+        // owner and it frees correctly -- no node exists yet on that path.
+        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*resolved)>;
+        auto* args         = resolved.get();
+        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(args));
+        // Registration succeeded, so the context is the owner now. Release here rather than
+        // after the branch: if cudaGraphAddHostNode below throws, this unique_ptr must no
+        // longer own the payload, or it would free what the registered resource also frees.
+        resolved.release();
+        cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
-        // The node now references the args; hand ownership to a ctx resource
-        // that deletes them (in release_in_callback) when the ctx is released.
-        using wrapper_type = ::std::remove_reference_t<decltype(*resolved)>;
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(resolved.get()));
       }
       else
       {
         // For a stream the callback owns the args once the launch succeeds.
         cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, resolved.get());
       }
-      // Ownership has transferred (to the ctx resource for graph, or to the
-      // callback for stream). These enqueues are asynchronous, so on a throw
-      // above the callback has not run and the unique_ptr still owns the args;
-      // release it now that ownership has moved on.
+      // No-op on the graph path (released above). On the stream path the callback owns the
+      // args once the launch succeeded; the enqueue is asynchronous, so on a throw above the
+      // callback has not run and this unique_ptr is still the sole owner.
       resolved.release();
     }
     else
@@ -377,14 +367,15 @@ public:
           return deps.instance(t);
         }
       }();
-      auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::std::forward<Fun>(f), mv(payload));
+      auto wrapper = ::std::make_unique<::std::pair<Fun, decltype(payload)>>(::cuda::std::forward<Fun>(f), mv(payload));
 
       auto callback = [](void* untyped_wrapper) {
-        on_throw(::std::abort) << [untyped_wrapper] {
+        ON_THROW(abort)
+        {
           auto w = static_cast<decltype(wrapper.get())>(untyped_wrapper);
           SCOPE(exit)
           {
-            if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+            if constexpr (!::cuda::std::is_same_v<Ctx, graph_ctx>)
             {
               delete w;
             }
@@ -399,29 +390,39 @@ public:
 
           if constexpr (fun_invocable_task_deps)
           {
-            ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+            ::std::apply(::cuda::std::forward<Fun>(w->first), mv(w->second));
           }
           else if constexpr (fun_invocable_task_non_void_deps)
           {
-            ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
+            ::std::apply(::cuda::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
           }
         };
       };
 
-      if constexpr (::std::is_same_v<Ctx, graph_ctx>)
+      if constexpr (::cuda::std::is_same_v<Ctx, graph_ctx>)
       {
-        cudaHostNodeParams params = {.fn = callback, .userData = wrapper.get()};
+        // Register *before* the node references the args, so there is no window in which a
+        // live graph node points at a freed payload. The resource is non-owning until the
+        // release() below runs, so a throw from add_resource() leaves this unique_ptr as the
+        // owner and it frees correctly -- no node exists yet on that path.
+        using wrapper_type = ::cuda::std::remove_reference_t<decltype(*wrapper)>;
+        auto* args         = wrapper.get();
+        ctx.add_resource(::std::make_shared<callback_args_resource<wrapper_type>>(args));
+        // Registration succeeded, so the context is the owner now. Release here rather than
+        // after the branch: if cudaGraphAddHostNode below throws, this unique_ptr must no
+        // longer own the payload, or it would free what the registered resource also frees.
+        // No-op on the graph path (released above); owns the stream path until launch succeeded.
+        wrapper.release();
+        cudaHostNodeParams params = {.fn = callback, .userData = args};
         auto lock                 = t.lock_ctx_graph();
         t.get_node()              = cuda_try<cudaGraphAddHostNode>(t.get_ctx_graph(), nullptr, 0, &params);
-        // Transfer ownership only after the node references the args, so a throw
-        // from cudaGraphAddHostNode leaves the unique_ptr as the sole owner.
-        using wrapper_type = ::std::remove_reference_t<decltype(*wrapper)>;
-        ctx.add_resource(::std::make_shared<host_callback_args_resource<wrapper_type>>(wrapper.get()));
       }
       else
       {
         cuda_try<cudaLaunchHostFunc>(t.get_stream(), callback, wrapper.get());
       }
+      // Empty already on the graph path (ownership moved into the resource); this releases
+      // only on the stream path, where the callback owns the args once the launch succeeded.
       wrapper.release();
     }
   }

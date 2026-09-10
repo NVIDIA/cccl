@@ -91,6 +91,47 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   // Reset the counters:
   this->counts = Counts();
 
+  SECTION("empty equality")
+  {
+    using AnyResource = cuda::mr::any_resource<::cuda::mr::host_accessible>;
+
+    TestResource resource{42, this};
+    AnyResource empty1;
+    AnyResource empty2;
+
+    CHECK(!empty1.has_value());
+    CHECK(!empty2.has_value());
+    CHECK((empty1 == empty2));
+    CHECK(!(empty1 != empty2));
+
+    AnyResource populated{resource};
+    CHECK((empty1 != populated));
+    CHECK((populated != empty1));
+    CHECK(!(empty1 == populated));
+    CHECK(!(populated == empty1));
+
+    CHECK(!(empty1 == resource));
+    CHECK(!(resource == empty1));
+    CHECK((empty1 != resource));
+    CHECK((resource != empty1));
+    CHECK(this->counts.equal_to_count == 0);
+
+    populated.reset();
+    CHECK((populated == empty1));
+    CHECK(!(populated != empty1));
+
+    AnyResource source{resource};
+    AnyResource destination{std::move(source)};
+    CHECK(!source.has_value());
+    CHECK((source == empty1));
+    CHECK((source != destination));
+    CHECK((destination != source));
+    CHECK(this->counts.equal_to_count == 0);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
   SECTION("allocate and deallocate_sync")
   {
     Counts expected{};

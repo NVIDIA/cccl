@@ -24,6 +24,7 @@
 #include <cuda/barrier>
 #include <cuda/hierarchy>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
@@ -64,6 +65,90 @@ inline constexpr thread_scope __barrier_scope_v = thread_scope_system;
 template <thread_scope _Sco, class _ComplFn>
 inline constexpr thread_scope __barrier_scope_v<barrier<_Sco, _ComplFn>> = _Sco;
 
+template <class _Barrier>
+class __barrier_synchronizer_instance_view
+{
+  _Barrier* __barrier_;
+
+public:
+  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance_view(_Barrier* __barrier) noexcept
+      : __barrier_{__barrier}
+  {}
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API auto view() const noexcept
+  {
+    return *this;
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void deinit(const _MappingResult&, const _Hierarchy&) const noexcept
+  {}
+};
+
+template <class _Barrier, class _Unit>
+class __barrier_synchronizer_instance
+{
+  _Barrier* __barrier_;
+
+public:
+  _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier) noexcept
+      : __barrier_{__barrier}
+  {}
+
+  // This synchronizer instance doesn't provide copy/move/assignment methods.
+  __barrier_synchronizer_instance(const __barrier_synchronizer_instance&)            = delete;
+  __barrier_synchronizer_instance(__barrier_synchronizer_instance&&)                 = delete;
+  __barrier_synchronizer_instance& operator=(const __barrier_synchronizer_instance&) = delete;
+  __barrier_synchronizer_instance& operator=(__barrier_synchronizer_instance&&)      = delete;
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult&, const _Hierarchy&) const noexcept
+  {
+    __barrier_->arrive_and_wait();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API __barrier_synchronizer_instance_view<_Barrier> view() const noexcept
+  {
+    return __barrier_synchronizer_instance_view<_Barrier>{__barrier_};
+  }
+
+  template <class _MappingResult, class _Hierarchy>
+  _CCCL_DEVICE_API void deinit(const _MappingResult& __mapping_result, const _Hierarchy& __hier) const noexcept
+  {
+    _CCCL_ASSERT(__mapping_result.is_valid(),
+                 "internal error - invoking deinit() from a thread that is not part of the group");
+
+    ::cuda::std::size_t __thread_rank_in_unit = 0u;
+    if constexpr (!::cuda::std::is_same_v<_Unit, thread_level>)
+    {
+      __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __hier);
+    }
+
+    if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
+    {
+      ::cuda::std::destroy_at(__barrier_);
+    }
+  }
+};
+
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer
 {
@@ -74,24 +159,8 @@ class barrier_synchronizer
 public:
   using barrier_type = _Barrier;
 
-  struct __synchronizer_instance
-  {
-    template <class _MappingResult, class _Hierarchy>
-    _CCCL_DEVICE_API void do_sync(const _MappingResult& __mapping_result,
-                                  const barrier_synchronizer& __synchronizer,
-                                  const _Hierarchy&) const noexcept
-    {
-      __synchronizer.__barriers_[__mapping_result.group_rank()].arrive_and_wait();
-    }
-
-    template <class _MappingResult, class _Hierarchy>
-    _CCCL_DEVICE_API void do_sync_aligned(const _MappingResult& __mapping_result,
-                                          const barrier_synchronizer& __synchronizer,
-                                          const _Hierarchy&) const noexcept
-    {
-      __synchronizer.__barriers_[__mapping_result.group_rank()].arrive_and_wait();
-    }
-  };
+  template <class _Unit>
+  using __synchronizer_instance = __barrier_synchronizer_instance<_Barrier, _Unit>;
 
   _CCCL_DEVICE_API barrier_synchronizer(::cuda::std::span<_Barrier, _Np> __barriers) noexcept
       : __barriers_(__barriers)
@@ -103,7 +172,7 @@ public:
   }
 
   template <class _Unit, class _ParentGroup, class _MappingResult>
-  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance
+  [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance<_Unit>
   make_instance(const _Unit&, const _ParentGroup& __parent, const _MappingResult& __mapping_result) const noexcept
   {
     using _Level = typename _ParentGroup::level_type;
@@ -130,15 +199,20 @@ public:
       __thread_rank_in_unit = gpu_thread.rank(_Unit{}, __parent.hierarchy());
     }
 
-    if (__mapping_result.is_valid() && __mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
+    _Barrier* __group_barrier_ptr = nullptr;
+    if (__mapping_result.is_valid())
     {
-      init(&__barriers_[__mapping_result.group_rank()],
-           static_cast<::cuda::std::ptrdiff_t>(__mapping_result.unit_count() * __nthread_in_unit));
+      __group_barrier_ptr = __barriers_.data() + __mapping_result.group_rank();
+      if (__mapping_result.unit_rank() == 0 && __thread_rank_in_unit == 0)
+      {
+        init(__group_barrier_ptr,
+             static_cast<::cuda::std::ptrdiff_t>(__mapping_result.unit_count() * __nthread_in_unit));
+      }
     }
 
     // todo(dabayer): How we can expose making this aligned?
     __parent.sync();
-    return {};
+    return __synchronizer_instance<_Unit>{__group_barrier_ptr};
   }
 };
 

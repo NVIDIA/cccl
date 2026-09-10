@@ -92,10 +92,14 @@ struct TestVectorRangeInsertSimple
     ASSERT_EQUAL(10lu, v5.size());
   }
 }; // end TestVectorRangeInsertSimple
-VectorUnitTest<TestVectorRangeInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
-  TestVectorRangeInsertSimpleDeviceInstance;
-VectorUnitTest<TestVectorRangeInsertSimple, NumericTypes, thrust::host_vector, std::allocator>
-  TestVectorRangeInsertSimpleHostInstance;
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorRangeInsertSimple,
+  NumericTypes,
+  thrust::device_vector,
+  thrust::device_malloc_allocator,
+  TestVectorRangeInsertSimpleDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorRangeInsertSimple, NumericTypes, thrust::host_vector, std::allocator, TestVectorRangeInsertSimpleHost);
 
 template <class T>
 struct TestVectorRangeInsert
@@ -118,7 +122,7 @@ struct TestVectorRangeInsert
     }
 
     // choose insertion position at random
-    size_t position = n > 0 ? (size_t) h_src[n + 2] % n : 0;
+    const size_t position = n > 0 ? (size_t) h_src[n + 2] % n : 0;
 
     // insert on host
     h_dst.insert(h_dst.begin() + position, h_src.begin() + begin, h_src.begin() + end);
@@ -129,7 +133,7 @@ struct TestVectorRangeInsert
     ASSERT_EQUAL(h_dst, d_dst);
   }
 }; // end TestVectorRangeInsert
-VariableUnitTest<TestVectorRangeInsert, IntegralTypes> TestVectorRangeInsertInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorRangeInsert, IntegralTypes);
 
 template <class Vector>
 struct TestVectorFillInsertSimple
@@ -219,10 +223,14 @@ struct TestVectorFillInsertSimple
     ASSERT_EQUAL(10lu, v4.size());
   }
 }; // end TestVectorFillInsertSimple
-VectorUnitTest<TestVectorFillInsertSimple, NumericTypes, thrust::device_vector, thrust::device_malloc_allocator>
-  TestVectorFillInsertSimpleDeviceInstance;
-VectorUnitTest<TestVectorFillInsertSimple, NumericTypes, thrust::host_vector, std::allocator>
-  TestVectorFillInsertSimpleHostInstance;
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorFillInsertSimple,
+  NumericTypes,
+  thrust::device_vector,
+  thrust::device_malloc_allocator,
+  TestVectorFillInsertSimpleDevice);
+DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
+  TestVectorFillInsertSimple, NumericTypes, thrust::host_vector, std::allocator, TestVectorFillInsertSimpleHost);
 
 template <class T>
 struct TestVectorFillInsert
@@ -234,10 +242,10 @@ struct TestVectorFillInsert
     thrust::device_vector<T> d_dst = h_dst;
 
     // choose insertion position at random
-    size_t position = n > 0 ? (size_t) h_dst[n] % n : 0;
+    const size_t position = n > 0 ? (size_t) h_dst[n] % n : 0;
 
     // choose insertion size at random
-    size_t insertion_size = n > 0 ? (size_t) h_dst[n] % n : 13;
+    const size_t insertion_size = n > 0 ? (size_t) h_dst[n] % n : 13;
 
     // insert on host
     h_dst.insert(h_dst.begin() + position, insertion_size, 13);
@@ -248,4 +256,4 @@ struct TestVectorFillInsert
     ASSERT_EQUAL(h_dst, d_dst);
   }
 }; // end TestVectorFillInsert
-VariableUnitTest<TestVectorFillInsert, IntegralTypes> TestVectorFillInsertInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestVectorFillInsert, IntegralTypes);

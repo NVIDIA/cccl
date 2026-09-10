@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/logical_device_ref.h>
 #include <cuda/__utility/no_init.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 #include <cuda/experimental/__nccl/nccl_api.h>
 
@@ -83,7 +83,7 @@ public:
   //! @throws std::invalid_argument If `__handle` is `NCCL_COMM_NULL`.
   //! @throws std::runtime_error If the device reported by NCCL does not match `__device`.
   [[nodiscard]] static _CCCL_HOST_API nccl_communicator
-  from_native_handle(native_handle_type __handle, ::cuda::experimental::logical_device __device)
+  from_native_handle(native_handle_type __handle, ::cuda::__logical_device_ref __device)
   {
     return nccl_communicator{__handle, ::cuda::std::move(__device)};
   }
@@ -97,7 +97,7 @@ public:
   //! @snippet communicators/nccl/basic.cu nccl_communicator_no_init_construction
   _CCCL_HOST_API explicit nccl_communicator(::cuda::no_init_t) noexcept
       : nccl_communicator_ref{::cuda::experimental::__nccl::__NCCL_COMM_NULL,
-                              ::cuda::experimental::logical_device{0},
+                              ::cuda::__logical_device_ref{0},
                               /*__rank=*/0,
                               /*__size=*/0}
   {}
@@ -176,7 +176,7 @@ private:
       : nccl_communicator_ref{__handle}
   {}
 
-  _CCCL_HOST_API explicit nccl_communicator(native_handle_type __handle, ::cuda::experimental::logical_device __device)
+  _CCCL_HOST_API explicit nccl_communicator(native_handle_type __handle, ::cuda::__logical_device_ref __device)
       : nccl_communicator_ref{__handle, ::cuda::std::move(__device)}
   {}
 

@@ -166,8 +166,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder : graph_builder_ref
   {
     if (auto __graph = ::cuda::std::exchange(__graph_, nullptr))
     {
-      [[maybe_unused]] auto __status = ::cuda::experimental::__driver::__graphDestroyNoThrow(__graph);
-      _CCCL_ASSERT(__status == cudaSuccess, "cuGraphDestroy failed");
+      _CCCL_ASSERT_DRIVER_API(::cuda::experimental::__driver::__graphDestroyNoThrow, "Failed to destroy graph", __graph);
     }
   }
 

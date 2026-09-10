@@ -71,11 +71,6 @@ template <class _Tp>
 _CCCL_CONCEPT __can_compare_begin_end = _CCCL_FRAGMENT(__can_compare_begin_end_, _Tp);
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_TEMPLATE(class _Tp)
@@ -101,10 +96,6 @@ struct __fn
     return ::cuda::std::ranges::begin(__t) == ::cuda::std::ranges::end(__t);
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 

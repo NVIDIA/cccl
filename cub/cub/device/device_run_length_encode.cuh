@@ -30,6 +30,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
+#include <cub/device/dispatch/dispatch_rle_encode.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
@@ -88,38 +89,13 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceRunLengthEncode
 {
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  // DeviceRunLengthEncode::Encode dispatches to ReduceByKey, but we want to have a dedicated tuning policy, so we need
-  // to adapt the policy selector to convert the tuning policy
-  template <typename PolicySelector>
-#  if _CCCL_HAS_CONCEPTS()
-    requires detail::rle::encode::rle_encode_policy_selector<PolicySelector>
-#  endif // _CCCL_HAS_CONCEPTS()
-  struct __policy_selector_adapter
-  {
-    [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-      -> ReduceByKeyPolicy
-    {
-      const RleEncodePolicy policy = PolicySelector{}(cc);
-      return ReduceByKeyPolicy{
-        ReduceByKeyAlgorithm::lookback,
-        {policy.lookback.threads_per_block,
-         policy.lookback.items_per_thread,
-         policy.lookback.load_algorithm,
-         policy.lookback.load_modifier,
-         policy.lookback.scan_algorithm,
-         policy.lookback.lookback_delay}};
-    }
-  };
-#endif // _CCCL_DOXYGEN_INVOKED
-
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
   //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
-  //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //! - For the *i*\ :sup:`th` run encountered, the last key of the run and
   //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
   //! - The total number of runs encountered is written to ``d_num_runs_out``.
   //! - The ``==`` equality operator is used to determine whether values are equivalent
@@ -242,21 +218,25 @@ struct DeviceRunLengthEncode
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t   = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+    using policy_selector_t = detail::rle::encode::policy_selector_from_types<
+      accum_t,
+      key_t,
+      InputIteratorT,
+      UniqueOutputIteratorT,
+      LengthsOutputIteratorT,
+      NumRunsOutputIteratorT,
+      offset_t>;
 
-    return detail::reduce_by_key::dispatch_streaming(
+    return detail::rle::encode::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_unique_out,
-      lengths_input_iterator_t(length_t{1}),
       d_counts_out,
       d_num_runs_out,
-      equality_op{},
-      reduction_op{},
       static_cast<offset_t>(num_items),
       stream,
-      __policy_selector_adapter<policy_selector_t>{});
+      policy_selector_t{});
   }
 
   //! @rst
@@ -270,7 +250,7 @@ struct DeviceRunLengthEncode
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //! - For the *i*\ :sup:`th` run encountered, the last key of the run and
   //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
   //! - The total number of runs encountered is written to ``d_num_runs_out``.
   //! - The ``==`` equality operator is used to determine whether values are equivalent
@@ -353,23 +333,27 @@ struct DeviceRunLengthEncode
     using lengths_input_iterator_t = ::cuda::constant_iterator<length_t, offset_t>;
     using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t>;
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-    using default_policy_selector = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+    using default_policy_selector = detail::rle::encode::policy_selector_from_types<
+      accum_t,
+      key_t,
+      InputIteratorT,
+      UniqueOutputIteratorT,
+      LengthsOutputIteratorT,
+      NumRunsOutputIteratorT,
+      offset_t>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&]([[maybe_unused]] auto policy_selector, void* storage, size_t& bytes, auto stream) {
-        return detail::reduce_by_key::dispatch_streaming(
+        return detail::rle::encode::dispatch(
           storage,
           bytes,
           d_in,
           d_unique_out,
-          lengths_input_iterator_t(length_t{1}),
           d_counts_out,
           d_num_runs_out,
-          equality_op{},
-          reduction_op{},
           static_cast<offset_t>(num_items),
           stream,
-          __policy_selector_adapter<decltype(policy_selector)>{});
+          policy_selector);
       });
   }
 

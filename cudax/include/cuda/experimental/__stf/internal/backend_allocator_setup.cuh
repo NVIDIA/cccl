@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -40,7 +41,7 @@ auto allocators_create_and_attach(ctx_impl_t& i, Args&&... args)
 {
   /* We cannot create a block_allocator<T> directly because the context
    * is not usable yet, this will not attach the allocator. */
-  auto res = block_allocator_untyped(::std::make_shared<T>(::std::forward<Args>(args)...));
+  auto res = block_allocator_untyped(::std::make_shared<T>(::cuda::std::forward<Args>(args)...));
 
   /* Ensure the allocator is cleaned up when the context ends */
   i.attached_allocators.push_back(res);

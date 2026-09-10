@@ -236,13 +236,8 @@ inline constexpr bool enable_borrowed_range<iota_view<_Start, _BoundSentinel>> =
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
+
 _CCCL_BEGIN_NAMESPACE_CPO(__iota)
-
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   template <class _Start>
@@ -263,11 +258,6 @@ struct __fn
       ::cuda::std::forward<_Start>(__start), ::cuda::std::forward<_BoundSentinel>(__bound_sentinel));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
-
 _CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo

@@ -69,11 +69,6 @@ struct __shift_left_predicate
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cuda>
 {
@@ -95,7 +90,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
 
     // Determine temporary device storage requirements for DeviceSelect::Flagged
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceSelect::Flagged,
       "__pstl_cuda_shift_left: determination of device storage for cub::DeviceSelect::Flagged failed",
       static_cast<void*>(nullptr),
@@ -110,7 +105,7 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceSelect::Flagged,
         "__pstl_cuda_shift_left: kernel launch of cub::DeviceSelect::Flagged failed",
         __storage.__get_temp_storage(),
@@ -161,10 +156,6 @@ struct __pstl_dispatch<__pstl_algorithm::__shift_left, __execution_backend::__cu
     }
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 

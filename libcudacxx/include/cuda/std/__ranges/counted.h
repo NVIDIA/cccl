@@ -38,11 +38,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CPO(__counted)
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(342) // static call operator in earlier standard modes
-
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(static_member_operator_not_allowed)
-
 struct __fn
 {
   _CCCL_TEMPLATE(class _It)
@@ -80,10 +75,6 @@ struct __fn
     return __go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count));
   }
 };
-
-_CCCL_DIAG_POP
-
-_CCCL_END_NV_DIAG_SUPPRESS()
 
 _CCCL_END_NAMESPACE_CPO
 
