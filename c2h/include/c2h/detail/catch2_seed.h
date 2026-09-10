@@ -11,7 +11,7 @@
 #include <string>
 
 #include <c2h/detail/env.cuh>
-#include <c2h/generator_types.h>
+#include <c2h/generator_common.h>
 #include <catch2/generators/catch_generators_all.hpp>
 
 namespace c2h

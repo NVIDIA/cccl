@@ -4,7 +4,7 @@
 #include <cuda/std/complex>
 #include <cuda/type_traits>
 
-#include <c2h/generator_types.h>
+#include <c2h/generator_common.h>
 
 namespace c2h::detail
 {

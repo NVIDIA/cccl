@@ -9,7 +9,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
-#include <c2h/generator_types.h>
+#include <c2h/generator_common.h>
 #include <c2h/vector.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
