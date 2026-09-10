@@ -25,6 +25,7 @@
 #include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>

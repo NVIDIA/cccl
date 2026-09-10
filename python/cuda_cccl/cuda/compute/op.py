@@ -51,6 +51,11 @@ class _OpAdapter:
         """
         return b""
 
+    @property
+    def state_alignment(self) -> int:
+        """Return the alignment requirement of the op's state bytes."""
+        return 1
+
     def get_return_type(self, input_types):
         """Get the return type for this op given input types."""
         raise NotImplementedError(
@@ -144,6 +149,15 @@ class RawOp(_OpAdapter):
         state_alignment: int = 1,
         extra_ltoirs: list[bytes | DeviceCode] | None = None,
     ):
+        if (
+            not isinstance(state_alignment, int)
+            or state_alignment < 1
+            or (state_alignment & (state_alignment - 1)) != 0
+        ):
+            raise ValueError(
+                "state_alignment must be a positive power of two, "
+                f"got {state_alignment!r}"
+            )
         self._ltoir = ltoir
         self._name = name
         self._state = state
@@ -168,11 +182,25 @@ class RawOp(_OpAdapter):
         return self._state
 
     @property
+    def state_alignment(self) -> int:
+        """Return the alignment requirement of the op's state bytes."""
+        return self._state_alignment
+
+    @property
     def _identity(self):
+        # The actual *value* of the state bytes never affects the compiled
+        # LTO-IR/glue code -- only their length (which fixes offsets baked
+        # into generated deref code, see TransformIterator) and alignment
+        # do. Keying the cache on the state's value would force a full
+        # rebuild for every distinct runtime state (e.g. every distinct `n`
+        # in a `sum(x) * (1/n)` mean), defeating the point of passing it as
+        # state rather than baking it into the LTO-IR. Mirrors how iterator
+        # state_bytes are excluded from IteratorBase.kind for the same
+        # reason.
         return (
             self._ltoir,
             self._name,
-            self._state,
+            len(self._state),
             self._state_alignment,
             tuple(self._extra_ltoirs),
         )
@@ -202,7 +230,7 @@ def _jit_op_adapter_factory():
 
             def _missing_jit_adapter(op):
                 raise ImportError(
-                    "numba-cuda is required to JIT compile Python callables"
+                    "numba-cuda-mlir is required to JIT compile Python callables"
                 )
 
             return _missing_jit_adapter

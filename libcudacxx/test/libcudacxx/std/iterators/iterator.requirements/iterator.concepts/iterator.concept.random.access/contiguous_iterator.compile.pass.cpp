@@ -430,7 +430,10 @@ namespace cuda::std
 template <>
 struct pointer_traits<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>
 {
-  TEST_FUNC static constexpr int* to_address(const no_operator_arrow<true, false>&);
+  TEST_FUNC static constexpr int* to_address(const no_operator_arrow<true, false>&)
+  {
+    return nullptr;
+  }
 };
 } // namespace cuda::std
 

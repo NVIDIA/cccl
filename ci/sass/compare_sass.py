@@ -27,6 +27,7 @@ CI does not read that status. CI reads `changed` from report.json, because
 """
 
 import argparse
+import bisect
 import difflib
 import itertools
 import json
@@ -246,6 +247,84 @@ def normalized_text(raw: str) -> dict[str, str]:
 # to the complete diff in the artifacts.
 _MAX_EXCERPT_LINES = 40
 
+_FUNCTION_LINE_RE = re.compile(r"^Function : (?P<name>.*)$")
+
+_HUNK_HEADER_RE = re.compile(
+    r"^@@ -(?P<l1>\d+)(?:,(?P<s1>\d+))? \+(?P<l2>\d+)(?:,(?P<s2>\d+))? @@$"
+)
+
+
+def _kernel_boundaries(text: str) -> tuple[list[int], list[str]]:
+    """The 0-indexed line and name of each `Function :` header in `text`.
+
+    `Listing.text()` puts one `Function : <name>` line before each kernel's
+    instructions. Returned as two parallel lists, so `bisect` can search the
+    line numbers.
+    """
+    starts: list[int] = []
+    names: list[str] = []
+    for i, line in enumerate(text.splitlines()):
+        if function_match := _FUNCTION_LINE_RE.match(line):
+            starts.append(i)
+            names.append(function_match.group("name"))
+    return starts, names
+
+
+def _kernel_at(boundaries: tuple[list[int], list[str]], line_no: int) -> str | None:
+    """The kernel that owns 0-indexed `line_no`, or None before the first one."""
+    starts, names = boundaries
+    index = bisect.bisect_right(starts, line_no) - 1
+    return names[index] if index >= 0 else None
+
+
+def _annotate_hunk_headers(
+    lines: list[str],
+    base_boundaries: tuple[list[int], list[str]],
+    test_boundaries: tuple[list[int], list[str]],
+) -> list[str]:
+    """Append the enclosing kernel name to each `@@ ... @@` hunk header.
+
+    Mirrors `git diff`'s function-context convention (`@@ -l,s +l,s @@ <name>`),
+    so the SASS diff excerpt shows which kernel a hunk belongs to without
+    growing the line budget. The hunk's leading context can start above the
+    kernel's `Function :` line (or even in the previous kernel's trailing
+    context), so the kernel is looked up at the hunk's first actual `-`/`+`
+    line, on whichever side that line belongs to, rather than at the hunk's
+    start.
+    """
+    annotated: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        hunk_match = _HUNK_HEADER_RE.match(line)
+        if not hunk_match:
+            annotated.append(line)
+            index += 1
+            continue
+
+        base_line = int(hunk_match.group("l1"))
+        test_line = int(hunk_match.group("l2"))
+
+        kernel = None
+        body_end = index + 1
+        while body_end < len(lines) and not _HUNK_HEADER_RE.match(lines[body_end]):
+            body = lines[body_end]
+            if body.startswith("-"):
+                kernel = kernel or _kernel_at(base_boundaries, base_line - 1)
+                base_line += 1
+            elif body.startswith("+"):
+                kernel = kernel or _kernel_at(test_boundaries, test_line - 1)
+                test_line += 1
+            else:
+                base_line += 1
+                test_line += 1
+            body_end += 1
+
+        annotated.append(f"{line} {kernel}" if kernel else line)
+        annotated.extend(lines[index + 1 : body_end])
+        index = body_end
+    return annotated
+
 
 class Status(StrEnum):
     """Whether an item was compared, or exists on only one side."""
@@ -335,6 +414,11 @@ def compare_target(
                 n=3,
                 lineterm="",
             )
+        )
+        lines = _annotate_hunk_headers(
+            lines,
+            _kernel_boundaries(base[arch]),
+            _kernel_boundaries(test[arch]),
         )
         diff = Diff(
             excerpt=lines[:_MAX_EXCERPT_LINES],

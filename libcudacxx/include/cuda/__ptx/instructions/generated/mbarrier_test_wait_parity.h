@@ -15,7 +15,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
 */
 #if __cccl_ptx_isa >= 710
 template <typename = void>
-_CCCL_DEVICE static inline bool
+_CCCL_DEVICE_API bool
 mbarrier_test_wait_parity(::cuda::std::uint64_t* __addr, const ::cuda::std::uint32_t& __phaseParity)
 {
   ::cuda::std::uint32_t __waitComplete;
@@ -44,7 +44,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait_parity(
+_CCCL_DEVICE_API bool mbarrier_test_wait_parity(
   ::cuda::ptx::sem_acquire_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::std::uint64_t* __addr,
@@ -92,7 +92,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait_parity(
+_CCCL_DEVICE_API bool mbarrier_test_wait_parity(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::std::uint64_t* __addr,
@@ -144,7 +144,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait_parity(
+_CCCL_DEVICE_API bool mbarrier_test_wait_parity(
   ::cuda::ptx::mbarrier_phase_primary_t,
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
@@ -236,7 +236,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait_parity(
+_CCCL_DEVICE_API bool mbarrier_test_wait_parity(
   ::cuda::ptx::mbarrier_phase_primary_t,
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
@@ -337,7 +337,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline bool mbarrier_test_wait_parity(
+_CCCL_DEVICE_API bool mbarrier_test_wait_parity(
   ::cuda::ptx::mbarrier_phase_conditional_t,
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,

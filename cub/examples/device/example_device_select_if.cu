@@ -156,7 +156,7 @@ int main(int argc, char** argv)
 
   // Select a pivot index
   unsigned int pivot_index;
-  unsigned int max_int = (unsigned int) -1;
+  const unsigned int max_int = (unsigned int) -1;
   RandomBits(pivot_index);
   pivot_index = (unsigned int) ((float(pivot_index) * (float(num_items - 1) / float(max_int))));
   printf("Pivot idx: %d\n", pivot_index);
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 
   // Initialize problem and solution
   Initialize(h_in, num_items, max_segment);
-  GreaterThan select_op(h_in[pivot_index]);
+  const GreaterThan select_op(h_in[pivot_index]);
 
   int num_selected = Solve(h_in, select_op, h_reference, num_items);
 

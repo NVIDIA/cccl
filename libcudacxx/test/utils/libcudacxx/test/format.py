@@ -63,6 +63,9 @@ class LibcxxTestFormat(object):
                 "FORCE_ALL_WARNINGS.", ParserKind.TAG, initial_value=False
             ),
             IntegratedTestKeywordParser(
+                "TREAT_WARNINGS_AS_ERRORS.", ParserKind.TAG, initial_value=False
+            ),
+            IntegratedTestKeywordParser(
                 "MODULES_DEFINES:", ParserKind.LIST, initial_value=[]
             ),
             IntegratedTestKeywordParser(
@@ -168,11 +171,17 @@ class LibcxxTestFormat(object):
         if is_fail_test:
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
+            test_cxx.treatWarningsAsErrors(False)
 
         force_all_warnings = self._get_parser("FORCE_ALL_WARNINGS.", parsers).getValue()
-
         if force_all_warnings:
             test_cxx.useWarnings(True)
+
+        treat_warnings_as_errors = self._get_parser(
+            "TREAT_WARNINGS_AS_ERRORS.", parsers
+        ).getValue()
+        if treat_warnings_as_errors:
+            test_cxx.treatWarningsAsErrors()
 
         extra_compile_definitions = self._get_parser(
             "ADDITIONAL_COMPILE_DEFINITIONS:", parsers

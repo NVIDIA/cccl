@@ -194,7 +194,27 @@ struct policy_selector_from_types
       const bool beneficial = StaticMaxSegSize >= cluster_beneficial_min_segment_size;
       backend               = (cluster_capable(cc) && beneficial) ? topk_algorithm::cluster : topk_algorithm::baseline;
     }
-    return topk_policy{backend, baseline_policy, make_cluster_policy()};
+
+    // The SM 100 cluster tunings cover deterministic pairs requests with 4-byte keys, measured on B200 (under a
+    // prefer-larger-index tie-break; applied to both tie-break directions on the expectation of near-symmetry).
+    // Deliberately gated to exactly SM 100: B300 (SM 103) gets its own measurement campaign rather than inheriting
+    // B200 policies. Other request shapes keep the default policy until their measurements land.
+    const bool has_sm100_pairs_tuning = deterministic && !::cuda::std::is_same_v<ValueT, NullType> && sizeof(KeyT) == 4
+                                     && cc == ::cuda::compute_capability{10, 0};
+    // Keys-only tunings were measured under the non-deterministic requirement; deterministic keys requests keep the
+    // default policy until measured.
+    const bool has_sm100_keys_tuning = !deterministic && ::cuda::std::is_same_v<ValueT, NullType> && sizeof(KeyT) == 4
+                                    && cc == ::cuda::compute_capability{10, 0};
+    // B300 gets its own measured table rather than inheriting B200 policies.
+    const bool has_sm103_pairs_tuning = deterministic && !::cuda::std::is_same_v<ValueT, NullType> && sizeof(KeyT) == 4
+                                     && cc == ::cuda::compute_capability{10, 3};
+    const auto cluster =
+      has_sm100_pairs_tuning  ? make_sm100_pairs_cluster_policy(StaticMaxSegSize, MaxK)
+      : has_sm100_keys_tuning ? make_sm100_keys_cluster_policy(StaticMaxSegSize, MaxK)
+      : has_sm103_pairs_tuning
+        ? make_sm103_pairs_cluster_policy(StaticMaxSegSize, MaxK)
+        : make_cluster_policy();
+    return topk_policy{backend, baseline_policy, cluster};
   }
 };
 
@@ -754,7 +774,7 @@ _CCCL_HOST_API cudaError_t launch_baseline_arm(
     //                                                       [2] large-segment ids.
     //   !any_small_segments (large-only): [0] tile offsets, [1] segment-size transform-scan temp storage.
     static constexpr int allocations_array_size     = only_small_segments ? 1 : (any_small_segments ? 3 : 2);
-    size_t allocation_sizes[allocations_array_size] = {1};
+    size_t allocation_sizes[allocations_array_size] = {1}; // NOLINT(misc-const-correctness)
 
     using num_segments_val_t         = typename ::cuda::args::__traits<NumSegmentsParameterT>::element_type;
     using counters_t                 = batched_topk_counters<num_segments_val_t>;

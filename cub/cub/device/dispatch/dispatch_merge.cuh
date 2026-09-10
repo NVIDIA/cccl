@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_merge.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
@@ -233,6 +234,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                            cc.minor_cap(),
                            ss.str().c_str());
                  }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    log_dispatch("DeviceMerge", cc, policy_getter());
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);

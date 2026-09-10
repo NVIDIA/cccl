@@ -73,7 +73,7 @@ struct static_mod<T, a, c, m, true>
 template <typename T, T a, T c, T m>
 _CCCL_HOST_DEVICE T mod(T x)
 {
-  static_mod<T, a, c, m> f;
+  const static_mod<T, a, c, m> f;
   return f(x);
 } // end static_mod
 } // namespace random::detail

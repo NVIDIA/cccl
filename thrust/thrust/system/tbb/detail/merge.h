@@ -61,8 +61,8 @@ struct range
       , grain_size(r.grain_size)
   {
     // we can assume n1 and n2 are not both 0
-    size_t n1 = ::cuda::std::distance(first1, last1);
-    size_t n2 = ::cuda::std::distance(first2, last2);
+    const size_t n1 = ::cuda::std::distance(first1, last1);
+    const size_t n2 = ::cuda::std::distance(first2, last2);
 
     InputIterator1 mid1 = first1;
     InputIterator2 mid2 = first2;
@@ -165,8 +165,8 @@ struct range
       , grain_size(r.grain_size)
   {
     // we can assume n1 and n2 are not both 0
-    size_t n1 = ::cuda::std::distance(keys_first1, keys_last1);
-    size_t n2 = ::cuda::std::distance(keys_first2, keys_last2);
+    const size_t n1 = ::cuda::std::distance(keys_first1, keys_last1);
+    const size_t n2 = ::cuda::std::distance(keys_first2, keys_last2);
 
     InputIterator1 mid1 = keys_first1;
     InputIterator2 mid2 = keys_first2;
@@ -245,8 +245,8 @@ merge(execution_policy<DerivedPolicy>&,
 {
   using Range = typename merge_detail::range<InputIterator1, InputIterator2, OutputIterator, StrictWeakOrdering>;
   using Body  = merge_detail::body;
-  Range range(first1, last1, first2, last2, result, comp);
-  Body body;
+  const Range range(first1, last1, first2, last2, result, comp);
+  const Body body;
 
   ::tbb::parallel_for(range, body);
 
@@ -285,9 +285,9 @@ template <typename DerivedPolicy,
     StrictWeakOrdering>;
   using Body = merge_by_key_detail::body;
 
-  Range range(
+  const Range range(
     keys_first1, keys_last1, keys_first2, keys_last2, values_first3, values_first4, keys_result, values_result, comp);
-  Body body;
+  const Body body;
 
   ::tbb::parallel_for(range, body);
 

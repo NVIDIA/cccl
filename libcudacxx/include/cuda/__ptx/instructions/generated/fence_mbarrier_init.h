@@ -17,7 +17,7 @@ __device__ static inline void fence_mbarrier_init(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void fence_mbarrier_init(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_cluster_t)
+_CCCL_DEVICE_API void fence_mbarrier_init(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_cluster_t)
 {
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)

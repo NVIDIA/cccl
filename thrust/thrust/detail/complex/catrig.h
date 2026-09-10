@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE inline void raise_inexact()
 {
   const volatile float tiny = 7.888609052210118054117286e-31; /* 0x1p-100; */
   // needs the volatile to prevent compiler from ignoring it
-  [[maybe_unused]] volatile float junk = 1 + tiny;
+  [[maybe_unused]] const volatile float junk = 1 + tiny;
 }
 
 _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z);
@@ -384,7 +384,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> casin(complex<double> z)
 {
-  complex<double> w = casinh(complex<double>(z.imag(), z.real()));
+  const complex<double> w = casinh(complex<double>(z.imag(), z.real()));
 
   return (complex<double>(w.imag(), w.real()));
 }
@@ -754,7 +754,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> catan(complex<double> z)
 {
-  complex<double> w = catanh(complex<double>(z.imag(), z.real()));
+  const complex<double> w = catanh(complex<double>(z.imag(), z.real()));
   return (complex<double>(w.imag(), w.real()));
 }
 } // namespace detail::complex

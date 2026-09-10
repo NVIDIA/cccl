@@ -1,12 +1,8 @@
 # Common CCCL Style Guidance
 
-Apply this guidance across CCCL unless a path-specific style reference says otherwise.
-
-## Naming Style
-
-- Macros: macro style, e.g. `MY_MACRO`.
-- Template parameters: PascalCase, e.g. `MyParameter`.
-- All other symbols: snake style, e.g. `my_variable`. The one exception is the CUB public API, which uses PascalCase.
+Read the [CCCL C++ Coding Guidelines](https://nvidia.github.io/cccl/unstable/cccl/development/coding_guidelines.html),
+which supersede everything below.
+Then apply the guidance in this file across CCCL unless a path-specific style reference says otherwise.
 
 ## Variables
 
@@ -29,7 +25,6 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 
 ## Functions
 
-- Functions must be marked `_CCCL_HOST_API`, `_CCCL_DEVICE_API`, `_CCCL_HOST_DEVICE_API`, `_CCCL_TILE_API`, or `_CCCL_API`.
 - Non-template, non-`constexpr` functions must use `inline`.
 - Most functions with a non-void return type should use `[[nodiscard]]`; functions with known side effects may be exceptions.
 - Functions that do not throw exceptions must use `noexcept`.
@@ -51,13 +46,20 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 - A local `using` declaration, e.g. `using ::cuda::std::size_t;`, is acceptable to avoid repetition within a function body.
 - Static member functions of a class template inherit the class's namespace.
 
+# Using CUDA APIs
+
+- In headers, all CUDA Runtime (`cudaXxx(...)`) and CUDA Driver (`cuXxx(...)` or `cuda::__driver::xxxNoThrow(...)`) calls must have their return values handled or explicitly ignored with a comment why it's being ignored.
+  - CUDA Runtime calls shall use `_CCCL_TRY_RUNTIME_API` or `_CCCL_ASSERT_RUNTIME_API` macros to handle the return values.
+  - CUDA Driver calls shall use `_CCCL_TRY_DRIVER_API` or `_CCCL_ASSERT_DRIVER_API` macros to handle the return values.
+  - Alternatively, the return value might be checked manually.
+- In tests, all CUDA Runtime/Driver calls must have their return values checked either manually or using`assert(...)` in lit-style tests or `(CHECK|REQUIRE)_(CUDA|CUDART)` macros in catch2-style tests.
+
 ## Comments
 
 - Commented code without a description is not allowed.
 
 ## General Guidelines
 
-- The code must reuse `cuda/` or `cuda/std` functionalities as much as possible, including macros.
 - Try to use modern C++ as much as possible. The repository supports C++17 but many more recent functionalities have been backported with functions and macros.
 
 ## Prevent Compiler Errors And Improve Compatibility
@@ -68,3 +70,16 @@ Apply this guidance across CCCL unless a path-specific style reference says othe
 ## Compiler Compatibility
 
 - Protect host-only code with `#if !_CCCL_COMPILER(NVRTC)`.
+
+## Arch/SM-Scoped Perf Changes
+
+Applies to any change that conditions a tuning constant, dispatch policy, or other perf-affecting
+behavior like tuning encodings on compute capability or an SM arch macro.
+
+- Never leave the comparison open-ended toward higher/future archs (e.g. `cc >= X` with no upper
+  bound). An unbounded lower-only check silently applies to every arch above X, including ones
+  that did not exist when the change was benchmarked.
+- A closed range (`cc >= X && cc < Y`) is not automatically correct either: `Y` must sit exactly at
+  the boundary of what was benchmarked, not at a rounder or more generous value picked out of
+  convenience. A range wider than what was tested still leaks the change onto untested archs inside
+  that range.

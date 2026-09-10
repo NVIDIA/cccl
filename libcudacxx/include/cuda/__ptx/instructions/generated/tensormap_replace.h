@@ -18,8 +18,7 @@ __device__ static inline void tensormap_replace_global_address(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_global_address(::cuda::ptx::space_global_t, void* __tm_addr, _B64 __new_val)
+_CCCL_DEVICE_API void tensormap_replace_global_address(::cuda::ptx::space_global_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -42,8 +41,7 @@ __device__ static inline void tensormap_replace_global_address(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void
-tensormap_replace_global_address(::cuda::ptx::space_shared_t, void* __tm_addr, _B64 __new_val)
+_CCCL_DEVICE_API void tensormap_replace_global_address(::cuda::ptx::space_shared_t, void* __tm_addr, _B64 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B64) == 8, "");
@@ -66,7 +64,7 @@ __device__ static inline void tensormap_replace_rank(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_rank(::cuda::ptx::space_global_t, void* __tm_addr, _B32 __new_val)
+_CCCL_DEVICE_API void tensormap_replace_rank(::cuda::ptx::space_global_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -89,7 +87,7 @@ __device__ static inline void tensormap_replace_rank(
 */
 #if __cccl_ptx_isa >= 830
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_rank(::cuda::ptx::space_shared_t, void* __tm_addr, _B32 __new_val)
+_CCCL_DEVICE_API void tensormap_replace_rank(::cuda::ptx::space_shared_t, void* __tm_addr, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
@@ -113,7 +111,7 @@ __device__ static inline void tensormap_replace_box_dim(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_box_dim(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -140,7 +138,7 @@ __device__ static inline void tensormap_replace_box_dim(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_box_dim(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -167,7 +165,7 @@ __device__ static inline void tensormap_replace_global_dim(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_global_dim(
+_CCCL_DEVICE_API void tensormap_replace_global_dim(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -194,7 +192,7 @@ __device__ static inline void tensormap_replace_global_dim(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_global_dim(
+_CCCL_DEVICE_API void tensormap_replace_global_dim(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -221,7 +219,7 @@ __device__ static inline void tensormap_replace_global_stride(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_global_stride(
+_CCCL_DEVICE_API void tensormap_replace_global_stride(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B64 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -248,7 +246,7 @@ __device__ static inline void tensormap_replace_global_stride(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_global_stride(
+_CCCL_DEVICE_API void tensormap_replace_global_stride(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B64 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -275,7 +273,7 @@ __device__ static inline void tensormap_replace_element_stride(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_element_stride(
+_CCCL_DEVICE_API void tensormap_replace_element_stride(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -302,7 +300,7 @@ __device__ static inline void tensormap_replace_element_stride(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_element_stride(
+_CCCL_DEVICE_API void tensormap_replace_element_stride(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -329,7 +327,7 @@ __device__ static inline void tensormap_replace_element_size(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_element_size(
+_CCCL_DEVICE_API void tensormap_replace_element_size(
   ::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -356,7 +354,7 @@ __device__ static inline void tensormap_replace_element_size(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void tensormap_replace_element_size(
+_CCCL_DEVICE_API void tensormap_replace_element_size(
   ::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __ord, _B32 __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -382,7 +380,7 @@ __device__ static inline void tensormap_replace_elemtype(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_elemtype(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -405,7 +403,7 @@ __device__ static inline void tensormap_replace_elemtype(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_elemtype(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -428,7 +426,7 @@ __device__ static inline void tensormap_replace_interleave_layout(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_interleave_layout(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -451,7 +449,7 @@ __device__ static inline void tensormap_replace_interleave_layout(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_interleave_layout(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -474,7 +472,7 @@ __device__ static inline void tensormap_replace_swizzle_mode(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_swizzle_mode(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -497,7 +495,7 @@ __device__ static inline void tensormap_replace_swizzle_mode(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_swizzle_mode(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -520,7 +518,7 @@ __device__ static inline void tensormap_replace_fill_mode(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_fill_mode(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -543,7 +541,7 @@ __device__ static inline void tensormap_replace_fill_mode(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_fill_mode(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -566,7 +564,7 @@ __device__ static inline void tensormap_replace_swizzle_atomicity(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_swizzle_atomicity(::cuda::ptx::space_global_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_global (due to parameter type constraint)
@@ -589,7 +587,7 @@ __device__ static inline void tensormap_replace_swizzle_atomicity(
 */
 #if __cccl_ptx_isa >= 860
 template <int _N32>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 tensormap_replace_swizzle_atomicity(::cuda::ptx::space_shared_t, void* __tm_addr, ::cuda::ptx::n32_t<_N32> __new_val)
 {
   // __space == space_shared (due to parameter type constraint)

@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cstdio>
@@ -79,7 +79,7 @@ public:
 
   cb* get_current_cb()
   {
-    return ((cb*) pthread_getspecific(cudaCallbackStateCtxKeys::instance().cb_key));
+    return static_cast<cb*>(pthread_getspecific(cudaCallbackStateCtxKeys::instance().cb_key));
   }
 
 private:
@@ -89,8 +89,8 @@ private:
     // pthread_once interface, so we retrieve the static instance
     // instead.
     cudaCallbackStateCtxKeys* ctx = &cudaCallbackStateCtxKeys::instance();
-    pthread_key_create(&ctx->cb_key, NULL);
-    pthread_setspecific(ctx->cb_key, NULL);
+    pthread_key_create(&ctx->cb_key, nullptr);
+    pthread_setspecific(ctx->cb_key, nullptr);
   }
 };
 #    endif // STATEFUL_CALLBACKS
@@ -99,7 +99,7 @@ class callback_queue;
 
 bool cudaCallbackQueueProgress(callback_queue* q, bool flag);
 cudaError_t cudaStreamAddCallbackWithQueue(
-  cudaStream_t stream, cudaStreamCallback_t callback, void* userData, unsigned int flags, class callback_queue* q);
+  cudaStream_t stream, cudaStreamCallback_t callback, void* userData, unsigned int flags, callback_queue* q);
 int* cf_pop(callback_queue* q);
 
 #    define USE_COMPLETION_FLAG_POOL 1
@@ -111,11 +111,10 @@ public:
   void init()
   {
     cnt = 1024;
-    cudaMallocManaged((void**) &pool, cnt * sizeof(int));
+    cudaMallocManaged(reinterpret_cast<void**>(&pool), cnt * sizeof(int));
     memset(pool, 0, cnt * sizeof(int));
 
-    int ii;
-    for (ii = 0; ii < cnt; ii++)
+    for (int ii = 0; ii < cnt; ii++)
     {
       stack.push(&pool[ii]);
     }
@@ -126,7 +125,7 @@ public:
   {
     if (stack.empty())
     {
-      return NULL;
+      return nullptr;
     }
 
     int* ptr = stack.top();
@@ -165,12 +164,12 @@ public:
 
   void* userData;
 
-  class callback_queue* queue;
+  callback_queue* queue;
 
 #    ifdef STATEFUL_CALLBACKS
   // To deal with restartable callbacks
   int step          = 0;
-  void* private_ptr = NULL;
+  void* private_ptr = nullptr;
 #    endif
 
   // This serves as a spinlock to unlock the stream after the execution
@@ -179,45 +178,45 @@ public:
   int* completion_flag;
 
   /* Callback from cudaGraph */
-  cb(cudaHostFn_t _graph_callback, void* _userData, class callback_queue* _queue)
+  cb(cudaHostFn_t _graph_callback, void* _userData, callback_queue* _queue)
   {
     is_graph_host_node = true;
     graph_callback     = _graph_callback;
-    callback           = NULL;
+    callback           = nullptr;
     userData           = _userData;
     queue              = _queue;
 
 #    ifdef STATEFUL_CALLBACKS
     step        = 0;
-    private_ptr = NULL;
+    private_ptr = nullptr;
 #    endif
 
 #    ifdef USE_COMPLETION_FLAG_POOL
     completion_flag = cf_pop(queue);
 #    else
-    cudaMallocManaged((void**) &completion_flag, sizeof(int));
+    cudaMallocManaged(reinterpret_cast<void**>(&completion_flag), sizeof(int));
 #    endif
   }
 
   /* Callback from CUDA streams */
-  cb(cudaStream_t _stream, cudaStreamCallback_t _callback, void* _userData, class callback_queue* _queue)
+  cb(cudaStream_t _stream, cudaStreamCallback_t _callback, void* _userData, callback_queue* _queue)
   {
     is_graph_host_node = false;
     stream             = _stream;
     userData           = _userData;
     callback           = _callback;
-    graph_callback     = NULL;
+    graph_callback     = nullptr;
     queue              = _queue;
 
 #    ifdef STATEFUL_CALLBACKS
     step        = 0;
-    private_ptr = NULL;
+    private_ptr = nullptr;
 #    endif
 
 #    ifdef USE_COMPLETION_FLAG_POOL
     completion_flag = cf_pop(queue);
 #    else
-    cudaMallocManaged((void**) &completion_flag, sizeof(int));
+    cudaMallocManaged(reinterpret_cast<void**>(&completion_flag), sizeof(int));
 #    endif
   }
 };
@@ -251,45 +250,44 @@ public:
 
   void async_destroy(cudaStream_t stream)
   {
-    cudaStreamAddCallbackWithQueue(stream, NULL, NULL, 0, this);
+    cudaStreamAddCallbackWithQueue(stream, nullptr, nullptr, 0, this);
   }
 
   void launch_worker()
   {
-    // Avoid C++ whining ...
-    using func_ptr = void* (*) (void*);
-    pthread_create(&progress_thread, NULL, (func_ptr) &callback_queue::callback_queue_worker, this);
+    pthread_create(&progress_thread, nullptr, &callback_queue::callback_queue_worker, this);
   }
 
   void wait_worker()
   {
-    pthread_join(progress_thread, NULL);
+    pthread_join(progress_thread, nullptr);
   }
 
   /* Helper routines to create a thread dedicated to this queue ! */
   pthread_t progress_thread;
 
 #    ifdef USE_COMPLETION_FLAG_POOL
-  class completion_flag_pool cfp;
+  completion_flag_pool cfp;
 #    endif
 
   static void* callback_queue_worker(void* args)
   {
     // pthread calls this, so an exception must not leave it either.
-    on_throw(::std::abort) << [args] {
-      fprintf(stderr, "CALLBACK RUNNING...\n");
-      class callback_queue* cbq = (callback_queue*) args;
+    ON_THROW(abort)
+    {
+      // fprintf(stderr, "CALLBACK RUNNING...\n");
+      auto* const cbq = static_cast<callback_queue*>(args);
       cudaCallbackQueueProgress(cbq, 1);
-      fprintf(stderr, "CALLBACK HALTING...\n");
+      // fprintf(stderr, "CALLBACK HALTING...\n");
     };
 
-    return NULL;
+    return nullptr;
   }
 };
 
 inline callback_queue* default_callback_queue()
 {
-  class callback_queue* default_cb = &callback_queue::instance();
+  callback_queue* const default_cb = &callback_queue::instance();
   return default_cb;
 }
 
@@ -302,9 +300,10 @@ inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 {
   // The CUDA runtime calls this back, so an exception must not leave it; it would also strand
   // the queue mutex.
-  on_throw(::std::abort) << [userData] {
-    class cb* cb_               = (cb*) userData;
-    class callback_queue* queue = cb_->queue;
+  ON_THROW(abort)
+  {
+    auto* const cb_             = static_cast<cb*>(userData);
+    callback_queue* const queue = cb_->queue;
 
     // Protect the queue
     pthread_mutex_lock(&queue->mutex);
@@ -316,10 +315,11 @@ inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 
 inline void cudagraph_callback_dispatcher(void* userData)
 {
-  on_throw(::std::abort) << [userData] {
-    cb* cb_ = (cb*) userData;
+  ON_THROW(abort)
+  {
+    auto* const cb_ = static_cast<cb*>(userData);
 
-    class callback_queue* queue = cb_->queue;
+    callback_queue* const queue = cb_->queue;
 
     // Protect the queue
     pthread_mutex_lock(&queue->mutex);
@@ -347,14 +347,14 @@ inline void set_current_cb(cb* cb)
   cudaCallbackStateCtx::instance().set_current_cb(cb);
 }
 
-inline class cb* get_current_cb()
+inline cb* get_current_cb()
 {
   return cudaCallbackStateCtx::instance().get_current_cb();
 }
 
 inline cudaError_t cudaCallbackSetStatus(int step, void* private_ptr)
 {
-  class cb* current_cb = get_current_cb();
+  cb* const current_cb = get_current_cb();
   assert(current_cb);
   current_cb->step        = step;
   current_cb->private_ptr = private_ptr;
@@ -363,7 +363,7 @@ inline cudaError_t cudaCallbackSetStatus(int step, void* private_ptr)
 
 inline cudaError_t cudaCallbackGetStatus(int* step, void** private_ptr)
 {
-  class cb* current_cb = get_current_cb();
+  cb* const current_cb = get_current_cb();
   assert(current_cb);
 
   if (step)
@@ -383,14 +383,14 @@ inline cudaError_t cudaCallbackGetStatus(int* step, void** private_ptr)
 inline int cudaCallbackGetStep()
 {
   int step;
-  cudaCallbackGetStatus(&step, NULL);
+  cudaCallbackGetStatus(&step, nullptr);
   return step;
 }
 
 inline void* cudaCallbackGetPrivatePtr()
 {
   void* private_ptr;
-  cudaCallbackGetStatus(NULL, &private_ptr);
+  cudaCallbackGetStatus(nullptr, &private_ptr);
   return private_ptr;
 }
 #    endif // STATEFUL_CALLBACKS
@@ -422,7 +422,7 @@ inline void execute_callback(cb* cb)
 #    ifdef STATEFUL_CALLBACKS
     // Values equal to 0 or strictly negative indicate the callback is over
     cb_restart = (cb->step > 0);
-    set_current_cb(NULL);
+    set_current_cb(nullptr);
 #    endif
   }
 
@@ -455,7 +455,7 @@ inline _CCCL_HOST cudaError_t cudaStreamAddCallbackWithQueue(
   if (q)
   {
     // We store the arguments in a structure that will be destroyed later on
-    class cb* data  = new cb(stream, callback, userData, q);
+    cb* const data  = new cb(stream, callback, userData, q);
     cudaError_t err = cudaStreamAddCallback(stream, callback_dispatcher, data, flags);
 
     // Submit completion kernel in the stream ...
@@ -480,11 +480,11 @@ inline _CCCL_HOST cudaError_t cudaStreamAddCallbackWithQueue(
  * @return cudaError_t indicating if the submission was successful
  */
 inline _CCCL_HOST cudaError_t
-cudaLaunchHostFuncWithQueue(cudaStream_t stream, cudaHostFn_t fn, void* userData, class callback_queue* q)
+cudaLaunchHostFuncWithQueue(cudaStream_t stream, cudaHostFn_t fn, void* userData, callback_queue* q)
 {
   assert(q);
   // We store the arguments in a structure that will be destroyed later on
-  class cb* data  = new cb(fn, userData, q);
+  cb* const data  = new cb(fn, userData, q);
   cudaError_t err = cudaLaunchHostFunc(stream, (cudaHostFn_t) cudagraph_callback_dispatcher, data);
 
   // Submit completion kernel in the stream ...
@@ -502,12 +502,12 @@ inline _CCCL_HOST cudaError_t cudaGraphAddHostNodeWithQueue(
   cudaGraphNode_t* deps,
   size_t ndeps,
   const cudaHostNodeParams* params,
-  class callback_queue* q)
+  callback_queue* q)
 {
   assert(q);
 
   // We store the arguments in a structure that will be destroyed later on
-  class cb* data = new cb(params->fn, params->userData, q);
+  cb* const data = new cb(params->fn, params->userData, q);
 
   // XXX we should expose a child graph ...
   cudaGraphNode_t node0;
@@ -559,7 +559,7 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 
   while (!stop)
   {
-    class cb* cb = NULL;
+    cb* cb = nullptr;
 
     // Protect the queue
     pthread_mutex_lock(&q->mutex);
@@ -594,7 +594,7 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
       }
 #    endif
 
-      if (cb->callback == NULL && cb->graph_callback == NULL)
+      if (cb->callback == nullptr && cb->graph_callback == nullptr)
       {
         // destroy
         q->status = 1;

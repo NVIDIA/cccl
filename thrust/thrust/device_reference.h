@@ -274,6 +274,10 @@ public:
       : super_t(ptr)
   {}
 
+  // A device_reference refers to an object in device memory, so assigning through a const
+  // reference writes the referent and not the proxy. This mirrors
+  // std::vector<bool>::reference and is what `*it = x` needs for output iterators.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference& other) const
   {
     return super_t::operator=(other);
@@ -290,11 +294,13 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
+  // NOLINTBEGIN(misc-unconventional-assign-operator): proxy reference, see above
   template <typename OtherT>
   _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
   {
     return super_t::operator=(other);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Assignment operator assigns the value of the given value to the
    *  value referenced by this \p device_reference.
@@ -306,6 +312,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator): proxy reference, see above
   _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
   {
     return super_t::operator=(x);

@@ -79,7 +79,7 @@ template <topk::select SelectDirection,
           typename NumSegmentsParameterT,
           typename TuningT,
           typename EnvT>
-_CCCL_HOST_API static cudaError_t dispatch_batched_topk(
+_CCCL_HOST_API cudaError_t dispatch_batched_topk(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorItT d_keys_in,

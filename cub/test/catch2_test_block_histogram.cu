@@ -81,7 +81,7 @@ CUB_TEST("Block histogram can be computed with uniform input",
 
   const sample_t uniform_value = static_cast<sample_t>(GENERATE_COPY(take(10, random(0, params::bins - 1))));
 
-  c2h::host_vector<sample_t> h_samples(params::num_samples, uniform_value);
+  const c2h::host_vector<sample_t> h_samples(params::num_samples, uniform_value);
   c2h::host_vector<int> h_reference(params::bins);
   h_reference[static_cast<std::size_t>(uniform_value)] = params::num_samples;
 
@@ -126,8 +126,8 @@ CUB_TEST("Block histogram can be computed with modulo input",
 
   c2h::gen(c2h::modulo_t{params::bins}, d_samples);
 
-  c2h::host_vector<sample_t> h_samples = d_samples;
-  auto h_reference                     = compute_host_reference(params::bins, h_samples);
+  const c2h::host_vector<sample_t> h_samples = d_samples;
+  auto h_reference                           = compute_host_reference(params::bins, h_samples);
 
   // Run kernel
   block_histogram<params::items_per_thread, params::threads_in_block, params::bins, params::algorithm>(
@@ -159,8 +159,8 @@ CUB_TEST("Block histogram can be computed with random input",
 
   c2h::gen(C2H_SEED(10), d_samples, min_bin, max_bin);
 
-  c2h::host_vector<sample_t> h_samples = d_samples;
-  auto h_reference                     = compute_host_reference(params::bins, h_samples);
+  const c2h::host_vector<sample_t> h_samples = d_samples;
+  auto h_reference                           = compute_host_reference(params::bins, h_samples);
 
   // Run kernel
   block_histogram<params::items_per_thread, params::threads_in_block, params::bins, params::algorithm>(

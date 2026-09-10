@@ -45,7 +45,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_constructible : public is_construct
 {};
 
 template <class _Tp>
-inline constexpr bool is_move_constructible_v = is_constructible<_Tp, add_rvalue_reference_t<_Tp>>::value;
+inline constexpr bool is_move_constructible_v = is_constructible_v<_Tp, add_rvalue_reference_t<_Tp>>;
 
 #endif // No builtin
 

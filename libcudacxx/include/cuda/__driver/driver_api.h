@@ -45,6 +45,23 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
+#  define _CCCL_TRY_DRIVER_API(_NAME, _MSG, ...)                                     \
+    do                                                                               \
+    {                                                                                \
+      const ::cudaError_t __cccl_try_driver_api_status = _NAME(__VA_ARGS__);         \
+      if (__cccl_try_driver_api_status != ::cudaSuccess)                             \
+      {                                                                              \
+        _CCCL_THROW(::cuda::cuda_error, __cccl_try_driver_api_status, _MSG, #_NAME); \
+      }                                                                              \
+    } while (0)
+
+#  define _CCCL_ASSERT_DRIVER_API(_NAME, _MSG, ...)                                              \
+    do                                                                                           \
+    {                                                                                            \
+      [[maybe_unused]] const ::cudaError_t __cccl_assert_driver_api_status = _NAME(__VA_ARGS__); \
+      _CCCL_ASSERT(__cccl_assert_driver_api_status == ::cudaSuccess, _MSG);                      \
+    } while (0)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
 // Get the driver function by name using this macro
@@ -136,7 +153,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 {
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  ::CUresult __status = __get_proc_addr_fn(
+  const ::CUresult __status = __get_proc_addr_fn(
     __name, &__fn, ::cuda::__driver::__make_version(__major, __minor), ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
   if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
@@ -165,7 +182,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 template <typename Fn, typename... Args>
 _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args... __args)
 {
-  ::CUresult __status = __fn(__args...);
+  const ::CUresult __status = __fn(__args...);
   if (__status != ::CUDA_SUCCESS)
   {
     _CCCL_THROW(::cuda::cuda_error, static_cast<::cudaError_t>(__status), __err_msg);
@@ -218,7 +235,7 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
 
 [[nodiscard]] _CCCL_HOST_API inline int __getVersion()
 {
-  static int __version = []() {
+  static const int __version = []() {
     int __v;
     auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDriverGetVersion);
     ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to check CUDA driver version", &__v);
@@ -268,7 +285,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetName);
 
   // TODO CUdevice is just an int, we probably could just cast, but for now do the safe thing
-  ::CUdevice __dev = __deviceGet(__ordinal);
+  const ::CUdevice __dev = __deviceGet(__ordinal);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
@@ -276,7 +293,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceTotalMem);
   ::std::size_t __result;
-  ::CUdevice __dev = __deviceGet(__ordinal);
+  const ::CUdevice __dev = __deviceGet(__ordinal);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query total memory of a device", &__result, __dev);
   return static_cast<::cuda::std::size_t>(__result);
 }
@@ -284,7 +301,8 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 #  if _CCCL_CTK_AT_LEAST(12, 4)
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __deviceGetDevResource(::CUdevice __dev, ::CUdevResourceType __type)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDevResource);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDeviceGetDevResource, cuDeviceGetDevResource, 12, 4);
   ::CUdevResource __resource{};
 
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the device SM resource", __dev, &__resource, __type);
@@ -292,17 +310,18 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-#  if _CCCL_CTK_AT_LEAST(13, 4)
+#  if _CCCL_CTK_AT_LEAST(13, 1)
 // Note: this function doesn't need to be [[nodiscard]]. The returned remainder is technically
 // an optional output (and can be NULL in the actual driver call), the true return value is
 // __groups.
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResource __devSmResourceSplit(
   ::CUdevResource* __groups,
   unsigned int __n_groups,
-  const ::CUdevResource& __input,
+  const ::CUdevResource& __in_resource,
   ::CU_DEV_SM_RESOURCE_GROUP_PARAMS* __params)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevSmResourceSplit);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDevSmResourceSplit, cuDevSmResourceSplit, 13, 1);
   ::CUdevResource __remainder{};
 
   ::cuda::__driver::__call_driver_fn(
@@ -310,19 +329,20 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
     "Failed to split the SM resource",
     __groups,
     __n_groups,
-    &__input,
+    &__in_resource,
     &__remainder,
     /*__flags*/ 0U,
     __params);
   return __remainder;
 }
-#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+#  endif // _CCCL_CTK_AT_LEAST(13, 1)
 
-#  if _CCCL_CTK_AT_LEAST(12, 5)
+#  if _CCCL_CTK_AT_LEAST(12, 4)
 [[nodiscard]] _CCCL_HOST_API inline ::CUdevResourceDesc
 __devResourceGenerateDesc(::CUdevResource* __resources, unsigned int __num_resources)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevResourceGenerateDesc);
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuDevResourceGenerateDesc, cuDevResourceGenerateDesc, 12, 4);
   ::CUdevResourceDesc __ret{};
 
   ::cuda::__driver::__call_driver_fn(
@@ -383,7 +403,7 @@ __ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept // NOLINT(bugprone-exception
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __ctxGetCurrent()
 {
   ::CUcontext __result;
-  _CCCL_TRY_CUDA_API(::cuda::__driver::__ctxGetCurrentNoThrow, "Failed to get current context", __result);
+  _CCCL_TRY_DRIVER_API(::cuda::__driver::__ctxGetCurrentNoThrow, "Failed to get current context", __result);
   return __result;
 }
 
@@ -577,11 +597,7 @@ __mempoolDestroyNoThrow(::CUmemoryPool __pool) noexcept // NOLINT(bugprone-excep
 
 _CCCL_HOST_API inline void __mempoolDestroy(::CUmemoryPool __pool)
 {
-  ::cudaError_t __status = ::cuda::__driver::__mempoolDestroyNoThrow(__pool);
-  if (__status != ::cudaSuccess)
-  {
-    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to destroy a memory pool");
-  }
+  _CCCL_TRY_DRIVER_API(::cuda::__driver::__mempoolDestroyNoThrow, "Failed to destroy a memory pool", __pool);
 }
 
 _CCCL_HOST_API inline ::CUdeviceptr
@@ -745,7 +761,7 @@ template <::CUpointer_attribute _Attr>
 [[nodiscard]] _CCCL_HOST_API __pointer_attribute_value_type_t<_Attr> __pointerGetAttribute(const void* __ptr)
 {
   __pointer_attribute_value_type_t<_Attr> __result;
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_DRIVER_API(
     ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>, "Failed to get attribute of a pointer", __result, __ptr);
   return __result;
 }
@@ -810,30 +826,31 @@ struct __ctx_from_stream
   };
 
   __kind __ctx_kind_;
-  union
-  {
-    ::CUcontext __ctx_device_;
-    ::CUgreenCtx __ctx_green_;
-  };
+  ::CUcontext __ctx_device_;
+  ::CUgreenCtx __ctx_green_;
 };
 
 [[nodiscard]] _CCCL_HOST_API inline __ctx_from_stream __streamGetCtx_v2(::CUstream __stream)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12, 5);
 
-  ::CUcontext __ctx   = nullptr;
-  ::CUgreenCtx __gctx = nullptr;
-  __ctx_from_stream __result;
-  _CCCLRT_CALL_STREAM_DRIVER_FN(__driver_fn, __stream, "Failed to get context from a stream", __stream, &__ctx, &__gctx);
-  if (__gctx)
+  __ctx_from_stream __result{};
+
+  _CCCLRT_CALL_STREAM_DRIVER_FN(
+    __driver_fn,
+    __stream,
+    "Failed to get context from a stream",
+    __stream,
+    &__result.__ctx_device_,
+    &__result.__ctx_green_);
+
+  if (__result.__ctx_green_)
   {
-    __result.__ctx_kind_  = __ctx_from_stream::__kind::__green;
-    __result.__ctx_green_ = __gctx;
+    __result.__ctx_kind_ = __ctx_from_stream::__kind::__green;
   }
   else
   {
-    __result.__ctx_kind_   = __ctx_from_stream::__kind::__device;
-    __result.__ctx_device_ = __ctx;
+    __result.__ctx_kind_ = __ctx_from_stream::__kind::__device;
   }
   return __result;
 }

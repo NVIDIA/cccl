@@ -38,7 +38,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Comp, class _InIter1, class _Sent1, class _InIter2, class _Sent2, class _OutIter>
 _CCCL_API constexpr pair<remove_cvref_t<_InIter1>, remove_cvref_t<_OutIter>> __set_difference(
-  _InIter1&& __first1, _Sent1&& __last1, _InIter2&& __first2, _Sent2&& __last2, _OutIter&& __result, _Comp&& __comp)
+  _InIter1 __first1, _Sent1 __last1, _InIter2 __first2, _Sent2 __last2, _OutIter __result, _Comp&& __comp)
 {
   while (__first1 != __last1 && __first2 != __last2)
   {
@@ -72,7 +72,12 @@ _CCCL_API constexpr _OutputIterator set_difference(
   _Compare __comp)
 {
   return ::cuda::std::__set_difference<_ClassicAlgPolicy, __comp_ref_type<_Compare>>(
-           __first1, __last1, __first2, __last2, __result, __comp)
+           ::cuda::std::move(__first1),
+           ::cuda::std::move(__last1),
+           ::cuda::std::move(__first2),
+           ::cuda::std::move(__last2),
+           ::cuda::std::move(__result),
+           __comp)
     .second;
 }
 
@@ -84,7 +89,13 @@ _CCCL_API constexpr _OutputIterator set_difference(
   _InputIterator2 __last2,
   _OutputIterator __result)
 {
-  return ::cuda::std::__set_difference<_ClassicAlgPolicy>(__first1, __last1, __first2, __last2, __result, __less{})
+  return ::cuda::std::__set_difference<_ClassicAlgPolicy>(
+           ::cuda::std::move(__first1),
+           ::cuda::std::move(__last1),
+           ::cuda::std::move(__first2),
+           ::cuda::std::move(__last2),
+           ::cuda::std::move(__result),
+           __less{})
     .second;
 }
 

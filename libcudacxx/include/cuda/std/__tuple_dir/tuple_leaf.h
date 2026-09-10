@@ -63,15 +63,13 @@ enum class __tuple_leaf_specialization
 
 //! @brief Detects whether we need to synthesize the assignment operator for reference types or can use EBCO
 template <class _Tp>
-_CCCL_API constexpr __tuple_leaf_specialization __tuple_leaf_choose()
-{
-  return is_empty_v<_Tp> && !is_final_v<_Tp> ? __tuple_leaf_specialization::__empty_non_final
-       : __must_synthesize_assignment_v<_Tp>
-         ? __tuple_leaf_specialization::__synthesize_assignment
-         : __tuple_leaf_specialization::__default;
-}
+inline constexpr __tuple_leaf_specialization __tuple_leaf_choose =
+  is_empty_v<_Tp> && !is_final_v<_Tp> ? __tuple_leaf_specialization::__empty_non_final
+  : __must_synthesize_assignment_v<_Tp>
+    ? __tuple_leaf_specialization::__synthesize_assignment
+    : __tuple_leaf_specialization::__default;
 
-template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choose<_Hp>()>
+template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choose<_Hp>>
 class __tuple_leaf;
 
 _CCCL_EXEC_CHECK_DISABLE

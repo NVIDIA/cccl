@@ -45,8 +45,8 @@ int main()
   // Create a transposed view of the multidimensional array.
   auto M_transposed = thrust::make_permutation_iterator(
     M.data_handle(), thrust::make_transform_iterator(cuda::counting_iterator(0), [=] __host__ __device__(int flat) {
-      int i = flat / cols;
-      int j = flat % cols;
+      const int i = flat / cols;
+      const int j = flat % cols;
       return i + j * rows;
     }));
 

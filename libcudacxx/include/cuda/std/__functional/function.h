@@ -135,8 +135,8 @@ class __alloc_func<_Fp, _Ap, _Rp(_ArgTypes...)>
   __compressed_pair<_Fp, _Ap> __f_;
 
 public:
-  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
-  using _Alloc _CCCL_NODEBUG_ALIAS  = _Ap;
+  using _Target _CCCL_NODEBUG = _Fp;
+  using _Alloc _CCCL_NODEBUG  = _Ap;
 
   _CCCL_API inline const _Target& __target() const
   {
@@ -206,7 +206,7 @@ class __default_alloc_func<_Fp, _Rp(_ArgTypes...)>
   _Fp __f_;
 
 public:
-  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
+  using _Target _CCCL_NODEBUG = _Fp;
 
   _CCCL_API inline const _Target& __target() const
   {

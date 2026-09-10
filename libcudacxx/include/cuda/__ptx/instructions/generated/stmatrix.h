@@ -15,7 +15,7 @@ __device__ static inline void stmatrix_m8n8(
 */
 #if __cccl_ptx_isa >= 780
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[1])
+_CCCL_DEVICE_API void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[1])
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x1.shared.b16 [%0], {%1};"
                :
@@ -33,7 +33,7 @@ __device__ static inline void stmatrix_m8n8(
 */
 #if __cccl_ptx_isa >= 780
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[2])
+_CCCL_DEVICE_API void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[2])
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x2.shared.b16 [%0], {%1, %2};"
                :
@@ -51,7 +51,7 @@ __device__ static inline void stmatrix_m8n8(
 */
 #if __cccl_ptx_isa >= 780
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[4])
+_CCCL_DEVICE_API void stmatrix_m8n8(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[4])
 {
   asm volatile(
     "stmatrix.sync.aligned.m8n8.x4.shared.b16 [%0], {%1, %2, %3, %4};"
@@ -70,7 +70,7 @@ __device__ static inline void stmatrix_m8n8_trans(
 */
 #if __cccl_ptx_isa >= 780
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[1])
+_CCCL_DEVICE_API void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[1])
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x1.trans.shared.b16 [%0], {%1};"
                :
@@ -88,7 +88,7 @@ __device__ static inline void stmatrix_m8n8_trans(
 */
 #if __cccl_ptx_isa >= 780
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[2])
+_CCCL_DEVICE_API void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[2])
 {
   asm volatile("stmatrix.sync.aligned.m8n8.x2.trans.shared.b16 [%0], {%1, %2};"
                :
@@ -106,7 +106,7 @@ __device__ static inline void stmatrix_m8n8_trans(
 */
 #if __cccl_ptx_isa >= 780
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[4])
+_CCCL_DEVICE_API void stmatrix_m8n8_trans(_B16* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[4])
 {
   asm volatile(
     "stmatrix.sync.aligned.m8n8.x4.trans.shared.b16 [%0], {%1, %2, %3, %4};"
@@ -126,7 +126,7 @@ __device__ static inline void stmatrix_m16n8_trans(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[1])
+_CCCL_DEVICE_API void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[1])
 {
   asm volatile("stmatrix.sync.aligned.m16n8.x1.trans.shared.b8 [%0], {%1};"
                :
@@ -145,7 +145,7 @@ __device__ static inline void stmatrix_m16n8_trans(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[2])
+_CCCL_DEVICE_API void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[2])
 {
   asm volatile("stmatrix.sync.aligned.m16n8.x2.trans.shared.b8 [%0], {%1, %2};"
                :
@@ -164,7 +164,7 @@ __device__ static inline void stmatrix_m16n8_trans(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
-_CCCL_DEVICE static inline void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[4])
+_CCCL_DEVICE_API void stmatrix_m16n8_trans(_B8* __gmem_ptr, const ::cuda::std::uint32_t (&__input_var)[4])
 {
   asm volatile(
     "stmatrix.sync.aligned.m16n8.x4.trans.shared.b8 [%0], {%1, %2, %3, %4};"

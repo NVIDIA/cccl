@@ -21,8 +21,6 @@
 
 #include "testing.cuh"
 
-namespace
-{
 template <class... Values>
 struct checked_value_receiver
 {
@@ -138,7 +136,7 @@ struct checked_error_receiver
         SUCCEED();
       }
     }
-    _CCCL_CATCH (::std::exception & e)
+    _CCCL_CATCH (const ::std::exception& e)
     {
 #if defined(_CCCL_NO_TYPEID)
       INFO("expected an error completion; got a different error. what: " << e.what());
@@ -216,4 +214,3 @@ struct proxy_value_receiver
 
 template <class Ty>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES proxy_value_receiver(Ty&) -> proxy_value_receiver<Ty>;
-} // namespace

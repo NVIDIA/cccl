@@ -43,10 +43,11 @@ jobs:
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
-          id:      ${{ matrix.id }}
+          id:          ${{ matrix.id }}
           environment: ${{ matrix.environment }}
-          command: ${{ matrix.command }}
-          image:   ${{ matrix.image }}
-          runner:  ${{ matrix.runner }}
-          cuda:    ${{ matrix.cuda }}
-          host:    ${{ matrix.host }}
+          command:     ${{ matrix.command }}
+          image:       ${{ matrix.image }}
+          runner:      ${{ matrix.runner }}
+          cuda:        ${{ matrix.cuda }}
+          host:        ${{ matrix.host }}
+          gpu_count:   ${{ matrix.gpu_count }}

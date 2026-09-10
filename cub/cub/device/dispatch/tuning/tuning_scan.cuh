@@ -960,6 +960,40 @@ struct policy_selector
     {
       return get_sm120_fallback_lookahead_policy();
     }
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      // tunings from cub/benchmarks/bench/scan/exclusive/sum.lookahead.cu
+      if (accum_is_primitive_or_trivially_copy_constructible)
+      {
+        switch (input_value_size)
+        {
+          case 2:
+            if (input_type == type_t::other)
+            {
+              // wrps_6.lbi_8.ipt_104.lbs_2.bis_2 ()  1.249803  1.041534  1.270719  1.566667
+              return ScanLookaheadPolicy{6, 104 - 1, 8, 2, 2};
+            }
+            break;
+          case 4:
+            if (input_type == type_t::float32)
+            {
+              // wrps_3.lbi_8.ipt_120.lbs_2.bis_-2 ()  1.127914  1.060261  1.129389  1.169118
+              return ScanLookaheadPolicy{3, 120 - 1, 8, 2, -2};
+            }
+            // wrps_4.lbi_5.ipt_88.lbs_-2.bis_-2 ()  1.079626  1.013468  1.090259  1.206897
+            return ScanLookaheadPolicy{4, 88 - 1, 5, -2, -2};
+          case 8:
+            if (input_type == type_t::float64)
+            {
+              break;
+            }
+            // wrps_2.lbi_7.ipt_88.lbs_-2.bis_-2 ()  1.032518  0.993770  1.029765  1.046025
+            return ScanLookaheadPolicy{2, 88 - 1, 7, -2, -2};
+          default:
+            break;
+        }
+      }
+    }
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       // tunings from cub/benchmarks/bench/scan/exclusive/sum.lookahead.cu
