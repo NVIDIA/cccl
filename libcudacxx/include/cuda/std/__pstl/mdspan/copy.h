@@ -36,14 +36,17 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _ExecutionPolicy, class _Src, class _Dst>
+_CCCL_CONCEPT __mdspan_copyable =
+  is_execution_policy_v<remove_cvref_t<_ExecutionPolicy>> && __is_cuda_std_mdspan_v<_Src>
+  && __is_cuda_std_mdspan_v<_Dst> && is_assignable_v<typename _Dst::reference, typename _Src::reference>
+  && is_constructible_v<typename _Src::extents_type, typename _Dst::extents_type>;
+
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 _CCCL_TEMPLATE(class _ExecutionPolicy, class _Src, class _Dst)
-_CCCL_REQUIRES(is_execution_policy_v<remove_cvref_t<_ExecutionPolicy>> _CCCL_AND //
-                 __is_cuda_std_mdspan_v<_Src> _CCCL_AND //
-                   __is_cuda_std_mdspan_v<_Dst> _CCCL_AND //
-                     is_assignable_v<typename _Dst::reference, typename _Src::reference> _CCCL_AND //
-                       is_constructible_v<typename _Src::extents_type, typename _Dst::extents_type>)
+_CCCL_REQUIRES(__mdspan_copyable<_ExecutionPolicy, _Src, _Dst>)
 _CCCL_HOST_API void copy(_ExecutionPolicy&& __policy, const _Src& __src, const _Dst& __dst)
 {
   _CCCL_ASSERT(__src.extents() == __dst.extents(), "__src and __dst extents must match");
