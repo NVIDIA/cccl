@@ -18,11 +18,12 @@ General
 #. API breaking changes of any public entity must be avoided,
    unless the next release will be a major release.
    If in doubt, consult a library maintainer.
-   A change is breaking if it can lead to a compilation failure in any consumer code using CCCL.
+   A change is breaking if it can lead to a compilation failure in any consumer code using CCCL,
+   or change the behavior or meaning of user code in any other way.
 #. Before an API is removed at a major release,
    the effected entity should be marked as ``[[deprecated("...")]]`` with rational and workaround,
    adding a Doxygen comment ``//! Deprecated [Since X.Y]`` with the CCCL version introducing the deprecation,
-   in at least one preceding minor release.
+   in at least one preceding release.
 
 Header inclusion
 ~~~~~~~~~~~~~~~~
