@@ -110,7 +110,7 @@ class EscapingGroupDescriptorError(GroupRewriteError):
             _wrap_diagnostic(
                 f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are "
                 f"compile-time descriptors and may only feed this_*(), group_by(), "
-                f"or group-first primitives; descriptor use involving {names!r} "
+                f"group methods, or group-first primitives; descriptor use involving {names!r} "
                 f"would escape to runtime",
             )
         )

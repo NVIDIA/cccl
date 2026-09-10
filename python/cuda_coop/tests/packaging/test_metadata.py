@@ -76,30 +76,28 @@ def test_excluded_python_implementations_are_absent() -> None:
     forbidden = (
         "_aot_cli.py",
         "cutlass",
-        "_core/block/reduce.py",
         "_core/block/scan.py",
-        "_core/group/reduce.py",
         "_core/group/scan.py",
-        "_core/api/reduce.py",
-        "_core/api/reduce.pyi",
         "_core/api/scan.py",
         "_core/api/scan.pyi",
         "numba_mlir/_dataclass.py",
         "numba_mlir/_stateful_function.py",
-        "numba_mlir/_group_reduce.py",
         "numba_mlir/_group_scan.py",
-        "numba_mlir/_lowering/_reduce.py",
         "numba_mlir/_lowering/_scan.py",
-        "numba_mlir/_lowering/_thread_group.py",
-        "numba_mlir/_compiler/_rewrite_reduce.py",
         "numba_mlir/_compiler/_rewrite_scan.py",
     )
 
     assert not [relative for relative in forbidden if (package / relative).exists()]
+    assert (package / "numba_mlir/_lowering/_thread_group.py").is_file()
 
     warp_files = {
         path.relative_to(package / "_core" / "warp").as_posix()
         for path in (package / "_core" / "warp").rglob("*")
         if path.is_file() and path.suffix in {".py", ".pyi"}
     }
-    assert warp_files == {"__init__.py", "exchange.py", "load_store.py"}
+    assert warp_files == {
+        "__init__.py",
+        "exchange.py",
+        "load_store.py",
+        "reduce.py",
+    }
