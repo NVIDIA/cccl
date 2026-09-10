@@ -11,20 +11,23 @@
 // Inserts and lookups must stay correct when the slot storage is under-aligned for the packed
 // atomic CAS, which forces the insert path onto the non-packed fallback.
 
-// Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
-#if defined(__CUDACC__)
-#  pragma nv_diag_suppress 20011
-#endif
-
 #include <cuda/__memory/align_up.h>
+#include <cuda/atomic>
+#include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/functional>
+#include <cuda/memory_pool>
+#include <cuda/std/atomic>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/type_traits>
+#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
 
+#include <cooperative_groups.h>
 #include <testing.cuh>
 
 namespace cudax = cuda::experimental;
@@ -136,4 +139,162 @@ C2H_TEST("fixed_capacity_map insert and contains over misaligned external storag
 {
   run_misaligned_external_storage<::cuda::std::int32_t, ::cuda::std::int32_t>();
   run_misaligned_external_storage<::cuda::std::uint16_t, ::cuda::std::uint16_t>();
+}
+
+struct publication_hash
+{
+  template <class Key>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr ::cuda::std::size_t operator()(Key key) const noexcept
+  {
+    return static_cast<::cuda::std::size_t>(key);
+  }
+};
+
+template <bool DelayedPublication, class Ref>
+__global__ void insert_and_find_publication_kernel(Ref ref, int* out)
+{
+  using key_type    = typename Ref::key_type;
+  using mapped_type = typename Ref::mapped_type;
+  using value_type  = typename Ref::value_type;
+  const auto tile   = ::cooperative_groups::tiled_partition<Ref::cg_size>(::cooperative_groups::this_thread_block());
+  auto* const slots = ref.storage_span().data();
+
+  for (auto i = threadIdx.x; i < ref.capacity(); i += blockDim.x)
+  {
+    slots[i] = value_type{ref.empty_key_sentinel(), ref.empty_value_sentinel()};
+  }
+  __syncthreads();
+
+  if constexpr (DelayedPublication)
+  {
+    // Model a successful key CAS whose dependent payload write has not happened yet.
+    // Hashing key zero selects slot zero for both scalar and cooperative probing.
+    if (threadIdx.x == 0)
+    {
+      slots[0].first = key_type{0};
+    }
+    __syncthreads();
+    if (threadIdx.x == 32)
+    {
+      // A separate, resident warp publishes after a bounded delay. The writer never
+      // waits for the reader to return, so the correct payload wait can finish.
+      const auto start = clock64();
+      while (clock64() - start < 1000000)
+      {
+      }
+      ::cuda::atomic_ref<mapped_type, Ref::thread_scope>{slots[0].second}.store(
+        mapped_type{7}, ::cuda::std::memory_order_relaxed);
+    }
+    if (threadIdx.x >= Ref::cg_size)
+    {
+      return;
+    }
+  }
+
+  const int operation = static_cast<int>(threadIdx.x) / Ref::cg_size;
+  const value_type value{key_type{0}, static_cast<mapped_type>(operation + 107)};
+  const auto result = [&] {
+    if constexpr (Ref::cg_size == 1)
+    {
+      return ref.insert_and_find(value);
+    }
+    else
+    {
+      return ref.insert_and_find(tile, value);
+    }
+  }();
+  if (tile.thread_rank() == 0)
+  {
+    out[2 * operation]     = result.first == ref.end() ? -1 : static_cast<int>(result.first->second);
+    out[2 * operation + 1] = result.second;
+  }
+}
+
+template <class Key, int CgSize>
+void run_insert_and_find_publication(bool misaligned, bool delayed_publication)
+{
+  using probing_type = cudax::cuco::linear_probing<CgSize, publication_hash>;
+  using ref_type     = cudax::cuco::
+    fixed_capacity_map_ref<Key, Key, ::cuda::thread_scope_device, ::cuda::std::equal_to<Key>, probing_type, 1>;
+  using value_type         = typename ref_type::value_type;
+  const auto capacity      = cudax::cuco::make_valid_capacity<probing_type, 1>(::cuda::std::size_t{16});
+  constexpr int block      = 128;
+  constexpr int operations = block / CgSize;
+  CAPTURE(sizeof(Key), CgSize, misaligned, delayed_publication);
+
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  const auto mr = ::cuda::device_default_memory_pool(stream.device());
+  auto storage =
+    ::cuda::make_buffer<::cuda::std::byte>(stream, mr, (capacity + 2) * sizeof(value_type), ::cuda::std::byte{});
+  auto* const aligned_raw = ::cuda::align_up(storage.data(), sizeof(value_type));
+  auto* const slots       = reinterpret_cast<value_type*>(aligned_raw + (misaligned ? alignof(value_type) : 0));
+  REQUIRE(reinterpret_cast<::cuda::std::uintptr_t>(slots) % alignof(value_type) == 0);
+  REQUIRE((reinterpret_cast<::cuda::std::uintptr_t>(slots) % sizeof(value_type) != 0) == misaligned);
+  const ref_type ref{
+    cudax::cuco::empty_key<Key>{static_cast<Key>(-1)},
+    cudax::cuco::empty_value<Key>{static_cast<Key>(-1)},
+    ::cuda::std::equal_to<Key>{},
+    probing_type{},
+    typename ref_type::storage_span_type{slots, capacity}};
+
+  auto results = ::cuda::make_buffer<int>(stream, mr, 2 * operations, 0);
+  if (delayed_publication)
+  {
+    insert_and_find_publication_kernel<true><<<1, block, 0, stream.get()>>>(ref, results.data());
+  }
+  else
+  {
+    insert_and_find_publication_kernel<false><<<1, block, 0, stream.get()>>>(ref, results.data());
+  }
+  REQUIRE(cudaGetLastError() == cudaSuccess);
+  int out[2 * operations];
+  const int result_count = delayed_publication ? 1 : operations;
+  REQUIRE(cudaMemcpyAsync(out, results.data(), 2 * result_count * sizeof(int), cudaMemcpyDeviceToHost, stream.get())
+          == cudaSuccess);
+  stream.sync();
+
+  if (delayed_publication)
+  {
+    REQUIRE(out[0] == 7);
+    REQUIRE(out[1] == 0);
+  }
+  else
+  {
+    int winner         = -1;
+    int inserted_count = 0;
+    for (int i = 0; i < operations; ++i)
+    {
+      if (out[2 * i + 1])
+      {
+        winner = i;
+        ++inserted_count;
+      }
+    }
+    REQUIRE(inserted_count == 1);
+    for (int i = 0; i < operations; ++i)
+    {
+      REQUIRE(out[2 * i] == winner + 107);
+    }
+  }
+}
+
+using publication_key_types = c2h::type_list<::cuda::std::int32_t, ::cuda::std::uint16_t>;
+using publication_cg_sizes =
+  c2h::type_list<::cuda::std::integral_constant<int, 1>, ::cuda::std::integral_constant<int, 2>>;
+
+C2H_TEST("fixed_capacity_map insert_and_find waits for a pending payload",
+         "[container]",
+         publication_key_types,
+         publication_cg_sizes)
+{
+  run_insert_and_find_publication<c2h::get<0, TestType>, c2h::get<1, TestType>::value>(true, true);
+}
+
+C2H_TEST("fixed_capacity_map insert_and_find concurrent duplicates over external storage",
+         "[container]",
+         publication_key_types,
+         publication_cg_sizes)
+{
+  run_insert_and_find_publication<c2h::get<0, TestType>, c2h::get<1, TestType>::value>(false, false);
+  run_insert_and_find_publication<c2h::get<0, TestType>, c2h::get<1, TestType>::value>(true, false);
 }

@@ -427,6 +427,8 @@ public:
   //! Otherwise, returns an iterator to the inserted pair and `true`.
   //!
   //! @note Concurrent calls for the same key return the payload of the insertion that succeeds.
+  //! @pre Input and stored mapped values must not equal `empty_value_sentinel()`.
+  //! @pre Concurrent operations on this map must also use `insert_and_find`.
   //!
   //! @tparam _Value Input type convertible to `value_type`
   //!
@@ -445,6 +447,8 @@ public:
   //! Otherwise, returns an iterator to the inserted pair and `true`.
   //!
   //! @note Concurrent calls for the same key return the payload of the insertion that succeeds.
+  //! @pre Input and stored mapped values must not equal `empty_value_sentinel()`.
+  //! @pre Concurrent operations on this map must also use `insert_and_find`.
   //!
   //! @tparam _Value Input type convertible to `value_type`
   //! @tparam _ParentCG Parent cooperative group type

@@ -532,14 +532,14 @@ public:
             case __insert_result::__duplicate:
               __maybe_wait_for_payload(__slot_ptr);
               return {__iterator{__slot_ptr}, false};
-            default:
+            case __insert_result::__continue:
               continue;
           }
         }
       }
 
       ++__probing_iter;
-      if (*__probing_iter == __init_idx)
+      if (_CCCL_BUILTIN_EXPECT(*__probing_iter == __init_idx, 0))
       {
         return {end(), false};
       }
@@ -641,13 +641,13 @@ public:
             }
             __group.sync();
             return {__iterator{__slot_ptr}, false};
-          default:
+          case __insert_result::__continue:
             continue;
         }
       }
 
       ++__probing_iter;
-      if (*__probing_iter == __init_idx)
+      if (_CCCL_BUILTIN_EXPECT(*__probing_iter == __init_idx, 0))
       {
         return {end(), false};
       }
@@ -1152,6 +1152,20 @@ public:
   }
 
   //!
+  //! @brief Returns whether this storage supports publishing a slot with one atomic CAS.
+  [[nodiscard]] _CCCL_DEVICE_API bool __can_use_packed_cas() const noexcept
+  {
+    if constexpr (__has_packable_representation)
+    {
+      return __storage_ref.__is_packed_cas_aligned();
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  //!
   //! @brief Attempts to insert an element into a slot.
   //!
   //! @note Dispatches the correct implementation depending on the container
@@ -1172,7 +1186,7 @@ public:
     {
       if constexpr (__has_packable_representation)
       {
-        if (__storage_ref.__is_packed_cas_aligned())
+        if (__can_use_packed_cas())
         {
           return packed_cas(__address, __expected, __desired);
         }
@@ -1213,7 +1227,7 @@ public:
     {
       if constexpr (__has_packable_representation)
       {
-        if (__storage_ref.__is_packed_cas_aligned())
+        if (__can_use_packed_cas())
         {
           return packed_cas(__address, __expected, __desired);
         }
@@ -1256,9 +1270,12 @@ public:
   template <class _SlotPtr>
   _CCCL_DEVICE_API void __maybe_wait_for_payload(_SlotPtr __slot_ptr) const noexcept
   {
-    if constexpr (__has_payload && sizeof(__value_type) > 8)
+    if constexpr (__has_payload)
     {
-      __wait_for_payload(__slot_ptr->second, empty_value_sentinel());
+      if (!__can_use_packed_cas())
+      {
+        __wait_for_payload(__slot_ptr->second, empty_value_sentinel());
+      }
     }
   }
 #endif // _CCCL_CUDA_COMPILATION()

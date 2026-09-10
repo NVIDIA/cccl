@@ -330,6 +330,9 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `insert_and_find_async`.
   //! @note If multiple input pairs have equivalent keys, it is unspecified which pair is inserted.
+  //! @pre Input and stored mapped values must not equal `empty_value_sentinel()`.
+  //! @pre Concurrent operations on this map must also use `insert_and_find` or `insert_and_find_async`.
+  //! @throws cuda_error if the operation fails to launch or stream synchronization fails
   //!
   //! @tparam _InputIt Device accessible random access input iterator whose value type is
   //! convertible to the map's `value_type`
@@ -342,7 +345,7 @@ public:
   //! @param __found_begin Beginning of the mapped-value output sequence
   //! @param __inserted_begin Beginning of the insertion-status output sequence
   template <class _InputIt, class _FoundIt, class _InsertedIt>
-  void insert_and_find(
+  _CCCL_HOST_API void insert_and_find(
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _FoundIt __found_begin, _InsertedIt __inserted_begin)
   {
     insert_and_find_async(__stream, __first, __last, __found_begin, __inserted_begin);
@@ -358,6 +361,9 @@ public:
   //! `false`.
   //!
   //! @note If multiple input pairs have equivalent keys, it is unspecified which pair is inserted.
+  //! @pre Input and stored mapped values must not equal `empty_value_sentinel()`.
+  //! @pre Concurrent operations on this map must also use `insert_and_find` or `insert_and_find_async`.
+  //! @throws cuda_error if the operation fails to launch
   //!
   //! @tparam _InputIt Device accessible random access input iterator whose value type is
   //! convertible to the map's `value_type`
@@ -370,12 +376,8 @@ public:
   //! @param __found_begin Beginning of the mapped-value output sequence
   //! @param __inserted_begin Beginning of the insertion-status output sequence
   template <class _InputIt, class _FoundIt, class _InsertedIt>
-  void insert_and_find_async(
-    ::cuda::stream_ref __stream,
-    _InputIt __first,
-    _InputIt __last,
-    _FoundIt __found_begin,
-    _InsertedIt __inserted_begin) noexcept
+  _CCCL_HOST_API void insert_and_find_async(
+    ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _FoundIt __found_begin, _InsertedIt __inserted_begin)
   {
     __impl->insert_and_find_async(__stream, __first, __last, __found_begin, __inserted_begin, ref());
   }

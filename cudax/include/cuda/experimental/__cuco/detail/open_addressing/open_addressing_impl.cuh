@@ -353,6 +353,7 @@ public:
     __open_addressing::__insert_and_find_n<__cg_size, detail::__default_block_size>
       <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
         __first, __num_keys, __found_begin, __inserted_begin, __container_ref);
+    _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert and find keys");
   }
 
   //! @brief Asynchronously checks if keys in `[first, last)` exist in the container.

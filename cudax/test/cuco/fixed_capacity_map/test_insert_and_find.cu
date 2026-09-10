@@ -8,11 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Temporary nvcc workaround for a cuda::buffer destructor conflict
-#if defined(__CUDACC__)
-#  pragma nv_diag_suppress 20011
-#endif // defined(__CUDACC__)
-
 #include <cuda/__cccl_config>
 #include <cuda/buffer>
 #include <cuda/functional>
@@ -22,6 +17,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -220,6 +216,16 @@ C2H_TEST(
     matches_insertion_status{inserted.data(), false}));
 
   map.insert_and_find(stream, initial_pairs, initial_pairs, found.begin(), inserted.begin());
+  REQUIRE(::cuda::std::all_of(
+    policy,
+    ::cuda::counting_iterator<::cuda::std::int32_t>{0},
+    ::cuda::counting_iterator<::cuda::std::int32_t>{num_keys},
+    matches_payloads<mapped_type>{found.data(), initial_payload_offset}));
+  REQUIRE(::cuda::std::all_of(
+    policy,
+    ::cuda::counting_iterator<::cuda::std::int32_t>{0},
+    ::cuda::counting_iterator<::cuda::std::int32_t>{num_keys},
+    matches_insertion_status{inserted.data(), false}));
 
   map.clear(stream);
   auto device_found    = ::cuda::make_buffer<mapped_type>(stream, mr, 2, mapped_type{0});
@@ -233,4 +239,19 @@ C2H_TEST(
     ::cuda::counting_iterator<::cuda::std::int32_t>{0},
     ::cuda::counting_iterator<::cuda::std::int32_t>{2},
     matches_device_results<mapped_type>{device_found.data(), device_inserted.data()}));
+
+  map.clear(stream);
+  const auto capacity = static_cast<::cuda::std::int32_t>(map.capacity());
+  REQUIRE(map.insert(stream, initial_pairs, initial_pairs + capacity) == map.capacity());
+  map.insert_and_find(stream, initial_pairs + capacity, initial_pairs + capacity + 1, found.begin(), inserted.begin());
+  REQUIRE(::cuda::std::all_of(
+    policy,
+    ::cuda::counting_iterator<::cuda::std::int32_t>{0},
+    ::cuda::counting_iterator<::cuda::std::int32_t>{1},
+    matches_payloads<mapped_type>{found.data(), empty_value_sentinel}));
+  REQUIRE(::cuda::std::all_of(
+    policy,
+    ::cuda::counting_iterator<::cuda::std::int32_t>{0},
+    ::cuda::counting_iterator<::cuda::std::int32_t>{1},
+    matches_insertion_status{inserted.data(), false}));
 }
