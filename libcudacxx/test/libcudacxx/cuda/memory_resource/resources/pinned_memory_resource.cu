@@ -146,67 +146,48 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
   }
 
 #if _CCCL_HAS_EXCEPTIONS()
-  { // allocate_sync with too small alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 42);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
-  }
+  {
+    const char* error_msg =
+      cuda::std::is_same_v<pinned_resource, cuda::mr::legacy_pinned_memory_resource>
+        ? "Invalid alignment passed to legacy_pinned_memory_resource::allocate_sync."
+        : "Invalid alignment passed to __memory_pool_base::allocate_sync.";
 
-  { // allocate_sync with non matching alignment
-    while (true)
-    {
-      try
-      {
-        [[maybe_unused]] auto* ptr = res.allocate_sync(5, 1337);
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
+    { // allocate_sync with zero alignment
+      REQUIRE_THROWS_MATCHES(
+        res.allocate_sync(5, 0), ::std::invalid_argument, Catch::Matchers::ExceptionMessageMatcher(error_msg));
+    }
+
+    { // allocate_sync with too small alignment
+      REQUIRE_THROWS_MATCHES(
+        res.allocate_sync(5, 42), ::std::invalid_argument, Catch::Matchers::ExceptionMessageMatcher(error_msg));
+    }
+
+    { // allocate_sync with non matching alignment
+      REQUIRE_THROWS_MATCHES(
+        res.allocate_sync(5, 1337), ::std::invalid_argument, Catch::Matchers::ExceptionMessageMatcher(error_msg));
     }
   }
 
   if constexpr (cuda::mr::resource<pinned_resource>)
   {
+    const char* error_msg =
+      cuda::std::is_same_v<pinned_resource, cuda::mr::legacy_pinned_memory_resource>
+        ? "Invalid alignment passed to legacy_pinned_memory_resource::allocate."
+        : "Invalid alignment passed to __memory_pool_base::allocate.";
+
+    { // allocate_sync with zero alignment
+      REQUIRE_THROWS_MATCHES(
+        res.allocate(stream, 5, 0), ::std::invalid_argument, Catch::Matchers::ExceptionMessageMatcher(error_msg));
+    }
+
     { // allocate with too small alignment
-      while (true)
-      {
-        try
-        {
-          [[maybe_unused]] auto* ptr = res.allocate(stream, 5, 42);
-        }
-        catch (std::invalid_argument&)
-        {
-          break;
-        }
-        CHECK(false);
-      }
+      REQUIRE_THROWS_MATCHES(
+        res.allocate(stream, 5, 42), ::std::invalid_argument, Catch::Matchers::ExceptionMessageMatcher(error_msg));
     }
 
     { // allocate with non matching alignment
-      while (true)
-      {
-        try
-        {
-          auto* ptr = res.allocate(stream, 5, 1337);
-          (void) ptr;
-        }
-        catch (std::invalid_argument&)
-        {
-          break;
-        }
-        CHECK(false);
-      }
+      REQUIRE_THROWS_MATCHES(
+        res.allocate(stream, 5, 1337), ::std::invalid_argument, Catch::Matchers::ExceptionMessageMatcher(error_msg));
     }
   }
 #endif // _CCCL_HAS_EXCEPTIONS()
