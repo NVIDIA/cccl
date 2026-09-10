@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 # ruff: noqa: E402
 
-"""Physical Warp Load/Store runtime qualification."""
+"""Physical and logical Warp Load/Store runtime qualification."""
 
 from __future__ import annotations
 
@@ -35,9 +35,12 @@ pytestmark = [
 ]
 
 _WARP_THREADS = 32
+_LOGICAL_WARP_THREADS = 8
 _BLOCK_THREADS = 2 * _WARP_THREADS
 _ITEMS_PER_THREAD = 2
 _WARP_TILE_ITEMS = _WARP_THREADS * _ITEMS_PER_THREAD
+_LOGICAL_TILE_ITEMS = _LOGICAL_WARP_THREADS * _ITEMS_PER_THREAD
+_LOGICAL_GROUPS = _BLOCK_THREADS // _LOGICAL_WARP_THREADS
 _BLOCK_ITEMS = _BLOCK_THREADS * _ITEMS_PER_THREAD
 _LOAD_OFFSET = 5
 _STORE_OFFSET = 7
@@ -378,6 +381,382 @@ def test_each_warp_store_algorithm_masks_each_warp_and_preserves_input(
     np.testing.assert_array_equal(preserved, source)
 
 
+def _logical_tile_index(algorithm: str, lane: int, item: int, width: int) -> int:
+    if algorithm == "striped":
+        return lane + item * width
+    return lane * _ITEMS_PER_THREAD + item
+
+
+@lru_cache(maxsize=None)
+def _logical_load_store_kernel(algorithm: str, qualified: bool):
+    if qualified:
+        load_algorithm = algorithm
+        store_algorithm = algorithm
+
+        @cuda.jit
+        def kernel(
+            load_source,
+            store_source,
+            observed,
+            destination,
+            valid_by_group,
+            offset_by_group,
+        ):
+            thread = cuda.threadIdx.x
+            group_index = thread // _LOGICAL_WARP_THREADS
+            offset = offset_by_group[group_index]
+            group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = qualified_coop.load(
+                group,
+                load_source,
+                payload,
+                algorithm=load_algorithm,
+                valid_items=valid_by_group[group_index],
+                oob_default=types.int32(-127),
+                offset=offset,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                payload_index = thread * _ITEMS_PER_THREAD + item
+                observed[payload_index] = loaded[item]
+                payload[item] = store_source[payload_index]
+            qualified_coop.store(
+                group,
+                destination,
+                payload,
+                algorithm=store_algorithm,
+                valid_items=valid_by_group[group_index],
+                offset=offset,
+            )
+
+    else:
+
+        @cuda.jit
+        def kernel(
+            load_source,
+            store_source,
+            observed,
+            destination,
+            valid_by_group,
+            offset_by_group,
+        ):
+            thread = cuda.threadIdx.x
+            group_index = thread // _LOGICAL_WARP_THREADS
+            offset = offset_by_group[group_index]
+            group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
+            payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = root_coop.load(
+                group,
+                load_source,
+                payload,
+                algorithm=algorithm,
+                valid_items=valid_by_group[group_index],
+                oob_default=types.int32(-127),
+                offset=offset,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                payload_index = thread * _ITEMS_PER_THREAD + item
+                observed[payload_index] = loaded[item]
+                payload[item] = store_source[payload_index]
+            root_coop.store(
+                group,
+                destination,
+                payload,
+                algorithm=algorithm,
+                valid_items=valid_by_group[group_index],
+                offset=offset,
+            )
+
+    return kernel
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("algorithm", _ALGORITHMS)
+def test_logical_warp_algorithms_use_independent_group_tiles(
+    qualified: bool,
+    algorithm: str,
+) -> None:
+    offsets_by_group = np.array([0, 1, 3, 4, 6, 7, 9, 10], dtype=np.int64)
+    allocation_items = int(offsets_by_group.max()) + _BLOCK_ITEMS + 3
+    load_source = _values(allocation_items, shift=47)
+    store_source = _values(_BLOCK_ITEMS, shift=53)
+    observed = np.full(_BLOCK_ITEMS, 19, dtype=np.int32)
+    destination = np.full(allocation_items, -31, dtype=np.int32)
+    valid_by_group = np.array(
+        [0, 1, 5, _LOGICAL_TILE_ITEMS, 3, 11, 7, 15],
+        dtype=np.int32,
+    )
+    expected_observed = np.full(_BLOCK_ITEMS, -127, dtype=np.int32)
+    expected_destination = destination.copy()
+    for thread in range(_BLOCK_THREADS):
+        group_index = thread // _LOGICAL_WARP_THREADS
+        lane = thread % _LOGICAL_WARP_THREADS
+        valid_items = valid_by_group[group_index]
+        offset = offsets_by_group[group_index]
+        for item in range(_ITEMS_PER_THREAD):
+            payload_index = thread * _ITEMS_PER_THREAD + item
+            tile_index = _logical_tile_index(
+                algorithm,
+                lane,
+                item,
+                _LOGICAL_WARP_THREADS,
+            )
+            if tile_index < valid_items:
+                memory_index = offset + group_index * _LOGICAL_TILE_ITEMS + tile_index
+                expected_observed[payload_index] = load_source[memory_index]
+                expected_destination[memory_index] = store_source[payload_index]
+
+    _logical_load_store_kernel(algorithm, qualified)[1, _BLOCK_THREADS](
+        load_source,
+        store_source,
+        observed,
+        destination,
+        valid_by_group,
+        offsets_by_group,
+    )
+
+    np.testing.assert_array_equal(observed, expected_observed)
+    np.testing.assert_array_equal(destination, expected_destination)
+
+
+@lru_cache(maxsize=None)
+def _logical_partial_transpose_load_kernel(qualified: bool):
+    if qualified:
+
+        @cuda.jit
+        def kernel(source, initial, observed, valid_by_group):
+            thread = cuda.threadIdx.x
+            group_index = thread // _LOGICAL_WARP_THREADS
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                payload_index = thread * _ITEMS_PER_THREAD + item
+                payload[item] = initial[payload_index]
+            loaded = qualified_coop.load(
+                qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+                source,
+                payload,
+                algorithm="transpose",
+                valid_items=valid_by_group[group_index],
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+    else:
+
+        @cuda.jit
+        def kernel(source, initial, observed, valid_by_group):
+            thread = cuda.threadIdx.x
+            group_index = thread // _LOGICAL_WARP_THREADS
+            payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                payload_index = thread * _ITEMS_PER_THREAD + item
+                payload[item] = initial[payload_index]
+            loaded = root_coop.load(
+                root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+                source,
+                payload,
+                algorithm="transpose",
+                valid_items=valid_by_group[group_index],
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+    return kernel
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+def test_logical_transpose_load_preserves_invalid_slots_in_nonzero_groups(
+    qualified: bool,
+) -> None:
+    source = _values(_BLOCK_ITEMS, shift=61)
+    initial = -1000 - np.arange(_BLOCK_ITEMS, dtype=np.int32)
+    observed = np.full(_BLOCK_ITEMS, 23, dtype=np.int32)
+    valid_by_group = np.array(
+        [0, 1, 5, _LOGICAL_TILE_ITEMS, 3, 11, 7, 15],
+        dtype=np.int32,
+    )
+    expected = initial.copy()
+    for thread in range(_BLOCK_THREADS):
+        group_index = thread // _LOGICAL_WARP_THREADS
+        lane = thread % _LOGICAL_WARP_THREADS
+        valid_items = valid_by_group[group_index]
+        for item in range(_ITEMS_PER_THREAD):
+            payload_index = thread * _ITEMS_PER_THREAD + item
+            tile_index = lane * _ITEMS_PER_THREAD + item
+            if tile_index < valid_items:
+                expected[payload_index] = source[
+                    group_index * _LOGICAL_TILE_ITEMS + tile_index
+                ]
+
+    _logical_partial_transpose_load_kernel(qualified)[1, _BLOCK_THREADS](
+        source,
+        initial,
+        observed,
+        valid_by_group,
+    )
+
+    np.testing.assert_array_equal(observed, expected)
+
+
+@lru_cache(maxsize=None)
+def _logical_width_direct_kernel(width: int, qualified: bool):
+    if qualified:
+
+        @cuda.jit
+        def kernel(source, observed):
+            thread = cuda.threadIdx.x
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = qualified_coop.load(
+                qualified_coop.this_warp().group_by(width),
+                source,
+                payload,
+                algorithm="direct",
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+    else:
+
+        @cuda.jit
+        def kernel(source, observed):
+            thread = cuda.threadIdx.x
+            payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = root_coop.load(
+                root_coop.this_warp().group_by(width),
+                source,
+                payload,
+                algorithm="direct",
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+    return kernel
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize("width", (1, 2, 4, 8, 16, 32))
+def test_every_logical_warp_width_addresses_consecutive_tiles(
+    qualified: bool,
+    width: int,
+) -> None:
+    source = _values(_BLOCK_ITEMS, shift=67)
+    observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
+
+    _logical_width_direct_kernel(width, qualified)[1, _BLOCK_THREADS](
+        source,
+        observed,
+    )
+
+    np.testing.assert_array_equal(observed, source)
+
+
+@lru_cache(maxsize=None)
+def _logical_direct_dtype_load_store_kernel(numba_dtype, qualified: bool):
+    if qualified:
+
+        @cuda.jit
+        def kernel(load_source, store_source, observed, destination):
+            thread = cuda.threadIdx.x
+            group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
+            loaded = qualified_coop.load(
+                group,
+                load_source,
+                qualified_coop.ThreadData(
+                    _ITEMS_PER_THREAD,
+                    dtype=numba_dtype,
+                ),
+                algorithm="direct",
+            )
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=numba_dtype,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
+                observed[index] = loaded[item]
+                payload[item] = store_source[index]
+            qualified_coop.store(
+                group,
+                destination,
+                payload,
+                algorithm="direct",
+            )
+
+    else:
+
+        @cuda.jit
+        def kernel(load_source, store_source, observed, destination):
+            thread = cuda.threadIdx.x
+            group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
+            loaded = root_coop.load(
+                group,
+                load_source,
+                root_coop.ThreadData(
+                    _ITEMS_PER_THREAD,
+                    dtype=numba_dtype,
+                ),
+                algorithm="direct",
+            )
+            payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=numba_dtype,
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                index = thread * _ITEMS_PER_THREAD + item
+                observed[index] = loaded[item]
+                payload[item] = store_source[index]
+            root_coop.store(
+                group,
+                destination,
+                payload,
+                algorithm="direct",
+            )
+
+    return kernel
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+@pytest.mark.parametrize(("numpy_dtype", "numba_dtype"), _DTYPES)
+def test_logical_direct_load_store_matches_every_dtype_oracle(
+    qualified: bool,
+    numpy_dtype: np.dtype,
+    numba_dtype,
+) -> None:
+    load_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=13)
+    store_source = _dtype_values(numpy_dtype, _BLOCK_ITEMS, shift=37)
+    sentinel = _dtype_sentinel(numpy_dtype)
+    observed = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
+    destination = np.full(_BLOCK_ITEMS, sentinel, dtype=numpy_dtype)
+
+    _logical_direct_dtype_load_store_kernel(numba_dtype, qualified)[1, _BLOCK_THREADS](
+        load_source,
+        store_source,
+        observed,
+        destination,
+    )
+
+    np.testing.assert_array_equal(observed, load_source)
+    np.testing.assert_array_equal(destination, store_source)
+
+
 @lru_cache(maxsize=None)
 def _partial_load_preserving_kernel(algorithm: str, qualified: bool):
     if qualified:
@@ -585,6 +964,66 @@ def test_physical_warp_origin_uses_x_major_multidimensional_rank(
     observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
 
     _multidimensional_load_kernel(qualified)[1, block_shape](source, observed)
+
+    np.testing.assert_array_equal(observed, source)
+
+
+@lru_cache(maxsize=None)
+def _logical_multidimensional_load_kernel(qualified: bool):
+    if qualified:
+
+        @cuda.jit
+        def kernel(source, observed):
+            thread = cuda.threadIdx.x + cuda.blockDim.x * (
+                cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
+            )
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = qualified_coop.load(
+                qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+                source,
+                payload,
+                algorithm="direct",
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+    else:
+
+        @cuda.jit
+        def kernel(source, observed):
+            thread = cuda.threadIdx.x + cuda.blockDim.x * (
+                cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
+            )
+            payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = root_coop.load(
+                root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS),
+                source,
+                payload,
+                algorithm="direct",
+            )
+            for item in range(_ITEMS_PER_THREAD):
+                observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+    return kernel
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+def test_logical_warp_origin_uses_x_major_multidimensional_rank(
+    qualified: bool,
+) -> None:
+    source = _values(_BLOCK_ITEMS, shift=79)
+    observed = np.full(_BLOCK_ITEMS, -1, dtype=np.int32)
+
+    _logical_multidimensional_load_kernel(qualified)[1, (8, 4, 2)](
+        source,
+        observed,
+    )
 
     np.testing.assert_array_equal(observed, source)
 
@@ -825,6 +1264,90 @@ def test_grid_stride_tail_clamps_valid_items_per_physical_warp(
     np.testing.assert_array_equal(destination, source)
 
 
+@lru_cache(maxsize=None)
+def _logical_grid_stride_transpose_kernel(qualified: bool):
+    if qualified:
+
+        @cuda.jit
+        def kernel(source, destination):
+            thread = cuda.threadIdx.x
+            group_index = thread // _LOGICAL_WARP_THREADS
+            block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
+            remaining = source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+            valid_items = min(max(remaining, 0), _LOGICAL_TILE_ITEMS)
+            group = qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
+            payload = qualified_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = qualified_coop.load(
+                group,
+                source,
+                payload,
+                algorithm="transpose",
+                valid_items=valid_items,
+                offset=block_offset,
+            )
+            qualified_coop.store(
+                group,
+                destination,
+                loaded,
+                algorithm="transpose",
+                valid_items=valid_items,
+                offset=block_offset,
+            )
+
+    else:
+
+        @cuda.jit
+        def kernel(source, destination):
+            thread = cuda.threadIdx.x
+            group_index = thread // _LOGICAL_WARP_THREADS
+            block_offset = cuda.blockIdx.x * _BLOCK_ITEMS
+            remaining = source.size - block_offset - group_index * _LOGICAL_TILE_ITEMS
+            valid_items = min(max(remaining, 0), _LOGICAL_TILE_ITEMS)
+            group = root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)
+            payload = root_coop.ThreadData(
+                _ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            loaded = root_coop.load(
+                group,
+                source,
+                payload,
+                algorithm="transpose",
+                valid_items=valid_items,
+                offset=block_offset,
+            )
+            root_coop.store(
+                group,
+                destination,
+                loaded,
+                algorithm="transpose",
+                valid_items=valid_items,
+                offset=block_offset,
+            )
+
+    return kernel
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+def test_grid_stride_tail_clamps_valid_items_per_logical_warp(
+    qualified: bool,
+) -> None:
+    source = _values(_GRID_STRIDE_ITEMS, shift=107)
+    destination = np.full(_GRID_STRIDE_ITEMS, -1, dtype=np.int32)
+
+    _logical_grid_stride_transpose_kernel(qualified)[
+        _GRID_STRIDE_BLOCKS, _BLOCK_THREADS
+    ](
+        source,
+        destination,
+    )
+
+    np.testing.assert_array_equal(destination, source)
+
+
 def _run_divergent_warp_probe(qualified: bool) -> subprocess.CompletedProcess[str]:
     if qualified:
         thread_data = "qualified_coop.ThreadData"
@@ -898,30 +1421,116 @@ def test_one_physical_warp_can_take_a_transpose_collective_path(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def _run_divergent_logical_warp_probe(
+    qualified: bool,
+) -> subprocess.CompletedProcess[str]:
+    if qualified:
+        thread_data = "qualified_coop.ThreadData"
+        group = "qualified_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)"
+        load = "qualified_coop.load"
+        algorithm = repr("transpose")
+    else:
+        thread_data = "root_coop.ThreadData"
+        group = "root_coop.this_warp().group_by(_LOGICAL_WARP_THREADS)"
+        load = "root_coop.load"
+        algorithm = repr("transpose")
+
+    script = f"""\
+import numpy as np
+import numba_cuda_mlir.cuda as cuda
+from numba_cuda_mlir import types
+from pathlib import Path
+
+import cuda.coop.numba_mlir as qualified_coop
+from cuda import coop as root_coop
+
+expected_origin = Path({str(_QUALIFIED_COOP_ORIGIN)!r})
+actual_origin = Path(qualified_coop.__file__).resolve()
+if actual_origin != expected_origin:
+    raise RuntimeError(
+        f"divergent logical-warp probe imported cuda.coop from {{actual_origin}}, "
+        f"expected {{expected_origin}}"
+    )
+
+_WARP_THREADS = {_WARP_THREADS}
+_LOGICAL_WARP_THREADS = {_LOGICAL_WARP_THREADS}
+_BLOCK_THREADS = {_BLOCK_THREADS}
+_ITEMS_PER_THREAD = {_ITEMS_PER_THREAD}
+
+@cuda.jit
+def kernel(source, observed):
+    thread = cuda.threadIdx.x
+    subgroup = (thread % _WARP_THREADS) // _LOGICAL_WARP_THREADS
+    if subgroup == 2:
+        payload = {thread_data}(_ITEMS_PER_THREAD, dtype=types.int32)
+        loaded = {load}(
+            {group},
+            source,
+            payload,
+            algorithm={algorithm},
+        )
+        for item in range(_ITEMS_PER_THREAD):
+            observed[thread * _ITEMS_PER_THREAD + item] = loaded[item]
+
+source = ((np.arange(_BLOCK_THREADS * _ITEMS_PER_THREAD, dtype=np.int64) * 3 + 113) % 211 - 101).astype(np.int32)
+observed = np.full_like(source, -37)
+expected = observed.copy()
+for warp in range(_BLOCK_THREADS // _WARP_THREADS):
+    begin = (
+        warp * _WARP_THREADS + 2 * _LOGICAL_WARP_THREADS
+    ) * _ITEMS_PER_THREAD
+    end = begin + _LOGICAL_WARP_THREADS * _ITEMS_PER_THREAD
+    expected[begin:end] = source[begin:end]
+kernel[1, _BLOCK_THREADS](source, observed)
+cuda.synchronize()
+np.testing.assert_array_equal(observed, expected)
+"""
+    return subprocess.run(
+        [sys.executable, _SAFE_PATH_FLAG, "-B", "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+
+
+@pytest.mark.parametrize("qualified", (False, True), ids=("portable", "qualified"))
+def test_one_logical_warp_per_physical_warp_can_diverge_at_transpose(
+    qualified: bool,
+) -> None:
+    result = _run_divergent_logical_warp_probe(qualified)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def _run_invalid_runtime_valid_items_probe(
     operation: str,
     valid_items: int,
+    *,
+    logical_width: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
     # A device trap poisons its CUDA context, so invalid launches must run in
     # disposable child processes rather than the pytest worker.
+    group = "root_coop.this_warp()"
+    if logical_width is not None:
+        group = f"root_coop.this_warp().group_by({logical_width})"
     operation_body = textwrap.indent(
         textwrap.dedent(
             {
-                "load": """
+                "load": f"""
             payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
             root_coop.load(
-                root_coop.this_warp(),
+                {group},
                 source,
                 payload,
                 valid_items=valid_items,
             )
         """,
-                "store": """
+                "store": f"""
             payload = root_coop.ThreadData(_ITEMS_PER_THREAD, dtype=types.int32)
             for item in range(_ITEMS_PER_THREAD):
                 payload[item] = source[thread * _ITEMS_PER_THREAD + item]
             root_coop.store(
-                root_coop.this_warp(),
+                {group},
                 destination,
                 payload,
                 valid_items=valid_items,
@@ -1008,3 +1617,32 @@ def test_runtime_valid_items_out_of_range_traps_in_an_isolated_context(
         np.int32(-1),
     )
     np.testing.assert_array_equal(observed, source)
+
+
+@pytest.mark.parametrize("operation", ("load", "store"))
+@pytest.mark.parametrize(
+    "valid_items",
+    (
+        pytest.param(-1, id="negative"),
+        pytest.param(_LOGICAL_TILE_ITEMS + 1, id="beyond-logical-tile"),
+    ),
+)
+def test_logical_runtime_valid_items_out_of_range_traps_in_isolated_context(
+    operation: str,
+    valid_items: int,
+) -> None:
+    result = _run_invalid_runtime_valid_items_probe(
+        operation,
+        valid_items,
+        logical_width=_LOGICAL_WARP_THREADS,
+    )
+    output = result.stdout + result.stderr
+
+    assert result.returncode != 0, output
+    assert any(
+        error in output
+        for error in (
+            "CUDA_ERROR_ILLEGAL_INSTRUCTION",
+            "CUDA_ERROR_LAUNCH_FAILED",
+        )
+    ), output

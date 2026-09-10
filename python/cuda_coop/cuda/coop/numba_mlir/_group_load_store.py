@@ -34,7 +34,7 @@ def load(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> ThreadDataLike[Any]:
-    """Load a per-thread tile through a block or physical warp group."""
+    """Load a per-thread tile through a block or Warp group."""
 
     return group_primitive_marker(
         "load",
@@ -64,7 +64,7 @@ def store(
     offset: Any = None,
     temp_storage: Any = None,
 ) -> None:
-    """Store a per-thread tile through a block or physical warp group."""
+    """Store a per-thread tile through a block or Warp group."""
 
     group_primitive_marker(
         "store",
