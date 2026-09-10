@@ -16,6 +16,8 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/functional>
+#include <cuda/hierarchy>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/atomic>
 #include <cuda/std/cstddef>
@@ -151,7 +153,7 @@ struct publication_hash
 };
 
 template <bool DelayedPublication, class Ref>
-__global__ void insert_and_find_publication_kernel(Ref ref, int* out)
+__global__ void insert_and_find_publication_kernel(Ref ref, int* const out)
 {
   using key_type    = typename Ref::key_type;
   using mapped_type = typename Ref::mapped_type;
@@ -237,16 +239,16 @@ void run_insert_and_find_publication(bool misaligned, bool delayed_publication)
     probing_type{},
     typename ref_type::storage_span_type{slots, capacity}};
 
-  auto results = ::cuda::make_buffer<int>(stream, mr, 2 * operations, 0);
+  auto results      = ::cuda::make_buffer<int>(stream, mr, 2 * operations, 0);
+  const auto config = ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<block>());
   if (delayed_publication)
   {
-    insert_and_find_publication_kernel<true><<<1, block, 0, stream.get()>>>(ref, results.data());
+    ::cuda::launch(stream, config, insert_and_find_publication_kernel<true, ref_type>, ref, results.data());
   }
   else
   {
-    insert_and_find_publication_kernel<false><<<1, block, 0, stream.get()>>>(ref, results.data());
+    ::cuda::launch(stream, config, insert_and_find_publication_kernel<false, ref_type>, ref, results.data());
   }
-  REQUIRE(cudaGetLastError() == cudaSuccess);
   int out[2 * operations];
   const int result_count = delayed_publication ? 1 : operations;
   REQUIRE(cudaMemcpyAsync(out, results.data(), 2 * result_count * sizeof(int), cudaMemcpyDeviceToHost, stream.get())

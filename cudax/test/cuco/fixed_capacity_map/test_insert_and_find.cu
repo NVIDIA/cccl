@@ -10,17 +10,24 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
+#include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
 
 #include <cooperative_groups.h>
@@ -45,7 +52,7 @@ struct iota_pair
 {
   ::cuda::std::int32_t payload_offset;
 
-  _CCCL_HOST_DEVICE_API Pair operator()(::cuda::std::int32_t index) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API Pair operator()(::cuda::std::int32_t index) const noexcept
   {
     using key_type    = typename Pair::first_type;
     using mapped_type = typename Pair::second_type;
@@ -59,7 +66,7 @@ struct matches_payloads
   const Mapped* found;
   ::cuda::std::int32_t payload_offset;
 
-  _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
   {
     return found[index] == static_cast<Mapped>(index) + payload_offset;
   }
@@ -70,7 +77,7 @@ struct matches_insertion_status
   const ::cuda::std::int32_t* inserted;
   bool expected;
 
-  _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
   {
     return static_cast<bool>(inserted[index]) == expected;
   }
@@ -82,7 +89,7 @@ struct matches_device_results
   const Mapped* found;
   const ::cuda::std::int32_t* inserted;
 
-  _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
   {
     return found[index] == static_cast<Mapped>(initial_payload_offset)
         && static_cast<bool>(inserted[index]) == (index == 0);
@@ -90,7 +97,8 @@ struct matches_device_results
 };
 
 template <class Ref>
-__global__ void device_insert_and_find_kernel(Ref ref, typename Ref::mapped_type* found, ::cuda::std::int32_t* inserted)
+__global__ void
+device_insert_and_find_kernel(Ref ref, typename Ref::mapped_type* const found, ::cuda::std::int32_t* const inserted)
 {
   using value_type  = typename Ref::value_type;
   using key_type    = typename Ref::key_type;
@@ -231,9 +239,13 @@ C2H_TEST(
   auto device_found    = ::cuda::make_buffer<mapped_type>(stream, mr, 2, mapped_type{0});
   auto device_inserted = ::cuda::make_buffer<::cuda::std::int32_t>(stream, mr, 2, 0);
 
-  device_insert_and_find_kernel<ref_type>
-    <<<1, cg_size, 0, stream.get()>>>(map.ref(), device_found.data(), device_inserted.data());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  ::cuda::launch(
+    stream,
+    ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<cg_size>()),
+    device_insert_and_find_kernel<ref_type>,
+    map.ref(),
+    device_found.data(),
+    device_inserted.data());
   REQUIRE(::cuda::std::all_of(
     policy,
     ::cuda::counting_iterator<::cuda::std::int32_t>{0},
@@ -254,4 +266,134 @@ C2H_TEST(
     ::cuda::counting_iterator<::cuda::std::int32_t>{0},
     ::cuda::counting_iterator<::cuda::std::int32_t>{1},
     matches_insertion_status{inserted.data(), false}));
+}
+
+#if _CCCL_HAS_EXCEPTIONS()
+C2H_TEST("fixed_capacity_map insert_and_find reports launch failures", "[container]")
+{
+  using key_type     = ::cuda::std::int32_t;
+  using probing_type = cudax::cuco::linear_probing<1, ::cuda::hash<key_type>>;
+  using map_type     = cudax::cuco::fixed_capacity_map<
+    key_type,
+    key_type,
+    ::cuda::std::dynamic_extent,
+    ::cuda::thread_scope_device,
+    ::cuda::std::equal_to<key_type>,
+    probing_type>;
+  using value_type = typename map_type::value_type;
+  using index_type = ::cuda::std::int64_t;
+
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  const auto mr = ::cuda::device_default_memory_pool(stream.device());
+  map_type map{
+    stream, mr, ::cuda::std::size_t{16}, cudax::cuco::empty_key{key_type{-1}}, cudax::cuco::empty_value{key_type{-1}}};
+  stream.sync();
+
+  // Constant/discard iterators describe a large range without allocating it. Its
+  // grid exceeds the device limit but fits the unsigned launch dimension, so the
+  // driver rejects the launch before executing any input or output access.
+  const auto max_grid_x           = ::cuda::device_attributes::max_grid_dim_x(stream.device());
+  const index_type invalid_grid_x = static_cast<index_type>(max_grid_x) + 1;
+  REQUIRE(invalid_grid_x <= ::cuda::std::numeric_limits<unsigned>::max());
+  const index_type num_inputs =
+    invalid_grid_x * cudax::cuco::detail::__default_stride * cudax::cuco::detail::__default_block_size;
+  REQUIRE(cudax::cuco::detail::__grid_size(num_inputs, map_type::cg_size) == invalid_grid_x);
+
+  const auto first   = ::cuda::constant_iterator<value_type, index_type>{value_type{key_type{0}, key_type{7}}};
+  const auto last    = first + num_inputs;
+  const auto discard = ::cuda::discard_iterator{};
+  REQUIRE_THROWS_AS(map.insert_and_find_async(stream, first, last, discard, discard), ::cuda::cuda_error);
+  REQUIRE_THROWS_AS(map.insert_and_find(stream, first, last, discard, discard), ::cuda::cuda_error);
+  REQUIRE_NOTHROW(map.insert_and_find(stream, first, first + 1, discard, discard));
+}
+#endif // _CCCL_HAS_EXCEPTIONS()
+
+struct nontrivial_default_payload
+{
+  ::cuda::std::int32_t value;
+
+  _CCCL_HOST_DEVICE_API constexpr nontrivial_default_payload() noexcept
+      : value{0}
+  {}
+
+  _CCCL_HOST_DEVICE_API constexpr explicit nontrivial_default_payload(::cuda::std::int32_t value) noexcept
+      : value{value}
+  {}
+};
+
+static_assert(sizeof(nontrivial_default_payload) == 4);
+static_assert(alignof(nontrivial_default_payload) == 4);
+static_assert(::cuda::std::is_trivially_copyable_v<nontrivial_default_payload>);
+static_assert(::cuda::std::has_unique_object_representations_v<nontrivial_default_payload>);
+static_assert(!::cuda::std::is_trivially_default_constructible_v<nontrivial_default_payload>);
+
+struct make_nontrivial_payload_pair
+{
+  ::cuda::std::int32_t payload_offset;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::pair<::cuda::std::int32_t, nontrivial_default_payload>
+  operator()(::cuda::std::int32_t index) const noexcept
+  {
+    return {index, nontrivial_default_payload{index + payload_offset}};
+  }
+};
+
+struct matches_nontrivial_payload_results
+{
+  const nontrivial_default_payload* found;
+  const ::cuda::std::int32_t* inserted;
+  ::cuda::std::int32_t payload_offset;
+  bool expected_inserted;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(::cuda::std::int32_t index) const noexcept
+  {
+    return found[index].value == index + payload_offset && static_cast<bool>(inserted[index]) == expected_inserted;
+  }
+};
+
+C2H_TEST("fixed_capacity_map insert_and_find supports a nontrivial payload default constructor", "[container]", cg_sizes)
+{
+  constexpr int cg_size = c2h::get<0, TestType>::value;
+  using key_type        = ::cuda::std::int32_t;
+  using mapped_type     = nontrivial_default_payload;
+  using probing_type    = cudax::cuco::linear_probing<cg_size, ::cuda::hash<key_type>>;
+  using map_type        = cudax::cuco::fixed_capacity_map<
+    key_type,
+    mapped_type,
+    ::cuda::std::dynamic_extent,
+    ::cuda::thread_scope_device,
+    ::cuda::std::equal_to<key_type>,
+    probing_type,
+    1>;
+
+  constexpr ::cuda::std::int32_t num_keys         = 17;
+  constexpr ::cuda::std::int32_t initial_offset   = 7;
+  constexpr ::cuda::std::int32_t duplicate_offset = 107;
+  CAPTURE(cg_size);
+
+  ::cuda::stream stream{::cuda::device_ref{0}};
+  // execution::gpu's memory-resource binding borrows a non-const resource lvalue.
+  auto mr           = ::cuda::device_default_memory_pool(stream.device());
+  const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
+
+  map_type map{stream,
+               mr,
+               ::cuda::std::size_t{num_keys} * 2,
+               cudax::cuco::empty_key<key_type>{key_type{-1}},
+               cudax::cuco::empty_value<mapped_type>{mapped_type{-1}}};
+
+  const auto first           = ::cuda::counting_iterator<::cuda::std::int32_t>{0};
+  const auto last            = first + num_keys;
+  const auto initial_pairs   = ::cuda::transform_iterator{first, make_nontrivial_payload_pair{initial_offset}};
+  const auto duplicate_pairs = ::cuda::transform_iterator{first, make_nontrivial_payload_pair{duplicate_offset}};
+  auto found                 = ::cuda::make_buffer<mapped_type>(stream, mr, num_keys, mapped_type{});
+  auto inserted              = ::cuda::make_buffer<::cuda::std::int32_t>(stream, mr, num_keys, 0);
+
+  map.insert_and_find_async(stream, initial_pairs, initial_pairs + num_keys, found.begin(), inserted.begin());
+  REQUIRE(::cuda::std::all_of(
+    policy, first, last, matches_nontrivial_payload_results{found.data(), inserted.data(), initial_offset, true}));
+
+  map.insert_and_find(stream, duplicate_pairs, duplicate_pairs + num_keys, found.begin(), inserted.begin());
+  REQUIRE(::cuda::std::all_of(
+    policy, first, last, matches_nontrivial_payload_results{found.data(), inserted.data(), initial_offset, false}));
 }

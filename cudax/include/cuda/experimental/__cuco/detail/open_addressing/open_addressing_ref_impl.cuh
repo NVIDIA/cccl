@@ -493,7 +493,7 @@ public:
   //!
   //! @tparam _Value Input type convertible to `__value_type`
   //!
-  //! @param __value The element to insert
+  //! @param[in] __value The element to insert
   //!
   //! @return The element's iterator and whether insertion succeeded
   template <class _Value>
@@ -551,8 +551,8 @@ public:
   //! @tparam _Value Input type convertible to `__value_type`
   //! @tparam _ParentCG Parent cooperative group type
   //!
-  //! @param __group The cooperative group used for this operation
-  //! @param __value The element to insert
+  //! @param[in] __group The cooperative group used for this operation
+  //! @param[in] __value The element to insert
   //!
   //! @return The element's iterator and whether insertion succeeded
   template <class _Value, class _ParentCG>
@@ -1266,7 +1266,7 @@ public:
   //!
   //! @tparam _SlotPtr Pointer-like type referring to a slot
   //!
-  //! @param __slot_ptr Pointer to the slot whose payload may still be pending
+  //! @param[in] __slot_ptr Pointer to the slot whose payload may still be pending
   template <class _SlotPtr>
   _CCCL_DEVICE_API void __maybe_wait_for_payload(_SlotPtr __slot_ptr) const noexcept
   {

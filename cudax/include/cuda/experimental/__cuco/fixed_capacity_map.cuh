@@ -339,11 +339,11 @@ public:
   //! @tparam _FoundIt Device accessible random access output iterator assignable from `mapped_type`
   //! @tparam _InsertedIt Device accessible random access output iterator assignable from `bool`
   //!
-  //! @param __stream CUDA stream used for insert
-  //! @param __first Beginning of the sequence of key-value pairs
-  //! @param __last End of the sequence of key-value pairs
-  //! @param __found_begin Beginning of the mapped-value output sequence
-  //! @param __inserted_begin Beginning of the insertion-status output sequence
+  //! @param[in] __stream CUDA stream used for insert
+  //! @param[in] __first Beginning of the sequence of key-value pairs
+  //! @param[in] __last End of the sequence of key-value pairs
+  //! @param[out] __found_begin Beginning of the mapped-value output sequence
+  //! @param[out] __inserted_begin Beginning of the insertion-status output sequence
   template <class _InputIt, class _FoundIt, class _InsertedIt>
   _CCCL_HOST_API void insert_and_find(
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _FoundIt __found_begin, _InsertedIt __inserted_begin)
@@ -370,11 +370,11 @@ public:
   //! @tparam _FoundIt Device accessible random access output iterator assignable from `mapped_type`
   //! @tparam _InsertedIt Device accessible random access output iterator assignable from `bool`
   //!
-  //! @param __stream CUDA stream used for insert
-  //! @param __first Beginning of the sequence of key-value pairs
-  //! @param __last End of the sequence of key-value pairs
-  //! @param __found_begin Beginning of the mapped-value output sequence
-  //! @param __inserted_begin Beginning of the insertion-status output sequence
+  //! @param[in] __stream CUDA stream used for insert
+  //! @param[in] __first Beginning of the sequence of key-value pairs
+  //! @param[in] __last End of the sequence of key-value pairs
+  //! @param[out] __found_begin Beginning of the mapped-value output sequence
+  //! @param[out] __inserted_begin Beginning of the insertion-status output sequence
   template <class _InputIt, class _FoundIt, class _InsertedIt>
   _CCCL_HOST_API void insert_and_find_async(
     ::cuda::stream_ref __stream, _InputIt __first, _InputIt __last, _FoundIt __found_begin, _InsertedIt __inserted_begin)

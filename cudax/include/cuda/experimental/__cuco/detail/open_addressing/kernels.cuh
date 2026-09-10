@@ -24,7 +24,9 @@
 #include <cub/block/block_reduce.cuh>
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
 
@@ -218,6 +220,19 @@ template <class _Ref, class _Iterator>
 }
 
 //! @brief Inserts each element and returns the mapped value and insertion status.
+//!
+//! @tparam _CgSize Number of threads cooperating on each insertion
+//! @tparam _BlockSize Number of threads per block
+//! @tparam _InputIt Device accessible random access input iterator
+//! @tparam _FoundIt Device accessible output iterator assignable from the mapped type
+//! @tparam _InsertedIt Device accessible output iterator assignable from bool
+//! @tparam _Ref Device reference to the map
+//!
+//! @param[in] __first Beginning of the input sequence
+//! @param[in] __n Number of input pairs
+//! @param[out] __found_begin Beginning of the mapped-value output sequence
+//! @param[out] __inserted_begin Beginning of the insertion-status output sequence
+//! @param[in,out] __ref Map in which to insert the input pairs
 template <int _CgSize, int _BlockSize, class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n(
   _InputIt __first, detail::__index_type __n, _FoundIt __found_begin, _InsertedIt __inserted_begin, _Ref __ref)
@@ -228,7 +243,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n
   auto __idx               = detail::__global_thread_id() / _CgSize;
 
   using __output_type = typename __find_buffer<_Ref>::type;
-  __shared__ __output_type __found_buffer[_BlockSize / _CgSize];
+  __shared__ ::cuda::__uninitialized_array<__output_type, _BlockSize / _CgSize> __found_buffer;
   __shared__ bool __inserted_buffer[_BlockSize / _CgSize];
 
   while ((__idx - __thread_idx / _CgSize) < __n)
@@ -245,7 +260,7 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n
          * Staging scalar results in shared memory avoids the additional L2 sector stores caused by
          * frequent L1 flushing from relaxed GPU loads.
          */
-        __found_buffer[__thread_idx]    = __find_output(__ref, __found);
+        ::cuda::std::__construct_at(__found_buffer.data() + __thread_idx, __find_output(__ref, __found));
         __inserted_buffer[__thread_idx] = __inserted;
       }
       __block.sync();
