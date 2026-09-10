@@ -10,6 +10,10 @@ General guidelines apply universally, but may be overridden by library-specific 
 General
 -------
 
+#. Use the latest C++ features available.
+  The repository supports C++17 but many newer library features are available through backports.
+
+
 Header inclusion
 ~~~~~~~~~~~~~~~~
 
@@ -20,8 +24,13 @@ Header inclusion
 #. Prefer including the smallest possible libcu++ detail headers (starting with ``__``) to reduce compile time.
    E.g. ``#include <cuda/std/__type_traits/is_array.h>`` instead of ``#include <cuda/std/type_traits>``.
    In tests and examples, always use the public headers.
+#. If possible, prefer forward declaration or a forward declaring header like ``__fwd/header.h``
+   over including the implementation header.
 #. All header inclusions must use angle brackets, e.g. ``<path/header>``.
    Relative includes using quotes are only allowed in tests, examples, and benchmarks.
+#. Never include headers from ``cuda/std/__cccl/*`` directly, include ``__cccl_config`` instead.
+#. Never include headers from ``thread/detail/config/*`` directly, include ``thrust/detail/config.h`` instead.
+
 
 Qualification
 ~~~~~~~~~~~~~
@@ -40,7 +49,6 @@ Qualification
 #. Some functions, like ``::cuda::std::swap`` and ``::cuda::std::get``, may be called unqualified,
    when they follow a preceding using declaration, e.g. ``using ::cuda::std::get;``.
 
-
 Variables
 ~~~~~~~~~
 
@@ -48,13 +56,17 @@ Variables
    This does not apply to function parameters.
 #. Variables with an initializer that can be evaluated at compile-time must be declared ``constexpr``.
 #. ``constexpr`` variables and variable templates at namespace/global scope must be declared ``inline``.
-
-.. TODO(bgruber): can we remove the constexpr in the last bullet?
+#. Use uniform initialization to call constructors (class types only) and compile-time conversions,
+   e.g. `constexpr auto x = int{sizeof(float)};`.
+#. Prefer plural names for variables of array, span, list types, e.g. ``int values[4]`` instead of ``int value[4]``.
 
 Functions
 ~~~~~~~~~
 
 #. Non-template, non-``constexpr`` functions must be declared ``inline``.
+#. Functions with a non-void return type should use `[[nodiscard]]`.
+#. Declare a function ``_CCCL_CONSTEVAL`` when it can only be evaluated at compile time.
+#. Prefer C++20 concept macros (``_CCCL_TEMPLATE(...)`` and ``_CCCL_REQUIRES(...)``) instead of SFINAE (``enable_if``).
 
 Macros
 ~~~~~~
@@ -75,11 +87,29 @@ Comments
 ~~~~~~~~
 
 #. Doxygen comments should start with ``//!``
-#. In documentation comments, we prefer the use of ``@`` to start Doxygen commands.
-#. Prefer ``@c`` when referring to code entities
+#. In Doxygen comments, we prefer the use of ``@`` to start Doxygen commands.
+#. In Doxygen comments, prefer ``@c`` when referring to code entities
 #. Comments should express what the code cannot say. They complement code. Before writing an
    explanatory comment, consider whether refactoring the code could allow the code to express the same.
    This avoids code and comments getting out of sync.
+#. Commented-out code without a justification is not allowed.
+
+Using CUDA APIs
+~~~~~~~~~~~~~~~
+
+#. In headers, all calls to CUDA Runtime (``cudaXxx(...)``) and CUDA Driver (``cuXxx(...)`` or ``cuda::__driver::xxxNoThrow(...)``) APIs
+   must check the returned value or explicitly ignore it with a comment containing a justification.
+   CUDA Runtime calls should prefer using the ``_CCCL_TRY_RUNTIME_API`` or ``_CCCL_ASSERT_RUNTIME_API`` macros.
+   CUDA Driver calls should prefer using the ``_CCCL_TRY_DRIVER_API`` or ``_CCCL_ASSERT_DRIVER_API`` macros.
+#. In tests, all CUDA Runtime/Driver calls must check the returned value manually, using ``assert`` (lit-style tests),
+    or using ``(CHECK|REQUIRE)_(CUDA|CUDART)`` macros (catch2-style tests).
+
+Compiler Compatibility
+~~~~~~~~~~~~~~~~~~~~~~
+
+#. Remove any unused files, code, or entities like variables, functions, types, template parameters, etc.
+#. Guard host-only code with ``#if !_CCCL_COMPILER(NVRTC)`` or ``#if _CCCL_HOSTED()``.
+
 
 Other
 ~~~~~
@@ -124,6 +154,7 @@ These rules also include cudax.
 
 #. The last included header before the start of the code must be ``<cuda/std/__cccl/prologue.h>``,
    and ``<cuda/std/__cccl/epilogue.h>`` must appear after the code at the end of the file.
+#. Functions that do not throw exceptions must use ``noexcept``.
 
 CUB and Thrust
 --------------

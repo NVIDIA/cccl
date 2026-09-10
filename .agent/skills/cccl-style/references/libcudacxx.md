@@ -1,6 +1,4 @@
-# libcudacxx Style Guidance
-
-Use this reference for `libcudacxx/include/**/*` and `cudax/include/**/*`.
+# Extra libcudacxx Style Guidance
 
 ## Naming Style
 
@@ -10,7 +8,7 @@ Use this reference for `libcudacxx/include/**/*` and `cudax/include/**/*`.
 ## Functions
 
 - Use `constexpr` for functions that do not depend on run-time features, such as pointers.
-- If the return type is not explicit (`auto`), then a trailing return type is strongly preferred.
+- If the return type is deduced (`auto`), then a trailing return type is strongly preferred.
 
 ## Headers
 
