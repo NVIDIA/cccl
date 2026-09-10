@@ -123,7 +123,11 @@ def run_example_module(module_name, display_name):
                         cwd=os.path.dirname(module_file),
                     )
                     if result.returncode != 0:
-                        raise Exception(f"Module execution failed: {result.stderr}")
+                        raise Exception(
+                            f"Module execution failed with exit code {result.returncode}:\n"
+                            f"stdout:\n{result.stdout}\n"
+                            f"stderr:\n{result.stderr}"
+                        )
                     print(f"  Output: {result.stdout.strip()}")
 
         print(f"✓ {display_name} examples passed")
