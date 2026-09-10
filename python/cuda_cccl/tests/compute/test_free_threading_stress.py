@@ -28,8 +28,7 @@ pytestmark = [
     # which clear_all_caches() documents as the caller's responsibility.
     #
     # They already get their concurrency from their own workers; raise
-    # STRESS_THREADS if more pressure is wanted. Declared here rather than
-    # filtered out in a CI script so the constraint travels with the tests.
+    # STRESS_THREADS if more pressure is wanted.
     pytest.mark.thread_unsafe,
     pytest.mark.no_verify_sass(
         reason="Free-threading stress tests intentionally run concurrent workers."

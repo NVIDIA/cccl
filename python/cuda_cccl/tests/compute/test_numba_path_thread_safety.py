@@ -50,8 +50,7 @@ pytestmark = [
     # These tests drive their own worker threads and call clear_all_caches()
     # between rounds, which clear_all_caches() documents as unsupported alongside
     # concurrent factory calls -- so they must not be re-run concurrently with
-    # themselves by pytest-run-parallel. Declared here so the constraint travels
-    # with the tests rather than living in a CI script.
+    # themselves by pytest-run-parallel.
     pytest.mark.thread_unsafe,
     pytest.mark.no_verify_sass(
         reason="Concurrency tests intentionally run concurrent workers."

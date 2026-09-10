@@ -311,22 +311,7 @@ does not select the device itself.
 Free-threaded Python
 ++++++++++++++++++++
 
-Every optional dependency package supports free-threaded Python, including the
-full ``cu12`` and ``cu13`` extras. Their JIT backend, ``numba-cuda-mlir``,
-publishes free-threaded wheels and keeps the GIL disabled, so Python-callable
-operators, ``gpu_struct`` types and unannotated
-:class:`TransformIterator <cuda.compute.iterators.TransformIterator>` all work
-on a free-threaded interpreter:
-
-.. code-block:: bash
-
-   pip install cuda-cccl[cu13]  # or cu12
-
-The ``minimal-*`` extras install no JIT backend, so with those use built-in
-:class:`OpKind <cuda.compute.op.OpKind>` operations or externally compiled
-:class:`RawOp <cuda.compute.op.RawOp>` operations.
-
-Independent calls from multiple Python threads reuse compiled build results
+``cuda.compute`` supports free-threaded Python. Independent calls from multiple Python threads reuse compiled build results
 within the same process on any interpreter build. A free-threaded interpreter
 additionally runs those calls in parallel instead of interleaving them under
 the GIL.

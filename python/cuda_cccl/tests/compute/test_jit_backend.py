@@ -347,12 +347,12 @@ def test_stateful_operator_infers_its_output_type(result):
 def test_clear_all_caches_drops_compiled_device_code():
     """clear_all_caches() must make the next build cold, not just empty the memos.
 
-    A build after a clear is only genuinely cold if the JIT-compiled operator,
-    the NVRTC-compiled iterator wrapper, and select's always-false predicate are
-    recompiled too; otherwise the native build reruns while the (dominant) JIT
-    cost is served from memo. Device code memoized on a live iterator object is
-    object state the clear does not reach -- that caveat is pinned down here so
-    it stays documented behavior rather than an accident.
+    Building an algorithm compiles in two places: numba-cuda-mlir compiles the
+    Python operator, and the C library compiles and links the CUB kernel. A
+    clear has to reach both, otherwise the next build only redoes the kernel
+    and reuses the memoized operator code. Device code memoized on a live
+    iterator object is object state the clear does not reach; that caveat is
+    pinned down here so it stays documented behavior.
     """
     import numpy as np
     from _utils.device_array import DeviceArray

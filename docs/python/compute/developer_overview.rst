@@ -828,14 +828,18 @@ Environment variables:
 Clearing caches
 +++++++++++++++
 
-``clear_all_caches()`` is process-local. It clears all known per-thread wrapper
-caches through a weak registry of live thread cache containers, the shared
-build-result cache, and the compiled-device-code memos (JIT-compiled Python
-operators in ``_jit`` and NVRTC-compiled iterator wrappers in
-``_cpp_compile``), so the next build is cold end to end. The struct
-registration caches are left alone, since re-registering the same types would
-be overhead with no benefit. Separate Python processes build and cache
-independently.
+``clear_all_caches()`` is process-local. It clears:
+
+* all known per-thread wrapper caches, through a weak registry of live thread
+  cache containers;
+* the shared build-result cache;
+* the compiled-device-code memos: JIT-compiled Python operators in ``_jit``,
+  NVRTC-compiled iterator wrappers in ``_cpp_compile``, and select's
+  always-false predicate in ``_select``.
+
+The struct registration caches are left alone, since re-registering the same
+types would be overhead with no benefit. Separate Python processes build and
+cache independently.
 
 Calling ``clear_all_caches()`` concurrently with active factory calls or
 algorithm execution is not supported unless the caller synchronizes externally.

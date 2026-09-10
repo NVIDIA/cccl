@@ -50,13 +50,6 @@ For a minimal install without a JIT backend (useful when you supply your own
    pip install cuda-cccl[minimal-cu13]      # pip-installed CUDA toolkit
    pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
 
-Free-threaded Python is supported with every ``cuda-cccl`` extra, minimal or
-full. The full extras install ``numba-cuda-mlir``, which publishes
-free-threaded (``cp314t``) wheels and keeps the GIL disabled, so
-Python-callable operators work on a free-threaded interpreter as well as on a
-regular one. Python-callable operators require ``numba-cuda-mlir``, so with a
-``minimal-*`` extra use ``OpKind`` or ``RawOp`` operators instead.
-
 Optional: Sequential Task Flow (``cuda-stf``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
