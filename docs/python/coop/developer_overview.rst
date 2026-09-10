@@ -659,7 +659,11 @@ storage contract.
 There are caches at several stages. Compiled Python operators are reused
 within the process. Provider compilation can use a persistent cache when
 ``CUDA_COOP_ENABLE_CACHE`` is enabled before backend import. Numba-CUDA-MLIR
-separately owns the compiled kernel's reuse and lifetime.
+separately owns the compiled kernel's reuse and lifetime. The provider cache
+uses ``XDG_CACHE_HOME/cccl`` on POSIX, falling back to ``~/.cache/cccl``;
+on Windows it uses ``LOCALAPPDATA\cccl``, falling back to
+``~\AppData\Local\cccl``. Unset, empty, or relative base directories use
+the fallback. These settings are read at backend cache import.
 
 The provider cache uses ``$XDG_CACHE_HOME/cccl`` on POSIX systems, falling
 back to ``~/.cache/cccl``. On Windows it uses ``%LOCALAPPDATA%\cccl``, with
@@ -1148,11 +1152,12 @@ silently supplying the module under test. The compile tests' fixed target
 is a test fixture; it does not imply that every public kernel compilation
 path is available without a GPU or configured launch.
 
-To inspect generated C++, set ``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR`` to a
-directory before compiling the kernel. Use the dump to check template arguments, wrapper signatures, and scratch
-metadata. Inspect
-the final kernel's PTX or SASS separately for inlining, barriers, and
-register behavior.
+To inspect generated C++, set ``CUDA_COOP_SOURCE_DUMP_DIR`` to a
+directory before compiling the kernel. Files are named
+``cuda_coop_<backend>_<hash>.cu``, allowing backends to share the directory.
+Use the dump to check template arguments, wrapper signatures, and scratch
+metadata. Inspect the final kernel's PTX or SASS separately for inlining,
+barriers, and register behavior.
 
 .. _coop-numba-validation:
 
