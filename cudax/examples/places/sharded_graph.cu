@@ -18,21 +18,29 @@
  *
  * The structure is a vertex-range-partitioned CSR — the layout multi-GPU
  * graph libraries use (cuGraph's vertex partitioning has this shape): each
- * shard owns a contiguous vertex interval, that interval's adjacency as a
- * LOCAL (rebased) row-offsets array, global column indices, and edge
- * values. The graph type below is deliberately just a struct of components
- * that each model `sharded_view` — the concepts describe the components,
- * and the composite needs no concept of its own.
+ * shard owns a contiguous vertex interval, that interval's global column
+ * indices and edge values, while the row offsets stay ONE classic global
+ * (V+1)-entry array — the array every CSR producer already has, kept as a
+ * single device copy and never rebased or split. The graph type below is
+ * deliberately just a struct of components that each model `sharded_view`
+ * (plus that one pointer) — the concepts describe the components, and the
+ * composite needs no concept of its own.
  *
- * Two spellings do the heavy lifting:
+ * Three spellings do the heavy lifting:
  *
- * - SHIFTED-ALIAS VIEWS: a CSR row-offsets buffer has n+1 entries for n
- *   vertices, so it cannot be co-partitioned with vertex-space vectors.
- *   Building TWO views over the SAME buffer — `lo = offsets[0..n)`,
- *   `hi = offsets[1..n+1)` — yields views that are each co-partitioned
- *   with every vertex vector: offset-structured computations become plain
- *   `zip_transform`s, and the pair is exactly `segmented_reduce`'s
- *   segments description.
+ * - WHOLE OFFSETS: `segmented_reduce` accepts the global row-offsets array
+ *   directly (values are global edge positions); each shard rebases on the
+ *   fly through a transform iterator. This is the zero-copy spelling for
+ *   classic CSR. The alternative — the container form `sharded_csr` uses —
+ *   is a pair of sharded views of per-shard REBASED begin/end offsets; both
+ *   share the precondition that no row crosses the edge cut, which a
+ *   vertex-range partition satisfies by construction.
+ * - SHIFTED-ALIAS VIEWS: a row-offsets array has V+1 entries, so it cannot
+ *   be co-partitioned with vertex-space vectors. Two views over the SAME
+ *   global array — `lo = offsets[v0..v1)`, `hi = offsets[v0+1..v1+1)` per
+ *   shard — are each co-partitioned with every vertex vector, so
+ *   offset-structured computations (degrees = hi - lo, invariant under
+ *   rebasing) become plain `zip_transform`s.
  * - CONTIGUOUS VERTEX VECTORS: gathering `x[col[e]]` reads across shards;
  *   `allocate_contiguous` gives the vertex vector one base pointer, which
  *   is what makes the gather a plain device-side load within one process.
@@ -42,7 +50,8 @@
  *  1. vertex degrees            = zip_transform(deg, hi, lo)
  *  2. per-vertex neighbor
  *     reduce (SpMV-shaped)      = zip_transform (edge-space gather*weight)
- *                                 then segmented_reduce (edges -> vertices)
+ *                                 then segmented_reduce(z, offsets, y)
+ *                                 (edges -> vertices, global offsets)
  *  3. frontier size             = count_if over a vertex property
  *  4. frontier contents (RAGGED) = out-of-place copy_if of the vertex ids
  *                                 into an owning array whose per-shard sizes
@@ -107,8 +116,9 @@ struct frontier_pred // applied to vertex IDS; degree gathered via the contiguou
 // composite itself needs no concept.
 struct sharded_csr_graph
 {
-  basic_sharded_view<const int> offsets_lo; // vertex space: offsets[0..n)
-  basic_sharded_view<const int> offsets_hi; // vertex space: offsets[1..n+1)
+  const int* offsets = nullptr; // the ONE global row-offsets array, V+1 entries
+  basic_sharded_view<const int> offsets_lo; // vertex space: offsets[v0..v1) per shard
+  basic_sharded_view<const int> offsets_hi; // vertex space: offsets[v0+1..v1+1) per shard
   basic_sharded_view<const int> col_indices; // edge space (global vertex ids)
   basic_sharded_view<const float> values; // edge space
   ::std::size_t num_vertices = 0;
@@ -154,12 +164,14 @@ int main()
     v_begin[g + 1] = v_begin[g] + V / P + (g < V % P ? 1 : 0);
   }
 
-  // Per-shard local CSR (rebased offsets, global column ids) on the host.
-  ::std::vector<::std::vector<int>> h_off(P), h_col(P);
+  // Classic host CSR: ONE global row-offsets array (V+1), plus the column
+  // ids / edge values split per shard along the vertex intervals (rows never
+  // cross the edge cut by construction).
+  ::std::vector<int> h_off(V + 1, 0);
+  ::std::vector<::std::vector<int>> h_col(P);
   ::std::vector<::std::vector<float>> h_val(P);
   for (::std::size_t g = 0; g < P; g++)
   {
-    h_off[g].push_back(0);
     for (::std::size_t v = v_begin[g]; v < v_begin[g + 1]; v++)
     {
       for (int u : adj[v])
@@ -167,20 +179,21 @@ int main()
         h_col[g].push_back(u);
         h_val[g].push_back(weight(v, u));
       }
-      h_off[g].push_back(static_cast<int>(h_col[g].size()));
+      h_off[v + 1] = h_off[v] + static_cast<int>(adj[v].size());
     }
   }
-  ::std::size_t E = 0;
-  for (::std::size_t g = 0; g < P; g++)
-  {
-    E += h_col[g].size();
-  }
+  const ::std::size_t E = static_cast<::std::size_t>(h_off[V]);
 
   // -------------------------------------------------------------------------
-  // Device buffers through the environments' memory resources: the binding
-  // tier does the placement, nothing here names a device.
+  // Device buffers. The global offsets are one whole-device allocation
+  // (readable from every place of the device); the edge-space pieces go
+  // through the environments' memory resources: the binding tier does the
+  // placement, nothing here names a device.
   // -------------------------------------------------------------------------
-  ::std::vector<int*> d_off(P), d_col(P);
+  int* d_off = nullptr;
+  cuda_safe_call(cudaMalloc(&d_off, h_off.size() * sizeof(int)));
+  cuda_safe_call(cudaMemcpy(d_off, h_off.data(), h_off.size() * sizeof(int), cudaMemcpyHostToDevice));
+  ::std::vector<int*> d_col(P);
   ::std::vector<float*> d_val(P);
   for (::std::size_t g = 0; g < P; g++)
   {
@@ -188,11 +201,8 @@ int main()
     const auto strm = ::cuda::get_stream(env);
     stream_scope sc(strm.get());
     auto mr  = ::cuda::mr::get_memory_resource(env);
-    d_off[g] = static_cast<int*>(mr.allocate(strm, h_off[g].size() * sizeof(int), 256));
     d_col[g] = static_cast<int*>(mr.allocate(strm, (h_col[g].empty() ? 1 : h_col[g].size()) * sizeof(int), 256));
     d_val[g] = static_cast<float*>(mr.allocate(strm, (h_val[g].empty() ? 1 : h_val[g].size()) * sizeof(float), 256));
-    cuda_safe_call(
-      cudaMemcpyAsync(d_off[g], h_off[g].data(), h_off[g].size() * sizeof(int), cudaMemcpyHostToDevice, strm.get()));
     cuda_safe_call(
       cudaMemcpyAsync(d_col[g], h_col[g].data(), h_col[g].size() * sizeof(int), cudaMemcpyHostToDevice, strm.get()));
     cuda_safe_call(
@@ -201,7 +211,8 @@ int main()
   }
 
   // -------------------------------------------------------------------------
-  // The composite: shifted-alias offset views + edge views.
+  // The composite: the global offsets pointer, shifted-alias vertex-space
+  // views over that same array, and the edge views.
   // -------------------------------------------------------------------------
   sharded_csr_graph graph;
   {
@@ -210,11 +221,12 @@ int main()
     for (::std::size_t g = 0; g < P; g++)
     {
       const ::std::size_t nv = v_begin[g + 1] - v_begin[g];
-      lo[g]                  = {d_off[g], nv};
-      hi[g]                  = {d_off[g] + 1, nv}; // the shifted alias
+      lo[g]                  = {d_off + v_begin[g], nv};
+      hi[g]                  = {d_off + v_begin[g] + 1, nv}; // the shifted alias
       col[g]                 = {d_col[g], h_col[g].size()};
       val[g]                 = {d_val[g], h_val[g].size()};
     }
+    graph.offsets      = d_off;
     graph.offsets_lo   = make_sharded_view(lo);
     graph.offsets_hi   = make_sharded_view(hi);
     graph.col_indices  = make_sharded_view(col);
@@ -246,7 +258,8 @@ int main()
   bool ok = true;
 
   // =========================================================================
-  // 1. Vertex degrees: the CSR off-by-one absorbed by the shifted aliases.
+  // 1. Vertex degrees: the CSR off-by-one absorbed by the shifted aliases
+  //    (hi - lo does not care that the offsets are global, not rebased).
   // =========================================================================
   zip_transform(deg, envs, degree_op{}, default_call_env{}, graph.offsets_hi, graph.offsets_lo);
   {
@@ -260,13 +273,22 @@ int main()
   ::std::printf("degrees as zip_transform over shifted aliases: %s\n", ok ? "OK" : "MISMATCH");
 
   // =========================================================================
-  // 2. Per-vertex neighbor reduce: y[v] = sum over e in [lo[v],hi[v]) of
-  //    x[col[e]] * w[e] — an edge-space gather+multiply, then the
+  // 2. Per-vertex neighbor reduce: y[v] = sum over e in [off[v],off[v+1])
+  //    of x[col[e]] * w[e] — an edge-space gather+multiply, then the
   //    edges-to-vertices segmented reduction.
+  //
+  //    Two offset spellings exist for segmented_reduce. The whole-offsets
+  //    form used here takes the global (V+1) array as is: segments are y's
+  //    global index space, values are global edge positions, and each shard
+  //    subtracts its edge base on the fly. The other form, which
+  //    `sharded_csr` stores, takes two sharded views of per-shard REBASED
+  //    begin/end offsets (`lo`/`hi` would have to be rebased aliases, not the
+  //    global ones above). Same precondition (no row crosses the edge cut),
+  //    same output — the sync form here also verifies the cut.
   // =========================================================================
   const float* x_base = static_cast<const float*>(x.shard(0).data);
   zip_transform(z, envs, gather_multiply_op{x_base}, default_call_env{}, graph.col_indices, graph.values);
-  segmented_reduce(z, envs, graph.offsets_lo, graph.offsets_hi, y, sum_op{}, 0.0f);
+  segmented_reduce(z, envs, graph.offsets, y, sum_op{}, 0.0f);
   {
     ::std::vector<float> h_y(V);
     y.copy_to_host(h_y.data());
@@ -280,7 +302,8 @@ int main()
       ok = ok && (::std::abs(h_y[v] - ref) <= 1e-4f * (1.0f + ::std::abs(ref)));
     }
   }
-  ::std::printf("neighbor reduce as gather zip_transform + segmented_reduce: %s\n", ok ? "OK" : "MISMATCH");
+  ::std::printf("neighbor reduce as gather zip_transform + whole-offsets segmented_reduce: %s\n",
+                ok ? "OK" : "MISMATCH");
 
   // =========================================================================
   // 3. Frontier size: count_if over a vertex property.
@@ -332,11 +355,11 @@ int main()
     const auto& env = envs[g];
     const auto strm = ::cuda::get_stream(env);
     auto mr         = ::cuda::mr::get_memory_resource(env);
-    mr.deallocate(strm, d_off[g], h_off[g].size() * sizeof(int), 256);
     mr.deallocate(strm, d_col[g], (h_col[g].empty() ? 1 : h_col[g].size()) * sizeof(int), 256);
     mr.deallocate(strm, d_val[g], (h_val[g].empty() ? 1 : h_val[g].size()) * sizeof(float), 256);
     cuda_safe_call(cudaStreamSynchronize(strm.get()));
   }
+  cuda_safe_call(cudaFree(d_off));
 
   if (!ok)
   {

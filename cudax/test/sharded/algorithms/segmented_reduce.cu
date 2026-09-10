@@ -11,10 +11,12 @@
 /**
  * @file
  * @brief Generic segmented_reduce: CSR-shaped correctness through the
- *        shifted-alias segments spelling, empty segments, the partition /
- *        alignment refusals, sync-policy refusal, and the asynchronous form
- *        under CUDA graph capture (map-class: capture-legal, balanced
- *        in-capture scratch).
+ *        shifted-alias segments spelling, the same layout through ONE whole
+ *        global offsets array (bit-identical results, sync + async, 2 and 3
+ *        shards), empty segments, the partition / alignment refusals, the
+ *        value-cut refusal of the whole-offsets sync form, sync-policy
+ *        refusal, and the asynchronous form under CUDA graph capture
+ *        (map-class: capture-legal, balanced in-capture scratch).
  */
 
 #include <cuda/experimental/sharded.cuh>
@@ -24,6 +26,8 @@
 #include <vector>
 
 using namespace cuda::experimental::sharded;
+using cuda::experimental::places::exec_place;
+using cuda::experimental::places::make_grid;
 using cuda::experimental::places::make_locality_domain_grid;
 using cuda::experimental::places::place_group;
 
@@ -296,6 +300,169 @@ void test_async_capture(place_group& group)
   cuda_safe_call(cudaGraphDestroy(graph));
   cuda_safe_call(cudaStreamDestroy(origin));
 }
+// The whole-offsets spelling: the SAME ragged layout expressed as ONE global
+// offsets array (num_segments + 1 entries whose values are GLOBAL value
+// positions). Results must equal the shard-local form bit for bit, in the
+// synchronous forms (explicit envs, self-bound) and the asynchronous form.
+void test_whole_offsets_correctness(place_group& group)
+{
+  const ::std::size_t P = group.size();
+  auto envs             = group.envs(0);
+  const auto c          = make_ragged(4097, P);
+
+  // Global offsets: chain the per-shard rebased offsets with each shard's
+  // value base. Since every shard's offsets end at its value count, the
+  // chained array has exactly num_segments + 1 entries.
+  ::std::vector<int> h_goff;
+  ::std::vector<float> h_gin;
+  h_goff.push_back(0);
+  for (::std::size_t g = 0; g < P; g++)
+  {
+    const int base = static_cast<int>(h_gin.size());
+    for (::std::size_t i = 1; i < c.h_off[g].size(); i++)
+    {
+      h_goff.push_back(base + c.h_off[g][i]);
+    }
+    h_gin.insert(h_gin.end(), c.h_in[g].begin(), c.h_in[g].end());
+  }
+  EXPECT(h_goff.size() == 4097 + 1);
+
+  // One whole-device offsets array (readable from every place of one device)
+  // and the values as a sharded container with the ragged per-shard sizes.
+  int* d_goff = nullptr;
+  cuda_safe_call(cudaMalloc(&d_goff, h_goff.size() * sizeof(int)));
+  cuda_safe_call(cudaMemcpy(d_goff, h_goff.data(), h_goff.size() * sizeof(int), cudaMemcpyHostToDevice));
+  auto in = sharded_array<float>::allocate(group, c.in_sizes, 0);
+  in.copy_from_host(h_gin.data());
+  auto out = sharded_array<float>::allocate(group, c.seg_sizes, 0);
+
+  // Reference: the shard-local begin/end form over shifted-alias views of
+  // per-shard rebased offsets (the container spelling).
+  ::std::vector<int*> d_off(P);
+  ::std::vector<cuda::std::span<const int>> lo(P), hi(P);
+  for (::std::size_t g = 0; g < P; g++)
+  {
+    cuda_safe_call(cudaMalloc(&d_off[g], c.h_off[g].size() * sizeof(int)));
+    cuda_safe_call(cudaMemcpy(d_off[g], c.h_off[g].data(), c.h_off[g].size() * sizeof(int), cudaMemcpyHostToDevice));
+    lo[g] = {d_off[g], c.seg_sizes[g]};
+    hi[g] = {d_off[g] + 1, c.seg_sizes[g]};
+  }
+  fill(out, -1.0f);
+  segmented_reduce(in, envs, make_sharded_view(lo), make_sharded_view(hi), out, sum_op{}, 0.0f);
+  ::std::vector<float> h_ref(out.size());
+  out.copy_to_host(h_ref.data());
+
+  // Sync, explicit envs.
+  fill(out, -1.0f);
+  segmented_reduce(in, envs, static_cast<const int*>(d_goff), out, sum_op{}, 0.0f);
+  ::std::vector<float> h_out(out.size());
+  out.copy_to_host(h_out.data());
+  for (::std::size_t i = 0; i < h_out.size(); i++)
+  {
+    EXPECT(h_out[i] == h_ref[i]);
+    if (h_goff[i] == h_goff[i + 1])
+    {
+      EXPECT(h_out[i] == 0.0f); // empty segment: exactly init
+    }
+  }
+
+  // Sync, self-bound.
+  fill(out, -1.0f);
+  segmented_reduce(in, d_goff, out, sum_op{}, 0.0f);
+  out.copy_to_host(h_out.data());
+  for (::std::size_t i = 0; i < h_out.size(); i++)
+  {
+    EXPECT(h_out[i] == h_ref[i]);
+  }
+
+  // Async (call env with a stream): lane-ordered, joined by the stream
+  // barrier; copy_to_host is stream-ordered on the lanes.
+  fill(out, -1.0f);
+  {
+    cudaStream_t origin;
+    cuda_safe_call(cudaStreamCreate(&origin));
+    const auto cprop = ::cuda::std::execution::prop{::cuda::get_stream, ::cuda::stream_ref{origin}};
+    segmented_reduce(in, envs, d_goff, out, sum_op{}, 0.0f, ::cuda::std::execution::env{cprop});
+    barrier(envs, ::cuda::stream_ref{origin});
+    cuda_safe_call(cudaStreamSynchronize(origin));
+    cuda_safe_call(cudaStreamDestroy(origin));
+  }
+  out.copy_to_host(h_out.data());
+  for (::std::size_t i = 0; i < h_out.size(); i++)
+  {
+    EXPECT(h_out[i] == h_ref[i]);
+  }
+
+  for (::std::size_t g = 0; g < P; g++)
+  {
+    cuda_safe_call(cudaFree(d_off[g]));
+  }
+  cuda_safe_call(cudaFree(d_goff));
+}
+
+// Whole-offsets sync form: a segment straddling the value cut is refused
+// (std::invalid_argument) before any work; a valid layout with the same
+// shapes succeeds.
+void test_whole_offsets_cut_refusal(place_group& group)
+{
+  const ::std::size_t P = group.size();
+  if (P < 2)
+  {
+    return;
+  }
+  auto envs = group.envs(0);
+  ::std::vector<::std::size_t> two_per(P, 2), three_per(P, 3);
+  auto in  = sharded_array<int>::allocate(group, three_per, 0);
+  auto out = sharded_array<int>::allocate(group, two_per, 0);
+  fill(in, 1);
+
+  // Valid: shard g's two segments split its 3 values as 1 + 2.
+  ::std::vector<int> h_good, h_bad;
+  for (::std::size_t g = 0; g < P; g++)
+  {
+    h_good.push_back(static_cast<int>(3 * g));
+    h_good.push_back(static_cast<int>(3 * g + 1));
+  }
+  h_good.push_back(static_cast<int>(3 * P));
+  // Straddling: shard 0's last segment ends one past its value shard.
+  h_bad    = h_good;
+  h_bad[2] = 4;
+
+  int* d_goff = nullptr;
+  cuda_safe_call(cudaMalloc(&d_goff, h_good.size() * sizeof(int)));
+  cuda_safe_call(cudaMemcpy(d_goff, h_good.data(), h_good.size() * sizeof(int), cudaMemcpyHostToDevice));
+  segmented_reduce(in, envs, d_goff, out, max_op{}, 0);
+  {
+    ::std::vector<int> h(out.size());
+    out.copy_to_host(h.data());
+    for (int x : h)
+    {
+      EXPECT(x == 1);
+    }
+  }
+
+  cuda_safe_call(cudaMemcpy(d_goff, h_bad.data(), h_bad.size() * sizeof(int), cudaMemcpyHostToDevice));
+  fill(out, -7);
+  bool threw = false;
+  try
+  {
+    segmented_reduce(in, envs, d_goff, out, max_op{}, 0);
+  }
+  catch (const ::std::invalid_argument&)
+  {
+    threw = true;
+  }
+  EXPECT(threw);
+  {
+    ::std::vector<int> h(out.size());
+    out.copy_to_host(h.data());
+    for (int x : h)
+    {
+      EXPECT(x == -7); // refused before any work: output untouched
+    }
+  }
+  cuda_safe_call(cudaFree(d_goff));
+}
 } // namespace
 
 int main()
@@ -308,6 +475,16 @@ int main()
   test_ragged_correctness(group);
   test_refusals(group);
   test_async_capture(group);
+
+  // Whole-offsets spelling: the two locality domains of device 0, then a
+  // 3-shard layout on device 0 (a value cut that is not a domain boundary).
+  auto group2 = place_group{make_locality_domain_grid(0)};
+  test_whole_offsets_correctness(group2);
+  test_whole_offsets_cut_refusal(group2);
+  auto group3 = place_group{
+    make_grid(::std::vector<exec_place>{exec_place::device(0), exec_place::device(0), exec_place::device(0)})};
+  test_whole_offsets_correctness(group3);
+  test_whole_offsets_cut_refusal(group3);
 
   printf("segmented_reduce: all tests passed\n");
   return 0;
