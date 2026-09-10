@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <string>
 #include <variant>
 #include <vector>
@@ -262,6 +263,10 @@ public:
 
   // Generate the complete CUDA source string (useful for debugging).
   std::string source() const;
+
+  // Generate the complete CUDA source string for a multi-function translation
+  // unit (useful for debugging and source-level tests).
+  static std::string source(std::initializer_list<CubCall> calls);
 
   // Compile the generated source and return the function pointer.
   CubCallResult compile(
