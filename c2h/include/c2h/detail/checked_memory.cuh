@@ -3,13 +3,8 @@
 
 #pragma once
 
-#include <cuda/std/detail/__config>
-
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-#  include <cuda/__memory_resource/properties.h>
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__exception/cuda_error.h>
 
 #include <algorithm>
@@ -129,7 +124,6 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
   return lhs > (std::numeric_limits<std::size_t>::max)() - rhs;
 }
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 class scoped_current_device
 {
 public:
@@ -223,9 +217,9 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
     throw std::bad_alloc{};
   }
 
-#  if __cpp_aligned_new >= 201606L
+#if __cpp_aligned_new >= 201606L
   return bytes;
-#  else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
+#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
   std::size_t result = bytes;
   if (add_overflows(result, alignment))
   {
@@ -238,10 +232,10 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
     throw std::bad_alloc{};
   }
   return result + sizeof(std::size_t);
-#  endif // ^^^ __cpp_aligned_new < 201606L ^^^
+#endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
 
-#  if __cpp_aligned_new < 201606L
+#if __cpp_aligned_new < 201606L
 inline void store_checked_host_offset(char* ptr, std::size_t bytes, const std::size_t offset) noexcept
 {
   std::memcpy(ptr + bytes, &offset, sizeof(offset));
@@ -253,7 +247,7 @@ inline void store_checked_host_offset(char* ptr, std::size_t bytes, const std::s
   std::memcpy(&offset, ptr + bytes, sizeof(offset));
   return offset;
 }
-#  endif // __cpp_aligned_new < 201606L
+#endif // __cpp_aligned_new < 201606L
 
 enum class integrated_device_cache_state : unsigned char
 {
@@ -314,9 +308,9 @@ enum class integrated_device_cache_state : unsigned char
     }
   }
 
-#  if __cpp_aligned_new >= 201606L
+#if __cpp_aligned_new >= 201606L
   return ::operator new(bytes, std::align_val_t(alignment));
-#  else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
+#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
   // Allocate memory for bytes, plus potential alignment correction, plus store of the correction offset.
   void* const p             = ::operator new(allocation_size);
   const std::size_t ptr_int = reinterpret_cast<std::size_t>(p);
@@ -324,7 +318,7 @@ enum class integrated_device_cache_state : unsigned char
   char* const ptr           = static_cast<char*>(p) + offset;
   store_checked_host_offset(ptr, bytes, offset);
   return static_cast<void*>(ptr);
-#  endif // ^^^ __cpp_aligned_new < 201606L ^^^
+#endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
 
 inline void checked_host_deallocate(
@@ -337,18 +331,18 @@ inline void checked_host_deallocate(
     return;
   }
 
-#  if __cpp_aligned_new >= 201606L
-#    if __cpp_sized_deallocation >= 201309L
+#if __cpp_aligned_new >= 201606L
+#  if __cpp_sized_deallocation >= 201309L
   ::operator delete(ptr, bytes, std::align_val_t(alignment));
-#    else // ^^^ __cpp_sized_deallocation >= 201309L ^^^ / vvv __cpp_sized_deallocation < 201309L vvv
+#  else // ^^^ __cpp_sized_deallocation >= 201309L ^^^ / vvv __cpp_sized_deallocation < 201309L vvv
   ::operator delete(ptr, std::align_val_t(alignment));
-#    endif // ^^^ __cpp_sized_deallocation < 201309L ^^^
-#  else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
+#  endif // ^^^ __cpp_sized_deallocation < 201309L ^^^
+#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
   char* const raw_ptr      = static_cast<char*>(ptr);
   const std::size_t offset = load_checked_host_offset(raw_ptr, bytes);
   ptr                      = static_cast<void*>(raw_ptr - offset);
   ::operator delete(ptr);
-#  endif // ^^^ __cpp_aligned_new < 201606L ^^^
+#endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 } // namespace c2h::detail
+

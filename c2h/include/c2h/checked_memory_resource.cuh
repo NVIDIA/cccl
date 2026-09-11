@@ -5,16 +5,14 @@
 
 #include <cuda/std/detail/__config>
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-#  include <cuda/__memory_resource/memory_resource_base.h>
-#  include <cuda/__memory_resource/properties.h>
-#  include <cuda/__memory_resource/resource.h>
-#  include <cuda/buffer>
-#  include <cuda/devices>
-#  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/initializer_list>
-#  include <cuda/stream>
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#include <cuda/__memory_resource/memory_resource_base.h>
+#include <cuda/__memory_resource/properties.h>
+#include <cuda/__memory_resource/resource.h>
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/initializer_list>
+#include <cuda/stream>
 
 #include <cstddef>
 
@@ -22,7 +20,6 @@
 
 namespace c2h
 {
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 class checked_device_memory_resource : public ::cuda::mr::memory_resource_base<checked_device_memory_resource>
 {
 public:
@@ -58,13 +55,13 @@ public:
     return lhs.m_device == rhs.m_device;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator!=(checked_device_memory_resource lhs, checked_device_memory_resource rhs) noexcept
   {
     return !(lhs == rhs);
   }
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible>;
 
@@ -121,13 +118,13 @@ public:
     return lhs.m_device == rhs.m_device;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator!=(checked_host_buffer_memory_resource lhs, checked_host_buffer_memory_resource rhs) noexcept
   {
     return !(lhs == rhs);
   }
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::host_accessible>;
 
@@ -144,5 +141,4 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&...
   return ::cuda::make_buffer<T>(
     stream, checked_host_buffer_memory_resource{device}, ::cuda::std::forward<Args>(args)...);
 }
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 } // namespace c2h

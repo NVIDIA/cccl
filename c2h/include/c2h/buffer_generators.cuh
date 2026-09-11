@@ -5,14 +5,12 @@
 
 #include <cuda/std/detail/__config>
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-#  include <cuda/__algorithm/copy.h>
-#  include <cuda/buffer>
-#  include <cuda/devices>
-#  include <cuda/std/limits>
-#  include <cuda/std/utility>
-#  include <cuda/stream>
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#include <cuda/__algorithm/copy.h>
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/std/limits>
+#include <cuda/std/utility>
+#include <cuda/stream>
 
 #include <cstddef>
 
@@ -21,7 +19,6 @@
 
 namespace c2h
 {
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 namespace detail
 {
 template <typename T>
@@ -130,5 +127,4 @@ template <typename T>
   auto buffers = ::c2h::gen_buffers<T>(stream, device, seed, num_items, min, max);
   return ::cuda::std::move(buffers.h_items);
 }
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 } // namespace c2h
