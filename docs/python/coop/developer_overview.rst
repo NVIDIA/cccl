@@ -2,6 +2,8 @@
 ..
 .. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+:html_theme.sidebar_secondary.remove:
+
 .. _cuda.coop.developer_overview:
 
 ``cuda.coop`` Developer Overview
@@ -131,6 +133,187 @@ the same runtime compilation tools appear at a different boundary. Here
 the generated C++ implements a device call within a kernel supplied by the
 user. That means the group shape and the kernel's other collective calls
 matter to compilation.
+
+.. _cuda.coop.generated_shims:
+
+Kernels and their generated C++
+------------------------------
+
+.. raw:: html
+
+   <style>
+   .bd-sidebar-secondary { display: none !important; }
+   .bd-main .bd-content .bd-article-container {
+     width: 100% !important;
+     max-width: none !important;
+     flex: 1 0 100% !important;
+   }
+   .coop-shim-pair pre {
+     white-space: pre-wrap;
+     overflow-wrap: anywhere;
+   }
+   .coop-shim-pair .sd-col { min-width: 0; }
+   </style>
+
+The following pairs use source captured while compiling real kernels. Each
+kernel runs as one block of 128 threads. The copy kernels process 256
+``int32`` values, with two values per thread; the Scan processes 128 values,
+one per thread.
+
+The C++ excerpts retain the emitted types, casts, and calls. Generated
+identifiers have been shortened to names such as ``load_impl`` and
+``load_abi``, and whitespace has been formatted to fit the page. The copy
+excerpts show the no-offset Load helper and its ABI wrapper. Their full
+translation units also contain Store and offset overloads. The Scan excerpt
+shows the helper that accepts a scratch pointer.
+
+The :download:`original captures <source_dumps/captures.zip>` contain all
+three unmodified translation units and a manifest with their checksums and
+the identifier substitutions used here. They were captured with
+Numba-CUDA-MLIR 0.5.1, targeting compute capability 12.0. Generated names
+and the set of emitted overloads can change with the compiler, toolkit, and
+source checkout.
+
+Capturing the source yourself
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+From the CCCL repository root, in an environment with the Numba-CUDA-MLIR
+extra installed:
+
+.. code-block:: bash
+
+   export PYTHONPATH="$PWD/python/cuda_coop${PYTHONPATH:+:$PYTHONPATH}"
+   export CUDA_COOP_ENABLE_CACHE=0
+   export CUDA_COOP_SOURCE_DUMP_DIR="$PWD/coop-source-dumps/direct"
+   python python/cuda_coop/examples/numba_mlir/source_dumps.py direct
+
+   export CUDA_COOP_SOURCE_DUMP_DIR="$PWD/coop-source-dumps/transpose"
+   python python/cuda_coop/examples/numba_mlir/source_dumps.py transpose
+
+   export CUDA_COOP_SOURCE_DUMP_DIR="$PWD/coop-source-dumps/scan"
+   python python/cuda_coop/examples/numba_mlir/source_dumps.py scan
+
+Each command launches the selected kernel, checks its result against NumPy,
+and writes ``cuda_coop_numba_mlir_<hash>.cu`` under the selected directory.
+Use ``CUDA_VISIBLE_DEVICES`` as well if you need to select a particular GPU.
+The :github:`example script
+<python/cuda_coop/examples/numba_mlir/source_dumps.py>` includes the imports,
+launches, and result checks omitted from the panels below.
+
+Set the environment variables before starting Python. The shared
+``CUDA_COOP_SOURCE_DUMP_DIR`` setting takes precedence over the older
+``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR`` setting; an empty shared value disables
+dumping. The provider source is dumped on provider-cache hits too. These
+commands disable that cache and use a fresh process for each kernel so the
+captures are easy to associate with their inputs. Reusing an already compiled
+kernel in the same process can bypass provider generation entirely.
+
+The dump contains the C++ input to NVRTC. Numba compiles the surrounding
+kernel separately, so its indexing, launches, and planner-inserted barriers
+need to be inspected in the kernel's compiler output. Bundling can also put
+several providers and overloads in one source file. A definition in the dump
+does not by itself establish which overload the final kernel calls.
+
+Direct Load and Store
+^^^^^^^^^^^^^^^^^^^^^
+
+.. grid:: 1 1 2 2
+   :gutter: 3
+   :class-container: coop-shim-pair
+
+   .. grid-item::
+
+      Python kernel
+
+      .. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/source_dumps.py
+         :language: python
+         :start-after: # docs: start dump-direct
+         :end-before: # docs: end dump-direct
+
+   .. grid-item::
+
+      Generated C++: Load excerpt
+
+      .. literalinclude:: source_dumps/direct.cpp.txt
+         :language: cpp
+         :start-after: // excerpt-begin
+
+``128`` and ``2`` appear in the CUB template arguments. The ABI accepts
+pointers, casts the payload pointer back to an array of two elements, and
+calls ``Load``. Direct Load needs no scratch pointer. Its ``__ret`` slot is
+unused because Load fills the caller's payload; the integer return value is
+the ABI status. The Store wrapper uses the same pointer conversion and calls
+``Store``.
+
+Transpose with a shared scratch descriptor
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. grid:: 1 1 2 2
+   :gutter: 3
+   :class-container: coop-shim-pair
+
+   .. grid-item::
+
+      Python kernel
+
+      .. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/source_dumps.py
+         :language: python
+         :start-after: # docs: start dump-transpose
+         :end-before: # docs: end dump-transpose
+
+   .. grid-item::
+
+      Generated C++: Load excerpt
+
+      .. literalinclude:: source_dumps/transpose.cpp.txt
+         :language: cpp
+         :start-after: // excerpt-begin
+
+The algorithm is now ``BLOCK_LOAD_TRANSPOSE``. CUB's ``TempStorage`` type
+determines the required bytes and alignment. The ABI has an additional
+pointer, ``abi_param_0``, which it casts to that storage type before calling
+the helper. The Python ``scratch`` descriptor causes the planner to supply
+the allocation and reuse it across Load and Store.
+
+This pointer-taking helper has no block barrier of its own. The planner
+inserts the barriers in the Python kernel's lowered code. The full source
+also contains ``_alloc`` variants with local ``__shared__`` storage and
+``__syncthreads()``; those are separate entry points.
+
+Scan with a Python device operator
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. grid:: 1 1 2 2
+   :gutter: 3
+   :class-container: coop-shim-pair
+
+   .. grid-item::
+
+      Python kernel and operator
+
+      .. literalinclude:: ../../../python/cuda_coop/examples/numba_mlir/source_dumps.py
+         :language: python
+         :start-after: # docs: start dump-scan
+         :end-before: # docs: end dump-scan
+
+   .. grid-item::
+
+      Generated C++: Scan excerpt
+
+      .. literalinclude:: source_dumps/scan.cpp.txt
+         :language: cpp
+         :start-after: // excerpt-begin
+
+The generated source declares ``maximum_device`` and wraps its call in a
+C++ lambda for CUB's ``InclusiveScan``. Numba compiles the Python
+``maximum`` function into a separate LTO-IR input that supplies the declared
+device symbol. Its Python body therefore has no C++ definition in this dump.
+
+The scalar input arrives by value as ``abi_param_1``. The wrapper creates
+references for CUB's input and output arguments, invokes Scan, and writes
+the result through ``__ret``. It still returns zero as the ABI status.
+Although this Python call omits ``temp_storage``, the planner can supply
+compiler-owned scratch through the same pointer-taking interface.
 
 Recovering the specialization
 ----------------------------
