@@ -81,7 +81,6 @@ workflows:
   override:
 
   pull_request:
-    # Use T4 for SM75 PR coverage; reserve RTX2080 coverage for scheduled workflows.
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '12.0', cxx: ['gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'minmax', ctk: '12.0', cxx: 'gcc7'}
@@ -160,7 +159,6 @@ workflows:
     # Eventually v2 will replace v1 as the default and run across the
     # entire matrix. Currently blocked on libnvfatbin availability for CUDA <12.4.
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'gcc13', gpu: 't4'}
-    # Use the established Windows L4 pool for the MSVC lane.
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: 'msvc', gpu: 'l4'}
     # Python against c.parallel v2 (HostJIT-based). Single point of coverage
     # for the v2 Python path; the main `python` matrix continues to test
@@ -340,7 +338,6 @@ workflows:
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
     # NVRTC tests don't currently support 12.0:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
-    # Retain the latest-host-compiler RTX2080 NVRTC coverage moved out of PRs.
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # libcu++ Codegen FileCheck: nightly covers the GCC and Clang host compilers
@@ -358,7 +355,6 @@ workflows:
     # c.parallel -- pinned to gcc13 / msvc2022 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc2022'], gpu: ['t4']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
-    # Keep HostJIT-based c.parallel v2 RTX2080 coverage in nightly.
     - {jobs: ['test'], project: 'cccl_c_parallel_v2', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: 'rtx2080'}
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
@@ -938,7 +934,7 @@ tags:
   ctk: { default: '13.X' }
   # CPU architecture
   cpu: { default: 'amd64' }
-  # GPU model: implicit PR jobs must not use the scheduled-only RTX2080 pool.
+  # GPU model
   gpu: { default: 't4' }
   # Host compiler {name, version, exe}
   # See the `host_compilers` map.
