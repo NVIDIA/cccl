@@ -182,7 +182,7 @@ int main()
   float y[4] = {1.0, 2.0, 3.0, 4.0};
   float z[4] = {0.0};
 
-  thrust::device_vector<float> X(x, x + 4);
+  const thrust::device_vector<float> X(x, x + 4);
   thrust::device_vector<float> Y(y, y + 4);
   thrust::device_vector<float> Z(z, z + 4);
 

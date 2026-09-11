@@ -102,7 +102,7 @@ struct CommandLineArgs
       }
 
       string key, val;
-      string::size_type pos = arg.find('=');
+      const string::size_type pos = arg.find('=');
       if (pos == string::npos)
       {
         key = string(arg, 2, arg.length() - 2);
@@ -195,7 +195,7 @@ struct CommandLineArgs
       {
         if (keys[i] == string(arg_name))
         {
-          string val_string(values[i]);
+          const string val_string(values[i]);
           istringstream str_stream(val_string);
           string::size_type old_pos = 0;
           string::size_type new_pos = 0;
@@ -391,7 +391,7 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
     // Generate random word_buff
     for (int j = 0; j < NUM_WORDS; j++)
     {
-      int current_bit = j * WORD_BYTES * 8;
+      const int current_bit = j * WORD_BYTES * 8;
 
       unsigned int word = 0xffffffff;
       word &= 0xffffffff << ::cuda::std::max(0, begin_bit - current_bit);
@@ -421,7 +421,7 @@ template <typename T>
 T RandomValue(T max)
 {
   unsigned int bits;
-  unsigned int max_int = (unsigned int) -1;
+  const unsigned int max_int = (unsigned int) -1;
   do
   {
     RandomBits(bits);
@@ -1089,8 +1089,8 @@ int CompareResults(float* computed, float* reference, OffsetT len, bool verbose 
   {
     if (computed[i] != reference[i])
     {
-      float difference = std::abs(computed[i] - reference[i]);
-      float fraction   = difference / std::abs(reference[i]);
+      const float difference = std::abs(computed[i] - reference[i]);
+      const float fraction   = difference / std::abs(reference[i]);
 
       if (fraction > 0.00015)
       {
@@ -1128,8 +1128,8 @@ int CompareResults(double* computed, double* reference, OffsetT len, bool verbos
   {
     if (computed[i] != reference[i])
     {
-      double difference = std::abs(computed[i] - reference[i]);
-      double fraction   = difference / std::abs(reference[i]);
+      const double difference = std::abs(computed[i] - reference[i]);
+      const double fraction   = difference / std::abs(reference[i]);
 
       if (fraction > 0.00015)
       {
@@ -1210,7 +1210,7 @@ int CompareDeviceResults(
   }
 
   // Check
-  int retval = CompareResults(h_data, h_reference, num_items, verbose);
+  const int retval = CompareResults(h_data, h_reference, num_items, verbose);
 
   // Cleanup
   if (h_data)
@@ -1394,8 +1394,8 @@ struct CpuTimer
 
   float ElapsedMillis()
   {
-    float sec  = static_cast<float>(stop.ru_utime.tv_sec - start.ru_utime.tv_sec);
-    float usec = static_cast<float>(stop.ru_utime.tv_usec - start.ru_utime.tv_usec);
+    const float sec  = static_cast<float>(stop.ru_utime.tv_sec - start.ru_utime.tv_sec);
+    const float usec = static_cast<float>(stop.ru_utime.tv_usec - start.ru_utime.tv_usec);
 
     return (sec * 1000) + (usec / 1000);
   }

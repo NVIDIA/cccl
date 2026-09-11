@@ -158,8 +158,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   const int findif_grid_size = ::cuda::std::min(num_tiles, max_blocks);
 
   // Temporary storage allocation requirements
-  void* allocations[1]       = {};
-  size_t allocation_sizes[1] = {sizeof(OffsetT)};
+  void* allocations[1]             = {};
+  const size_t allocation_sizes[1] = {sizeof(OffsetT)};
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
@@ -171,7 +171,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return cudaSuccess;
   }
 
-  OffsetT* found_pos_ptr = [&] {
+  OffsetT* found_pos_ptr = [&] { // NOLINT(misc-const-correctness)
     if constexpr (can_write_to_output_directly)
     {
       return reinterpret_cast<OffsetT*>(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out));

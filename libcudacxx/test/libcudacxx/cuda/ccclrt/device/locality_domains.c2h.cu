@@ -194,7 +194,7 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
     // observe it.
     for (auto dev : cuda::devices)
     {
-      cuda::device_ref other{dev.get()};
+      const cuda::device_ref other{dev.get()};
       REQUIRE(other.__locality_domains().data() == dev.__locality_domains().data());
     }
   }
@@ -227,7 +227,7 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
 
         // The fixture checks that the driver stack is empty at test exit, so the push must be undone
         // even if a check throws.
-        cuda::__ensure_current_context guard{domain};
+        const cuda::__ensure_current_context guard{domain};
         REQUIRE(cuda::__driver::__ctxGetCurrent() == ctx);
         REQUIRE(cuda::__driver::__ctxGetDevice() == expected_device);
       }

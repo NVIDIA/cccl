@@ -62,7 +62,7 @@ __global__ void BlockReduceKernel(int* d_in, // Tile of input
   // cast to lvalue reference of expected type
   auto& temp_storage = reinterpret_cast<TempStorageT&>(smem);
 
-  int data = d_in[threadIdx.x];
+  const int data = d_in[threadIdx.x];
 
   // Compute sum
   int aggregate = BlockReduceT(temp_storage).Sum(data);

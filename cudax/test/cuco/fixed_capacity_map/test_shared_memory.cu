@@ -84,10 +84,11 @@ C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity
 {
   constexpr int num_keys = 64;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  fixed_capacity_map_512_type map{stream, mr, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
+  const fixed_capacity_map_512_type map{
+    stream, mr, cudax::cuco::empty_key{empty_key}, cudax::cuco::empty_value{empty_value}};
 
   const int block_size = 128;
   const int grid_size  = (num_keys + block_size - 1) / block_size;
@@ -152,7 +153,7 @@ C2H_TEST("fixed_capacity_map_ref device initialize — map fully in shared memor
   constexpr int num_blocks = 8;
   constexpr int block_size = 64;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   auto thread_ok = ::cuda::make_buffer<int>(stream, mr, num_blocks * block_size, 0);
@@ -242,7 +243,7 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
   constexpr int num_blocks = 8;
   constexpr int block_size = 128;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,
@@ -344,7 +345,7 @@ C2H_TEST("fixed_capacity_map_ref initialize and make_copy — dynamic extent in 
   constexpr int block_size = 128;
   const auto capacity      = cudax::cuco::make_valid_capacity<probing, dynamic_bucket>(::cuda::std::size_t{256});
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   auto slots      = ::cuda::make_buffer<value_type>(stream, mr, capacity, ::cuda::no_init);

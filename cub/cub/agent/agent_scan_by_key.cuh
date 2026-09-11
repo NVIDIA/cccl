@@ -373,7 +373,7 @@ struct AgentScanByKey
     }
     else
     {
-      KeyT tile_pred_key = (threadIdx.x == 0) ? d_keys_prev_in[tile_idx] : KeyT();
+      const KeyT tile_pred_key = (threadIdx.x == 0) ? d_keys_prev_in[tile_idx] : KeyT();
 
       BlockDiscontinuityKeysT(storage.scan_storage.discontinuity)
         .FlagHeads(segment_flags, keys, inequality_op, tile_pred_key);
@@ -443,7 +443,7 @@ struct AgentScanByKey
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
-    int tile_idx          = static_cast<int>(blockIdx.x);
+    const int tile_idx    = static_cast<int>(blockIdx.x);
     OffsetT tile_base     = OffsetT(ITEMS_PER_TILE) * tile_idx;
     OffsetT num_remaining = num_items - tile_base;
 

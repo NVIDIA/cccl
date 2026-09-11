@@ -38,7 +38,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   T val = 1;
   // set up input
-  const auto elements       = static_cast<OffsetT>(state.get_int64("Elements"));
+  const auto elements       = static_cast<OffsetT>(state.get_int64("Elements{io}"));
   const auto common_prefix  = state.get_float64("MismatchAt");
   const auto mismatch_point = static_cast<OffsetT>(elements * common_prefix);
 
@@ -72,5 +72,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 }
 
 NVBENCH_BENCH_TYPES(find_if, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
+  .set_name("base")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.0});
