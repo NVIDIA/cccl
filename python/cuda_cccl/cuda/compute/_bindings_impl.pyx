@@ -609,6 +609,27 @@ cdef class Pointer(StateBase):
             )
         self.set_state(ptr, ref)
 
+    def rebind(self, ptr, owner):
+        """Mutate this Pointer's ptr/ref in place instead of allocating a
+        new Pointer object -- ptr/ref are plain `cdef` fields (not `cdef
+        public`), so this can only be done from Cython, not from a pure-
+        Python caller. Intended for hot-loop call sites (e.g.
+        _Reduce.execute()) that already hold a Pointer instance from a
+        prior call and just need to update it to a new pointer value,
+        instead of going through make_pointer_object's __cinit__ every
+        call. Semantics match make_pointer_object exactly.
+        """
+        if isinstance(ptr, int):
+            self.ptr = int_as_ptr(ptr)
+        elif isinstance(ptr, ctypes.c_void_p):
+            self.ptr = int_as_ptr(ptr.value)
+        else:
+            raise TypeError(
+                "First argument must be an integer, or ctypes.c_void_p, "
+                f"got {type(ptr)}"
+            )
+        self.ref = owner
+
 
 def make_pointer_object(ptr, owner):
     cdef Pointer res = Pointer(0)
