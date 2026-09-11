@@ -635,6 +635,7 @@ CUresult cccl_device_radix_sort_impl(
       end_bit,
       is_overwrite_okay,
       stream,
+      /*runs_on_guarantee=*/::cuda::std::nullopt,
       decomposer,
       *static_cast<cub::detail::radix_sort::policy_selector*>(build.runtime_policy),
       radix_sort::radix_sort_kernel_source{build},
