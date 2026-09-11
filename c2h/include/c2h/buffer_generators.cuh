@@ -56,6 +56,17 @@ void gen_into_device_buffer(
 }
 } // namespace detail
 
+//! @brief Holds a generated device buffer and its logical size.
+//!
+//! @c size is the number of generated items. The owning buffer may contain additional capacity that is not part of the
+//! generated sequence.
+template <typename T>
+struct sized_device_buffer
+{
+  cuda::device_buffer<T> d_items;
+  std::size_t size;
+};
+
 //! @brief Holds generated device and host buffers and their shared logical size.
 //!
 //! @c size is the number of generated items shared by both buffers. The owning buffers may contain additional
@@ -119,6 +130,53 @@ template <typename T>
   T max = ::cuda::std::numeric_limits<T>::max())
 {
   auto buffers = ::c2h::gen_buffers<T>(stream, seed, num_items, min, max);
+  return ::cuda::std::move(buffers.h_items);
+}
+
+//! @brief Generates uniform segment offsets with the existing c2h device generator and returns them in device memory.
+//!
+//! @pre @c stream must not be the legacy default stream.
+template <typename T>
+[[nodiscard]] sized_device_buffer<T> gen_uniform_offsets_device_buffer(
+  cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+{
+  const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
+
+  const auto device = stream.device();
+  const ::c2h::detail::scoped_current_device device_scope{device.get()};
+
+  auto d_segment_offsets = ::c2h::make_device_buffer<T>(stream, device, offsets_size, cuda::no_init);
+  const auto num_offsets = ::c2h::detail::gen_uniform_offsets(
+    stream, seed, d_segment_offsets.first(d_segment_offsets.size()), total_elements, min_segment_size, max_segment_size);
+
+  return {::cuda::std::move(d_segment_offsets), num_offsets};
+}
+
+//! @brief Generates uniform segment offsets with the existing c2h device generator and returns device and host buffers.
+//!
+//! @pre @c stream must not be the legacy default stream.
+template <typename T>
+[[nodiscard]] sized_device_host_buffers<T> gen_uniform_offsets_buffers(
+  cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+{
+  auto d_segment_offsets =
+    ::c2h::gen_uniform_offsets_device_buffer<T>(stream, seed, total_elements, min_segment_size, max_segment_size);
+
+  const auto num_items   = d_segment_offsets.size;
+  auto h_segment_offsets = ::c2h::detail::device_buffer_to_host_buffer(stream, d_segment_offsets.d_items, num_items);
+
+  return {::cuda::std::move(d_segment_offsets.d_items), ::cuda::std::move(h_segment_offsets), num_items};
+}
+
+//! @brief Generates uniform segment offsets with the existing c2h device generator and returns them in host memory.
+//!
+//! @pre @c stream must not be the legacy default stream.
+template <typename T>
+[[nodiscard]] cuda::host_buffer<T> gen_uniform_offsets_host_buffer(
+  cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+{
+  auto buffers =
+    ::c2h::gen_uniform_offsets_buffers<T>(stream, seed, total_elements, min_segment_size, max_segment_size);
   return ::cuda::std::move(buffers.h_items);
 }
 } // namespace c2h

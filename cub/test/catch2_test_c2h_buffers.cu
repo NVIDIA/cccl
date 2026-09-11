@@ -4,6 +4,9 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
+#include <cuda/std/span>
 #include <cuda/stream>
 
 #include <algorithm>
@@ -12,6 +15,7 @@
 #include <cstdint>
 #include <limits>
 #include <new>
+#include <stdexcept>
 
 #include <cuda_runtime_api.h>
 
@@ -21,6 +25,8 @@
 #include <c2h/custom_type.h>
 #include <c2h/detail/env.cuh>
 #include <c2h/detail/scoped_current_device.cuh>
+#include <c2h/generator_common.h>
+#include <c2h/vector_generators.h>
 
 namespace
 {
@@ -63,6 +69,46 @@ CUB_TEST("c2h checked memory rejects sizes that overflow padding", "[c2h][buffer
 {
   REQUIRE(
     c2h::detail::check_free_device_memory((std::numeric_limits<std::size_t>::max)()) == cudaErrorMemoryAllocation);
+}
+
+CUB_TEST("c2h uniform offset size validation rejects invalid element counts", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  REQUIRE(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{0}) == 2);
+  REQUIRE(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{1}) == 3);
+
+  REQUIRE_THROWS_AS(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{-1}), std::invalid_argument);
+  REQUIRE_THROWS_AS(c2h::detail::checked_uniform_offsets_size((cuda::std::numeric_limits<cuda::std::int32_t>::max)()),
+                    std::invalid_argument);
+  REQUIRE_THROWS_AS(
+    c2h::detail::checked_uniform_offsets_size((cuda::std::numeric_limits<cuda::std::uint64_t>::max)() - 1),
+    std::invalid_argument);
+}
+
+CUB_TEST("c2h uniform offset generators validate sizes before allocation", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  const auto seed = c2h::seed_t{0};
+
+  REQUIRE_THROWS_AS(
+    c2h::gen_uniform_offsets(seed, cuda::std::int32_t{-1}, cuda::std::int32_t{0}, cuda::std::int32_t{1}),
+    std::invalid_argument);
+
+  const auto device = c2h::current_test_device();
+  const cuda::stream stream{device};
+  REQUIRE_THROWS_AS(c2h::gen_uniform_offsets_device_buffer(
+                      stream, seed, cuda::std::int32_t{-1}, cuda::std::int32_t{0}, cuda::std::int32_t{1}),
+                    std::invalid_argument);
+}
+
+CUB_TEST("c2h detail uniform offset generator validates destination size", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  REQUIRE_THROWS_AS(
+    c2h::detail::gen_uniform_offsets(
+      c2h::seed_t{0},
+      cuda::std::span<cuda::std::int32_t>{},
+      cuda::std::int32_t{1},
+      cuda::std::int32_t{0},
+      cuda::std::int32_t{1}),
+    std::invalid_argument);
 }
 
 CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buffers][device_resource]", CUB_SMALL)
@@ -176,6 +222,12 @@ CUB_TEST("c2h stream generators select the stream device", "[c2h][buffers][gener
   using custom_t = c2h::custom_type_t<c2h::equal_comparable_t>;
   auto d_custom  = c2h::make_device_buffer<custom_t>(stream, device, size, cuda::no_init);
 
+  constexpr std::int32_t total_elements   = 8;
+  constexpr std::int32_t min_segment_size = 1;
+  constexpr std::int32_t max_segment_size = 2;
+  const auto offsets_size                 = c2h::detail::checked_uniform_offsets_size(total_elements);
+  auto d_offsets = c2h::make_device_buffer<std::int32_t>(stream, device, offsets_size, cuda::no_init);
+
   constexpr std::int32_t scalar_value = 42;
   const int2 vector_value{42, 42};
   const auto custom_value = [] {
@@ -191,19 +243,26 @@ CUB_TEST("c2h stream generators select the stream device", "[c2h][buffers][gener
     c2h::detail::gen_into_device_buffer(c2h::seed_t{1234}, d_scalar, scalar_value, scalar_value);
     c2h::detail::gen_into_device_buffer(c2h::seed_t{1234}, d_vector, vector_value, vector_value);
     c2h::detail::gen_into_device_buffer(c2h::seed_t{1234}, d_custom, custom_value, custom_value);
+    const auto num_offsets = c2h::detail::gen_uniform_offsets(
+      stream, c2h::seed_t{1234}, d_offsets.first(d_offsets.size()), total_elements, min_segment_size, max_segment_size);
+    REQUIRE(num_offsets >= 2);
+    REQUIRE(num_offsets <= offsets_size);
 
     int current_device{};
     REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
     REQUIRE(current_device == other_device);
   }
 
-  const auto h_scalar = c2h::make_host_buffer<std::int32_t>(stream, device, d_scalar);
-  const auto h_vector = c2h::make_host_buffer<int2>(stream, device, d_vector);
-  const auto h_custom = c2h::make_host_buffer<custom_t>(stream, device, d_custom);
+  const auto h_scalar  = c2h::make_host_buffer<std::int32_t>(stream, device, d_scalar);
+  const auto h_vector  = c2h::make_host_buffer<int2>(stream, device, d_vector);
+  const auto h_custom  = c2h::make_host_buffer<custom_t>(stream, device, d_custom);
+  const auto h_offsets = c2h::make_host_buffer<std::int32_t>(stream, device, d_offsets);
   stream.sync();
 
   REQUIRE(h_scalar.front() == scalar_value);
   REQUIRE(h_vector.front().x == vector_value.x);
   REQUIRE(h_vector.front().y == vector_value.y);
   REQUIRE(h_custom.front() == custom_value);
+  REQUIRE(h_offsets.front() == 0);
+  REQUIRE(std::find(h_offsets.begin(), h_offsets.end(), total_elements) != h_offsets.end());
 }
