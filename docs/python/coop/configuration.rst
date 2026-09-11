@@ -10,13 +10,7 @@ Configuration
 Installation
 ------------
 
-The base install has no Python package dependencies:
-
-.. code-block:: console
-
-   python -m pip install cuda-coop
-
-For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
+Install the extra matching the CUDA major version used to compile the kernel:
 
 .. code-block:: console
 
@@ -43,7 +37,7 @@ Runtime environment variables
 
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
-   :mod:`cuda.coop` import. Explicit registration and qualified-backend import still work.
+   :mod:`cuda.coop` import. Explicit qualified-backend import still works.
 
 ``CUDA_COOP_CCCL_ROOT``
    Selects a CCCL source checkout or a ``cuda-coop`` header bundle. An invalid
