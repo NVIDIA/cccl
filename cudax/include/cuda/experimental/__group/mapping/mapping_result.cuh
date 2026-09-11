@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bit_fns.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>
@@ -174,10 +175,9 @@ template <bool _IsContiguous>
 
     const auto __less_mask = __prev_lane_mask & ::cuda::device::lane_mask::all_less();
     const auto __nless     = ::cuda::std::popcount(__less_mask.value());
-    if (__nless > __rank)
+    if (__nless >= __rank)
     {
-      const auto __nless_to_remove = __nless - __rank;
-      const auto __last_to_remove  = ::__fns(__less_mask.value(), 0, __nless_to_remove);
+      const auto __last_to_remove = ::cuda::bit_fns(__less_mask.value(), __nless - __rank);
       __lane_mask |= ::cuda::device::lane_mask{__less_mask.value() & (~0u << (__last_to_remove + 1))};
     }
     else
@@ -189,8 +189,7 @@ template <bool _IsContiguous>
     const auto __ngreater     = ::cuda::std::popcount(__greater_mask.value());
     if (__rank + __ngreater >= __n)
     {
-      const auto __ngreater_to_keep = __n - __rank;
-      const auto __first_to_remove  = ::__fns(__greater_mask.value(), 0, __ngreater_to_keep);
+      const auto __first_to_remove = ::cuda::bit_fns(__greater_mask.value(), __n - __rank - 1);
       __lane_mask |= ::cuda::device::lane_mask{__greater_mask.value() & ((1u << __first_to_remove) - 1u)};
     }
     else

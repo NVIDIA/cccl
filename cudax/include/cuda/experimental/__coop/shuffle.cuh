@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bit_fns.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -61,7 +62,7 @@ _CCCL_REQUIRES(is_group<_Group> _CCCL_AND ::cuda::std::is_same_v<typename _Group
   }
   else
   {
-    __src_lane = ::__fns(__lane_mask.value(), 0, static_cast<int>(__src_unit_rank) + 1);
+    __src_lane = ::cuda::bit_fns(__lane_mask.value(), static_cast<int>(__src_unit_rank));
   }
   return ::cuda::device::warp_shuffle_idx(__value, static_cast<int>(__src_lane), __lane_mask.value());
 }
