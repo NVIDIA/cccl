@@ -12,7 +12,7 @@ compile_time:
   pull_request:
     - id: public-headers-gcc13
       name: Public headers compile-time bench
-      gpu: rtx2080
+      gpu: t4
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
