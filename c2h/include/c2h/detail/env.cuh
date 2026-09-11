@@ -8,9 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace c2h
-{
-namespace detail
+namespace c2h::detail
 {
 inline std::optional<std::string> get_env(const char* name)
 {
@@ -32,5 +30,4 @@ inline std::optional<std::string> get_env(const char* name)
   return std::nullopt;
 #endif
 }
-} // namespace detail
-} // namespace c2h
+} // namespace c2h::detail
