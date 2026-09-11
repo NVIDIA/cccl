@@ -31,6 +31,12 @@ CUB_TEST_CASE("Test utils can print __uint128", "[test][utils]", CUB_SMALL)
   REQUIRE(print(__uint128_t{42}) == "42");
   REQUIRE(print(__uint128_t{1} << 120) == "1329227995784915872903807060280344576");
 }
+
+CUB_TEST_CASE("Catch2 can stringify 128-bit integers", "[test][utils]", CUB_SMALL)
+{
+  REQUIRE(Catch::StringMaker<__int128_t>::convert(__int128_t{-42}) == "-42");
+  REQUIRE(Catch::StringMaker<__uint128_t>::convert(__uint128_t{1} << 120) == "1329227995784915872903807060280344576");
+}
 #endif
 
 CUB_TEST_CASE("Test utils can print KeyValuePair", "[test][utils]", CUB_SMALL)
