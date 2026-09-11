@@ -4,7 +4,7 @@ Run compile-time benchmarks
 Use the compile-time benchmark when you want to compare how a change affects
 CUDA TU compile time. The common workflow compares the current tree against
 ``origin/main`` and reports the most important movements in generated public
-include-check TUs.
+include-check TUs or supported third-party builds.
 
 For the full option, CSV, filter, and CI contract reference, see
 :doc:`../references/compile_time`.
@@ -19,6 +19,20 @@ From the repository root, run:
   ci/build_compile_time_bench.sh \
     -baseline-ref origin/main \
     -- --slices /path/to/slices.json
+
+Use ``-project`` to run the same comparison over an existing third-party build
+flow:
+
+.. code-block:: bash
+
+  ci/build_compile_time_bench.sh \
+    -project matx \
+    -baseline-ref origin/main \
+    -- --slices /path/to/slices.json
+
+Supported projects are ``pytorch``, ``matx``, and ``rapids``. By default,
+RAPIDS builds every C++ project in its build manifest; pass one or more
+``-target`` options to select specific libraries instead.
 
 The CI slices live in ``ci/matrix.yaml`` under
 ``compile_time.pull_request[].slices``. To reproduce the PR shape locally, copy
@@ -40,14 +54,16 @@ those slice definitions to a JSON file shaped as:
     ]
   }
 
-The wrapper builds both the current tree and the baseline commit with the same
-preset, target set, architecture, and other build arguments. It then writes
-baseline reports, current reports, comparison CSVs, a ``summary.json`` manifest,
-raw traces, and Perfetto-friendly traces under the preset build directory:
+The wrapper holds the build shape constant between the current tree and the
+baseline commit. CCCL comparisons reuse the same preset, targets, and build
+arguments; third-party comparisons reuse the same upstream checkout and
+selected project targets. The wrapper then writes baseline reports, current
+reports, comparison CSVs, a ``summary.json`` manifest, raw traces, and
+Perfetto-friendly traces under the build directory:
 
 .. code-block:: text
 
-  build/<infix>/<preset>/compile_time/
+  build/<infix>/<preset-or-project>/compile_time/
 
 Run a quick single-slice report
 -------------------------------
@@ -70,12 +86,26 @@ Other useful built-in filters include:
 - ``code-generation``
 - ``all``
 
+To aggregate all specializations under the primary-template name reported by
+NVCC, add ``--group-by primary-template``:
+
+.. code-block:: bash
+
+  ci/build_compile_time_bench.sh -skip-build -- \
+    -f template-instantiation -i --sort total -n 25 \
+    --group-by primary-template
+
+In a multi-slice JSON file, use ``"group_by": "primary-template"`` on a
+template-instantiation slice.
+
 Interpret the PR comment
 ------------------------
 
-The PR comment contains one section per configured slice. Within each slice,
-regressions and improvements are intentionally separated. Rows are ranked by
-total impact across matched traces, not just by the largest single-TU movement.
+The PR workflow posts one combined comment. Each enabled benchmark
+configuration has its own collapsible section, containing one section per
+configured slice. Within each slice, regressions and improvements are
+intentionally separated. Rows are ranked by total impact across matched traces,
+not just by the largest single-TU movement.
 
 Important columns:
 

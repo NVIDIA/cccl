@@ -64,11 +64,15 @@ _create_rapids_cmake_override_json() {
         rapids_cmake_upstream="$(yq '.x-git-defaults.upstream' /opt/rapids-build-utils/manifest.yaml)";
     fi
 
-    # Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
+    # Define CCCL_TAG to override the default CCCL SHA. Otherwise the current
+    # HEAD of the local checkout is used.
     if test -n "${CCCL_TAG-}"; then
-        # If CCCL_TAG is defined, fetch it to the local checkout
-        git -C "${HOME}/cccl" fetch origin "${CCCL_TAG}";
-        cccl_sha="$(git -C "${HOME}/cccl" rev-parse FETCH_HEAD)";
+        if [[ "${CCCL_RESOLVE_TAG_LOCALLY:-0}" == 1 ]]; then
+            cccl_sha="$(git -C "${HOME}/cccl" rev-parse "${CCCL_TAG}^{commit}")";
+        else
+            git -C "${HOME}/cccl" fetch origin "${CCCL_TAG}";
+            cccl_sha="$(git -C "${HOME}/cccl" rev-parse FETCH_HEAD)";
+        fi
     else
         cccl_sha="$(git -C "${HOME}/cccl" rev-parse HEAD)";
     fi
@@ -110,6 +114,12 @@ _create_rapids_cmake_override_json() {
     cmake_args+=("-Drapids-cmake-branch=${rapids_cmake_tag}");
     cmake_args+=("-Drapids-cmake-repo=${rapids_cmake_upstream}/rapids-cmake");
     cmake_args+=("-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE=${HOME}/rapids-cmake-override-versions.json");
+
+    if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+        cmake_args+=("-DCMAKE_CUDA_FLAGS=--fdevice-time-trace=-");
+        cmake_args+=("-DCMAKE_CUDA_COMPILER_LAUNCHER=");
+        cmake_args+=("-DCMAKE_CXX_COMPILER_LAUNCHER=");
+    fi
 
     # Inject the CMake args into manifest.yaml
     sudo yq -i "(.repos[] | .cpp[] | .args.cmake) += \" ${cmake_args[*]}\"" "${PROJECT_MANIFEST_YML}";
