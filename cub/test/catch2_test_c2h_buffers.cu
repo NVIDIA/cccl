@@ -4,6 +4,9 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -13,6 +16,7 @@
 #include <cstdint>
 #include <limits>
 #include <new>
+#include <stdexcept>
 
 #include <cuda_runtime_api.h>
 
@@ -89,6 +93,46 @@ CUB_TEST("c2h checked memory rejects sizes that overflow padding", "[c2h][buffer
 {
   REQUIRE(
     c2h::detail::check_free_device_memory((std::numeric_limits<std::size_t>::max)()) == cudaErrorMemoryAllocation);
+}
+
+CUB_TEST("c2h uniform offset size validation rejects invalid element counts", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  REQUIRE(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{0}) == 2);
+  REQUIRE(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{1}) == 3);
+
+  REQUIRE_THROWS_AS(c2h::detail::checked_uniform_offsets_size(cuda::std::int32_t{-1}), std::invalid_argument);
+  REQUIRE_THROWS_AS(c2h::detail::checked_uniform_offsets_size((cuda::std::numeric_limits<cuda::std::int32_t>::max)()),
+                    std::invalid_argument);
+  REQUIRE_THROWS_AS(
+    c2h::detail::checked_uniform_offsets_size((cuda::std::numeric_limits<cuda::std::uint64_t>::max)() - 1),
+    std::invalid_argument);
+}
+
+CUB_TEST("c2h uniform offset generators validate sizes before allocation", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  const auto seed = c2h::seed_t{0};
+
+  REQUIRE_THROWS_AS(
+    c2h::gen_uniform_offsets(seed, cuda::std::int32_t{-1}, cuda::std::int32_t{0}, cuda::std::int32_t{1}),
+    std::invalid_argument);
+
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+  REQUIRE_THROWS_AS(c2h::gen_uniform_offsets_device_buffer(
+                      stream, seed, cuda::std::int32_t{-1}, cuda::std::int32_t{0}, cuda::std::int32_t{1}),
+                    std::invalid_argument);
+}
+
+CUB_TEST("c2h detail uniform offset generator validates destination size", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  REQUIRE_THROWS_AS(
+    c2h::detail::gen_uniform_offsets(
+      c2h::seed_t{0},
+      cuda::std::span<cuda::std::int32_t>{},
+      cuda::std::int32_t{1},
+      cuda::std::int32_t{0},
+      cuda::std::int32_t{1}),
+    std::invalid_argument);
 }
 
 CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buffers][device_resource]", CUB_SMALL)
