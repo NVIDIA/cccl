@@ -345,4 +345,3 @@ inline void checked_host_deallocate(
 #endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
 } // namespace c2h::detail
-
