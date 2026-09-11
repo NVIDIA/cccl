@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -62,6 +62,21 @@ CUB_NAMESPACE_BEGIN
 //!
 //!   - Summation (**vs.** generic reduction)
 //!   - The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
+//!
+//! Hardware Warp Redux Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For full 32-thread logical warps, ``WarpReduce`` uses PTX ``redux.sync`` instructions for the following operator and
+//! type combinations when the target architecture supports them:
+//!
+//! - On SM80 and later:
+//!
+//!   - ``cuda::std::plus``, ``cuda::minimum``, and ``cuda::maximum`` for integral types up to 32 bits.
+//!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor`` for integral types of any size.
+//!
+//! - On SM100f and later in the same architecture family:
+//!
+//!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
 //!
 //! Simple Examples
 //! +++++++++++++++
