@@ -317,9 +317,9 @@ Fortunately, the kernel source is already being assembled as a string at
 runtime. That means we can also generate the type information needed by
 the CUDA C++ side.
 
-As a concrete example, suppose we want to pass a ``numba.complex128``
-value into the kernel. The C++ side does not see the original Python
-type definition, but that is not an issue. It only needs a storage
+As a concrete example, suppose we want to pass a value of numba-cuda-mlir's
+``types.complex128`` into the kernel. The C++ side does not see the original
+Python type definition, but that is not an issue. It only needs a storage
 type with matching size and alignment, and can type-erase everything
 else.
 
@@ -344,7 +344,7 @@ else.
             cuLaunchKernel((CUfunction)kernel, 1, 1, 1, 4, 1, 1, 0, 0, kernel_args, nullptr);
 
 In this version, the operator takes a type-erased pointer. On the
-Python side, we therefore pass a pointer to the ``numba.complex128``
+Python side, we therefore pass a pointer to the ``types.complex128``
 value, together with the size and alignment needed to construct a
 matching storage type on the C++ side:
 
@@ -375,8 +375,9 @@ matching storage type on the C++ side:
         bindings.launcher.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
         bindings.launcher(type_erased_value_ptr, size, alignment, ltoir, len(ltoir))
 
-In this example, we obtain the size and alignment of
-``numba.complex128`` from Numba's type system. The remaining detail is
+In this example, we obtain the size and alignment from the corresponding NumPy
+dtype, ``np.dtype(np.complex128)``, since that is the layout the C++ storage
+type has to match. The remaining detail is
 how to pass the value to ``cuLaunchKernel``. Kernel arguments are
 described to ``cuLaunchKernel`` as pointers to host memory from which
 the launch parameters are copied. In Python, that host-memory pointer
@@ -558,20 +559,6 @@ The free-threading design is constrained by the following requirements:
 * Same-key concurrent cold builds should build once; waiters should receive the
   same result or observe the same exception.
 
-The current free-threading support boundary is the ``minimal-cu12`` and
-``minimal-cu13`` extras. These extras omit Numba and Numba CUDA. Consequently,
-free-threaded support currently covers built-in ``OpKind`` operations and
-externally compiled ``RawOp`` operations, but not Python-callable operators.
-The full ``cu12`` and ``cu13`` extras remain
-outside the support claim until the Numba CUDA dependency is replaced by a
-free-threading-compatible implementation.
-
-CI runs ``test_free_threading_stress.py`` directly from the minimal test job.
-The v1 backend is covered across the supported CUDA 12 and 13 lanes, and a
-separate CTK 13.X minimal job runs the same suite against the v2 HostJIT
-backend. Pytest runs each suite in one process while the stress tests create
-and synchronize their own worker threads.
-
 Build and validation requirements
 +++++++++++++++++++++++++++++++++
 
@@ -596,6 +583,28 @@ criteria for a free-threaded build are:
 * importing ``cuda.compute`` does not re-enable the GIL;
 * the free-threading stress suite passes without forcing ``PYTHON_GIL=0`` or
   ``-X gil=0``.
+
+CI enforces the last criterion as follows.
+
+Tests that require a free-threaded interpreter carry the ``free_threading``
+marker. When the Python interpreter is a free-threaded build, the CI test
+payload adds two steps after the regular suite has run. First, it runs the
+tests selected by the ``free_threading`` marker. Second, it runs the regular
+suite a second time under pytest-run-parallel, a plugin that executes each
+individual test in two threads simultaneously -- the same test body running
+twice, concurrently, in one process -- to expose races on shared state that a
+single-threaded run cannot. The pytest-run-parallel re-run is an extra form of
+stress testing: the hand-written stress suite targets specific shared-object
+scenarios, whereas the re-run applies the same kind of concurrency to every
+functional test, so the whole surface of algorithms, iterators and operators is
+exercised under contention without a dedicated test for each.
+
+The two-thread re-run with pytest-run-parallel is what the ``thread_unsafe``
+marker is for. Some tests must not run concurrently with a second copy of
+themselves, because they spawn and synchronize their own worker threads (the
+stress suites) or mutate process-wide state, for example by calling
+``clear_all_caches()`` or asserting on compile-cache hit counts. Marking them
+``thread_unsafe`` makes the plugin run them once, single-threaded, instead.
 
 
 Device keying
@@ -819,10 +828,18 @@ Environment variables:
 Clearing caches
 +++++++++++++++
 
-``clear_all_caches()`` is process-local. It clears all known per-thread wrapper
-caches through a weak registry of live thread cache containers, and it clears the
-shared build-result cache. Separate Python processes build and cache
-independently.
+``clear_all_caches()`` is process-local. It clears:
+
+* all known per-thread wrapper caches, through a weak registry of live thread
+  cache containers;
+* the shared build-result cache;
+* the compiled-device-code memos: JIT-compiled Python operators in ``_jit``,
+  NVRTC-compiled iterator wrappers in ``_cpp_compile``, and select's
+  always-false predicate in ``_select``.
+
+The struct registration caches are left alone, since re-registering the same
+types would be overhead with no benefit. Separate Python processes build and
+cache independently.
 
 Calling ``clear_all_caches()`` concurrently with active factory calls or
 algorithm execution is not supported unless the caller synchronizes externally.

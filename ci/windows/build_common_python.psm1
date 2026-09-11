@@ -341,4 +341,43 @@ function Assert-MinimalEnvironment {
     Write-Host "Minimal environment confirmed: no host compiler, no system CUDA toolkit."
 }
 
-Export-ModuleMember -Function Invoke-Checked, Get-Python, Assert-MinimalEnvironment, Install-MsvcRuntime, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+function Test-FreeThreadedPython {
+    <#
+    .SYNOPSIS
+    True when the given interpreter is a free-threaded (GIL-disabled) build.
+
+    .DESCRIPTION
+    Mirrors is_free_threaded_python in ci/pyenv_helper.sh. Ask the interpreter
+    rather than matching the version string ("3.14t"): a string match silently
+    stops firing the day a 3.15t appears, and the free-threading coverage would
+    vanish with no test failure to notice it.
+
+    Reports what the build supports, not whether the GIL happens to be on right
+    now (PYTHON_GIL=1 can re-enable it). Callers that need the GIL genuinely off
+    assert that separately, so a mis-set PYTHON_GIL fails loudly instead of
+    silently skipping.
+
+    The probe prints a sentinel and anything else throws. An exit-code probe
+    would read a crashed probe as "GIL build" and silently skip the
+    free-threading coverage this function exists to gate.
+    #>
+    Param([Parameter(Mandatory = $true)][string]$Python)
+
+    # Outer double / inner single quotes: Windows PowerShell 5.1 passes native
+    # arguments without escaping embedded double quotes, so a double-quoted
+    # Python literal reaches python.exe with its quotes stripped.
+    $probe = (& $Python -c "import sysconfig; print('FT=%d' % (sysconfig.get_config_var('Py_GIL_DISABLED') in (1, '1')))" | Out-String).Trim()
+    # Capture the exit code before anything else can disturb it. A probe that
+    # printed a sentinel but exited nonzero is still a failed probe, matching the
+    # bash is_free_threaded_python, which treats any nonzero exit as an error.
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -eq 0) {
+        switch ($probe) {
+            'FT=1' { return $true }
+            'FT=0' { return $false }
+        }
+    }
+    throw "free-threading probe failed (exit code $exitCode, output '$probe'); expected exit 0 with FT=0 or FT=1"
+}
+
+Export-ModuleMember -Function Invoke-Checked, Get-Python, Assert-MinimalEnvironment, Install-MsvcRuntime, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch, Test-FreeThreadedPython

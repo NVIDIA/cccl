@@ -29,7 +29,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 //! @brief Per-bucket key-count functor for the histogramming and data-exchange phases.
 //!
@@ -90,7 +91,8 @@ struct __bucket_count_fn
     return __ret;
   }
 };
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

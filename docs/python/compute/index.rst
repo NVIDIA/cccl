@@ -136,14 +136,14 @@ Features and Restrictions
 User-defined operations are just-in-time (JIT) compiled into device code using
 `numba-cuda-mlir <https://nvidia.github.io/numba-cuda-mlir/>`_, which follows
 Numba CUDA's programming model, so they inherit many of the same features and
-restrictions as Numba CUDA functions:
+restrictions:
 
-* `Python features <https://nvidia.github.io/numba-cuda/user/cudapysupported.html>`_
-  and `atomic operations <https://nvidia.github.io/numba-cuda/user/intrinsics.html>`_
-  supported by Numba CUDA are also supported within user-defined operators.
+* `Python features <https://nvidia.github.io/numba-cuda-mlir/latest/user/cudapysupported.html>`_
+  and `atomic operations <https://nvidia.github.io/numba-cuda-mlir/latest/user/intrinsics.html>`_
+  supported by numba-cuda-mlir are also supported within user-defined operators.
 * Nested functions must be decorated with ``@numba_cuda_mlir.cuda.jit``.
 * Variables captured in closures or globals follow
-  `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
+  `numba-cuda-mlir semantics <https://nvidia.github.io/numba-cuda-mlir/latest/user/globals.html>`_:
   scalars and host arrays are captured by value (as constants),
   while device arrays are captured by reference.
 * Indexing a :func:`gpu_struct <cuda.compute.gpu_struct>` with a value only
@@ -311,24 +311,7 @@ does not select the device itself.
 Free-threaded Python
 ++++++++++++++++++++
 
-.. important::
-
-   Free-threaded Python support is currently validated with the
-   ``minimal-cu12`` and ``minimal-cu13`` extras, which do not install Numba or
-   Numba CUDA:
-
-   .. code-block:: bash
-
-      pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
-
-   The full ``cu12`` and ``cu13`` extras and Python-callable operators that
-   require Numba CUDA are not currently
-   supported in free-threaded Python. Use built-in
-   :class:`OpKind <cuda.compute.op.OpKind>` operations or externally compiled
-   :class:`RawOp <cuda.compute.op.RawOp>` operations with the minimal
-   installation.
-
-Independent calls from multiple Python threads reuse compiled build results
+``cuda.compute`` supports free-threaded Python. Independent calls from multiple Python threads reuse compiled build results
 within the same process on any interpreter build. A free-threaded interpreter
 additionally runs those calls in parallel instead of interleaving them under
 the GIL.
@@ -417,7 +400,8 @@ Use :func:`serialize <cuda.compute.algorithms.serialize>` on any object returned
 ``make_*`` factory to obtain a ``bytes`` blob, and
 :func:`deserialize <cuda.compute.algorithms.deserialize>` to reconstruct it. The blob stores
 the *compiled* build result, so :func:`deserialize <cuda.compute.algorithms.deserialize>`
-performs no JIT compilation—it neither invokes Numba nor recompiles device code.
+performs no JIT compilation—it neither invokes the JIT backend nor recompiles
+device code.
 In practice you would write the blob to a file and load it in a later run or on
 another machine.
 
@@ -511,7 +495,8 @@ Externally Compiled Operators
 (LTO-IR) implementing custom operators.
 
 This is useful for users who wish to use a different compilation pipeline than the default
-used by ``cuda.compute`` (JIT compilation of Python callables using Numba CUDA).
+used by ``cuda.compute`` (JIT compilation of Python callables using
+numba-cuda-mlir).
 
 The example below shows how to compile a C++ device function
 to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/latest/>`_,
@@ -545,7 +530,8 @@ to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/lates
 
 If you wish to use ``cuda.compute`` solely with externally compiled operators
 (i.e., without native JIT support), you can install a
-minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA dependencies:
+minimal version of the `cuda-cccl` package that ships without the
+numba-cuda-mlir JIT backend:
 
 .. code-block:: bash
 

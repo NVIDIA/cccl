@@ -17,11 +17,12 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
+#include "block_size_extracting_helpers.h"
 #include "catch2_test_device_select_common.cuh"
-#include "catch2_test_env_launch_helper.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, device_partition_if);
-DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::Flagged, device_partition_flagged);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DevicePartition::If, device_partition_if);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DevicePartition::Flagged, device_partition_flagged);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

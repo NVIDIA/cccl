@@ -116,7 +116,7 @@ public:
 
     if (!__prev_mapping_result.is_valid())
     {
-      return _MappingResult::invalid();
+      return _MappingResult::__invalid();
     }
 
     const auto __prev_nunits      = __prev_mapping_result.unit_count();
@@ -150,7 +150,7 @@ public:
 
       if (__prev_unit_rank >= static_cast<::cuda::std::uint32_t>(__counts_sum))
       {
-        return _MappingResult::invalid_with_group_count(__ngroups);
+        return _MappingResult::__invalid();
       }
     }
 
@@ -262,7 +262,7 @@ public:
 
     if (!__prev_mapping_result.is_valid())
     {
-      return _MappingResult::invalid();
+      return _MappingResult::__invalid();
     }
 
     const auto __prev_nunits      = __prev_mapping_result.unit_count();
@@ -278,7 +278,7 @@ public:
     }
     else if (__prev_unit_rank >= ::cuda::std::accumulate(__counts_, __counts_ + __curr_ngroups, 0u))
     {
-      return _MappingResult::invalid_with_group_count(__ngroups);
+      return _MappingResult::__invalid();
     }
 
     ::cuda::std::uint32_t __sum = 0;

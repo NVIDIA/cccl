@@ -548,6 +548,9 @@ def _transform_case():
 @pytest.mark.parametrize(
     "case", [_counting_case(), _transform_case()], ids=["counting", "transform"]
 )
+@pytest.mark.thread_unsafe(
+    reason="Byte-compares compiled ops, which is only stable through the op-compile cache: a concurrent same-key compile in another thread emits a differently numbered wrapper symbol."
+)
 def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
     """Reusing one iterator instance across builds targeting different arches
     must recompile its device code for each arch.
@@ -790,6 +793,9 @@ def test_select_deserialize_needs_no_gpu_and_no_recompile(monkeypatch):
 
 
 @requires_serialization
+@pytest.mark.thread_unsafe(
+    reason="Asserts the process-wide AOT build result is still unloaded before executing it; a concurrent instance's execution loads it first."
+)
 def test_compile_only_then_lazy_load_and_execute():
     cc = current_device_cc_key()
 

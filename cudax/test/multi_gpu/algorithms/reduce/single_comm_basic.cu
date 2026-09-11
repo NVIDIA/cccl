@@ -40,7 +40,7 @@ namespace
 // join, since the assertion macros are not safe to fire concurrently.
 template <class Env, class T, class Op>
 void do_reduce_threaded(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   std::vector<Env>& envs,
   std::vector<cuda::device_buffer<T>>& in,
   std::vector<cuda::device_buffer<T>>& out,
@@ -54,7 +54,8 @@ void do_reduce_threaded(
   INFO("ident = " << ident);
 
   run_threaded(comms.size(), [&](cuda::std::size_t i) {
-    cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
+    cudax::mgmn::reduce(
+      cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
   });
 
   // Reduction call should not modify the inputs in any ways
@@ -96,7 +97,8 @@ MULTI_GPU_TEST("reduce single-comm documentation example", c2h::type_list<int>)
     auto input  = cuda::make_device_buffer<int>(stream, device, input_values);
     auto output = cuda::make_device_buffer<int>(stream, device, 1, cuda::no_init);
 
-    cudax::reduce(cudax::broadcasted, communicator, env, input.begin(), input.size(), output.begin(), /*__init=*/0);
+    cudax::mgmn::reduce(
+      cudax::broadcasted, communicator, env, input.begin(), input.size(), output.begin(), /*__init=*/0);
 
     // Every rank contributes {1, 2}, so the reduction over all ranks is 3 * nranks. `reduce`
     // broadcasts the result, so every rank sees the same value.
