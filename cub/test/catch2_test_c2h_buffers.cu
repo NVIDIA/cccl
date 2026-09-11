@@ -125,7 +125,7 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
   REQUIRE(buffers.size == num_items);
   REQUIRE(buffers.d_items.size() == num_items);
   REQUIRE(buffers.h_items.size() == num_items);
-  REQUIRE(std::all_of(buffers.h_items.begin(), buffers.h_items.end(), [](std::int32_t value) {
+  REQUIRE(std::all_of(buffers.h_items.begin(), buffers.h_items.end(), [expected](std::int32_t value) {
     return value == expected;
   }));
 
@@ -133,7 +133,7 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
   const auto h_items =
     c2h::gen_host_buffer<std::int32_t>(stream, device, c2h::seed_t{5678}, num_items, host_expected, host_expected);
   REQUIRE(h_items.size() == num_items);
-  REQUIRE(std::all_of(h_items.begin(), h_items.end(), [](std::int32_t value) {
+  REQUIRE(std::all_of(h_items.begin(), h_items.end(), [host_expected](std::int32_t value) {
     return value == host_expected;
   }));
 }
