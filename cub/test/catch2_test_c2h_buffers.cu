@@ -54,6 +54,11 @@ CUB_TEST("c2h integral environment parser rejects invalid values", "[c2h][buffer
   REQUIRE(c2h::detail::parse_env_integer<long long>("9223372036854775808") == 0);
 }
 
+CUB_TEST("c2h checked host allocation rejects invalid alignments", "[c2h][buffers][host_resource]", CUB_SMALL)
+{
+  REQUIRE_THROWS_AS(c2h::detail::checked_host_allocation_size(1, 3), std::bad_alloc);
+}
+
 CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buffers][device_resource]", CUB_SMALL)
 {
   STATIC_REQUIRE(cuda::mr::synchronous_resource_with<c2h::checked_device_memory_resource, cuda::mr::device_accessible>);

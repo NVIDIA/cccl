@@ -216,6 +216,10 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
   {
     throw std::bad_alloc{};
   }
+  if (!cuda::is_power_of_two(alignment))
+  {
+    throw std::bad_alloc{};
+  }
 
 #if __cpp_aligned_new >= 201606L
   return bytes;
