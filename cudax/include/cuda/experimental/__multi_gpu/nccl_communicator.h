@@ -34,8 +34,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+
 //! @brief An owning wrapper around a NCCL communicator (`ncclComm_t`).
 //!
 //! This type takes ownership of the communicator supplied. It destroys the communicator when
@@ -188,10 +188,11 @@ private:
     }
   }
 };
-} // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_H

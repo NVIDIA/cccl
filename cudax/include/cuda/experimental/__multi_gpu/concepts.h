@@ -34,8 +34,8 @@
 #include <cuda/std/__cccl/prologue.h>
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+
 // Needed because the C++17 concept emulation can't handle the implicit first template
 // parameter of real concepts.
 template <class _Tp>
@@ -251,7 +251,9 @@ template <class _Range>
 _CCCL_CONCEPT __range_of_communicators = _CCCL_REQUIRES_EXPR((_Range), )(
   requires(::cuda::std::ranges::forward_range<_Range>),
   requires(__communicator<::cuda::std::ranges::range_reference_t<_Range>>));
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA_MGMN
+
 // NOLINTEND(bugprone-reserved-identifier)
 
 #include <cuda/std/__cccl/epilogue.h>

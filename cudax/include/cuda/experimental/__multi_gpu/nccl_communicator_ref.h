@@ -39,8 +39,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+
 //! @brief The `nccl_transportable` concept verifies that a particular type is transportable by
 //! NCCL.
 //!
@@ -71,7 +71,7 @@ _CCCL_CONCEPT nccl_reducible =
 //! @brief A non-owning wrapper around a NCCL communicator (`ncclComm_t`).
 //!
 //! `nccl_communicator_ref` adapts a previously-created NCCL communicator to the
-//! `cuda::experimental` communicator model, exposing NCCL's point-to-point and collective
+//! `cuda::mgmn` communicator model, exposing NCCL's point-to-point and collective
 //! operations as member functions. It does not own the underlying communicator: the caller
 //! is responsible for creating it (e.g. via `ncclCommInitRank`) and destroying it once it is
 //! no longer in use, and for keeping it alive for the lifetime of this object.
@@ -855,10 +855,11 @@ private:
   ::cuda::std::int32_t __rank_{};
   ::cuda::std::int32_t __size_{};
 };
-} // namespace cuda::experimental
 
-#include <cuda/std/__cccl/epilogue.h>
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_EXPERIMENTAL___MULTI_GPU_NCCL_COMMUNICATOR_REF_H

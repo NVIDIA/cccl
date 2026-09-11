@@ -73,7 +73,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default init, op, ident (all)")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin());
+      cudax::mgmn::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin());
     });
 
     for (const auto& buf : out)
@@ -85,7 +85,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default op, ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init);
+      cudax::mgmn::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init);
     });
 
     for (const auto& buf : out)
@@ -97,7 +97,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op);
+      cudax::mgmn::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op);
     });
 
     for (const auto& buf : out)
@@ -109,7 +109,8 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   SECTION("Default none")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::reduce(cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
+      cudax::mgmn::reduce(
+        cudax::broadcasted, comms[i], envs[i], in[i].begin(), in[i].size(), out[i].begin(), init, op, ident);
     });
 
     for (const auto& buf : out)

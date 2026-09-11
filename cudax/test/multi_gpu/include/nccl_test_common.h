@@ -25,7 +25,7 @@
 
 #include <c2h/catch2_test_helper.h>
 
-namespace cudax = ::cuda::experimental;
+namespace cudax = ::cuda::experimental; // NOLINT: misc-unused-alias-decls
 
 namespace nccl_test_util
 {
@@ -35,9 +35,9 @@ namespace nccl_test_util
   return {cuda::devices.begin(), cuda::devices.end()};
 }
 
-[[nodiscard]] inline const std::vector<cudax::nccl_communicator>& nccl_comms()
+[[nodiscard]] inline const std::vector<cudax::mgmn::nccl_communicator>& nccl_comms()
 {
-  static const auto comms = []() -> std::vector<cudax::nccl_communicator> {
+  static const auto comms = []() -> std::vector<cudax::mgmn::nccl_communicator> {
     if (cuda::devices.size() == 0)
     {
       SKIP("No CUDA devices visible");
@@ -58,12 +58,12 @@ namespace nccl_test_util
     INFO("NCCL: " << ncclGetErrorString(result));
     REQUIRE(result == ncclSuccess);
 
-    std::vector<cudax::nccl_communicator> comms;
+    std::vector<cudax::mgmn::nccl_communicator> comms;
     comms.reserve(raw_comms.size());
 
     for (const auto comm : raw_comms)
     {
-      comms.emplace_back(cudax::nccl_communicator::from_native_handle(comm));
+      comms.emplace_back(cudax::mgmn::nccl_communicator::from_native_handle(comm));
     }
 
     return comms;
@@ -78,13 +78,13 @@ template <class = void>
 class nccl_comm_fixture
 {
 public:
-  [[nodiscard]] cuda::std::span<cudax::nccl_communicator_ref> communicators()
+  [[nodiscard]] cuda::std::span<cudax::mgmn::nccl_communicator_ref> communicators()
   {
     return wrappers_;
   }
 
 private:
-  std::vector<cudax::nccl_communicator_ref> wrappers_{nccl_comms().begin(), nccl_comms().end()};
+  std::vector<cudax::mgmn::nccl_communicator_ref> wrappers_{nccl_comms().begin(), nccl_comms().end()};
 };
 
 #define MULTI_GPU_TEST(NAME, ...) \
