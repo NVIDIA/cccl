@@ -188,6 +188,81 @@ class _Reduce(Serializable):
             self.device_reduce_fn = self.loaded_build_result.compute
         self._last_loaded_build_result = self.loaded_build_result
 
+    def set_op(self, op: Callable | OpAdapter) -> None:
+        """Explicitly rebind this reducer's operator.
+
+        ``execute()`` (unlike ``__call__``) never re-derives op state on its
+        own -- if the operator or its captured state has changed since
+        construction or the last ``set_op()``, you must call this first, or
+        ``execute()`` will silently launch with stale op state. Call this
+        only when it has actually changed; it is not needed after every
+        ``execute()``.
+        """
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
+
+    def set_h_init(self, h_init: np.ndarray | GpuStruct) -> None:
+        """Explicitly rebind this reducer's initial value.
+
+        ``execute()`` never re-reads ``h_init`` on its own -- if its value
+        has changed (including in-place mutation of the same array object)
+        since construction or the last ``set_h_init()``, you must call this
+        first, or ``execute()`` will silently launch with the stale value.
+        """
+        if self.init_kind is _bindings.InitKind.VALUE_INIT:
+            self.h_init_cccl = cast(_bindings.Value, self.h_init_cccl)
+            self.h_init_cccl.state = to_cccl_value_state(h_init)
+
+    def execute(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        stream=None,
+    ):
+        """Minimal per-call path: updates only the ``d_in``/``d_out`` pointer
+        state and issues the launch. Unlike ``__call__``, this never
+        re-derives op state or ``h_init`` state -- construct with the right
+        initial values (or call ``set_op``/``set_h_init`` beforehand) and
+        reuse this for repeat calls against the same op/h_init. This is the
+        deliberately-unsafe-by-default counterpart to ``__call__``: it trades
+        the implicit per-call re-derivation (and its correctness margin for
+        mutated/varying op or h_init) for the lower fixed cost of a call
+        where op and h_init are call-invariant, which is the common case in
+        a hot loop. Use ``__call__`` (via ``reduce_into``/the object
+        returned by ``make_reduce_into``) if you can't make that guarantee.
+        """
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+        self._bind_device_reduce_fn()
+
+        set_cccl_iterator_state(self.d_in_cccl, d_in)
+        set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        stream_handle = validate_and_get_stream(stream)
+
+        if temp_storage is None:
+            temp_storage_bytes = 0
+            d_temp_storage = 0
+        else:
+            temp_storage_bytes = temp_storage.nbytes
+            d_temp_storage = get_data_pointer(temp_storage)
+
+        temp_storage_bytes = self.device_reduce_fn(
+            d_temp_storage,
+            temp_storage_bytes,
+            self.d_in_cccl,
+            self.d_out_cccl,
+            num_items,
+            self.op_cccl,
+            self.h_init_cccl,
+            stream_handle,
+        )
+        return temp_storage_bytes
+
     def __call__(
         self,
         *,
