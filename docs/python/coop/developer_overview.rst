@@ -14,7 +14,8 @@ The two are linked together before the kernel runs.
 
 This overview follows a call through the Numba-CUDA-MLIR implementation. It
 assumes some familiarity with CUDA threads, blocks, and shared memory. The
-:doc:`user guide <../coop>` covers installation and the supported operations;
+:doc:`Programming Guide <programming_guide>` covers writing kernels and
+the :doc:`overview <../coop>` covers installation and supported operations;
 the focus here is how the implementation works and where to change it.
 
 *Draft scope: this describes the current Numba-CUDA-MLIR 0.5.x integration,

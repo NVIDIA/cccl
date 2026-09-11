@@ -8,6 +8,7 @@
    :maxdepth: 2
 
    Overview <self>
+   coop/programming_guide
    coop/developer_overview
 
 ``cuda.coop`` provides cooperative CUDA primitives for Python kernel DSLs.
@@ -16,16 +17,15 @@ Exchange, Shuffle, Reduce, and Scan across their supported thread-group scopes.
 Its portable descriptors and planning records let primitive families share one
 dispatch, storage, and compilation model.
 
+The :doc:`Programming Guide <coop/programming_guide>` explains how to write
+kernels with the common and qualified APIs, groups, thread data, and temporary
+storage. The :doc:`Developer Overview <coop/developer_overview>` describes
+the compiler integration for readers working on the library itself.
+
 Installation
 ------------
 
-The base install has no Python package dependencies:
-
-.. code-block:: console
-
-   python -m pip install cuda-coop
-
-For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
+Install the extra matching the CUDA major version used to compile the kernel:
 
 .. code-block:: console
 
@@ -46,36 +46,47 @@ provides access to overload templates, IR, datamodels, and the registries
 needed to roll back a failed activation. It does not adapt between runtime
 versions. Other runtime series are rejected before compiler registries change.
 
-.. _coop-backend-registration:
+Backend activation
+------------------
 
-Backend registration
---------------------
+When using the portable namespace with Numba-CUDA-MLIR, import the compiler
+runtime first:
 
-Call ``register`` on the host before compiling a kernel:
+.. code-block:: python
+
+   from numba_cuda_mlir import cuda
+
+   from cuda import coop
+
+Because Numba-CUDA-MLIR is already imported, importing :mod:`cuda.coop`
+automatically activates its compiler hooks. A standalone :mod:`cuda.coop`
+import does not discover or load optional compiler runtimes or CUDA bindings.
+
+If :mod:`cuda.coop` was imported first, activate the backend explicitly before
+compiling a kernel:
 
 .. code-block:: python
 
    from cuda import coop
+   import cuda.coop.numba_mlir as _coop_numba_mlir  # Activate portable calls.
 
-   coop.register("numba-cuda-mlir")
+Importing :mod:`cuda.coop` first and compiling without that explicit
+activation is unsupported. Numba-CUDA-MLIR then reports the portable marker as
+unknown, typically as ``Unknown attribute 'this_block'``, because its compiler
+hooks were not registered.
 
-   from numba_cuda_mlir import cuda
+Keep the alias on the qualified activation import. A bare
+``import cuda.coop.numba_mlir`` binds the name ``cuda`` in the importing
+scope. If that name already refers to the object imported by
+``from numba_cuda_mlir import cuda``, the bare import replaces it and later
+``@cuda.jit`` uses the wrong module.
 
-Registration works in either import order and is safe to repeat. It also
-accepts ``"numba_cuda_mlir"``. The backend dependencies must already be
-installed. A standalone ``cuda.coop`` import does not load an optional
-compiler; importing it after Numba-CUDA-MLIR activates the backend
-automatically unless ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION`` is set.
-
-Importing the backend namespace also registers it:
-
-.. code-block:: python
-
-   import cuda.coop.numba_mlir as numba_coop
-
-You can use ``as coop`` when only using this backend. Keep the alias so the
-import does not replace a ``cuda`` name imported from Numba-CUDA-MLIR.
-The common API will also support future backends; CUTLASS support is planned.
+Alternatively, import :mod:`cuda.coop.numba_mlir` as ``coop`` to use the
+qualified namespace. It supports the common operation forms and adds
+backend memory namespaces, local-array payloads, and operation-specific
+controls such as Scan aggregates and prefix callbacks. See
+:ref:`Choosing the common or qualified API <coop-programming-api-choice>`
+for examples and a comparison.
 
 Configuration
 -------------
@@ -85,7 +96,7 @@ Runtime environment variables
 
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during
-   :mod:`cuda.coop` import. Explicit registration and qualified-backend import still work.
+   :mod:`cuda.coop` import. Explicit qualified-backend import still works.
 
 ``CUDA_COOP_CCCL_ROOT``
    Selects a CCCL source checkout or a ``cuda-coop`` header bundle. An invalid
@@ -186,11 +197,6 @@ The portable root and qualified backend expose matching entry points:
        offset=tile_offset,
    )
 
-For a complete copy kernel, including allocation, launch, tail handling, and
-an output check, see the example in :func:`cuda.coop.load`. The API reference
-also includes tested examples for :func:`cuda.coop.store`,
-:func:`cuda.coop.ThreadData`, and :func:`cuda.coop.TempStorage`.
-
 Use the qualified namespace when backend-specific types or controls are
 required:
 
@@ -200,8 +206,6 @@ required:
 
 Both spellings are compiler markers. Calls must occur in a compatible compiler
 context; they are not host-side data movement operations.
-
-.. _coop-thread-groups:
 
 Groups and thread data
 ----------------------
@@ -247,31 +251,6 @@ excluded threads. Do not use that branch to skip a collective unless the
 collective's participation contract explicitly permits it; every required
 group or parent-group participant must still reach the collective.
 
-.. _coop-participation:
-
-Participation and synchronization
----------------------------------
-
-Every member of a participating group must reach the same cooperative call.
-A branch around a block operation must be uniform across the block; a branch
-around a logical-warp operation must be uniform within that logical warp.
-Complete sibling logical groups may follow different paths. Warp operations
-require a block size divisible by 32, with no incomplete final physical warp.
-
-Do not put a block Load or Store inside a per-element ``if index < count``
-condition. Use ``valid_items`` to describe the valid prefix while all block
-threads participate. An early return by some threads also violates participation
-if the remaining threads later execute a block operation.
-
-A scratch-reuse barrier protects temporary storage. It does not synchronize
-arbitrary application-owned shared memory or make divergent participation safe.
-Use the kernel compiler's synchronization operations for application data.
-
-.. _coop-thread-data:
-
-Per-thread payloads
--------------------
-
 ``ThreadData(items_per_thread, dtype=None, *, alignment=None)`` describes the
 fixed-size register payload owned by each participating thread. Portable and
 qualified calls use the same inference rules: an untyped Load output infers
@@ -285,12 +264,6 @@ payload storage; ``None`` lets the compiler choose. For example,
 16-byte alignment. The backend may use stronger alignment, including for
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
-
-Payload slots start uninitialized. Write every slot before reading it; a
-partial Load needs ``oob_default`` or previously initialized values for its
-invalid slots. :class:`cuda.coop.ThreadDataLike` names the shared payload
-interface in type signatures. Protocol compatibility alone does not make an
-arbitrary Python object a supported kernel value.
 
 The payload's ``items_per_thread`` attribute is a compile-time integer and
 can be used as a loop bound inside a kernel, including through payload aliases.
@@ -380,11 +353,6 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
-.. _coop-data-layouts:
-
-Data layouts and algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 Both portable and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``,
 ``vectorize``, ``transpose``, ``warp_transpose``, and
@@ -405,11 +373,6 @@ transactions while exposing a blocked payload. Portable and qualified calls
 use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
-
-For group size ``G``, items per thread ``K``, thread rank ``t``, and item index
-``i``, blocked order uses tile position ``t * K + i``; striped order uses
-``t + i * G``. The payload has no runtime layout tag that corrects a mismatched
-Load/Store pair.
 
 Store consumes the arrangement associated with its selected algorithm. The
 transpose Store implementations copy the payload before calling CUB, so Store
@@ -593,8 +556,6 @@ prefix state is persistent per-thread data, not CUB temporary storage.
    :language: python
    :start-after: docs: start numba-block-scan
    :end-before: docs: end numba-block-scan
-
-.. _coop-temp-storage:
 
 Temporary storage
 -----------------
