@@ -350,7 +350,6 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
       CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
@@ -367,6 +366,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
+        CHECK(result.group_count() == static_cast<unsigned>(ngroups));
         CHECK(result.group_rank() == group_rank_ref);
 
         CHECK(result.unit_count() == ns[group_rank_ref]);
@@ -458,7 +458,6 @@ __device__ void test_group_as_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      CHECK(result.group_count() == static_cast<unsigned>(ngroups));
       CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
@@ -475,6 +474,7 @@ __device__ void test_group_as_non_exhaustive(Config config)
           }
         }
 
+        CHECK(result.group_count() == static_cast<unsigned>(ngroups));
         CHECK(result.group_rank() == group_rank_ref);
 
         CHECK(result.unit_count() == ns[group_rank_ref]);
