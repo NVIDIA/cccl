@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <cuda/std/complex>
+#pragma once
 
-#include <c2h/generators.h>
+#include <cuda/std/complex>
+#include <cuda/stream>
+#include <cuda/type_traits>
+
+#include <c2h/generator_types.h>
 
 namespace c2h::detail
 {
@@ -12,6 +16,9 @@ void init_generator();
 
 // sets the seed and resizes the distribution vector, fills it, and returns a pointer the start of the data
 float* prepare_random_data(seed_t seed, std::size_t num_items);
+
+// sets the seed and resizes the distribution vector, fills it on stream, and returns a pointer the start of the data
+float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items);
 
 // called once before main returns to clean up the generator state
 void cleanup_generator();
@@ -36,7 +43,7 @@ struct random_to_item_t
 template <typename T>
 struct random_to_item_t<T, true>
 {
-  using storage_t = ::cuda::std::_If<(sizeof(T) > 4), double, float>;
+  using storage_t = ::cuda::std::conditional_t<(sizeof(T) > 4), double, float>;
   storage_t m_min;
   storage_t m_max;
 

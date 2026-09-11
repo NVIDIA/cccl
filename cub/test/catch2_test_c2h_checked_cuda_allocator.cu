@@ -4,10 +4,20 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/memory_resource>
+#include <cuda/stream>
+
 #include <algorithm>
 #include <new> // std::bad_alloc
 
+#include <cuda_runtime_api.h>
+
 #include "cub_test_macros.h"
+#include <c2h/checked_allocator.cuh>
+#include <c2h/checked_memory_resource.cuh>
+#include <c2h/detail/env.cuh>
 
 std::size_t get_alloc_bytes()
 {
@@ -47,4 +57,77 @@ CUB_TEST("c2h::device_policy throws when requested allocations exceed free devic
     std::bad_alloc);
 
   thrust::detail::return_temporary_buffer(policy, buffer.first, buffer.second);
+}
+
+CUB_TEST("c2h integral environment parser rejects invalid values", "[c2h][checked_cuda_allocator][env]", CUB_SMALL)
+{
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>(nullptr) == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("0") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("1024") == 1024);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("-1") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>(" -1") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("1x") == 0);
+  REQUIRE(c2h::detail::parse_env_integer<std::size_t>("18446744073709551616") == 0);
+
+  REQUIRE(c2h::detail::parse_env_integer<long long>("-1") == -1);
+  REQUIRE(c2h::detail::parse_env_integer<long long>("9223372036854775808") == 0);
+}
+
+CUB_TEST("c2h::checked_device_memory_resource supports device buffers and rejects invalid allocations",
+         "[c2h][checked_cuda_allocator][device_buffer]",
+         CUB_SMALL)
+{
+  STATIC_REQUIRE(cuda::mr::synchronous_resource_with<c2h::checked_device_memory_resource, cuda::mr::device_accessible>);
+
+  int current_device{0};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  const auto stream      = cuda::stream_ref{cudaStream_t{}};
+  const auto alloc_bytes = get_alloc_bytes();
+  REQUIRE_THROWS_AS(c2h::make_device_buffer<char>(stream, cuda::device_ref{current_device}, alloc_bytes, cuda::no_init),
+                    std::bad_alloc);
+
+  constexpr auto small_size = std::size_t{1024};
+
+  const auto small_buffer =
+    c2h::make_device_buffer<char>(stream, cuda::device_ref{current_device}, small_size, cuda::no_init);
+  REQUIRE(small_buffer.size() == small_size);
+  REQUIRE(small_buffer.data() != nullptr);
+
+  const auto empty_buffer =
+    c2h::make_device_buffer<char>(stream, cuda::device_ref{current_device}, std::size_t{0}, cuda::no_init);
+  REQUIRE(empty_buffer.size() == 0);
+  REQUIRE(empty_buffer.data() == nullptr);
+
+  auto resource                      = c2h::checked_device_memory_resource{cuda::device_ref{current_device}};
+  constexpr auto invalid_alignment   = ::cuda::mr::default_cuda_malloc_alignment - 1;
+  constexpr auto invalid_alloc_bytes = std::size_t{1};
+  REQUIRE_THROWS_AS(resource.allocate_sync(invalid_alloc_bytes, invalid_alignment), std::bad_alloc);
+}
+
+CUB_TEST("c2h::checked_host_buffer_memory_resource creates host-accessible buffers",
+         "[c2h][checked_cuda_allocator][host_buffer]",
+         CUB_SMALL)
+{
+  STATIC_REQUIRE(
+    cuda::mr::synchronous_resource_with<c2h::checked_host_buffer_memory_resource, cuda::mr::host_accessible>);
+
+  int current_device{0};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  constexpr auto small_size = std::size_t{1024};
+
+  const auto stream = cuda::stream_ref{cudaStream_t{}};
+  auto small_buffer = c2h::make_host_buffer<int>(stream, cuda::device_ref{current_device}, small_size, cuda::no_init);
+  REQUIRE(small_buffer.size() == small_size);
+  REQUIRE(small_buffer.data() != nullptr);
+
+  small_buffer[0] = 42;
+  REQUIRE(small_buffer[0] == 42);
+
+  const auto empty_buffer =
+    c2h::make_host_buffer<int>(stream, cuda::device_ref{current_device}, std::size_t{0}, cuda::no_init);
+  REQUIRE(empty_buffer.size() == 0);
+  REQUIRE(empty_buffer.data() == nullptr);
 }

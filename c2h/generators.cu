@@ -3,20 +3,28 @@
 
 #include <cub/device/device_copy.cuh>
 
+#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tabulate.h>
+#include <thrust/version.h>
 
 #include <cuda/iterator>
 #include <cuda/std/optional>
+#include <cuda/std/span>
+#include <cuda/stream>
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 #include <c2h/half.cuh>
 #include <c2h/vector.h>
 
@@ -65,31 +73,46 @@ public:
 
   float* prepare_random_generator(seed_t seed, std::size_t num_items)
   {
-    m_distribution.resize(num_items);
+    return prepare_random_generator(::cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
+  }
+
+  float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+  {
+    resize_distribution(num_items);
 
 #if C2H_HAS_CURAND
     curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-#else
+#else // C2H_HAS_CURAND
     m_gen.seed(seed.get());
-#endif
+#endif // C2H_HAS_CURAND
 
-    generate();
+    generate(stream);
 
     return thrust::raw_pointer_cast(m_distribution.data());
   }
 
   // re-fills the currently held distribution vector with new random values
-  void generate()
+  void generate(::cuda::stream_ref stream)
   {
 #if C2H_HAS_CURAND
+    curandSetStream(m_gen, stream.get());
     curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
 #else
-    thrust::tabulate(device_policy, m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
+    thrust::tabulate(device_policy.on(stream.get()), m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
     m_gen.discard(m_distribution.size());
 #endif
   }
 
 private:
+  void resize_distribution(std::size_t num_items)
+  {
+#if THRUST_VERSION >= 300100
+    m_distribution.resize(num_items, thrust::no_init);
+#else // THRUST_VERSION >= 300100
+    m_distribution.resize(num_items);
+#endif // THRUST_VERSION >= 300100
+  }
+
 #if C2H_HAS_CURAND
   curandGenerator_t
 #else
@@ -111,6 +134,11 @@ void init_generator()
 float* prepare_random_data(seed_t seed, std::size_t num_items)
 {
   return generator.value().prepare_random_generator(seed, num_items);
+}
+
+float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+{
+  return generator.value().prepare_random_generator(stream, seed, num_items);
 }
 
 void cleanup_generator()
@@ -138,14 +166,26 @@ struct random_to_custom_t
 void gen_custom_type_state(
   seed_t seed,
   char* d_out,
+  custom_type_state_t min,
+  custom_type_state_t max,
+  std::size_t elements,
+  std::size_t element_size)
+{
+  gen_custom_type_state(::cuda::stream_ref{::cudaStream_t{}}, seed, d_out, min, max, elements, element_size);
+}
+
+void gen_custom_type_state(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  char* d_out,
   custom_type_state_t /* min */,
   custom_type_state_t /* max */,
   std::size_t elements,
   std::size_t element_size)
 {
   // FIXME(bgruber): implement min/max handling for custom_type_state_t
-  float* d_in = prepare_random_data(seed, elements * 2);
-  thrust::for_each(device_policy,
+  float* d_in = prepare_random_data(stream, seed, elements * 2);
+  thrust::for_each(device_policy.on(stream.get()),
                    thrust::counting_iterator<std::size_t>{0},
                    thrust::counting_iterator<std::size_t>{elements},
                    random_to_custom_t{d_in, d_out, element_size});

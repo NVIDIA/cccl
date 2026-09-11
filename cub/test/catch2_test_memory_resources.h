@@ -8,8 +8,13 @@
 #include <cuda/__memory_resource/memory_resource_base.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__exception/terminate.h>
 
-#include <c2h/catch2_test_helper.h>
+#include <cstddef>
+
+#include <cuda_runtime_api.h>
+
+#include <c2h/catch2_test_macros.h>
 
 struct device_memory_resource
     : cub::detail::device_memory_resource
@@ -149,11 +154,12 @@ struct device_side_memory_resource
 
   __host__ __device__ void* allocate(cuda::stream_ref /* stream */, size_t bytes)
   {
+    const size_t allocated = bytes_allocated ? *bytes_allocated : size_t{};
     if (bytes_allocated)
     {
       *bytes_allocated += bytes;
     }
-    return static_cast<void*>(static_cast<char*>(ptr) + *bytes_allocated);
+    return static_cast<void*>(static_cast<char*>(ptr) + allocated);
   }
 
   __host__ __device__ void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes)

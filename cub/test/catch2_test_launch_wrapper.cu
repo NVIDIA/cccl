@@ -4,6 +4,7 @@
 #include <thrust/count.h>
 
 #include <cuda/std/tuple>
+#include <cuda/stream>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -108,6 +109,16 @@ struct cub_api_example_t
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
 
+struct stream_with_get_stream
+{
+  cudaStream_t value;
+
+  [[nodiscard]] cudaStream_t get_stream() const noexcept
+  {
+    return value;
+  }
+};
+
 CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB_SMALL)
 {
   INFO("Launch = " << TEST_LAUNCH);
@@ -136,6 +147,37 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB
 
     REQUIRE(actual == expected);
   }
+}
+
+CUB_TEST("Launch wrapper accepts stream-like arguments", "[test][utils]", CUB_SMALL)
+{
+  INFO("Launch = " << TEST_LAUNCH);
+
+  constexpr int num_items = 42;
+  auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
+  c2h::device_vector<int> in(num_items, 21);
+  c2h::device_vector<int> out(num_items);
+
+  int* const d_in  = thrust::raw_pointer_cast(in.data());
+  int* const d_out = thrust::raw_pointer_cast(out.data());
+
+  SECTION("cuda::stream_ref")
+  {
+    x2_0(cuda::get_stream(stream), d_in, d_out, num_items);
+  }
+  SECTION("cudaStream_t")
+  {
+    x2_0(stream.get(), d_in, d_out, num_items);
+  }
+  SECTION("custom get_stream")
+  {
+    x2_0(stream_with_get_stream{stream.get()}, d_in, d_out, num_items);
+  }
+
+  const auto actual   = static_cast<std::size_t>(thrust::count(c2h::device_policy, out.begin(), out.end(), 42));
+  const auto expected = static_cast<std::size_t>(num_items);
+
+  REQUIRE(actual == expected);
 }
 
 struct custom_x2_0_invocable
