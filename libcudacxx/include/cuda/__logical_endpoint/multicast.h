@@ -25,6 +25,7 @@
 
 #  include <cuda/__logical_endpoint/common.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -98,8 +99,8 @@ namespace __detail
   __prop.type                 = ::CU_LOGICAL_ENDPOINT_TYPE_MULTICAST;
   __prop.multicast.numDevices = __spec.num_devices();
   __prop.size                 = __bytes;
-  __prop.ipcHandleTypes       = static_cast<unsigned>(__spec.ipc_handle_type());
-  __prop.flags                = static_cast<unsigned>(__spec.flags());
+  __prop.ipcHandleTypes       = ::cuda::std::to_underlying(__spec.ipc_handle_type());
+  __prop.flags                = ::cuda::std::to_underlying(__spec.flags());
   return __prop;
 }
 } // namespace __detail

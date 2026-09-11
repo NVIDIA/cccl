@@ -25,14 +25,17 @@
 
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__logical_endpoint/fwd.h>
 #  include <cuda/__memory_resource/shared_block_ptr.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__thread/threading_support.h>
+#  include <cuda/std/__type_traits/underlying_type.h>
 #  include <cuda/std/__utility/exchange.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/__utility/pair.h>
+#  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/chrono>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/optional>
@@ -41,18 +44,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-class logical_endpoint_id;
-class logical_endpoint_id_range;
-class multicast_logical_endpoint;
-class multicast_logical_endpoint_ref;
-class multicast_logical_endpoint_spec;
-class unicast_logical_endpoint;
-class unicast_logical_endpoint_ref;
-class unicast_logical_endpoint_spec;
-
 namespace __detail
 {
-enum class __logical_endpoint_type
+enum class __logical_endpoint_type : ::cuda::std::underlying_type_t<::CUlogicalEndpointType>
 {
   __invalid   = ::CU_LOGICAL_ENDPOINT_TYPE_INVALID,
   __unicast   = ::CU_LOGICAL_ENDPOINT_TYPE_UNICAST,
@@ -71,7 +65,7 @@ __wait_until_ready_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanose
 [[nodiscard]] _CCCL_HOST_API constexpr bool
 __handle_types_include_fabric(::CUmemAllocationHandleType __handle_types) noexcept
 {
-  return (static_cast<unsigned>(__handle_types) & static_cast<unsigned>(::CU_MEM_HANDLE_TYPE_FABRIC)) != 0;
+  return (::cuda::std::to_underlying(__handle_types) & ::cuda::std::to_underlying(::CU_MEM_HANDLE_TYPE_FABRIC)) != 0;
 }
 
 [[nodiscard]] _CCCL_HOST_API inline bool __allocation_is_known_not_fabric_exportable(const void* __ptr) noexcept
@@ -100,7 +94,7 @@ __handle_types_include_fabric(::CUmemAllocationHandleType __handle_types) noexce
 } // namespace __detail
 
 //! @brief CUDA logical endpoint creation flags.
-enum class logical_endpoint_flag : unsigned
+enum class logical_endpoint_flag : ::cuda::std::underlying_type_t<::CUlogicalEndpointFlag>
 {
   none        = ::CU_LOGICAL_ENDPOINT_FLAG_NONE,
   counted_ops = ::CU_LOGICAL_ENDPOINT_FLAG_COUNTED_OPS
@@ -114,11 +108,11 @@ enum class logical_endpoint_flag : unsigned
 [[nodiscard]] _CCCL_HOST_API constexpr logical_endpoint_flag
 operator|(logical_endpoint_flag __lhs, logical_endpoint_flag __rhs) noexcept
 {
-  return static_cast<logical_endpoint_flag>(static_cast<unsigned>(__lhs) | static_cast<unsigned>(__rhs));
+  return static_cast<logical_endpoint_flag>(::cuda::std::to_underlying(__lhs) | ::cuda::std::to_underlying(__rhs));
 }
 
 //! @brief CUDA logical endpoint IPC handle kinds.
-enum class logical_endpoint_ipc_handle_type : unsigned
+enum class logical_endpoint_ipc_handle_type : ::cuda::std::underlying_type_t<::CUlogicalEndpointIpcHandleType>
 {
   none   = ::CU_LOGICAL_ENDPOINT_IPC_HANDLE_TYPE_NONE,
   fabric = ::CU_LOGICAL_ENDPOINT_IPC_HANDLE_TYPE_FABRIC
@@ -167,62 +161,59 @@ public:
 
   //! @brief Creates an ID wrapper from a native CUDA logical endpoint ID.
   //!
-  //! This constructor is intentionally implicit so APIs can accept native IDs without duplicating overloads.
-  //!
   //! @param[in] __id The CUDA logical endpoint ID.
-  _CCCL_HOST_DEVICE_API constexpr logical_endpoint_id(native_handle_type __id) noexcept
+  _CCCL_API constexpr explicit logical_endpoint_id(native_handle_type __id) noexcept
       : __id_(__id)
   {}
 
   //! @brief Returns the native CUDA logical endpoint ID.
   //!
   //! @return The wrapped CUDA logical endpoint ID.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr native_handle_type native_handle() const noexcept
+  [[nodiscard]] _CCCL_API constexpr native_handle_type native_handle() const noexcept
   {
     return __id_;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr logical_endpoint_id& operator+=(native_handle_type __offset) noexcept
+  _CCCL_API constexpr logical_endpoint_id& operator+=(native_handle_type __offset) noexcept
   {
     __id_ = static_cast<native_handle_type>(__id_ + __offset);
     return *this;
   }
 
-  _CCCL_HOST_DEVICE_API constexpr logical_endpoint_id& operator-=(native_handle_type __offset) noexcept
+  _CCCL_API constexpr logical_endpoint_id& operator-=(native_handle_type __offset) noexcept
   {
     __id_ = static_cast<native_handle_type>(__id_ - __offset);
     return *this;
   }
 
-  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr logical_endpoint_id
+  [[nodiscard]] friend _CCCL_API constexpr logical_endpoint_id
   operator+(logical_endpoint_id __id, native_handle_type __offset) noexcept
   {
     __id += __offset;
     return __id;
   }
 
-  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr logical_endpoint_id
+  [[nodiscard]] friend _CCCL_API constexpr logical_endpoint_id
   operator+(native_handle_type __offset, logical_endpoint_id __id) noexcept
   {
     return __id + __offset;
   }
 
-  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr logical_endpoint_id
+  [[nodiscard]] friend _CCCL_API constexpr logical_endpoint_id
   operator-(logical_endpoint_id __id, native_handle_type __offset) noexcept
   {
     __id -= __offset;
     return __id;
   }
 
-  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
-  operator==(logical_endpoint_id __lhs, logical_endpoint_id __rhs) noexcept
+  [[nodiscard]] friend _CCCL_API constexpr bool operator==(logical_endpoint_id __lhs, logical_endpoint_id __rhs) noexcept
   {
     return __lhs.__id_ == __rhs.__id_;
   }
 
 #  if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_HOST_DEVICE_API constexpr bool
-  operator!=(logical_endpoint_id __lhs, logical_endpoint_id __rhs) noexcept
+  [[nodiscard]] friend
+    _CCCL_API constexpr bool operator!=(logical_endpoint_id __lhs, logical_endpoint_id __rhs) noexcept
   {
     return __lhs.__id_ != __rhs.__id_;
   }
@@ -264,6 +255,7 @@ struct __logical_endpoint_id_range_state
 
   [[nodiscard]] _CCCL_HOST_API constexpr logical_endpoint_id base_id() const noexcept
   {
+    _CCCL_ASSERT(__count_ != 0, "logical endpoint ID range has no active reservation");
     return __base_id_;
   }
 
@@ -275,6 +267,7 @@ struct __logical_endpoint_id_range_state
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::pair<logical_endpoint_id, ::cuda::std::uint32_t> release() noexcept
   {
+    _CCCL_ASSERT(__count_ != 0, "logical endpoint ID range has no active reservation");
     return {__base_id_, ::cuda::std::exchange(__count_, 0)};
   }
 
@@ -295,6 +288,9 @@ class logical_endpoint_id_range
   ::cuda::mr::__shared_block_ptr<::cuda::__detail::__logical_endpoint_id_range_state> __range_{};
 
 public:
+  //! @brief Creates an empty logical endpoint ID range.
+  _CCCL_HOST_API logical_endpoint_id_range() noexcept {}
+
   //! @brief Reserves a contiguous range of CUDA logical endpoint IDs.
   //!
   //! @param[in] __count The number of endpoint IDs to reserve.
@@ -322,11 +318,11 @@ public:
     return *this;
   }
 
-  _CCCL_HOST_API ~logical_endpoint_id_range() {}
+  _CCCL_HOST_API ~logical_endpoint_id_range() {} // NOLINT(bugprone-exception-escape)
 
   //! @brief Returns the number of IDs still owned by this reservation.
   //!
-  //! @return The reservation size, or zero after release/move.
+  //! @return The reservation size, or zero for an empty, released, or moved-from range.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::uint32_t size() const noexcept
   {
     return __range_ ? __range_.__payload().size() : 0;
@@ -334,37 +330,40 @@ public:
 
   //! @brief Returns the first ID in the reserved range.
   //!
+  //! Calling this function requires `size() != 0`.
+  //!
   //! @return The base logical endpoint ID.
   [[nodiscard]] _CCCL_HOST_API logical_endpoint_id base_id() const noexcept
   {
-    _CCCL_ASSERT(static_cast<bool>(__range_), "logical endpoint ID range has no reservation");
+    _CCCL_ASSERT(size() != 0, "logical endpoint ID range has no active reservation");
     return __range_.__payload().base_id();
   }
 
   //! @brief Returns an ID from the reserved contiguous range.
   //!
+  //! Calling this function requires `__index < size()`.
+  //!
   //! @param[in] __index The zero-based index into the reserved range.
   //! @return `base_id() + __index`.
   [[nodiscard]] _CCCL_HOST_API logical_endpoint_id operator[](::cuda::std::uint32_t __index) const noexcept
   {
-    _CCCL_ASSERT(static_cast<bool>(__range_), "logical endpoint ID range has no reservation");
+    _CCCL_ASSERT(__index < size(), "logical endpoint ID range index is out of bounds");
     return __range_.__payload()[__index];
   }
 
   //! @brief Releases ownership of the reserved ID range without releasing it to the CUDA driver.
   //!
+  //! Calling this function requires `size() != 0`.
+  //!
   //! @return The base ID and number of released IDs.
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::pair<logical_endpoint_id, ::cuda::std::uint32_t> release() noexcept
   {
-    if (!__range_)
-    {
-      return {logical_endpoint_id{0}, 0};
-    }
+    _CCCL_ASSERT(size() != 0, "logical endpoint ID range has no active reservation");
     return __range_.__payload().release();
   }
 
-  [[nodiscard]] _CCCL_HOST_API auto __shared_state() const noexcept
-    -> ::cuda::mr::__shared_block_ptr<::cuda::__detail::__logical_endpoint_id_range_state>
+  [[nodiscard]] _CCCL_HOST_API ::cuda::mr::__shared_block_ptr<::cuda::__detail::__logical_endpoint_id_range_state>
+  __shared_state() const noexcept
   {
     return __range_;
   }
@@ -385,20 +384,13 @@ namespace __detail
 __get_logical_endpoint_limits(const ::CUlogicalEndpointProp& __prop)
 {
   const auto __limits = ::cuda::__driver::__logicalEndpointGetLimits(&__prop);
-  return {static_cast<::cuda::std::uint64_t>(__limits.first), static_cast<::cuda::std::uint64_t>(__limits.second)};
+  return {__limits.first, __limits.second};
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __get_logical_endpoint_limits_no_throw(
   logical_endpoint_limits& __limits, const ::CUlogicalEndpointProp& __prop) noexcept
 {
-  ::cuuint64_t __bind_alignment{};
-  ::cuuint64_t __max_size{};
-  const auto __status = ::cuda::__driver::__logicalEndpointGetLimitsNoThrow(&__bind_alignment, &__max_size, &__prop);
-  if (__status == ::cudaSuccess)
-  {
-    __limits = {static_cast<::cuda::std::uint64_t>(__bind_alignment), static_cast<::cuda::std::uint64_t>(__max_size)};
-  }
-  return __status;
+  return ::cuda::__driver::__logicalEndpointGetLimitsNoThrow(&__limits.bind_alignment, &__limits.max_size, &__prop);
 }
 
 _CCCL_HOST_API inline void
@@ -435,36 +427,29 @@ __checked_logical_endpoint_id(const logical_endpoint_id_range& __range, ::cuda::
   logical_endpoint_ipc_handle_type __ipc,
   logical_endpoint_flag __flags)
 {
-  ::CUdevice __native_device{};
-  if (::cuda::__driver::__deviceGetNoThrow(&__native_device, __device.get()) != ::cudaSuccess)
-  {
-    return false;
-  }
+  const auto __native_device                  = static_cast<::CUdevice>(__device.get());
+  const auto __logical_endpoint_has_attribute = [__native_device](::CUdevice_attribute __attr) {
+    int __attr_value{};
+    return ::cuda::__driver::__deviceGetAttributeNoThrow(&__attr_value, __attr, __native_device) == ::cudaSuccess
+        && __attr_value != 0;
+  };
 
-  int __attr_value{};
-  if (::cuda::__driver::__deviceGetAttributeNoThrow(&__attr_value, __endpoint_attr, __native_device) != ::cudaSuccess
-      || __attr_value == 0)
+  if (!__logical_endpoint_has_attribute(__endpoint_attr))
   {
     return false;
   }
 
   if (__ipc == logical_endpoint_ipc_handle_type::fabric)
   {
-    if (::cuda::__driver::__deviceGetAttributeNoThrow(
-          &__attr_value, ::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED, __native_device)
-          != ::cudaSuccess
-        || __attr_value == 0)
+    if (!__logical_endpoint_has_attribute(::CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED))
     {
       return false;
     }
   }
 
-  if ((static_cast<unsigned>(__flags) & static_cast<unsigned>(logical_endpoint_flag::counted_ops)) != 0)
+  if ((::cuda::std::to_underlying(__flags) & ::cuda::std::to_underlying(logical_endpoint_flag::counted_ops)) != 0)
   {
-    if (::cuda::__driver::__deviceGetAttributeNoThrow(
-          &__attr_value, ::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_COUNTED_OPS_SUPPORTED, __native_device)
-          != ::cudaSuccess
-        || __attr_value == 0)
+    if (!__logical_endpoint_has_attribute(::CU_DEVICE_ATTRIBUTE_LOGICAL_ENDPOINT_COUNTED_OPS_SUPPORTED))
     {
       return false;
     }
@@ -599,11 +584,7 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Cannot bind a null pointer to a logical endpoint");
     }
     ::cuda::__driver::__logicalEndpointBindAddr(
-      native_handle(),
-      ::cuda::__driver::__deviceGet(__device.get()),
-      static_cast<::cuuint64_t>(__endpoint_offset),
-      __ptr,
-      static_cast<::cuuint64_t>(__bytes));
+      native_handle(), ::cuda::__driver::__deviceGet(__device.get()), __endpoint_offset, __ptr, __bytes);
   }
 
   //! @brief Binds a generic allocation handle range to an endpoint offset.
@@ -625,10 +606,10 @@ public:
     ::cuda::__driver::__logicalEndpointBindMem(
       native_handle(),
       ::cuda::__driver::__deviceGet(__device.get()),
-      static_cast<::cuuint64_t>(__endpoint_offset),
+      __endpoint_offset,
       __handle,
-      static_cast<::cuuint64_t>(__handle_offset),
-      static_cast<::cuuint64_t>(__bytes),
+      __handle_offset,
+      __bytes,
       __bind_flags);
   }
 
@@ -785,11 +766,7 @@ public:
       _CCCL_THROW(::std::invalid_argument, "Cannot bind a null pointer to a logical endpoint");
     }
     const auto __status = ::cuda::__driver::__logicalEndpointBindAddrNoThrow(
-      this->native_handle(),
-      ::cuda::__driver::__deviceGet(__device.get()),
-      static_cast<::cuuint64_t>(__endpoint_offset),
-      __ptr,
-      static_cast<::cuuint64_t>(__bytes));
+      this->native_handle(), ::cuda::__driver::__deviceGet(__device.get()), __endpoint_offset, __ptr, __bytes);
     if (__status != ::cudaSuccess)
     {
       ::cuda::__detail::__throw_logical_endpoint_bind_addr_error(__status, __ipc_handle_type_, __ptr);
