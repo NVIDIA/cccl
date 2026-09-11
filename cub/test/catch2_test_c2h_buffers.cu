@@ -21,11 +21,13 @@
 
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/env.cuh>
 #include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/generator_common.h>
+#include <c2h/vector.h>
 #include <c2h/vector_generators.h>
 
 namespace
@@ -63,6 +65,14 @@ CUB_TEST("c2h integral environment parser rejects invalid values", "[c2h][buffer
 CUB_TEST("c2h checked host allocation rejects invalid alignments", "[c2h][buffers][host_resource]", CUB_SMALL)
 {
   REQUIRE_THROWS_AS(c2h::detail::checked_host_allocation_size(1, 3), std::bad_alloc);
+}
+
+CUB_TEST("c2h vector matcher rejects ranges with different sizes", "[c2h][comparison]", CUB_SMALL)
+{
+  const c2h::host_vector<std::int32_t> actual;
+  const c2h::host_vector<std::int32_t> expected{42};
+
+  REQUIRE_FALSE(Equals(expected).match(actual));
 }
 
 CUB_TEST("c2h checked memory rejects sizes that overflow padding", "[c2h][buffers][device_resource]", CUB_SMALL)

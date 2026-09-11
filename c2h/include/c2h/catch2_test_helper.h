@@ -548,7 +548,7 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
     comparison_result = compare_vectors(actual_vec, expected_vec);
-    return comparison_result.total_mismatches == 0;
+    return comparison_result.actual_size == comparison_result.expected_size && comparison_result.total_mismatches == 0;
   }
 
   // See the note on CustomEqualsRangeMatcher::describe above.
