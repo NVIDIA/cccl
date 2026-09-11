@@ -1637,9 +1637,10 @@ inline constexpr bool __has_get_data_dims_v<
  * `dim4 get_data_dims() const` (such as the shape of a logical data) in place
  * of the explicit true extents. Forwards to the dim4 overload.
  *
- * @param shape Shape object providing the true tensor extents
- * @param spec One entry per tensor dimension (at most 4)
- * @param grid_dims Extents of the grid of places
+ * @param[in] shape Shape object providing the true tensor extents
+ * @param[in] spec One entry per tensor dimension (at most 4)
+ * @param[in] grid_dims Extents of the grid of places
+ * @return The partition descriptor built from `shape.get_data_dims()`
  */
 template <typename Shape, typename = ::cuda::std::enable_if_t<__has_get_data_dims_v<Shape>>>
 cute_partition_descriptor
@@ -1687,6 +1688,11 @@ auto make_partition(dim4 true_dims, partition_spec<Specs...> spec, dim4 grid_dim
  * `dim4 get_data_dims() const` (such as the shape of a logical data) in place
  * of the explicit true extents, so that `make_partition(lA.shape(), spec,
  * grid.get_dims())` can be written directly. Forwards to the dim4 overload.
+ *
+ * @param[in] shape Shape object providing the true tensor extents
+ * @param[in] spec Typed per-dimension specification (one entry per tensor dimension, at most 4)
+ * @param[in] grid_dims Extents of the grid of places
+ * @return The statically shaped `cute_partition` built from `shape.get_data_dims()`
  */
 template <typename Shape, typename... Specs, typename = ::cuda::std::enable_if_t<__has_get_data_dims_v<Shape>>>
 auto make_partition(const Shape& shape, partition_spec<Specs...> spec, dim4 grid_dims)
