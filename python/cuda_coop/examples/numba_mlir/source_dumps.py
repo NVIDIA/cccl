@@ -44,7 +44,7 @@ def copy_direct(source, destination):
 def copy_transpose(source, destination):
     block = coop.this_block()
     items = coop.ThreadData(2, dtype=np.int32)
-    scratch = coop.TempStorage(auto_sync=True)
+    scratch = coop.TempStorage()
     coop.load(
         block,
         source,
