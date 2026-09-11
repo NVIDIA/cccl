@@ -111,7 +111,7 @@ Running a measurement
 namespace cudax = cuda::experimental;
 
 cudax::fpmp2_stat_reset_device_data(stream);
-my_kernel<<<1, 32, 0, stream.get()>>>(...);
+cuda::launch(stream, config, my_kernel, ...);
 const auto record = cudax::fpmp2_stat_read_device_data(stream);
 ```
 

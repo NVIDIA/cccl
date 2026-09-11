@@ -106,3 +106,8 @@ A CUDA compiler is required, since the sources are CUDA and always contain kerne
 architecture follows `CMAKE_CUDA_ARCHITECTURES`, which the enclosing project defaults to
 `native`. Running without a visible GPU is not an error: the device section is skipped and
 the host report is still printed.
+
+The arithmetic is the subject of these examples, but the code around it is written the way
+CCCL would have you write it: `cuda::devices` to find a GPU, a `cuda::stream` to submit on,
+`cuda::make_pinned_buffer` for the results the kernels write back, and `cuda::launch` for the
+kernels themselves.

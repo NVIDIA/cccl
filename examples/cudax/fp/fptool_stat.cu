@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 /*
-    fptool_stat.cpp - Arithmetic statistics collected from a multi-precision computation
+    fptool_stat.cu - Arithmetic statistics collected from a multi-precision computation
     ===================================================================================
 
     An fpmp2_stat type is a drop-in replacement for the fpmp2 type it instruments: it
@@ -78,10 +78,18 @@
       - the same source running on host and device
 */
 #include <cstdio>
+#include <exception>
 
 // One header for the whole feature: the analysis types and the math functions
 // that go with them.
 #include <cuda/fptool>
+
+// The CCCL runtime, for the device half of the example: finding a device, a
+// stream to submit on, buffers for the results, and the kernel launches.
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/launch>
+#include <cuda/stream>
 
 // The CCCL FP component lives in cuda::experimental (later cuda::),
 // abbreviated here rather than pulled in with a using-directive. Type names
@@ -311,7 +319,23 @@ static void print_results(
   print_value_slot("result", stats->result, stats->ops_count);
 } // print_results
 
+// Whether this machine can run the device half of the example. Neither a missing
+// GPU nor a driver that cannot initialize is a failure here: the host results
+// stand on their own, so both fall back to reporting only those. Enumerating the
+// devices is what first touches the driver, so it is also where an installation
+// that cannot be used surfaces.
+static bool device_available()
+try
+{
+  return cuda::devices.size() != 0;
+}
+catch (const cuda::cuda_error&)
+{
+  return false;
+}
+
 int main()
+try
 {
   // The series are __host__ __device__, so the build carries a host and a device
   // copy of each and one run can report both. Only the device side carries
@@ -326,32 +350,35 @@ int main()
   print_results("host", "fp32mp2_stat", "instruments fp32mp2, float-float", host_float_float, nullptr);
   print_results("host", "fp64mp2_stat", "instruments fp64mp2, double-double", host_double_double, nullptr);
 
-  int device_count = 0;
-  if (cudaGetDeviceCount(&device_count) != cudaSuccess || device_count == 0)
+  if (!device_available())
   {
-    cudaGetLastError(); // discard the sticky error so it cannot mask a later one
     printf("\nno CUDA device available, so only the host results are shown\n\n");
     return 0;
   }
 
   // Name the GPU the device results came from. Its architecture is worth having next to
   // the numbers, since that is what decides which instructions the arithmetic is built on.
-  int device_id = 0;
-  cudaGetDevice(&device_id);
-  cudaDeviceProp props{};
-  cudaGetDeviceProperties(&props, device_id);
-  printf("\nthe device results below come from %s, sm_%d%d\n", props.name, props.major, props.minor);
-
-  fptool_stat_results* float_float;
-  fptool_stat_results* double_double;
-
-  cudaMallocManaged(&float_float, sizeof(fptool_stat_results));
-  cudaMallocManaged(&double_double, sizeof(fptool_stat_results));
+  const cuda::device_ref device = cuda::devices[0];
+  const auto device_name        = device.name();
+  const auto cc                 = device.attribute(cuda::device_attributes::compute_capability);
+  printf("\nthe device results below come from %.*s, sm_%d%d\n",
+         static_cast<int>(device_name.size()),
+         device_name.data(),
+         cc.major_cap(),
+         cc.minor_cap());
 
   // The clear and the read place their copies through a stream, so the whole
-  // measurement runs on one.
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
+  // measurement runs on one. The counter API takes it directly.
+  cuda::stream stream{device};
+
+  // The results come back in pinned host memory, one value each, which the
+  // kernels write and the host reads once the stream has drained.
+  auto float_float   = cuda::make_pinned_buffer<fptool_stat_results>(stream, 1, cuda::no_init);
+  auto double_double = cuda::make_pinned_buffer<fptool_stat_results>(stream, 1, cuda::no_init);
+
+  // One thread does all of it, since the point is the arithmetic rather than
+  // the parallelism.
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
 
   // One bracketed measurement per width. The second bracket starts from a
   // cleared record, which is what makes its counts attributable to fp64mp2_stat
@@ -360,35 +387,33 @@ int main()
   cudax::fpmp2_stat_reset_device_data(stream);
 
   // Run the float-float kernel on the device.
-  float_float_kernel<<<1, 1, 0, stream>>>(float_float);
+  cuda::launch(stream, config, float_float_kernel, float_float.data());
 
   const cudax::fpmp2_stat_data float_float_record = cudax::fpmp2_stat_read_device_data(stream);
 
   cudax::fpmp2_stat_reset_device_data(stream);
 
   // Run the double-double kernel on the device.
-  double_double_kernel<<<1, 1, 0, stream>>>(double_double);
+  cuda::launch(stream, config, double_double_kernel, double_double.data());
 
   const cudax::fpmp2_stat_data double_double_record = cudax::fpmp2_stat_read_device_data(stream);
 
-  cudaStreamDestroy(stream);
+  stream.sync();
 
-  const cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    printf("CUDA error: %s\n", cudaGetErrorString(err));
-    cudaFree(float_float);
-    cudaFree(double_double);
-    return 1;
-  }
-
-  print_results("device", "fp32mp2_stat", "instruments fp32mp2, float-float", *float_float, &float_float_record);
-  print_results("device", "fp64mp2_stat", "instruments fp64mp2, double-double", *double_double, &double_double_record);
-
-  cudaFree(float_float);
-  cudaFree(double_double);
+  print_results("device", "fp32mp2_stat", "instruments fp32mp2, float-float", float_float[0], &float_float_record);
+  print_results("device", "fp64mp2_stat", "instruments fp64mp2, double-double", double_double[0], &double_double_record);
 
   printf("\n");
 
   return 0;
 } // main
+catch (const cuda::cuda_error& e)
+{
+  printf("CUDA error: %s\n", e.what());
+  return 1;
+}
+catch (const std::exception& e)
+{
+  printf("error: %s\n", e.what());
+  return 1;
+}

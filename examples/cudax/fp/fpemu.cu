@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 /*
-    fpemu.cpp - IEEE-754 compliant double-precision arithmetic software implementation
-    ==================================================================================
+    fpemu.cu - IEEE-754 compliant double-precision arithmetic software implementation
+    =================================================================================
 
     fpemu provides an IEEE-754 double built from 32-bit integer and float operations
     rather than native FP64 instructions, for GPUs where FP64 throughput is limited or
@@ -52,9 +52,15 @@
       - converting between the two representations
       - the same source running on host and device
 */
+#include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/fpemu>
+#include <cuda/launch>
+#include <cuda/std/numbers>
+#include <cuda/stream>
 
 #include <cstdio>
+#include <exception>
 
 // The CCCL FP component lives in cuda::experimental (later cuda::),
 // abbreviated here rather than pulled in with a using-directive. Type names
@@ -106,7 +112,7 @@ __host__ __device__ void fpemu_packed_operations(fpemu_results* out)
   // double.
   const cudax::fp64emu a = fpemu_input_a;
   const cudax::fp64emu b = fpemu_input_b;
-  const cudax::fp64emu c = 2.71828182f;
+  const cudax::fp64emu c = cuda::std::numbers::e_v<float>;
   const cudax::fp64emu d = 5u;
 
   // Arithmetic. An operation on two fp64emu values yields an fp64emu, so
@@ -218,7 +224,7 @@ __host__ __device__ void fpemu_unpacked_operations(fpemu_results* out)
   // does the same job.
   const cudax::fp64emu_unpacked a{fpemu_input_a};
   const cudax::fp64emu_unpacked b{fpemu_input_b};
-  const cudax::fp64emu_unpacked c{2.71828182f};
+  const cudax::fp64emu_unpacked c{cuda::std::numbers::e_v<float>};
   const cudax::fp64emu_unpacked d{5u};
 
   // Arithmetic, as on the packed form: the result of every operation is another
@@ -342,7 +348,7 @@ static void print_results(
   printf("\ninputs\n");
   printf("  a = %.17g   (from a double literal)\n", r.a);
   printf("  b = %.17g   (from a double literal)\n", r.b);
-  printf("  c = %.17g   (from a float literal)\n", r.c);
+  printf("  c = %.17g   (from a float constant)\n", r.c);
   printf("  d = %.17g   (from an unsigned literal)\n", r.d);
 
   printf("\narithmetic\n");
@@ -386,7 +392,23 @@ static void print_results(
   printf("  a                = %.17g\n", r.converted);
 }
 
+// Whether this machine can run the device half of the example. Neither a missing
+// GPU nor a driver that cannot initialize is a failure here: the host results
+// stand on their own, so both fall back to reporting only those. Enumerating the
+// devices is what first touches the driver, so it is also where an installation
+// that cannot be used surfaces.
+static bool device_available()
+try
+{
+  return cuda::devices.size() != 0;
+}
+catch (const cuda::cuda_error&)
+{
+  return false;
+}
+
 int main()
+try
 {
   // The plain-double baseline for the accumulation section, so each report can
   // show what the hardware type does with the same sequence.
@@ -408,53 +430,63 @@ int main()
   print_results("host", "fp64emu", "packed, the 64-bit IEEE layout", host_packed, drift_double);
   print_results("host", "unpacked", "sign/exponent/mantissa, 9 guard bits", host_unpacked, drift_double);
 
-  int device_count = 0;
-  if (cudaGetDeviceCount(&device_count) != cudaSuccess || device_count == 0)
+  if (!device_available())
   {
-    cudaGetLastError(); // discard the sticky error so it cannot mask a later one
     printf("\nno CUDA device available, so only the host results are shown\n\n");
     return 0;
   }
 
   // Name the GPU the device results came from. Its architecture is worth having next to
   // the numbers, since that is what decides which instructions the arithmetic is built on.
-  int device_id = 0;
-  cudaGetDevice(&device_id);
-  cudaDeviceProp props{};
-  cudaGetDeviceProperties(&props, device_id);
-  printf("\nthe device results below come from %s, sm_%d%d\n", props.name, props.major, props.minor);
+  const cuda::device_ref device = cuda::devices[0];
+  const auto device_name        = device.name();
+  const auto cc                 = device.attribute(cuda::device_attributes::compute_capability);
+  printf("\nthe device results below come from %.*s, sm_%d%d\n",
+         static_cast<int>(device_name.size()),
+         device_name.data(),
+         cc.major_cap(),
+         cc.minor_cap());
 
-  fpemu_results* packed;
-  fpemu_results* unpacked;
-
-  cudaMallocManaged(&packed, sizeof(fpemu_results));
-  cudaMallocManaged(&unpacked, sizeof(fpemu_results));
-
-  // The fpemu template instantiations are stack-heavy.
-  cudaDeviceSetLimit(cudaLimitStackSize, 16384);
-
-  // The same two functions, this time from a kernel.
-  fpemu_packed_kernel<<<1, 1>>>(packed);
-  fpemu_unpacked_kernel<<<1, 1>>>(unpacked);
-
-  cudaDeviceSynchronize();
-
-  const cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess)
+  // The fpemu template instantiations are stack-heavy. This limit belongs to the
+  // device rather than the stream, so it is still set through the CUDA runtime.
+  constexpr size_t device_stack_bytes = 16384;
+  if (const cudaError_t status = cudaDeviceSetLimit(cudaLimitStackSize, device_stack_bytes); status != cudaSuccess)
   {
-    printf("CUDA error: %s\n", cudaGetErrorString(err));
-    cudaFree(packed);
-    cudaFree(unpacked);
+    printf("\ncould not raise the device stack limit: %s\n\n", cudaGetErrorString(status));
     return 1;
   }
 
-  print_results("device", "fp64emu", "packed, the 64-bit IEEE layout", *packed, drift_double);
-  print_results("device", "unpacked", "sign/exponent/mantissa, 9 guard bits", *unpacked, drift_double);
+  // Work is submitted through a stream, and the results come back in pinned host
+  // memory: one value each, which the kernels write and the host reads once the
+  // stream has drained. Both buffers release themselves at the end of the scope.
+  cuda::stream stream{device};
 
-  cudaFree(packed);
-  cudaFree(unpacked);
+  auto packed   = cuda::make_pinned_buffer<fpemu_results>(stream, 1, cuda::no_init);
+  auto unpacked = cuda::make_pinned_buffer<fpemu_results>(stream, 1, cuda::no_init);
+
+  // The same two functions, this time from a kernel. One thread does all of it,
+  // since the point is the arithmetic rather than the parallelism.
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
+
+  cuda::launch(stream, config, fpemu_packed_kernel, packed.data());
+  cuda::launch(stream, config, fpemu_unpacked_kernel, unpacked.data());
+
+  stream.sync();
+
+  print_results("device", "fp64emu", "packed, the 64-bit IEEE layout", packed[0], drift_double);
+  print_results("device", "unpacked", "sign/exponent/mantissa, 9 guard bits", unpacked[0], drift_double);
 
   printf("\n");
 
   return 0;
 } // main
+catch (const cuda::cuda_error& e)
+{
+  printf("CUDA error: %s\n", e.what());
+  return 1;
+}
+catch (const std::exception& e)
+{
+  printf("error: %s\n", e.what());
+  return 1;
+}

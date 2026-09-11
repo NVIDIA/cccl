@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 /*
-    fptool_custom.cpp - Reduced floating-point formats emulated on native FP64
-    ==========================================================================
+    fptool_custom.cu - Reduced floating-point formats emulated on native FP64
+    =========================================================================
 
     An fp_custom value is a double that rounds to a narrower format after every operation,
     so a computation can be run as though the hardware had that format. Both field sizes
@@ -58,9 +58,17 @@
         has it set from the host on a stream
 */
 #include <cstdio>
+#include <exception>
 
 // One header for the whole feature.
 #include <cuda/fptool>
+
+// The CCCL runtime, for the device half of the example: finding a device, a
+// stream to submit on, a buffer for the results, and the kernel launches.
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/launch>
+#include <cuda/stream>
 
 // The CCCL FP component lives in cuda::experimental (later cuda::), abbreviated here
 // rather than pulled in with a using-directive. Everything this example names is specific
@@ -240,7 +248,23 @@ static void print_run_time(const char* where, const fp_custom_results& r, const 
   printf("the exponent having been left native throughout\n");
 }
 
+// Whether this machine can run the device half of the example. Neither a missing
+// GPU nor a driver that cannot initialize is a failure here: the host results
+// stand on their own, so both fall back to reporting only those. Enumerating the
+// devices is what first touches the driver, so it is also where an installation
+// that cannot be used surfaces.
+static bool device_available()
+try
+{
+  return cuda::devices.size() != 0;
+}
+catch (const cuda::cuda_error&)
+{
+  return false;
+}
+
 int main()
+try
 {
   // Both entry points are __host__ __device__, so the build carries a host and a
   // device copy of each and one run can report both. The runtime sizes are the
@@ -265,62 +289,65 @@ int main()
   print_compile_time("host", host_results);
   print_run_time("host", host_results, host_sizes);
 
-  int device_count = 0;
-  if (cudaGetDeviceCount(&device_count) != cudaSuccess || device_count == 0)
+  if (!device_available())
   {
-    cudaGetLastError(); // discard the sticky error so it cannot mask a later one
     printf("\nno CUDA device available, so only the host results are shown\n\n");
     return 0;
   }
 
   // Name the GPU the device results came from. Its architecture is worth having next to
   // the numbers, since that is what decides which instructions the arithmetic is built on.
-  int device_id = 0;
-  cudaGetDevice(&device_id);
-  cudaDeviceProp props{};
-  cudaGetDeviceProperties(&props, device_id);
-  printf("\nthe device results below come from %s, sm_%d%d\n", props.name, props.major, props.minor);
-
-  fp_custom_results* r;
-  int sizes_in_effect[sweep_count] = {};
-
-  cudaMallocManaged(&r, sizeof(fp_custom_results));
+  const cuda::device_ref device = cuda::devices[0];
+  const auto device_name        = device.name();
+  const auto cc                 = device.attribute(cuda::device_attributes::compute_capability);
+  printf("\nthe device results below come from %.*s, sm_%d%d\n",
+         static_cast<int>(device_name.size()),
+         device_name.data(),
+         cc.major_cap(),
+         cc.minor_cap());
 
   // A device size is per-device state, so the setter takes the stream that says which
   // device to write it on and orders the write against the kernels that read it. No
   // synchronization of our own is needed between a set and the launch that follows it.
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
+  cuda::stream stream{device};
+
+  // The results come back in pinned host memory, which the kernels write and the
+  // host reads once the stream has drained.
+  auto r                           = cuda::make_pinned_buffer<fp_custom_results>(stream, 1, cuda::no_init);
+  int sizes_in_effect[sweep_count] = {};
+
+  // One thread does all of it, since the point is the arithmetic rather than the
+  // parallelism.
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
 
   // The same two entry points, this time from kernels.
-  compile_time_kernel<<<1, 1, 0, stream>>>(r);
+  cuda::launch(stream, config, compile_time_kernel, r.data());
 
   for (int i = 0; i < sweep_count; ++i)
   {
     cudax::fp_custom_set_device_mantissa_size(sweep_mantissa[i], stream);
 
-    run_time_kernel<<<1, 1, 0, stream>>>(r, i);
+    cuda::launch(stream, config, run_time_kernel, r.data(), i);
 
     sizes_in_effect[i] = cudax::fp_custom_get_device_mantissa_size(stream);
   }
 
-  cudaStreamSynchronize(stream);
-  cudaStreamDestroy(stream);
+  stream.sync();
 
-  const cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    printf("CUDA error: %s\n", cudaGetErrorString(err));
-    cudaFree(r);
-    return 1;
-  }
-
-  print_compile_time("device", *r);
-  print_run_time("device", *r, sizes_in_effect);
-
-  cudaFree(r);
+  print_compile_time("device", r[0]);
+  print_run_time("device", r[0], sizes_in_effect);
 
   printf("\n");
 
   return 0;
 } // main
+catch (const cuda::cuda_error& e)
+{
+  printf("CUDA error: %s\n", e.what());
+  return 1;
+}
+catch (const std::exception& e)
+{
+  printf("error: %s\n", e.what());
+  return 1;
+}

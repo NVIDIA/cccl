@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 /*
-    fpmp.cpp - Multi-precision arithmetic on pairs of floating-point values
+    fpmp.cu - Multi-precision arithmetic on pairs of floating-point values
     ======================================================================
 
     An fpmp2 value represents a number as the unevaluated sum of two IEEE floats, which
@@ -49,6 +49,7 @@
       - the same source running on host and device
 */
 #include <cstdio>
+#include <exception>
 
 // Multi-precision types and operations, plus the transcendental math functions.
 // The core type alone is available as <cuda/fpmp>, which does not pay the math
@@ -57,6 +58,16 @@
 //       and it already includes <cuda/fpmp>.
 #include <cuda/fpmp>
 #include <cuda/fpmp_math>
+
+// The mathematical constants some of the inputs are taken from.
+#include <cuda/std/numbers>
+
+// The CCCL runtime, for the device half of the example: finding a device, a
+// stream to submit on, buffers for the results, and the kernel launches.
+#include <cuda/buffer>
+#include <cuda/devices>
+#include <cuda/launch>
+#include <cuda/stream>
 
 // The CCCL FP component lives in cuda::experimental (later cuda::),
 // abbreviated here rather than pulled in with a using-directive.
@@ -116,7 +127,7 @@ __host__ __device__ void float_float_operations(fpmp_results* out)
   // float and integer sources convert implicitly.
   const cudax::fp32mp2 a{1.234567890123456789};
   const cudax::fp32mp2 b{9.876543210987654321};
-  const cudax::fp32mp2 c{2.71828182f};
+  const cudax::fp32mp2 c{cuda::std::numbers::e_v<float>};
   const cudax::fp32mp2 d{5u};
 
   // Arithmetic. An operation on two fp32mp2 values yields an fp32mp2, so
@@ -252,7 +263,7 @@ __host__ __device__ void double_double_operations(fpmp_results* out)
   // convert as before.
   const cudax::fp64mp2 a{1.234567890123456789};
   const cudax::fp64mp2 b{9.876543210987654321};
-  const cudax::fp64mp2 c{2.71828182f};
+  const cudax::fp64mp2 c{cuda::std::numbers::e_v<float>};
   const cudax::fp64mp2 d{5u};
 
   // Arithmetic. As on the narrower type, results stay in the pair
@@ -384,7 +395,7 @@ static void print_results(const char* where, const char* type_name, const char* 
   printf("\ninputs\n");
   printf("  a = %.17g   (from a double literal)\n", r.a);
   printf("  b = %.17g   (from a double literal)\n", r.b);
-  printf("  c = %.17g   (from a float literal)\n", r.c);
+  printf("  c = %.17g   (from a float constant)\n", r.c);
   printf("  d = %.17g   (from an unsigned literal)\n", r.d);
 
   printf("\narithmetic\n");
@@ -436,7 +447,23 @@ static void print_results(const char* where, const char* type_name, const char* 
   printf("  renormalize(a - big + big)           %-24.17g %.17g\n", r.renorm_fixed.hi, r.renorm_fixed.lo);
 }
 
+// Whether this machine can run the device half of the example. Neither a missing
+// GPU nor a driver that cannot initialize is a failure here: the host results
+// stand on their own, so both fall back to reporting only those. Enumerating the
+// devices is what first touches the driver, so it is also where an installation
+// that cannot be used surfaces.
+static bool device_available()
+try
+{
+  return cuda::devices.size() != 0;
+}
+catch (const cuda::cuda_error&)
+{
+  return false;
+}
+
 int main()
+try
 {
   // The operations above are __host__ __device__, so the build carries a host and
   // a device copy of each and one run can report both. The two agree wherever the
@@ -452,50 +479,54 @@ int main()
   print_results("host", "fp32mp2", "float-float, ~46 effective mantissa bits", host_float_float);
   print_results("host", "fp64mp2", "double-double, ~104 effective mantissa bits", host_double_double);
 
-  int device_count = 0;
-  if (cudaGetDeviceCount(&device_count) != cudaSuccess || device_count == 0)
+  if (!device_available())
   {
-    cudaGetLastError(); // discard the sticky error so it cannot mask a later one
     printf("\nno CUDA device available, so only the host results are shown\n\n");
     return 0;
   }
 
   // Name the GPU the device results came from. Its architecture is worth having next to
   // the numbers, since that is what decides which instructions the arithmetic is built on.
-  int device_id = 0;
-  cudaGetDevice(&device_id);
-  cudaDeviceProp props{};
-  cudaGetDeviceProperties(&props, device_id);
-  printf("\nthe device results below come from %s, sm_%d%d\n", props.name, props.major, props.minor);
+  const cuda::device_ref device = cuda::devices[0];
+  const auto device_name        = device.name();
+  const auto cc                 = device.attribute(cuda::device_attributes::compute_capability);
+  printf("\nthe device results below come from %.*s, sm_%d%d\n",
+         static_cast<int>(device_name.size()),
+         device_name.data(),
+         cc.major_cap(),
+         cc.minor_cap());
 
-  fpmp_results* float_float;
-  fpmp_results* double_double;
+  // Work is submitted through a stream, and the results come back in pinned host
+  // memory: one value each, which the kernels write and the host reads once the
+  // stream has drained. Both buffers release themselves at the end of the scope.
+  cuda::stream stream{device};
 
-  cudaMallocManaged(&float_float, sizeof(fpmp_results));
-  cudaMallocManaged(&double_double, sizeof(fpmp_results));
+  auto float_float   = cuda::make_pinned_buffer<fpmp_results>(stream, 1, cuda::no_init);
+  auto double_double = cuda::make_pinned_buffer<fpmp_results>(stream, 1, cuda::no_init);
 
-  // The same two functions, this time from a kernel.
-  float_float_kernel<<<1, 1>>>(float_float);
-  double_double_kernel<<<1, 1>>>(double_double);
+  // The same two functions, this time from a kernel. One thread does all of it,
+  // since the point is the arithmetic rather than the parallelism.
+  const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<1>());
 
-  cudaDeviceSynchronize();
+  cuda::launch(stream, config, float_float_kernel, float_float.data());
+  cuda::launch(stream, config, double_double_kernel, double_double.data());
 
-  const cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess)
-  {
-    printf("CUDA error: %s\n", cudaGetErrorString(err));
-    cudaFree(float_float);
-    cudaFree(double_double);
-    return 1;
-  }
+  stream.sync();
 
-  print_results("device", "fp32mp2", "float-float, ~46 effective mantissa bits", *float_float);
-  print_results("device", "fp64mp2", "double-double, ~104 effective mantissa bits", *double_double);
-
-  cudaFree(float_float);
-  cudaFree(double_double);
+  print_results("device", "fp32mp2", "float-float, ~46 effective mantissa bits", float_float[0]);
+  print_results("device", "fp64mp2", "double-double, ~104 effective mantissa bits", double_double[0]);
 
   printf("\n");
 
   return 0;
 } // main
+catch (const cuda::cuda_error& e)
+{
+  printf("CUDA error: %s\n", e.what());
+  return 1;
+}
+catch (const std::exception& e)
+{
+  printf("error: %s\n", e.what());
+  return 1;
+}
