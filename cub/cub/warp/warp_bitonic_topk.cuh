@@ -19,6 +19,7 @@
 #include <cub/warp/warp_bitonic_sort.cuh>
 #include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/popcount.h>
@@ -67,9 +68,11 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void compare_and_replace(
   }
 }
 
+// reverse keys and values which are in striped arrangement
 template <int Len, int LogicalWarpThreads, typename KeyT, typename ValueT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, int lane, unsigned int member_mask)
 {
+  // first reverse each lane's array
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < Len / 2; ++i)
   {
@@ -84,6 +87,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, in
     }
   }
 
+  // then exchange between between lanes with reversed indices
   const int src_lane = LogicalWarpThreads - lane - 1;
 
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -100,7 +104,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void reverse_items(KeyT* keys, ValueT* values, in
 
 enum class WarpBitonicTopKAlgorithm
 {
-  //! Eagerly sort and merge every MaxK items.
+  //! Eagerly sort and merge every MaxK items. Best suited to small arrays, such as ItemsPerThread <= 4.
   eager,
   //! Buffer candidates that pass the current key threshold before merging them.
   buffered,
@@ -118,7 +122,7 @@ enum class WarpBitonicTopKAlgorithm
 //!   (1) Array overloads operate on items already held by each lane. Input and
 //!       output items use a striped arrangement across logical warp lanes.
 //!   (2) Iterator overloads read arbitrary-length input through random-access iterators. Output items use a striped
-//!       arrangement across logical warp lanes. Supported only by the buffered algorithm.
+//!       arrangement across logical warp lanes. Supported only by the ``buffered`` algorithm.
 //!
 //! Simple Examples
 //! ++++++++++++++++
@@ -143,9 +147,10 @@ enum class WarpBitonicTopKAlgorithm
 //!    {
 //!        constexpr int max_k            = 32;
 //!        constexpr int items_per_thread = 2;
+//!        constexpr int warp_threads = 32;
 //!
-//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<max_k, int>;
-//!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage;
+//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<
+//!          max_k, int, warp_threads, cub::NullType, cub::detail::WarpBitonicTopKAlgorithm::eager>;
 //!
 //!        int thread_keys[items_per_thread];
 //!        // ...
@@ -160,6 +165,7 @@ enum class WarpBitonicTopKAlgorithm
 //! (``?`` represents an undetermined value.)
 //! Note keys are in a :ref:`striped arrangement <flexible-data-arrangement>` across warp lanes.
 //!
+//!
 //! The code snippet below illustrates the iterator overload. The input ``keys_in`` points to ``num_items`` items. The
 //! top 30 keys are selected.
 //!
@@ -170,8 +176,7 @@ enum class WarpBitonicTopKAlgorithm
 //!        constexpr int max_k = 32;
 //!        constexpr int warp_threads = 32;
 //!
-//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<
-//!          max_k, int, warp_threads, cub::NullType, cub::detail::WarpBitonicTopKAlgorithm::buffered>;
+//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<max_k, int>;
 //!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage;
 //!
 //!        int keys_out[max_k / warp_threads];
@@ -181,12 +186,13 @@ enum class WarpBitonicTopKAlgorithm
 //!
 //! Suppose the input ``keys_in`` is [0, 1, ..., 63]. The output ``keys_out`` in a warp of threads will be
 //! ``{ [0,?], [1,?], [2,?], ..., [29,?], [?,?], [?,?] }``.
+//! (``?`` represents an undetermined value.)
 //! Note keys in ``keys_out`` are in a :ref:`striped arrangement <flexible-data-arrangement>` across warp lanes.
 //!
 //! @endrst
 //!
 //! @tparam MaxK
-//!   The maximum number of selected items. Must be a multiple of the logical warp size.
+//!   The maximum number of selected items. Must be a positive multiple of the logical warp size.
 //!
 //! @tparam KeyT
 //!   Key type.
@@ -207,6 +213,8 @@ template <int MaxK,
           WarpBitonicTopKAlgorithm Algorithm = WarpBitonicTopKAlgorithm::buffered>
 class WarpBitonicTopK;
 
+// The eager specialization lacks an iterator overload, even though it could outperform the buffered specialization when
+// `num_items` is small. This is because the array overload should be preferred in such cases.
 template <int MaxK, typename KeyT, int LogicalWarpThreads, typename ValueT>
 class WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::eager>
 {
@@ -214,6 +222,7 @@ private:
   static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
                 "LogicalWarpThreads must not exceed the architectural warp size");
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
+  static_assert(MaxK > 0, "MaxK must be greater than 0");
   static_assert(MaxK % LogicalWarpThreads == 0, "MaxK must be a multiple of LogicalWarpThreads");
   static constexpr int max_k_per_thread = MaxK / LogicalWarpThreads;
   static constexpr bool keys_only       = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -235,13 +244,13 @@ public:
 
   //! @brief Selects top-k keys from per-thread arrays across a logical warp.
   //!
-  //! @tparam ItemsPerThread Number of keys per thread.
+  //! @tparam ItemsPerThread Number of keys per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >= MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK``.
+  //! @param[in] k Number of keys to select. Valid range is [1, `MaxK`].
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k) const
   {
@@ -253,13 +262,13 @@ public:
   //! @brief Selects top-k keys from partially valid per-thread arrays across a logical warp. An out-of-bound key
   //! ordered after any valid key must be provided.
   //!
-  //! @tparam ItemsPerThread Number of keys per thread.
+  //! @tparam ItemsPerThread Number of keys per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >= MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] k Number of keys to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid keys across the logical warp.
   //! @param[in] oob_default Default value for out-of-bound key.
   template <int ItemsPerThread, typename CompareOp>
@@ -273,13 +282,13 @@ public:
 
   //! @brief Selects top-k keys from partially valid per-thread arrays across a logical warp.
   //!
-  //! @tparam ItemsPerThread Number of keys per thread.
+  //! @tparam ItemsPerThread Number of keys per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >= MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] k Number of keys to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid keys across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -292,28 +301,36 @@ public:
 
   //! @brief Selects top-k key-value pairs from per-thread arrays across a logical warp.
   //!
-  //! @tparam ItemsPerThread Number of key-value pairs per thread.
+  //! @tparam ItemsPerThread Number of key-value pairs per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >=
+  //! MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK``.
+  //! @param[in] k Number of pairs to select. Valid range is [1, `MaxK`].
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(
     KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, [[maybe_unused]] int k) const
   {
-    static_assert(ItemsPerThread * LogicalWarpThreads >= MaxK);
+    constexpr int valid_items = ItemsPerThread * LogicalWarpThreads;
+    static_assert(valid_items >= MaxK);
 
-    if constexpr (ItemsPerThread * LogicalWarpThreads == MaxK)
+    if constexpr (valid_items == MaxK)
     {
       MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op);
     }
+    else if constexpr (valid_items == ::cuda::next_power_of_two(static_cast<unsigned>(MaxK)))
+    {
+      // For non-power-of-two input size, WarpBitonicSort conceptually pads the sorting network to the next
+      // power-of-two. If input size equals this rounded-up value for MaxK, sort input directly.
+      WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op);
+    }
     else
     {
-      // Due to the requirement of WarpBitonicSort::merge, when MaxK is not a power of 2, the result must be
-      // reverse-sorted while merging incoming data, then reversed again at the end.
+      // For non-power-of-two MaxK, WarpBitonicSort::merge requires the retained set to remain reverse-sorted while
+      // merging incoming data.
       constexpr bool reverse = !::cuda::is_power_of_two(MaxK);
       MaxKSortT{}.template sort<CompareOp, reverse>(keys, values, compare_op);
 
@@ -347,6 +364,7 @@ public:
         MaxKSortT{}.template merge<CompareOp, reverse>(keys, values, compare_op);
       }
 
+      // restore the requested order after processing all data
       if constexpr (reverse)
       {
         warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys, values, lane, member_mask);
@@ -357,14 +375,15 @@ public:
   //! @brief Selects top-k key-value pairs from partially valid per-thread arrays across a logical warp. An out-of-bound
   //! key ordered after any valid key must be provided.
   //!
-  //! @tparam ItemsPerThread Number of key-value pairs per thread.
+  //! @tparam ItemsPerThread Number of key-value pairs per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >=
+  //! MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] k Number of pairs to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid pairs across the logical warp.
   //! @param[in] oob_default Default value for out-of-bound key.
   template <int ItemsPerThread, typename CompareOp>
@@ -389,14 +408,15 @@ public:
 
   //! @brief Selects top-k key-value pairs from partially valid per-thread arrays across a logical warp of threads.
   //!
-  //! @tparam ItemsPerThread Number of key-value pairs per thread.
+  //! @tparam ItemsPerThread Number of key-value pairs per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >=
+  //! MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] k Number of pairs to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid pairs across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -408,7 +428,7 @@ public:
   {
     static_assert(ItemsPerThread * LogicalWarpThreads >= MaxK);
 
-    if (valid_items < MaxK) // using "<=" is slower
+    if (valid_items <= MaxK)
     {
       MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
       return;
@@ -459,9 +479,8 @@ private:
   unsigned int member_mask = WarpMask<LogicalWarpThreads>(detail::logical_warp_id<LogicalWarpThreads>());
 };
 
-// The buffered WarpBitonicTopK specialization initializes a retained top-k set from per-thread arrays or
-// random-access iterators, buffers candidates that pass the current key threshold, and merges them into the retained
-// set. Input and output items use a striped arrangement across logical warp lanes.
+// The buffered specialization initializes a retained top-k set from per-thread arrays or random-access
+// iterators, buffers candidates that pass the current key threshold, and merges them into the retained set.
 template <int MaxK, typename KeyT, int LogicalWarpThreads, typename ValueT>
 class WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::buffered>
 {
@@ -469,6 +488,7 @@ private:
   static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
                 "LogicalWarpThreads must not exceed the architectural warp size");
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
+  static_assert(MaxK > 0, "MaxK must be greater than 0");
   static_assert(MaxK % LogicalWarpThreads == 0, "MaxK must be a multiple of LogicalWarpThreads");
   static constexpr int max_k_per_thread = MaxK / LogicalWarpThreads;
   static constexpr bool keys_only       = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -497,13 +517,13 @@ public:
 
   //! @brief Selects top-k keys from per-thread arrays across a logical warp.
   //!
-  //! @tparam ItemsPerThread Number of keys per thread.
+  //! @tparam ItemsPerThread Number of keys per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >= MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK``.
+  //! @param[in] k Number of keys to select. Valid range is [1, `MaxK`].
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k)
   {
@@ -514,13 +534,13 @@ public:
 
   //! @brief Selects top-k keys from partially valid per-thread arrays across a logical warp.
   //!
-  //! @tparam ItemsPerThread Number of keys per thread.
+  //! @tparam ItemsPerThread Number of keys per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >= MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] k Number of keys to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid keys across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -533,31 +553,54 @@ public:
 
   //! @brief Selects top-k key-value pairs from per-thread arrays across a logical warp.
   //!
-  //! @tparam ItemsPerThread Number of key-value pairs per thread.
+  //! @tparam ItemsPerThread Number of key-value pairs per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >=
+  //! MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK``.
+  //! @param[in] k Number of pairs to select. Valid range is [1, `MaxK`].
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int k)
   {
-    TopK(keys, values, compare_op, k, ItemsPerThread * LogicalWarpThreads);
+    constexpr int valid_items = ItemsPerThread * LogicalWarpThreads;
+    static_assert(valid_items >= MaxK);
+
+    if constexpr (valid_items == MaxK)
+    {
+      MaxKSortT{}.template sort<CompareOp, false>(keys, values, compare_op);
+    }
+    else if constexpr (valid_items == ::cuda::next_power_of_two(static_cast<unsigned>(MaxK)))
+    {
+      // For non-power-of-two input size, WarpBitonicSort conceptually pads the sorting network to the next
+      // power-of-two. If input size equals this rounded-up value for MaxK, sort input directly.
+      WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op);
+    }
+    else
+    {
+      // Fall back to partial variant TopK because it already calls full variant Sort in most cases.
+      // It also means adding a partial-with-oob-default variant would offer no performance benefit.
+      //
+      // It's possible to eliminate the final reversal when MaxK is a power-of-two as in eager specialization.
+      // However, this isn't worthwhile due to overhead like extra adjustment for flushing.
+      TopK(keys, values, compare_op, k, valid_items);
+    }
   }
 
   //! @brief Selects top-k key-value pairs from partially valid per-thread arrays across a logical warp.
   //!
-  //! @tparam ItemsPerThread Number of key-value pairs per thread.
+  //! @tparam ItemsPerThread Number of key-value pairs per thread. Must satisfy: ItemsPerThread * LogicalWarpThreads >=
+  //! MaxK.
   //! @tparam CompareOp Comparison functor type.
   //!
   //! @param[in,out] keys Keys in striped arrangement. On return, the first ``k`` striped positions contain the selected
   //! top-k keys.
   //! @param[in,out] values Values selected together with their corresponding keys.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``valid_items``.
+  //! @param[in] k Number of pairs to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid pairs across the logical warp.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
@@ -586,6 +629,7 @@ public:
       process_candidate(
         keys, values, keys[i], values[i], compare_op, is_candidate, k_th_item, k_th_lane, k_th, num_candidates);
     }
+
     flush_candidates(keys, values, compare_op, num_candidates);
     warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys, values, lane, member_mask);
   }
@@ -598,7 +642,7 @@ public:
   //! @param[in] keys_in Iterator pointing to the first input key of a logical warp. All lanes in a logical warp should
   //! pass the same iterator.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of keys to select. Must not exceed ``MaxK`` or ``num_items``.
+  //! @param[in] k Number of keys to select. Valid range is [1, min(`MaxK`, `num_items`)].
   //! @param[in] num_items Number of input keys.
   //! @param[out] keys_out Selected keys in striped arrangement.
   template <typename KeyInputIteratorT, typename CompareOp>
@@ -621,7 +665,7 @@ public:
   //! @param[in] values_in Iterator pointing to the first input value of a logical warp. All lanes in a logical warp
   //! should pass the same iterator.
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
-  //! @param[in] k Number of pairs to select. Must not exceed ``MaxK`` or ``num_items``.
+  //! @param[in] k Number of pairs to select. Valid range is [1, min(`MaxK`, `num_items`)].
   //! @param[in] num_items Number of input pairs.
   //! @param[out] keys_out Selected keys in striped arrangement.
   //! @param[out] values_out Values selected together with their corresponding keys.
@@ -635,10 +679,6 @@ public:
        KeyT (&keys_out)[MaxK / LogicalWarpThreads],
        ValueT (&values_out)[MaxK / LogicalWarpThreads])
   {
-    const int k_th_pos  = MaxK - k;
-    const int k_th_item = k_th_pos / LogicalWarpThreads;
-    const int k_th_lane = k_th_pos % LogicalWarpThreads;
-
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < max_k_per_thread; ++i)
     {
@@ -659,11 +699,18 @@ public:
       return;
     }
 
+    // Where to find the current k-th key: k_th_lane identifies the lane that owns it, and k_th_item is the array index.
+    // Note that k > 0 is required: when k=0, k_th_item becomes max_k_per_thread, causing get_key_threshold to read one
+    // element past the array.
+    const int k_th_pos  = MaxK - k;
+    const int k_th_item = k_th_pos / LogicalWarpThreads;
+    const int k_th_lane = k_th_pos % LogicalWarpThreads;
+
     MaxKSortT{}.template sort<CompareOp, true>(keys_out, values_out, compare_op);
     KeyT k_th          = get_key_threshold(keys_out, k_th_item, k_th_lane);
     int num_candidates = 0;
 
-    const int num_items_per_thread = (num_items + LogicalWarpThreads - 1) / LogicalWarpThreads;
+    const int num_items_per_thread = ::cuda::ceil_div(num_items, LogicalWarpThreads);
     for (int i = max_k_per_thread; i < num_items_per_thread; ++i)
     {
       const int pos = i * LogicalWarpThreads + lane;
@@ -682,6 +729,7 @@ public:
       process_candidate(
         keys_out, values_out, key, value, compare_op, is_candidate, k_th_item, k_th_lane, k_th, num_candidates);
     }
+
     flush_candidates(keys_out, values_out, compare_op, num_candidates);
     warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys_out, values_out, lane, member_mask);
   }
@@ -702,22 +750,13 @@ private:
   {
     _TempStorage& temp_storage = *storage;
     is_candidate               = is_candidate && compare_op(key, k_th);
-    unsigned int mask;
-    if constexpr (LogicalWarpThreads == detail::warp_threads)
-    {
-      constexpr unsigned int full_warp_mask = 0xFFFFFFFFu;
-      mask                                  = __ballot_sync(full_warp_mask, is_candidate);
-    }
-    else
-    {
-      mask = __ballot_sync(member_mask, is_candidate);
-      mask >>= logical_warp_id * LogicalWarpThreads;
-    }
+    unsigned int mask          = __ballot_sync(member_mask, is_candidate);
     if (mask == 0)
     {
       return;
     }
 
+    mask >>= logical_warp_id * LogicalWarpThreads;
     int pos = num_candidates + ::cuda::std::popcount(mask & ((0x1u << lane) - 1));
     if (is_candidate && pos < LogicalWarpThreads)
     {
@@ -732,12 +771,13 @@ private:
     if (num_candidates >= LogicalWarpThreads)
     {
       __syncwarp(member_mask);
+      KeyT key = temp_storage.keys[lane];
       ValueT value;
       if constexpr (!keys_only)
       {
         value = temp_storage.values[lane];
       }
-      merge_candidates(keys_out, values_out, temp_storage.keys[lane], value, compare_op);
+      merge_candidates(keys_out, values_out, key, value, compare_op);
       k_th = get_key_threshold(keys_out, k_th_item, k_th_lane);
       num_candidates -= LogicalWarpThreads;
     }
@@ -772,7 +812,7 @@ private:
 
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  merge_candidates(KeyT* keys_out, ValueT* values_out, KeyT key, ValueT value, CompareOp compare_op) const
+  merge_candidates(KeyT* keys_out, ValueT* values_out, KeyT& key, ValueT& value, CompareOp compare_op) const
   {
     CandidateSortT{}.template sort<CompareOp, false>(&key, &value, compare_op);
 
@@ -782,13 +822,13 @@ private:
   }
 
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  merge_candidates(KeyT* keys_out, ValueT* values_out, KeyT key, ValueT value, CompareOp compare_op, int len) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void merge_candidates(
+    KeyT* keys_out, ValueT* values_out, KeyT& key, ValueT& value, CompareOp compare_op, int valid_items) const
   {
-    CandidateSortT{}.template sort<CompareOp, false>(&key, &value, compare_op, len);
+    CandidateSortT{}.template sort<CompareOp, false>(&key, &value, compare_op, valid_items);
 
     warp_bitonic_topk::compare_and_replace<1, LogicalWarpThreads>(
-      keys_out, values_out, &key, &value, compare_op, len, lane);
+      keys_out, values_out, &key, &value, compare_op, valid_items, lane);
 
     MaxKSortT{}.template merge<CompareOp, true>(keys_out, values_out, compare_op);
   }
