@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
@@ -47,6 +48,19 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   {
     return -1;
   }
+#if defined(_CCCL_BUILTIN_CONSTANT_P)
+  if (_CCCL_BUILTIN_CONSTANT_P(__rank))
+  {
+    if (__rank == 0)
+    {
+      return ::cuda::std::countr_zero(__value);
+    }
+    if (__rank == __digits - 1)
+    {
+      return (__value == static_cast<_Tp>(-1)) ? __digits - 1 : -1;
+    }
+  }
+#endif // defined(_CCCL_BUILTIN_CONSTANT_P)
   auto __window   = +__value; // small types are promoted to 32 bits
   int __remaining = __rank;
   int __position  = 0;
