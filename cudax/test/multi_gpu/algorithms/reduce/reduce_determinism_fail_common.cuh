@@ -27,7 +27,7 @@ namespace cudax = ::cuda::experimental;
 template <class Determinism>
 void reduce_with_determinism(Determinism determinism)
 {
-  cudax::nccl_communicator_ref comm{::ncclComm_t{}};
+  cudax::mgmn::nccl_communicator_ref comm{::ncclComm_t{}};
   auto env = ::cuda::std::execution::env{::cuda::stream_ref{::cudaStream_t{}}, ::cuda::execution::require(determinism)};
   int* ptr{};
 
