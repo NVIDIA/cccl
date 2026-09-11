@@ -52,6 +52,21 @@ class _Reduce(Serializable):
         "build_results",
         "loaded_build_result",
         "device_reduce_fn",
+        # Perf: __call__ used to unconditionally redo three things that are
+        # data-independent (device_reduce_fn only depends on which build
+        # result got loaded; a *stateless* op's state is always b"" by
+        # definition). Caching them costs one extra `is` check but skips a
+        # `Determinism(...)` reconstruction / adapter re-derivation on every
+        # call in the common "same reducer, same op, repeated calls" case.
+        #
+        # These hold strong references (not bare ids) so identity can never
+        # false-positive against a GC'd-and-reused object. h_init is
+        # deliberately NOT cached this way: it's a plain mutable
+        # numpy array/GpuStruct the caller may mutate in place between calls
+        # while reusing the same object, and identity alone can't detect
+        # that -- so h_init state is still re-marshaled every call.
+        "_last_loaded_build_result",
+        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -117,6 +132,8 @@ class _Reduce(Serializable):
 
         # loaded_build_result / device_reduce_fn are bound lazily on the first
         # __call__ (see _bind_device_reduce_fn).
+        self._last_loaded_build_result = None
+        self._last_stateless_op = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
@@ -138,10 +155,30 @@ class _Reduce(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where these two caches are otherwise initialized -- without this,
+        # a deserialized _Reduce would raise AttributeError the first time
+        # _bind_device_reduce_fn/__call__ reads them.
+        self._last_loaded_build_result = None
+        self._last_stateless_op = None
+
     def _bind_device_reduce_fn(self) -> None:
         # Derived from the loaded build result (not serialized); bound at __call__
         # once resolve_build_result picks + loads the current device's build result.
         # compute() handles both init kinds: it ignores h_init for NO_INIT builds.
+        #
+        # Perf: device_reduce_fn is a pure function of `loaded_build_result`'s
+        # identity -- nothing else it's derived from can change without
+        # `loaded_build_result` itself changing first. resolve_build_result()
+        # already returns the same object every call on the construction-time
+        # bound fast path, so this guard turns a `Determinism(...)`
+        # reconstruction + two attribute writes into a no-op on repeat calls.
+        # For deserialized/unbound wrappers (resolved fresh per call), this
+        # still rebinds whenever the resolved result actually changes (e.g.
+        # a different device), matching prior behavior exactly.
+        if self.loaded_build_result is self._last_loaded_build_result:
+            return
         if (
             Determinism(self.loaded_build_result.determinism)
             is Determinism.NOT_GUARANTEED
@@ -149,6 +186,7 @@ class _Reduce(Serializable):
             self.device_reduce_fn = self.loaded_build_result.compute_nondeterministic
         else:
             self.device_reduce_fn = self.loaded_build_result.compute
+        self._last_loaded_build_result = self.loaded_build_result
 
     def __call__(
         self,
@@ -171,9 +209,22 @@ class _Reduce(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops
+        # Update op state for stateful ops.
+        #
+        # Perf: make_op_adapter(op) is already cheap when `op` is already an
+        # _OpAdapter (the common case: the isinstance check short-circuits,
+        # no construction). What's skippable is re-deriving and re-assigning
+        # .get_state(): for a *stateless* op that's a constant (b"" by
+        # definition -- see _OpAdapter.get_state), so once we've seen this
+        # exact op object with is_stateful=False, re-running that derivation
+        # on a repeat call is pure waste. Stateful ops are NOT cached this
+        # way: get_state() can legitimately return different bytes across
+        # calls for the same object (e.g. an op capturing evolving runtime
+        # state), so those always re-derive, unchanged from prior behavior.
         op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op_adapter.is_stateful or op is not self._last_stateless_op:
+            self.op_cccl.state = op_adapter.get_state()
+            self._last_stateless_op = None if op_adapter.is_stateful else op
 
         if self.init_kind is _bindings.InitKind.VALUE_INIT:
             # We know that h_init_cccl is a Value here, so this cast tells MyPy
