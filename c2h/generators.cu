@@ -186,6 +186,11 @@ public:
 
   float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
   {
+    if (stream.get() == ::cudaStream_t{})
+    {
+      return prepare_random_generator(seed, num_items);
+    }
+
     const int device = stream.device().get();
     const scoped_current_device device_scope{device};
     return state_for(device, stream.get()).prepare_random_generator(stream, seed, num_items);

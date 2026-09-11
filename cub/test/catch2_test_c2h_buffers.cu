@@ -145,9 +145,15 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
 CUB_TEST("c2h random generator supports the legacy default stream", "[c2h][buffers][generators]", CUB_SMALL)
 {
   constexpr std::size_t num_items = 256;
-  const auto* random_data         = c2h::detail::prepare_random_data(c2h::seed_t{1234}, num_items);
+  const c2h::seed_t seed{1234};
 
-  REQUIRE(random_data != nullptr);
+  const auto* implicit_stream_data = c2h::detail::prepare_random_data(seed, num_items);
+  REQUIRE(implicit_stream_data != nullptr);
+
+  const auto* explicit_stream_data =
+    c2h::detail::prepare_random_data(cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
+  REQUIRE(explicit_stream_data != nullptr);
+
   REQUIRE(cudaSuccess == cudaStreamSynchronize(::cudaStream_t{}));
 }
 
