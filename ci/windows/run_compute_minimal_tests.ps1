@@ -43,12 +43,21 @@ Invoke-Checked { & $python -m pip install "$wheelPath[minimal-$ctkFlavor$cudaMaj
 
 Push-Location (Join-Path $repoRoot "python/cuda_cccl/tests")
 try {
-    Invoke-Checked { & $python -m pytest -n 6 -v compute/test_no_numba.py } "test_no_numba.py failed"
+    Invoke-Checked { & $python -m pytest -n 6 -v compute/test_no_numba.py compute/test_raw_op.py } "minimal-extra tests failed"
 
-    if ($PyVersion -eq "3.14t") {
-        # Select only tests that support the minimal extra so pytest does not
-        # collect tests that import numba-cuda and re-enable the GIL. These tests
-        # provide their own worker threads, so keep pytest itself in a single
+    if (Test-FreeThreadedPython $python) {
+        # Fail fast if the interpreter is not actually GIL-free (wrong build /
+        # PYTHON_GIL=1). The stress tests below check this themselves, but the
+        # pytest-run-parallel sweep does NOT catch a GIL that is enabled from the
+        # start -- it would run threads GIL-serialized and pass vacuously. (A GIL
+        # *re-enabled mid-run* by a non-free-threaded import IS caught by the
+        # plugin, which is why we do not pass --ignore-gil-enabled.) One check up
+        # front covers both and gives one clear failure instead of one per test.
+        Invoke-Checked { & $python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; free-threading tests have no signal'" } "interpreter is not GIL-free; free-threading tests have no signal"
+
+        # Select only tests that support the minimal extra, so pytest does not
+        # collect tests needing a JIT backend the minimal extras do not install.
+        # These tests provide their own worker threads, so keep pytest in a single
         # process. The serialization node-ids are module-skipped on the v2
         # backend today and will start running there automatically once v2 gains
         # serialization support.
@@ -73,17 +82,13 @@ try {
         # (the runner's logical-core count).
         #
         # pytest-run-parallel is only used by this sweep, so install it on the
-        # 3.14t path rather than for every minimal (e.g. non-free-threaded 3.14)
-        # run.
+        # free-threaded path rather than for every minimal (e.g. GIL-enabled
+        # 3.14) run.
         Invoke-Checked { & $python -m pip install pytest-run-parallel } "Failed to install pytest-run-parallel"
 
-        # Fail fast if the interpreter is not actually GIL-free (wrong build /
-        # PYTHON_GIL=1): pytest-run-parallel does NOT catch a GIL that is enabled
-        # from the start -- it would run threads GIL-serialized and pass
-        # vacuously. (A GIL *re-enabled mid-run* by a non-free-threaded import IS
-        # caught by the plugin, which is why we do not pass --ignore-gil-enabled.)
-        Invoke-Checked { & $python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; parallel sweep has no signal'" } "interpreter is not GIL-free; parallel sweep has no signal"
-        Invoke-Checked { & $python -m pytest -n 0 -v --parallel-threads=2 compute/test_no_numba.py } "parallel-threads sweep failed"
+        # The swept files are the ones marked no_numba module-wide, i.e. everything
+        # the minimal extras can run.
+        Invoke-Checked { & $python -m pytest -n 0 -v --parallel-threads=2 compute/test_no_numba.py compute/test_raw_op.py } "parallel-threads sweep failed"
     }
 }
 finally { Pop-Location }

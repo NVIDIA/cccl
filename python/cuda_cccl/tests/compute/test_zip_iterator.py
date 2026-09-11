@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray, get_compute_capability
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -268,17 +268,11 @@ def test_zip_iterator_with_scan(num_items):
 
 
 @pytest.mark.parametrize("num_items", [10, 1000])
-def test_output_zip_iterator_with_scan(monkeypatch, num_items):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_output_zip_iterator_with_scan(num_items):
     """Test ZipIterator as output iterator with scan operations."""
-    # Skip SASS check for CC 8.0+ due to LDL/STL CI failure.
-    cc_major, _ = get_compute_capability()
-    if cc_major >= 8:
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
-
     h_in1 = np.random.randint(0, 1000, num_items, dtype=np.int64)
     h_in2 = np.random.randint(0, 1000, num_items, dtype=np.int64)
     d_in1 = DeviceArray.from_numpy(h_in1)
@@ -438,15 +432,10 @@ def test_deeply_nested_zip_iterators():
         {"x": np.float64, "y": np.float32},
     ],
 )
-def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
-    cc_major, _ = get_compute_capability()
-    if cc_major >= 8:
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
-
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_nested_output_zip_iterator_with_scan(num_items, dtype_map):
     Vec2 = gpu_struct(dtype_map)
 
     h_in1 = np.zeros(num_items, dtype=Vec2.dtype)
@@ -509,6 +498,9 @@ def test_zip_iterator_of_transform_iterator_kind():
     assert it1.kind != it2.kind
 
 
+@pytest.mark.thread_unsafe(
+    reason="Clears and counts hits on the process-wide compile cache, which a concurrent instance perturbs."
+)
 def test_caching_zip_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
     from cuda.compute._cpp_compile import compile_cpp_op_code
@@ -586,6 +578,9 @@ def test_caching_zip_iterator():
     assert len(set(kinds)) == 1, "Same CountingIterator types should have same kind"
 
 
+@pytest.mark.thread_unsafe(
+    reason="Clears and counts hits on the process-wide compile cache, which a concurrent instance perturbs."
+)
 def test_compilation_caching_across_iterator_types():
     """Test that compilation caching works across different iterator types."""
     from cuda.compute import ConstantIterator

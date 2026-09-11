@@ -46,6 +46,25 @@ try {
     Invoke-Checked { & $python -m pytest -n 6 -v compute/ -m "not large and not free_threading" } "compute tests (not large) failed"
     Invoke-Checked { & $python -m pytest -n 0 -v compute/ -m "large and not free_threading" } "compute tests (large) failed"
 
+    # Mirrors the free-threading section of ci/util/python/run_compute_tests.sh;
+    # see there for the full rationale. The suites carry the free_threading marker
+    # so the runs above exclude them, and on a GIL interpreter they would only
+    # skip themselves -- run them when the interpreter is genuinely free-threaded.
+    if (Test-FreeThreadedPython $python) {
+        Invoke-Checked { & $python -c "import sys; assert not sys._is_gil_enabled(), 'GIL is enabled; free-threading tests have no signal'" } "interpreter is not GIL-free; free-threading tests have no signal"
+
+        # -n 0: these spawn and barrier-synchronize their own worker threads, so
+        # pytest itself must stay in a single process. Selected by marker rather
+        # than by filename so a future suite is picked up automatically.
+        Invoke-Checked { & $python -m pytest -n 0 -v -m free_threading compute/ } "free-threading tests failed"
+
+        # Broad thread-safety sweep. "not large" avoids re-creating the memory
+        # pressure the -n 6 / -n 0 split above exists to prevent;
+        # "not free_threading" because those just ran with their own workers.
+        Invoke-Checked { & $python -m pip install pytest-run-parallel } "Failed to install pytest-run-parallel"
+        Invoke-Checked { & $python -m pytest -n 0 -v --parallel-threads=2 compute/ -m "not large and not free_threading" } "parallel-threads sweep failed"
+    }
+
     # ml_dtypes (the NumPy bfloat16 extension dtype) is deliberately not in the
     # test extras, so the sweeps above match a user's default install, where the
     # bfloat16 tests skip themselves. Install it last and run them explicitly.
