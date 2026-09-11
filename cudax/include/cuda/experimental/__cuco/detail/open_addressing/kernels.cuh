@@ -26,6 +26,7 @@
 #include <cuda/__atomic/atomic.h>
 #include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstdint>
@@ -216,6 +217,77 @@ template <class _Ref, class _Iterator>
   else
   {
     return __found == __ref.end() ? __ref.empty_key_sentinel() : *__found;
+  }
+}
+
+//! @brief Inserts each element and returns the mapped value and insertion status.
+//!
+//! @tparam _CgSize Number of threads cooperating on each insertion
+//! @tparam _BlockSize Number of threads per block
+//! @tparam _InputIt Device accessible random access input iterator
+//! @tparam _FoundIt Device accessible output iterator assignable from the mapped type
+//! @tparam _InsertedIt Device accessible output iterator assignable from bool
+//! @tparam _Ref Device reference to the map
+//!
+//! @param[in] __first Beginning of the input sequence
+//! @param[in] __n Number of input pairs
+//! @param[out] __found_begin Beginning of the mapped-value output sequence
+//! @param[out] __inserted_begin Beginning of the insertion-status output sequence
+//! @param[in,out] __ref Map in which to insert the input pairs
+template <int _CgSize, int _BlockSize, class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n(
+  _InputIt __first, detail::__index_type __n, _FoundIt __found_begin, _InsertedIt __inserted_begin, _Ref __ref)
+{
+  const auto __block       = ::cooperative_groups::this_thread_block();
+  const auto __thread_idx  = __block.thread_rank();
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
+
+  using __output_type = typename __find_buffer<_Ref>::type;
+  __shared__ ::cuda::__uninitialized_array<__output_type, _BlockSize / _CgSize> __found_buffer;
+  __shared__ bool __inserted_buffer[_BlockSize / _CgSize];
+
+  while ((__idx - __thread_idx / _CgSize) < __n)
+  {
+    if constexpr (_CgSize == 1)
+    {
+      if (__idx < __n)
+      {
+        using __value_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+        const __value_type __value{*(__first + __idx)};
+        const auto [__found, __inserted] = __ref.insert_and_find(__value);
+
+        /*
+         * Staging scalar results in shared memory avoids the additional L2 sector stores caused by
+         * frequent L1 flushing from relaxed GPU loads.
+         */
+        ::cuda::std::__construct_at(__found_buffer.data() + __thread_idx, __find_output(__ref, __found));
+        __inserted_buffer[__thread_idx] = __inserted;
+      }
+      __block.sync();
+      if (__idx < __n)
+      {
+        *(__found_begin + __idx)    = __found_buffer[__thread_idx];
+        *(__inserted_begin + __idx) = __inserted_buffer[__thread_idx];
+      }
+    }
+    else
+    {
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+      if (__idx < __n)
+      {
+        using __value_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+        const __value_type __value{*(__first + __idx)};
+        const auto [__found, __inserted] = __ref.insert_and_find(__tile, __value);
+
+        if (__tile.thread_rank() == 0)
+        {
+          *(__found_begin + __idx)    = __find_output(__ref, __found);
+          *(__inserted_begin + __idx) = __inserted;
+        }
+      }
+    }
+    __idx += __loop_stride;
   }
 }
 

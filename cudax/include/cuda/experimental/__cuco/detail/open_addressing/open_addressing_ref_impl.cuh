@@ -486,6 +486,174 @@ public:
     }
   }
 
+  //! @brief Inserts an element and returns its slot.
+  //!
+  //! If an equivalent key is already present, returns an iterator to the existing element and
+  //! `false`. Otherwise, returns an iterator to the inserted element and `true`.
+  //!
+  //! @tparam _Value Input type convertible to `__value_type`
+  //!
+  //! @param[in] __value The element to insert
+  //!
+  //! @return The element's iterator and whether insertion succeeded
+  template <class _Value>
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<__iterator, bool> insert_and_find(_Value __value) noexcept
+  {
+    static_assert(__cg_size == 1, "Non-CG operation is incompatible with the current probing scheme");
+
+    const auto __val = __heterogeneous_value(__value);
+    const auto __key = __extract_key(__val);
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__key, __storage_ref.capacity_extent());
+    const auto __init_idx = *__probing_iter;
+
+    while (true)
+    {
+      const auto __bucket_slots = __storage_ref[*__probing_iter];
+
+      for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
+      {
+        const auto __slot  = __bucket_slots[__i];
+        const auto __state = __predicate.template operator()<detail::__is_insert::__yes>(__key, __extract_key(__slot));
+        auto* const __slot_ptr = __get_slot_ptr(*__probing_iter, __i);
+
+        if (__state == detail::__equal_result::__equal)
+        {
+          __maybe_wait_for_payload(__slot_ptr);
+          return {__iterator{__slot_ptr}, false};
+        }
+        if (__state == detail::__equal_result::__available)
+        {
+          switch (__attempt_insert_stable(__slot_ptr, __slot, __val))
+          {
+            case __insert_result::__success:
+              __maybe_wait_for_payload(__slot_ptr);
+              return {__iterator{__slot_ptr}, true};
+            case __insert_result::__duplicate:
+              __maybe_wait_for_payload(__slot_ptr);
+              return {__iterator{__slot_ptr}, false};
+            case __insert_result::__continue:
+              continue;
+          }
+        }
+      }
+
+      ++__probing_iter;
+      if (_CCCL_BUILTIN_EXPECT(*__probing_iter == __init_idx, 0))
+      {
+        return {end(), false};
+      }
+    }
+  }
+
+  //! @brief Cooperative-group variant of `insert_and_find`.
+  //!
+  //! @tparam _Value Input type convertible to `__value_type`
+  //! @tparam _ParentCG Parent cooperative group type
+  //!
+  //! @param[in] __group The cooperative group used for this operation
+  //! @param[in] __value The element to insert
+  //!
+  //! @return The element's iterator and whether insertion succeeded
+  template <class _Value, class _ParentCG>
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<__iterator, bool>
+  insert_and_find(::cooperative_groups::thread_block_tile<__cg_size, _ParentCG> __group, _Value __value) noexcept
+  {
+    const auto __val = __heterogeneous_value(__value);
+    const auto __key = __extract_key(__val);
+    auto __probing_iter =
+      __probing_scheme.template make_iterator<__bucket_size>(__group, __key, __storage_ref.capacity_extent());
+    const auto __init_idx = *__probing_iter;
+
+    while (true)
+    {
+      const auto __bucket_slots = __storage_ref[*__probing_iter];
+      auto __expected_slot      = empty_slot_sentinel();
+      auto __probing_result     = __bucket_probing_results{detail::__equal_result::__unequal, -1};
+
+      for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
+      {
+        const auto __slot  = __bucket_slots[__i];
+        const auto __state = __predicate.template operator()<detail::__is_insert::__yes>(__key, __extract_key(__slot));
+
+        if (__state == detail::__equal_result::__available)
+        {
+          __expected_slot  = __slot;
+          __probing_result = __bucket_probing_results{__state, __i};
+          break;
+        }
+        if constexpr (!__allows_duplicates)
+        {
+          if (__state == detail::__equal_result::__equal)
+          {
+            __expected_slot  = __slot;
+            __probing_result = __bucket_probing_results{__state, __i};
+            break;
+          }
+        }
+      }
+
+      const auto [__state, __intra_bucket_index] = __probing_result;
+
+      const auto __group_finds_equal = __group.ballot(__state == detail::__equal_result::__equal);
+      if (__group_finds_equal != 0)
+      {
+        const auto __src_lane      = __ffs(__group_finds_equal) - 1;
+        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
+        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
+        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
+
+        if (__group.thread_rank() == __src_lane)
+        {
+          __maybe_wait_for_payload(__slot_ptr);
+        }
+        __group.sync();
+        return {__iterator{__slot_ptr}, false};
+      }
+
+      const auto __group_contains_available = __group.ballot(__state == detail::__equal_result::__available);
+      if (__group_contains_available != 0)
+      {
+        const auto __src_lane      = __ffs(__group_contains_available) - 1;
+        const auto __probing_index = __group.shfl(*__probing_iter, __src_lane);
+        const auto __slot_index    = __group.shfl(__intra_bucket_index, __src_lane);
+        auto* const __slot_ptr     = __get_slot_ptr(__probing_index, __slot_index);
+        auto __status              = __insert_result::__continue;
+
+        if (__group.thread_rank() == __src_lane)
+        {
+          __status = __attempt_insert_stable(__slot_ptr, __expected_slot, __val);
+        }
+
+        switch (__group.shfl(__status, __src_lane))
+        {
+          case __insert_result::__success:
+            if (__group.thread_rank() == __src_lane)
+            {
+              __maybe_wait_for_payload(__slot_ptr);
+            }
+            __group.sync();
+            return {__iterator{__slot_ptr}, true};
+          case __insert_result::__duplicate:
+            if (__group.thread_rank() == __src_lane)
+            {
+              __maybe_wait_for_payload(__slot_ptr);
+            }
+            __group.sync();
+            return {__iterator{__slot_ptr}, false};
+          case __insert_result::__continue:
+            continue;
+        }
+      }
+
+      ++__probing_iter;
+      if (_CCCL_BUILTIN_EXPECT(*__probing_iter == __init_idx, 0))
+      {
+        return {end(), false};
+      }
+    }
+  }
+
   //!
   //! @brief Indicates whether the probe __key `__key` was inserted into the container.
   //!
@@ -1078,6 +1246,27 @@ public:
     {
       __current = __ref.load(::cuda::std::memory_order_relaxed);
     } while (detail::__bitwise_compare(__current, __sentinel));
+  }
+
+  //! @brief Waits for a separately written payload when the slot cannot be inserted atomically.
+  //!
+  //! @tparam _SlotPtr Pointer-like type referring to a slot
+  //!
+  //! @param[in] __slot_ptr Pointer to the slot whose payload may still be pending
+  template <class _SlotPtr>
+  _CCCL_DEVICE_API void __maybe_wait_for_payload(_SlotPtr __slot_ptr) const noexcept
+  {
+    if constexpr (__has_payload)
+    {
+      if constexpr (__has_packable_representation)
+      {
+        if (__storage_ref.__is_packed_cas_aligned())
+        {
+          return;
+        }
+      }
+      __wait_for_payload(__slot_ptr->second, empty_value_sentinel());
+    }
   }
 #endif // _CCCL_CUDA_COMPILATION()
 

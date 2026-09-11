@@ -29,6 +29,7 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/level_dimensions.h>
 #include <cuda/__iterator/constant_iterator.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
@@ -333,6 +334,51 @@ public:
           __first, __num_keys, __stencil, __pred, __container_ref);
       _CCCL_TRY_RUNTIME_API(::cudaGetLastError, "cuco: failed to insert keys");
     }
+  }
+
+  //! @brief Asynchronously inserts each element and returns its mapped value and insertion status.
+  //!
+  //! @throws cuda_error if the insert operation fails to launch
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator
+  //! @tparam _FoundIt Device accessible output iterator assignable from the mapped type
+  //! @tparam _InsertedIt Device accessible output iterator assignable from bool
+  //! @tparam _Ref Device reference to the map
+  //!
+  //! @param[in] __stream CUDA stream used for insertion
+  //! @param[in] __first Beginning of the input sequence
+  //! @param[in] __last End of the input sequence
+  //! @param[out] __found_begin Beginning of the mapped-value output sequence
+  //! @param[out] __inserted_begin Beginning of the insertion-status output sequence
+  //! @param[in,out] __container_ref Map in which to insert the input pairs
+  template <class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
+  _CCCL_HOST_API void insert_and_find_async(
+    ::cuda::stream_ref __stream,
+    _InputIt __first,
+    _InputIt __last,
+    _FoundIt __found_begin,
+    _InsertedIt __inserted_begin,
+    _Ref __container_ref)
+  {
+    const auto __num_keys = detail::__distance(__first, __last);
+    if (__num_keys == 0)
+    {
+      return;
+    }
+
+    const auto __grid_size = detail::__grid_size(__num_keys, __cg_size);
+    const auto __config    = ::cuda::make_config(
+      ::cuda::block_dims<detail::__default_block_size>(), ::cuda::grid_dims(static_cast<unsigned>(__grid_size)));
+    ::cuda::launch(
+      __stream,
+      __config,
+      __open_addressing::
+        __insert_and_find_n<__cg_size, detail::__default_block_size, _InputIt, _FoundIt, _InsertedIt, _Ref>,
+      __first,
+      __num_keys,
+      __found_begin,
+      __inserted_begin,
+      __container_ref);
   }
 
   //! @brief Asynchronously checks if keys in `[first, last)` exist in the container.

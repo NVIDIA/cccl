@@ -421,6 +421,51 @@ public:
     return __impl.insert(__group, __value);
   }
 
+  //! @brief Inserts a key-value pair and returns its slot.
+  //!
+  //! If an equivalent key is already present, returns an iterator to the existing pair and `false`.
+  //! If insertion succeeds, returns an iterator to the inserted pair and `true`.
+  //! If no slot is available, returns `end()` and `false`.
+  //!
+  //! @note Concurrent calls for the same key return the payload of the insertion that succeeds.
+  //! @pre Input and stored mapped values must not equal `empty_value_sentinel()`.
+  //! @pre Concurrent operations on this map must also use `insert_and_find`.
+  //!
+  //! @tparam _Value Input type convertible to `value_type`
+  //!
+  //! @param[in] __value The key-value pair to insert
+  //!
+  //! @return The pair's iterator and whether insertion succeeded, or `{end(), false}` if the map is full
+  template <class _Value>
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<iterator, bool> insert_and_find(_Value __value) noexcept
+  {
+    return __impl.insert_and_find(__value);
+  }
+
+  //! @brief Cooperative-group variant of `insert_and_find`.
+  //!
+  //! If an equivalent key is already present, returns an iterator to the existing pair and `false`.
+  //! If insertion succeeds, returns an iterator to the inserted pair and `true`.
+  //! If no slot is available, returns `end()` and `false`.
+  //!
+  //! @note Concurrent calls for the same key return the payload of the insertion that succeeds.
+  //! @pre Input and stored mapped values must not equal `empty_value_sentinel()`.
+  //! @pre Concurrent operations on this map must also use `insert_and_find`.
+  //!
+  //! @tparam _Value Input type convertible to `value_type`
+  //! @tparam _ParentCG Parent cooperative group type
+  //!
+  //! @param[in] __group The cooperative group used for this operation
+  //! @param[in] __value The key-value pair to insert
+  //!
+  //! @return The pair's iterator and whether insertion succeeded, or `{end(), false}` if the map is full
+  template <class _Value, class _ParentCG>
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::pair<iterator, bool>
+  insert_and_find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _Value __value) noexcept
+  {
+    return __impl.insert_and_find(__group, __value);
+  }
+
   // ===== Lookup operations =====
 
   //! @brief Checks if a key exists in the map.
