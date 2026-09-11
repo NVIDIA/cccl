@@ -304,6 +304,50 @@ get_argextremum_sm107_tuning(type_t accum_t, int offset_size, int accum_size, ty
   return {};
 }
 
+// tunings from cub/benchmarks/bench/reduce/arg_minmax.cu. These are raw measured values and must not be passed
+// through scale_mem_bound. The benchmark launches with LOAD_DEFAULT and a vector load length of 1 << ipv.
+_CCCL_HOST_DEVICE_API constexpr auto get_sm107_argminmax_tuning(op_kind_t operation_t, int offset_size, type_t input_t)
+  -> ::cuda::std::optional<sm100_tuning_values>
+{
+  if (operation_t != op_kind_t::argminmax || offset_size != 4)
+  {
+    return {};
+  }
+
+  if (input_t == type_t::int8 || input_t == type_t::uint8)
+  {
+    // ipt_22.tpb_160.ipv_1  2^28: int8 1.417
+    return sm100_tuning_values{22, 160, 2};
+  }
+  if (input_t == type_t::int16 || input_t == type_t::uint16)
+  {
+    // ipt_24.tpb_192.ipv_2  2^28: int16 1.655
+    return sm100_tuning_values{24, 192, 4};
+  }
+  if (input_t == type_t::int32 || input_t == type_t::uint32 || input_t == type_t::float32)
+  {
+    // ipt_16.tpb_256.ipv_2  2^28: int32 1.735, float 1.805
+    return sm100_tuning_values{16, 256, 4};
+  }
+  if (input_t == type_t::int64 || input_t == type_t::uint64)
+  {
+    // ipt_22.tpb_320.ipv_2  2^28: int64 1.929
+    return sm100_tuning_values{22, 320, 4};
+  }
+  if (input_t == type_t::float64)
+  {
+    // ipt_20.tpb_512.ipv_1  2^28: double 1.903
+    return sm100_tuning_values{20, 512, 2};
+  }
+  if (input_t == type_t::int128)
+  {
+    // ipt_11.tpb_192.ipv_2  2^28: int128 2.078
+    return sm100_tuning_values{11, 192, 4};
+  }
+
+  return {};
+}
+
 // tunings from cub/benchmarks/bench/reduce/sum.cu
 _CCCL_HOST_DEVICE_API constexpr auto get_sum_sm107_tuning(type_t accum_t, int offset_size) noexcept
   -> ::cuda::std::optional<sm100_tuning_values>
@@ -525,6 +569,16 @@ struct policy_selector
   {
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
+      if (const auto sm107_tuning = get_sm107_argminmax_tuning(operation_t, offset_size, input_t))
+      {
+        const auto rp = ReducePassPolicy{
+          sm107_tuning->threads,
+          sm107_tuning->items,
+          sm107_tuning->items_per_vec_load,
+          BLOCK_REDUCE_WARP_REDUCTIONS,
+          LOAD_DEFAULT};
+        return {rp, rp};
+      }
       if (operation_t == op_kind_t::arg_extremum)
       {
         if (const auto sm107_tuning = get_argextremum_sm107_tuning(accum_t, offset_size, accum_size, input_t))
