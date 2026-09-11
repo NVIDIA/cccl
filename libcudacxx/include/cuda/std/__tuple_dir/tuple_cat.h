@@ -59,6 +59,11 @@ template <class... _Tuples>
 using __tuple_cat_return_t = decltype(::cuda::std::__tuple_cat_return_type(
   ::cuda::std::__tuple_cat_return_impl(__make_tuple_types_t<remove_cvref_t<_Tuples>>{}...)));
 
+// clang-tidy incorrectly reports "'__t0' used after it was forwarded".
+// Each expansion forwards the tuple only to select get<I>'s cvref-qualified
+// overload for a distinct element.
+// NOLINTBEGIN(bugprone-use-after-move)
+
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tuple, size_t... _Indices>
 [[nodiscard]] _CCCL_API constexpr auto __tuple_cat_impl(__tuple_indices<_Indices...>, _Tuple&& __tuple) noexcept
@@ -119,6 +124,8 @@ _CCCL_REQUIRES(__all_tuple_like<_Tuples...>)
     return ::cuda::std::__tuple_cat_impl(_TupleSize0{}, _TupleSize1{}, ::cuda::std::forward<_Tuples>(__tuples)...);
   }
 }
+
+// NOLINTEND(bugprone-use-after-move)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
