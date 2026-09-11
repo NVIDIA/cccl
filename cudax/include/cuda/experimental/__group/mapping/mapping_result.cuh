@@ -46,19 +46,9 @@ struct __mapping_result
   ::cuda::std::uint32_t __unit_rank_;
   ::cuda::device::lane_mask __lane_mask_;
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result invalid() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid() noexcept
   {
     return {__invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            ::cuda::device::lane_mask::none()};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
-  invalid_with_group_count(::cuda::std::uint32_t __group_count) noexcept
-  {
-    return {__group_count,
             __invalid_count_or_rank,
             __invalid_count_or_rank,
             __invalid_count_or_rank,
@@ -72,17 +62,17 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
   {
+    if constexpr (!_IsExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting group count of thread that is not part of the group is UB");
+    }
+
     if constexpr (_StaticGroupCount != ::cuda::std::dynamic_extent)
     {
       return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
     }
     else
     {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(__group_count_ != __invalid_count_or_rank,
-                     "getting group count by a unit that was not part of the parent group is not allowed");
-      }
       return __group_count_;
     }
   }
@@ -103,16 +93,17 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
   {
+    if constexpr (!_IsExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting unit count of thread that is not part of the group is UB");
+    }
+
     if constexpr (_StaticCount != ::cuda::std::dynamic_extent)
     {
       return static_cast<::cuda::std::uint32_t>(_StaticCount);
     }
     else
     {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
-      }
       return __unit_count_;
     }
   }
