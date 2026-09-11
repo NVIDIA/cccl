@@ -22,6 +22,7 @@
 
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
+#include <c2h/catch2_test_helper.h>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/env.cuh>
@@ -87,6 +88,14 @@ CUB_TEST("c2h checked host allocation rejects invalid alignments", "[c2h][buffer
 {
   REQUIRE_THROWS_AS(c2h::detail::checked_host_allocation_size(1, 3), std::bad_alloc);
   REQUIRE_THROWS_AS(c2h::detail::checked_host_allocate(0, 0, 3), std::bad_alloc);
+}
+
+CUB_TEST("c2h vector matcher rejects ranges with different sizes", "[c2h][comparison]", CUB_SMALL)
+{
+  const c2h::host_vector<std::int32_t> actual;
+  const c2h::host_vector<std::int32_t> expected{42};
+
+  REQUIRE_FALSE(Equals(expected).match(actual));
 }
 
 CUB_TEST("c2h checked memory rejects sizes that overflow padding", "[c2h][buffers][device_resource]", CUB_SMALL)
