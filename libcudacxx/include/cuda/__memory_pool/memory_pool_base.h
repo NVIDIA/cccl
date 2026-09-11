@@ -342,6 +342,54 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
   }
 }
 
+//! @brief RAII scope putting the calling thread in relaxed stream-capture mode.
+//!
+//! Some driver calls are "potentially unsafe" under an active stream capture and invalidate the
+//! capture (or fail with `CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED`) when the calling thread is in
+//! global or thread-local capture mode: memory-pool attribute reads and writes are among them.
+//! Capture mode is a per-thread property, so switching THIS thread to relaxed mode for the
+//! duration of such a call lets it execute immediately (it is not recorded into the graph) and
+//! leaves the capture valid. Nothing that should be captured may be issued inside the scope.
+//!
+//! There is no query for a thread's capture mode; the exchange is the only per-thread primitive,
+//! and it has no observable effect when the thread is not capturing, so the scope needs no
+//! capture check and costs two cheap driver calls.
+struct __relaxed_capture_scope
+{
+  _CCCL_HOST_API __relaxed_capture_scope()
+      : __previous_{::CU_STREAM_CAPTURE_MODE_RELAXED}
+  {
+    ::cuda::__driver::__threadExchangeStreamCaptureMode(__previous_);
+  }
+
+  _CCCL_HOST_API ~__relaxed_capture_scope()
+  {
+    // Restore whatever the thread had. The exchange cannot fail for a mode it returned itself,
+    // and a destructor must not throw.
+    _CCCL_TRY
+    {
+      ::cuda::__driver::__threadExchangeStreamCaptureMode(__previous_);
+    }
+    _CCCL_CATCH_ALL {}
+  }
+
+  __relaxed_capture_scope(const __relaxed_capture_scope&)            = delete;
+  __relaxed_capture_scope& operator=(const __relaxed_capture_scope&) = delete;
+
+private:
+  ::CUstreamCaptureMode __previous_;
+};
+
+//! @brief The driver's default memory pool for @p __location, with the library's retention
+//! policy applied (an unlimited release threshold, so freed memory is kept for reuse).
+//!
+//! The lookup itself is a pure query and is legal at any time. Applying the policy reads and
+//! possibly writes a pool attribute, which the driver refuses while the calling thread is
+//! capturing; that step runs in a relaxed-capture scope so that resolving a default pool
+//! lazily under an active stream capture (the first `device_default_memory_pool` of a process,
+//! a pool ref constructed while capturing) works and leaves the capture valid. The policy write
+//! executes immediately rather than being recorded, which is the intent for a process-global
+//! setting.
 [[nodiscard]] _CCCL_HOST_API inline ::cudaMemPool_t __get_default_memory_pool(
   const ::CUmemLocation __location, [[maybe_unused]] const ::CUmemAllocationType __allocation_type)
 {
@@ -354,9 +402,12 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
                "Before CUDA 13 only device memory pools have a default");
   ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
-  if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
   {
-    ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+    ::cuda::__relaxed_capture_scope __relaxed{};
+    if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
+    {
+      ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+    }
   }
   return __pool;
 }
