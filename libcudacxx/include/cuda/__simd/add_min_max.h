@@ -50,20 +50,29 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 // CUDA [13.2, 13.3] ptxas generates incorrect SM103 code for dependent VIADDMNMX instructions.
 // The workaround consists in adding an identity LOP3 to break the dependency. CTK 13.4 fixes the issue.
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t
+__workaround_sm103_viaddmnmx(::cuda::std::uint32_t __value) noexcept
+{
+#  if _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)
+  NV_IF_TARGET(NV_IS_EXACTLY_SM_103, ({
+                 ::cuda::std::uint32_t __result;
+                 asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__value));
+                 return __result;
+               }))
+#  endif // _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)
+  return __value;
+}
+
 template <::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::simd::__array_u32_t<_Np>
 __workaround_sm103_viaddmnmx(::cuda::std::simd::__array_u32_t<_Np> __values) noexcept
 {
 #  if _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)
-  NV_IF_TARGET(NV_IS_EXACTLY_SM_103, ({
-                 _CCCL_PRAGMA_UNROLL_FULL()
-                 for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
-                 {
-                   ::cuda::std::uint32_t __result;
-                   asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__values[__i]));
-                   __values[__i] = __result;
-                 }
-               }))
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __values[__i] = ::cuda::simd::__workaround_sm103_viaddmnmx(__values[__i]);
+  }
 #  endif // _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)
   return __values;
 }
