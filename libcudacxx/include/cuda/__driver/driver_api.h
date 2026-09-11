@@ -918,9 +918,10 @@ __streamDestroyNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exceptio
   return static_cast<::cudaError_t>(__driver_fn(__stream));
 }
 
-//! @brief Swap the calling thread's stream-capture mode: installs @p __mode and returns the
-//! previous one through the same reference (`cuThreadExchangeStreamCaptureMode`). Per-thread,
-//! independent of any stream; no observable effect when the thread is not capturing.
+//! @brief Swap the calling thread's stream-capture mode (`cuThreadExchangeStreamCaptureMode`).
+//! Per-thread, independent of any stream; no observable effect when the thread is not capturing.
+//! @param[in,out] __mode On entry, the mode to install for the calling thread; on return, the mode
+//! the thread had before the call.
 _CCCL_HOST_API inline void __threadExchangeStreamCaptureMode(::CUstreamCaptureMode& __mode)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuThreadExchangeStreamCaptureMode);

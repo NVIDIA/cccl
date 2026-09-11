@@ -390,6 +390,9 @@ private:
 //! a pool ref constructed while capturing) works and leaves the capture valid. The policy write
 //! executes immediately rather than being recorded, which is the intent for a process-global
 //! setting.
+//! @param[in] __location The memory location whose default pool is requested.
+//! @param[in] __allocation_type The allocation type of the pool (CTK 13.0+; ignored before).
+//! @return The default pool for @p __location, with the retention policy applied.
 [[nodiscard]] _CCCL_HOST_API inline ::cudaMemPool_t __get_default_memory_pool(
   const ::CUmemLocation __location, [[maybe_unused]] const ::CUmemAllocationType __allocation_type)
 {
