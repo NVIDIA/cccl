@@ -306,6 +306,8 @@ void transform(Input input, Output output, int64_t n, TransformOp op, cudaStream
 
 #ifdef TUNE_T
 using element_types = nvbench::type_list<TUNE_T>;
+#elif _CCCL_STD_VER >= 2023 // C++23 std::float32_t is not supported on device
+using element_types = nvbench::type_list<float, double>;
 #else
 using element_types = nvbench::type_list<float, BFloat16>;
 #endif
