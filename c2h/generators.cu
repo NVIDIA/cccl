@@ -19,9 +19,14 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/detail/checked_memory.cuh>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
@@ -54,30 +59,46 @@ struct i_to_rnd_t
 };
 #endif // !C2H_HAS_CURAND
 
-class generator_t
+class generator_state_t
 {
 public:
-  generator_t()
+  generator_state_t(int device, ::cudaStream_t stream)
+      : m_device(device)
+      , m_stream(stream)
   {
 #if C2H_HAS_CURAND
     curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
 #endif
   }
 
-  ~generator_t()
+  ~generator_state_t()
   {
 #if C2H_HAS_CURAND
     curandDestroyGenerator(m_gen);
 #endif
   }
 
-  float* prepare_random_generator(seed_t seed, std::size_t num_items)
+  [[nodiscard]] bool matches(int device, ::cudaStream_t stream) const noexcept
   {
-    return prepare_random_generator(::cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
+    return m_device == device && m_stream == stream;
+  }
+
+  [[nodiscard]] int device() const noexcept
+  {
+    return m_device;
   }
 
   float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
   {
+    const std::lock_guard<std::mutex> lock{m_state_mutex};
+
+    // A caller may enqueue consumption of the returned pointer after this function returns. Finish any work already
+    // submitted to this stream before mutating its generator or distribution storage.
+    if (m_has_generated)
+    {
+      stream.sync();
+    }
+
     resize_distribution(num_items);
 
 #if C2H_HAS_CURAND
@@ -87,6 +108,7 @@ public:
 #endif // C2H_HAS_CURAND
 
     generate(stream);
+    m_has_generated = true;
 
     return thrust::raw_pointer_cast(m_distribution.data());
   }
@@ -120,6 +142,60 @@ private:
 #endif
     m_gen;
   c2h::device_vector<float> m_distribution;
+  int m_device;
+  ::cudaStream_t m_stream;
+  std::mutex m_state_mutex;
+  bool m_has_generated = false;
+};
+
+class generator_t
+{
+public:
+  // An explicit body prevents nvcc from inferring a host/device constructor for this host-only state.
+  generator_t() {} // NOLINT(modernize-use-equals-default)
+
+  ~generator_t()
+  {
+    // Generator states own allocations on their associated devices. Destroy each state while that device is current.
+    for (auto& state : m_states)
+    {
+      const scoped_current_device device_scope{state->device()};
+      state.reset();
+    }
+  }
+
+  float* prepare_random_generator(seed_t seed, std::size_t num_items)
+  {
+    return prepare_random_generator(::cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
+  }
+
+  float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+  {
+    const int device = stream.device().get();
+    const scoped_current_device device_scope{device};
+    return state_for(device, stream.get()).prepare_random_generator(stream, seed, num_items);
+  }
+
+private:
+  generator_state_t& state_for(int device, ::cudaStream_t stream)
+  {
+    const std::lock_guard<std::mutex> lock{m_states_mutex};
+    for (const auto& state : m_states)
+    {
+      if (state->matches(device, stream))
+      {
+        return *state;
+      }
+    }
+
+    auto state   = std::make_unique<generator_state_t>(device, stream);
+    auto& result = *state;
+    m_states.push_back(std::move(state));
+    return result;
+  }
+
+  std::vector<std::unique_ptr<generator_state_t>> m_states;
+  std::mutex m_states_mutex;
 };
 
 // global generator state

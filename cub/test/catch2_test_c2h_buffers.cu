@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
+#include <cuda/std/span>
 #include <cuda/stream>
 
 #include <algorithm>
@@ -18,6 +20,7 @@
 #include <c2h/buffer_generators.cuh>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/detail/env.cuh>
+#include <c2h/detail/generators.cuh>
 
 namespace
 {
@@ -136,4 +139,41 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
   REQUIRE(std::all_of(h_items.begin(), h_items.end(), [](std::int32_t value) {
     return value == host_expected;
   }));
+}
+
+CUB_TEST("c2h random generator isolates in-flight streams", "[c2h][buffers][generators][streams]", CUB_SMALL)
+{
+  int device_id{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
+
+  const auto device = cuda::device_ref{device_id};
+  const cuda::stream first_stream{device};
+  const cuda::stream second_stream{device};
+
+  constexpr std::size_t num_items = 256;
+  const c2h::seed_t first_seed{1234};
+  const c2h::seed_t second_seed{5678};
+
+  auto d_expected = c2h::make_device_buffer<float>(first_stream, device, num_items, cuda::no_init);
+  auto d_actual   = c2h::make_device_buffer<float>(first_stream, device, num_items, cuda::no_init);
+
+  const auto* first_data = c2h::detail::prepare_random_data(first_stream, first_seed, num_items);
+  cuda::copy_bytes(first_stream, cuda::std::span<const float>{first_data, num_items}, d_expected);
+
+  // Capture the first distribution before allowing the second stream to generate its distribution.
+  const auto first_distribution_captured = first_stream.record_event();
+  second_stream.wait(first_distribution_captured);
+
+  c2h::detail::prepare_random_data(second_stream, second_seed, num_items);
+  const auto second_generation_complete = second_stream.record_event();
+  first_stream.wait(second_generation_complete);
+
+  // Delay consumption of the first distribution until the second stream has generated its distribution.
+  cuda::copy_bytes(first_stream, cuda::std::span<const float>{first_data, num_items}, d_actual);
+
+  const auto h_expected = c2h::make_host_buffer<float>(first_stream, device, d_expected);
+  const auto h_actual   = c2h::make_host_buffer<float>(first_stream, device, d_actual);
+  first_stream.sync();
+
+  REQUIRE(std::equal(h_actual.begin(), h_actual.end(), h_expected.begin(), h_expected.end()));
 }
