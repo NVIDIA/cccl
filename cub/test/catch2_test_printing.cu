@@ -34,8 +34,15 @@ CUB_TEST_CASE("Test utils can print __uint128", "[test][utils]", CUB_SMALL)
 
 CUB_TEST_CASE("Catch2 can stringify 128-bit integers", "[test][utils]", CUB_SMALL)
 {
-  REQUIRE(Catch::StringMaker<__int128_t>::convert(__int128_t{-42}) == "-42");
-  REQUIRE(Catch::StringMaker<__uint128_t>::convert(__uint128_t{1} << 120) == "1329227995784915872903807060280344576");
+  const __int128_t signed_value    = -42;
+  const __int128_t signed_expected = -42;
+  REQUIRE(signed_value == signed_expected);
+  REQUIRE(Catch::StringMaker<__int128_t>::convert(signed_value) == "-42");
+
+  const __uint128_t unsigned_value    = __uint128_t{1} << 120;
+  const __uint128_t unsigned_expected = __uint128_t{1} << 120;
+  REQUIRE(unsigned_value == unsigned_expected);
+  REQUIRE(Catch::StringMaker<__uint128_t>::convert(unsigned_value) == "1329227995784915872903807060280344576");
 }
 #endif
 
