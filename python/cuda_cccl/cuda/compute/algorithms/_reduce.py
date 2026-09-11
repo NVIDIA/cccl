@@ -14,6 +14,7 @@ from .. import _cccl_interop as cccl
 from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import (
     get_value_type,
+    make_pointer_object,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
@@ -67,6 +68,14 @@ class _Reduce(Serializable):
         # that -- so h_init state is still re-marshaled every call.
         "_last_loaded_build_result",
         "_last_stateless_op",
+        # Perf: is_kind_pointer() reads fixed metadata (iter_data.type) baked
+        # into the iterator descriptor when it was built -- it can never
+        # change for a given d_in_cccl/d_out_cccl object, so re-checking it
+        # on every execute() call (inside set_cccl_iterator_state) is
+        # redundant. Cached once here; execute() uses it to skip straight to
+        # the pointer-update fast path instead of re-deriving the branch.
+        "_d_in_is_ptr",
+        "_d_out_is_ptr",
     ]
 
     __serialization_schema__ = (
@@ -99,6 +108,8 @@ class _Reduce(Serializable):
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        self._d_in_is_ptr = self.d_in_cccl.is_kind_pointer()
+        self._d_out_is_ptr = self.d_out_cccl.is_kind_pointer()
 
         self.init_kind = get_init_kind(h_init)
 
@@ -162,6 +173,11 @@ class _Reduce(Serializable):
         # _bind_device_reduce_fn/__call__ reads them.
         self._last_loaded_build_result = None
         self._last_stateless_op = None
+        # d_in_cccl/d_out_cccl ARE part of the serialization schema and are
+        # already restored by the time _after_deserialize runs (schema
+        # members are set in order before this hook fires) -- safe to read.
+        self._d_in_is_ptr = self.d_in_cccl.is_kind_pointer()
+        self._d_out_is_ptr = self.d_out_cccl.is_kind_pointer()
 
     def _bind_device_reduce_fn(self) -> None:
         # Derived from the loaded build result (not serialized); bound at __call__
@@ -239,8 +255,20 @@ class _Reduce(Serializable):
         )
         self._bind_device_reduce_fn()
 
-        set_cccl_iterator_state(self.d_in_cccl, d_in)
-        set_cccl_iterator_state(self.d_out_cccl, d_out)
+        # Perf: skip set_cccl_iterator_state's is_kind_pointer() re-check --
+        # _d_in_is_ptr/_d_out_is_ptr were already determined once at
+        # construction (see __init__/_after_deserialize) and cannot change
+        # for these iterator objects. Falls back to the general helper for
+        # the (rarer) non-pointer-kind case (a custom Iterator/Transform/Zip
+        # input), which still needs its own state-reading logic.
+        if self._d_in_is_ptr:
+            self.d_in_cccl.state = make_pointer_object(get_data_pointer(d_in), d_in)
+        else:
+            set_cccl_iterator_state(self.d_in_cccl, d_in)
+        if self._d_out_is_ptr:
+            self.d_out_cccl.state = make_pointer_object(get_data_pointer(d_out), d_out)
+        else:
+            set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         stream_handle = validate_and_get_stream(stream)
 
