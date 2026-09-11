@@ -99,6 +99,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -129,6 +130,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:

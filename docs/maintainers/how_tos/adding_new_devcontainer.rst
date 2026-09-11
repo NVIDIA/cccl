@@ -16,8 +16,8 @@ edit.
 Check that the base image exists
 --------------------------------
 
-Every CCCL devcontainer is built on a published ``rapidsai/devcontainers`` image. Image tags
-follow this pattern::
+Every local CCCL devcontainer and Linux CI job uses a published
+``rapidsai/devcontainers`` image. Image tags follow this pattern::
 
     rapidsai/devcontainers:<devcontainer_version>-cpp-<compiler><version>-cuda<ctk>[ext]
 
@@ -26,8 +26,13 @@ own CUDA toolkit and omits it.
 
 The ``<devcontainer_version>`` value is the ``devcontainer_version:`` field in ``ci/matrix.yaml``.
 
-The images are maintained in the https://github.com/rapidsai/devcontainers/ repo, in the top-level
-matrix file. If new images are required for the coverage, submit a PR against `main`.
+Windows CI uses the corresponding image from CCCL's internal GHCR package::
+
+    ghcr.io/nvidia/cccl-windows-containers:<devcontainer_version>-cuda<ctk>-cl<version>
+
+The image sources are maintained in the https://github.com/rapidsai/devcontainers/ repo, in the
+top-level matrix file. If new images are required for the coverage, submit a PR against ``main``
+and publish the Windows variants to the internal package before updating CCCL's matrix.
 
 Add the combination to ci/matrix.yaml
 -------------------------------------
