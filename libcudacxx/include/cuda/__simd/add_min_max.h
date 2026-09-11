@@ -48,6 +48,26 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #if _CCCL_HAS_SIMD_ADD_MIN_MAX()
 
+// CUDA [13.2, 13.3] ptxas generates incorrect SM103 code for dependent VIADDMNMX instructions.
+// The workaround consists in adding an identity LOP3 to break the dependency. CTK 13.4 fixes the issue.
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::simd::__array_u32_t<_Np>
+__workaround_sm103_viaddmnmx(::cuda::std::simd::__array_u32_t<_Np> __values) noexcept
+{
+#  if _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)
+  NV_IF_TARGET(NV_IS_EXACTLY_SM_103, ({
+                 _CCCL_PRAGMA_UNROLL_FULL()
+                 for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+                 {
+                   ::cuda::std::uint32_t __result;
+                   asm volatile("lop3.b32 %0, %1, 0, 0, 0xF0;" : "=r"(__result) : "r"(__values[__i]));
+                   __values[__i] = __result;
+                 }
+               }))
+#  endif // _CCCL_CTK_AT_LEAST(13, 2) && _CCCL_CTK_BELOW(13, 4)
+  return __values;
+}
+
 template <typename _Tp>
 struct __add_max_operation
 {
@@ -55,10 +75,11 @@ struct __add_max_operation
   [[nodiscard]] _CCCL_DEVICE_API _Storage
   _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
-    const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);
-    const auto __b_u      = ::cuda::std::simd::__to_unsigned_storage(__b);
-    const auto __c_u      = ::cuda::std::simd::__to_unsigned_storage(__c);
-    const auto __result_u = ::cuda::simd::__viaddmax_16bit_x2<_Tp>(__a_u, __b_u, __c_u);
+    const auto __a_u          = ::cuda::std::simd::__to_unsigned_storage(__a);
+    const auto __b_u          = ::cuda::std::simd::__to_unsigned_storage(__b);
+    const auto __c_u          = ::cuda::std::simd::__to_unsigned_storage(__c);
+    const auto __result_tmp_u = ::cuda::simd::__viaddmax_16bit_x2<_Tp>(__a_u, __b_u, __c_u);
+    const auto __result_u     = ::cuda::simd::__workaround_sm103_viaddmnmx(__result_tmp_u);
     return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
   }
 };
@@ -70,10 +91,11 @@ struct __add_min_operation
   [[nodiscard]] _CCCL_DEVICE_API _Storage
   _CCCL_STATIC_CALL_OPERATOR(const _Storage& __a, const _Storage& __b, const _Storage& __c) noexcept
   {
-    const auto __a_u      = ::cuda::std::simd::__to_unsigned_storage(__a);
-    const auto __b_u      = ::cuda::std::simd::__to_unsigned_storage(__b);
-    const auto __c_u      = ::cuda::std::simd::__to_unsigned_storage(__c);
-    const auto __result_u = ::cuda::simd::__viaddmin_16bit_x2<_Tp>(__a_u, __b_u, __c_u);
+    const auto __a_u          = ::cuda::std::simd::__to_unsigned_storage(__a);
+    const auto __b_u          = ::cuda::std::simd::__to_unsigned_storage(__b);
+    const auto __c_u          = ::cuda::std::simd::__to_unsigned_storage(__c);
+    const auto __result_tmp_u = ::cuda::simd::__viaddmin_16bit_x2<_Tp>(__a_u, __b_u, __c_u);
+    const auto __result_u     = ::cuda::simd::__workaround_sm103_viaddmnmx(__result_tmp_u);
     return ::cuda::std::simd::__copy_from_unsigned_storage<_Storage>(__result_u);
   }
 };
