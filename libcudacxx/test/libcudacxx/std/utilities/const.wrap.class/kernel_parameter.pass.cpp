@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// nvrtc is unsupported.
+// This test requires kernel launch from host.
 // UNSUPPORTED: nvrtc
 
 // constant_wrapper

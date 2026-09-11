@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Find a way to make this work for nvrtc.
-// nvrtc doesn't allow accessing the static constexpr const auto& value member.
-// UNSUPPORTED: nvrtc
+// todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
+//   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
+//   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
 
 // todo(dabayer): It seems that msvc has problems picking up the consteval invoke path. Investigate.
 
@@ -101,14 +101,14 @@ struct S
 // Remarks: The exception specification is equivalent to noexcept(call-expr).
 
 // clang-format off
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 constexpr auto get_42_lambda = []() { return 42; };
 static_assert(cuda::std::is_invocable_v<cuda::std::__constant_wrapper<get_42_lambda>>);
 static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<get_42_lambda>, int>);
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<5>>);
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 static_assert(!cuda::std::is_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int>);
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, int, int>);
 
@@ -121,7 +121,7 @@ static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cu
 #if !_CCCL_COMPILER(MSVC)
 static_assert(cuda::std::is_nothrow_invocable_v<cuda::std::__constant_wrapper<cuda::std::plus<>{}>, cuda::std::__constant_wrapper<42>, cuda::std::__constant_wrapper<42>>);
 #endif // !_CCCL_COMPILER(MSVC)
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 // gcc < 13 fails this test with error:
 //   'nothrow_call'/'throwing_call' is not a valid template argument of type 'int (*)(int) noexcept' because it is not
@@ -149,7 +149,7 @@ struct MustBeInt
 struct Poison
 {
   template <class T>
-  constexpr auto operator()(T) const noexcept -> MustBeInt<T>
+  TEST_FUNC constexpr auto operator()(T) const noexcept -> MustBeInt<T>
   {
     return {};
   }
@@ -163,7 +163,7 @@ struct Poison
 
 TEST_FUNC constexpr bool test()
 {
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // with runtime param
@@ -241,7 +241,7 @@ TEST_FUNC constexpr bool test()
     assert(result.get() == 6);
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
 #if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   {
@@ -304,7 +304,7 @@ TEST_FUNC constexpr bool test()
 #  endif // !_CCCL_COMPILER(MSVC)
   }
 
-#  if TEST_STD_VER >= 2020
+#  if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
   {
     // nvcc < 13.2 fails to compile this test
 #    if !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
@@ -317,10 +317,10 @@ TEST_FUNC constexpr bool test()
     static_assert(result2 == 1);
 #    endif // !_CCCL_CUDA_COMPILER(NVCC, <, 13, 2)
   }
-#  endif // TEST_STD_VER >= 2020
+#  endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 #endif // !_CCCL_TILE_COMPILATION()
 
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   {
     // return non-structural type
@@ -377,7 +377,7 @@ TEST_FUNC constexpr bool test()
 #  endif // !_CCCL_COMPILER(MSVC)
   }
 
-#endif // TEST_STD_VER >= 2020
+#endif // TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 
   return true;
 }
