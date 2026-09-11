@@ -981,8 +981,8 @@ public:
    * locality domain of `dev_id` (a single whole-device place on devices without
    * locality-domain support). Defined in `exec/locality_domain.cuh`.
    *
-   * @param dev_id The CUDA device ordinal
-   * @param split SM split method applied to every place of the grid; see
+   * @param[in] dev_id The CUDA device ordinal
+   * @param[in] split SM split method applied to every place of the grid; see
    *        `locality_domain_sm_split`
    * @return exec_place grid with one place per locality domain
    */
