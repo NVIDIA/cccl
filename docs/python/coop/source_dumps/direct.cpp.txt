@@ -1,0 +1,36 @@
+// Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+// NVRTC capture excerpt: generated identifiers shortened and whitespace formatted.
+// The archive contains the original translation unit and the identifier mapping.
+// excerpt-begin
+#include <cuda/std/cstdint>
+
+#include <cub/block/block_load.cuh>
+
+using block_load_t =
+    cub::BlockLoad<::cuda::std::int32_t, 128, 2,
+                   ::cub::BLOCK_LOAD_DIRECT, 1, 1>;
+
+extern "C" __device__ void
+load_impl(::cuda::std::int32_t *param_0,
+          ::cuda::std::int32_t *param_1) {
+  block_load_t().Load(
+      param_0,
+      *reinterpret_cast<::cuda::std::int32_t (*)[2]>(
+          param_1));
+}
+
+extern "C" __device__ int
+load_abi(void *__ret, void *abi_param_0,
+         void *abi_param_1) {
+  ::cuda::std::int32_t *abi_cast_0 =
+      reinterpret_cast<::cuda::std::int32_t *>(
+          abi_param_0);
+  ::cuda::std::int32_t *abi_cast_1 =
+      reinterpret_cast<::cuda::std::int32_t *>(
+          abi_param_1);
+  load_impl(abi_cast_0, abi_cast_1);
+  return 0;
+}

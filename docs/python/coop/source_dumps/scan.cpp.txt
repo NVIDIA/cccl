@@ -1,0 +1,53 @@
+// Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+//
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+// NVRTC capture excerpt: generated identifiers shortened and whitespace formatted.
+// The archive contains the original translation unit and the identifier mapping.
+// excerpt-begin
+#include <cuda/std/cstdint>
+
+#include <cub/block/block_scan.cuh>
+
+using block_scan_t =
+    cub::BlockScan<::cuda::std::int32_t, 128,
+                   ::cub::BLOCK_SCAN_RAKING, 1, 1>;
+
+using scan_storage_t =
+    typename block_scan_t::TempStorage;
+
+__device__ constexpr unsigned scan_storage_bytes =
+    sizeof(scan_storage_t);
+
+__device__ constexpr unsigned scan_storage_alignment =
+    alignof(scan_storage_t);
+
+extern "C" __device__ ::cuda::std::int32_t
+maximum_device(::cuda::std::int32_t,
+               ::cuda::std::int32_t);
+
+extern "C" __device__ void
+scan_impl(scan_storage_t *temp_storage,
+          ::cuda::std::int32_t &param_0,
+          ::cuda::std::int32_t &param_1) {
+  auto param_2 =
+      [](const ::cuda::std::int32_t &wp_0,
+         const ::cuda::std::int32_t &wp_1) {
+        return maximum_device(wp_0, wp_1);
+      };
+  block_scan_t(*temp_storage)
+      .InclusiveScan(param_0, param_1, param_2);
+}
+
+extern "C" __device__ int
+scan_abi(void *__ret, void *abi_param_0,
+         ::cuda::std::int32_t abi_param_1) {
+  scan_storage_t *abi_cast_0 =
+      reinterpret_cast<scan_storage_t *>(abi_param_0);
+  ::cuda::std::int32_t abi_ref_1 = abi_param_1;
+  ::cuda::std::int32_t abi_out;
+  scan_impl(abi_cast_0, abi_ref_1, abi_out);
+  *reinterpret_cast<::cuda::std::int32_t *>(__ret) =
+      abi_out;
+  return 0;
+}
