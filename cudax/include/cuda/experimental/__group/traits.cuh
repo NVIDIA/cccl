@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/hierarchy>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
@@ -50,6 +51,10 @@ template <class _Level>
 inline constexpr bool __unit_same_as_or_below_v<_Level, _Level> = true;
 template <>
 inline constexpr bool __unit_same_as_or_below_v<thread_level, warp_level> = true;
+
+template <class _HierarchyLike>
+using __hierarchy_type_of =
+  ::cuda::std::remove_cvref_t<decltype(::cuda::__unpack_hierarchy_if_needed(::cuda::std::declval<_HierarchyLike>()))>;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED
