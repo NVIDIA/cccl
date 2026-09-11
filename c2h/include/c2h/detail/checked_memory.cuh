@@ -14,9 +14,7 @@
 
 #include <c2h/detail/env.cuh>
 
-namespace c2h
-{
-namespace detail
+namespace c2h::detail
 {
 struct memory_info
 {
@@ -119,5 +117,4 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 
   return cudaMalloc(ptr, bytes);
 }
-} // namespace detail
-} // namespace c2h
+} // namespace c2h::detail
