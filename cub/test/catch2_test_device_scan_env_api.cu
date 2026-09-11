@@ -33,7 +33,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirem
     std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{0, 0, 1, 3};
+  const thrust::device_vector<int> expected{0, 0, 1, 3};
   // example-end exclusive-scan-env-determinism
 
   REQUIRE(error == cudaSuccess);
@@ -48,8 +48,8 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed deter
   auto output = thrust::device_vector<float>(4);
   auto init   = 1.0f;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto req_env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   auto env     = cuda::std::execution::env{stream_ref, req_env};
 
@@ -59,7 +59,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed deter
     std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<float> expected{1.0f, 1.0f, 2.0f, 4.0f};
+  const thrust::device_vector<float> expected{1.0f, 1.0f, 2.0f, 4.0f};
   // example-end exclusive-scan-env-stream
   stream.sync();
 
@@ -81,7 +81,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveSum accepts run_to_run determinism requireme
     std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{0, 0, 1, 3};
+  const thrust::device_vector<int> expected{0, 0, 1, 3};
   // example-end exclusive-sum-env-determinism
 
   REQUIRE(error == cudaSuccess);
@@ -94,8 +94,8 @@ CUB_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = thrust::device_vector<float>(4);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto req_env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   auto env     = cuda::std::execution::env{stream_ref, req_env};
 
@@ -105,7 +105,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
     std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
+  const thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
   // example-end exclusive-sum-env-stream
   stream.sync();
 
@@ -127,7 +127,7 @@ CUB_TEST("cub::DeviceScan::InclusiveSum accepts run_to_run determinism requireme
     std::cerr << "cub::DeviceScan::InclusiveSum failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 3, 6, 10};
+  const thrust::device_vector<int> expected{1, 3, 6, 10};
   // example-end inclusive-sum-env-determinism
 
   REQUIRE(error == cudaSuccess);
@@ -140,8 +140,8 @@ CUB_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determ
   auto input  = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
   auto output = thrust::device_vector<float>(4);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
   auto req_env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   auto env     = cuda::std::execution::env{stream_ref, req_env};
 
@@ -151,7 +151,7 @@ CUB_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determ
     std::cerr << "cub::DeviceScan::InclusiveSum failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
+  const thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
   // example-end inclusive-sum-env-stream
   stream.sync();
 
@@ -177,7 +177,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", 
     std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{5, 13, 19, 26, 31, 34, 34};
+  const thrust::device_vector<int> expected{5, 13, 19, 26, 31, 34, 34};
   // example-end exclusive-scan-future-env
 
   REQUIRE(error == cudaSuccess);
@@ -193,8 +193,8 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environ
   auto init_value_vec = thrust::device_vector<int>{10};
   auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceScan::ExclusiveScan(
     input.begin(), output.begin(), cuda::std::plus{}, future_init, input.size(), stream_ref);
@@ -203,7 +203,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environ
     std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{10, 11, 13, 16};
+  const thrust::device_vector<int> expected{10, 11, 13, 16};
   // example-end exclusive-scan-future-env-stream
   stream.sync();
 
@@ -224,7 +224,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]", CU
     std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 3, 6, 10};
+  const thrust::device_vector<int> expected{1, 3, 6, 10};
   // example-end inclusive-scan-env
 
   REQUIRE(error == cudaSuccess);
@@ -238,8 +238,8 @@ CUB_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   auto input  = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
   auto output = thrust::device_vector<float>(4);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, input.size(), stream_ref);
   if (error != cudaSuccess)
@@ -247,7 +247,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
     std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
+  const thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
   // example-end inclusive-scan-env-stream
   stream.sync();
 
@@ -269,7 +269,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
     std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{11, 13, 16, 20};
+  const thrust::device_vector<int> expected{11, 13, 16, 20};
   // example-end inclusive-scan-init-env
 
   REQUIRE(error == cudaSuccess);
@@ -294,7 +294,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit with args::deferred accepts environ
     std::cerr << "cub::DeviceScan::InclusiveScanInit (FutureValue) failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{11, 13, 16, 20};
+  const thrust::device_vector<int> expected{11, 13, 16, 20};
   // example-end inclusive-scan-future-init-env
 
   REQUIRE(error == cudaSuccess);
@@ -309,8 +309,8 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   auto output = thrust::device_vector<float>(4);
   auto init   = 10.0f;
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size(), stream_ref);
   if (error != cudaSuccess)
@@ -318,7 +318,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
     std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<float> expected{11.0f, 13.0f, 16.0f, 20.0f};
+  const thrust::device_vector<float> expected{11.0f, 13.0f, 16.0f, 20.0f};
   // example-end inclusive-scan-init-env-stream
   stream.sync();
 
@@ -331,8 +331,8 @@ CUB_TEST("cub::DeviceScan::ExclusiveSum in-place accepts stream", "[scan][env]",
   // example-begin exclusive-sum-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceScan::ExclusiveSum(data.begin(), static_cast<int>(data.size()), stream_ref);
   if (error != cudaSuccess)
@@ -340,7 +340,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveSum in-place accepts stream", "[scan][env]",
     std::cerr << "cub::DeviceScan::ExclusiveSum in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{0, 1, 3, 6};
+  const thrust::device_vector<int> expected{0, 1, 3, 6};
   // example-end exclusive-sum-inplace-env
   stream.sync();
 
@@ -353,8 +353,8 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan in-place accepts stream", "[scan][env]"
   // example-begin exclusive-scan-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error =
     cub::DeviceScan::ExclusiveScan(data.begin(), cuda::std::plus{}, 42, static_cast<int>(data.size()), stream_ref);
@@ -363,7 +363,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan in-place accepts stream", "[scan][env]"
     std::cerr << "cub::DeviceScan::ExclusiveScan in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{42, 43, 45, 48};
+  const thrust::device_vector<int> expected{42, 43, 45, 48};
   // example-end exclusive-scan-inplace-env
   stream.sync();
 
@@ -379,8 +379,8 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue in-place accepts strea
   auto init_value_vec = thrust::device_vector<int>{10};
   auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceScan::ExclusiveScan(
     data.begin(), cuda::std::plus{}, future_init, static_cast<int>(data.size()), stream_ref);
@@ -389,7 +389,7 @@ CUB_TEST("cub::DeviceScan::ExclusiveScan with FutureValue in-place accepts strea
     std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{10, 11, 13, 16};
+  const thrust::device_vector<int> expected{10, 11, 13, 16};
   // example-end exclusive-scan-future-inplace-env
   stream.sync();
 
@@ -402,8 +402,8 @@ CUB_TEST("cub::DeviceScan::InclusiveSum in-place accepts stream", "[scan][env]",
   // example-begin inclusive-sum-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceScan::InclusiveSum(data.begin(), static_cast<int>(data.size()), stream_ref);
   if (error != cudaSuccess)
@@ -411,7 +411,7 @@ CUB_TEST("cub::DeviceScan::InclusiveSum in-place accepts stream", "[scan][env]",
     std::cerr << "cub::DeviceScan::InclusiveSum in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 3, 6, 10};
+  const thrust::device_vector<int> expected{1, 3, 6, 10};
   // example-end inclusive-sum-inplace-env
   stream.sync();
 
@@ -424,8 +424,8 @@ CUB_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]"
   // example-begin inclusive-scan-inplace-env
   auto data = thrust::device_vector<int>{1, 2, 3, 4};
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error =
     cub::DeviceScan::InclusiveScan(data.begin(), cuda::std::plus{}, static_cast<int>(data.size()), stream_ref);
@@ -434,7 +434,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]"
     std::cerr << "cub::DeviceScan::InclusiveScan in-place failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{1, 3, 6, 10};
+  const thrust::device_vector<int> expected{1, 3, 6, 10};
   // example-end inclusive-scan-inplace-env
   stream.sync();
 

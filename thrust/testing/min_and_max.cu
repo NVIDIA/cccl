@@ -19,8 +19,8 @@ struct TestMin
     ASSERT_EQUAL(three, ::cuda::std::min(three, two, ::cuda::std::greater<T>()));
 
     using KV = key_value<T, T>;
-    KV two_and_two(two, two);
-    KV two_and_three(two, three);
+    const KV two_and_two(two, two);
+    const KV two_and_three(two, three);
 
     // the first element breaks ties
     ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::min(two_and_two, two_and_three));
@@ -52,8 +52,8 @@ struct TestMax
     ASSERT_EQUAL(two, ::cuda::std::max(three, two, ::cuda::std::greater<T>()));
 
     using KV = key_value<T, T>;
-    KV two_and_two(two, two);
-    KV two_and_three(two, three);
+    const KV two_and_two(two, two);
+    const KV two_and_three(two, three);
 
     // the first element breaks ties
     ASSERT_EQUAL_QUIET(two_and_two, ::cuda::std::max(two_and_two, two_and_three));

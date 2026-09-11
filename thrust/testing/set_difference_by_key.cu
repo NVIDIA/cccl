@@ -30,7 +30,7 @@ void TestSetDifferenceByKeyDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_difference_by_key(
     sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
@@ -93,7 +93,7 @@ void TestSetDifferenceByKeySimple()
 
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),
@@ -180,7 +180,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKey);
 template <typename T>
 void TestSetDifferenceByKeyEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h_a_key = temp;
   thrust::sort(h_a_key.begin(), h_a_key.end());

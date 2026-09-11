@@ -70,8 +70,14 @@ fi
 # test-sysctkNN), as in test_cuda_compute_python.sh.
 CUDA_CCCL_WHEEL_PATH="$(find_one_wheel 'cuda_cccl-*.whl')"
 CUDA_STF_WHEEL_PATH="$(find_one_wheel 'cuda_stf-*.whl')"
+# cuda_cccl takes its test extra too: STF itself only needs numba-cuda (via
+# cuda_stf's own extras), but the interop tests hand a plain Python callable to
+# cuda.compute, and JIT-compiling that is cuda.compute's job -- which now means
+# numba-cuda-mlir. Installing cuda_cccl bare leaves cuda.compute with no JIT
+# backend at all, so those tests die with "numba-cuda is required to JIT
+# compile Python callables". Mirrors test_cuda_compute_python.sh.
 python -m pip install \
-    "${CUDA_CCCL_WHEEL_PATH}" \
+    "${CUDA_CCCL_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]" \
     "${CUDA_STF_WHEEL_PATH}[test-${ctk_flavor}${cuda_major_version}]"
 
 # Run STF tests and examples. Fixed -n 6 (not auto): bound the number of

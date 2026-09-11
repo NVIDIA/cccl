@@ -39,7 +39,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
 
     for (++first; first != last; ++first)
     {
-      T temp = *first;
+      const T temp = *first;
 
       if (!binary_pred(prev, temp))
       {
@@ -83,7 +83,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
 
     for (++first; first != last; ++first)
     {
-      T temp = *first;
+      const T temp = *first;
 
       if (!binary_pred(prev, temp))
       {

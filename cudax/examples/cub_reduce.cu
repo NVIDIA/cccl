@@ -25,7 +25,7 @@ int main()
   constexpr int num_items = 50000;
 
   // A CUDA stream on which to execute the reduction
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
   cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
   // Allocate input and output, but do not zero initialize output (`cuda::no_init`)
@@ -33,7 +33,7 @@ int main()
   auto d_out = cuda::make_buffer<float>(stream, mr, 1, cuda::no_init);
 
   // An environment we use to pass all necessary information to CUB
-  cudax::env_t<cuda::mr::device_accessible> env{mr, stream};
+  const cudax::env_t<cuda::mr::device_accessible> env{mr, stream};
   auto error = cub::DeviceReduce::Reduce(d_in.begin(), d_out.begin(), num_items, cuda::std::plus{}, 0, env);
   if (error != cudaSuccess)
   {

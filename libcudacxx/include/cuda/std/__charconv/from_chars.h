@@ -114,8 +114,8 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base = 1
 
   if constexpr (is_signed_v<_Tp>)
   {
-    bool __neg = (__first < __last && *__first == '-');
-    __ret      = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
+    const bool __neg = (__first < __last && *__first == '-');
+    __ret            = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
     if (__ret.ec == errc{})
     {
       const auto __max = ::cuda::uabs((__neg) ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());

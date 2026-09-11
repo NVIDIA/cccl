@@ -26,8 +26,8 @@ public:
 
   __host__ __device__ ScaledInteger rescale(int scale) const
   {
-    int shift  = scale - scale_;
-    int result = shift < 0 ? value_ << (-shift) : value_ >> shift;
+    const int shift  = scale - scale_;
+    const int result = shift < 0 ? value_ << (-shift) : value_ >> shift;
     return ScaledInteger{result, scale};
   }
 
@@ -94,7 +94,7 @@ int main()
 
   thrust::host_vector<int> A_h(A);
   thrust::host_vector<int> B_h(B);
-  thrust::host_vector<int> C_h(C);
+  const thrust::host_vector<int> C_h(C);
 
   std::cout << std::hex;
 

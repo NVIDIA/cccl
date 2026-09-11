@@ -210,9 +210,9 @@ public:
 
   _CCCL_HOST_DEVICE value_type operator++(int)
   {
-    value_type tmp    = *this;
-    value_type result = tmp++;
-    *this             = ::cuda::std::move(tmp);
+    value_type tmp          = *this;
+    const value_type result = tmp++;
+    *this                   = ::cuda::std::move(tmp);
     return result;
   }
 

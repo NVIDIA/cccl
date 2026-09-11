@@ -197,8 +197,8 @@ CUB_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_uni
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  c2h::device_vector<type> reference_keys     = keys_in;
-  c2h::device_vector<val_type> reference_vals = vals_in;
+  const c2h::device_vector<type> reference_keys     = keys_in;
+  const c2h::device_vector<val_type> reference_vals = vals_in;
 
   select_unique_by_key(
     keys_in.begin(),
@@ -422,8 +422,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit 
   using index_type = std::int64_t;
 
   const std::size_t num_items = 4400000000ULL;
-  c2h::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
-  c2h::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
+  const c2h::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
+  const c2h::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
 
   auto keys_in   = cuda::transform_iterator(cuda::counting_iterator(0ULL), index_to_value_t<type>{});
   auto values_in = cuda::counting_iterator(0ULL);
