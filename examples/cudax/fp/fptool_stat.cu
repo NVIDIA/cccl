@@ -85,10 +85,13 @@
 #include <cuda/fptool>
 
 // The CCCL runtime, for the device half of the example: finding a device, a
-// stream to submit on, buffers for the results, and the kernel launches.
+// stream to submit on, buffers for the results, the kernel launches, and the
+// copy that brings the results back.
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/stream>
 
 // The CCCL FP component lives in cuda::experimental (later cuda::),
@@ -334,6 +337,44 @@ catch (const cuda::cuda_error&)
   return false;
 }
 
+// Where a kernel leaves its results, and how they get back to the host. CUDA 12.9
+// brought the pinned memory pool, and on those toolkits the kernel writes memory the
+// host can read directly, so draining the stream is all that stands between the
+// launch and the numbers. Before that version there is no such pool, so the buffer
+// lives on the device and cuda::copy_bytes carries it back. The choice is plumbing
+// only: the arithmetic being demonstrated, and everything printed, is the same.
+#if CUDART_VERSION >= 12090
+
+template <class Results>
+[[nodiscard]] static auto make_results_buffer(cuda::stream_ref stream, cuda::device_ref)
+{
+  return cuda::make_pinned_buffer<Results>(stream, 1, cuda::no_init);
+}
+
+template <class Results, class Buffer>
+static void read_results(cuda::stream_ref stream, const Buffer& buffer, Results& results)
+{
+  stream.sync();
+  results = buffer[0];
+}
+
+#else // ^^^ CUDA 12.9 and up ^^^ / vvv below CUDA 12.9 vvv
+
+template <class Results>
+[[nodiscard]] static auto make_results_buffer(cuda::stream_ref stream, cuda::device_ref device)
+{
+  return cuda::make_device_buffer<Results>(stream, device, 1, cuda::no_init);
+}
+
+template <class Results, class Buffer>
+static void read_results(cuda::stream_ref stream, const Buffer& buffer, Results& results)
+{
+  cuda::copy_bytes(stream, buffer, cuda::std::span<Results>{&results, 1});
+  stream.sync();
+}
+
+#endif // below CUDA 12.9
+
 int main()
 try
 {
@@ -371,10 +412,13 @@ try
   // measurement runs on one. The counter API takes it directly.
   cuda::stream stream{device};
 
-  // The results come back in pinned host memory, one value each, which the
-  // kernels write and the host reads once the stream has drained.
-  auto float_float   = cuda::make_pinned_buffer<fptool_stat_results>(stream, 1, cuda::no_init);
-  auto double_double = cuda::make_pinned_buffer<fptool_stat_results>(stream, 1, cuda::no_init);
+  // A one-value buffer per width for the kernels to write, and the host values each
+  // is read back into once its kernel has run.
+  auto float_float   = make_results_buffer<fptool_stat_results>(stream, device);
+  auto double_double = make_results_buffer<fptool_stat_results>(stream, device);
+
+  fptool_stat_results device_float_float{};
+  fptool_stat_results device_double_double{};
 
   // One thread does all of it, since the point is the arithmetic rather than
   // the parallelism.
@@ -388,6 +432,7 @@ try
 
   // Run the float-float kernel on the device.
   cuda::launch(stream, config, float_float_kernel, float_float.data());
+  read_results(stream, float_float, device_float_float);
 
   const cudax::fpmp2_stat_data float_float_record = cudax::fpmp2_stat_read_device_data(stream);
 
@@ -395,13 +440,13 @@ try
 
   // Run the double-double kernel on the device.
   cuda::launch(stream, config, double_double_kernel, double_double.data());
+  read_results(stream, double_double, device_double_double);
 
   const cudax::fpmp2_stat_data double_double_record = cudax::fpmp2_stat_read_device_data(stream);
 
-  stream.sync();
-
-  print_results("device", "fp32mp2_stat", "instruments fp32mp2, float-float", float_float[0], &float_float_record);
-  print_results("device", "fp64mp2_stat", "instruments fp64mp2, double-double", double_double[0], &double_double_record);
+  print_results("device", "fp32mp2_stat", "instruments fp32mp2, float-float", device_float_float, &float_float_record);
+  print_results(
+    "device", "fp64mp2_stat", "instruments fp64mp2, double-double", device_double_double, &double_double_record);
 
   printf("\n");
 

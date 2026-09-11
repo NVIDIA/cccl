@@ -64,10 +64,13 @@
 #include <cuda/fptool>
 
 // The CCCL runtime, for the device half of the example: finding a device, a
-// stream to submit on, a buffer for the results, and the kernel launches.
+// stream to submit on, a buffer for the results, the kernel launches, and the
+// copy that brings the results back.
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/launch>
+#include <cuda/std/span>
 #include <cuda/stream>
 
 // The CCCL FP component lives in cuda::experimental (later cuda::), abbreviated here
@@ -263,6 +266,44 @@ catch (const cuda::cuda_error&)
   return false;
 }
 
+// Where a kernel leaves its results, and how they get back to the host. CUDA 12.9
+// brought the pinned memory pool, and on those toolkits the kernel writes memory the
+// host can read directly, so draining the stream is all that stands between the
+// launch and the numbers. Before that version there is no such pool, so the buffer
+// lives on the device and cuda::copy_bytes carries it back. The choice is plumbing
+// only: the arithmetic being demonstrated, and everything printed, is the same.
+#if CUDART_VERSION >= 12090
+
+template <class Results>
+[[nodiscard]] static auto make_results_buffer(cuda::stream_ref stream, cuda::device_ref)
+{
+  return cuda::make_pinned_buffer<Results>(stream, 1, cuda::no_init);
+}
+
+template <class Results, class Buffer>
+static void read_results(cuda::stream_ref stream, const Buffer& buffer, Results& results)
+{
+  stream.sync();
+  results = buffer[0];
+}
+
+#else // ^^^ CUDA 12.9 and up ^^^ / vvv below CUDA 12.9 vvv
+
+template <class Results>
+[[nodiscard]] static auto make_results_buffer(cuda::stream_ref stream, cuda::device_ref device)
+{
+  return cuda::make_device_buffer<Results>(stream, device, 1, cuda::no_init);
+}
+
+template <class Results, class Buffer>
+static void read_results(cuda::stream_ref stream, const Buffer& buffer, Results& results)
+{
+  cuda::copy_bytes(stream, buffer, cuda::std::span<Results>{&results, 1});
+  stream.sync();
+}
+
+#endif // below CUDA 12.9
+
 int main()
 try
 {
@@ -311,9 +352,10 @@ try
   // synchronization of our own is needed between a set and the launch that follows it.
   cuda::stream stream{device};
 
-  // The results come back in pinned host memory, which the kernels write and the
-  // host reads once the stream has drained.
-  auto r                           = cuda::make_pinned_buffer<fp_custom_results>(stream, 1, cuda::no_init);
+  // A one-value buffer for the kernels to write, and the host value it is read back
+  // into once they have all run.
+  auto r = make_results_buffer<fp_custom_results>(stream, device);
+  fp_custom_results device_r{};
   int sizes_in_effect[sweep_count] = {};
 
   // One thread does all of it, since the point is the arithmetic rather than the
@@ -332,10 +374,12 @@ try
     sizes_in_effect[i] = cudax::fp_custom_get_device_mantissa_size(stream);
   }
 
-  stream.sync();
+  // Once the stream has drained, the device numbers print the same way the host
+  // ones did.
+  read_results(stream, r, device_r);
 
-  print_compile_time("device", r[0]);
-  print_run_time("device", r[0], sizes_in_effect);
+  print_compile_time("device", device_r);
+  print_run_time("device", device_r, sizes_in_effect);
 
   printf("\n");
 

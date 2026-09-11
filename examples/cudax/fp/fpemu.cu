@@ -52,11 +52,13 @@
       - converting between the two representations
       - the same source running on host and device
 */
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/fpemu>
 #include <cuda/launch>
 #include <cuda/std/numbers>
+#include <cuda/std/span>
 #include <cuda/stream>
 
 #include <cstdio>
@@ -407,6 +409,44 @@ catch (const cuda::cuda_error&)
   return false;
 }
 
+// Where a kernel leaves its results, and how they get back to the host. CUDA 12.9
+// brought the pinned memory pool, and on those toolkits the kernel writes memory the
+// host can read directly, so draining the stream is all that stands between the
+// launch and the numbers. Before that version there is no such pool, so the buffer
+// lives on the device and cuda::copy_bytes carries it back. The choice is plumbing
+// only: the arithmetic being demonstrated, and everything printed, is the same.
+#if CUDART_VERSION >= 12090
+
+template <class Results>
+[[nodiscard]] static auto make_results_buffer(cuda::stream_ref stream, cuda::device_ref)
+{
+  return cuda::make_pinned_buffer<Results>(stream, 1, cuda::no_init);
+}
+
+template <class Results, class Buffer>
+static void read_results(cuda::stream_ref stream, const Buffer& buffer, Results& results)
+{
+  stream.sync();
+  results = buffer[0];
+}
+
+#else // ^^^ CUDA 12.9 and up ^^^ / vvv below CUDA 12.9 vvv
+
+template <class Results>
+[[nodiscard]] static auto make_results_buffer(cuda::stream_ref stream, cuda::device_ref device)
+{
+  return cuda::make_device_buffer<Results>(stream, device, 1, cuda::no_init);
+}
+
+template <class Results, class Buffer>
+static void read_results(cuda::stream_ref stream, const Buffer& buffer, Results& results)
+{
+  cuda::copy_bytes(stream, buffer, cuda::std::span<Results>{&results, 1});
+  stream.sync();
+}
+
+#endif // below CUDA 12.9
+
 int main()
 try
 {
@@ -456,13 +496,12 @@ try
     return 1;
   }
 
-  // Work is submitted through a stream, and the results come back in pinned host
-  // memory: one value each, which the kernels write and the host reads once the
-  // stream has drained. Both buffers release themselves at the end of the scope.
+  // Work is submitted through a stream, into a one-value buffer per result. Both
+  // buffers release themselves at the end of the scope.
   cuda::stream stream{device};
 
-  auto packed   = cuda::make_pinned_buffer<fpemu_results>(stream, 1, cuda::no_init);
-  auto unpacked = cuda::make_pinned_buffer<fpemu_results>(stream, 1, cuda::no_init);
+  auto packed   = make_results_buffer<fpemu_results>(stream, device);
+  auto unpacked = make_results_buffer<fpemu_results>(stream, device);
 
   // The same two functions, this time from a kernel. One thread does all of it,
   // since the point is the arithmetic rather than the parallelism.
@@ -471,10 +510,16 @@ try
   cuda::launch(stream, config, fpemu_packed_kernel, packed.data());
   cuda::launch(stream, config, fpemu_unpacked_kernel, unpacked.data());
 
-  stream.sync();
+  // Once the stream has drained, the device numbers print the same way the host
+  // ones did.
+  fpemu_results device_packed{};
+  fpemu_results device_unpacked{};
 
-  print_results("device", "fp64emu", "packed, the 64-bit IEEE layout", packed[0], drift_double);
-  print_results("device", "unpacked", "sign/exponent/mantissa, 9 guard bits", unpacked[0], drift_double);
+  read_results(stream, packed, device_packed);
+  read_results(stream, unpacked, device_unpacked);
+
+  print_results("device", "fp64emu", "packed, the 64-bit IEEE layout", device_packed, drift_double);
+  print_results("device", "unpacked", "sign/exponent/mantissa, 9 guard bits", device_unpacked, drift_double);
 
   printf("\n");
 
