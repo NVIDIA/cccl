@@ -166,7 +166,15 @@ public:
 
   float* prepare_random_generator(seed_t seed, std::size_t num_items)
   {
-    return prepare_random_generator(::cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
+    int device{};
+    const cudaError_t status = cudaGetDevice(&device);
+    if (status != cudaSuccess)
+    {
+      throw ::cuda::cuda_error{status, "failed to get current device"};
+    }
+
+    const ::cuda::stream_ref stream{::cudaStream_t{}};
+    return state_for(device, stream.get()).prepare_random_generator(stream, seed, num_items);
   }
 
   float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
