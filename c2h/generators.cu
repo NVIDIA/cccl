@@ -159,8 +159,15 @@ public:
     // Generator states own allocations on their associated devices. Destroy each state while that device is current.
     for (auto& state : m_states)
     {
-      const scoped_current_device device_scope{state->device()};
-      state.reset();
+      try
+      {
+        const scoped_current_device device_scope{state->device()};
+        state.reset();
+      }
+      catch (...)
+      {
+        state.reset();
+      }
     }
   }
 
