@@ -102,6 +102,8 @@ MULTI_GPU_TEST("inclusive_scan single-comm, supported determinism requirements",
 
   // Keep an independent snapshot because each launch overwrites the output buffers.
   std::vector<std::vector<T>> first_results;
+
+  first_results.reserve(out.size());
   for (const auto& buf : out)
   {
     first_results.push_back(::detail::to_vec(buf));

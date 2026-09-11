@@ -104,6 +104,8 @@ MULTI_GPU_TEST("reduce single-comm, run_to_run determinism", run_to_run_cases)
 
   // Keep an independent snapshot because each launch overwrites the output buffers.
   std::vector<std::vector<T>> first_results;
+
+  first_results.reserve(out.size());
   for (const auto& buf : out)
   {
     first_results.push_back(::detail::to_vec(buf));
@@ -185,6 +187,8 @@ MULTI_GPU_TEST("reduce single-comm, default determinism requirement", arithmetic
 
   // Keep an independent snapshot because each launch overwrites the output buffers.
   std::vector<std::vector<T>> first_results;
+
+  first_results.reserve(out.size());
   for (const auto& buf : out)
   {
     first_results.push_back(::detail::to_vec(buf));
