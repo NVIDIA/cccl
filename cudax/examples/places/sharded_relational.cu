@@ -13,7 +13,8 @@
  *
  * @brief Three relational shapes (the ones a columnar DataFrame library
  *        such as cuDF runs all day) written as compositions of the sharded
- *        verbs over the locality domains of one device.
+ *        verbs over the locality domains of one device — then the same
+ *        verbs run over REAL libcudf columns adopted zero-copy.
  *
  * A table is a struct of columns; each column is a `sharded_array` over
  * `place_group{make_locality_domain_grid(0)}`, every column cut at the SAME
@@ -32,13 +33,18 @@
  *   COMMIT the data-dependent sizes into the container; the contiguous grade
  *   refuses that by design (a shrunken shard would leave a gap).
  *
+ * A third grade appears in section 4: ADOPTED columns (`sharded_array::adopt`
+ * over memory owned by someone else — here libcudf). Adopted and contiguous
+ * columns share the property the gathers rely on (one buffer, so the global
+ * row id indexes it), which is what `column_base()` abstracts.
+ *
  * VALIDITY. cuDF stores nullability as one bit per row in 32-bit words. A
  * row cut that is a multiple of 32 makes each shard's words exactly its
  * rows' bits (no word straddles two places), so the bitmask can be a
  * co-partitioned contiguous column of `uint32_t` words with `rows/32`
  * entries per shard. The row cut below is chosen accordingly.
  *
- * Sections (each verified against a host reference):
+ * Sections (each verified against a host reference, section 4 against cuDF):
  *
  *  1. FILTER + AGGREGATE (TPC-H Q6 shape).  cuDF `detail/copy_if.cuh`:
  *     thrust::copy_if of row ids -> `output_size = distance(begin, end)`
@@ -62,6 +68,39 @@
  *     selected with a second `copy_if` — cuDF appends the second select at
  *     `result.begin() + unmatched_valid` in ONE buffer; no append form of
  *     `copy_if` exists yet, so the example reports two ragged arrays.
+ *  4. ADOPT cuDF COLUMNS (compiled only with -DSHARDED_RELATIONAL_WITH_CUDF).
+ *     A `cudf::table` with the same lineitem-like columns is built through
+ *     libcudf's factories (`make_numeric_column`), the generated data is
+ *     copied into its buffers once, and then each `cudf::column_view` is
+ *     ADOPTED zero-copy: `column_view` is exactly the shard descriptor by
+ *     projection — {data, size, offset, place} — so a `shard<T>` per place
+ *     is `{cv.data<T>() + row_begin, rows, row_begin, place}` and
+ *     `sharded_array<T>::adopt` wraps them without touching a byte. The
+ *     null mask words (`cv.null_mask()`, 32 rows per word) are adopted the
+ *     same way. Sections 1 and 2 rerun over the adopted views and are
+ *     verified against libcudf's own API (`apply_boolean_mask` +
+ *     `binary_operation` + `reduce`; `groupby::aggregate` with SUM/COUNT).
+ *
+ *     WHICH MEMORY the verbs touch: libcudf allocates through rmm's current
+ *     device resource, i.e. whole-device memory INTERLEAVED across the
+ *     dies. Adopted cuDF columns are therefore "arm C" of the lab bench:
+ *     CONFINEMENT (each place runs only its rows) WITHOUT PLACEMENT (the
+ *     rows' pages are spread over both dies). The section then copies the
+ *     adopted columns once into placed (`allocate_contiguous`) columns and
+ *     reruns Q1 — the "born-placed vs adopted" distinction: same verbs,
+ *     same cut, only the page ownership differs. A small timing table
+ *     (cudaEvent, median of 5) prints cuDF vs sharded-adopted vs
+ *     sharded-placed; informative only, nothing is tuned.
+ *
+ *     Build (libcudf 26.08, CUDA 13; never add the env's `include/rapids`,
+ *     it carries a second CCCL):
+ *
+ *       nvcc -std=c++20 -O3 -arch=native --expt-relaxed-constexpr --extended-lambda
+ *         -DSHARDED_RELATIONAL_WITH_CUDF -DCCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER
+ *         -D_CCCL_NO_SYSTEM_HEADER -D_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX
+ *         -I<cccl>/cub -I<cccl>/libcudacxx/include -I<cccl>/thrust -isystem <cccl>/cudax/include
+ *         -I<cudf-env>/include sharded_relational.cu -o sharded_relational_cudf
+ *         -L<cudf-env>/lib -lcudf -lrmm -lcudart -lcuda -Xlinker -rpath=<cudf-env>/lib
  *
  * Verb gaps this example works around (candidates for the verb set):
  *  - `copy_if` over a counting-iterator input: the row ids have to be
@@ -85,8 +124,30 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <map>
+#include <stdexcept>
 #include <vector>
+
+#ifdef SHARDED_RELATIONAL_WITH_CUDF
+#  include <cudf/aggregation.hpp>
+#  include <cudf/binaryop.hpp>
+#  include <cudf/column/column.hpp>
+#  include <cudf/column/column_factories.hpp>
+#  include <cudf/column/column_view.hpp>
+#  include <cudf/groupby.hpp>
+#  include <cudf/null_mask.hpp>
+#  include <cudf/reduction.hpp>
+#  include <cudf/scalar/scalar.hpp>
+#  include <cudf/stream_compaction.hpp>
+#  include <cudf/table/table.hpp>
+#  include <cudf/table/table_view.hpp>
+#  include <cudf/types.hpp>
+#  include <cudf/utilities/default_stream.hpp>
+#  include <cudf/version_config.hpp>
+#  include <rmm/mr/cuda_async_view_memory_resource.hpp>
+#  include <rmm/mr/per_device_resource.hpp>
+#endif
 
 using namespace cuda::experimental::sharded;
 using cuda::experimental::places::make_locality_domain_grid;
@@ -159,6 +220,10 @@ struct gen
     // 4096 distinct keys: a stride pattern over the orderkey domain
     return static_cast<int>((i * 16 + hash32(static_cast<::std::uint32_t>(i), 8) % 16) % build_key_range);
   }
+  __host__ __device__ static bool q6_selects(int shipdate, float discount, int quantity)
+  {
+    return shipdate >= shipdate_lo && shipdate < shipdate_hi && discount >= 0.05f && discount <= 0.07f && quantity < 24;
+  }
 };
 
 // Generators as tabulate functors (index = GLOBAL row / word id).
@@ -190,6 +255,13 @@ struct gen_shipdate
     return gen::shipdate(r);
   }
 };
+struct gen_group_key
+{
+  __device__ int operator()(::std::size_t r) const
+  {
+    return gen::group_key(r);
+  }
+};
 struct gen_orderkey
 {
   __device__ int operator()(::std::size_t r) const
@@ -205,12 +277,15 @@ struct gen_validity
   }
 };
 // Packed sort key: (group key << 32) | row id — the "sort by key carrying a
-// payload" spelling on a keys-only sort.
-struct gen_packed_key
+// payload" spelling on a keys-only sort. A zip_transform over the group-key
+// column and the row-id column (co-partitioned), so it reads the COLUMN,
+// whatever grade of storage backs it.
+struct pack_key_op
 {
-  __device__ unsigned long long operator()(::std::size_t r) const
+  __device__ unsigned long long operator()(int key, int row) const
   {
-    return (static_cast<unsigned long long>(gen::group_key(r)) << 32) | static_cast<unsigned long long>(r);
+    return (static_cast<unsigned long long>(static_cast<unsigned>(key)) << 32)
+         | static_cast<unsigned long long>(static_cast<unsigned>(row));
   }
 };
 __host__ __device__ inline int packed_group(unsigned long long k)
@@ -228,6 +303,39 @@ __host__ __device__ inline bool validity_bit(const ::std::uint32_t* words, ::std
 }
 
 // ---------------------------------------------------------------------------
+// The row cut, shared by every column of a table (co-partitioning).
+// ---------------------------------------------------------------------------
+struct row_cut
+{
+  ::std::size_t N = 0;
+  ::std::size_t P = 0;
+  ::std::vector<::std::size_t> rows, words, row_begin; // row_begin has P+1 entries
+
+  // Equal shares rounded DOWN to a multiple of 32 rows (validity words never
+  // straddle a place); the last shard absorbs the remainder, itself a
+  // multiple of 32 since N is.
+  row_cut(::std::size_t n, ::std::size_t p)
+      : N(n)
+      , P(p)
+      , rows(p)
+      , words(p)
+      , row_begin(p + 1, 0)
+  {
+    const ::std::size_t share = (N / P) / 32 * 32;
+    for (::std::size_t g = 0; g < P; g++)
+    {
+      rows[g]          = (g + 1 == P) ? N - share * (P - 1) : share;
+      words[g]         = rows[g] / 32;
+      row_begin[g + 1] = row_begin[g] + rows[g];
+    }
+  }
+  ::std::size_t shard_of(::std::size_t row) const
+  {
+    return ::std::upper_bound(row_begin.begin(), row_begin.end(), row) - row_begin.begin() - 1;
+  }
+};
+
+// ---------------------------------------------------------------------------
 // The table: a struct of co-partitioned sharded columns.
 // ---------------------------------------------------------------------------
 struct lineitem_table
@@ -236,6 +344,7 @@ struct lineitem_table
   sharded_array<float> discount;
   sharded_array<float> extendedprice;
   sharded_array<int> shipdate;
+  sharded_array<int> group_key; // returnflag x linestatus, already encoded
   sharded_array<int> orderkey; // nullable: validity below
   sharded_array<::std::uint32_t> validity; // one bit per row, 32 rows per word
   ::std::size_t num_rows = 0;
@@ -251,9 +360,7 @@ struct q6_pred // applied to ROW IDS; columns gathered through their bases
   const int* quantity;
   __device__ bool operator()(int r) const
   {
-    const int d     = shipdate[r];
-    const float dis = discount[r];
-    return d >= shipdate_lo && d < shipdate_hi && dis >= 0.05f && dis <= 0.07f && quantity[r] < 24;
+    return gen::q6_selects(shipdate[r], discount[r], quantity[r]);
   }
 };
 struct gather_price_x_discount
@@ -434,6 +541,47 @@ sharded_array<T> allocate_contiguous_column(place_group& group, const ::std::vec
   return sharded_array<T>::allocate_contiguous(specs);
 }
 
+// The one base pointer a gather-by-global-row functor needs. Two grades
+// provide it: the contiguous grade (one VA range, placed pages) and an
+// ADOPTED column whose shards are consecutive slices of one foreign buffer
+// (section 4). Anything else is refused: a plain `allocate` has one
+// allocation per shard, so no global base exists.
+template <class T>
+const T* column_base(const sharded_array<T>& a)
+{
+  if (a.is_contiguous())
+  {
+    return a.contiguous_data();
+  }
+  const T* base = a.shard(0).data - a.shard(0).global_offset;
+  for (::std::size_t g = 0; g < a.num_shards(); g++)
+  {
+    if (a.shard(g).data != base + a.shard(g).global_offset)
+    {
+      throw ::std::invalid_argument("column_base: shards are not consecutive slices of one buffer");
+    }
+  }
+  return base;
+}
+
+// One element read back by GLOBAL index (whatever the grade): tiny, used for
+// the handful of group boundaries.
+template <class T>
+T read_global(const sharded_array<T>& a, ::std::size_t idx)
+{
+  for (::std::size_t g = 0; g < a.num_shards(); g++)
+  {
+    const auto& s = a.shard(g);
+    if (s.contains(idx))
+    {
+      T v{};
+      cuda_safe_call(cudaMemcpy(&v, s.data + (idx - s.global_offset), sizeof(T), cudaMemcpyDeviceToHost));
+      return v;
+    }
+  }
+  throw ::std::out_of_range("read_global: index outside every shard");
+}
+
 template <class T>
 void print_shard_sizes(const char* what, const sharded_array<T>& a)
 {
@@ -444,6 +592,387 @@ void print_shard_sizes(const char* what, const sharded_array<T>& a)
   }
   ::std::printf("]\n");
 }
+
+// ---------------------------------------------------------------------------
+// Q6 as a function of the columns (any grade with a base) — used by section
+// 1 over the generated placed columns and by section 4 over adopted cuDF
+// columns and their placed copies. `survivors`/`products` are ragged
+// workspaces with capacity = rows (the worst case); their sizes are
+// re-committed here, so the function can be timed without allocating.
+// ---------------------------------------------------------------------------
+struct q6_result
+{
+  ::std::size_t survivors = 0;
+  float revenue           = 0.0f;
+};
+
+struct q6_workspace
+{
+  sharded_array<int> survivors;
+  sharded_array<float> products;
+  float* h_revenue = nullptr; // pinned: `reduce_into` target
+};
+
+template <class Envs, class CallEnv>
+q6_result run_q6(
+  const row_cut& cut,
+  const Envs& envs,
+  const CallEnv& caller_env,
+  cudaStream_t caller,
+  const sharded_array<int>& row_ids,
+  const sharded_array<int>& shipdate,
+  const sharded_array<float>& discount,
+  const sharded_array<int>& quantity,
+  const sharded_array<float>& price,
+  q6_workspace& ws,
+  bool verbose)
+{
+  ws.survivors.commit_sizes(cut.rows); // capacity back to the worst case
+  ws.products.commit_sizes(cut.rows);
+
+  // copy_if(row ids) -> distance -> gather -> reduce: four passes in cuDF
+  // with one host readback for the size. Here the readback is the commit
+  // of the ragged survivors array (all shards, one join).
+  q6_result res;
+  res.survivors =
+    copy_if(row_ids, envs, ws.survivors, q6_pred{column_base(shipdate), column_base(discount), column_base(quantity)});
+  if (verbose)
+  {
+    print_shard_sizes("survivors (ragged, committed by copy_if)", ws.survivors);
+  }
+
+  // Gather-multiply for the survivors only, into a ragged array laid out
+  // like the survivors (same committed sizes).
+  ::std::vector<::std::size_t> sizes(cut.P);
+  for (::std::size_t g = 0; g < cut.P; g++)
+  {
+    sizes[g] = ws.survivors.shard(g).size;
+  }
+  ws.products.commit_sizes(sizes);
+  zip_transform(ws.products,
+                envs,
+                gather_price_x_discount{column_base(price), column_base(discount)},
+                default_call_env{},
+                ws.survivors);
+
+  reduce_into(ws.products, envs, ws.h_revenue, sum_f{}, 0.0f, caller_env);
+  cuda_safe_call(cudaStreamSynchronize(caller));
+  res.revenue = *ws.h_revenue;
+  return res;
+}
+
+// ---------------------------------------------------------------------------
+// Q1 as a function of the columns: groups in ascending key order.
+// ---------------------------------------------------------------------------
+struct q1_group
+{
+  int key              = 0;
+  long long rows       = 0;
+  long long sum_qty    = 0;
+  double sum_price     = 0.0;
+  long long count      = 0; // COUNT(orderkey): non-null rows
+  ::std::size_t pieces = 0; // how many pieces (cut splits) merged into this group
+};
+
+struct q1_workspace
+{
+  sharded_array<unsigned long long> keys;
+  sharded_array<unsigned long long> marks; // contiguous: read by global position
+  sharded_array<int> boundaries; // ragged
+  sharded_array<int> q_sorted, valid_sorted;
+  sharded_array<float> price_sorted;
+};
+
+template <class Envs>
+::std::vector<q1_group> run_q1(
+  place_group& group,
+  const row_cut& cut,
+  const Envs& envs,
+  const sharded_array<int>& row_ids,
+  const sharded_array<int>& group_key,
+  const sharded_array<int>& quantity,
+  const sharded_array<float>& price,
+  const sharded_array<::std::uint32_t>& validity,
+  q1_workspace& ws,
+  bool verbose)
+{
+  const ::std::size_t P = cut.P;
+
+  // a. Sort by key carrying the row id (packed 64-bit key, built from the
+  //    group-key COLUMN and the row ids). Shards keep their boundaries; the
+  //    array reads as one globally sorted sequence.
+  zip_transform(ws.keys, envs, pack_key_op{}, default_call_env{}, group_key, row_ids);
+  sort(group, ws.keys);
+
+  // b. Group starts: adjacent_difference flags a key change (the
+  //    predecessor of a shard's first element comes from the previous
+  //    shard — the one-element halo). Contiguous, so the boundary
+  //    predicate can read it by global position.
+  adjacent_difference(ws.keys, envs, ws.marks, key_change_op{});
+
+  // c. Boundary positions as a RAGGED copy_if of the positions (the row ids
+  //    double as positions: the counting-iterator gap).
+  ws.boundaries.commit_sizes(cut.rows);
+  const ::std::size_t G = copy_if(row_ids, envs, ws.boundaries, boundary_pred{ws.marks.contiguous_data()});
+  if (verbose)
+  {
+    print_shard_sizes("group starts (ragged)", ws.boundaries);
+  }
+
+  // d. The whole `pieces+1` offsets array. Assembled on the host from the
+  //    committed ragged shards: the group count is tiny (a handful of
+  //    keys), so this is a few dozen bytes. Every shard cut is inserted as
+  //    an extra boundary when a group straddles it — whole-offsets
+  //    segmented_reduce requires no segment to cross the value cut. Such
+  //    a straddling group becomes two PIECES, merged on the host below.
+  ::std::vector<int> h_off(G);
+  ws.boundaries.copy_to_host(h_off.data());
+  for (::std::size_t g = 1; g < P; g++)
+  {
+    h_off.push_back(static_cast<int>(cut.row_begin[g]));
+  }
+  h_off.push_back(static_cast<int>(cut.N));
+  ::std::sort(h_off.begin(), h_off.end());
+  h_off.erase(::std::unique(h_off.begin(), h_off.end()), h_off.end());
+  const ::std::size_t pieces = h_off.size() - 1;
+  ::std::vector<::std::size_t> pieces_per_shard(P, 0);
+  for (::std::size_t p = 0; p < pieces; p++)
+  {
+    pieces_per_shard[cut.shard_of(static_cast<::std::size_t>(h_off[p]))]++;
+  }
+  int* d_off = nullptr;
+  cuda_safe_call(cudaMalloc(&d_off, h_off.size() * sizeof(int)));
+  cuda_safe_call(cudaMemcpy(d_off, h_off.data(), h_off.size() * sizeof(int), cudaMemcpyHostToDevice));
+  if (verbose)
+  {
+    ::std::printf("  groups %zu, pieces %zu (straddling cuts split into pieces)\n", G, pieces);
+  }
+
+  // e. Value columns in SORTED order (gather by the packed row id), then the
+  //    whole-offsets segmented reduce, output co-partitioned with the pieces.
+  zip_transform(ws.q_sorted, envs, gather_int_by_packed{column_base(quantity)}, default_call_env{}, ws.keys);
+  zip_transform(ws.price_sorted, envs, gather_float_by_packed{column_base(price)}, default_call_env{}, ws.keys);
+  zip_transform(ws.valid_sorted, envs, gather_valid_by_packed{column_base(validity)}, default_call_env{}, ws.keys);
+
+  auto sum_qty   = sharded_array<long long>::allocate(group, pieces_per_shard, 0);
+  auto sum_price = sharded_array<float>::allocate(group, pieces_per_shard, 0);
+  auto count     = sharded_array<long long>::allocate(group, pieces_per_shard, 0);
+  segmented_reduce(ws.q_sorted, envs, d_off, sum_qty, sum_ll{}, 0ll);
+  segmented_reduce(ws.price_sorted, envs, d_off, sum_price, sum_f{}, 0.0f);
+  segmented_reduce(ws.valid_sorted, envs, d_off, count, sum_ll{}, 0ll);
+  if (verbose)
+  {
+    print_shard_sizes("aggregates (co-partitioned with the pieces)", sum_qty);
+  }
+
+  // f. Merge pieces into groups on the host: a piece starting at a cut where
+  //    no key change was flagged continues the previous group.
+  ::std::vector<long long> h_q(pieces), h_c(pieces);
+  ::std::vector<float> h_p(pieces);
+  sum_qty.copy_to_host(h_q.data());
+  sum_price.copy_to_host(h_p.data());
+  count.copy_to_host(h_c.data());
+  cuda_safe_call(cudaFree(d_off));
+
+  ::std::vector<q1_group> groups;
+  for (::std::size_t p = 0; p < pieces; p++)
+  {
+    const auto start   = static_cast<::std::size_t>(h_off[p]);
+    const bool new_grp = (p == 0) || read_global(ws.marks, start) != 0ull;
+    if (new_grp)
+    {
+      groups.emplace_back();
+      groups.back().key = packed_group(read_global(ws.keys, start));
+    }
+    auto& grp = groups.back();
+    grp.sum_qty += h_q[p];
+    grp.count += h_c[p];
+    grp.sum_price += static_cast<double>(h_p[p]);
+    grp.rows += h_off[p + 1] - h_off[p];
+    grp.pieces++;
+  }
+  if (verbose)
+  {
+    ::std::printf("  %zu groups from %zu pieces (%zu host merge%s at the cut)\n",
+                  groups.size(),
+                  pieces,
+                  pieces - groups.size(),
+                  pieces - groups.size() == 1 ? "" : "s");
+  }
+  return groups;
+}
+
+// Q1 verification against a key -> {sum q, sum price, count, rows} reference.
+bool check_q1(const ::std::vector<q1_group>& groups,
+              const ::std::map<int, ::std::array<double, 4>>& ref,
+              const char* ref_name,
+              double price_tol)
+{
+  bool ok         = groups.size() == ref.size();
+  ::std::size_t i = 0;
+  for (const auto& [key, a] : ref)
+  {
+    if (!ok || i >= groups.size())
+    {
+      break;
+    }
+    const auto& g   = groups[i++];
+    const bool k_ok = g.key == key;
+    const bool q_ok = static_cast<double>(g.sum_qty) == a[0];
+    const bool p_ok = ::std::abs(g.sum_price - a[1]) <= price_tol * (1.0 + ::std::abs(a[1]));
+    const bool c_ok = static_cast<double>(g.count) == a[2];
+    const bool n_ok = a[3] < 0 || static_cast<double>(g.rows) == a[3];
+    ::std::printf(
+      "  key %d: rows %lld sum(qty) %lld sum(price) %.2f count %lld  vs %s sum(price) %.2f  %s\n",
+      g.key,
+      g.rows,
+      g.sum_qty,
+      g.sum_price,
+      g.count,
+      ref_name,
+      a[1],
+      (k_ok && q_ok && p_ok && c_ok && n_ok) ? "OK" : "MISMATCH");
+    ok = ok && k_ok && q_ok && p_ok && c_ok && n_ok;
+  }
+  return ok;
+}
+
+q6_workspace make_q6_workspace(place_group& group, const row_cut& cut)
+{
+  q6_workspace ws;
+  ws.survivors = sharded_array<int>::allocate(group, cut.rows, 0); // capacity = worst case
+  ws.products  = sharded_array<float>::allocate(group, cut.rows, 0);
+  cuda_safe_call(cudaMallocHost(&ws.h_revenue, sizeof(float)));
+  return ws;
+}
+
+q1_workspace make_q1_workspace(place_group& group, const row_cut& cut)
+{
+  q1_workspace ws;
+  ws.keys         = sharded_array<unsigned long long>::allocate(group, cut.rows, 0);
+  ws.marks        = allocate_contiguous_column<unsigned long long>(group, cut.rows);
+  ws.boundaries   = sharded_array<int>::allocate(group, cut.rows, 0);
+  ws.q_sorted     = sharded_array<int>::allocate(group, cut.rows, 0);
+  ws.valid_sorted = sharded_array<int>::allocate(group, cut.rows, 0);
+  ws.price_sorted = sharded_array<float>::allocate(group, cut.rows, 0);
+  return ws;
+}
+
+#ifdef SHARDED_RELATIONAL_WITH_CUDF
+// ---------------------------------------------------------------------------
+// Section 4 helpers: adopting cuDF columns.
+// ---------------------------------------------------------------------------
+
+// `cudf::column_view` -> sharded view, zero-copy. The column's ONE buffer is
+// cut at the table's row boundaries; shard g is {cv.data<T>() + row_begin[g],
+// rows[g]} executed by place g. The data place is the whole device: cuDF's
+// buffer came from rmm's current device resource, whose pages are
+// interleaved across the dies — no place owns them (confinement without
+// placement). `elements_per_row` = 1 for values, 1/32 for the null mask.
+template <class T>
+sharded_array<T>
+adopt_cudf_buffer(place_group& group, const row_cut& cut, const T* data, const ::std::vector<::std::size_t>& sizes)
+{
+  ::std::vector<shard<T>> shards(cut.P);
+  ::std::size_t begin = 0;
+  for (::std::size_t g = 0; g < cut.P; g++)
+  {
+    // The verbs only read through these views; `shard<T>` carries a
+    // mutable pointer because it is also the write-side descriptor.
+    shards[g].data          = const_cast<T*>(data) + begin;
+    shards[g].size          = sizes[g];
+    shards[g].capacity      = sizes[g];
+    shards[g].global_offset = begin;
+    shards[g].place         = data_place::device(0);
+    shards[g].exec          = group.place(g);
+    shards[g].stream        = group.get_stream(g, 0);
+    begin += sizes[g];
+  }
+  return sharded_array<T>::adopt(::std::move(shards));
+}
+
+template <class T>
+sharded_array<T> adopt_cudf_column(place_group& group, const row_cut& cut, const cudf::column_view& cv)
+{
+  if (static_cast<::std::size_t>(cv.size()) != cut.N || cv.offset() != 0)
+  {
+    throw ::std::invalid_argument("adopt_cudf_column: the column must span the table's rows from offset 0");
+  }
+  return adopt_cudf_buffer<T>(group, cut, cv.data<T>(), cut.rows);
+}
+
+sharded_array<::std::uint32_t> adopt_cudf_null_mask(place_group& group, const row_cut& cut, const cudf::column_view& cv)
+{
+  if (cv.null_mask() == nullptr)
+  {
+    throw ::std::invalid_argument("adopt_cudf_null_mask: the column has no null mask");
+  }
+  return adopt_cudf_buffer<::std::uint32_t>(group, cut, cv.null_mask(), cut.words);
+}
+
+// Placed copy of an adopted column: the "born-placed" grade, filled from the
+// adopted one (a shard-to-shard copy, each on its place's stream).
+template <class T>
+sharded_array<T>
+placed_copy(place_group& group, const ::std::vector<::std::size_t>& sizes, const sharded_array<T>& adopted)
+{
+  auto placed = allocate_contiguous_column<T>(group, sizes);
+  for (::std::size_t g = 0; g < placed.num_shards(); g++)
+  {
+    cuda_safe_call(cudaMemcpyAsync(
+      placed.shard(g).data,
+      adopted.shard(g).data,
+      adopted.shard(g).size * sizeof(T),
+      cudaMemcpyDeviceToDevice,
+      placed.shard(g).stream));
+  }
+  cuda_safe_call(cudaDeviceSynchronize());
+  return placed;
+}
+
+// The Q6 predicate as a BOOL8 mask column for cuDF's `apply_boolean_mask`
+// (cuDF would evaluate it with `compute_column` over an AST; a tiny kernel
+// keeps the example free of the AST headers and is cheaper than a chain of
+// nine `binary_operation`s).
+__global__ void
+q6_mask_kernel(const int* shipdate, const float* discount, const int* quantity, ::std::int8_t* mask, int n)
+{
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n)
+  {
+    mask[i] = gen::q6_selects(shipdate[i], discount[i], quantity[i]) ? 1 : 0;
+  }
+}
+
+// cudaEvent timing: median of `reps` after one warm-up, the device drained
+// before each start and after each stop (the verbs run on per-place lanes,
+// so a single stream's events would not bracket them).
+template <class Fn>
+float time_median_ms(Fn&& fn, int reps = 5)
+{
+  cudaEvent_t start, stop;
+  cuda_safe_call(cudaEventCreate(&start));
+  cuda_safe_call(cudaEventCreate(&stop));
+  fn();
+  ::std::vector<float> ms;
+  for (int i = 0; i < reps; i++)
+  {
+    cuda_safe_call(cudaDeviceSynchronize());
+    cuda_safe_call(cudaEventRecord(start, nullptr));
+    fn();
+    cuda_safe_call(cudaDeviceSynchronize());
+    cuda_safe_call(cudaEventRecord(stop, nullptr));
+    cuda_safe_call(cudaEventSynchronize(stop));
+    float t = 0;
+    cuda_safe_call(cudaEventElapsedTime(&t, start, stop));
+    ms.push_back(t);
+  }
+  cuda_safe_call(cudaEventDestroy(start));
+  cuda_safe_call(cudaEventDestroy(stop));
+  ::std::sort(ms.begin(), ms.end());
+  return ms[ms.size() / 2];
+}
+#endif // SHARDED_RELATIONAL_WITH_CUDF
 } // namespace
 
 int main(int argc, char** argv)
@@ -470,19 +999,7 @@ int main(int argc, char** argv)
   auto envs             = group.envs(0);
   ::std::printf("place_group with %zu place(s), N = %zu rows\n", P, N);
 
-  // Row cut: equal shares rounded DOWN to a multiple of 32 rows (validity
-  // words never straddle a place); the last shard absorbs the remainder,
-  // itself a multiple of 32 since N is.
-  ::std::vector<::std::size_t> rows(P), words(P), row_begin(P + 1, 0);
-  {
-    const ::std::size_t share = (N / P) / 32 * 32;
-    for (::std::size_t g = 0; g < P; g++)
-    {
-      rows[g]          = (g + 1 == P) ? N - share * (P - 1) : share;
-      words[g]         = rows[g] / 32;
-      row_begin[g + 1] = row_begin[g] + rows[g];
-    }
-  }
+  const row_cut cut(N, P);
 
   // -------------------------------------------------------------------------
   // The table: contiguous value columns generated in place (tabulate by
@@ -490,29 +1007,27 @@ int main(int argc, char** argv)
   // -------------------------------------------------------------------------
   lineitem_table t;
   t.num_rows      = N;
-  t.quantity      = allocate_contiguous_column<int>(group, rows);
-  t.discount      = allocate_contiguous_column<float>(group, rows);
-  t.extendedprice = allocate_contiguous_column<float>(group, rows);
-  t.shipdate      = allocate_contiguous_column<int>(group, rows);
-  t.orderkey      = allocate_contiguous_column<int>(group, rows);
-  t.validity      = allocate_contiguous_column<::std::uint32_t>(group, words);
+  t.quantity      = allocate_contiguous_column<int>(group, cut.rows);
+  t.discount      = allocate_contiguous_column<float>(group, cut.rows);
+  t.extendedprice = allocate_contiguous_column<float>(group, cut.rows);
+  t.shipdate      = allocate_contiguous_column<int>(group, cut.rows);
+  t.group_key     = allocate_contiguous_column<int>(group, cut.rows);
+  t.orderkey      = allocate_contiguous_column<int>(group, cut.rows);
+  t.validity      = allocate_contiguous_column<::std::uint32_t>(group, cut.words);
   tabulate(t.quantity, envs, gen_quantity{});
   tabulate(t.discount, envs, gen_discount{});
   tabulate(t.extendedprice, envs, gen_price{});
   tabulate(t.shipdate, envs, gen_shipdate{});
+  tabulate(t.group_key, envs, gen_group_key{});
   tabulate(t.orderkey, envs, gen_orderkey{});
   tabulate(t.validity, envs, gen_validity{});
 
-  const int* quantity_base             = t.quantity.contiguous_data();
-  const float* discount_base           = t.discount.contiguous_data();
-  const float* price_base              = t.extendedprice.contiguous_data();
-  const int* shipdate_base             = t.shipdate.contiguous_data();
   const int* orderkey_base             = t.orderkey.contiguous_data();
   const ::std::uint32_t* validity_base = t.validity.contiguous_data();
 
   // Row ids, materialized once: `copy_if` selects from a sharded VIEW, so
   // there is no "copy_if over a counting iterator" spelling yet (gap).
-  auto row_ids = sharded_array<int>::allocate(group, rows, 0);
+  auto row_ids = sharded_array<int>::allocate(group, cut.rows, 0);
   sequence(row_ids, envs, 0, 1);
 
   // A caller stream for the asynchronous terminators (`reduce_into`).
@@ -523,52 +1038,45 @@ int main(int argc, char** argv)
 
   bool ok = true;
 
+  // Host references, shared by sections 1, 2 and 4.
+  double ref_revenue          = 0.0;
+  ::std::size_t ref_survivors = 0;
+  ::std::map<int, ::std::array<double, 4>> ref_groups; // key -> {sum q, sum price, count valid, rows}
+  for (::std::size_t r = 0; r < N; r++)
+  {
+    const float dis = gen::discount(r);
+    if (gen::q6_selects(gen::shipdate(r), dis, gen::quantity(r)))
+    {
+      ref_revenue += static_cast<double>(gen::extendedprice(r) * dis);
+      ref_survivors++;
+    }
+    auto& a = ref_groups[gen::group_key(r)];
+    a[0] += gen::quantity(r);
+    a[1] += static_cast<double>(gen::extendedprice(r));
+    a[2] += gen::valid(r) ? 1 : 0;
+    a[3] += 1;
+  }
+
   // =========================================================================
   // 1. FILTER + AGGREGATE (Q6): sum(extendedprice * discount) over the rows
   //    with shipdate in a year, discount in [0.05, 0.07], quantity < 24.
-  //
-  //    cuDF: copy_if(row ids) -> distance -> gather -> reduce, four passes
-  //    with one host readback for the size. Here the readback is the
-  //    commit of the ragged survivors array (all shards, one join).
   // =========================================================================
   ::std::printf("[1] filter + aggregate (Q6 shape)\n");
-  auto survivors        = sharded_array<int>::allocate(group, rows, 0); // capacity = worst case
-  const ::std::size_t s = copy_if(row_ids, envs, survivors, q6_pred{shipdate_base, discount_base, quantity_base});
-  print_shard_sizes("survivors (ragged, committed by copy_if)", survivors);
-
-  // Gather-multiply for the survivors only, into a ragged array laid out
-  // like the survivors (allocate_like copies the committed sizes).
-  auto products = sharded_array<float>::allocate_like(survivors);
-  zip_transform(products, envs, gather_price_x_discount{price_base, discount_base}, default_call_env{}, survivors);
-
-  float* h_revenue = nullptr;
-  cuda_safe_call(cudaMallocHost(&h_revenue, sizeof(float)));
-  reduce_into(products, envs, h_revenue, sum_f{}, 0.0f, caller_env);
-  cuda_safe_call(cudaStreamSynchronize(caller));
-
+  auto q6_ws = make_q6_workspace(group, cut);
   {
-    double ref        = 0.0;
-    ::std::size_t cnt = 0;
-    for (::std::size_t r = 0; r < N; r++)
-    {
-      const int d     = gen::shipdate(r);
-      const float dis = gen::discount(r);
-      if (d >= shipdate_lo && d < shipdate_hi && dis >= 0.05f && dis <= 0.07f && gen::quantity(r) < 24)
-      {
-        ref += static_cast<double>(gen::extendedprice(r) * dis);
-        cnt++;
-      }
-    }
-    const bool count_ok = (s == cnt);
-    const bool sum_ok   = ::std::abs(static_cast<double>(*h_revenue) - ref) <= 1e-3 * (1.0 + ::std::abs(ref));
-    ok                  = ok && count_ok && sum_ok;
+    const q6_result r =
+      run_q6(cut, envs, caller_env, caller, row_ids, t.shipdate, t.discount, t.quantity, t.extendedprice, q6_ws, true);
+    const bool count_ok = (r.survivors == ref_survivors);
+    const bool sum_ok =
+      ::std::abs(static_cast<double>(r.revenue) - ref_revenue) <= 1e-3 * (1.0 + ::std::abs(ref_revenue));
+    ok = ok && count_ok && sum_ok;
     ::std::printf(
       "  survivors %zu (ref %zu) %s, revenue %.2f (ref %.2f) %s\n",
-      s,
-      cnt,
+      r.survivors,
+      ref_survivors,
       count_ok ? "OK" : "MISMATCH",
-      static_cast<double>(*h_revenue),
-      ref,
+      static_cast<double>(r.revenue),
+      ref_revenue,
       sum_ok ? "OK" : "MISMATCH");
   }
 
@@ -577,156 +1085,14 @@ int main(int argc, char** argv)
   //    SUM(extendedprice), COUNT(orderkey) (non-null rows).
   // =========================================================================
   ::std::printf("[2] group-by aggregate (Q1 shape)\n");
-
-  // 2a. Sort by key carrying the row id (packed 64-bit key). Shards keep
-  //     their boundaries; the array reads as one globally sorted sequence.
-  auto keys = sharded_array<unsigned long long>::allocate(group, rows, 0);
-  tabulate(keys, envs, gen_packed_key{});
-  sort(group, keys);
-
-  // 2b. Group starts: adjacent_difference flags a key change (the
-  //     predecessor of a shard's first element comes from the previous
-  //     shard — the one-element halo). Contiguous, so the boundary
-  //     predicate can read it by global position.
-  auto marks = allocate_contiguous_column<unsigned long long>(group, rows);
-  adjacent_difference(keys, envs, marks, key_change_op{});
-
-  // 2c. Boundary positions as a RAGGED copy_if of the positions
-  //     (materialized again: the counting-iterator gap).
-  auto positions  = sharded_array<int>::allocate(group, rows, 0);
-  auto boundaries = sharded_array<int>::allocate(group, rows, 0);
-  sequence(positions, envs, 0, 1);
-  const ::std::size_t G = copy_if(positions, envs, boundaries, boundary_pred{marks.contiguous_data()});
-  print_shard_sizes("group starts (ragged)", boundaries);
-
-  // 2d. The whole `pieces+1` offsets array. Assembled on the host from the
-  //     committed ragged shards: the group count is tiny (a handful of
-  //     keys), so this is a few dozen bytes. Every shard cut is inserted as
-  //     an extra boundary when a group straddles it — whole-offsets
-  //     segmented_reduce requires no segment to cross the value cut. Such
-  //     a straddling group becomes two PIECES, merged on the host below.
-  ::std::vector<int> h_bounds(G);
-  boundaries.copy_to_host(h_bounds.data());
-  ::std::vector<int> h_off(h_bounds);
-  for (::std::size_t g = 1; g < P; g++)
+  auto q1_ws = make_q1_workspace(group, cut);
   {
-    h_off.push_back(static_cast<int>(row_begin[g]));
+    const auto groups =
+      run_q1(group, cut, envs, row_ids, t.group_key, t.quantity, t.extendedprice, t.validity, q1_ws, true);
+    const bool ok2 = check_q1(groups, ref_groups, "host", 1e-3);
+    ok             = ok && ok2;
+    ::std::printf("  group-by vs host reference: %s\n", ok2 ? "OK" : "MISMATCH");
   }
-  h_off.push_back(static_cast<int>(N));
-  ::std::sort(h_off.begin(), h_off.end());
-  h_off.erase(::std::unique(h_off.begin(), h_off.end()), h_off.end());
-  const ::std::size_t pieces = h_off.size() - 1;
-  ::std::vector<::std::size_t> pieces_per_shard(P, 0);
-  for (::std::size_t p = 0; p < pieces; p++)
-  {
-    const ::std::size_t g = ::std::upper_bound(row_begin.begin(), row_begin.end(), h_off[p]) - row_begin.begin() - 1;
-    pieces_per_shard[g]++;
-  }
-  int* d_off = nullptr;
-  cuda_safe_call(cudaMalloc(&d_off, h_off.size() * sizeof(int)));
-  cuda_safe_call(cudaMemcpy(d_off, h_off.data(), h_off.size() * sizeof(int), cudaMemcpyHostToDevice));
-  ::std::printf("  groups %zu, pieces %zu (straddling cuts split into pieces)\n", G, pieces);
-
-  // 2e. Value columns in SORTED order (gather by the packed row id), then
-  //     the whole-offsets segmented reduce, output co-partitioned with the
-  //     pieces.
-  auto q_sorted     = sharded_array<int>::allocate(group, rows, 0);
-  auto price_sorted = sharded_array<float>::allocate(group, rows, 0);
-  auto valid_sorted = sharded_array<int>::allocate(group, rows, 0);
-  zip_transform(q_sorted, envs, gather_int_by_packed{quantity_base}, default_call_env{}, keys);
-  zip_transform(price_sorted, envs, gather_float_by_packed{price_base}, default_call_env{}, keys);
-  zip_transform(valid_sorted, envs, gather_valid_by_packed{validity_base}, default_call_env{}, keys);
-
-  auto sum_qty   = sharded_array<long long>::allocate(group, pieces_per_shard, 0);
-  auto sum_price = sharded_array<float>::allocate(group, pieces_per_shard, 0);
-  auto count_ok_ = sharded_array<long long>::allocate(group, pieces_per_shard, 0);
-  segmented_reduce(q_sorted, envs, d_off, sum_qty, sum_ll{}, 0ll);
-  segmented_reduce(price_sorted, envs, d_off, sum_price, sum_f{}, 0.0f);
-  segmented_reduce(valid_sorted, envs, d_off, count_ok_, sum_ll{}, 0ll);
-  print_shard_sizes("aggregates (co-partitioned with the pieces)", sum_qty);
-
-  // 2f. Merge pieces into groups on the host (a piece starting at a cut
-  //     where no key change was flagged continues the previous group) and
-  //     verify.
-  {
-    ::std::vector<long long> h_q(pieces), h_c(pieces);
-    ::std::vector<float> h_p(pieces);
-    sum_qty.copy_to_host(h_q.data());
-    sum_price.copy_to_host(h_p.data());
-    count_ok_.copy_to_host(h_c.data());
-
-    ::std::vector<long long> h_marks_at_start(pieces);
-    for (::std::size_t p = 0; p < pieces; p++)
-    {
-      unsigned long long m = 1;
-      if (h_off[p] != 0)
-      {
-        cuda_safe_call(cudaMemcpy(&m, marks.contiguous_data() + h_off[p], sizeof(m), cudaMemcpyDeviceToHost));
-      }
-      h_marks_at_start[p] = static_cast<long long>(m);
-    }
-    ::std::vector<long long> g_q, g_c;
-    ::std::vector<double> g_p;
-    ::std::vector<long long> g_rows;
-    for (::std::size_t p = 0; p < pieces; p++)
-    {
-      if (h_marks_at_start[p] != 0 || p == 0)
-      {
-        g_q.push_back(0);
-        g_c.push_back(0);
-        g_p.push_back(0.0);
-        g_rows.push_back(0);
-      }
-      g_q.back() += h_q[p];
-      g_c.back() += h_c[p];
-      g_p.back() += static_cast<double>(h_p[p]);
-      g_rows.back() += h_off[p + 1] - h_off[p];
-    }
-    const ::std::size_t merged = pieces - g_q.size();
-
-    // Host reference: groups appear in ascending key order after the sort.
-    ::std::map<int, ::std::array<double, 4>> ref; // key -> {sum q, sum price, count valid, rows}
-    for (::std::size_t r = 0; r < N; r++)
-    {
-      auto& a = ref[gen::group_key(r)];
-      a[0] += gen::quantity(r);
-      a[1] += static_cast<double>(gen::extendedprice(r));
-      a[2] += gen::valid(r) ? 1 : 0;
-      a[3] += 1;
-    }
-    bool ok2        = (G == ref.size()) && (g_q.size() == ref.size());
-    ::std::size_t i = 0;
-    for (const auto& [key, a] : ref)
-    {
-      if (!ok2 || i >= g_q.size())
-      {
-        break;
-      }
-      const bool q_ok = static_cast<double>(g_q[i]) == a[0];
-      const bool p_ok = ::std::abs(g_p[i] - a[1]) <= 1e-3 * (1.0 + ::std::abs(a[1]));
-      const bool c_ok = static_cast<double>(g_c[i]) == a[2];
-      const bool n_ok = static_cast<double>(g_rows[i]) == a[3];
-      ::std::printf(
-        "  key %d: rows %lld sum(qty) %lld sum(price) %.2f count %lld %s\n",
-        key,
-        g_rows[i],
-        g_q[i],
-        g_p[i],
-        g_c[i],
-        (q_ok && p_ok && c_ok && n_ok) ? "OK" : "MISMATCH");
-      ok2 = ok2 && q_ok && p_ok && c_ok && n_ok;
-      i++;
-    }
-    ok = ok && ok2;
-    ::std::printf(
-      "  %zu groups from %zu pieces (%zu host merge%s at the cut): %s\n",
-      g_q.size(),
-      pieces,
-      merged,
-      merged == 1 ? "" : "s",
-      ok2 ? "OK" : "MISMATCH");
-  }
-  cuda_safe_call(cudaFree(d_off));
 
   // =========================================================================
   // 3. ANTI-JOIN (mark_join shape): probe rows whose orderkey is not in the
@@ -763,8 +1129,8 @@ int main(int argc, char** argv)
   // `result.begin() + unmatched_valid`. There is no append form of
   // `copy_if` (select into `out` from its committed size) yet, so the two
   // results are two ragged arrays here (gap).
-  auto unmatched = sharded_array<int>::allocate(group, rows, 0);
-  auto nulls     = sharded_array<int>::allocate(group, rows, 0);
+  auto unmatched = sharded_array<int>::allocate(group, cut.rows, 0);
+  auto nulls     = sharded_array<int>::allocate(group, cut.rows, 0);
   const ::std::size_t n_unmatched =
     copy_if(row_ids, envs, unmatched, unmatched_valid_pred{set, orderkey_base, validity_base});
   const ::std::size_t n_nulls = copy_if(row_ids, envs, nulls, null_row_pred{validity_base});
@@ -847,7 +1213,229 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaFree(d_build));
   cuda_safe_call(cudaFree(set.slots));
   cuda_safe_call(cudaFree(set.marks));
-  cuda_safe_call(cudaFreeHost(h_revenue));
+
+#ifdef SHARDED_RELATIONAL_WITH_CUDF
+  // =========================================================================
+  // 4. ADOPT cuDF COLUMNS: the same two queries over real libcudf columns,
+  //    adopted zero-copy, verified against libcudf's own API.
+  // =========================================================================
+  ::std::printf("[4] adopt cudf columns (libcudf %d.%d)\n", CUDF_VERSION_MAJOR, CUDF_VERSION_MINOR);
+  {
+    using cudf::data_type;
+    using cudf::type_id;
+
+    // rmm's default resource is cudaMalloc/cudaFree per allocation; route
+    // cuDF's allocations (results and its own temporaries) through the
+    // device's default stream-ordered pool so the timings below measure
+    // cuDF's kernels rather than the allocator. The pool is still
+    // whole-device memory: interleaved across the dies.
+    cudaMemPool_t mempool = nullptr;
+    cuda_safe_call(cudaDeviceGetDefaultMemPool(&mempool, 0));
+    unsigned long long keep_all = ~0ull;
+    cuda_safe_call(cudaMemPoolSetAttribute(mempool, cudaMemPoolAttrReleaseThreshold, &keep_all));
+    rmm::mr::cuda_async_view_memory_resource pool_mr{mempool};
+    rmm::mr::set_current_device_resource(cuda::mr::any_resource<cuda::mr::device_accessible>{pool_mr});
+    const cudaStream_t cudf_stream = cudf::get_default_stream().value();
+
+    // 4a. The cuDF table: libcudf's factories allocate the buffers, the
+    //     generated (placed) columns are copied in once — bit-identical
+    //     data, so every result of sections 1/2 is a cross-check too.
+    const auto n_rows = static_cast<cudf::size_type>(N);
+    auto make_col     = [&](type_id id, const void* src, ::std::size_t bytes, cudf::mask_state mask) {
+      auto col = cudf::make_numeric_column(data_type{id}, n_rows, mask);
+      cuda_safe_call(cudaMemcpy(col->mutable_view().head(), src, bytes, cudaMemcpyDeviceToDevice));
+      return col;
+    };
+    ::std::vector<::std::unique_ptr<cudf::column>> cols;
+    cols.push_back(
+      make_col(type_id::INT32, t.quantity.contiguous_data(), N * sizeof(int), cudf::mask_state::UNALLOCATED));
+    cols.push_back(
+      make_col(type_id::FLOAT32, t.discount.contiguous_data(), N * sizeof(float), cudf::mask_state::UNALLOCATED));
+    cols.push_back(
+      make_col(type_id::FLOAT32, t.extendedprice.contiguous_data(), N * sizeof(float), cudf::mask_state::UNALLOCATED));
+    cols.push_back(
+      make_col(type_id::INT32, t.shipdate.contiguous_data(), N * sizeof(int), cudf::mask_state::UNALLOCATED));
+    cols.push_back(
+      make_col(type_id::INT32, t.group_key.contiguous_data(), N * sizeof(int), cudf::mask_state::UNALLOCATED));
+    // orderkey: nullable. ALL_VALID allocates the mask; its words are then
+    // overwritten with the generated validity and the null count recomputed
+    // by libcudf.
+    cols.push_back(
+      make_col(type_id::INT32, t.orderkey.contiguous_data(), N * sizeof(int), cudf::mask_state::ALL_VALID));
+    cuda_safe_call(cudaMemcpy(
+      cols.back()->mutable_view().null_mask(),
+      t.validity.contiguous_data(),
+      (N / 32) * sizeof(::std::uint32_t),
+      cudaMemcpyDeviceToDevice));
+    cols.back()->set_null_count(cudf::null_count(cols.back()->view().null_mask(), 0, n_rows));
+    cudf::table lineitem(::std::move(cols));
+    const cudf::table_view tv           = lineitem.view();
+    const cudf::column_view cv_quantity = tv.column(0), cv_discount = tv.column(1), cv_price = tv.column(2),
+                            cv_shipdate = tv.column(3), cv_group_key = tv.column(4), cv_orderkey = tv.column(5);
+    ::std::printf("  cudf::table: %d rows x %d columns, orderkey null_count %d (%.2f%%)\n",
+                  tv.num_rows(),
+                  tv.num_columns(),
+                  cv_orderkey.null_count(),
+                  100.0 * cv_orderkey.null_count() / N);
+
+    // 4b. ADOPT. Nothing is copied: the shards point into cuDF's buffers.
+    auto a_quantity  = adopt_cudf_column<int>(group, cut, cv_quantity);
+    auto a_discount  = adopt_cudf_column<float>(group, cut, cv_discount);
+    auto a_price     = adopt_cudf_column<float>(group, cut, cv_price);
+    auto a_shipdate  = adopt_cudf_column<int>(group, cut, cv_shipdate);
+    auto a_group_key = adopt_cudf_column<int>(group, cut, cv_group_key);
+    auto a_validity  = adopt_cudf_null_mask(group, cut, cv_orderkey);
+    {
+      const bool alias_ok =
+        a_quantity.is_view() && !a_quantity.is_owning() && a_quantity.shard(0).data == cv_quantity.data<int>()
+        && a_quantity.shard(P - 1).data == cv_quantity.data<int>() + cut.row_begin[P - 1]
+        && a_validity.shard(0).data == cv_orderkey.null_mask() && a_validity.size() == N / 32;
+      ok = ok && alias_ok;
+      ::std::printf("  adopted %zu value columns + 1 null mask as views (shards alias cudf buffers): %s\n",
+                    ::std::size_t{5},
+                    alias_ok ? "OK" : "MISMATCH");
+      print_shard_sizes("adopted quantity (cudf data<int>())", a_quantity);
+      print_shard_sizes("adopted orderkey null mask (cudf null_mask(), words)", a_validity);
+    }
+
+    // 4c. cuDF's own answers. Q6: BOOL8 mask -> apply_boolean_mask over
+    //     {price, discount} -> MUL -> SUM. Q1: groupby(group_key).aggregate
+    //     {SUM(quantity), SUM(price), COUNT_VALID(orderkey)}.
+    auto mask_col = cudf::make_numeric_column(data_type{type_id::BOOL8}, n_rows, cudf::mask_state::UNALLOCATED);
+    ::std::size_t cudf_survivors = 0;
+    double cudf_revenue          = 0.0;
+    auto cudf_q6                 = [&] {
+      q6_mask_kernel<<<static_cast<unsigned>((N + 255) / 256), 256, 0, cudf_stream>>>(
+        cv_shipdate.data<int>(),
+        cv_discount.data<float>(),
+        cv_quantity.data<int>(),
+        mask_col->mutable_view().data<::std::int8_t>(),
+        n_rows);
+      cuda_safe_call(cudaGetLastError());
+      auto filtered = cudf::apply_boolean_mask(cudf::table_view({cv_price, cv_discount}), mask_col->view());
+      auto products = cudf::binary_operation(
+        filtered->view().column(0), filtered->view().column(1), cudf::binary_operator::MUL, data_type{type_id::FLOAT32});
+      auto agg       = cudf::make_sum_aggregation<cudf::reduce_aggregation>();
+      auto sum       = cudf::reduce(products->view(), *agg, data_type{type_id::FLOAT64});
+      cudf_survivors = static_cast<::std::size_t>(filtered->num_rows());
+      cudf_revenue   = static_cast<cudf::numeric_scalar<double>*>(sum.get())->value();
+    };
+    ::std::map<int, ::std::array<double, 4>> cudf_groups; // key -> {sum q, sum price, count, -1 (rows unused)}
+    auto cudf_q1 = [&] {
+      ::std::vector<cudf::groupby::aggregation_request> requests(3);
+      requests[0].values = cv_quantity;
+      requests[0].aggregations.push_back(cudf::make_sum_aggregation<cudf::groupby_aggregation>());
+      requests[1].values = cv_price;
+      requests[1].aggregations.push_back(cudf::make_sum_aggregation<cudf::groupby_aggregation>());
+      requests[2].values = cv_orderkey;
+      requests[2].aggregations.push_back(
+        cudf::make_count_aggregation<cudf::groupby_aggregation>(cudf::null_policy::EXCLUDE));
+      cudf::groupby::groupby gb(cudf::table_view({cv_group_key}));
+      auto [keys, results] = gb.aggregate(requests);
+      const auto G         = static_cast<::std::size_t>(keys->num_rows());
+      ::std::vector<int> h_k(G), h_c(G);
+      ::std::vector<long long> h_q(G);
+      ::std::vector<float> h_p(G);
+      cuda_safe_call(cudaMemcpy(h_k.data(), keys->view().column(0).data<int>(), G * sizeof(int), cudaMemcpyDefault));
+      cuda_safe_call(cudaMemcpy(
+        h_q.data(), results[0].results[0]->view().data<long long>(), G * sizeof(long long), cudaMemcpyDefault));
+      cuda_safe_call(
+        cudaMemcpy(h_p.data(), results[1].results[0]->view().data<float>(), G * sizeof(float), cudaMemcpyDefault));
+      cuda_safe_call(
+        cudaMemcpy(h_c.data(), results[2].results[0]->view().data<int>(), G * sizeof(int), cudaMemcpyDefault));
+      cudf_groups.clear();
+      for (::std::size_t i = 0; i < G; i++)
+      {
+        cudf_groups[h_k[i]] = {
+          static_cast<double>(h_q[i]), static_cast<double>(h_p[i]), static_cast<double>(h_c[i]), -1.0};
+      }
+    };
+    cudf_q6();
+    cudf_q1();
+    ::std::printf(
+      "  cudf Q6: survivors %zu, revenue %.2f (host ref %zu, %.2f); cudf Q1: %zu groups\n",
+      cudf_survivors,
+      cudf_revenue,
+      ref_survivors,
+      ref_revenue,
+      cudf_groups.size());
+
+    // 4d. The sharded verbs over the ADOPTED views, verified against cuDF.
+    ::std::printf("  -- sharded Q6 over adopted cudf columns\n");
+    const q6_result a6 =
+      run_q6(cut, envs, caller_env, caller, row_ids, a_shipdate, a_discount, a_quantity, a_price, q6_ws, true);
+    {
+      const bool count_ok = a6.survivors == cudf_survivors;
+      const bool sum_ok =
+        ::std::abs(static_cast<double>(a6.revenue) - cudf_revenue) <= 1e-3 * (1.0 + ::std::abs(cudf_revenue));
+      ok = ok && count_ok && sum_ok;
+      ::std::printf(
+        "  survivors %zu (cudf %zu) %s, revenue %.2f (cudf %.2f) %s\n",
+        a6.survivors,
+        cudf_survivors,
+        count_ok ? "OK" : "MISMATCH",
+        static_cast<double>(a6.revenue),
+        cudf_revenue,
+        sum_ok ? "OK" : "MISMATCH");
+    }
+    ::std::printf("  -- sharded Q1 over adopted cudf columns (group key, quantity, price, null mask)\n");
+    {
+      const auto groups = run_q1(group, cut, envs, row_ids, a_group_key, a_quantity, a_price, a_validity, q1_ws, true);
+      const bool ok4    = check_q1(groups, cudf_groups, "cudf", 1e-3);
+      ok                = ok && ok4;
+      ::std::printf("  group-by vs cudf::groupby: %s\n", ok4 ? "OK" : "MISMATCH");
+    }
+
+    // 4e. Born-placed vs adopted: copy the adopted columns ONCE into placed
+    //     (contiguous, per-place page ownership) columns and rerun. Same
+    //     verbs, same cut; only where the pages live differs.
+    auto p_quantity  = placed_copy(group, cut.rows, a_quantity);
+    auto p_discount  = placed_copy(group, cut.rows, a_discount);
+    auto p_price     = placed_copy(group, cut.rows, a_price);
+    auto p_shipdate  = placed_copy(group, cut.rows, a_shipdate);
+    auto p_group_key = placed_copy(group, cut.rows, a_group_key);
+    auto p_validity  = placed_copy(group, cut.words, a_validity);
+    {
+      const auto groups = run_q1(group, cut, envs, row_ids, p_group_key, p_quantity, p_price, p_validity, q1_ws, false);
+      bool same         = groups.size() == cudf_groups.size();
+      for (const auto& g : groups)
+      {
+        const auto it = cudf_groups.find(g.key);
+        same          = same && it != cudf_groups.end() && static_cast<double>(g.sum_qty) == it->second[0]
+                     && static_cast<double>(g.count) == it->second[2];
+      }
+      ok = ok && same;
+      ::std::printf("  placed copies of the adopted columns: Q1 vs cudf::groupby %s\n", same ? "OK" : "MISMATCH");
+    }
+
+    // 4f. Timing (informative only; cudaEvent, median of 5 after a warm-up).
+    const float ms_cudf_q6    = time_median_ms(cudf_q6);
+    const float ms_cudf_q1    = time_median_ms(cudf_q1);
+    const float ms_adopted_q6 = time_median_ms([&] {
+      run_q6(cut, envs, caller_env, caller, row_ids, a_shipdate, a_discount, a_quantity, a_price, q6_ws, false);
+    });
+    const float ms_adopted_q1 = time_median_ms([&] {
+      run_q1(group, cut, envs, row_ids, a_group_key, a_quantity, a_price, a_validity, q1_ws, false);
+    });
+    const float ms_placed_q6  = time_median_ms([&] {
+      run_q6(cut, envs, caller_env, caller, row_ids, p_shipdate, p_discount, p_quantity, p_price, q6_ws, false);
+    });
+    const float ms_placed_q1  = time_median_ms([&] {
+      run_q1(group, cut, envs, row_ids, p_group_key, p_quantity, p_price, p_validity, q1_ws, false);
+    });
+    ::std::printf("  timing, N = %zu rows, ms (median of 5):\n", N);
+    ::std::printf("    %-22s %10s %18s %18s\n", "query", "cudf", "sharded adopted", "sharded placed");
+    ::std::printf("    %-22s %10.3f %18.3f %18.3f\n", "Q6 filter+aggregate", ms_cudf_q6, ms_adopted_q6, ms_placed_q6);
+    ::std::printf("    %-22s %10.3f %18.3f %18.3f\n", "Q1 group-by", ms_cudf_q1, ms_adopted_q1, ms_placed_q1);
+    ::std::printf("    (adopted = cudf's rmm memory, interleaved across the dies: confinement without placement;\n"
+                  "     placed = the same bytes copied once into per-place pages; cudf = libcudf's own kernels)\n");
+
+    // The adopted views must die before the cudf::table they alias (they do:
+    // scope order), and never free anything themselves.
+  }
+#endif // SHARDED_RELATIONAL_WITH_CUDF
+
+  cuda_safe_call(cudaFreeHost(q6_ws.h_revenue));
   cuda_safe_call(cudaStreamDestroy(caller));
 
   if (!ok)
