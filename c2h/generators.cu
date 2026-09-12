@@ -21,6 +21,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -65,6 +66,7 @@ public:
   generator_state_t(int device, ::cudaStream_t stream)
       : m_device(device)
       , m_stream(stream)
+      , m_thread_id(thread_id_for_stream(stream))
   {
 #if C2H_HAS_CURAND
     curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
@@ -80,7 +82,7 @@ public:
 
   [[nodiscard]] bool matches(int device, ::cudaStream_t stream) const noexcept
   {
-    return m_device == device && m_stream == stream;
+    return m_device == device && m_stream == stream && m_thread_id == thread_id_for_stream(stream);
   }
 
   [[nodiscard]] int device() const noexcept
@@ -126,6 +128,23 @@ public:
   }
 
 private:
+  [[nodiscard]] static std::thread::id thread_id_for_stream(::cudaStream_t stream) noexcept
+  {
+    if (stream == cudaStreamPerThread)
+    {
+      return std::this_thread::get_id();
+    }
+
+#if defined(CUDA_API_PER_THREAD_DEFAULT_STREAM)
+    if (stream == ::cudaStream_t{})
+    {
+      return std::this_thread::get_id();
+    }
+#endif // CUDA_API_PER_THREAD_DEFAULT_STREAM
+
+    return {};
+  }
+
   void resize_distribution(std::size_t num_items)
   {
 #if THRUST_VERSION >= 300100
@@ -144,6 +163,7 @@ private:
   c2h::device_vector<float> m_distribution;
   int m_device;
   ::cudaStream_t m_stream;
+  std::thread::id m_thread_id;
   std::mutex m_state_mutex;
   bool m_has_generated = false;
 };
