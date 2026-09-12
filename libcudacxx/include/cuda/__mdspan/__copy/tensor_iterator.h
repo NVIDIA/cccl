@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_TENSOR_ITERATOR_H
-#define _CUDAX__COPY_TENSOR_ITERATOR_H
+#ifndef _CUDA___MDSPAN___COPY_TENSOR_ITERATOR_H
+#define _CUDA___MDSPAN___COPY_TENSOR_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,8 +30,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 /***********************************************************************************************************************
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
@@ -41,8 +41,8 @@ template <typename _ExtentT, ::cuda::std::size_t _Size, ::cuda::std::size_t... _
 __extents_fast_div_mod_impl(const ::cuda::std::array<_ExtentT, _Size>& __extents,
                             ::cuda::std::index_sequence<_Rp...> = {}) noexcept
 {
-  using __fast_mod_div_t = ::cuda::fast_mod_div<_ExtentT>;
-  using __array_t        = ::cuda::std::array<__fast_mod_div_t, sizeof...(_Rp)>;
+  using __fast_mod_div_t _CCCL_NODEBUG = ::cuda::fast_mod_div<_ExtentT>;
+  using __array_t _CCCL_NODEBUG        = ::cuda::std::array<__fast_mod_div_t, sizeof...(_Rp)>;
   return __array_t{__fast_mod_div_t(__extents[_Rp])...};
 }
 
@@ -54,8 +54,8 @@ template <typename _ExtentT, ::cuda::std::size_t _Size>
 [[nodiscard]] _CCCL_HOST_DEVICE_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
 __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noexcept
 {
-  using __seq_t = ::cuda::std::make_index_sequence<_Size>;
-  return ::cuda::experimental::__extents_fast_div_mod_impl(__extents, __seq_t{});
+  using __seq_t _CCCL_NODEBUG = ::cuda::std::make_index_sequence<_Size>;
+  return ::cuda::__extents_fast_div_mod_impl(__extents, __seq_t{});
 }
 
 /***********************************************************************************************************************
@@ -66,9 +66,9 @@ __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noe
 template <typename _ExtentT, ::cuda::std::size_t _Rank>
 struct __tensor_coord_iterator
 {
-  using __unsigned_extent_t = ::cuda::std::make_unsigned_t<_ExtentT>;
-  using __fast_mod_div_t    = ::cuda::fast_mod_div<__unsigned_extent_t>;
-  using __array_t           = ::cuda::std::array<__fast_mod_div_t, _Rank>;
+  using __unsigned_extent_t _CCCL_NODEBUG = ::cuda::std::make_unsigned_t<_ExtentT>;
+  using __fast_mod_div_t _CCCL_NODEBUG    = ::cuda::fast_mod_div<__unsigned_extent_t>;
+  using __array_t _CCCL_NODEBUG           = ::cuda::std::array<__fast_mod_div_t, _Rank>;
 
   __array_t __extents_;
 
@@ -93,7 +93,7 @@ struct __tensor_coord_iterator
   //! @param[in] __extents Tensor extents (may be unsigned; converted to _ExtentT internally)
   template <typename _UExtentT>
   _CCCL_HOST_API explicit __tensor_coord_iterator(const ::cuda::std::array<_UExtentT, _Rank>& __extents) noexcept
-      : __extents_{::cuda::experimental::__extents_fast_div_mod(__to_extent_array(__extents))}
+      : __extents_{::cuda::__extents_fast_div_mod(__to_extent_array(__extents))}
   {}
 
   //! @brief Returns the multi-dimensional coordinates for the given linear index.
@@ -157,14 +157,14 @@ struct __partial_tensor
   //! @param[in] __coords Array of per-dimension coordinates
   //! @return Reference to the element at the computed offset
   template <typename _CoordT>
-  [[nodiscard]] _CCCL_DEVICE_API decltype(auto)
-  operator()(const ::cuda::std::array<_CoordT, _Rank>& __coords) const noexcept
+  _CCCL_DEVICE_API decltype(auto) operator()(const ::cuda::std::array<_CoordT, _Rank>& __coords) const noexcept
   {
     return __accessor.access(const_cast<::cuda::std::remove_const_t<_Tp>*>(__ptr), __offset(__coords));
   }
 };
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_TENSOR_ITERATOR_H
+#endif // _CUDA___MDSPAN___COPY_TENSOR_ITERATOR_H

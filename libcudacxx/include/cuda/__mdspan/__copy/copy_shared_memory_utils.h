@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_COPY_SHARED_MEMORY_UTILS_H
-#define _CUDAX__COPY_COPY_SHARED_MEMORY_UTILS_H
+#ifndef _CUDA___MDSPAN___COPY_COPY_SHARED_MEMORY_UTILS_H
+#define _CUDA___MDSPAN___COPY_COPY_SHARED_MEMORY_UTILS_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,23 +26,22 @@
 #  include <cuda/__cmath/ceil_div.h>
 #  include <cuda/__device/attributes.h>
 #  include <cuda/__device/device_ref.h>
+#  include <cuda/__mdspan/__copy/tensor_query.h>
+#  include <cuda/__mdspan/__copy/types.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/array>
 
-#  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
-#  include <cuda/experimental/__copy_bytes/types.cuh>
-
 #  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 //! Maximum tensor rank for which the shared-memory transpose kernel is instantiated. Higher ranks cause excessive
 //! register pressure (many rank-sized arrays and fully-unrolled loops).
 inline constexpr ::cuda::std::size_t __max_shared_mem_kernel_rank = 8;
 
 //! A tile size is always representable by an unsigned integer.
-using __tile_extent_t = unsigned;
+using __tile_extent_t _CCCL_NODEBUG = unsigned;
 
 //! @brief Copy a raw tensor descriptor into one with a narrower static maximum rank.
 //!
@@ -73,7 +72,7 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
 __num_contiguous_dimensions(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __rank_t = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
+  using __rank_t _CCCL_NODEBUG = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
   if (__tensor.__rank == 0 || __tensor.__strides[0] != 1)
   {
     return 0;
@@ -156,7 +155,7 @@ template <typename _SmemTp, typename _ExtentT, typename _StrideT, typename _Tp, 
 
     const auto __perm_i = __perm[__i];
     const auto __extent = static_cast<size_t>(__tensor.__extents[__perm_i]);
-    const auto __stride = ::cuda::experimental::__abs_integer(__tensor.__strides[__perm_i]);
+    const auto __stride = ::cuda::__abs_integer(__tensor.__strides[__perm_i]);
     if (__stride != __expected_stride) // input tensor not contiguous
     {
       break;
@@ -229,12 +228,12 @@ template <typename _TpIn,
     __result.__src_perm[__i]   = __i;
     __result.__dst_perm[__i]   = __i;
   }
-  __result.__src_perm = ::cuda::experimental::__stride_order(__src);
-  __result.__dst_perm = ::cuda::experimental::__stride_order(__dst);
+  __result.__src_perm = ::cuda::__stride_order(__src);
+  __result.__dst_perm = ::cuda::__stride_order(__dst);
 
-  __result.__src_coalesced_tile_size = ::cuda::experimental::__add_coalesced_tile_run<_TpIn>(
+  __result.__src_coalesced_tile_size = ::cuda::__add_coalesced_tile_run<_TpIn>(
     __src, __result.__src_perm, __result, __max_shared_mem_bytes, __target_coalesced_size);
-  __result.__dst_coalesced_tile_size = ::cuda::experimental::__add_coalesced_tile_run<_TpIn>(
+  __result.__dst_coalesced_tile_size = ::cuda::__add_coalesced_tile_run<_TpIn>(
     __dst, __result.__dst_perm, __result, __max_shared_mem_bytes, __target_coalesced_size);
   return __result;
 }
@@ -320,18 +319,17 @@ template <typename _TpIn,
   ::cuda::std::size_t __max_shared_mem_bytes,
   ::cuda::std::size_t __num_sms) noexcept
 {
-  auto __result =
-    ::cuda::experimental::__make_shared_mem_tiling_candidate<_TpIn>(__src, __dst, __max_shared_mem_bytes, 0);
-  ::cuda::experimental::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __max_shared_mem_bytes, __num_sms);
+  auto __result = ::cuda::__make_shared_mem_tiling_candidate<_TpIn>(__src, __dst, __max_shared_mem_bytes, 0);
+  ::cuda::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __max_shared_mem_bytes, __num_sms);
   if (__result.__is_valid)
   {
     return __result;
   }
 
   // fallback with one warp of coalesced elements per layout
-  __result = ::cuda::experimental::__make_shared_mem_tiling_candidate<_TpIn>(
-    __src, __dst, __max_shared_mem_bytes, __max_tile_size_32);
-  ::cuda::experimental::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __max_shared_mem_bytes, __num_sms);
+  __result =
+    ::cuda::__make_shared_mem_tiling_candidate<_TpIn>(__src, __dst, __max_shared_mem_bytes, __max_tile_size_32);
+  ::cuda::__validate_shared_mem_tiling<_TpIn>(__result, __dst, __max_shared_mem_bytes, __num_sms);
   return __result;
 }
 
@@ -355,7 +353,7 @@ template <typename _TpIn,
 {
   const auto __max_shared_mem_bytes = __device.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
   const auto __num_sms              = __device.attribute<::cudaDevAttrMultiProcessorCount>();
-  return ::cuda::experimental::__find_shared_mem_tiling_with_limits<_TpIn>(
+  return ::cuda::__find_shared_mem_tiling_with_limits<_TpIn>(
     __src, __dst, static_cast<::cuda::std::size_t>(__max_shared_mem_bytes), static_cast<::cuda::std::size_t>(__num_sms));
 }
 
@@ -376,11 +374,12 @@ template <typename _ExtentT,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst,
   ::cuda::device_ref __device) noexcept
 {
-  return ::cuda::experimental::__find_shared_mem_tiling<_TpIn>(__src, __dst, __device).__is_valid;
+  return ::cuda::__find_shared_mem_tiling<_TpIn>(__src, __dst, __device).__is_valid;
 }
-} // namespace cuda::experimental
+
+_CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // _CUDAX__COPY_COPY_SHARED_MEMORY_UTILS_H
+#endif // _CUDA___MDSPAN___COPY_COPY_SHARED_MEMORY_UTILS_H
