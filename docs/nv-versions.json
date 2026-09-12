@@ -1,0 +1,9 @@
+[
+  {
+    "name": "unstable",
+    "version": "unstable",
+    "url": "https://NVIDIA.github.io/cccl/unstable/",
+    "latest": true,
+    "preferred": true
+  }
+]
