@@ -182,8 +182,7 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
   result.resize(1);
   thrust::set_difference(thrust::device, begin, end_longer, begin, end, result.begin());
 
-  thrust::host_vector<long long> expected;
-  expected.push_back(*end);
+  thrust::host_vector<long long> expected{*end};
 
   ASSERT_EQUAL(result, expected);
 }

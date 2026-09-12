@@ -1,3 +1,4 @@
+#include <thrust/complex.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/sequence.h>

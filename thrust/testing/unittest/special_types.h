@@ -2,7 +2,12 @@
 
 #include <thrust/execution_policy.h>
 
-#include <iosfwd>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+
+#include <limits>
+#include <ostream>
 
 template <typename T, unsigned int N>
 struct FixedVector
@@ -133,6 +138,198 @@ struct user_swappable
   }
 };
 
+// A type that behaves as if it was a normal numeric type,
+// so it can be used in the same tests as "normal" numeric types.
+// NOTE: This is explicitly NOT proclaimed trivially reloctable.
+class custom_numeric
+{
+public:
+  _CCCL_HOST_DEVICE custom_numeric()
+  {
+    fill(0);
+  }
+
+#if _CCCL_COMPILER(MSVC2019)
+  // MSVC 2019's __is_constructible intrinsic can fail to detect the templated overload below sometimes, which happens
+  // e.g. in cuda::std::tuple's variadic converting constructor, called in the thrust.cpp.cuda.test.tuple.
+  _CCCL_HOST_DEVICE custom_numeric(int i)
+  {
+    fill(i);
+  }
+#endif // _CCCL_COMPILER(MSVC2019)
+
+  // Allow construction from any integral numeric.
+  template <typename T, typename = typename ::cuda::std::enable_if<::cuda::std::is_integral<T>::value>::type>
+  _CCCL_HOST_DEVICE custom_numeric(const T& i)
+  {
+    fill(static_cast<int>(i));
+  }
+
+  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other)
+  {
+    fill(other.value[0]);
+  }
+
+  _CCCL_HOST_DEVICE custom_numeric& operator=(int val)
+  {
+    fill(val);
+    return *this;
+  }
+
+  _CCCL_HOST_DEVICE custom_numeric& operator=(const custom_numeric& other)
+  {
+    if (this != &other)
+    {
+      fill(other.value[0]);
+    }
+    return *this;
+  }
+  _CCCL_HOST_DEVICE operator void*() const
+  {
+    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0])); // NOLINT(performance-no-int-to-ptr)
+  }
+
+#define DEFINE_OPERATOR(op)                               \
+  _CCCL_HOST_DEVICE custom_numeric& operator op()         \
+  {                                                       \
+    fill(op value[0]);                                    \
+    return *this;                                         \
+  }                                                       \
+  _CCCL_HOST_DEVICE custom_numeric operator op(int) const \
+  {                                                       \
+    custom_numeric ret(*this);                            \
+    op ret;                                               \
+    return ret;                                           \
+  }
+
+  DEFINE_OPERATOR(++)
+  DEFINE_OPERATOR(--)
+
+#undef DEFINE_OPERATOR
+
+#define DEFINE_OPERATOR(op)                            \
+  _CCCL_HOST_DEVICE custom_numeric operator op() const \
+  {                                                    \
+    return custom_numeric(op value[0]);                \
+  }
+
+  DEFINE_OPERATOR(+)
+  DEFINE_OPERATOR(-)
+  DEFINE_OPERATOR(~)
+
+#undef DEFINE_OPERATOR
+
+#define DEFINE_OPERATOR(op)                                                       \
+  _CCCL_HOST_DEVICE custom_numeric operator op(const custom_numeric& other) const \
+  {                                                                               \
+    return custom_numeric(value[0] op other.value[0]);                            \
+  }
+
+  DEFINE_OPERATOR(+)
+  DEFINE_OPERATOR(-)
+  DEFINE_OPERATOR(*)
+  DEFINE_OPERATOR(/)
+  DEFINE_OPERATOR(%)
+  DEFINE_OPERATOR(<<)
+  DEFINE_OPERATOR(>>)
+  DEFINE_OPERATOR(&)
+  DEFINE_OPERATOR(|)
+  DEFINE_OPERATOR(^)
+
+#undef DEFINE_OPERATOR
+
+#define CONCAT(X, Y) X##Y
+
+#define DEFINE_OPERATOR(op)                                                             \
+  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric& other) \
+  {                                                                                     \
+    fill(value[0] op other.value[0]);                                                   \
+    return *this;                                                                       \
+  }
+
+  DEFINE_OPERATOR(+)
+  DEFINE_OPERATOR(-)
+  DEFINE_OPERATOR(*)
+  DEFINE_OPERATOR(/)
+  DEFINE_OPERATOR(%)
+  DEFINE_OPERATOR(<<)
+  DEFINE_OPERATOR(>>)
+  DEFINE_OPERATOR(&)
+  DEFINE_OPERATOR(|)
+  DEFINE_OPERATOR(^)
+
+#undef DEFINE_OPERATOR
+#undef CONCAT
+
+#define DEFINE_OPERATOR(op)                                                                       \
+  _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
+  {                                                                                               \
+    return lhs.value[0] op rhs.value[0];                                                          \
+  }
+
+  DEFINE_OPERATOR(==)
+  DEFINE_OPERATOR(!=)
+  DEFINE_OPERATOR(<)
+  DEFINE_OPERATOR(<=)
+  DEFINE_OPERATOR(>)
+  DEFINE_OPERATOR(>=)
+  DEFINE_OPERATOR(&&)
+  DEFINE_OPERATOR(||)
+
+#undef DEFINE_OPERATOR
+
+  // Mixed comparisons against int. Because custom_numeric is implicitly convertible to bool, the built-in integer
+  // comparison operators would otherwise compete with the homogeneous ones above and make comparisons against integer
+  // literals (e.g. ASSERT_EQUAL(0, some_custom_numeric)) ambiguous. Providing exact int overloads resolves this.
+#define DEFINE_OPERATOR(op)                                                     \
+  _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, int rhs) \
+  {                                                                             \
+    return lhs.value[0] op rhs;                                                 \
+  }                                                                             \
+  _CCCL_HOST_DEVICE friend bool operator op(int lhs, const custom_numeric& rhs) \
+  {                                                                             \
+    return lhs op rhs.value[0];                                                 \
+  }
+
+  DEFINE_OPERATOR(==)
+  DEFINE_OPERATOR(!=)
+  DEFINE_OPERATOR(<)
+  DEFINE_OPERATOR(<=)
+  DEFINE_OPERATOR(>)
+  DEFINE_OPERATOR(>=)
+
+#undef DEFINE_OPERATOR
+
+  friend std::ostream& operator<<(std::ostream& os, const custom_numeric& val)
+  {
+    return os << "custom_numeric{" << val.value[0] << "}";
+  }
+
+private:
+  int value[5];
+
+  _CCCL_HOST_DEVICE void fill(int val)
+  {
+    for (int& v : value)
+    {
+      v = val;
+    }
+  }
+};
+
+namespace std
+{
+template <>
+struct numeric_limits<custom_numeric> : numeric_limits<int>
+{};
+} // namespace std
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+template <>
+struct numeric_limits<custom_numeric> : numeric_limits<int>
+{};
+_CCCL_END_NAMESPACE_CUDA_STD
+
 // Inheriting from classes in anonymous namespaces is not allowed.
 // The anonymous namespace tests don't use these, so just disable them:
 #ifndef THRUST_USE_ANON_NAMESPACE
@@ -170,13 +367,13 @@ struct my_tag : THRUST_NS_QUALIFIER::device_execution_policy<my_tag>
 
 namespace unittest
 {
-using std::int16_t;
-using std::int32_t;
-using std::int64_t;
-using std::int8_t;
+using ::cuda::std::int16_t;
+using ::cuda::std::int32_t;
+using ::cuda::std::int64_t;
+using ::cuda::std::int8_t;
 
-using std::uint16_t;
-using std::uint32_t;
-using std::uint64_t;
-using std::uint8_t;
+using ::cuda::std::uint16_t;
+using ::cuda::std::uint32_t;
+using ::cuda::std::uint64_t;
+using ::cuda::std::uint8_t;
 } // namespace unittest
