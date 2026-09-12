@@ -38,11 +38,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__min_element)
 struct __fn
 {
-  _CCCL_TEMPLATE(class _Ip, class _Sp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
-  _CCCL_REQUIRES(forward_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip> _CCCL_AND
-                   indirect_strict_weak_order<_Comp, projected<_Ip, _Proj>>)
-  [[nodiscard]] _CCCL_API constexpr _Ip
-  _CCCL_STATIC_CALL_OPERATOR(_Ip __first, _Sp __last, _Comp __comp = {}, _Proj __proj = {})
+  _CCCL_TEMPLATE(class _Iter, class _Sp, class _Proj = identity, class _Comp = ::cuda::std::ranges::less)
+  _CCCL_REQUIRES(forward_iterator<_Iter> _CCCL_AND sentinel_for<_Sp, _Iter> _CCCL_AND
+                   indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>)
+  [[nodiscard]] _CCCL_API constexpr _Iter
+  _CCCL_STATIC_CALL_OPERATOR(_Iter __first, _Sp __last, _Comp __comp = {}, _Proj __proj = {})
   {
     return ::cuda::std::__min_element(__first, __last, __comp, __proj);
   }
