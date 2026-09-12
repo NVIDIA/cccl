@@ -3,20 +3,33 @@
 
 #include <cub/device/device_copy.cuh>
 
+#include <thrust/detail/config/device_system.h>
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/tabulate.h>
+#include <thrust/version.h>
 
 #include <cuda/iterator>
 #include <cuda/std/optional>
+#include <cuda/std/span>
+#include <cuda/stream>
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/detail/checked_memory.cuh>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
-#include <c2h/generators.h>
 #include <c2h/half.cuh>
 #include <c2h/vector.h>
 
@@ -46,50 +59,82 @@ struct i_to_rnd_t
 };
 #endif // !C2H_HAS_CURAND
 
-class generator_t
+class generator_state_t
 {
 public:
-  generator_t()
+  generator_state_t(int device, ::cudaStream_t stream)
+      : m_device(device)
+      , m_stream(stream)
   {
 #if C2H_HAS_CURAND
     curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
 #endif
   }
 
-  ~generator_t()
+  ~generator_state_t()
   {
 #if C2H_HAS_CURAND
     curandDestroyGenerator(m_gen);
 #endif
   }
 
-  float* prepare_random_generator(seed_t seed, std::size_t num_items)
+  [[nodiscard]] bool matches(int device, ::cudaStream_t stream) const noexcept
   {
-    m_distribution.resize(num_items);
+    return m_device == device && m_stream == stream;
+  }
+
+  [[nodiscard]] int device() const noexcept
+  {
+    return m_device;
+  }
+
+  float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+  {
+    const std::lock_guard<std::mutex> lock{m_state_mutex};
+
+    // A caller may enqueue consumption of the returned pointer after this function returns. Finish any work already
+    // submitted to this stream before mutating its generator or distribution storage.
+    if (m_has_generated)
+    {
+      stream.sync();
+    }
+
+    resize_distribution(num_items);
 
 #if C2H_HAS_CURAND
     curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
-#else
+#else // C2H_HAS_CURAND
     m_gen.seed(seed.get());
-#endif
+#endif // C2H_HAS_CURAND
 
-    generate();
+    generate(stream);
+    m_has_generated = true;
 
     return thrust::raw_pointer_cast(m_distribution.data());
   }
 
   // re-fills the currently held distribution vector with new random values
-  void generate()
+  void generate(::cuda::stream_ref stream)
   {
 #if C2H_HAS_CURAND
+    curandSetStream(m_gen, stream.get());
     curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
 #else
-    thrust::tabulate(device_policy, m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
+    thrust::tabulate(device_policy.on(stream.get()), m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
     m_gen.discard(m_distribution.size());
 #endif
   }
 
 private:
+  void resize_distribution(std::size_t num_items)
+  {
+#if THRUST_VERSION >= 300100
+    m_distribution.resize(num_items, thrust::no_init);
+#else // THRUST_VERSION >= 300100
+    m_distribution.resize(num_items);
+#endif // THRUST_VERSION >= 300100
+  }
+
 #if C2H_HAS_CURAND
   curandGenerator_t
 #else
@@ -97,6 +142,80 @@ private:
 #endif
     m_gen;
   c2h::device_vector<float> m_distribution;
+  int m_device;
+  ::cudaStream_t m_stream;
+  std::mutex m_state_mutex;
+  bool m_has_generated = false;
+};
+
+class generator_t
+{
+public:
+  // An explicit body prevents nvcc from inferring a host/device constructor for this host-only state.
+  generator_t() {} // NOLINT(modernize-use-equals-default)
+
+  ~generator_t()
+  {
+    // Generator states own allocations on their associated devices. Destroy each state while that device is current.
+    for (auto& state : m_states)
+    {
+      try
+      {
+        const scoped_current_device device_scope{state->device()};
+        state.reset();
+      }
+      catch (...)
+      {
+        state.reset();
+      }
+    }
+  }
+
+  float* prepare_random_generator(seed_t seed, std::size_t num_items)
+  {
+    int device{};
+    const cudaError_t status = cudaGetDevice(&device);
+    if (status != cudaSuccess)
+    {
+      throw ::cuda::cuda_error{status, "failed to get current device"};
+    }
+
+    const ::cuda::stream_ref stream{::cudaStream_t{}};
+    return state_for(device, stream.get()).prepare_random_generator(stream, seed, num_items);
+  }
+
+  float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+  {
+    if (stream.get() == ::cudaStream_t{})
+    {
+      return prepare_random_generator(seed, num_items);
+    }
+
+    const int device = stream.device().get();
+    const scoped_current_device device_scope{device};
+    return state_for(device, stream.get()).prepare_random_generator(stream, seed, num_items);
+  }
+
+private:
+  generator_state_t& state_for(int device, ::cudaStream_t stream)
+  {
+    const std::lock_guard<std::mutex> lock{m_states_mutex};
+    for (const auto& state : m_states)
+    {
+      if (state->matches(device, stream))
+      {
+        return *state;
+      }
+    }
+
+    auto state   = std::make_unique<generator_state_t>(device, stream);
+    auto& result = *state;
+    m_states.push_back(std::move(state));
+    return result;
+  }
+
+  std::vector<std::unique_ptr<generator_state_t>> m_states;
+  std::mutex m_states_mutex;
 };
 
 // global generator state
@@ -111,6 +230,11 @@ void init_generator()
 float* prepare_random_data(seed_t seed, std::size_t num_items)
 {
   return generator.value().prepare_random_generator(seed, num_items);
+}
+
+float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+{
+  return generator.value().prepare_random_generator(stream, seed, num_items);
 }
 
 void cleanup_generator()
@@ -138,14 +262,26 @@ struct random_to_custom_t
 void gen_custom_type_state(
   seed_t seed,
   char* d_out,
+  custom_type_state_t min,
+  custom_type_state_t max,
+  std::size_t elements,
+  std::size_t element_size)
+{
+  gen_custom_type_state(::cuda::stream_ref{::cudaStream_t{}}, seed, d_out, min, max, elements, element_size);
+}
+
+void gen_custom_type_state(
+  ::cuda::stream_ref stream,
+  seed_t seed,
+  char* d_out,
   custom_type_state_t /* min */,
   custom_type_state_t /* max */,
   std::size_t elements,
   std::size_t element_size)
 {
   // FIXME(bgruber): implement min/max handling for custom_type_state_t
-  float* d_in = prepare_random_data(seed, elements * 2);
-  thrust::for_each(device_policy,
+  float* d_in = prepare_random_data(stream, seed, elements * 2);
+  thrust::for_each(device_policy.on(stream.get()),
                    thrust::counting_iterator<std::size_t>{0},
                    thrust::counting_iterator<std::size_t>{elements},
                    random_to_custom_t{d_in, d_out, element_size});

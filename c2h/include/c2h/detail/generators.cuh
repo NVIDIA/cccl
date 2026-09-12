@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+#pragma once
+
 #include <cuda/std/complex>
+#include <cuda/stream>
 #include <cuda/type_traits>
 
 #include <c2h/generator_common.h>
@@ -11,8 +14,13 @@ namespace c2h::detail
 // called once from main to set up the generator state
 void init_generator();
 
-// sets the seed and resizes the distribution vector, fills it, and returns a pointer the start of the data
+// Sets the seed, fills the per-device default-stream distribution, and returns its data pointer. Enqueue any consumers
+// before calling this function again for the same device and stream.
 float* prepare_random_data(seed_t seed, std::size_t num_items);
+
+// Sets the seed, fills the per-device, per-stream distribution, and returns its data pointer. Enqueue any consumers on
+// stream before calling this function again for the same device and stream.
+float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items);
 
 // called once before main returns to clean up the generator state
 void cleanup_generator();
