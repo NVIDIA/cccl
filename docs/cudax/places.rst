@@ -141,8 +141,11 @@ domain can improve locality. Locality domain places expose this capability:
 - ``data_place::locality_domain(devid, domain)`` -- a data place whose
   allocations are localized to the requested domain (stream-ordered memory
   pools and VMM physical handles)
-- ``make_locality_domain_grid(devid[, split])`` -- a grid with one execution
-  place per domain of the device, all built with the same SM split method
+- ``exec_place::locality_domains(devid[, split])`` -- a grid with one
+  execution place per domain of the device, all built with the same SM split
+  method; the single-device counterpart of ``exec_place::all_devices()``
+  (``make_locality_domain_grid(devid[, split])`` is the equivalent free
+  function)
 - ``locality_domain_helper`` -- enumerates the domains of a device, mirroring
   ``green_context_helper``; hands out ``locality_domain_view`` identity
   tokens accepted by both factories
@@ -202,7 +205,7 @@ predate it, so no method needs a toolkit newer than 13.4.
 .. code:: cpp
 
     // Strictly per-domain partitions for affinity-partitioned work
-    auto grid = make_locality_domain_grid(dev, locality_domain_sm_split::fine);
+    auto grid = exec_place::locality_domains(dev, locality_domain_sm_split::fine);
 
 The following schematic example assumes the usual CUDASTF setup (a
 ``context ctx``, a logical data ``lX`` and a ``kernel``, as in the STF
@@ -223,7 +226,7 @@ introduction):
     }
 
     // Or distribute a parallel_for over all domains at once
-    auto grid = make_locality_domain_grid(dev);
+    auto grid = exec_place::locality_domains(dev);
     ctx.parallel_for(blocked_partition(), grid, lX.shape(), lX.rw())
         ->*[] __device__(size_t i, auto x) { x(i) *= 2.0; };
 
@@ -660,8 +663,9 @@ The partitioning granularity is specified by ``place_partition_scope``:
 
 Partitioning ``exec_place::all_devices()`` at ``locality_domain`` scope is
 the machine-wide form: it yields every locality domain of every device. The
-single-device helper ``make_locality_domain_grid(dev_id)`` is convenience
-sugar over this mechanism.
+single-device helper ``exec_place::locality_domains(dev_id)`` (equivalently
+``make_locality_domain_grid(dev_id)``) is convenience sugar over this
+mechanism.
 
 .. code:: c++
 

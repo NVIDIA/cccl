@@ -14,7 +14,8 @@
  * @brief Grid of execution places over all locality domains of a device
  *
  * Checks that `make_locality_domain_grid` builds a grid whose size adapts to
- * the queried domain count and whose sub-places match the scalar factories.
+ * the queried domain count and whose sub-places match the scalar factories,
+ * and that `exec_place::locality_domains` is the same grid.
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -37,6 +38,18 @@ int main()
 
   // The grid adapts to the reported count (which may be 1)
   EXPECT(grid.size() == ndomains);
+
+  // exec_place::locality_domains(dev) is the static-member spelling of the
+  // same grid: same size, same members in the same order
+  exec_place grid2 = exec_place::locality_domains(dev);
+  EXPECT(grid2.size() == ndomains);
+  EXPECT(grid2 == grid);
+  for (size_t i = 0; i < grid.size(); i++)
+  {
+    EXPECT(grid2.get_place(i) == grid.get_place(i));
+  }
+  EXPECT(exec_place::locality_domains(dev, locality_domain_sm_split::fine)
+         == make_locality_domain_grid(dev, locality_domain_sm_split::fine));
 
   for (size_t i = 0; i < grid.size(); i++)
   {
