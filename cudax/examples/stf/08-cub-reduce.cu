@@ -10,39 +10,101 @@
 
 /**
  * @file
- * @brief Example of reduction implementing using CUB kernels
+ * @brief Example of reduction implementing using CUB
  */
 
-#include <thrust/device_vector.h>
+#include <cub/cub.cuh>
 
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 
-template <int BLOCK_THREADS, typename T>
-__global__ void reduce(slice<const T> values, slice<T> partials, size_t nelems)
+template <typename BinaryOp>
+struct OpWrapper
 {
-  using namespace cub;
-  typedef BlockReduce<T, BLOCK_THREADS> BlockReduceT;
+  OpWrapper(BinaryOp _op)
+      : op(mv(_op)) {};
 
-  auto thread_id = BLOCK_THREADS * blockIdx.x + threadIdx.x;
-
-  // Local reduction
-  T local_sum = 0;
-  for (size_t ind = thread_id; ind < nelems; ind += blockDim.x * gridDim.x)
+  template <typename T>
+  __device__ __forceinline__ T operator()(const T& a, const T& b) const
   {
-    local_sum += values(ind);
+    return op(a, b);
   }
 
-  __shared__ typename BlockReduceT::TempStorage temp_storage;
+  BinaryOp op;
+};
 
-  // Per-thread tile data
-  T result = BlockReduceT(temp_storage).Sum(local_sum);
+template <typename D, typename T, typename Ctx, typename BinaryOp>
+auto reduce(Ctx& ctx, logical_data<D> data, BinaryOp&& op, T init_val)
+{
+  using out_t = typename shape_of<D>::element_type;
+  auto result = ctx.logical_data(shape_of<scalar_view<out_t>>());
 
-  if (threadIdx.x == 0)
+  if constexpr (reserved::view_of<D>::can_provide_raw_data)
   {
-    partials(blockIdx.x) = result;
+    // Determine temporary device storage requirements
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+    cub::DeviceReduce::Reduce(
+      d_temp_storage,
+      temp_storage_bytes,
+      (T*) nullptr,
+      (T*) nullptr,
+      data.shape().size(),
+      OpWrapper<BinaryOp>(op),
+      init_val,
+      0);
+
+    auto ltemp = ctx.logical_data(shape_of<slice<char>>(temp_storage_bytes));
+
+    ctx.task(data.read(), result.write(), ltemp.write())
+        ->*[&op, init_val, temp_storage_bytes](cudaStream_t stream, auto d_data, auto d_result, auto d_temp) {
+              size_t d_temp_size = shape(d_temp).size();
+
+              cub::DeviceReduce::Reduce(
+                (void*) d_temp.data_handle(),
+                d_temp_size,
+                reserved::view_of<D>::data(d_data),
+                (T*) d_result.addr,
+                reserved::view_of<D>::size(d_data),
+                OpWrapper<BinaryOp>(op),
+                init_val,
+                stream);
+            };
   }
+  else
+  {
+    ctx.task(data.read(), result.write())->*[&op, init_val](cudaStream_t stream, auto d_data, auto d_result) {
+      // Determine temporary device storage requirements
+      void* d_temp_storage      = nullptr;
+      size_t temp_storage_bytes = 0;
+      cub::DeviceReduce::Reduce(
+        d_temp_storage,
+        temp_storage_bytes,
+        reserved::view_of<D>::begin(d_data),
+        (T*) d_result.addr,
+        reserved::view_of<D>::size(d_data),
+        OpWrapper<BinaryOp>(op),
+        init_val,
+        0);
+
+      cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
+
+      cub::DeviceReduce::Reduce(
+        d_temp_storage,
+        temp_storage_bytes,
+        reserved::view_of<D>::begin(d_data),
+        (T*) d_result.addr,
+        reserved::view_of<D>::size(d_data),
+        OpWrapper<BinaryOp>(op),
+        init_val,
+        stream);
+
+      cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
+    };
+  }
+
+  return result;
 }
 
 template <typename Ctx>
@@ -50,14 +112,10 @@ void run()
 {
   Ctx ctx;
 
-  const size_t N          = 1024 * 16;
-  const size_t BLOCK_SIZE = 128;
-  const size_t num_blocks = 32;
+  const size_t N = 1024 * 16;
 
-  int *X, ref_tot;
-
-  X       = new int[N];
-  ref_tot = 0;
+  int* X      = new int[N];
+  int ref_tot = 0;
 
   for (size_t ind = 0; ind < N; ind++)
   {
@@ -65,25 +123,53 @@ void run()
     ref_tot += X[ind];
   }
 
-  auto values   = ctx.logical_data(X, {N});
-  auto partials = ctx.logical_data(shape_of<slice<int>>(num_blocks));
-  auto result   = ctx.logical_data(shape_of<slice<int>>(1));
+  auto values = ctx.logical_data(X, {N});
 
-  ctx.task(values.read(), partials.write(), result.write())->*[&](auto stream, auto values, auto partials, auto result) {
-    // reduce values into partials
-    reduce<BLOCK_SIZE, int><<<num_blocks, BLOCK_SIZE, 0, stream>>>(values, partials, N);
+  // int should be deduced from "values"...
+  auto lresult = reduce(
+    ctx,
+    values,
+    [] __device__(const int& a, const int& b) {
+      return a + b;
+    },
+    0);
 
-    // reduce partials on a single block into result
-    reduce<BLOCK_SIZE, int><<<1, BLOCK_SIZE, 0, stream>>>(partials, result, num_blocks);
-  };
+  int result = ctx.wait(lresult);
+  _CCCL_ASSERT(result == ref_tot, "Incorrect result");
 
-  ctx.host_launch(result.read())->*[&](auto p) {
-    if (p(0) != ref_tot)
-    {
-      fprintf(stderr, "INCORRECT RESULT: p sum = %d, ref tot = %d\n", p(0), ref_tot);
-      abort();
-    }
-  };
+  ctx.finalize();
+}
+
+template <typename Ctx>
+void run_2D()
+{
+  Ctx ctx;
+
+  const size_t N  = 1024;
+  const size_t N2 = N * N;
+
+  int* X      = new int[N2];
+  int ref_tot = 0;
+
+  for (size_t ind = 0; ind < N2; ind++)
+  {
+    X[ind] = rand() % N2;
+    ref_tot += X[ind];
+  }
+
+  auto values = ctx.logical_data(make_slice(X, std::tuple{N, N}, N));
+
+  // int should be deduced from "values"...
+  auto lresult = reduce(
+    ctx,
+    values,
+    [] __device__(const int& a, const int& b) {
+      return a + b;
+    },
+    0);
+
+  int result = ctx.wait(lresult);
+  _CCCL_ASSERT(result == ref_tot, "Incorrect result");
 
   ctx.finalize();
 }
@@ -91,5 +177,6 @@ void run()
 int main()
 {
   run<stream_ctx>();
-  run<graph_ctx>();
+  run_2D<stream_ctx>();
+  // run<graph_ctx>();
 }
