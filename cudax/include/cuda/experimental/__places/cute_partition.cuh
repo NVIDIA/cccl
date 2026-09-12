@@ -58,7 +58,10 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
@@ -1613,6 +1616,39 @@ dim_spec __make_runtime_dim_spec(block_cyclic_dim_spec<axis> spec)
   return {dim_policy::block_cyclic, axis, spec.block};
 }
 
+//! Detects shape-like objects that expose `dim4 get_data_dims() const`
+//! (e.g. the shape of a logical data). Used to let make_partition() and
+//! make_partition_descriptor() take a shape in place of an explicit dim4
+//! without depending on any particular shape type.
+template <typename Shape, typename = void>
+inline constexpr bool __has_get_data_dims_v = false;
+
+template <typename Shape>
+inline constexpr bool __has_get_data_dims_v<
+  Shape,
+  ::cuda::std::enable_if_t<
+    ::cuda::std::is_same_v<::cuda::std::decay_t<decltype(::cuda::std::declval<const Shape&>().get_data_dims())>, dim4>>> =
+  true;
+
+/**
+ * @brief Build a partition descriptor from a shape object
+ *
+ * Overload of make_partition_descriptor() taking any object exposing
+ * `dim4 get_data_dims() const` (such as the shape of a logical data) in place
+ * of the explicit true extents. Forwards to the dim4 overload.
+ *
+ * @param[in] shape Shape object providing the true tensor extents
+ * @param[in] spec One entry per tensor dimension (at most 4)
+ * @param[in] grid_dims Extents of the grid of places
+ * @return The partition descriptor built from `shape.get_data_dims()`
+ */
+template <typename Shape, typename = ::cuda::std::enable_if_t<__has_get_data_dims_v<Shape>>>
+cute_partition_descriptor
+make_partition_descriptor(const Shape& shape, const ::std::vector<dim_spec>& spec, dim4 grid_dims)
+{
+  return ::cuda::experimental::places::make_partition_descriptor(shape.get_data_dims(), spec, grid_dims);
+}
+
 /**
  * @brief Build a statically shaped partition from typed dimension specs
  */
@@ -1642,6 +1678,26 @@ auto make_partition(dim4 true_dims, partition_spec<Specs...> spec, dim4 grid_dim
 
   const auto descriptor = ::cuda::experimental::places::make_partition_descriptor(true_dims, runtime_specs, grid_dims);
   return cute_partition<rank, num_place_leaves, num_local_leaves>(descriptor);
+}
+
+/**
+ * @brief Build a statically shaped partition from a shape object and typed
+ * dimension specs
+ *
+ * Overload of make_partition() taking any object exposing
+ * `dim4 get_data_dims() const` (such as the shape of a logical data) in place
+ * of the explicit true extents, so that `make_partition(lA.shape(), spec,
+ * grid.get_dims())` can be written directly. Forwards to the dim4 overload.
+ *
+ * @param[in] shape Shape object providing the true tensor extents
+ * @param[in] spec Typed per-dimension specification (one entry per tensor dimension, at most 4)
+ * @param[in] grid_dims Extents of the grid of places
+ * @return The statically shaped `cute_partition` built from `shape.get_data_dims()`
+ */
+template <typename Shape, typename... Specs, typename = ::cuda::std::enable_if_t<__has_get_data_dims_v<Shape>>>
+auto make_partition(const Shape& shape, partition_spec<Specs...> spec, dim4 grid_dims)
+{
+  return ::cuda::experimental::places::make_partition(shape.get_data_dims(), spec, grid_dims);
 }
 
 /**
