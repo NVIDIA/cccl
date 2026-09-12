@@ -48,11 +48,7 @@ class exec_place;
  * @brief Is @p stream currently participating in a CUDA graph capture?
  *
  * Returns `false` for `nullptr` (the legacy default stream is never
- * capturing). `cudaStreamIsCapturing` is itself capture-safe, so this can be
- * called from contexts where most other driver queries (`cuStreamGetId`,
- * `cudaStreamGetDevice`, ...) would be rejected with
- * `cudaErrorStreamCaptureUnsupported` and would *invalidate* the in-flight
- * capture.
+ * capturing).
  */
 [[nodiscard]] inline bool is_stream_capturing(cudaStream_t stream)
 {
@@ -61,6 +57,13 @@ class exec_place;
 
 /**
  * @brief Computes the CUDA device in which the stream was created
+ *
+ * Capture-safe on CTK >= 12.8: `cudaStreamGetDevice` succeeds during
+ * thread-local, relaxed and global capture, on device and green-context
+ * streams alike, without invalidating the capture (probed on CTK 13.4).
+ * Answering from a guess instead of the query is what put transient events
+ * in the wrong device's context on multi-GPU systems
+ * (`cudaErrorInvalidResourceHandle` at event-record time).
  */
 inline int get_device_from_stream(cudaStream_t stream)
 {
@@ -69,17 +72,18 @@ inline int get_device_from_stream(cudaStream_t stream)
     return cuda_try<cudaGetDevice>();
   }
 
-  // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
-  // participating in capture. Use the active device, which is the device on
-  // which the capture is being constructed.
+#if _CCCL_CTK_AT_LEAST(12, 8)
+  return cuda_try<cudaStreamGetDevice>(stream);
+#else
+  // cuStreamGetCtx during capture is unverified on pre-12.8 drivers: keep
+  // the conservative current-device fallback there. Only correct on
+  // single-device systems; the locality-domain feature set requires 13.4+
+  // anyway, so this branch is legacy-toolkit compatibility only.
   if (is_stream_capturing(stream))
   {
     return cuda_try<cudaGetDevice>();
   }
 
-#if _CCCL_CTK_AT_LEAST(12, 8)
-  return cuda_try<cudaStreamGetDevice>(stream);
-#else
   auto stream_driver = CUstream(stream);
 
   CUcontext ctx = cuda_try<cuStreamGetCtx>(stream_driver);
@@ -100,9 +104,8 @@ inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long l
  * @param stream A valid CUDA stream, or nullptr.
  * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
  *
- * When @p stream is participating in CUDA graph capture, querying the driver
- * stream ID is not permitted (CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED). In that case
- * this returns k_no_stream_id; callers that cache syncs treat unknown ids as
+ * When @p stream is participating in CUDA graph capture this returns
+ * k_no_stream_id; callers that cache syncs treat unknown ids as
  * ``never skip cudaStreamWaitEvent`` (see async_resources_handle).
  */
 inline unsigned long long get_stream_id(cudaStream_t stream)
@@ -112,11 +115,10 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
     return k_no_stream_id;
   }
 
-  // ``cuStreamGetId`` is not capture-safe: during
-  // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` it rejects the query
-  // *and* invalidates the capture itself. Gate on ``cudaStreamIsCapturing``
-  // (which is safe) and conservatively report an unknown stream ID while
-  // capture is in flight.
+  // Deliberately report an unknown id while capture is in flight — not
+  // because the query fails (``cuStreamGetId`` succeeds during capture,
+  // probed on CTK 13.4), but because sync-skip caching must never elide a
+  // ``cudaStreamWaitEvent`` under capture: the wait IS the graph edge.
   if (is_stream_capturing(stream))
   {
     return k_no_stream_id;
