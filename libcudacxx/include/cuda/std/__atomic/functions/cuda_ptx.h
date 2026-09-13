@@ -65,7 +65,7 @@ _CCCL_DEVICE_API auto __cuda_atomic_ptx_backend::__with_transformed_order(
       }
       else
       {
-        return __fn(__transform_order(__order), __args..., __scope);
+        return __fn(::cuda::std::__transform_order(__order), __args..., __scope);
       }
     }),
     NV_IS_DEVICE,
