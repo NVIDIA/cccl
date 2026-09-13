@@ -53,21 +53,21 @@ struct random_to_vec_item_t
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  define VEC_SPECIALIZATION(T)                                                                              \
-    template <>                                                                                              \
-    void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max) \
-    {                                                                                                        \
-      const auto* dist = prepare_random_data(stream, seed, data.size());                                     \
-      auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()}; \
-      thrust::for_each(device_policy.on(stream.get()),                                                       \
-                       thrust::counting_iterator<size_t>{0},                                                 \
-                       thrust::counting_iterator<size_t>{data.size()},                                       \
-                       op);                                                                                  \
-    }                                                                                                        \
-    template <>                                                                                              \
-    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                            \
-    {                                                                                                        \
-      gen_values_between(::cuda::stream_ref{::cudaStream_t{}}, seed, data, min, max);                        \
+#  define VEC_SPECIALIZATION(T)                                                                                   \
+    template <>                                                                                                   \
+    void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)      \
+    {                                                                                                             \
+      const auto random_data = prepare_random_data(stream, seed, data.size());                                    \
+      auto op = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, random_data.data(), data.data()}; \
+      thrust::for_each(device_policy.on(stream.get()),                                                            \
+                       thrust::counting_iterator<size_t>{0},                                                      \
+                       thrust::counting_iterator<size_t>{data.size()},                                            \
+                       op);                                                                                       \
+    }                                                                                                             \
+    template <>                                                                                                   \
+    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
+    {                                                                                                             \
+      gen_values_between(::cuda::stream_ref{::cudaStream_t{}}, seed, data, min, max);                             \
     }
 
 VEC_SPECIALIZATION(char2);

@@ -7,20 +7,54 @@
 #include <cuda/stream>
 #include <cuda/type_traits>
 
+#include <cstddef>
+#include <memory>
+
 #include <c2h/generator_common.h>
 
 namespace c2h::detail
 {
+class generator_state_t;
+
+inline constexpr std::size_t max_cached_generator_states = 16;
+
+class random_data_t
+{
+public:
+  random_data_t(const random_data_t&)            = delete;
+  random_data_t& operator=(const random_data_t&) = delete;
+
+  random_data_t(random_data_t&&) noexcept;
+  random_data_t& operator=(random_data_t&&) noexcept;
+
+  ~random_data_t();
+
+  [[nodiscard]] float* data() const noexcept
+  {
+    return m_data;
+  }
+
+private:
+  friend class generator_t;
+
+  random_data_t(float* data, std::shared_ptr<generator_state_t> state) noexcept;
+
+  float* m_data = nullptr;
+  std::shared_ptr<generator_state_t> m_state;
+};
+
 // called once from main to set up the generator state
 void init_generator();
 
-// Sets the seed, fills the per-device default-stream distribution, and returns its data pointer. Enqueue any consumers
-// before calling this function again for the same device and stream.
-float* prepare_random_data(seed_t seed, std::size_t num_items);
+// Sets the seed and fills the per-device default-stream distribution. The returned object keeps the distribution alive;
+// enqueue all consumers before destroying it.
+[[nodiscard]] random_data_t prepare_random_data(seed_t seed, std::size_t num_items);
 
-// Sets the seed, fills the per-device, per-stream distribution, and returns its data pointer. Enqueue any consumers on
-// stream before calling this function again for the same device and stream.
-float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items);
+// Sets the seed and fills the per-device, per-stream distribution. The returned object keeps the distribution alive;
+// enqueue all consumers on stream before destroying it.
+[[nodiscard]] random_data_t prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items);
+
+[[nodiscard]] std::size_t cached_generator_state_count();
 
 // called once before main returns to clean up the generator state
 void cleanup_generator();

@@ -26,6 +26,8 @@
 #include <utility>
 #include <vector>
 
+#include <cuda_runtime_api.h>
+
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/detail/checked_memory.cuh>
@@ -84,9 +86,63 @@ public:
 
   ~generator_state_t()
   {
-#if C2H_HAS_CURAND
-    (void) curandDestroyGenerator(m_gen);
-#endif
+    try
+    {
+      const scoped_current_device device_scope{m_device};
+      cleanup_on_current_device();
+    }
+    catch (...)
+    {
+      cleanup_on_current_device();
+    }
+  }
+
+  [[nodiscard]] bool try_acquire() noexcept
+  {
+    const std::lock_guard<std::mutex> lock{m_state_mutex};
+    if (m_is_leased)
+    {
+      return false;
+    }
+
+    m_is_leased = true;
+    return true;
+  }
+
+  void release() noexcept
+  {
+    // A per-thread stream sentinel denotes a different stream when a lease is destroyed on another host thread.
+    bool event_record_failed = m_thread_id != thread_id_for_stream(m_stream);
+    if (!event_record_failed)
+    {
+      try
+      {
+        const scoped_current_device device_scope{m_device};
+        if (m_completion_event == nullptr)
+        {
+          ::cudaEvent_t completion_event{};
+          event_record_failed = cudaEventCreateWithFlags(&completion_event, cudaEventDisableTiming) != cudaSuccess;
+          if (!event_record_failed)
+          {
+            m_completion_event = completion_event;
+          }
+        }
+
+        if (!event_record_failed)
+        {
+          event_record_failed = cudaEventRecord(m_completion_event, m_stream) != cudaSuccess;
+        }
+      }
+      catch (...)
+      {
+        event_record_failed = true;
+      }
+    }
+
+    m_completion_event_record_failed = event_record_failed;
+
+    const std::lock_guard<std::mutex> lock{m_state_mutex};
+    m_is_leased = false;
   }
 
   [[nodiscard]] bool matches(int device, ::cudaStream_t stream) const noexcept
@@ -99,16 +155,9 @@ public:
     return m_device;
   }
 
-  float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+  [[nodiscard]] float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
   {
-    const std::lock_guard<std::mutex> lock{m_state_mutex};
-
-    // A caller may enqueue consumption of the returned pointer after this function returns. Finish any work already
-    // submitted to this stream before mutating its generator or distribution storage.
-    if (m_has_generated)
-    {
-      stream.sync();
-    }
+    synchronize_previous_work();
 
     resize_distribution(num_items);
 
@@ -119,7 +168,6 @@ public:
 #endif // C2H_HAS_CURAND
 
     generate(stream);
-    m_has_generated = true;
 
     return thrust::raw_pointer_cast(m_distribution.data());
   }
@@ -139,6 +187,50 @@ public:
   }
 
 private:
+  void synchronize_previous_work()
+  {
+    if (m_completion_event == nullptr && !m_completion_event_record_failed)
+    {
+      return;
+    }
+
+    const scoped_current_device device_scope{m_device};
+    const cudaError_t status =
+      m_completion_event_record_failed ? cudaDeviceSynchronize() : cudaEventSynchronize(m_completion_event);
+    if (status != cudaSuccess)
+    {
+      throw ::cuda::cuda_error{status, "failed to synchronize random generator state"};
+    }
+
+    m_completion_event_record_failed = false;
+  }
+
+  void cleanup_on_current_device() noexcept
+  {
+    if (m_completion_event_record_failed)
+    {
+      // Destructors cannot report synchronization failures.
+      (void) cudaDeviceSynchronize();
+    }
+    else if (m_completion_event != nullptr && cudaEventSynchronize(m_completion_event) != cudaSuccess)
+    {
+      // Fall back to synchronizing the device before releasing the distribution storage.
+      (void) cudaDeviceSynchronize();
+    }
+
+    if (m_completion_event != nullptr)
+    {
+      // Destructors cannot report event cleanup failures.
+      (void) cudaEventDestroy(m_completion_event);
+      m_completion_event = nullptr;
+    }
+
+#if C2H_HAS_CURAND
+    // Destructors cannot report generator cleanup failures.
+    (void) curandDestroyGenerator(m_gen);
+#endif
+  }
+
   [[nodiscard]] static std::thread::id thread_id_for_stream(::cudaStream_t stream) noexcept
   {
     if (stream == cudaStreamPerThread)
@@ -176,8 +268,43 @@ private:
   ::cudaStream_t m_stream;
   std::thread::id m_thread_id;
   std::mutex m_state_mutex;
-  bool m_has_generated = false;
+  ::cudaEvent_t m_completion_event      = nullptr;
+  bool m_completion_event_record_failed = false;
+  bool m_is_leased                      = false;
 };
+
+random_data_t::random_data_t(float* data, std::shared_ptr<generator_state_t> state) noexcept
+    : m_data(data)
+    , m_state(std::move(state))
+{}
+
+random_data_t::random_data_t(random_data_t&& other) noexcept
+    : m_data(std::exchange(other.m_data, nullptr))
+    , m_state(std::move(other.m_state))
+{}
+
+random_data_t& random_data_t::operator=(random_data_t&& other) noexcept
+{
+  if (this != &other)
+  {
+    if (m_state)
+    {
+      m_state->release();
+    }
+
+    m_data  = std::exchange(other.m_data, nullptr);
+    m_state = std::move(other.m_state);
+  }
+  return *this;
+}
+
+random_data_t::~random_data_t()
+{
+  if (m_state)
+  {
+    m_state->release();
+  }
+}
 
 class generator_t
 {
@@ -202,7 +329,7 @@ public:
     }
   }
 
-  float* prepare_random_generator(seed_t seed, std::size_t num_items)
+  [[nodiscard]] random_data_t prepare_random_generator(seed_t seed, std::size_t num_items)
   {
     int device{};
     const cudaError_t status = cudaGetDevice(&device);
@@ -212,10 +339,10 @@ public:
     }
 
     const ::cuda::stream_ref stream{::cudaStream_t{}};
-    return state_for(device, stream.get()).prepare_random_generator(stream, seed, num_items);
+    return prepare_random_generator(device, stream, seed, num_items);
   }
 
-  float* prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+  [[nodiscard]] random_data_t prepare_random_generator(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
   {
     if (stream.get() == ::cudaStream_t{})
     {
@@ -224,28 +351,71 @@ public:
 
     const int device = stream.device().get();
     const scoped_current_device device_scope{device};
-    return state_for(device, stream.get()).prepare_random_generator(stream, seed, num_items);
+    return prepare_random_generator(device, stream, seed, num_items);
+  }
+
+  [[nodiscard]] std::size_t cached_state_count()
+  {
+    const std::lock_guard<std::mutex> lock{m_states_mutex};
+    return m_states.size();
   }
 
 private:
-  generator_state_t& state_for(int device, ::cudaStream_t stream)
+  [[nodiscard]] random_data_t
+  prepare_random_generator(int device, ::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
   {
-    const std::lock_guard<std::mutex> lock{m_states_mutex};
-    for (const auto& state : m_states)
+    auto state = state_for(device, stream.get());
+    try
     {
-      if (state->matches(device, stream))
+      float* data = state->prepare_random_generator(stream, seed, num_items);
+      return random_data_t{data, std::move(state)};
+    }
+    catch (...)
+    {
+      state->release();
+      throw;
+    }
+  }
+
+  [[nodiscard]] std::shared_ptr<generator_state_t> state_for(int device, ::cudaStream_t stream)
+  {
+    std::shared_ptr<generator_state_t> result;
+    std::shared_ptr<generator_state_t> evicted;
+
+    {
+      const std::lock_guard<std::mutex> lock{m_states_mutex};
+      for (auto state = m_states.begin(); state != m_states.end(); ++state)
       {
-        return *state;
+        if ((*state)->matches(device, stream) && (*state)->try_acquire())
+        {
+          result = *state;
+          m_states.erase(state);
+          m_states.push_back(result);
+          break;
+        }
+      }
+
+      if (!result)
+      {
+        result                               = std::make_shared<generator_state_t>(device, stream);
+        [[maybe_unused]] const bool acquired = result->try_acquire();
+        _CCCL_VERIFY(acquired, "");
+
+        if (m_states.size() >= max_cached_generator_states)
+        {
+          evicted = std::move(m_states.front());
+          m_states.erase(m_states.begin());
+        }
+        m_states.push_back(result);
       }
     }
 
-    auto state   = std::make_unique<generator_state_t>(device, stream);
-    auto& result = *state;
-    m_states.push_back(std::move(state));
+    // An in-use state is kept alive by its caller. An idle state waits for its last consumer before releasing storage.
+    evicted.reset();
     return result;
   }
 
-  std::vector<std::unique_ptr<generator_state_t>> m_states;
+  std::vector<std::shared_ptr<generator_state_t>> m_states;
   std::mutex m_states_mutex;
 };
 
@@ -258,14 +428,19 @@ void init_generator()
   generator.emplace();
 }
 
-float* prepare_random_data(seed_t seed, std::size_t num_items)
+random_data_t prepare_random_data(seed_t seed, std::size_t num_items)
 {
   return generator.value().prepare_random_generator(seed, num_items);
 }
 
-float* prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
+random_data_t prepare_random_data(::cuda::stream_ref stream, seed_t seed, std::size_t num_items)
 {
   return generator.value().prepare_random_generator(stream, seed, num_items);
+}
+
+std::size_t cached_generator_state_count()
+{
+  return generator.value().cached_state_count();
 }
 
 void cleanup_generator()
@@ -311,11 +486,11 @@ void gen_custom_type_state(
   std::size_t element_size)
 {
   // FIXME(bgruber): implement min/max handling for custom_type_state_t
-  float* d_in = prepare_random_data(stream, seed, elements * 2);
+  const auto random_data = prepare_random_data(stream, seed, elements * 2);
   thrust::for_each(device_policy.on(stream.get()),
                    thrust::counting_iterator<std::size_t>{0},
                    thrust::counting_iterator<std::size_t>{elements},
-                   random_to_custom_t{d_in, d_out, element_size});
+                   random_to_custom_t{random_data.data(), d_out, element_size});
 }
 
 template <typename T>

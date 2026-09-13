@@ -17,6 +17,7 @@
 #include <limits>
 #include <new>
 #include <utility>
+#include <vector>
 
 #include <cuda_runtime_api.h>
 
@@ -157,12 +158,16 @@ CUB_TEST("c2h random generator supports the legacy default stream", "[c2h][buffe
   constexpr std::size_t num_items = 256;
   const c2h::seed_t seed{1234};
 
-  const auto* implicit_stream_data = c2h::detail::prepare_random_data(seed, num_items);
-  REQUIRE(implicit_stream_data != nullptr);
+  {
+    const auto implicit_stream_data = c2h::detail::prepare_random_data(seed, num_items);
+    REQUIRE(implicit_stream_data.data() != nullptr);
+  }
 
-  const auto* explicit_stream_data =
-    c2h::detail::prepare_random_data(cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
-  REQUIRE(explicit_stream_data != nullptr);
+  {
+    const auto explicit_stream_data =
+      c2h::detail::prepare_random_data(cuda::stream_ref{::cudaStream_t{}}, seed, num_items);
+    REQUIRE(explicit_stream_data.data() != nullptr);
+  }
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(::cudaStream_t{}));
 }
@@ -183,19 +188,19 @@ CUB_TEST("c2h random generator isolates in-flight streams", "[c2h][buffers][gene
   auto d_expected = c2h::make_device_buffer<float>(first_stream, device, num_items, cuda::no_init);
   auto d_actual   = c2h::make_device_buffer<float>(first_stream, device, num_items, cuda::no_init);
 
-  const auto* first_data = c2h::detail::prepare_random_data(first_stream, first_seed, num_items);
-  cuda::copy_bytes(first_stream, cuda::std::span<const float>{first_data, num_items}, d_expected);
+  const auto first_data = c2h::detail::prepare_random_data(first_stream, first_seed, num_items);
+  cuda::copy_bytes(first_stream, cuda::std::span<const float>{first_data.data(), num_items}, d_expected);
 
   // Capture the first distribution before allowing the second stream to generate its distribution.
   const auto first_distribution_captured = first_stream.record_event();
   second_stream.wait(first_distribution_captured);
 
-  c2h::detail::prepare_random_data(second_stream, second_seed, num_items);
+  const auto second_data                = c2h::detail::prepare_random_data(second_stream, second_seed, num_items);
   const auto second_generation_complete = second_stream.record_event();
   first_stream.wait(second_generation_complete);
 
   // Delay consumption of the first distribution until the second stream has generated its distribution.
-  cuda::copy_bytes(first_stream, cuda::std::span<const float>{first_data, num_items}, d_actual);
+  cuda::copy_bytes(first_stream, cuda::std::span<const float>{first_data.data(), num_items}, d_actual);
 
   const auto h_expected = c2h::make_host_buffer<float>(first_stream, device, d_expected);
   const auto h_actual   = c2h::make_host_buffer<float>(first_stream, device, d_actual);
@@ -225,31 +230,33 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
   auto second_generation_complete = second_generation_complete_promise.get_future();
 
   auto first_task = std::async(std::launch::async, [&] {
-    const float* first_data = nullptr;
-    try
-    {
-      const cudaError_t status = cudaSetDevice(device_id);
-      if (status != cudaSuccess)
+    auto first_data = [&] {
+      try
       {
-        throw cuda::cuda_error{status, "failed to set current device"};
-      }
+        const cudaError_t status = cudaSetDevice(device_id);
+        if (status != cudaSuccess)
+        {
+          throw cuda::cuda_error{status, "failed to set current device"};
+        }
 
-      const cuda::stream_ref stream{cudaStreamPerThread};
-      first_data = c2h::detail::prepare_random_data(stream, first_seed, num_items);
-      cuda::copy_bytes(stream, cuda::std::span<const float>{first_data, num_items}, d_expected);
-      auto first_distribution_captured_event = stream.record_event();
-      first_distribution_captured_promise.set_value(std::move(first_distribution_captured_event));
-    }
-    catch (...)
-    {
-      first_distribution_captured_promise.set_exception(std::current_exception());
-      throw;
-    }
+        const cuda::stream_ref stream{cudaStreamPerThread};
+        auto data = c2h::detail::prepare_random_data(stream, first_seed, num_items);
+        cuda::copy_bytes(stream, cuda::std::span<const float>{data.data(), num_items}, d_expected);
+        auto first_distribution_captured_event = stream.record_event();
+        first_distribution_captured_promise.set_value(std::move(first_distribution_captured_event));
+        return data;
+      }
+      catch (...)
+      {
+        first_distribution_captured_promise.set_exception(std::current_exception());
+        throw;
+      }
+    }();
 
     const cuda::stream_ref stream{cudaStreamPerThread};
     const auto second_generation_complete_event = second_generation_complete.get();
     stream.wait(second_generation_complete_event);
-    cuda::copy_bytes(stream, cuda::std::span<const float>{first_data, num_items}, d_actual);
+    cuda::copy_bytes(stream, cuda::std::span<const float>{first_data.data(), num_items}, d_actual);
     stream.sync();
   });
 
@@ -265,7 +272,7 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
       const cuda::stream_ref stream{cudaStreamPerThread};
       const auto first_distribution_captured_event = first_distribution_captured.get();
       stream.wait(first_distribution_captured_event);
-      c2h::detail::prepare_random_data(stream, second_seed, num_items);
+      const auto second_data                = c2h::detail::prepare_random_data(stream, second_seed, num_items);
       auto second_generation_complete_event = stream.record_event();
       stream.sync();
       second_generation_complete_promise.set_value(std::move(second_generation_complete_event));
@@ -284,5 +291,42 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
   const auto h_actual   = c2h::make_host_buffer<float>(copy_stream, device, d_actual);
   copy_stream.sync();
 
+  REQUIRE(std::equal(h_actual.begin(), h_actual.end(), h_expected.begin(), h_expected.end()));
+}
+
+CUB_TEST("c2h random generator bounds cached stream states", "[c2h][buffers][generators][streams]", CUB_SMALL)
+{
+  int device_id{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
+
+  const auto device = cuda::device_ref{device_id};
+  std::vector<cuda::stream> streams;
+  streams.reserve(c2h::detail::max_cached_generator_states + 1);
+
+  streams.emplace_back(device);
+  constexpr std::size_t num_items = 256;
+  auto d_expected                 = c2h::make_device_buffer<float>(streams.front(), device, num_items, cuda::no_init);
+  auto d_actual                   = c2h::make_device_buffer<float>(streams.front(), device, num_items, cuda::no_init);
+  const auto first_data           = c2h::detail::prepare_random_data(streams.front(), c2h::seed_t{1234}, num_items);
+  cuda::copy_bytes(streams.front(), cuda::std::span<const float>{first_data.data(), num_items}, d_expected);
+
+  for (std::size_t index = 1; index <= c2h::detail::max_cached_generator_states; ++index)
+  {
+    streams.emplace_back(device);
+    const auto random_data = c2h::detail::prepare_random_data(streams.back(), c2h::seed_t{static_cast<int>(index)}, 1);
+    REQUIRE(random_data.data() != nullptr);
+  }
+
+  // The first state has been evicted from the cache, but its lease keeps the distribution alive for another consumer.
+  cuda::copy_bytes(streams.front(), cuda::std::span<const float>{first_data.data(), num_items}, d_actual);
+  const auto h_expected = c2h::make_host_buffer<float>(streams.front(), device, d_expected);
+  const auto h_actual   = c2h::make_host_buffer<float>(streams.front(), device, d_actual);
+
+  for (const auto& stream : streams)
+  {
+    stream.sync();
+  }
+
+  REQUIRE(c2h::detail::cached_generator_state_count() == c2h::detail::max_cached_generator_states);
   REQUIRE(std::equal(h_actual.begin(), h_actual.end(), h_expected.begin(), h_expected.end()));
 }

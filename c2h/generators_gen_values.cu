@@ -23,7 +23,8 @@ void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 template <typename T>
 void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  const auto* dist = prepare_random_data(stream, seed, data.size());
+  const auto random_data = prepare_random_data(stream, seed, data.size());
+  const auto* dist       = random_data.data();
   thrust::transform(
     device_policy.on(stream.get()), dist, dist + data.size(), data.begin(), random_to_item_t<T>(min, max));
 }
