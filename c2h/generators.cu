@@ -327,8 +327,9 @@ random_data_t::~random_data_t()
 class generator_t
 {
 public:
-  // An explicit body prevents nvcc from inferring a host/device constructor for this host-only state.
+  // Explicit bodies prevent nvcc from inferring host/device special members for this host-only state.
   generator_t() {} // NOLINT(modernize-use-equals-default)
+  ~generator_t() {} // NOLINT(modernize-use-equals-default)
 
   [[nodiscard]] random_data_t prepare_random_generator(seed_t seed, std::size_t num_items)
   {
