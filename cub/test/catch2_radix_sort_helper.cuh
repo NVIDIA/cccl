@@ -256,7 +256,7 @@ c2h::host_vector<std::size_t> get_permutation(
   auto bit_ordered_striped_keys =
     reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(h_striped_keys.data()));
 
-  indirect_binary_comparator_t<bit_ordered_t> comp{bit_ordered_striped_keys, is_descending};
+  const indirect_binary_comparator_t<bit_ordered_t> comp{bit_ordered_striped_keys, is_descending};
 
   for (std::size_t segment = 0; segment < num_segments; ++segment)
   {
@@ -274,9 +274,9 @@ c2h::host_vector<KeyT> radix_sort_reference(
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  c2h::host_vector<KeyT> h_keys(d_keys);
-  std::array<std::size_t, 2> segments{0, d_keys.size()};
-  c2h::host_vector<std::size_t> h_permutation =
+  const c2h::host_vector<KeyT> h_keys(d_keys);
+  const std::array<std::size_t, 2> segments{0, d_keys.size()};
+  const c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, 1, segments.cbegin(), segments.cbegin() + 1, begin_bit, end_bit);
   c2h::host_vector<KeyT> result(d_keys.size());
   thrust::gather(h_permutation.cbegin(), h_permutation.cend(), h_keys.cbegin(), result.begin());
@@ -296,13 +296,13 @@ std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> radix_sort_reference
   result.first.resize(d_keys.size());
   result.second.resize(d_keys.size());
 
-  std::array<std::size_t, 2> segments{0, d_keys.size()};
+  const std::array<std::size_t, 2> segments{0, d_keys.size()};
 
-  c2h::host_vector<KeyT> h_keys(d_keys);
-  c2h::host_vector<std::size_t> h_permutation =
+  const c2h::host_vector<KeyT> h_keys(d_keys);
+  const c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, 1, segments.cbegin(), segments.cbegin() + 1, begin_bit, end_bit);
 
-  c2h::host_vector<ValueT> h_values(d_values);
+  const c2h::host_vector<ValueT> h_values(d_values);
   thrust::gather(h_permutation.cbegin(),
                  h_permutation.cend(),
                  thrust::make_zip_iterator(h_keys.cbegin(), h_values.cbegin()),
@@ -321,8 +321,8 @@ c2h::host_vector<KeyT> segmented_radix_sort_reference(
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  c2h::host_vector<KeyT> h_keys(d_keys);
-  c2h::host_vector<std::size_t> h_permutation =
+  const c2h::host_vector<KeyT> h_keys(d_keys);
+  const c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, num_segments, h_seg_begin_it, h_seg_end_it, begin_bit, end_bit);
   c2h::host_vector<KeyT> result(d_keys.size());
   thrust::gather(h_permutation.cbegin(), h_permutation.cend(), h_keys.cbegin(), result.begin());
@@ -345,11 +345,11 @@ std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> segmented_radix_sort
   result.first.resize(d_keys.size());
   result.second.resize(d_keys.size());
 
-  c2h::host_vector<KeyT> h_keys(d_keys);
-  c2h::host_vector<std::size_t> h_permutation =
+  const c2h::host_vector<KeyT> h_keys(d_keys);
+  const c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, num_segments, h_seg_begin_it, h_seg_end_it, begin_bit, end_bit);
 
-  c2h::host_vector<ValueT> h_values(d_values);
+  const c2h::host_vector<ValueT> h_values(d_values);
   thrust::gather(h_permutation.cbegin(),
                  h_permutation.cend(),
                  thrust::make_zip_iterator(h_keys.cbegin(), h_values.cbegin()),

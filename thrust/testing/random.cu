@@ -295,7 +295,7 @@ void TestEngineSaveRestore()
 template <typename Engine>
 void TestEngineEqual()
 {
-  ValidateEngineEqual<Engine> f;
+  const ValidateEngineEqual<Engine> f;
 
   // test host
   thrust::host_vector<bool> h(1);
@@ -313,7 +313,7 @@ void TestEngineEqual()
 template <typename Engine>
 void TestEngineUnequal()
 {
-  ValidateEngineUnequal<Engine> f;
+  const ValidateEngineUnequal<Engine> f;
 
   // test host
   thrust::host_vector<bool> h(1);
@@ -416,21 +416,12 @@ void TestRanlux48BaseEqual()
 }
 DECLARE_UNITTEST(TestRanlux48BaseEqual);
 
-#if defined(__INTEL_COMPILER) && 1800 >= __INTEL_COMPILER
-void TestRanlux48BaseUnequal()
-{
-  // ICPC has a known failure with this test.
-  // See nvbug 200414000.
-  KNOWN_FAILURE;
-}
-#else
 void TestRanlux48BaseUnequal()
 {
   using Engine = thrust::random::ranlux48_base;
 
   TestEngineUnequal<Engine>();
 }
-#endif
 DECLARE_UNITTEST(TestRanlux48BaseUnequal);
 
 void TestMinstdRandValidation()
@@ -715,9 +706,9 @@ void ValidateDistributionCharacteristic()
     // test Distribution with smaller range than engine
 
     // test host
-    typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
-    typename Distribution::result_type smaller_min  = engine_range / 3;
-    typename Distribution::result_type smaller_max  = engine_range - smaller_min;
+    const typename Distribution::result_type engine_range = (engine_traits::max) () - (engine_traits::min) ();
+    const typename Distribution::result_type smaller_min  = engine_range / 3;
+    const typename Distribution::result_type smaller_max  = engine_range - smaller_min;
 
     thrust::generate(h.begin(), h.end(), Validator(Distribution(smaller_min, smaller_max)));
 

@@ -30,7 +30,7 @@ Usage:
 
        // Get address of remote shared memory value:
        unsigned int other_block_rank = cluster.block_rank() ^ 1;
-       int * remote_x = cluster.map_shared_rank(&bar, other_block_rank);
+       int * remote_x = cluster.map_shared_rank(&x, other_block_rank);
 
        // Write to remote value:
        *remote_x = 2;

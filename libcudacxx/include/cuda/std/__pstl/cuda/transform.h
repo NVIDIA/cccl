@@ -78,7 +78,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     // We pass the policy as an environment to DeviceTransform
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
       "cuda::std::transform: failed inside CUDA backend",
       ::cuda::std::move(__first),

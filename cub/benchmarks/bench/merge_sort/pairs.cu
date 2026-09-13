@@ -69,7 +69,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
       cuda::execution::tune(policy_selector<key_t>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceMergeSort::SortPairsCopy,
       "SortPairsCopy failed",
       d_keys_buffer_1,

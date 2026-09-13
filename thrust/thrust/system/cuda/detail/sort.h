@@ -106,7 +106,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
     return cudaSuccess;
   }
 
-  thrust::detail::integral_constant<bool, SORT_ITEMS::value> sort_items{};
+  const thrust::detail::integral_constant<bool, SORT_ITEMS::value> sort_items{};
 
   return doit_step(d_temp_storage, temp_storage_bytes, keys, items, keys_count, compare_op, stream, sort_items);
 }
@@ -118,7 +118,7 @@ THRUST_RUNTIME_FUNCTION void merge_sort(
 {
   using size_type = thrust::detail::it_difference_t<KeysIt>;
 
-  size_type count = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
+  const size_type count = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
 
   size_t storage_size = 0;
   cudaStream_t stream = cuda_cub::stream(policy);
@@ -234,10 +234,10 @@ THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* 
     dispatch<SORT_ITEMS, CompareOp>::doit(nullptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
   cuda_cub::throw_on_error(status, "radix_sort: failed on 1st step");
 
-  size_t keys_temp_storage  = ::cuda::round_up(sizeof(Key) * keys_count, 128);
-  size_t items_temp_storage = ::cuda::round_up(sizeof(Item) * items_count, 128);
+  const size_t keys_temp_storage  = ::cuda::round_up(sizeof(Key) * keys_count, 128);
+  const size_t items_temp_storage = ::cuda::round_up(sizeof(Item) * items_count, 128);
 
-  size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
+  const size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);

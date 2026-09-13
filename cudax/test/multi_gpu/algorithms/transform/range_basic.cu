@@ -23,6 +23,7 @@
 
 #include <vector>
 
+#include <algorithm_common.h>
 #include <nccl_test_common.h>
 #include <testing.cuh>
 
@@ -30,15 +31,10 @@
 
 namespace
 {
-using transform_test_util::expected_for_rank;
-using transform_test_util::make_value;
-using transform_test_util::operators;
-using transform_test_util::value_types;
-
 // Run the whole world's transform through the range overload and check every rank against its own
 // reference. This boilerplate is identical for every test regardless of how the inputs are shaped.
 template <class T, class Op>
-void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void run_case(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
               const std::vector<std::vector<T>>& inputs_by_rank,
               Op op)
 {
@@ -62,7 +58,7 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
 
   const auto in_copy = in;
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     streams,
@@ -78,7 +74,8 @@ void run_case(cuda::std::span<cudax::nccl_communicator_ref> comms,
     INFO("device = " << i);
     REQUIRE_THAT(in[i], Equals(in_copy[i]));
 
-    const auto expected_values = expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], op);
+    const auto expected_values =
+      transform_test_util::expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], op);
     const auto expected =
       cuda::make_buffer<T>(out[i].stream(), cuda::mr::legacy_pinned_memory_resource{}, expected_values);
 
@@ -113,7 +110,7 @@ MULTI_GPU_TEST("transform documentation example", c2h::type_list<int>)
     outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, input_values.size(), cuda::no_init));
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     // Passing streams as the environment directly
@@ -135,7 +132,7 @@ MULTI_GPU_TEST("transform documentation example", c2h::type_list<int>)
   //! [transform]
 }
 
-MULTI_GPU_TEST("transform, one element per rank", value_types, operators)
+MULTI_GPU_TEST("transform, one element per rank", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -155,7 +152,7 @@ MULTI_GPU_TEST("transform, one element per rank", value_types, operators)
   run_case(comms, inputs_by_rank, Op{});
 }
 
-MULTI_GPU_TEST("transform, multiple elements per rank", value_types, operators)
+MULTI_GPU_TEST("transform, multiple elements per rank", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -175,7 +172,7 @@ MULTI_GPU_TEST("transform, multiple elements per rank", value_types, operators)
 
 // Uneven sizes make sure a rank's element count comes from its own size entry and not from a
 // neighbour's.
-MULTI_GPU_TEST("transform, uneven rank sizes", value_types, operators)
+MULTI_GPU_TEST("transform, uneven rank sizes", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -193,7 +190,7 @@ MULTI_GPU_TEST("transform, uneven rank sizes", value_types, operators)
   run_case(comms, inputs_by_rank, Op{});
 }
 
-MULTI_GPU_TEST("transform, some ranks empty", value_types, operators)
+MULTI_GPU_TEST("transform, some ranks empty", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -213,7 +210,7 @@ MULTI_GPU_TEST("transform, some ranks empty", value_types, operators)
   run_case(comms, inputs_by_rank, Op{});
 }
 
-MULTI_GPU_TEST("transform, all ranks empty", value_types, operators)
+MULTI_GPU_TEST("transform, all ranks empty", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -227,7 +224,7 @@ MULTI_GPU_TEST("transform, all ranks empty", value_types, operators)
 
 // The environment is an `env` carrying a stream rather than a bare `stream_ref`, which is the
 // other shape `transform` must accept for the `get_stream` query.
-MULTI_GPU_TEST("transform, env environments", value_types, operators)
+MULTI_GPU_TEST("transform, env environments", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -259,7 +256,7 @@ MULTI_GPU_TEST("transform, env environments", value_types, operators)
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     envs,
@@ -272,7 +269,7 @@ MULTI_GPU_TEST("transform, env environments", value_types, operators)
   {
     INFO("device = " << i);
     const auto expected_values =
-      expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], Op{});
+      transform_test_util::expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], Op{});
     const auto expected =
       cuda::make_buffer<T>(out[i].stream(), cuda::mr::legacy_pinned_memory_resource{}, expected_values);
 
@@ -311,7 +308,7 @@ MULTI_GPU_TEST("transform, differing input and output types", )
     out.emplace_back(cuda::make_device_buffer<out_t>(streams[i], device, values.size(), cuda::no_init));
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     streams,
@@ -341,7 +338,7 @@ MULTI_GPU_TEST("transform, differing input and output types", )
 }
 
 // In place is a legal use: the output iterator may alias the input iterator.
-MULTI_GPU_TEST("transform, in place", value_types, operators)
+MULTI_GPU_TEST("transform, in place", value_types, transform_test_util::operators)
 {
   using T  = c2h::get<0, TestType>;
   using Op = c2h::get<1, TestType>;
@@ -368,7 +365,7 @@ MULTI_GPU_TEST("transform, in place", value_types, operators)
       cuda::make_device_buffer<T>(streams[i], comms[i].logical_device().underlying_device(), values));
   }
 
-  cudax::transform(
+  cudax::mgmn::transform(
     cudax::distributed,
     comms,
     streams,
@@ -381,7 +378,7 @@ MULTI_GPU_TEST("transform, in place", value_types, operators)
   {
     INFO("device = " << i);
     const auto expected_values =
-      expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], Op{});
+      transform_test_util::expected_for_rank(inputs_by_rank[static_cast<cuda::std::size_t>(comms[i].rank())], Op{});
     const auto expected =
       cuda::make_buffer<T>(buffers[i].stream(), cuda::mr::legacy_pinned_memory_resource{}, expected_values);
 

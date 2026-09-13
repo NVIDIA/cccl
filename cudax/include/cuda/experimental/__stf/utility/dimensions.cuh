@@ -264,9 +264,14 @@ public:
   ///@{ @name Constructors
   /// Construct an explicit shape from its lower and upper bounds (inclusive lower bounds, exclusive upper bounds)
   template <typename Int1, typename Int2>
-  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& s)
-      : s(s)
-  {}
+  _CCCL_HOST_DEVICE box(const ::std::array<::std::pair<Int1, Int2>, dimensions>& bounds)
+  {
+    for (const size_t ind : each(0, dimensions))
+    {
+      s[ind].first  = bounds[ind].first;
+      s[ind].second = bounds[ind].second;
+    }
+  }
 
   /// Construct an explicit shape from its upper bounds (exclusive upper bounds)
   template <typename Int>
@@ -476,12 +481,19 @@ public:
   };
 
   // Functions to create the begin and end iterators
-  _CCCL_HOST_DEVICE iterator begin()
+  _CCCL_HOST_DEVICE iterator begin() const
   {
+    for (size_t i = 0; i < dimensions; ++i)
+    {
+      if (get_extent(i) == 0)
+      {
+        return iterator(*this, true);
+      }
+    }
     return iterator(*this);
   }
 
-  _CCCL_HOST_DEVICE iterator end()
+  _CCCL_HOST_DEVICE iterator end() const
   {
     return iterator(*this, true);
   }
@@ -587,6 +599,31 @@ UNITTEST("empty box<1>")
   }
 };
 
+UNITTEST("empty box<2>")
+{
+  const auto empty_first = box({7, 7}, {2, 5});
+  EXPECT(empty_first.size() == 0);
+  EXPECT(empty_first.begin() == empty_first.end());
+
+  size_t first_count = 0;
+  for ([[maybe_unused]] const auto& pos : empty_first)
+  {
+    first_count++;
+  }
+  EXPECT(first_count == 0);
+
+  const auto empty_second = box({2, 5}, {7, 7});
+  EXPECT(empty_second.size() == 0);
+  EXPECT(empty_second.begin() == empty_second.end());
+
+  size_t second_count = 0;
+  for ([[maybe_unused]] const auto& pos : empty_second)
+  {
+    second_count++;
+  }
+  EXPECT(second_count == 0);
+};
+
 UNITTEST("mix of integrals and pairs")
 {
   const size_t expected_cnt = 12;
@@ -600,6 +637,22 @@ UNITTEST("mix of integrals and pairs")
   }
 
   EXPECT(cnt == expected_cnt);
+};
+
+UNITTEST("box from an array of integral pairs")
+{
+  const auto bounds = ::std::array{
+    ::std::pair{0, 10},
+    ::std::pair{20, 30},
+  };
+  const auto shape = box(bounds);
+
+  static_assert(::cuda::std::is_same_v<::cuda::std::remove_cv_t<decltype(shape)>, box<2>>);
+  EXPECT(shape.get_begin(0) == 0);
+  EXPECT(shape.get_end(0) == 10);
+  EXPECT(shape.get_begin(1) == 20);
+  EXPECT(shape.get_end(1) == 30);
+  EXPECT(shape.size() == 100);
 };
 
 UNITTEST("pos4 large values")

@@ -16,7 +16,7 @@ void TestUninitializedFillDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_fill(sys, vec.begin(), vec.begin(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -50,7 +50,7 @@ void TestUninitializedFillNDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_fill_n(sys, vec.begin(), vec.size(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -68,7 +68,7 @@ void TestUninitializedFillNDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::uninitialized_fill_n(sys, vec.begin(), vec.size(), 0);
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -133,14 +133,14 @@ struct TestUninitializedFillNonPOD
 {
   void operator()(const size_t)
   {
-    using T                 = CopyConstructTest;
-    thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
+    using T                       = CopyConstructTest;
+    const thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
-    T exemplar;
+    const T exemplar;
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
 
-    T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
+    const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
 
@@ -201,14 +201,14 @@ struct TestUninitializedFillNNonPOD
 {
   void operator()(const size_t)
   {
-    using T                 = CopyConstructTest;
-    thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
+    using T                       = CopyConstructTest;
+    const thrust::device_ptr<T> v = thrust::device_malloc<T>(5);
 
-    T exemplar;
+    const T exemplar;
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
 
-    T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
+    const T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
 

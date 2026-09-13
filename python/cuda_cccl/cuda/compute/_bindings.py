@@ -9,7 +9,7 @@
 #    appropriate extension based on the detected CUDA version, and imports all
 #    symbols from it.
 #
-# 2. Preload `nvrtc` and `nvJitLink` before importing the extension.
+# 2. Preload `nvrtc`, `nvJitLink` and `cudart` before importing the extension.
 #    These shared libraries are indirect dependencies, pulled in via the direct
 #    dependency `cccl.c.parallel`. To ensure reliable symbol resolution at
 #    runtime, we explicitly load them first using `cuda.pathfinder`.
@@ -35,8 +35,15 @@ from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_e
 
 
 def _load_cuda_libraries():
-    # Load appropriate libraries for the detected CUDA version
-    for libname in ("nvrtc", "nvJitLink"):
+    # Load appropriate libraries for the detected CUDA version.
+    #
+    # `cudart` is required by the v2 (HostJIT) backend: both libnvcc.so and
+    # libcccl.c.parallel.v2.so carry a DT_NEEDED on libcudart.so.<major>, and
+    # auditwheel excludes it from the wheel just as it excludes nvrtc and
+    # nvJitLink. Without this preload the extension imports only where a system
+    # CUDA toolkit happens to be installed; a plain `pip install cuda-cccl[cu13]`
+    # fails to find it even though cuda-toolkit[cudart] is a declared dependency.
+    for libname in ("nvrtc", "nvJitLink", "cudart"):
         load_nvidia_dynamic_lib(libname)
 
 

@@ -382,9 +382,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
   template <class _Self, class _Env>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
-    using __cv_sndr_t _CCCL_NODEBUG_ALIAS     = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
-    using __sndr_config_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_launch_config_t, env_of_t<_Sndr>>;
-    using __env_t                             = __stream::__env_t<_Env, __sndr_config_t>;
+    using __cv_sndr_t _CCCL_NODEBUG     = ::cuda::std::__copy_cvref_t<_Self, _Sndr>;
+    using __sndr_config_t _CCCL_NODEBUG = __call_result_t<get_launch_config_t, env_of_t<_Sndr>>;
+    using __env_t                       = __stream::__env_t<_Env, __sndr_config_t>;
     _CUDAX_LET_COMPLETIONS(auto(__completions) = execution::get_completion_signatures<__cv_sndr_t, __env_t>())
     {
       return __stream::__with_cuda_error(__completions);

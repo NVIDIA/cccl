@@ -92,7 +92,7 @@ struct TestTupleConstructor
     ASSERT_EQUAL(data[9], get<9>(t10));
   }
 };
-SimpleUnitTest<TestTupleConstructor, BuiltinNumericTypes> TestTupleConstructorInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleConstructor, BuiltinNumericTypes);
 
 template <typename T>
 struct TestMakeTuple
@@ -182,7 +182,7 @@ struct TestMakeTuple
     ASSERT_EQUAL(data[9], get<9>(t10));
   }
 };
-SimpleUnitTest<TestMakeTuple, BuiltinNumericTypes> TestMakeTupleInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestMakeTuple, BuiltinNumericTypes);
 
 template <typename T>
 struct TestTupleGet
@@ -271,7 +271,7 @@ struct TestTupleGet
     ASSERT_EQUAL(data[9], thrust::get<9>(t10));
   }
 };
-SimpleUnitTest<TestTupleGet, BuiltinNumericTypes> TestTupleGetInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleGet, BuiltinNumericTypes);
 
 template <typename T>
 struct TestTupleComparison
@@ -325,7 +325,7 @@ struct TestTupleComparison
     ASSERT_EQUAL(false, lhs >= rhs);
   }
 };
-SimpleUnitTest<TestTupleComparison, NumericTypes> TestTupleComparisonInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleComparison, NumericTypes);
 
 template <typename T>
 struct TestTupleTieFunctor
@@ -456,17 +456,17 @@ struct TestTupleTie
     ASSERT_EQUAL(true, d_result[0]);
   }
 };
-SimpleUnitTest<TestTupleTie, NumericTypes> TestTupleTieInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleTie, NumericTypes);
 
 void TestTupleSwap()
 {
-  int a = 7;
-  int b = 13;
-  int c = 42;
+  const int a = 7;
+  const int b = 13;
+  const int c = 42;
 
-  int x = 77;
-  int y = 1313;
-  int z = 4242;
+  const int x = 77;
+  const int y = 1313;
+  const int z = 4242;
 
   thrust::tuple<int, int, int> t1(a, b, c);
   thrust::tuple<int, int, int> t2(x, y, z);
@@ -489,7 +489,7 @@ void TestTupleSwap()
   thrust::swap_ranges(h_v1.begin(), h_v1.end(), h_v2.begin());
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());
 
-  swappable_tuple ref(user_swappable(true), user_swappable(true), user_swappable(true), user_swappable(true));
+  const swappable_tuple ref(user_swappable(true), user_swappable(true), user_swappable(true), user_swappable(true));
 
   ASSERT_EQUAL_QUIET(ref, h_v1[0]);
   ASSERT_EQUAL_QUIET(ref, h_v1[0]);

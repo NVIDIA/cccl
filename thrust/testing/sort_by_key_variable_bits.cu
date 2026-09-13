@@ -43,4 +43,4 @@ struct TestSortByKeyVariableBits
     }
   }
 };
-VariableUnitTest<TestSortByKeyVariableBits, UnsignedIntegerTypes> TestSortByKeyVariableBitsInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortByKeyVariableBits, UnsignedIntegerTypes);

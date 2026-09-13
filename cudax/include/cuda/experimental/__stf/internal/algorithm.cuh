@@ -249,7 +249,10 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
-    // Speaking of which.
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
     SCOPE(exit)
     {
       adapter.clear();
@@ -309,7 +312,10 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
-    // Speaking of which.
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
     SCOPE(exit)
     {
       adapter.clear();

@@ -9,6 +9,7 @@
 #===----------------------------------------------------------------------===##
 
 add_subdirectory(reduce)
+add_subdirectory(segmented_reduce)
 add_subdirectory(exclusive_scan)
 add_subdirectory(inclusive_scan)
 add_subdirectory(sort)

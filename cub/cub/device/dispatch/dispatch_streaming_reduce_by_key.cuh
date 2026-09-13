@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce_by_key.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
@@ -89,6 +90,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
                          cc.minor_cap(),
                          ss.str().c_str());
                }))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  log_dispatch("DeviceReduce (by key, streaming)", cc, policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   using local_offset_t  = ::cuda::std::int32_t;
@@ -141,8 +144,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
 
   for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
   {
-    global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
-    global_offset_t current_num_items =
+    const global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
+    const global_offset_t current_num_items =
       (partition_idx + 1 == num_partitions) ? (num_items - current_partition_offset) : capped_num_items_per_invocation;
 
     const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
@@ -155,7 +158,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_current_tiles, init_kernel_threads));
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif
+#else // CUB_DEBUG_LOG
+    log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+#endif // CUB_DEBUG_LOG
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -182,7 +187,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
             threads_per_block,
             (long long) stream,
             items_per_thread);
-#endif
+#else // CUB_DEBUG_LOG
+    log("Invoking reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
+        num_current_tiles,
+        threads_per_block,
+        (long long) stream,
+        items_per_thread);
+#endif // CUB_DEBUG_LOG
     auto reduce_by_key_kernel = KernelSource::template reduce_by_key_kernel<
       PolicySelector,
       KeysInputIteratorT,
@@ -204,7 +215,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
       const bool is_first_partition = (partition_idx == 0);
       const bool is_last_partition  = (partition_idx + 1 == num_partitions);
       const int buffer_selector     = partition_idx % 2;
-      streaming_context_t streaming_context{
+      const streaming_context_t streaming_context{
         is_first_partition,
         is_last_partition,
         is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,

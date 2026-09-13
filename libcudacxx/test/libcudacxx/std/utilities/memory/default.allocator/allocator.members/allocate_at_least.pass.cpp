@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17, c++20
-
 // <memory>
 
 // allocation_result<T*> allocate_at_least(size_t n)
@@ -40,7 +38,8 @@ TEST_GLOBAL_VARIABLE int AlignedType_constructed = 0;
 template <cuda::std::size_t Align>
 struct alignas(Align) AlignedType
 {
-  char data;
+  char data[Align];
+
   TEST_FUNC AlignedType()
   {
     ++AlignedType_constructed;
@@ -67,9 +66,10 @@ TEST_FUNC void test_aligned()
   {
     assert(globalMemCounter.checkOutstandingNewEq(0));
     assert(AlignedType_constructed == 0);
-    globalMemCounter.last_new_size                                         = 0;
-    globalMemCounter.last_new_align                                        = 0;
-    cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
+    globalMemCounter.last_new_size  = 0;
+    globalMemCounter.last_new_align = 0;
+    decltype(auto) ap               = a.allocate_at_least(3);
+    static_assert(cuda::std::same_as<cuda::std::allocation_result<T*>, decltype(ap)>);
     assert(ap.count >= 3);
     NV_IF_TARGET(NV_IS_HOST, DoNotOptimize(ap);)
     assert(globalMemCounter.checkOutstandingNewEq(1));
@@ -93,7 +93,8 @@ TEST_FUNC _CCCL_CONSTEXPR_CXX20_ALLOCATION bool test_aligned_constexpr()
 {
   using T = AlignedType<Align>;
   cuda::std::allocator<T> a;
-  cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
+  decltype(auto) ap = a.allocate_at_least(3);
+  static_assert(cuda::std::same_as<cuda::std::allocation_result<T*>, decltype(ap)>);
   assert(ap.count >= 3);
   a.deallocate(ap.ptr, 3);
 

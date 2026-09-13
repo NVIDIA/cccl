@@ -23,7 +23,7 @@ void basic(nvbench::state& state, nvbench::type_list<T>)
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     const auto env = cub_bench_env(alloc, launch);
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceFind::LowerBound,
       "LowerBound failed",
       s.range_ptr(),

@@ -33,7 +33,7 @@ struct TestPairManipulation
     ASSERT_EQUAL(p1.second, sp.second);
 
     // test initialization
-    P p3 = p2; // NOLINT(performance-unnecessary-copy-initialization)
+    const P p3 = p2; // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(p2.first, p3.first);
     ASSERT_EQUAL(p2.second, p3.second);
 
@@ -71,7 +71,7 @@ struct TestPairManipulation
     ASSERT_EQUAL(T(9), p7.second);
   }
 };
-SimpleUnitTest<TestPairManipulation, NumericTypes> TestPairManipulationInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairManipulation, NumericTypes);
 
 template <typename T>
 struct TestPairComparison
@@ -221,7 +221,7 @@ struct TestPairComparison
     ASSERT_EQUAL(false, y >= x);
   }
 };
-SimpleUnitTest<TestPairComparison, NumericTypes> TestPairComparisonInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairComparison, NumericTypes);
 
 template <typename T>
 struct TestPairGet
@@ -236,7 +236,7 @@ struct TestPairGet
     ASSERT_EQUAL(data[1], cuda::std::get<1>(p));
   }
 };
-SimpleUnitTest<TestPairGet, BuiltinNumericTypes> TestPairGetInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairGet, BuiltinNumericTypes);
 
 using PairConstVolatileTypes =
   unittest::type_list<thrust::pair<int, float>, thrust::pair<int, float> const, thrust::pair<int, float> const volatile>;
@@ -249,7 +249,7 @@ struct TestPairTupleSize
     ASSERT_EQUAL(2, static_cast<int>(thrust::tuple_size<Pair>::value));
   }
 };
-SimpleUnitTest<TestPairTupleSize, PairConstVolatileTypes> TestPairTupleSizeInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairTupleSize, PairConstVolatileTypes);
 
 void TestPairTupleElement()
 {
@@ -277,11 +277,11 @@ DECLARE_UNITTEST(TestPairTupleElement);
 
 void TestPairSwap()
 {
-  int x = 7;
-  int y = 13;
+  const int x = 7;
+  const int y = 13;
 
-  int z = 42;
-  int w = 0;
+  const int z = 42;
+  const int w = 0;
 
   thrust::pair<int, int> a(x, y);
   thrust::pair<int, int> b(z, w);
@@ -302,7 +302,7 @@ void TestPairSwap()
   thrust::swap_ranges(h_v1.begin(), h_v1.end(), h_v2.begin());
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());
 
-  swappable_pair ref(user_swappable(true), user_swappable(true));
+  const swappable_pair ref(user_swappable(true), user_swappable(true));
 
   ASSERT_EQUAL_QUIET(ref, h_v1[0]);
   ASSERT_EQUAL_QUIET(ref, h_v1[0]);

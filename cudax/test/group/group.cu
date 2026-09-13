@@ -47,7 +47,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
-    cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
+    const cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
     if ((threadIdx.x + threadIdx.y + threadIdx.z) % 2 == 0)
     {
       atomic++;
@@ -110,8 +110,8 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
   {
     auto& barriers = get_barriers<nbarriers, 0>(level);
 
-    cudax::group_by<N> mapping{};
-    cudax::barrier_synchronizer synchronizer{barriers};
+    const cudax::group_by<N> mapping{};
+    const cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
@@ -121,8 +121,8 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
   {
     auto& barriers = get_barriers<nbarriers, 1>(level);
 
-    cudax::group_by mapping{N};
-    cudax::barrier_synchronizer synchronizer{barriers};
+    const cudax::group_by mapping{N};
+    const cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);

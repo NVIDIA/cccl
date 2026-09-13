@@ -102,11 +102,12 @@ void run_misaligned_external_storage()
   REQUIRE(cudaGetLastError() == cudaSuccess);
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
-  ref_type ref{cudax::cuco::empty_key<Key>{empty_k},
-               cudax::cuco::empty_value<Mapped>{empty_v},
-               ::cuda::std::equal_to<Key>{},
-               probing_type{},
-               span_type{slots, capacity}};
+  const ref_type ref{
+    cudax::cuco::empty_key<Key>{empty_k},
+    cudax::cuco::empty_value<Mapped>{empty_v},
+    ::cuda::std::equal_to<Key>{},
+    probing_type{},
+    span_type{slots, capacity}};
 
   insert_kernel<ref_type, Key><<<(num_keys + block - 1) / block, block>>>(ref, num_keys);
   REQUIRE(cudaGetLastError() == cudaSuccess);

@@ -39,6 +39,7 @@ jobs:
       pull-requests: write
     outputs:
       base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
+      merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
       matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
@@ -71,15 +72,21 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
+          # `git merge-base` below needs the history of both sides.
+          fetch-depth: 0
           persist-credentials: false
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
       - name: Export PR info
         id: export-pr-info
+        env:
+          BASE_SHA: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
         run: |
-          echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
+          echo "base_sha=${BASE_SHA}" | tee -a "${GITHUB_OUTPUT}"
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
+          git fetch origin "${BASE_SHA}" -q
+          echo "merge_base_sha=$(git merge-base "${BASE_SHA}" "${GITHUB_SHA}")" | tee -a "${GITHUB_OUTPUT}"
       - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
@@ -179,16 +186,12 @@ jobs:
         id: branch-notes-dirt
         env:
           BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+          merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
         run: |
           if [[ -z "${BASE_SHA}" ]]; then
             echo "branch_notes_dirt=" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
-
-          echo "Fetch history and determine merge base..."
-          git fetch origin --unshallow -q || true
-          git fetch origin "${BASE_SHA}" -q
-          merge_base_sha=$(git merge-base "${GITHUB_SHA}" "${BASE_SHA}")
 
           echo "Head SHA: ${GITHUB_SHA}"
           echo "PR Base SHA: ${BASE_SHA}"
@@ -561,7 +564,7 @@ jobs:
       preset: ${{ matrix.preset }}
       archs: ${{ matrix.archs }}
       target_filters_json: ${{ matrix.target_filters_json }}
-      base_ref: ${{ needs.build-workflow.outputs.base_sha }}
+      base_ref: ${{ needs.build-workflow.outputs.merge_base_sha }}
 
   bench-results:
     name: Post benchmark results
@@ -804,12 +807,13 @@ jobs:
       - bench-results
     permissions:
       actions: read
+      checks: read
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     outputs:
-      github_report: ${{ steps.failure-analysis.outputs.github_report }}
+      github_comment: ${{ steps.render-github-comment.outputs.content }}
       pr_number: ${{ steps.pull-request.outputs.pr_number }}
     steps:
       - name: Check out CCCL
@@ -828,17 +832,46 @@ jobs:
           fi
 
       - name: Analyze failures
-        id: failure-analysis
+        id: analyze
         uses: ./.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
-          output_dir: ${{ runner.temp }}/ci-failure-analysis
           pr_number: ${{ steps.pull-request.outputs.pr_number }}
+
+      - name: Render GitHub failure analysis comment
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-comment
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-comment
+
+      - name: Render GitHub verbose failure analysis summary
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-verbose-summary
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-verbose-summary
+
+      - name: Add failure analysis to workflow summary
+        if: ${{ !cancelled() && steps.render-github-verbose-summary.outcome == 'success' }}
+        env:
+          SUMMARY_FILE: ${{ steps.render-github-verbose-summary.outputs.rendered_file }}
+        run: |
+          test -s "${SUMMARY_FILE}"
+          cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
 
   publish-failure-analysis:
     name: Add failure analysis to CI results
-    if: ${{ always() && needs.analyze-failures.result == 'success' }}
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        needs.analyze-failures.outputs.github_comment != '' &&
+        needs.analyze-failures.outputs.pr_number != ''
+      }}
     needs: analyze-failures
     permissions:
       pull-requests: write
@@ -850,5 +883,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           header: ci-results
           number: ${{ needs.analyze-failures.outputs.pr_number }}
-          message: ${{ needs.analyze-failures.outputs.github_report }}
+          message: ${{ needs.analyze-failures.outputs.github_comment }}
           append: true

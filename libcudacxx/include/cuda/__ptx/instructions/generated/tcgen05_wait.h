@@ -1,48 +1,37 @@
 // This file was automatically generated. Do not edit.
 
+// clang-tidy does not distinguish generated PTX constraints or inline-assembly branch bodies.
+// NOLINTBEGIN(modernize-unary-static-assert, bugprone-branch-clone)
+
 #ifndef _CUDA_PTX_GENERATED_TCGEN05_WAIT_H_
 #define _CUDA_PTX_GENERATED_TCGEN05_WAIT_H_
 
 /*
-// tcgen05.wait::ld.sync.aligned; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+// tcgen05.wait::ld.sync.aligned; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 template <typename = void>
 __device__ static inline void tcgen05_wait_ld();
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_wait_ld_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
-_CCCL_DEVICE static inline void tcgen05_wait_ld()
+_CCCL_DEVICE_API void tcgen05_wait_ld()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   asm volatile("tcgen05.wait::ld.sync.aligned;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_wait_ld_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.wait::st.sync.aligned; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_110a, SM_110f
+// tcgen05.wait::st.sync.aligned; // PTX ISA 86, SM_100a, SM_100f, SM_103a, SM_103f, SM_107a, SM_107f, SM_110a, SM_110f
 template <typename = void>
 __device__ static inline void tcgen05_wait_st();
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void __cuda_ptx_tcgen05_wait_st_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
 template <typename = void>
-_CCCL_DEVICE static inline void tcgen05_wait_st()
+_CCCL_DEVICE_API void tcgen05_wait_st()
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
-    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
-    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
   asm volatile("tcgen05.wait::st.sync.aligned;" : : : "memory");
-#  else
-  // Unsupported architectures will have a linker error with a semi-decent error message
-  __cuda_ptx_tcgen05_wait_st_is_only_supported_on_SM_100a_100f_103a_103f_110a_110f__();
-#  endif
 }
 #endif // __cccl_ptx_isa >= 860
+
+// NOLINTEND(modernize-unary-static-assert, bugprone-branch-clone)
 
 #endif // _CUDA_PTX_GENERATED_TCGEN05_WAIT_H_

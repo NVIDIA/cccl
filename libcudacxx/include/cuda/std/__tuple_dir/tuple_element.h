@@ -32,24 +32,24 @@ template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element;
 
 template <size_t _Ip, class _Tp>
-using tuple_element_t _CCCL_NODEBUG_ALIAS = typename tuple_element<_Ip, _Tp>::type;
+using tuple_element_t _CCCL_NODEBUG = typename tuple_element<_Ip, _Tp>::type;
 
 template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = const tuple_element_t<_Ip, _Tp>;
+  using type _CCCL_NODEBUG = const tuple_element_t<_Ip, _Tp>;
 };
 
 template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, volatile _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = volatile tuple_element_t<_Ip, _Tp>;
+  using type _CCCL_NODEBUG = volatile tuple_element_t<_Ip, _Tp>;
 };
 
 template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const volatile _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = const volatile tuple_element_t<_Ip, _Tp>;
+  using type _CCCL_NODEBUG = const volatile tuple_element_t<_Ip, _Tp>;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -65,19 +65,19 @@ struct tuple_element;
 template <size_t _Ip, class _Tp>
 struct tuple_element<_Ip, const _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = const typename tuple_element<_Ip, _Tp>::type;
+  using type _CCCL_NODEBUG = const typename tuple_element<_Ip, _Tp>::type;
 };
 
 template <size_t _Ip, class _Tp>
 struct tuple_element<_Ip, volatile _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = volatile typename tuple_element<_Ip, _Tp>::type;
+  using type _CCCL_NODEBUG = volatile typename tuple_element<_Ip, _Tp>::type;
 };
 
 template <size_t _Ip, class _Tp>
 struct tuple_element<_Ip, const volatile _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = const volatile typename tuple_element<_Ip, _Tp>::type;
+  using type _CCCL_NODEBUG = const volatile typename tuple_element<_Ip, _Tp>::type;
 };
 #endif // _CCCL_FREESTANDING()
 

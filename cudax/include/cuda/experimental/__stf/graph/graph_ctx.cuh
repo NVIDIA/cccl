@@ -73,7 +73,7 @@ public:
       cuda_try(cudaMallocHost(&result, s));
       SCOPE(fail)
       {
-        cudaFreeHost(&result);
+        cuda_safe_call(cudaFreeHost(result));
       };
       out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }

@@ -75,7 +75,7 @@ struct __pstl_dispatch<__pstl_algorithm::__exclusive_scan, __execution_backend::
     const auto __ctx    = ::cuda::std::execution::__pstl_ensure_current_ctx_for(__policy);
 
     // We pass the policy as an environment to DeviceScan
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceScan::ExclusiveScan,
       "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::ExclusiveScan failed",
       ::cuda::std::move(__first),

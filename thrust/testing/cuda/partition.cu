@@ -706,7 +706,7 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
+  const Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
 
   Vector ref(5);
   ref[0] = 2;

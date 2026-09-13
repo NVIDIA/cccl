@@ -5,6 +5,7 @@ from ._base import IteratorBase
 
 CUDA_PREAMBLE = """#include <cuda/std/cstdint>
 #include <cuda_fp16.h>
+#include <cuda_bf16.h>
 #include <cuda/std/cstring>
 using namespace cuda::std;
 """
