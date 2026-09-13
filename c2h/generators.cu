@@ -84,18 +84,7 @@ public:
 #endif
   }
 
-  ~generator_state_t()
-  {
-    try
-    {
-      const scoped_current_device device_scope{m_device};
-      cleanup_on_current_device();
-    }
-    catch (...)
-    {
-      cleanup_on_current_device();
-    }
-  }
+  static void destroy(generator_state_t* state) noexcept;
 
   [[nodiscard]] bool try_acquire() noexcept
   {
@@ -191,6 +180,11 @@ public:
   }
 
 private:
+  ~generator_state_t()
+  {
+    cleanup_on_current_device();
+  }
+
   void synchronize_previous_work()
   {
     if (m_completion_event == nullptr && !m_completion_event_record_failed)
@@ -283,6 +277,20 @@ private:
   bool m_is_leased                      = false;
 };
 
+void generator_state_t::destroy(generator_state_t* state) noexcept
+{
+  try
+  {
+    const scoped_current_device device_scope{state->device()};
+    delete state;
+  }
+  catch (...)
+  {
+    // CUDA resources cannot be safely destroyed unless their owning device is current.
+    // Retain the state and let process teardown reclaim it if device selection fails.
+  }
+}
+
 random_data_t::random_data_t(float* data, std::shared_ptr<generator_state_t> state) noexcept
     : m_data(data)
     , m_state(std::move(state))
@@ -321,23 +329,6 @@ class generator_t
 public:
   // An explicit body prevents nvcc from inferring a host/device constructor for this host-only state.
   generator_t() {} // NOLINT(modernize-use-equals-default)
-
-  ~generator_t()
-  {
-    // Generator states own allocations on their associated devices. Destroy each state while that device is current.
-    for (auto& state : m_states)
-    {
-      try
-      {
-        const scoped_current_device device_scope{state->device()};
-        state.reset();
-      }
-      catch (...)
-      {
-        state.reset();
-      }
-    }
-  }
 
   [[nodiscard]] random_data_t prepare_random_generator(seed_t seed, std::size_t num_items)
   {
@@ -407,7 +398,7 @@ private:
 
       if (!result)
       {
-        result                               = std::make_shared<generator_state_t>(device, stream);
+        result = std::shared_ptr<generator_state_t>{new generator_state_t{device, stream}, &generator_state_t::destroy};
         [[maybe_unused]] const bool acquired = result->try_acquire();
         _CCCL_VERIFY(acquired, "");
 
