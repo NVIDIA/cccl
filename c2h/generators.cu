@@ -222,6 +222,12 @@ private:
       (void) cudaDeviceSynchronize();
     }
 
+    // Release the distribution storage before the owning-device scope exits.
+    {
+      c2h::device_vector<float> distribution_to_release;
+      distribution_to_release.swap(m_distribution);
+    }
+
     if (m_completion_event != nullptr)
     {
       // Destructors cannot report event cleanup failures.
