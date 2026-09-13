@@ -21,6 +21,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -42,7 +43,15 @@
 
 namespace c2h::detail
 {
-#if !C2H_HAS_CURAND
+#if C2H_HAS_CURAND
+void check_curand_status(curandStatus_t status, const char* message)
+{
+  if (status != CURAND_STATUS_SUCCESS)
+  {
+    throw std::runtime_error{message};
+  }
+}
+#else // C2H_HAS_CURAND
 struct i_to_rnd_t
 {
   __host__ __device__ i_to_rnd_t(thrust::default_random_engine engine)
@@ -58,7 +67,7 @@ struct i_to_rnd_t
     return thrust::uniform_real_distribution<float>{0.0f, 1.0f}(m_engine);
   }
 };
-#endif // !C2H_HAS_CURAND
+#endif // C2H_HAS_CURAND
 
 class generator_state_t
 {
@@ -69,14 +78,14 @@ public:
       , m_thread_id(thread_id_for_stream(stream))
   {
 #if C2H_HAS_CURAND
-    curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
+    check_curand_status(curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT), "failed to create cuRAND generator");
 #endif
   }
 
   ~generator_state_t()
   {
 #if C2H_HAS_CURAND
-    curandDestroyGenerator(m_gen);
+    (void) curandDestroyGenerator(m_gen);
 #endif
   }
 
@@ -104,7 +113,7 @@ public:
     resize_distribution(num_items);
 
 #if C2H_HAS_CURAND
-    curandSetPseudoRandomGeneratorSeed(m_gen, seed.get());
+    check_curand_status(curandSetPseudoRandomGeneratorSeed(m_gen, seed.get()), "failed to seed cuRAND generator");
 #else // C2H_HAS_CURAND
     m_gen.seed(seed.get());
 #endif // C2H_HAS_CURAND
@@ -119,8 +128,10 @@ public:
   void generate(::cuda::stream_ref stream)
   {
 #if C2H_HAS_CURAND
-    curandSetStream(m_gen, stream.get());
-    curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size());
+    check_curand_status(curandSetStream(m_gen, stream.get()), "failed to set cuRAND generator stream");
+    check_curand_status(
+      curandGenerateUniform(m_gen, thrust::raw_pointer_cast(m_distribution.data()), m_distribution.size()),
+      "failed to generate cuRAND distribution");
 #else
     thrust::tabulate(device_policy.on(stream.get()), m_distribution.begin(), m_distribution.end(), i_to_rnd_t{m_gen});
     m_gen.discard(m_distribution.size());
