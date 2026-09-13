@@ -129,6 +129,23 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
   REQUIRE_THROWS_AS(resource.allocate_sync(1, 0), std::bad_alloc);
 }
 
+CUB_TEST("c2h random generator handles zero items", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  const c2h::seed_t seed{1234};
+
+  {
+    const auto random_data = c2h::detail::prepare_random_data(seed, 0);
+    REQUIRE(random_data.data() == nullptr);
+  }
+
+  int device_id{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
+
+  const cuda::stream stream{cuda::device_ref{device_id}};
+  const auto random_data = c2h::detail::prepare_random_data(stream, seed, 0);
+  REQUIRE(random_data.data() == nullptr);
+}
+
 CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][generators]", CUB_SMALL)
 {
   int device_id{};

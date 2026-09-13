@@ -160,6 +160,10 @@ public:
     synchronize_previous_work();
 
     resize_distribution(num_items);
+    if (num_items == 0)
+    {
+      return nullptr;
+    }
 
 #if C2H_HAS_CURAND
     check_curand_status(curandSetPseudoRandomGeneratorSeed(m_gen, seed.get()), "failed to seed cuRAND generator");
