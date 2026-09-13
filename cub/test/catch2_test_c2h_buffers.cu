@@ -15,6 +15,7 @@
 #include <exception>
 #include <future>
 #include <limits>
+#include <memory>
 #include <new>
 #include <utility>
 #include <vector>
@@ -241,9 +242,11 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
   auto d_expected = c2h::make_device_buffer<float>(copy_stream, device, num_items, cuda::no_init);
   auto d_actual   = c2h::make_device_buffer<float>(copy_stream, device, num_items, cuda::no_init);
 
-  std::promise<cuda::event> first_distribution_captured_promise;
+  // VS 2019's std::promise implementation requires its value type to be default-constructible.
+  using event_ptr = std::shared_ptr<cuda::event>;
+  std::promise<event_ptr> first_distribution_captured_promise;
   auto first_distribution_captured = first_distribution_captured_promise.get_future();
-  std::promise<cuda::event> second_generation_complete_promise;
+  std::promise<event_ptr> second_generation_complete_promise;
   auto second_generation_complete = second_generation_complete_promise.get_future();
 
   auto first_task = std::async(std::launch::async, [&] {
@@ -259,7 +262,7 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
         const cuda::stream_ref stream{cudaStreamPerThread};
         auto data = c2h::detail::prepare_random_data(stream, first_seed, num_items);
         cuda::copy_bytes(stream, cuda::std::span<const float>{data.data(), num_items}, d_expected);
-        auto first_distribution_captured_event = stream.record_event();
+        auto first_distribution_captured_event = std::make_shared<cuda::event>(stream.record_event());
         first_distribution_captured_promise.set_value(std::move(first_distribution_captured_event));
         return data;
       }
@@ -272,7 +275,7 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
 
     const cuda::stream_ref stream{cudaStreamPerThread};
     const auto second_generation_complete_event = second_generation_complete.get();
-    stream.wait(second_generation_complete_event);
+    stream.wait(*second_generation_complete_event);
     cuda::copy_bytes(stream, cuda::std::span<const float>{first_data.data(), num_items}, d_actual);
     stream.sync();
   });
@@ -288,9 +291,9 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
 
       const cuda::stream_ref stream{cudaStreamPerThread};
       const auto first_distribution_captured_event = first_distribution_captured.get();
-      stream.wait(first_distribution_captured_event);
+      stream.wait(*first_distribution_captured_event);
       const auto second_data                = c2h::detail::prepare_random_data(stream, second_seed, num_items);
-      auto second_generation_complete_event = stream.record_event();
+      auto second_generation_complete_event = std::make_shared<cuda::event>(stream.record_event());
       stream.sync();
       second_generation_complete_promise.set_value(std::move(second_generation_complete_event));
     }
