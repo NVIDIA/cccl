@@ -102,8 +102,7 @@ public:
     return ::c2h::detail::checked_host_allocate(m_device, bytes, alignment);
   }
 
-  _CCCL_HOST_API void deallocate_sync(
-    void* ptr, std::size_t bytes, std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
+  _CCCL_HOST_API void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
     ::c2h::detail::checked_host_deallocate(ptr, bytes, alignment);
   }

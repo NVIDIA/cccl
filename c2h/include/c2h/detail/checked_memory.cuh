@@ -325,10 +325,8 @@ enum class integrated_device_cache_state : unsigned char
 #endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
 
-inline void checked_host_deallocate(
-  void* ptr,
-  [[maybe_unused]] std::size_t bytes,
-  [[maybe_unused]] std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
+inline void
+checked_host_deallocate(void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) noexcept
 {
   if (ptr == nullptr)
   {

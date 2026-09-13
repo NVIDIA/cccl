@@ -127,6 +127,14 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
   REQUIRE(empty.data() == nullptr);
 
   auto resource = c2h::checked_host_buffer_memory_resource{device};
+
+  constexpr std::size_t aligned_bytes = 1;
+  constexpr std::size_t alignment     = cuda::mr::default_cuda_malloc_alignment * 2;
+  void* const aligned_ptr             = resource.allocate_sync(aligned_bytes, alignment);
+  REQUIRE(aligned_ptr != nullptr);
+  REQUIRE(reinterpret_cast<std::uintptr_t>(aligned_ptr) % alignment == 0);
+  resource.deallocate_sync(aligned_ptr, aligned_bytes, alignment);
+
   REQUIRE_THROWS_AS(resource.allocate_sync(1, 0), std::bad_alloc);
 }
 
