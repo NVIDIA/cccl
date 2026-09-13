@@ -13,10 +13,10 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBoundSortedValues, device_lower_bound_sorted_values);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBoundSortedValues, device_upper_bound_sorted_values);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::LowerBoundSortedValues, device_lower_bound_sorted_values);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::UpperBoundSortedValues, device_upper_bound_sorted_values);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

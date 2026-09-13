@@ -18,11 +18,12 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::FindIf, device_find_if);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBound, device_lower_bound);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBound, device_upper_bound);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::FindIf, device_find_if);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::LowerBound, device_lower_bound);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::UpperBound, device_upper_bound);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

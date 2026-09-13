@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bit_fns.h>
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
@@ -65,7 +66,7 @@ __shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) 
   {
     const auto __lane = ::cuda::ptx::get_sreg_laneid();
     const auto __src_lane =
-      (__offset_is_valid) ? ::__fns(__lane_mask.value(), 0, static_cast<int>(__src_rank + 1)) : __lane;
+      (__offset_is_valid) ? ::cuda::bit_fns(__lane_mask.value(), static_cast<int>(__src_rank)) : __lane;
     const auto __result = ::cuda::device::warp_shuffle_idx(__value, static_cast<int>(__src_lane), __lane_mask.value());
     return (__offset_is_valid) ? ::cuda::std::optional{__result.data} : ::cuda::std::nullopt;
   }

@@ -263,4 +263,7 @@ markers = [
   "no_numba: tests that should not import the JIT backend",
   "free_threading: tests requiring free-threaded CPython with the GIL disabled",
   "serialization: serialize/deserialize tests (skipped on the v2 HostJIT backend)",
+  # Provided by pytest-run-parallel when installed; registered here too so it
+  # does not warn as unknown on the lanes that do not install that plugin.
+  "thread_unsafe: test must not be run concurrently with itself",
 ]

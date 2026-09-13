@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <cuda/std/complex>
+#include <cuda/type_traits>
 
-#include <c2h/generators.h>
+#include <c2h/generator_common.h>
 
 namespace c2h::detail
 {

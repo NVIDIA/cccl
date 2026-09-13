@@ -13,10 +13,11 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergeKeys, merge_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMerge::MergeKeys, merge_keys);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceMerge::MergePairs, merge_pairs);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

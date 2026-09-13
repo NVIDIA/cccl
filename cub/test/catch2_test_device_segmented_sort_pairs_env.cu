@@ -16,12 +16,13 @@ struct stream_registry_factory_t;
 #include <cuda/devices>
 #include <cuda/stream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairsDescending, stable_sort_pairs_descending);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortPairs, sort_pairs);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortPairsDescending, sort_pairs_descending);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortPairsDescending, stable_sort_pairs_descending);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::SortPairs, sort_pairs);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::SortPairsDescending, sort_pairs_descending);
 
 // %PARAM% TEST_LAUNCH lid 0:1
 

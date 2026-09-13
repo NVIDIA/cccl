@@ -15,12 +15,13 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortKeys, sort_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::SortKeysDescending, sort_keys_descending);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortKeysDescending, stable_sort_keys_descending);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::SortKeys, sort_keys);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::SortKeysDescending, sort_keys_descending);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortKeys, stable_sort_keys);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceSegmentedSort::StableSortKeysDescending, stable_sort_keys_descending);
 
 // %PARAM% TEST_LAUNCH lid 0:1
 
