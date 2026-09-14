@@ -3,15 +3,15 @@
 
 #pragma once
 
-#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__numeric/add_overflow.h>
 #include <cuda/std/__exception/cuda_error.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <iostream>
-#include <limits>
 #include <new>
 
 #include <cuda_runtime_api.h>
@@ -119,11 +119,6 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
   return cudaMalloc(ptr, bytes);
 }
 
-[[nodiscard]] inline bool add_overflows(std::size_t lhs, std::size_t rhs) noexcept
-{
-  return lhs > (std::numeric_limits<std::size_t>::max)() - rhs;
-}
-
 class scoped_current_device
 {
 public:
@@ -164,7 +159,7 @@ private:
 
 [[nodiscard]] inline bool is_valid_cuda_malloc_alignment(std::size_t alignment) noexcept
 {
-  return cuda::is_power_of_two(alignment) && alignment <= cuda::mr::default_cuda_malloc_alignment;
+  return ::cuda::__is_valid_alignment(alignment) && alignment <= ::cuda::mr::default_cuda_malloc_alignment;
 }
 
 [[nodiscard]] inline void* checked_device_allocate(int device, std::size_t bytes, std::size_t alignment)
@@ -212,11 +207,7 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
 
 [[nodiscard]] inline std::size_t checked_host_allocation_size(std::size_t bytes, std::size_t alignment)
 {
-  if (alignment == 0)
-  {
-    throw std::bad_alloc{};
-  }
-  if (!cuda::is_power_of_two(alignment))
+  if (!::cuda::__is_valid_alignment(alignment))
   {
     throw std::bad_alloc{};
   }
@@ -224,18 +215,18 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
 #if __cpp_aligned_new >= 201606L
   return bytes;
 #else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
-  std::size_t result = bytes;
-  if (add_overflows(result, alignment))
+  const auto padded_size = ::cuda::add_overflow(bytes, alignment);
+  if (padded_size.overflow)
   {
     throw std::bad_alloc{};
   }
-  result += alignment;
 
-  if (add_overflows(result, sizeof(std::size_t)))
+  const auto allocation_size = ::cuda::add_overflow(padded_size.value, sizeof(std::size_t));
+  if (allocation_size.overflow)
   {
     throw std::bad_alloc{};
   }
-  return result + sizeof(std::size_t);
+  return allocation_size.value;
 #endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
 
