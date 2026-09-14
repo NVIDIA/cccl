@@ -352,13 +352,13 @@
 #  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
 #endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
 
-#if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+#if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary) || _CCCL_COMPILER(MSVC, >, 19, 51)
 #  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
+#endif // _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary) || _CCCL_COMPILER(MSVC, >, 19, 51)
 
-#if _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
+#if _CCCL_HAS_BUILTIN(__reference_converts_from_temporary) || _CCCL_COMPILER(MSVC, >, 19, 51)
 #  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
+#endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary) || _CCCL_COMPILER(MSVC, >, 19, 51)
 
 #if _CCCL_HAS_BUILTIN(__remove_volatile) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
