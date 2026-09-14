@@ -14,7 +14,7 @@ __device__ static inline void cp_async_bulk_wait_group(
 */
 #if __cccl_ptx_isa >= 800
 template <int _N32>
-_CCCL_DEVICE static inline void cp_async_bulk_wait_group(::cuda::ptx::n32_t<_N32> __N)
+_CCCL_DEVICE_API void cp_async_bulk_wait_group(::cuda::ptx::n32_t<_N32> __N)
 {
   asm volatile("cp.async.bulk.wait_group %0;" : : "n"(__N.value) : "memory");
 }
@@ -28,7 +28,7 @@ __device__ static inline void cp_async_bulk_wait_group_read(
 */
 #if __cccl_ptx_isa >= 800
 template <int _N32>
-_CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<_N32> __N)
+_CCCL_DEVICE_API void cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<_N32> __N)
 {
   asm volatile("cp.async.bulk.wait_group.read %0;" : : "n"(__N.value) : "memory");
 }

@@ -21,7 +21,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -81,7 +81,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -141,7 +141,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -201,7 +201,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_min_t,
@@ -261,7 +261,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -321,7 +321,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -381,7 +381,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -441,7 +441,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_max_t,
@@ -501,7 +501,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -561,7 +561,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -621,7 +621,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -681,7 +681,7 @@ __device__ static inline void multimem_red(
 */
 #if __cccl_ptx_isa >= 810
 template <::cuda::ptx::dot_sem _Sem, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_add_t,
@@ -744,7 +744,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_and_op_t,
@@ -832,7 +832,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_or_op_t,
@@ -920,7 +920,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_xor_op_t,
@@ -1008,7 +1008,7 @@ template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_and_op_t,
@@ -1096,7 +1096,7 @@ template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_or_op_t,
@@ -1184,7 +1184,7 @@ template <typename _B64,
           ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true,
           ::cuda::ptx::dot_sem _Sem,
           ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void multimem_red(
+_CCCL_DEVICE_API void multimem_red(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::op_xor_op_t,

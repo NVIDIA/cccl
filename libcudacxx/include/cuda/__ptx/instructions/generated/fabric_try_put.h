@@ -25,7 +25,7 @@ __device__ static inline void fabric_try_put(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_put(
+_CCCL_DEVICE_API void fabric_try_put(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -66,7 +66,7 @@ __device__ static inline void fabric_try_put_cp_mask(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_put_cp_mask(
+_CCCL_DEVICE_API void fabric_try_put_cp_mask(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -113,7 +113,7 @@ __device__ static inline void fabric_try_put_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_put_counted(
+_CCCL_DEVICE_API void fabric_try_put_counted(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -159,7 +159,7 @@ __device__ static inline void fabric_try_put_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_put_multimem(
+_CCCL_DEVICE_API void fabric_try_put_multimem(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -200,7 +200,7 @@ __device__ static inline void fabric_try_put_multimem_cp_mask(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_put_multimem_cp_mask(
+_CCCL_DEVICE_API void fabric_try_put_multimem_cp_mask(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,
@@ -247,7 +247,7 @@ __device__ static inline void fabric_try_put_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_put_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_put_multimem_counted(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_sys_t,

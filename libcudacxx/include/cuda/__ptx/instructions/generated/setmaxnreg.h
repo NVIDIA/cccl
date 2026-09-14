@@ -14,7 +14,7 @@ __device__ static inline void setmaxnreg_inc(
 */
 #if __cccl_ptx_isa >= 800
 template <int _N32>
-_CCCL_DEVICE static inline void setmaxnreg_inc(::cuda::ptx::n32_t<_N32> __imm_reg_count)
+_CCCL_DEVICE_API void setmaxnreg_inc(::cuda::ptx::n32_t<_N32> __imm_reg_count)
 {
   asm volatile("setmaxnreg.inc.sync.aligned.u32 %0;" : : "n"(__imm_reg_count.value) :);
 }
@@ -28,7 +28,7 @@ __device__ static inline void setmaxnreg_dec(
 */
 #if __cccl_ptx_isa >= 800
 template <int _N32>
-_CCCL_DEVICE static inline void setmaxnreg_dec(::cuda::ptx::n32_t<_N32> __imm_reg_count)
+_CCCL_DEVICE_API void setmaxnreg_dec(::cuda::ptx::n32_t<_N32> __imm_reg_count)
 {
   asm volatile("setmaxnreg.dec.sync.aligned.u32 %0;" : : "n"(__imm_reg_count.value) :);
 }

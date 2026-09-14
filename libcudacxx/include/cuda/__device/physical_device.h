@@ -112,8 +112,8 @@ class __physical_device
       // group of peers is needed (for cases other than peer access control)
       if (__other_id != __id)
       {
-        device_ref __dev{__id};
-        device_ref __other_dev{__other_id};
+        const device_ref __dev{__id};
+        const device_ref __other_dev{__other_id};
 
         // While in almost all practical applications peer access should be symmetrical,
         // it is possible to build a system with one directional peer access, check
@@ -148,8 +148,8 @@ class __physical_device
     const auto __groups = ::cuda::std::make_unique<::CUdevResource[]>(__domain_count);
 
     // We don't care about the returned remainder so ignore it
-    static_cast<void>(
-      ::cuda::__driver::__devSmResourceSplit(__groups.get(), __domain_count, __full_resource, __params.get()));
+    static_cast<void>(::cuda::__driver::__devSmResourceSplit(
+      __groups.get(), static_cast<unsigned int>(__domain_count), __full_resource, __params.get()));
 
     // Neither `__logical_device` nor `__logical_device_ref` is default constructible, so both
     // arrays must be constructed element by element in raw storage.
@@ -218,7 +218,8 @@ public:
   {
     if (__primary_ctx_ != nullptr)
     {
-      [[maybe_unused]] const auto __ignore = ::cuda::__driver::__primaryCtxReleaseNoThrow(__device_);
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::__driver::__primaryCtxReleaseNoThrow, "Failed to release primary context", __device_);
     }
   }
 

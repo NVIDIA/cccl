@@ -14,7 +14,7 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 700
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(::cuda::std::uint64_t* __addr)
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive(::cuda::std::uint64_t* __addr)
 {
   ::cuda::std::uint64_t __state;
   asm("mbarrier.arrive.shared.b64                                  %0,  [%1];           // 1. "
@@ -34,7 +34,7 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 780
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 mbarrier_arrive(::cuda::std::uint64_t* __addr, const ::cuda::std::uint32_t& __count)
 {
   ::cuda::std::uint64_t __state;
@@ -60,7 +60,7 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -103,7 +103,7 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -146,7 +146,7 @@ __device__ static inline void mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive(
+_CCCL_DEVICE_API void mbarrier_arrive(
   ::cuda::ptx::sem_release_t, ::cuda::ptx::scope_cluster_t, ::cuda::ptx::space_cluster_t, ::cuda::std::uint64_t* __addr)
 {
   // __sem == sem_release (due to parameter type constraint)
@@ -174,7 +174,7 @@ __device__ static inline void mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive(
+_CCCL_DEVICE_API void mbarrier_arrive(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -206,7 +206,7 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -249,7 +249,7 @@ __device__ static inline uint64_t mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -292,7 +292,7 @@ __device__ static inline void mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive(
+_CCCL_DEVICE_API void mbarrier_arrive(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -323,7 +323,7 @@ __device__ static inline void mbarrier_arrive(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive(
+_CCCL_DEVICE_API void mbarrier_arrive(
   ::cuda::ptx::sem_relaxed_t, ::cuda::ptx::scope_cluster_t, ::cuda::ptx::space_cluster_t, ::cuda::std::uint64_t* __addr)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
@@ -350,7 +350,7 @@ __device__ static inline void mbarrier_arrive_multicast_32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem>
-_CCCL_DEVICE static inline void mbarrier_arrive_multicast_32b(
+_CCCL_DEVICE_API void mbarrier_arrive_multicast_32b(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -395,7 +395,7 @@ __device__ static inline void mbarrier_arrive_expect_tx_multicast_32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem>
-_CCCL_DEVICE static inline void mbarrier_arrive_expect_tx_multicast_32b(
+_CCCL_DEVICE_API void mbarrier_arrive_expect_tx_multicast_32b(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,

@@ -27,7 +27,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -72,7 +72,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -122,7 +122,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -167,7 +167,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -217,7 +217,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -262,7 +262,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -312,7 +312,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -357,7 +357,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -407,7 +407,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -452,7 +452,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -502,7 +502,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -547,7 +547,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -597,7 +597,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -642,7 +642,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -692,7 +692,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -737,7 +737,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_and_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -787,7 +787,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -832,7 +832,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -882,7 +882,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -927,7 +927,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_xor_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -977,7 +977,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1022,7 +1022,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1072,7 +1072,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1117,7 +1117,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_or_op_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1167,7 +1167,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1212,7 +1212,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1262,7 +1262,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1307,7 +1307,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1357,7 +1357,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1402,7 +1402,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1452,7 +1452,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1497,7 +1497,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1547,7 +1547,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1592,7 +1592,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1642,7 +1642,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1687,7 +1687,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1737,7 +1737,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1782,7 +1782,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1832,7 +1832,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1877,7 +1877,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1927,7 +1927,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -1972,7 +1972,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2022,7 +2022,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2067,7 +2067,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2117,7 +2117,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2162,7 +2162,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2212,7 +2212,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2257,7 +2257,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2307,7 +2307,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2352,7 +2352,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2402,7 +2402,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2447,7 +2447,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2497,7 +2497,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2542,7 +2542,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2592,7 +2592,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2637,7 +2637,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2688,7 +2688,7 @@ __device__ static inline void fabric_try_red(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2735,7 +2735,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2787,7 +2787,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2834,7 +2834,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2886,7 +2886,7 @@ __device__ static inline void fabric_try_red(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2933,7 +2933,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -2985,7 +2985,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3032,7 +3032,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3084,7 +3084,7 @@ __device__ static inline void fabric_try_red(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3131,7 +3131,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3183,7 +3183,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3231,7 +3231,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_min_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3283,7 +3283,7 @@ __device__ static inline void fabric_try_red(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3330,7 +3330,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3382,7 +3382,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3430,7 +3430,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_max_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3481,7 +3481,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3526,7 +3526,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3576,7 +3576,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3621,7 +3621,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3671,7 +3671,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3716,7 +3716,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3766,7 +3766,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3811,7 +3811,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3862,7 +3862,7 @@ __device__ static inline void fabric_try_red(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3909,7 +3909,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -3961,7 +3961,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4008,7 +4008,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4060,7 +4060,7 @@ __device__ static inline void fabric_try_red(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4107,7 +4107,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4159,7 +4159,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4207,7 +4207,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #  if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4258,7 +4258,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4303,7 +4303,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4353,7 +4353,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4398,7 +4398,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4448,7 +4448,7 @@ __device__ static inline void fabric_try_red(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red(
+_CCCL_DEVICE_API void fabric_try_red(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4493,7 +4493,7 @@ __device__ static inline void fabric_try_red_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_counted(
+_CCCL_DEVICE_API void fabric_try_red_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4543,7 +4543,7 @@ __device__ static inline void fabric_try_red_multimem(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem(
+_CCCL_DEVICE_API void fabric_try_red_multimem(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,
@@ -4588,7 +4588,7 @@ __device__ static inline void fabric_try_red_multimem_counted(
 */
 #if __cccl_ptx_isa >= 930
 template <typename = void>
-_CCCL_DEVICE static inline void fabric_try_red_multimem_counted(
+_CCCL_DEVICE_API void fabric_try_red_multimem_counted(
   ::cuda::ptx::op_add_t,
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::sem_relaxed_t,

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__bit/bit_fns.h>
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__cstddef/types.h>
@@ -46,19 +47,9 @@ struct __mapping_result
   ::cuda::std::uint32_t __unit_rank_;
   ::cuda::device::lane_mask __lane_mask_;
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result invalid() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid() noexcept
   {
     return {__invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            __invalid_count_or_rank,
-            ::cuda::device::lane_mask::none()};
-  }
-
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
-  invalid_with_group_count(::cuda::std::uint32_t __group_count) noexcept
-  {
-    return {__group_count,
             __invalid_count_or_rank,
             __invalid_count_or_rank,
             __invalid_count_or_rank,
@@ -72,17 +63,17 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t group_count() const noexcept
   {
+    if constexpr (!_IsExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting group count of thread that is not part of the group is UB");
+    }
+
     if constexpr (_StaticGroupCount != ::cuda::std::dynamic_extent)
     {
       return static_cast<::cuda::std::uint32_t>(_StaticGroupCount);
     }
     else
     {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(__group_count_ != __invalid_count_or_rank,
-                     "getting group count by a unit that was not part of the parent group is not allowed");
-      }
       return __group_count_;
     }
   }
@@ -103,16 +94,17 @@ struct __mapping_result
 
   [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint32_t unit_count() const noexcept
   {
+    if constexpr (!_IsExhaustive)
+    {
+      _CCCL_ASSERT(is_valid(), "getting unit count of thread that is not part of the group is UB");
+    }
+
     if constexpr (_StaticCount != ::cuda::std::dynamic_extent)
     {
       return static_cast<::cuda::std::uint32_t>(_StaticCount);
     }
     else
     {
-      if constexpr (!_IsExhaustive)
-      {
-        _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
-      }
       return __unit_count_;
     }
   }
@@ -183,10 +175,9 @@ template <bool _IsContiguous>
 
     const auto __less_mask = __prev_lane_mask & ::cuda::device::lane_mask::all_less();
     const auto __nless     = ::cuda::std::popcount(__less_mask.value());
-    if (__nless > __rank)
+    if (__nless >= __rank)
     {
-      const auto __nless_to_remove = __nless - __rank;
-      const auto __last_to_remove  = ::__fns(__less_mask.value(), 0, __nless_to_remove);
+      const auto __last_to_remove = ::cuda::bit_fns(__less_mask.value(), __nless - __rank);
       __lane_mask |= ::cuda::device::lane_mask{__less_mask.value() & (~0u << (__last_to_remove + 1))};
     }
     else
@@ -198,8 +189,7 @@ template <bool _IsContiguous>
     const auto __ngreater     = ::cuda::std::popcount(__greater_mask.value());
     if (__rank + __ngreater >= __n)
     {
-      const auto __ngreater_to_keep = __n - __rank;
-      const auto __first_to_remove  = ::__fns(__greater_mask.value(), 0, __ngreater_to_keep);
+      const auto __first_to_remove = ::cuda::bit_fns(__greater_mask.value(), __n - __rank - 1);
       __lane_mask |= ::cuda::device::lane_mask{__greater_mask.value() & ((1u << __first_to_remove) - 1u)};
     }
     else

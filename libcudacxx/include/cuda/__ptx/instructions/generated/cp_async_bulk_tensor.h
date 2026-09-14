@@ -22,7 +22,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -53,7 +53,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -85,7 +85,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -120,7 +120,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -152,7 +152,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -188,7 +188,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -224,7 +224,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -262,7 +262,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -299,7 +299,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_cluster_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -338,7 +338,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -376,7 +376,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -411,7 +411,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -458,7 +458,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -497,7 +497,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -552,7 +552,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -592,7 +592,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -649,7 +649,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -690,7 +690,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -749,7 +749,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   void* __dstMem,
@@ -792,7 +792,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -859,7 +859,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -1001,7 +1001,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -1185,7 +1185,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -1231,7 +1231,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           ::cuda::ptx::dot_cta_group _Cta_Group,
           ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -1432,7 +1432,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -1478,7 +1478,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -1668,7 +1668,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -1864,7 +1864,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -1919,7 +1919,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_cta_group _Cta_Group,
           ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -2189,7 +2189,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -2243,7 +2243,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -2445,7 +2445,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -2653,7 +2653,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -2710,7 +2710,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_cta_group _Cta_Group,
           ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -3016,7 +3016,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -3073,7 +3073,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -3287,7 +3287,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -3507,7 +3507,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -3565,7 +3565,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_cta_group _Cta_Group,
           ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -3907,7 +3907,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -3967,7 +3967,7 @@ __device__ static inline void cp_async_bulk_tensor(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE_API void cp_async_bulk_tensor(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -4193,7 +4193,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group, ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -4425,7 +4425,7 @@ __device__ static inline void cp_async_bulk_tensor_override(
 */
 #if __cccl_ptx_isa >= 940
 template <typename = void>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,
@@ -4484,7 +4484,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           ::cuda::ptx::dot_cta_group _Cta_Group,
           ::cuda::ptx::dot_report_mechanism _Report_Mechanism>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_shared_t,
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group,
@@ -4862,7 +4862,7 @@ template <typename _B16,
           ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true,
           typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void cp_async_bulk_tensor_override(
+_CCCL_DEVICE_API void cp_async_bulk_tensor_override(
   ::cuda::ptx::space_global_t,
   ::cuda::ptx::space_shared_t,
   const void* __tensorMap,

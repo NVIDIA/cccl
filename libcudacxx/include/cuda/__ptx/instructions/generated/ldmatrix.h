@@ -17,7 +17,7 @@ __device__ static inline void ldmatrix_m8n8(
 */
 #if __cccl_ptx_isa >= 650
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 ldmatrix_m8n8(::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[1], const _B16* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -39,7 +39,7 @@ __device__ static inline void ldmatrix_m8n8(
 */
 #if __cccl_ptx_isa >= 650
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 ldmatrix_m8n8(::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[2], const _B16* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -61,7 +61,7 @@ __device__ static inline void ldmatrix_m8n8(
 */
 #if __cccl_ptx_isa >= 650
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 ldmatrix_m8n8(::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[4], const _B16* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -83,7 +83,7 @@ __device__ static inline void ldmatrix_m8n8_trans(
 */
 #if __cccl_ptx_isa >= 650
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 ldmatrix_m8n8_trans(::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[1], const _B16* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -105,7 +105,7 @@ __device__ static inline void ldmatrix_m8n8_trans(
 */
 #if __cccl_ptx_isa >= 650
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 ldmatrix_m8n8_trans(::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[2], const _B16* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -127,7 +127,7 @@ __device__ static inline void ldmatrix_m8n8_trans(
 */
 #if __cccl_ptx_isa >= 650
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 ldmatrix_m8n8_trans(::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[4], const _B16* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -149,7 +149,7 @@ __device__ static inline void ldmatrix_m8n16_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void ldmatrix_m8n16_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void ldmatrix_m8n16_b8x16_b6x16_p32(
   ::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[1], const void* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -171,7 +171,7 @@ __device__ static inline void ldmatrix_m8n16_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void ldmatrix_m8n16_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void ldmatrix_m8n16_b8x16_b4x16_p64(
   ::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[1], const void* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -193,7 +193,7 @@ __device__ static inline void ldmatrix_m8n16_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void ldmatrix_m8n16_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void ldmatrix_m8n16_b8x16_b6x16_p32(
   ::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[2], const void* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -215,7 +215,7 @@ __device__ static inline void ldmatrix_m8n16_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void ldmatrix_m8n16_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void ldmatrix_m8n16_b8x16_b4x16_p64(
   ::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[2], const void* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -237,7 +237,7 @@ __device__ static inline void ldmatrix_m8n16_b8x16_b6x16_p32(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void ldmatrix_m8n16_b8x16_b6x16_p32(
+_CCCL_DEVICE_API void ldmatrix_m8n16_b8x16_b6x16_p32(
   ::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[4], const void* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)
@@ -259,7 +259,7 @@ __device__ static inline void ldmatrix_m8n16_b8x16_b4x16_p64(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void ldmatrix_m8n16_b8x16_b4x16_p64(
+_CCCL_DEVICE_API void ldmatrix_m8n16_b8x16_b4x16_p64(
   ::cuda::ptx::space_shared_t, ::cuda::std::uint32_t (&__out_var)[4], const void* __smem_ptr)
 {
   // __space == space_shared (due to parameter type constraint)

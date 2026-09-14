@@ -173,6 +173,10 @@ def filter_benchmarks(benchmarks, args):
 def search(seeker):
     args = parse_arguments()
 
+    # This guard has never fired: Storage() calls sqlite3.connect(), which
+    # creates the DB file before exists() is checked. Making it fire would
+    # wipe all built benchmark binaries on every fresh campaign; current
+    # workflows rely on fresh runs reusing existing binaries (see #11096).
     if not Storage().exists():
         CMake().clean()
 

@@ -20,7 +20,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_inc_t,
           ::cuda::std::uint32_t* __dest,
           const ::cuda::std::uint32_t& __value,
@@ -49,7 +49,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_dec_t,
           ::cuda::std::uint32_t* __dest,
           const ::cuda::std::uint32_t& __value,
@@ -78,7 +78,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_min_t,
           ::cuda::std::uint32_t* __dest,
           const ::cuda::std::uint32_t& __value,
@@ -107,7 +107,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_max_t,
           ::cuda::std::uint32_t* __dest,
           const ::cuda::std::uint32_t& __value,
@@ -136,7 +136,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_add_t,
           ::cuda::std::uint32_t* __dest,
           const ::cuda::std::uint32_t& __value,
@@ -165,7 +165,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_min_t,
           ::cuda::std::int32_t* __dest,
           const ::cuda::std::int32_t& __value,
@@ -194,7 +194,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_max_t,
           ::cuda::std::int32_t* __dest,
           const ::cuda::std::int32_t& __value,
@@ -223,7 +223,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_add_t,
           ::cuda::std::int32_t* __dest,
           const ::cuda::std::int32_t& __value,
@@ -252,7 +252,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_and_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
@@ -281,7 +281,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_or_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
@@ -310,7 +310,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_xor_op_t, _B32* __dest, const _B32& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   // __type == type_b32 (due to parameter type constraint)
@@ -339,7 +339,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_add_t,
           ::cuda::std::uint64_t* __dest,
           const ::cuda::std::uint64_t& __value,
@@ -367,7 +367,7 @@ __device__ static inline void red_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename = void>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 red_async(::cuda::ptx::op_add_t,
           ::cuda::std::int64_t* __dest,
           const ::cuda::std::int64_t& __value,

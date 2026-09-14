@@ -467,7 +467,7 @@ _CCCL_HOST_API void fp_custom_set_device_mantissa_size(int __new_size, ::cuda::s
   _CCCL_ASSERT(__new_size >= 0 && __new_size <= __fp_custom_native_sizes<_FpType>::__mant_size,
                "fp_custom mantissa size out of range");
   int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to set the fp_custom device mantissa size",
     __size_ptr,
@@ -485,7 +485,7 @@ _CCCL_HOST_API void fp_custom_set_device_exponent_size(int __new_size, ::cuda::s
   _CCCL_ASSERT(__new_size >= 2 && __new_size <= __fp_custom_native_sizes<_FpType>::__exp_size,
                "fp_custom exponent size out of range");
   int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to set the fp_custom device exponent size",
     __size_ptr,
@@ -508,7 +508,7 @@ template <typename _FpType = double>
 {
   int __size            = 0;
   const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to read the fp_custom device mantissa size",
     &__size,
@@ -527,7 +527,7 @@ template <typename _FpType = double>
 {
   int __size            = 0;
   const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
-  _CCCL_TRY_CUDA_API(
+  _CCCL_TRY_RUNTIME_API(
     ::cudaMemcpyAsync,
     "failed to read the fp_custom device exponent size",
     &__size,

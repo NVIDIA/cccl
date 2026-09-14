@@ -17,8 +17,7 @@ __device__ static inline void fence_proxy_tensormap_generic(
 */
 #if __cccl_ptx_isa >= 830
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void
-fence_proxy_tensormap_generic(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_Scope> __scope)
+_CCCL_DEVICE_API void fence_proxy_tensormap_generic(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -54,7 +53,7 @@ __device__ static inline void fence_proxy_tensormap_generic(
 */
 #if __cccl_ptx_isa >= 830
 template <int _N32, ::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
+_CCCL_DEVICE_API void fence_proxy_tensormap_generic(
   ::cuda::ptx::sem_acquire_t, ::cuda::ptx::scope_t<_Scope> __scope, const void* __addr, ::cuda::ptx::n32_t<_N32> __size)
 {
   // __sem == sem_acquire (due to parameter type constraint)

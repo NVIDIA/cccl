@@ -14,7 +14,7 @@ __device__ static inline void mbarrier_inval(
 */
 #if __cccl_ptx_isa >= 700
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_inval(::cuda::std::uint64_t* __addr)
+_CCCL_DEVICE_API void mbarrier_inval(::cuda::std::uint64_t* __addr)
 {
   asm("mbarrier.inval.shared.b64 [%0];" : : "r"(__as_ptr_smem(__addr)) : "memory");
 }

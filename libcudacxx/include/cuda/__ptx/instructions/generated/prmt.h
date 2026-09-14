@@ -16,7 +16,7 @@ __device__ static inline uint32_t prmt(
 */
 #if __cccl_ptx_isa >= 200
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t prmt(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t prmt(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
@@ -41,7 +41,7 @@ __device__ static inline uint32_t prmt_f4e(
 */
 #if __cccl_ptx_isa >= 200
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t prmt_f4e(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t prmt_f4e(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
@@ -66,7 +66,7 @@ __device__ static inline uint32_t prmt_b4e(
 */
 #if __cccl_ptx_isa >= 200
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t prmt_b4e(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t prmt_b4e(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
@@ -91,7 +91,7 @@ __device__ static inline uint32_t prmt_rc8(
 */
 #if __cccl_ptx_isa >= 200
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t prmt_rc8(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t prmt_rc8(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
@@ -116,7 +116,7 @@ __device__ static inline uint32_t prmt_ecl(
 */
 #if __cccl_ptx_isa >= 200
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t prmt_ecl(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t prmt_ecl(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
@@ -141,7 +141,7 @@ __device__ static inline uint32_t prmt_ecr(
 */
 #if __cccl_ptx_isa >= 200
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t prmt_ecr(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t prmt_ecr(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
@@ -166,7 +166,7 @@ __device__ static inline uint32_t prmt_rc16(
 */
 #if __cccl_ptx_isa >= 200
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline ::cuda::std::uint32_t prmt_rc16(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
+_CCCL_DEVICE_API ::cuda::std::uint32_t prmt_rc16(_B32 __a_reg, _B32 __b_reg, ::cuda::std::uint32_t __c_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");

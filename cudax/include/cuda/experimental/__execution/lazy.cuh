@@ -52,7 +52,7 @@ struct __lazy_box_
 };
 
 template <size_t _Idx, class _Ty>
-using __lazy_box _CCCL_NODEBUG_ALIAS = __lazy_box_<_Idx, sizeof(_Ty), alignof(_Ty)>;
+using __lazy_box _CCCL_NODEBUG = __lazy_box_<_Idx, sizeof(_Ty), alignof(_Ty)>;
 } // namespace __detail
 
 template <class _Idx, class... _Ts>
@@ -73,7 +73,7 @@ template <size_t... _Idx, class... _Ts>
 struct __lazy_tupl<::cuda::std::index_sequence<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts>...
 {
   template <size_t _Ny>
-  using __at _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_index_c<_Ny, _Ts...>;
+  using __at _CCCL_NODEBUG = ::cuda::std::__type_index_c<_Ny, _Ts...>;
 
   _CCCL_HOST_DEVICE_API __lazy_tupl() noexcept {}
 
@@ -92,9 +92,9 @@ struct __lazy_tupl<::cuda::std::index_sequence<_Idx...>, _Ts...> : __detail::__l
   _CCCL_HOST_DEVICE_API __at<_Ny>& __emplace(_Us&&... __us) //
     noexcept(__nothrow_constructible<__at<_Ny>, _Us...>)
   {
-    using _Ty _CCCL_NODEBUG_ALIAS = __at<_Ny>;
-    _Ty* __value_                 = ::new (static_cast<void*>(__get<_Ny, _Ty>())) _Ty{static_cast<_Us&&>(__us)...};
-    __engaged_[_Ny]               = true;
+    using _Ty _CCCL_NODEBUG = __at<_Ny>;
+    _Ty* __value_           = ::new (static_cast<void*>(__get<_Ny, _Ty>())) _Ty{static_cast<_Us&&>(__us)...};
+    __engaged_[_Ny]         = true;
     return *::cuda::std::launder(__value_);
   }
 
@@ -115,19 +115,19 @@ struct __lazy_tupl<::cuda::std::index_sequence<_Idx...>, _Ts...> : __detail::__l
 template <class... _Ts>
 struct __mk_lazy_tuple_
 {
-  using __indices_t _CCCL_NODEBUG_ALIAS = ::cuda::std::make_index_sequence<sizeof...(_Ts)>;
-  using type _CCCL_NODEBUG_ALIAS        = __lazy_tupl<__indices_t, _Ts...>;
+  using __indices_t _CCCL_NODEBUG = ::cuda::std::make_index_sequence<sizeof...(_Ts)>;
+  using type _CCCL_NODEBUG        = __lazy_tupl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __lazy_tuple _CCCL_NODEBUG_ALIAS = typename __mk_lazy_tuple_<_Ts...>::type;
+using __lazy_tuple _CCCL_NODEBUG = typename __mk_lazy_tuple_<_Ts...>::type;
 #else // ^^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class... _Ts>
-using __lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tupl<::cuda::std::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+using __lazy_tuple _CCCL_NODEBUG = __lazy_tupl<::cuda::std::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif // !_CCCL_COMPILER(MSVC)
 
 template <class... _Ts>
-using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<decay_t<_Ts>...>;
+using __decayed_lazy_tuple _CCCL_NODEBUG = __lazy_tuple<decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

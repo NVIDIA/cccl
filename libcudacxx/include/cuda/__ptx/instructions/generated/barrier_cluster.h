@@ -14,7 +14,7 @@ __device__ static inline void barrier_cluster_arrive();
 */
 #if __cccl_ptx_isa >= 780
 template <typename = void>
-_CCCL_DEVICE static inline void barrier_cluster_arrive()
+_CCCL_DEVICE_API void barrier_cluster_arrive()
 {
   asm volatile("barrier.cluster.arrive;" : : : "memory");
 }
@@ -28,7 +28,7 @@ __device__ static inline void barrier_cluster_wait();
 */
 #if __cccl_ptx_isa >= 780
 template <typename = void>
-_CCCL_DEVICE static inline void barrier_cluster_wait()
+_CCCL_DEVICE_API void barrier_cluster_wait()
 {
   asm volatile("barrier.cluster.wait;" : : : "memory");
 }
@@ -44,7 +44,7 @@ __device__ static inline void barrier_cluster_arrive(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void barrier_cluster_arrive(::cuda::ptx::sem_release_t)
+_CCCL_DEVICE_API void barrier_cluster_arrive(::cuda::ptx::sem_release_t)
 {
   // __sem == sem_release (due to parameter type constraint)
   asm volatile("barrier.cluster.arrive.release;" : : : "memory");
@@ -61,7 +61,7 @@ __device__ static inline void barrier_cluster_arrive(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void barrier_cluster_arrive(::cuda::ptx::sem_relaxed_t)
+_CCCL_DEVICE_API void barrier_cluster_arrive(::cuda::ptx::sem_relaxed_t)
 {
   // __sem == sem_relaxed (due to parameter type constraint)
   asm volatile("barrier.cluster.arrive.relaxed;" : : :);
@@ -78,7 +78,7 @@ __device__ static inline void barrier_cluster_wait(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void barrier_cluster_wait(::cuda::ptx::sem_acquire_t)
+_CCCL_DEVICE_API void barrier_cluster_wait(::cuda::ptx::sem_acquire_t)
 {
   // __sem == sem_acquire (due to parameter type constraint)
   asm volatile("barrier.cluster.wait.acquire;" : : : "memory");

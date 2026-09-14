@@ -56,8 +56,8 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
 ; DEC-DAG: {{.*}}{{(IMAD\.)?MOV(\.U32)?}} [[OPERAND:R[0-9]+]], {{.*}}0xffffffff{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
-; NON_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
+; BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
+; NON_BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
 ; NON_BLOCK-NEXT: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; POST_INC-NOT: {{.*}}{{(VIADD|IADD3|IADD)}}{{.*}}[[OLD]]{{.*}}

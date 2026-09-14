@@ -18,7 +18,7 @@ __device__ static inline void st_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _Type>
-_CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type& __value, ::cuda::std::uint64_t* __remote_bar)
+_CCCL_DEVICE_API void st_async(_Type* __addr, const _Type& __value, ::cuda::std::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   if constexpr (sizeof(_Type) == 4)
@@ -54,7 +54,7 @@ __device__ static inline void st_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _Type>
-_CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type (&__value)[2], ::cuda::std::uint64_t* __remote_bar)
+_CCCL_DEVICE_API void st_async(_Type* __addr, const _Type (&__value)[2], ::cuda::std::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   if constexpr (sizeof(_Type) == 4)
@@ -90,7 +90,7 @@ __device__ static inline void st_async(
 */
 #if __cccl_ptx_isa >= 810
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline void st_async(_B32* __addr, const _B32 (&__value)[4], ::cuda::std::uint64_t* __remote_bar)
+_CCCL_DEVICE_API void st_async(_B32* __addr, const _B32 (&__value)[4], ::cuda::std::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_B32) == 4, "");
   asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // 3. "

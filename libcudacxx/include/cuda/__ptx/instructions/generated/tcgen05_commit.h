@@ -17,8 +17,7 @@ __device__ static inline void tcgen05_commit(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void
-tcgen05_commit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar)
+_CCCL_DEVICE_API void tcgen05_commit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)
@@ -50,7 +49,7 @@ __device__ static inline void tcgen05_commit_multicast(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_commit_multicast(
+_CCCL_DEVICE_API void tcgen05_commit_multicast(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar, ::cuda::std::uint16_t __ctaMask)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -83,7 +82,7 @@ __device__ static inline void tcgen05_commit_multicast_32b(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_commit_multicast_32b(
+_CCCL_DEVICE_API void tcgen05_commit_multicast_32b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar, ::cuda::std::uint32_t __ctaMask)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -117,7 +116,7 @@ __device__ static inline void tcgen05_commit_sync_restrict_shared_read_mma_a(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_commit_sync_restrict_shared_read_mma_a(
+_CCCL_DEVICE_API void tcgen05_commit_sync_restrict_shared_read_mma_a(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -153,7 +152,7 @@ __device__ static inline void tcgen05_commit_sync_restrict_shared_read_mma_a_mul
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_commit_sync_restrict_shared_read_mma_a_multicast_32b(
+_CCCL_DEVICE_API void tcgen05_commit_sync_restrict_shared_read_mma_a_multicast_32b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint64_t* __smem_bar, ::cuda::std::uint32_t __ctaMask)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");

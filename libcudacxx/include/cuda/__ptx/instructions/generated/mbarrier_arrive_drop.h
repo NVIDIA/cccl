@@ -21,7 +21,7 @@ __device__ static inline uint64_t mbarrier_arrive_drop(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_drop(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive_drop(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -65,7 +65,7 @@ __device__ static inline void mbarrier_arrive_drop(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive_drop(
+_CCCL_DEVICE_API void mbarrier_arrive_drop(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -97,7 +97,7 @@ __device__ static inline uint64_t mbarrier_arrive_drop(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_drop(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive_drop(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -141,7 +141,7 @@ __device__ static inline void mbarrier_arrive_drop(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive_drop(
+_CCCL_DEVICE_API void mbarrier_arrive_drop(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -175,7 +175,7 @@ __device__ static inline void mbarrier_arrive_drop_multicast(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem>
-_CCCL_DEVICE static inline void mbarrier_arrive_drop_multicast(
+_CCCL_DEVICE_API void mbarrier_arrive_drop_multicast(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -220,7 +220,7 @@ __device__ static inline void mbarrier_arrive_drop_expect_tx_multicast(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_sem _Sem>
-_CCCL_DEVICE static inline void mbarrier_arrive_drop_expect_tx_multicast(
+_CCCL_DEVICE_API void mbarrier_arrive_drop_expect_tx_multicast(
   ::cuda::ptx::sem_t<_Sem> __sem,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -257,7 +257,7 @@ __device__ static inline uint64_t mbarrier_arrive_drop_no_complete(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t
+_CCCL_DEVICE_API ::cuda::std::uint64_t
 mbarrier_arrive_drop_no_complete(::cuda::std::uint64_t* __addr, ::cuda::std::uint32_t __count)
 {
   ::cuda::std::uint64_t __state;
@@ -284,7 +284,7 @@ __device__ static inline uint64_t mbarrier_arrive_drop_expect_tx(
 */
 #if __cccl_ptx_isa >= 800
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_drop_expect_tx(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive_drop_expect_tx(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -328,7 +328,7 @@ __device__ static inline void mbarrier_arrive_drop_expect_tx(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive_drop_expect_tx(
+_CCCL_DEVICE_API void mbarrier_arrive_drop_expect_tx(
   ::cuda::ptx::sem_release_t,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,
@@ -360,7 +360,7 @@ __device__ static inline uint64_t mbarrier_arrive_drop_expect_tx(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_scope _Scope>
-_CCCL_DEVICE static inline ::cuda::std::uint64_t mbarrier_arrive_drop_expect_tx(
+_CCCL_DEVICE_API ::cuda::std::uint64_t mbarrier_arrive_drop_expect_tx(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_t<_Scope> __scope,
   ::cuda::ptx::space_shared_t,
@@ -404,7 +404,7 @@ __device__ static inline void mbarrier_arrive_drop_expect_tx(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void mbarrier_arrive_drop_expect_tx(
+_CCCL_DEVICE_API void mbarrier_arrive_drop_expect_tx(
   ::cuda::ptx::sem_relaxed_t,
   ::cuda::ptx::scope_cluster_t,
   ::cuda::ptx::space_cluster_t,

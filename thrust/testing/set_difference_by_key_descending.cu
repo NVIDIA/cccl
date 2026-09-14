@@ -17,7 +17,7 @@ void TestSetDifferenceByKeyDescendingSimple()
 
   Vector result_key(2), result_val(2);
 
-  cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
+  const cuda::std::pair<Iterator, Iterator> end = thrust::set_difference_by_key(
     a_key.begin(),
     a_key.end(),
     b_key.begin(),

@@ -16,8 +16,7 @@ __device__ static inline void tcgen05_shift_down(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void
-tcgen05_shift_down(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr)
+_CCCL_DEVICE_API void tcgen05_shift_down(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)

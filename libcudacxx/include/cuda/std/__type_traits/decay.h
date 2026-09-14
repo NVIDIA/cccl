@@ -45,47 +45,66 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct decay
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_DECAY(_Tp);
 };
 
 #  if _CCCL_COMPILER(GCC) // GCC does not accept the builtin in template signatures
 template <class _Tp>
-using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
+using decay_t _CCCL_NODEBUG = typename decay<_Tp>::type;
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 template <class _Tp>
-using decay_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
+using decay_t _CCCL_NODEBUG = _CCCL_BUILTIN_DECAY(_Tp);
 #  endif // !_CCCL_COMPILER(GCC)
 
 #else // ^^^ _CCCL_BUILTIN_DECAY ^^^ / vvv !_CCCL_BUILTIN_DECAY vvv
 
-template <class _Up, bool>
-struct __decay_impl
+enum class __decay_choice
 {
-  using type _CCCL_NODEBUG_ALIAS = remove_cv_t<_Up>;
+  __default,
+  __decay_array,
+  __decay_function,
+};
+
+template <__decay_choice _Choice>
+struct __decay_impl;
+
+template <>
+struct __decay_impl<__decay_choice::__default>
+{
+  template <class _Up>
+  using type _CCCL_NODEBUG = remove_cv_t<_Up>;
+};
+
+template <>
+struct __decay_impl<__decay_choice::__decay_array>
+{
+  template <class _Up>
+  using type _CCCL_NODEBUG = remove_extent_t<_Up>*;
+};
+
+template <>
+struct __decay_impl<__decay_choice::__decay_function>
+{
+  template <class _Up>
+  using type _CCCL_NODEBUG = add_pointer_t<_Up>;
 };
 
 template <class _Up>
-struct __decay_impl<_Up, true>
-{
-public:
-  using type _CCCL_NODEBUG_ALIAS =
-    conditional_t<is_array_v<_Up>,
-                  remove_extent_t<_Up>*,
-                  conditional_t<is_function_v<_Up>, add_pointer_t<_Up>, remove_cv_t<_Up>>>;
-};
+inline constexpr __decay_choice __decay_select =
+  !__referenceable<_Up> ? __decay_choice::__default
+  : is_array_v<_Up>     ? __decay_choice::__decay_array
+  : is_function_v<_Up>  ? __decay_choice::__decay_function
+                        : __decay_choice::__default;
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT decay
 {
-private:
-  using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
-
-public:
-  using type _CCCL_NODEBUG_ALIAS = typename __decay_impl<_Up, __referenceable<_Up>>::type;
+  using type _CCCL_NODEBUG =
+    typename __decay_impl<__decay_select<remove_reference_t<_Tp>>>::template type<remove_reference_t<_Tp>>;
 };
 
 template <class _Tp>
-using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
+using decay_t _CCCL_NODEBUG = typename decay<_Tp>::type;
 
 #endif // !_CCCL_BUILTIN_DECAY
 

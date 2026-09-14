@@ -49,7 +49,7 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
 
 ; SMXX-LABEL: {{[[:space:]]*}}Function : atomic_codegen_test
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{(\.S32)?}}{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-DAG: {{.*}}MEMBAR.SC.[[SASS_SCOPE]]{{.*}}
 ; NON_BLOCK-DAG: {{.*}}CCTL.IVALL{{.*}}
@@ -57,9 +57,9 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
 ; DEC-DAG: {{.*}}{{(IMAD\.)?MOV(\.U32)?}} [[OPERAND:R[0-9]+]], {{.*}}0xffffffff{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
-; BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
-; NON_BLOCK: {{.*}}ATOM.E.ADD.S32.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{(\.S32)?}}{{.*}}
+; BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.{{CTA|SM}} {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
+; NON_BLOCK: {{.*}}ATOM.E.ADD{{(\.S32)?}}.STRONG.[[SASS_SCOPE]] {{P(T|[0-9]+)}}, [[OLD:R[0-9]+]], {{.*}}, [[OPERAND]]{{.*}}
 ; NON_BLOCK-NEXT: {{.*}}CCTL.IVALL{{.*}}
 ; BLOCK-NOT: {{.*}}CCTL.IVALL{{.*}}
 ; POST_INC-NOT: {{.*}}{{(VIADD|IADD3|IADD)}}{{.*}}[[OLD]]{{.*}}
@@ -67,7 +67,7 @@ extern "C" __device__ auto atomic_codegen_test(TEMPLATE<int32_t, SCOPE>& atom)
 ; PRE_INC: {{.*}}{{(VIADD|IADD3|IADD)}} {{R[0-9]+}}, {{(PT, PT, )?}}[[OLD]], 0x1{{([,;[:space:]]|$)}}{{.*}}
 ; PRE_DEC: {{.*}}{{(VIADD|IADD3|IADD)}} {{R[0-9]+}}, {{(PT, PT, )?}}[[OLD]], {{(-0x1|0xffffffff)([,;[:space:]]|$)}}{{.*}}
 ; SMXX-NOT: {{.*}}ATOM.{{.*}}CAS{{.*}}
-; SMXX-NOT: {{.*}}ATOM.E.ADD.S32{{.*}}
+; SMXX-NOT: {{.*}}ATOM.E.ADD{{(\.S32)?}}{{.*}}
 ; SMXX: {{.*}}RET.ABS.NODEC{{.*}}
 
 */

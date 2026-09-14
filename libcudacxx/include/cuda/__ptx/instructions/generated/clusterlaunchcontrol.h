@@ -15,7 +15,7 @@ __device__ static inline void clusterlaunchcontrol_try_cancel(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void clusterlaunchcontrol_try_cancel(void* __addr, ::cuda::std::uint64_t* __smem_bar)
+_CCCL_DEVICE_API void clusterlaunchcontrol_try_cancel(void* __addr, ::cuda::std::uint64_t* __smem_bar)
 {
   asm("clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.b128 [%0], [%1];"
       :
@@ -34,8 +34,7 @@ __device__ static inline void clusterlaunchcontrol_try_cancel_multicast(
 */
 #if __cccl_ptx_isa >= 860
 template <typename = void>
-_CCCL_DEVICE static inline void
-clusterlaunchcontrol_try_cancel_multicast(void* __addr, ::cuda::std::uint64_t* __smem_bar)
+_CCCL_DEVICE_API void clusterlaunchcontrol_try_cancel_multicast(void* __addr, ::cuda::std::uint64_t* __smem_bar)
 {
   asm("clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128 "
       "[%0], [%1];"
@@ -53,7 +52,7 @@ __device__ static inline bool clusterlaunchcontrol_query_cancel_is_canceled(
 */
 #if __cccl_ptx_isa >= 860
 template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline bool clusterlaunchcontrol_query_cancel_is_canceled(_B128 __try_cancel_response)
+_CCCL_DEVICE_API bool clusterlaunchcontrol_query_cancel_is_canceled(_B128 __try_cancel_response)
 {
   static_assert(sizeof(_B128) == 16, "");
   ::cuda::std::uint32_t __pred_is_canceled;
@@ -84,7 +83,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           typename _B128,
           ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_x(_B128 __try_cancel_response)
+_CCCL_DEVICE_API _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_x(_B128 __try_cancel_response)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B128) == 16, "");
@@ -114,7 +113,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           typename _B128,
           ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_y(_B128 __try_cancel_response)
+_CCCL_DEVICE_API _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_y(_B128 __try_cancel_response)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B128) == 16, "");
@@ -144,7 +143,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           typename _B128,
           ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_z(_B128 __try_cancel_response)
+_CCCL_DEVICE_API _B32 clusterlaunchcontrol_query_cancel_get_first_ctaid_z(_B128 __try_cancel_response)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B128) == 16, "");
@@ -175,7 +174,7 @@ template <typename _B32,
           ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true,
           typename _B128,
           ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = true>
-_CCCL_DEVICE static inline void
+_CCCL_DEVICE_API void
 clusterlaunchcontrol_query_cancel_get_first_ctaid(_B32 (&__block_dim)[4], _B128 __try_cancel_response)
 {
   static_assert(sizeof(_B32) == 4, "");

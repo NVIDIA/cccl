@@ -18,7 +18,7 @@ __device__ static inline void tcgen05_alloc(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_alloc(
+_CCCL_DEVICE_API void tcgen05_alloc(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t* __dst, const ::cuda::std::uint32_t& __nCols)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -51,7 +51,7 @@ __device__ static inline void tcgen05_dealloc(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_dealloc(
+_CCCL_DEVICE_API void tcgen05_dealloc(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, const ::cuda::std::uint32_t& __nCols)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -78,7 +78,7 @@ __device__ static inline void tcgen05_alloc_exclusive(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_alloc_exclusive(
+_CCCL_DEVICE_API void tcgen05_alloc_exclusive(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t* __dst, const ::cuda::std::uint32_t& __nCols)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -111,7 +111,7 @@ __device__ static inline void tcgen05_dealloc_exclusive(
 */
 #if __cccl_ptx_isa >= 940
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_dealloc_exclusive(
+_CCCL_DEVICE_API void tcgen05_dealloc_exclusive(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, const ::cuda::std::uint32_t& __nCols)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
@@ -142,7 +142,7 @@ __device__ static inline void tcgen05_relinquish_alloc_permit(
 */
 #if __cccl_ptx_isa >= 860
 template <::cuda::ptx::dot_cta_group _Cta_Group>
-_CCCL_DEVICE static inline void tcgen05_relinquish_alloc_permit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group)
+_CCCL_DEVICE_API void tcgen05_relinquish_alloc_permit(::cuda::ptx::cta_group_t<_Cta_Group> __cta_group)
 {
   static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
   if constexpr (__cta_group == cta_group_1)

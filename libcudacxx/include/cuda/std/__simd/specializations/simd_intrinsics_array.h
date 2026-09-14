@@ -94,6 +94,19 @@ __vadd_16bit_x2(const __array_u32_t<_Np>& __lhs_u, const __array_u32_t<_Np>& __r
   return __result_u;
 }
 
+template <size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr __array_u32_t<_Np>
+__vsub_16bit_x2(const __array_u32_t<_Np>& __lhs_u, const __array_u32_t<_Np>& __rhs_u) noexcept
+{
+  __array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::cuda::std::simd::__vsub_16x2(__lhs_u[__i], __rhs_u[__i]);
+  }
+  return __result_u;
+}
+
 #  if _CCCL_HAS_SIMD_8BIT()
 
 template <size_t _Np>
@@ -105,6 +118,19 @@ __vadd_8bit_x4(const __array_u32_t<_Np>& __lhs_u, const __array_u32_t<_Np>& __rh
   for (size_t __i = 0; __i < _Np; ++__i)
   {
     __result_u[__i] = ::cuda::std::simd::__vadd_8x4(__lhs_u[__i], __rhs_u[__i]);
+  }
+  return __result_u;
+}
+
+template <size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API constexpr __array_u32_t<_Np>
+__vsub_8bit_x4(const __array_u32_t<_Np>& __lhs_u, const __array_u32_t<_Np>& __rhs_u) noexcept
+{
+  __array_u32_t<_Np> __result_u;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::cuda::std::simd::__vsub_8x4(__lhs_u[__i], __rhs_u[__i]);
   }
   return __result_u;
 }

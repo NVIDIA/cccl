@@ -14,7 +14,7 @@ __device__ static inline bool elect_sync(
 */
 #if __cccl_ptx_isa >= 800
 template <typename = void>
-_CCCL_DEVICE static inline bool elect_sync(const ::cuda::std::uint32_t& __membermask)
+_CCCL_DEVICE_API bool elect_sync(const ::cuda::std::uint32_t& __membermask)
 {
   ::cuda::std::uint32_t __is_elected;
   asm volatile(

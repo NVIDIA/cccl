@@ -1500,7 +1500,7 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
+      const ::cuda::std::plus<> scan_op;
       T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
@@ -1566,7 +1566,7 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
+      const ::cuda::std::plus<> scan_op;
       T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
@@ -1650,7 +1650,7 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      ::cuda::std::plus<> scan_op;
+      const ::cuda::std::plus<> scan_op;
       T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan

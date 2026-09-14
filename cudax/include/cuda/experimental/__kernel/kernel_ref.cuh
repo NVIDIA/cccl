@@ -78,10 +78,11 @@ public:
   //! @throws cuda_error if the kernel cannot be obtained from the entry function address
   kernel_ref(void (*__entry_func_address)(_Args...))
   {
-    _CCCL_TRY_CUDA_API(::cudaGetKernel,
-                       "Failed to get kernel from entry function address",
-                       (cudaKernel_t*) &__kernel_,
-                       (const void*) __entry_func_address);
+    _CCCL_TRY_RUNTIME_API(
+      ::cudaGetKernel,
+      "Failed to get kernel from entry function address",
+      (cudaKernel_t*) &__kernel_,
+      (const void*) __entry_func_address);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
 

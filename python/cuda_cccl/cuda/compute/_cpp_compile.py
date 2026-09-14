@@ -15,6 +15,7 @@ from cuda.core import Device, Program, ProgramOptions
 from cuda.cccl import get_include_paths
 
 from ._bindings import TypeEnum
+from ._caching import _process_wide_cache_registry
 from ._device_code import DeviceCode
 
 try:
@@ -104,6 +105,9 @@ def _compile_cpp_to_ltoir_cached(source: str, arch: str) -> bytes:
 # entry point, backed by the arch-aware inner cache.
 compile_cpp_to_ltoir.cache_clear = _compile_cpp_to_ltoir_cached.cache_clear  # type: ignore[attr-defined]
 compile_cpp_to_ltoir.cache_info = _compile_cpp_to_ltoir_cached.cache_info  # type: ignore[attr-defined]
+# Keep clear_all_caches() covering this memo too, so iterator device code is
+# recompiled after a clear rather than served from here.
+_process_wide_cache_registry["_cpp_compile.compile_cpp_to_ltoir"] = compile_cpp_to_ltoir
 
 
 def compile_cpp_op_code(source: str, arch: str | None = None) -> DeviceCode:
@@ -132,6 +136,7 @@ def _compile_cpp_op_code_cached(source: str, arch: str | None) -> DeviceCode:
 
 compile_cpp_op_code.cache_clear = _compile_cpp_op_code_cached.cache_clear  # type: ignore[attr-defined]
 compile_cpp_op_code.cache_info = _compile_cpp_op_code_cached.cache_info  # type: ignore[attr-defined]
+_process_wide_cache_registry["_cpp_compile.compile_cpp_op_code"] = compile_cpp_op_code
 
 
 def cpp_type_from_descriptor(type_desc) -> str | None:

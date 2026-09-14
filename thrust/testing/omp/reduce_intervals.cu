@@ -90,4 +90,4 @@ struct TestOmpReduceIntervals
     ASSERT_EQUAL(h_output, d_output);
   }
 };
-VariableUnitTest<TestOmpReduceIntervals, IntegralTypes> TestOmpReduceIntervalsInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestOmpReduceIntervals, IntegralTypes);

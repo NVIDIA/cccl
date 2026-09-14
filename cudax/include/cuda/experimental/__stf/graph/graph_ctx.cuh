@@ -73,7 +73,7 @@ public:
       cuda_try(cudaMallocHost(&result, s));
       SCOPE(fail)
       {
-        cudaFreeHost(&result);
+        cuda_safe_call(cudaFreeHost(result));
       };
       out = cuda_try<cudaGraphAddEmptyNode>(graph, nodes.data(), nodes.size());
     }
@@ -363,14 +363,26 @@ public:
     // Make sure we release resources attached to this context
     state.release_ctx_resources(state.submitted_stream);
 
+    // Finalization has to complete even when the synchronize below reports a failure, which is
+    // the likely case rather than the exotic one: cudaStreamSynchronize is where asynchronous
+    // errors from earlier work surface. Leaving the context in `submitted` with its resources
+    // already released makes it unusable AND unretryable -- a second finalize() re-enters
+    // release_ctx_resources and trips its "already released" assertion. The guard is armed
+    // after that release so that a failure there still leaves the context retryable, which it
+    // is today: release() only sets its released flag once it has finished.
+    //
+    // The error still propagates; the caller simply gets a consistent context along with it.
+    SCOPE(exit)
+    {
+      state.submitted_stream = nullptr;
+      state.cleanup();
+      set_phase(backend_ctx_untyped::phase::finalized);
+    };
+
     if (state.blocking_finalize)
     {
       cuda_try(cudaStreamSynchronize(state.submitted_stream));
     }
-
-    state.submitted_stream = nullptr;
-    state.cleanup();
-    set_phase(backend_ctx_untyped::phase::finalized);
   }
 
   void submit(cudaStream_t stream = nullptr)

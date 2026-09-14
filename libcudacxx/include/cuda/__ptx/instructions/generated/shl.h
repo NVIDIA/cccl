@@ -15,7 +15,7 @@ __device__ static inline B16 shl(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = true>
-_CCCL_DEVICE static inline _B16 shl(_B16 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _B16 shl(_B16 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   static_assert(sizeof(_B16) == 2, "");
   static_assert(sizeof(_B16) == 2, "");
@@ -37,7 +37,7 @@ __device__ static inline B32 shl(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = true>
-_CCCL_DEVICE static inline _B32 shl(_B32 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _B32 shl(_B32 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B32) == 4, "");
@@ -59,7 +59,7 @@ __device__ static inline B64 shl(
 */
 #if __cccl_ptx_isa >= 100
 template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = true>
-_CCCL_DEVICE static inline _B64 shl(_B64 __a_reg, ::cuda::std::uint32_t __b_reg)
+_CCCL_DEVICE_API _B64 shl(_B64 __a_reg, ::cuda::std::uint32_t __b_reg)
 {
   static_assert(sizeof(_B64) == 8, "");
   static_assert(sizeof(_B64) == 8, "");

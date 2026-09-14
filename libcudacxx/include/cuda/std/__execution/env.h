@@ -102,7 +102,7 @@ _CCCL_API auto __query_result_()
 
 #if _CCCL_HAS_EXCEPTIONS()
 template <class _Env, class _Query, class... _Args>
-using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS =
+using __nothrow_queryable_with_t _CCCL_NODEBUG =
   enable_if_t<noexcept(::cuda::std::declval<_Env>().query(_Query{}, ::cuda::std::declval<_Args>()...))>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
@@ -135,7 +135,7 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
 } // namespace __detail
 
 template <class _Env, class _Query, class... _Args>
-using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__query_result_<_Env, _Query, _Args...>());
+using __query_result_t _CCCL_NODEBUG = decltype(__detail::__query_result_<_Env, _Query, _Args...>());
 
 template <class _Env, class _Query, class... _Args>
 _CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Env, _Query, _Args...>::value;
@@ -154,7 +154,7 @@ _CCCL_CONCEPT __nothrow_queryable_with = true;
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
-using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__unwrap_ref<_Ty>);
+using __unwrap_reference_t _CCCL_NODEBUG = decltype(__detail::__unwrap_ref<_Ty>);
 
 template <class _Query, class _DefaultFn = void>
 struct __basic_query : __basic_query<_Query>
@@ -282,8 +282,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   //!
   //! @tparam _Query The type of the query to be performed.
   template <class _Query, class... _Args>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS =
-    decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
+  using __1st_env_t _CCCL_NODEBUG = decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
 
   //! @brief Queries the first environment that satisfies the given query type.
   //!
@@ -340,8 +339,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   }
 
   template <class _Query, class... _Args>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS =
-    decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
+  using __1st_env_t _CCCL_NODEBUG = decltype(env::__get_1st<_Query, _Args...>(::cuda::std::declval<const env&>()));
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query, class... _Args)
@@ -374,7 +372,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 struct get_env_t
 {
   template <class _Ty>
-  using __env_of _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::declval<_Ty>().get_env());
+  using __env_of _CCCL_NODEBUG = decltype(::cuda::std::declval<_Ty>().get_env());
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty>
@@ -393,7 +391,7 @@ struct get_env_t
 _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 
 template <class _Ty>
-using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(::cuda::std::declval<_Ty>()));
+using env_of_t _CCCL_NODEBUG = decltype(get_env(::cuda::std::declval<_Ty>()));
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // forwarding_query_t
@@ -445,7 +443,7 @@ struct __query_or_t
 _CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
 
 template <class _Env, class _Query, class _Default, class... _Args>
-using __query_result_or_t _CCCL_NODEBUG_ALIAS = decltype(__query_or(
+using __query_result_or_t _CCCL_NODEBUG = decltype(__query_or(
   ::cuda::std::declval<_Env>(),
   ::cuda::std::declval<_Query>(),
   ::cuda::std::declval<_Default>(),

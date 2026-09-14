@@ -16,7 +16,7 @@ void TestSwapRangesDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::swap_ranges(sys, vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -60,8 +60,8 @@ DECLARE_VECTOR_UNITTEST(TestSwapRangesSimple);
 template <typename T>
 void TestSwapRanges(const size_t n)
 {
-  thrust::host_vector<T> a1 = unittest::random_integers<T>(n);
-  thrust::host_vector<T> a2 = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> a1 = unittest::random_integers<T>(n);
+  const thrust::host_vector<T> a2 = unittest::random_integers<T>(n);
 
   thrust::host_vector<T> h1   = a1;
   thrust::host_vector<T> h2   = a2;

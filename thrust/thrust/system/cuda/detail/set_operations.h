@@ -50,8 +50,8 @@ binary_search_iteration(It data, Size& begin, Size& end, T key, int shift, Comp 
   IntT scale = (1 << shift) - 1;
   Size mid   = (begin + scale * end) >> shift;
 
-  T key2    = data[mid];
-  bool pred = UpperBound ? !comp(key, key2) : comp(key2, key);
+  T key2          = data[mid];
+  const bool pred = UpperBound ? !comp(key, key2) : comp(key2, key);
   if (pred)
   {
     begin = mid + 1;
@@ -114,10 +114,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE Size merge_path(It1 a, Size aCount, It2 b, Si
 
   while (begin < end)
   {
-    Size mid  = (begin + end) >> 1;
-    T aKey    = a[mid];
-    T bKey    = b[diag - 1 - mid];
-    bool pred = UpperBound ? comp(aKey, bKey) : !comp(bKey, aKey);
+    Size mid        = (begin + end) >> 1;
+    const T aKey    = a[mid];
+    const T bKey    = b[diag - 1 - mid];
+    const bool pred = UpperBound ? comp(aKey, bKey) : !comp(bKey, aKey);
     if (pred)
     {
       begin = mid + 1;
@@ -142,7 +142,7 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
   bool star = false;
   if (index2 < num_keys2)
   {
-    T x = keys2[index2];
+    const T x = keys2[index2];
 
     // Search for the beginning of the duplicate run in both A and B.
     Size start1 = biased_binary_search<false>(keys1, index1, x, levels, compare_op);
@@ -165,7 +165,7 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
     advance2      = min<Size>(advance2, run2);
     Size advance1 = total_run - advance2;
 
-    bool round_up = (advance1 == advance2 + 1) && (advance2 < run2);
+    const bool round_up = (advance1 == advance2 + 1) && (advance2 < run2);
     if (round_up)
     {
       star = true;
@@ -360,14 +360,14 @@ struct SetOpAgent
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
         {
-          int idx      = BLOCK_THREADS * ITEM + threadIdx.x;
-          output[ITEM] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
+          const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+          output[ITEM]  = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
         }
 
         // last ITEM might be a conditional load even for full tiles
         // please check first before attempting to load.
-        int ITEM = ITEMS_PER_THREAD - 1;
-        int idx  = BLOCK_THREADS * ITEM + threadIdx.x;
+        const int ITEM = ITEMS_PER_THREAD - 1;
+        const int idx  = BLOCK_THREADS * ITEM + threadIdx.x;
         if (idx < count1 + count2)
         {
           output[ITEM] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -378,7 +378,7 @@ struct SetOpAgent
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
-          int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+          const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
           if (idx < count1 + count2)
           {
             output[ITEM] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
@@ -393,8 +393,8 @@ struct SetOpAgent
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
-        int idx     = BLOCK_THREADS * ITEM + threadIdx.x;
-        output[idx] = input[ITEM];
+        const int idx = BLOCK_THREADS * ITEM + threadIdx.x;
+        output[idx]   = input[ITEM];
       }
     }
 
@@ -437,7 +437,7 @@ struct SetOpAgent
       CompareOp compare_op,
       SetOp set_op)
     {
-      int active_mask = set_op(keys, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
+      const int active_mask = set_op(keys, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op);
 
       return active_mask;
     }
@@ -449,8 +449,8 @@ struct SetOpAgent
     template <bool IS_LAST_TILE>
     void _CCCL_DEVICE_API _CCCL_FORCEINLINE consume_tile(Size tile_idx)
     {
-      ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
-      ::cuda::std::pair<Size, Size> partition_end = partitions[tile_idx + 1];
+      const ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
+      const ::cuda::std::pair<Size, Size> partition_end = partitions[tile_idx + 1];
 
       Size keys1_beg = partition_beg.first;
       Size keys1_end = partition_end.first;
@@ -459,8 +459,8 @@ struct SetOpAgent
 
       // number of keys per tile
       //
-      int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
-      int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
+      const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
+      const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
       // load keys into shared memory for further processing
       key_type keys_loc[ITEMS_PER_THREAD];
@@ -471,9 +471,9 @@ struct SetOpAgent
 
       __syncthreads();
 
-      int diag_loc = min<int>(ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
+      const int diag_loc = min<int>(ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
 
-      ::cuda::std::pair<int, int> partition_loc = balanced_path(
+      const ::cuda::std::pair<int, int> partition_loc = balanced_path(
         &storage.load_storage.keys_shared[0],
         &storage.load_storage.keys_shared[num_keys1],
         num_keys1,
@@ -482,32 +482,33 @@ struct SetOpAgent
         4,
         compare_op);
 
-      int keys1_beg_loc = partition_loc.first;
-      int keys2_beg_loc = partition_loc.second;
+      const int keys1_beg_loc = partition_loc.first;
+      const int keys2_beg_loc = partition_loc.second;
 
       // compute difference between next and current thread
       // to obtain number of elements per thread
-      int value = threadIdx.x == 0 ? (num_keys1 << 16) | num_keys2 : (partition_loc.first << 16) | partition_loc.second;
+      const int value =
+        threadIdx.x == 0 ? (num_keys1 << 16) | num_keys2 : (partition_loc.first << 16) | partition_loc.second;
 
-      int dst                          = threadIdx.x == 0 ? BLOCK_THREADS - 1 : threadIdx.x - 1;
+      const int dst                    = threadIdx.x == 0 ? BLOCK_THREADS - 1 : threadIdx.x - 1;
       storage.load_storage.offset[dst] = value;
 
       __syncthreads();
 
-      ::cuda::std::pair<int, int> partition1_loc = ::cuda::std::make_pair(
+      const ::cuda::std::pair<int, int> partition1_loc = ::cuda::std::make_pair(
         storage.load_storage.offset[threadIdx.x] >> 16, storage.load_storage.offset[threadIdx.x] & 0xFFFF);
 
-      int keys1_end_loc = partition1_loc.first;
-      int keys2_end_loc = partition1_loc.second;
+      const int keys1_end_loc = partition1_loc.first;
+      const int keys2_end_loc = partition1_loc.second;
 
-      int num_keys1_loc = keys1_end_loc - keys1_beg_loc;
-      int num_keys2_loc = keys2_end_loc - keys2_beg_loc;
+      const int num_keys1_loc = keys1_end_loc - keys1_beg_loc;
+      const int num_keys2_loc = keys2_end_loc - keys2_beg_loc;
 
       // perform serial set operation
       //
       int indices[ITEMS_PER_THREAD];
 
-      int active_mask = serial_set_op(
+      const int active_mask = serial_set_op(
         &storage.load_storage.keys_shared[0],
         keys1_beg_loc,
         keys2_beg_loc + num_keys1,
@@ -636,8 +637,8 @@ struct SetOpAgent
         , partitions(partitions_)
         , output_count(output_count_)
     {
-      int tile_idx  = static_cast<int>(blockIdx.x);
-      int num_tiles = static_cast<int>(gridDim.x);
+      const int tile_idx  = static_cast<int>(blockIdx.x);
+      const int num_tiles = static_cast<int>(gridDim.x);
 
       if (tile_idx < num_tiles - 1)
       {
@@ -717,7 +718,7 @@ struct PartitionAgent
     if (partition_idx < num_partitions)
     {
       Size partition_at = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);
-      ::cuda::std::pair<Size, Size> diag =
+      const ::cuda::std::pair<Size, Size> diag =
         balanced_path(keys1, keys2, keys1_count, keys2_count, partition_at, 4ll, compare_op);
       partitions[partition_idx] = diag;
     }
@@ -766,10 +767,10 @@ struct serial_set_intersection
   {
     int active_mask = 0;
 
-    int aBegin = keys1_beg;
-    int bBegin = keys2_beg;
-    int aEnd   = keys1_beg + keys1_count;
-    int bEnd   = keys2_beg + keys2_count;
+    int aBegin     = keys1_beg;
+    int bBegin     = keys2_beg;
+    const int aEnd = keys1_beg + keys1_count;
+    const int bEnd = keys2_beg + keys2_count;
 
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
@@ -777,8 +778,8 @@ struct serial_set_intersection
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
-      bool pA = compare_op(aKey, bKey);
-      bool pB = compare_op(bKey, aKey);
+      const bool pA = compare_op(aKey, bKey);
+      const bool pB = compare_op(bKey, aKey);
 
       // The outputs must come from A by definition of set intersection.
       output[i]  = aKey;
@@ -821,11 +822,11 @@ struct serial_set_symmetric_difference
   {
     int active_mask = 0;
 
-    int aBegin = keys1_beg;
-    int bBegin = keys2_beg;
-    int aEnd   = keys1_beg + keys1_count;
-    int bEnd   = keys2_beg + keys2_count;
-    int end    = aEnd + bEnd;
+    int aBegin     = keys1_beg;
+    int bBegin     = keys2_beg;
+    const int aEnd = keys1_beg + keys1_count;
+    const int bEnd = keys2_beg + keys2_count;
+    const int end  = aEnd + bEnd;
 
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
@@ -883,11 +884,11 @@ struct serial_set_difference
   {
     int active_mask = 0;
 
-    int aBegin = keys1_beg;
-    int bBegin = keys2_beg;
-    int aEnd   = keys1_beg + keys1_count;
-    int bEnd   = keys2_beg + keys2_count;
-    int end    = aEnd + bEnd;
+    int aBegin     = keys1_beg;
+    int bBegin     = keys2_beg;
+    const int aEnd = keys1_beg + keys1_count;
+    const int bEnd = keys2_beg + keys2_count;
+    const int end  = aEnd + bEnd;
 
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
@@ -945,11 +946,11 @@ struct serial_set_union
   {
     int active_mask = 0;
 
-    int aBegin = keys1_beg;
-    int bBegin = keys2_beg;
-    int aEnd   = keys1_beg + keys1_count;
-    int bEnd   = keys2_beg + keys2_count;
-    int end    = aEnd + bEnd;
+    int aBegin     = keys1_beg;
+    int bBegin     = keys2_beg;
+    const int aEnd = keys1_beg + keys1_count;
+    const int bEnd = keys2_beg + keys2_count;
+    const int end  = aEnd + bEnd;
 
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
@@ -1037,15 +1038,15 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   AgentPlan init_plan      = init_agent::get_plan();
   AgentPlan partition_plan = partition_agent::get_plan();
 
-  int tile_size  = set_op_plan.items_per_tile;
-  Size num_tiles = (keys_total + tile_size - 1) / tile_size;
+  const int tile_size = set_op_plan.items_per_tile;
+  Size num_tiles      = (keys_total + tile_size - 1) / tile_size;
 
   size_t tile_agent_storage;
   status = ScanTileState::AllocationSize(static_cast<int>(num_tiles), tile_agent_storage);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  size_t vshmem_storage          = core::detail::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
-  size_t partition_agent_storage = (num_tiles + 1) * sizeof(Size) * 2;
+  const size_t vshmem_storage          = core::detail::vshmem_size(set_op_plan.shared_memory_size, num_tiles);
+  const size_t partition_agent_storage = (num_tiles + 1) * sizeof(Size) * 2;
 
   void* allocations[3]       = {nullptr, nullptr, nullptr};
   size_t allocation_sizes[3] = {tile_agent_storage, partition_agent_storage, vshmem_storage};
@@ -1065,15 +1066,15 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   ::cuda::std::pair<Size, Size>* partitions = (::cuda::std::pair<Size, Size>*) allocations[1];
   char* vshmem_ptr                          = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
 
-  init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
+  const init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
   _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
-  partition_agent pa(partition_plan, num_tiles + 1, stream, "set_op::partition agent");
+  const partition_agent pa(partition_plan, num_tiles + 1, stream, "set_op::partition agent");
   pa.launch(keys1, keys2, num_keys1, num_keys2, num_tiles + 1, partitions, compare_op, tile_size);
   _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
-  set_op_agent sa(set_op_plan, keys_total, stream, vshmem_ptr, "set_op::set_op_agent");
+  const set_op_agent sa(set_op_plan, keys_total, stream, vshmem_ptr, "set_op::set_op_agent");
   sa.launch(
     keys1,
     keys2,
@@ -1118,8 +1119,8 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
 {
   using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
-  size_type num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
-  size_type num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
+  const size_type num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
+  const size_type num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
 
   if (num_keys1 + num_keys2 == 0)
   {
@@ -1192,7 +1193,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
   status = cuda_cub::synchronize(policy);
   cuda_cub::throw_on_error(status, "set_operations failed to synchronize");
 
-  std::size_t output_count = cuda_cub::get_value(policy, d_output_count);
+  const std::size_t output_count = cuda_cub::get_value(policy, d_output_count);
 
   return ::cuda::std::make_pair(keys_output + output_count, values_output + output_count);
 }

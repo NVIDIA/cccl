@@ -113,7 +113,7 @@ void test_evaluate_blocked_even()
   EXPECT(stats.nblocks == 2);
   // One block per place, and the split is block-aligned: every probe agrees
   EXPECT(stats.nallocs == 2);
-  EXPECT(stats.accuracy() == 1.0);
+  EXPECT(stats.accuracy == 1.0);
 
   size_t total = 0;
   for (const auto& entry : stats.bytes_per_place)
@@ -146,14 +146,13 @@ void test_evaluate_straddling_block()
 
   EXPECT(stats.nblocks == 2);
   EXPECT(stats.nallocs == 2); // majority breaks the tie: block 0 and block 1 differ
-  EXPECT(stats.accuracy() < 1.0);
-  EXPECT(stats.accuracy() > 0.7); // expected ~0.8 (block 0 ~62.5% local, block 1 fully local)
+  EXPECT(stats.accuracy < 1.0);
+  EXPECT(stats.accuracy > 0.7); // expected ~0.8 (block 0 ~62.5% local, block 1 fully local)
 
   // The decision procedure is seeded: evaluating twice gives the same stats
   auto stats2 =
     evaluate_localized_placement(grid, &blocked_partition_custom<0>::get_executor, data_dims, 1, 64, block_size);
-  EXPECT(stats.matching_samples == stats2.matching_samples);
-  EXPECT(stats.total_samples == stats2.total_samples);
+  EXPECT(stats.accuracy == stats2.accuracy);
   EXPECT(stats.bytes_per_place == stats2.bytes_per_place);
 
   printf("  evaluate (majority tie-breaking) test PASSED\n");
@@ -177,7 +176,8 @@ void test_evaluate_cute_matches_mapper()
   EXPECT(stats_mapper.nblocks == stats_cute.nblocks);
   EXPECT(stats_mapper.nallocs == stats_cute.nallocs);
   EXPECT(stats_mapper.bytes_per_place == stats_cute.bytes_per_place);
-  EXPECT(stats_mapper.matching_samples == stats_cute.matching_samples);
+  EXPECT(stats_mapper.accuracy == 1.0);
+  EXPECT(stats_cute.accuracy == 1.0);
 
   printf("  evaluate (cute vs mapper) test PASSED\n");
 }
