@@ -14,6 +14,10 @@ inputs:
   image:
     description: "The Docker image to use."
     required: true
+  image_dependencies:
+    description: "JSON map of environment variables to additional images to inject and pre-pull."
+    required: false
+    default: '{}'
   runner:
     description: "The GitHub Actions runner name."
     required: true
@@ -47,7 +51,6 @@ runs:
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
         ENVIRONMENT: ${{ inputs.environment }}
-        GH_TOKEN: ${{ github.token }}
       run: |
         echo "::group::️🔍 Job Vars"
         echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
@@ -55,7 +58,6 @@ runs:
         # Define the job input parameters as JOB_* environment variables that are visible in all steps:
         echo "JOB_ID=${{inputs.id}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_RUNNER=${{inputs.runner}}" | tee -a "${GITHUB_ENV}"
-        echo "JOB_IMAGE=${{inputs.image}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_CUDA=${{inputs.cuda}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_HOST=${{inputs.host}}" | tee -a "${GITHUB_ENV}"
         echo "JOB_ENVIRONMENT=${ENVIRONMENT}" | tee -a "${GITHUB_ENV}"
@@ -164,18 +166,60 @@ runs:
         echo "HOST_REPO=${{ github.workspace }}\${{ github.event.repository.name }}".Replace('\', '/') | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
-    - name: Fetch ${{ inputs.image }}
+    - name: Log in to GHCR
+      uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Fetch job images
       shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        IMAGE: ${{ inputs.image }}
+        IMAGE_DEPENDENCIES: ${{ inputs.image_dependencies }}
       run: |
-        echo "::group::Pulling Docker image ${{ inputs.image }}"
-        docker pull ${{ inputs.image }}
-        echo "::endgroup::"
+        if ! jq -e \
+          'type == "object" and all(to_entries[]; (.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) and (.value | type == "string" and length > 0))' \
+          <<< "${IMAGE_DEPENDENCIES}" > /dev/null; then
+          echo "::error::image_dependencies must map environment variable names to non-empty image strings."
+          exit 1
+        fi
+
+        images=("${IMAGE}")
+        # NUL delimiters avoid retaining a carriage return from Windows jq output.
+        while IFS= read -r -d '' image; do
+          images+=("${image}")
+        done < <(jq -rj '.[] | "\(.)\u0000"' <<< "${IMAGE_DEPENDENCIES}")
+
+        for image in "${images[@]}"; do
+          if [[ "${image}" != ghcr.io/* ]]; then
+            echo "::error::Windows job images must use ghcr.io: ${image}"
+            exit 1
+          fi
+        done
+
+        for image in "${images[@]}"; do
+          echo "::group::Pulling Docker image ${image}"
+          docker pull "${image}"
+          echo "::endgroup::"
+        done
+
+    # Remove the host Docker CLI's stored GHCR login before repository-controlled
+    # code receives access to the Docker daemon.
+    - name: Log out of GHCR
+      if: ${{ always() }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: docker logout ghcr.io
 
     - name: Run command
       id: run
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
+        # Used by CI artifact helpers to fetch workflow metadata and producer artifacts.
         GH_TOKEN: ${{ github.token }}
+        JOB_IMAGE: ${{ inputs.image }}
+        IMAGE_DEPENDENCIES: ${{ inputs.image_dependencies }}
         ENABLE_GPU: ${{ inputs.gpu_count != '0' && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
       run: |
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
@@ -211,9 +255,15 @@ runs:
         exit $exitCode
         EOF
 
+        dependency_envargs=()
+        # Keep image references byte-identical to those used by the pull step.
+        while IFS= read -r -d '' entry; do
+          dependency_envargs+=(--env "${entry}")
+        done < <(jq -rj 'to_entries[] | "\(.key)=\(.value)\u0000"' <<< "${IMAGE_DEPENDENCIES}")
+
         docker_exit=0
         set +e
-        docker run \
+        docker run --rm --pull never \
           -v //./pipe/docker_engine://./pipe/docker_engine \
           --mount type=bind,source="${{steps.paths.outputs.HOST_REPO}}",target="${{steps.paths.outputs.MOUNT_REPO}}" \
           --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
@@ -251,7 +301,8 @@ runs:
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           ${ENVARGS:-} \
-          ${{ inputs.image }} \
+          "${dependency_envargs[@]}" \
+          "${JOB_IMAGE}" \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
         docker_exit=$?
