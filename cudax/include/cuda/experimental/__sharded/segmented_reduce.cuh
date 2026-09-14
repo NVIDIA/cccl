@@ -297,12 +297,8 @@ _CCCL_HOST_API void segmented_reduce(
     // offsets per shard. Entry refusals first (nothing enqueued before they
     // are decided), then a small stream-ordered read-back on each lane.
     require_sync_allowed(call_env, "sharded::segmented_reduce");
-    places::check_not_capturing(nullptr, "sharded::segmented_reduce");
     reserved::__check_env_count(envs, num_shards, "sharded::segmented_reduce");
-    for (::std::size_t g = 0; g < num_shards; g++)
-    {
-      places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::segmented_reduce");
-    }
+    reserved::__check_envs_not_capturing(envs, num_shards, "sharded::segmented_reduce");
     ::std::vector<_Off> cut(2 * num_shards);
     for (::std::size_t g = 0; g < num_shards; g++)
     {

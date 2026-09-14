@@ -114,6 +114,24 @@ private:
   bool __switched_ = false;
 };
 
+namespace reserved
+{
+//! @brief Capture entry guard for the synchronous forms: refuse when a
+//! global-mode capture is open anywhere in the process (legacy-stream probe)
+//! or when any of the @p __num_shards environment streams is itself being
+//! captured. Runs before anything is enqueued, so a refusal leaves the
+//! caller's capture valid. Each probe is a ~40 ns host-side query.
+template <class _Envs>
+void __check_envs_not_capturing(const _Envs& __envs, ::std::size_t __num_shards, const char* __what)
+{
+  places::check_not_capturing(nullptr, __what);
+  for (::std::size_t __g = 0; __g < __num_shards; ++__g)
+  {
+    places::check_not_capturing(::cuda::get_stream(__envs[__g]).get(), __what);
+  }
+}
+} // namespace reserved
+
 namespace __detail
 {
 //! @brief Make @p __consumer wait for all work currently enqueued on
@@ -177,11 +195,7 @@ __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, cons
     // end, so both refusal conditions must be decided before any work is
     // enqueued (the entry-guard discipline, applied family-wide).
     require_sync_allowed(__call_env, __what);
-    places::check_not_capturing(nullptr, __what);
-    for (const auto __g : each(__num_shards))
-    {
-      places::check_not_capturing(::cuda::get_stream(__envs[__g]).get(), __what);
-    }
+    reserved::__check_envs_not_capturing(__envs, __num_shards, __what);
   }
   else
   {

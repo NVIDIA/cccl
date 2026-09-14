@@ -96,11 +96,7 @@ _CCCL_REQUIRES(
 
   // Refusals first, before any CUDA call: size write-back synchronizes.
   require_sync_allowed(call_env, "sharded::unique (synchronous form)");
-  places::check_not_capturing(nullptr, "sharded::unique");
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::unique");
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::unique");
 
   // Entry probe: committing the current sizes throws exactly when this model
   // cannot mutate sizes, before any element moves.

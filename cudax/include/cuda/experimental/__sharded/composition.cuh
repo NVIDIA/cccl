@@ -79,11 +79,7 @@ _CCCL_HOST_API void barrier(const _Envs& envs, const _PolicyEnv& policy_env = {}
 {
   require_sync_allowed(policy_env, "sharded::barrier");
   const ::std::size_t n = reserved::__env_count(envs);
-  places::check_not_capturing(nullptr, "sharded::barrier");
-  for (const auto i : each(n))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[i]).get(), "sharded::barrier");
-  }
+  reserved::__check_envs_not_capturing(envs, n, "sharded::barrier");
   for (const auto i : each(n))
   {
     cuda_safe_call(cudaStreamSynchronize(::cuda::get_stream(envs[i]).get()));

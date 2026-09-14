@@ -113,11 +113,7 @@ reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, c
 
   // Refusals first, before any CUDA call: this form synchronizes.
   require_sync_allowed(call_env, "sharded::reduce (synchronous form)");
-  places::check_not_capturing(nullptr, "sharded::reduce");
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::reduce");
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::reduce");
 
   // Pinned host staging for the per-shard partials (host-accessible +
   // async-transfer-capable). A per-call cudaMallocHost/cudaFreeHost pair

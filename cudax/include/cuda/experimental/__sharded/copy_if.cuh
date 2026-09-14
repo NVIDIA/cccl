@@ -116,11 +116,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
 
   // Refusals first, before any CUDA call: size write-back synchronizes.
   require_sync_allowed(call_env, what);
-  places::check_not_capturing(nullptr, what);
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), what);
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, what);
 
   // Entry probe: committing the current sizes is a no-op that throws exactly
   // when this model cannot mutate sizes, before any element moves.
@@ -257,11 +253,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
 
   // Refusals first, before any CUDA call: size write-back synchronizes.
   require_sync_allowed(call_env, what);
-  places::check_not_capturing(nullptr, what);
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), what);
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, what);
 
   // Entry probe: committing the current sizes is a no-op that throws exactly
   // when this model cannot mutate sizes, before any element moves.

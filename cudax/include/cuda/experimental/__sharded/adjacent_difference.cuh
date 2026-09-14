@@ -124,11 +124,7 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
 
   // Refusals first, before any CUDA call: the boundary staging synchronizes.
   require_sync_allowed(call_env, "sharded::adjacent_difference (boundary staging synchronizes)");
-  places::check_not_capturing(nullptr, "sharded::adjacent_difference");
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::adjacent_difference");
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::adjacent_difference");
 
   // Boundary staging: one element per shard, host-accessible, from the call
   // environment's resource when present, the cached pinned arena otherwise.

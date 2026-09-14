@@ -94,11 +94,7 @@ _CCCL_REQUIRES(
 
   // Refusals first, before any CUDA call: this form synchronizes.
   require_sync_allowed(call_env, "sharded::histogram_even (synchronous form)");
-  places::check_not_capturing(nullptr, "sharded::histogram_even");
-  for (const auto g : each(num_shards))
-  {
-    places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::histogram_even");
-  }
+  reserved::__check_envs_not_capturing(envs, num_shards, "sharded::histogram_even");
 
   using counter_type          = unsigned long long; // device-atomics-capable bin counter
   constexpr bool __env_has_mr = ::cuda::std::execution::__queryable_with<_CallEnv, ::cuda::mr::get_memory_resource_t>
