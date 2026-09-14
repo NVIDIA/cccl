@@ -124,7 +124,7 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   REQUIRE_THAT(device_estimate_value, Catch::Matchers::WithinRel(host_estimate, 1e-10));
 }
 
-C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
+C2H_TEST("HyperLogLog merge", "[hyperloglog]")
 {
   using T              = int32_t;
   using estimator_type = cudax::cuco::hyperloglog<T>;
@@ -140,9 +140,43 @@ C2H_TEST("HyperLogLog device ref merge", "[hyperloglog]")
   source.add(stream, first, first + num_items);
   const auto source_estimate = source.estimate(stream);
 
-  const estimator_type destination{stream, mr, precision};
-  merge_kernel<<<1, 128, 0, stream.get()>>>(destination.ref(), source.ref());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  estimator_type destination{stream, mr, precision};
+
+  SECTION("device reference")
+  {
+    merge_kernel<<<1, 128, 0, stream.get()>>>(destination.ref(), source.ref());
+    REQUIRE(cudaGetLastError() == cudaSuccess);
+  }
+
+  SECTION("host estimator")
+  {
+    destination.merge(stream, source);
+  }
+
+  SECTION("host estimator asynchronous")
+  {
+    destination.merge_async(stream, source);
+  }
+
+  SECTION("host estimator from reference")
+  {
+    destination.merge(stream, source.ref());
+  }
+
+  SECTION("host estimator from reference asynchronous")
+  {
+    destination.merge_async(stream, source.ref());
+  }
+
+  SECTION("host reference")
+  {
+    destination.ref().merge(stream, source.ref());
+  }
+
+  SECTION("host reference asynchronous")
+  {
+    destination.ref().merge_async(stream, source.ref());
+  }
 
   REQUIRE(destination.estimate(stream) == source_estimate);
   REQUIRE(source.estimate(stream) == source_estimate);
