@@ -77,7 +77,7 @@ class CMake:
                 "starting build for {}: {}".format(bench.label(), " ".join(cmd))
             )
 
-            begin = time.time()
+            begin = time.perf_counter()
             p = subprocess.Popen(
                 cmd,
                 start_new_session=True,
@@ -85,7 +85,7 @@ class CMake:
                 stderr=subprocess.DEVNULL,
             )
             p.wait(timeout=timeout)
-            elapsed = time.time() - begin
+            elapsed = time.perf_counter() - begin
             logger.info(
                 "finished build for {} (exit code: {}) in {:.3f}s".format(
                     bench.label(), p.returncode, elapsed
