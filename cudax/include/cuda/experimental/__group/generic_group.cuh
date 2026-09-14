@@ -124,7 +124,7 @@ public:
   _CCCL_DEVICE_API ~generic_group()
   {
     // Skip the synchronization for threads that are not part of this group.
-    if constexpr (!_MappingResult::is_always_exhaustive())
+    if constexpr (!is_always_exhaustive())
     {
       if (!__mapping_result_.is_valid())
       {
@@ -151,12 +151,22 @@ public:
     return __synchronizer_instance_;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return _MappingResult::is_always_exhaustive();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return _MappingResult::is_always_contiguous();
+  }
+
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() const noexcept
   {
     // Skip the synchronization for threads that are not part of this group.
-    if constexpr (!_MappingResult::is_always_exhaustive())
+    if constexpr (!is_always_exhaustive())
     {
       if (!__mapping_result_.is_valid())
       {
@@ -169,7 +179,7 @@ public:
   _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     // Skip the synchronization for threads that are not part of this group.
-    if constexpr (!_MappingResult::is_always_exhaustive())
+    if constexpr (!is_always_exhaustive())
     {
       if (!__mapping_result_.is_valid())
       {

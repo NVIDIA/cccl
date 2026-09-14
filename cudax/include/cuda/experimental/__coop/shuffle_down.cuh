@@ -52,7 +52,7 @@ __shuffle_down_impl(const _Group& __group, const _Tp& __value, unsigned __offset
   const auto __lane_mask       = __mapping_result.lane_mask();
   const auto __offset_is_valid = (__offset < __mapping_result.unit_count() - __mapping_result.unit_rank());
 
-  if constexpr (_MappingResult::is_always_contiguous())
+  if constexpr (_Group::is_always_contiguous())
   {
     const auto __real_offset = (__offset_is_valid) ? __offset : 0u;
     const auto __result =

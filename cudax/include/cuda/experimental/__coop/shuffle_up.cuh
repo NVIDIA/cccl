@@ -55,7 +55,7 @@ __shuffle_up_impl(const _Group& __group, const _Tp& __value, unsigned __offset) 
   const auto [__src_rank, __underflow] = ::cuda::sub_overflow(__mapping_result.unit_rank(), __offset);
   const auto __offset_is_valid         = !__underflow;
 
-  if constexpr (_MappingResult::is_always_contiguous())
+  if constexpr (_Group::is_always_contiguous())
   {
     const auto __real_offset = (__offset_is_valid) ? __offset : 0u;
     const auto __result =
