@@ -137,9 +137,7 @@ def test_split_dim_reduction_is_partials_plus_fold(grid):
 @requires_cuda
 def test_map_rejects_misaligned_operands(grid):
     x = tp.localized_empty(SHAPE, torch.float32, grid)  # default: blocked dim 0
-    y = tp.localized_empty(
-        SHAPE, torch.float32, grid, spec=(None, ("cyclic", 0))
-    )
+    y = tp.localized_empty(SHAPE, torch.float32, grid, spec=(None, ("cyclic", 0)))
     with pytest.raises(ValueError, match="misaligned"):
         tp.map(lambda a, b: a.add_(b), x, y)
     with pytest.raises(ValueError, match="spec="):

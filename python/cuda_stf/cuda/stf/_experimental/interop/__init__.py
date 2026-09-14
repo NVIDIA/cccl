@@ -15,7 +15,6 @@ The optional runtime is imported lazily inside the adapter functions; a missing
 dependency raises a clear ``ImportError`` at first call.
 """
 
-
 _SUBMODULES = frozenset({"numba", "pytorch"})
 
 
