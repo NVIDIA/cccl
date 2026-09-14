@@ -30,18 +30,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief RAII scope putting the calling thread in relaxed stream-capture mode.
-//!
-//! Some driver calls are "potentially unsafe" under an active stream capture and invalidate the
-//! capture (or fail with `CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED`) when the calling thread is in
-//! global or thread-local capture mode: memory-pool attribute reads and writes are among them.
-//! Capture mode is a per-thread property, so switching THIS thread to relaxed mode for the
-//! duration of such a call lets it execute immediately (it is not recorded into the graph) and
-//! leaves the capture valid. Nothing that should be captured may be issued inside the scope.
-//!
-//! There is no query for a thread's capture mode; the exchange is the only per-thread primitive,
-//! and it has no observable effect when the thread is not capturing, so the scope needs no
-//! capture check and costs two cheap driver calls.
+//! @brief RAII scope putting the calling thread in relaxed stream-capture mode, for driver calls
+//! that are refused under global/thread-local capture. Nothing to be captured may be issued inside.
 struct [[maybe_unused]] __relaxed_capture_scope
 {
   _CCCL_HOST_API __relaxed_capture_scope()
@@ -52,8 +42,7 @@ struct [[maybe_unused]] __relaxed_capture_scope
 
   _CCCL_HOST_API ~__relaxed_capture_scope() noexcept
   {
-    // Restore whatever the thread had. The exchange cannot fail for a mode it returned itself, so
-    // the status is deliberately dropped rather than caught.
+    // Cannot fail for a mode the exchange itself returned.
     (void) ::cuda::__driver::__threadExchangeStreamCaptureModeNoThrow(__previous_);
   }
 

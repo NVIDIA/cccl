@@ -8,15 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Resolving a driver default memory pool lazily while the calling thread is inside a stream
-// capture. `__get_default_memory_pool` applies the library's retention policy through a pool
-// attribute read (and possibly write), which the driver refuses in global and thread-local
-// capture modes; it must do so in a relaxed-capture window so the lookup succeeds and the capture
-// stays valid. This test is deliberately the FIRST touch of the device default pool in its
-// process, so the once-only path of `device_default_memory_pool` runs under capture.
-//
-// Driver entry points only (no cudart): the ccclrt fixture requires an empty driver context
-// stack, which any runtime call would violate.
+// Default memory pool resolved for the first time in the process while the calling thread is
+// capturing: the pool attribute access must run in relaxed mode and leave the capture valid.
+// Driver API only: the ccclrt fixture requires an empty driver context stack.
 
 #include <cuda/__device/all_devices.h>
 #include <cuda/__driver/driver_api.h>
@@ -42,7 +36,6 @@ constexpr capture_mode_case capture_modes[] = {
   {"thread-local", ::CU_STREAM_CAPTURE_MODE_THREAD_LOCAL},
 };
 
-// Raw driver calls the library does not wrap, resolved through the same entry-point mechanism.
 template <class Fn>
 Fn* driver_fn(const char* name)
 {
@@ -70,8 +63,7 @@ void destroy_graph(::CUgraph graph)
   static auto fn = driver_fn<decltype(::cuGraphDestroy)>("cuGraphDestroy");
   REQUIRE(fn(graph) == ::CUDA_SUCCESS);
 }
-// A driver call that is unsafe under capture: accepted only in relaxed mode. Used to prove the
-// thread's mode was restored after the accessor returned.
+// Refused under global/thread-local capture; accepted in relaxed mode.
 ::CUresult unsafe_pool_query(::CUmemoryPool pool)
 {
   static auto fn       = driver_fn<decltype(::cuMemPoolGetAttribute)>("cuMemPoolGetAttribute");
@@ -95,14 +87,10 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
     cuda::stream stream{dev};
     REQUIRE(begin_capture(stream.get(), c.mode) == ::CUDA_SUCCESS);
 
-    // Lazy resolution under capture: the public once-only accessor (first touch in this
-    // process on the first iteration) and the underlying helper (runs the attribute read on
-    // every call). Both must succeed and leave the capture valid.
     cuda::device_memory_pool_ref& pool = cuda::device_default_memory_pool(dev);
     const ::cudaMemPool_t raw          = cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
     CCCLRT_REQUIRE(raw == pool.get());
 
-    // Stream-ordered work after the resolution is still recorded into the graph.
     void* ptr = pool.allocate(stream, 1 << 20, ::cuda::mr::default_cuda_malloc_alignment);
     CCCLRT_REQUIRE(ptr != nullptr);
     pool.deallocate(stream, ptr, 1 << 20);
@@ -112,7 +100,6 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
     CCCLRT_CHECK(graph_node_count(graph) >= 1);
     destroy_graph(graph);
 
-    // The retention policy was applied for real (immediately, not recorded).
     CCCLRT_CHECK(cuda::memory_pool_attributes::release_threshold(pool.get()) != 0);
   }
 
@@ -123,10 +110,10 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
 
     const ::cudaMemPool_t raw = cuda::__get_default_memory_pool(location, ::CU_MEM_ALLOCATION_TYPE_PINNED);
 
-    // Had the accessor left the thread in relaxed mode, this unsafe call would now be accepted.
+    // Thread mode was restored: the unsafe call is refused again.
     CCCLRT_CHECK(unsafe_pool_query(raw) == ::CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED);
 
-    // That refused call invalidated the capture, as it should in global mode; end it.
+    // The refused call invalidated the capture; end it.
     ::CUgraph graph = nullptr;
     CCCLRT_CHECK(end_capture(stream.get(), &graph) == ::CUDA_ERROR_STREAM_CAPTURE_INVALIDATED);
   }

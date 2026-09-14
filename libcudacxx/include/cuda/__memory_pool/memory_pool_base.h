@@ -343,11 +343,7 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
   }
 }
 
-//! @brief The driver's default memory pool for @p __location, with the library's retention
-//! policy applied (an unlimited release threshold, so freed memory is kept for reuse).
-//! @param[in] __location The memory location whose default pool is requested.
-//! @param[in] __allocation_type The allocation type of the pool (CTK 13.0+; ignored before).
-//! @return The default pool for @p __location, with the retention policy applied.
+//! @brief Default memory pool for @p __location, with an unlimited release threshold applied.
 [[nodiscard]] _CCCL_HOST_API inline ::cudaMemPool_t __get_default_memory_pool(
   const ::CUmemLocation __location, [[maybe_unused]] const ::CUmemAllocationType __allocation_type)
 {
@@ -361,10 +357,7 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
   ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   {
-    // Reading or writing a pool attribute is refused while the calling thread is capturing. Run
-    // it in relaxed mode so that resolving a default pool under capture (e.g. the first
-    // `device_default_memory_pool` of a process) works; the write executes immediately rather
-    // than being recorded, which is the intent for a process-global setting.
+    // Pool attribute accesses are refused while the calling thread is capturing.
     const ::cuda::__relaxed_capture_scope __relaxed{};
     if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
     {
