@@ -21,6 +21,7 @@ from cuda.coop._core import (
 
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
+from ._descriptor_provenance import descriptor_definitions
 from ._group_planner_support import (
     GroupRewriteError,
     _cuda_module,
@@ -39,10 +40,11 @@ from ._parameters import (
 class GroupPlanningContext:
     """Stable cross-family view of one whole-function planner."""
 
-    __slots__ = ("__planner",)
+    __slots__ = ("__planner", "__thread_data_dtypes")
 
     def __init__(self, planner: Any) -> None:
         self.__planner = planner
+        self.__thread_data_dtypes: dict[int, Any] = {}
 
     @property
     def launch(self) -> Any:
@@ -58,6 +60,7 @@ class GroupPlanningContext:
         return self.__planner._callable(value)
 
     def constant(self, value: Any) -> Any:
+        self.__planner._reject_literal_unroll_value(value, "a compile-time argument")
         return self.__planner._constant(value)
 
     def try_constant(self, value: Any) -> tuple[bool, Any]:
@@ -270,6 +273,49 @@ class GroupPlanningContext:
             return None
         return self.dtype(bound.arguments[result.dtype_parameter], seen=seen)
 
+    def record_thread_data_dtype(self, value: Any, dtype: Any) -> None:
+        """Keep an output's inferred dtype available to subsequent group calls."""
+
+        def payload_definitions(current, seen):
+            for _, definition in descriptor_definitions(
+                current, self._all_definitions, seen=seen
+            ):
+                if not isinstance(definition, ir.Expr) or definition.op not in {
+                    "getitem",
+                    "static_getitem",
+                }:
+                    yield definition
+                    continue
+                index = definition.index
+                if isinstance(index, ir.Var):
+                    resolved, index = self.try_constant(index)
+                    if not resolved:
+                        continue
+                if not isinstance(index, Integral) or isinstance(index, bool):
+                    continue
+                next_seen = {*seen, current.name}
+                for packed in payload_definitions(definition.value, next_seen):
+                    if isinstance(packed, ir.Expr) and packed.op == "build_tuple":
+                        if -len(packed.items) <= index < len(packed.items):
+                            yield from payload_definitions(
+                                packed.items[index], next_seen
+                            )
+
+        for definition in payload_definitions(value, set()):
+            if (
+                isinstance(definition, ir.Expr)
+                and definition.op == "call"
+                and self._callable(definition.func)
+                in {ThreadData, _portable_api.ThreadData}
+            ):
+                previous = self._dtype_definition(definition, seen=set())
+                if previous is not None and previous != dtype:
+                    raise GroupRewriteError(
+                        "cuda.coop.numba_mlir ThreadData aliases have "
+                        "inconsistent dtypes"
+                    )
+                self.__thread_data_dtypes[id(definition)] = dtype
+
     def _tuple_dtype(
         self,
         value: Any,
@@ -398,7 +444,7 @@ class GroupPlanningContext:
             resolved, dtype = self.try_constant(bound.arguments["dtype"])
             if resolved and dtype is not None:
                 return normalize_dtype_param(dtype)
-            return None
+            return self.__thread_data_dtypes.get(id(definition))
         if function is _cuda_module.local.array:
             if len(definition.args) >= 2:
                 resolved, dtype = self.try_constant(definition.args[1])
@@ -524,53 +570,6 @@ class GroupPlanningContext:
                     )
         return inferred
 
-    def _temp_storage_definition(
-        self,
-        definition: Any,
-        *,
-        seen: set[str],
-    ) -> tuple[int | None, int | None, bool, str] | None:
-        if isinstance(definition, ir.Var):
-            return self.temp_storage(definition, seen=seen)
-        if not isinstance(definition, ir.Expr):
-            return None
-        if definition.op in {"cast", "exhaust_iter"}:
-            return self.temp_storage(definition.value, seen=seen)
-        if definition.op == "phi":
-            incoming_values = tuple(getattr(definition, "incoming_values", ()))
-            resolved = tuple(
-                self.temp_storage(incoming, seen=set(seen))
-                for incoming in incoming_values
-            )
-            candidates = {
-                descriptor for descriptor in resolved if descriptor is not None
-            }
-            if candidates and any(descriptor is None for descriptor in resolved):
-                raise GroupRewriteError(
-                    "cuda.coop.numba_mlir TempStorage aliases have "
-                    "inconsistent contracts"
-                )
-            if len(candidates) > 1:
-                raise GroupRewriteError(
-                    "cuda.coop.numba_mlir TempStorage aliases have "
-                    "inconsistent contracts"
-                )
-            return next(iter(candidates), None)
-        if definition.op != "call":
-            return None
-        function = self._callable(definition.func)
-        if function not in {TempStorage, _portable_api.TempStorage}:
-            return None
-        bound = self.bind(function, definition)
-        values = {name: self.constant(value) for name, value in bound.arguments.items()}
-        descriptor = TempStorage(**values)
-        return (
-            descriptor.size_in_bytes,
-            descriptor.alignment,
-            descriptor.auto_sync,
-            descriptor.sharing,
-        )
-
     def temp_storage(
         self,
         value: Any,
@@ -579,27 +578,57 @@ class GroupPlanningContext:
     ) -> tuple[int | None, int | None, bool, str] | None:
         if not isinstance(value, ir.Var):
             return None
-        if seen is None:
-            seen = set()
-        if value.name in seen:
-            return None
-        seen.add(value.name)
-        candidates = {
-            descriptor
-            for definition in self._all_definitions(value)
-            if (
-                descriptor := self._temp_storage_definition(
-                    definition,
-                    seen=set(seen),
+        candidates = set()
+        sites: set[int] = set()
+        non_descriptor = False
+        for _, definition in descriptor_definitions(
+            value, self._all_definitions, seen=seen
+        ):
+            if not (
+                isinstance(definition, ir.Expr)
+                and definition.op == "call"
+                and self._callable(definition.func)
+                in {TempStorage, _portable_api.TempStorage}
+            ):
+                non_descriptor = True
+                continue
+            function = self._callable(definition.func)
+            bound = self.bind(function, definition)
+            values = {
+                name: self.constant(argument)
+                for name, argument in bound.arguments.items()
+            }
+            descriptor = TempStorage(**values)
+            candidates.add(
+                (
+                    descriptor.size_in_bytes,
+                    descriptor.alignment,
+                    descriptor.auto_sync,
+                    descriptor.sharing,
                 )
             )
-            is not None
-        }
+            sites.add(id(definition))
         if len(candidates) > 1:
             raise GroupRewriteError(
                 "cuda.coop.numba_mlir TempStorage aliases have inconsistent contracts"
             )
-        return next(iter(candidates), None)
+        descriptor = next(iter(candidates), None)
+        if descriptor is not None and non_descriptor:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir TempStorage variables must be bound to "
+                f"a TempStorage descriptor on every path; {value.name!r} is "
+                "also bound to a non-descriptor value such as None. Remove "
+                "the None initializer or construct the descriptor unconditionally."
+            )
+        if descriptor is not None and descriptor[2] is False and len(sites) > 1:
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir TempStorage with auto_sync=False must "
+                f"be constructed at exactly one site; {value.name!r} reaches "
+                f"{len(sites)} constructor sites. The compiler cannot verify "
+                "caller synchronization when it merges these regions. "
+                "Construct the descriptor once or keep auto_sync enabled."
+            )
+        return descriptor
 
 
 __all__ = ["GroupPlanningContext"]

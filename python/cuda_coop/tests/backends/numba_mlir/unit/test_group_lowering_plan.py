@@ -45,6 +45,7 @@ def test_group_planning_context_exposes_only_declared_operations():
     planner = SimpleNamespace(
         launch=launch,
         _constant=lambda value: ("constant", value),
+        _reject_literal_unroll_value=lambda *_args: None,
     )
     context = GroupPlanningContext(planner)
 

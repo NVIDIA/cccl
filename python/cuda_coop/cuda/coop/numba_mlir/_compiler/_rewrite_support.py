@@ -64,6 +64,9 @@ _GLOBAL_NAME_COUNTER = count()
 _UNRESOLVED = object()
 _MIN_TEMP_STORAGE_ALIGNMENT = max(1, struct.calcsize("P"))
 _DEFAULT_STATIC_SHARED_MEMORY_BYTES = 48 * 1024
+# numba-cuda-mlir declares its dynamic shared-memory window with 16-byte
+# alignment; a larger request cannot be honored once the backing goes dynamic.
+_DYNAMIC_SHARED_MEMORY_ALIGNMENT = 16
 
 
 class CoopSinglePhaseRewriteError(Exception):

@@ -13,6 +13,7 @@ from enum import Enum
 
 import cuda.coop._core.api._dispatch as _portable_dispatch
 
+from .._temp_storage import TempStorage
 from .._thread_data import ThreadData
 from ._group_errors import (
     CyclicArrayProvenanceError,
@@ -149,6 +150,66 @@ class _GroupCallPlanner:
             return None
         return obj
 
+    def _reject_literal_unroll_value(self, value: Any, parameter: str) -> None:
+        """Diagnose unrolled values used before the unrolling pass runs."""
+
+        def depends_on_unroll(current, seen):
+            if not isinstance(current, ir.Var) or current.name in seen:
+                return False
+            seen = {*seen, current.name}
+            for definition in self._all_definitions(current):
+                if isinstance(definition, ir.Var):
+                    if depends_on_unroll(definition, seen):
+                        return True
+                elif isinstance(definition, ir.Expr):
+                    if definition.op == "call":
+                        function = self._callable(definition.func)
+                        if getattr(
+                            function, "__name__", None
+                        ) == "literal_unroll" and getattr(
+                            function, "__module__", None
+                        ) in {
+                            "numba.misc.special",
+                            "numba_cuda_mlir.numba_cuda.misc.special",
+                        }:
+                            return True
+                    if any(
+                        depends_on_unroll(source, seen)
+                        for source in definition.list_vars()
+                    ):
+                        return True
+            return False
+
+        if depends_on_unroll(value, set()):
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir does not support literal_unroll values "
+                f"that determine {parameter} in the MVP. Write separate "
+                "cooperative calls with explicit constant shapes/selectors, "
+                "or use an ordinary loop with a fixed cooperative shape."
+            )
+
+    def _reject_literal_unroll_constructors(self) -> None:
+        constructors = {
+            *_GROUP_CONSTRUCTORS,
+            ThreadHierarchy,
+            ThreadData,
+            _portable_api.ThreadData,
+            TempStorage,
+            _portable_api.TempStorage,
+        }
+        for block in self.func_ir.blocks.values():
+            for inst in block.body:
+                call = getattr(inst, "value", None)
+                if not isinstance(call, ir.Expr) or call.op != "call":
+                    continue
+                function = self._callable(call.func)
+                if function not in constructors:
+                    continue
+                for argument in (*call.args, *(value for _, value in call.kws)):
+                    self._reject_literal_unroll_value(
+                        argument, f"{function.__name__} arguments"
+                    )
+
     def _constant(self, value: Any) -> Any:
         if not isinstance(value, ir.Var):
             return value
@@ -235,6 +296,7 @@ class _GroupCallPlanner:
         allow_none: bool = False,
     ) -> Any:
         """Validate one common-root selector bypassed by identity rewriting."""
+        self._reject_literal_unroll_value(value, f"{operation} {parameter}")
         token = self._constant(value)
         if token is None and allow_none:
             return None
@@ -345,8 +407,11 @@ class _GroupCallPlanner:
                 count_arg = raw_kwargs["count"]
             else:
                 raise GroupRewriteError("ThreadGroup.group_by requires count")
+            self._reject_literal_unroll_value(count_arg, "group_by count")
+            exhaustive_arg = raw_kwargs.get("exhaustive", True)
+            self._reject_literal_unroll_value(exhaustive_arg, "group_by exhaustive")
             count_value = self._constant(count_arg)
-            exhaustive = self._constant(raw_kwargs.get("exhaustive", True))
+            exhaustive = self._constant(exhaustive_arg)
             group = parent.group_by(count_value, exhaustive=exhaustive)
             self._group_cache[value.name] = group
             return group
@@ -392,6 +457,11 @@ class _GroupCallPlanner:
                 return None
             result = results[0]
         else:
+            if len(results) == 1:
+                # A single-result primitive returns its value directly, so an
+                # integer subscript selects an element of that value (a
+                # scalar), not a tuple item.
+                return None
             if not -len(results) <= index < len(results):
                 return None
             result = results[index]
@@ -782,6 +852,7 @@ class _GroupCallPlanner:
         if function in {ThreadData, _portable_api.ThreadData}:
             bound = self._bind(function, definition)
             extent_argument = bound.arguments["items_per_thread"]
+            self._reject_literal_unroll_value(extent_argument, "payload extent")
             try:
                 extent = self._constant(extent_argument)
             except GroupRewriteError:
@@ -792,6 +863,7 @@ class _GroupCallPlanner:
         if function is _cuda_module.local.array:
             if not definition.args:
                 return None
+            self._reject_literal_unroll_value(definition.args[0], "payload extent")
             try:
                 extent = self._constant(definition.args[0])
             except GroupRewriteError:
@@ -1049,6 +1121,7 @@ class _GroupCallPlanner:
                 raise EscapingGroupDescriptorError(names)
 
     def run(self) -> bool:
+        self._reject_literal_unroll_constructors()
         self._mark_descriptor_calls()
         for block in self.func_ir.blocks.values():
             for inst in block.body:
@@ -1162,7 +1235,14 @@ class CoopGroupHierarchyPlanner(WholeFunctionPlanner):
         if not has_group_markers(self.state.func_ir):
             return False
         if self.is_device_function:
-            return False
+            function_name = self.state.func_ir.func_id.func_qualname
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir cooperative calls in device function "
+                f"{function_name!r} must be inlined into a kernel. Standalone "
+                "collective helpers and collectives inside standalone callbacks "
+                "are unsupported; use inline='always' for a kernel helper or "
+                "move the cooperative calls into the kernel."
+            )
         launch_config = require_launch_config(self.state)
         return _GroupCallPlanner(self.state, launch_config).run()
 

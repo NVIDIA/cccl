@@ -40,19 +40,14 @@ class TempStorage:
 
         if auto_sync is not None and not isinstance(auto_sync, bool):
             raise TypeError("TempStorage auto_sync must be None/True/False.")
-        if sharing_value == "exclusive" and auto_sync is True:
-            raise ValueError(
-                "TempStorage with sharing='exclusive' does not support auto_sync=True."
-            )
 
         self.size_in_bytes = size_in_bytes
         self.alignment = alignment
         self.sharing = sharing_value
-        self.auto_sync = (
-            False
-            if sharing_value == "exclusive"
-            else (True if auto_sync is None else auto_sync)
-        )
+        # Sharing selects the slice layout; synchronization is independent.
+        # A call site inside a loop reuses its slice under either layout, so
+        # the trailing reuse barrier stays on unless the caller opts out.
+        self.auto_sync = True if auto_sync is None else auto_sync
 
 
 __all__ = ["TempStorage"]
