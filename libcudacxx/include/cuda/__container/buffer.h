@@ -829,6 +829,7 @@ public:
 
 _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
+//! @brief Convenience alias for @c cuda::buffer configured with @c cuda::mr::device_accessible.
 //! @rst
 //! Convenience alias for :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>`
 //! configured with the ``cuda::mr::device_accessible`` property. See
@@ -838,6 +839,7 @@ _CCCL_END_NAMESPACE_ABI_VER4_BUMP
 template <class _Tp>
 using device_buffer = buffer<_Tp, ::cuda::mr::device_accessible>;
 
+//! @brief Convenience alias for @c cuda::buffer configured with @c cuda::mr::host_accessible.
 //! @rst
 //! Convenience alias for :ref:`cuda::buffer <libcudacxx-api-class-cuda-ns-buffer>`
 //! configured with the ``cuda::mr::host_accessible`` property. See
