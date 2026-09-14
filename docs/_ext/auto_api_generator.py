@@ -647,13 +647,20 @@ def generate_individual_api_page(class_name, refid, project_name):
     content.append(":orphan:")
     content.append("")
 
+    # Check if this is a struct by looking at the refid
+    class_kind = "struct" if refid.startswith("struct") else "class"
+
+    content.append(
+        f".. _{make_api_reference_label(project_name, class_kind, class_name)}:"
+    )
+    content.append("")
+
     # Add title
     content.append(class_name)
     content.append("=" * len(class_name))
     content.append("")
 
-    # Check if this is a struct by looking at the refid
-    directive = "doxygenstruct" if refid.startswith("struct") else "doxygenclass"
+    directive = f"doxygen{class_kind}"
 
     # Add the doxygen directive
     content.append(f".. {directive}:: {class_name}")
@@ -728,6 +735,11 @@ def generate_member_api_page(
             qualified_name = member_name
     else:
         qualified_name = member_name
+
+    content.append(
+        f".. _{make_api_reference_label(project_name, member_type, qualified_name)}:"
+    )
+    content.append("")
 
     # Add title
     content.append(f"{qualified_name}")
@@ -1037,6 +1049,62 @@ def clean_template_name(name):
     # Handle spaces after :: in nested namespaces
     cleaned = cleaned.replace(":: ", "::")
     return cleaned
+
+
+def make_api_reference_label(project_name, member_type, name):
+    """Create a stable label for an auto-generated API page."""
+    clean_name = clean_template_name(name)
+
+    if project_name == "libcudacxx" and "::" not in clean_name and member_type != "macro":
+        clean_name = f"cuda::{clean_name}"
+    elif project_name in ["cub", "thrust"] and "::" not in clean_name and member_type != "macro":
+        clean_name = f"{project_name}::{clean_name}"
+
+    operator_tokens = {
+        "!": "bang",
+        "%": "percent",
+        "&": "amp",
+        "(": "lparen",
+        ")": "rparen",
+        "*": "star",
+        "+": "plus",
+        ",": "comma",
+        "-": "minus",
+        "/": "slash",
+        "<": "lt",
+        "=": "eq",
+        ">": "gt",
+        "[": "lbracket",
+        "]": "rbracket",
+        "^": "caret",
+        "|": "pipe",
+        "~": "tilde",
+    }
+
+    label_parts = []
+    current = []
+
+    def flush_current():
+        if current:
+            label_parts.append("".join(current))
+            current.clear()
+
+    for char in clean_name.lower():
+        if char.isalnum():
+            current.append(char)
+        elif char in "_:" or char.isspace():
+            flush_current()
+        elif char in operator_tokens:
+            flush_current()
+            label_parts.append(operator_tokens[char])
+        else:
+            flush_current()
+            label_parts.append(f"x{ord(char):x}")
+
+    flush_current()
+
+    label = "-".join(label_parts)
+    return f"{project_name}-api-{member_type}-{label}"
 
 
 def format_doc_reference(name, refid, doc_prefix="", as_list_item=True):
