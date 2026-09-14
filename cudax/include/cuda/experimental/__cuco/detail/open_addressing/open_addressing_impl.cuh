@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cub/device/device_for.cuh>
+#include <cub/device/device_reduce.cuh>
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_transform.cuh>
 
@@ -38,6 +39,7 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
@@ -223,6 +225,21 @@ public:
     }
     clear_async(__stream);
   }
+
+  //! @brief Copy-constructs an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl(const __open_addressing_impl&) = default;
+
+  //! @brief Move-constructs an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl(__open_addressing_impl&&) = default;
+
+  __open_addressing_impl& operator=(const __open_addressing_impl&) = delete;
+
+  //! @brief Move-assigns an open addressing implementation.
+  _CCCL_HIDE_FROM_ABI __open_addressing_impl& operator=(__open_addressing_impl&&) = default;
+
+  // NVCC requires a non-defaulted destructor to honor the host annotation. The slot buffer must
+  // be destroyed on the host. Explicitly default the other special members to preserve their behavior.
+  _CCCL_HOST_API ~__open_addressing_impl() {} // NOLINT(modernize-use-equals-default)
 
   //! @brief Fills all slots with the empty sentinel.
   _CCCL_HOST_API void clear(::cuda::stream_ref __stream)
@@ -471,6 +488,61 @@ public:
     }
   }
 
+  //! @brief Asynchronously regenerates the container without changing its capacity.
+  //!
+  //! @tparam _Container Owning container type
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  //! @param[in] __container Owning container whose reference is rebuilt after storage replacement
+  template <class _Container>
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, const _Container& __container)
+  {
+    rehash_async(__stream, capacity(), __container);
+  }
+
+  //! @brief Asynchronously replaces the slot storage and reinserts all filled slots.
+  //!
+  //! @tparam _Container Owning container type
+  //!
+  //! @param[in] __stream CUDA stream used for this operation
+  //! @param[in] __capacity Requested new capacity
+  //! @param[in] __container Owning container whose reference is rebuilt after storage replacement
+  template <class _Container>
+  _CCCL_HOST_API void rehash_async(::cuda::stream_ref __stream, __size_type __capacity, const _Container& __container)
+  {
+    const auto __new_capacity = __compute_num_buckets(__capacity) * _BucketSize;
+    ::cuda::device_buffer<__value_type> __new_slots{__stream, __memory_resource, __new_capacity, ::cuda::no_init};
+
+    _CCCL_TRY_RUNTIME_API(
+      CUB_NS_QUALIFIER::DeviceTransform::Fill,
+      "cuco: failed to initialize rehashed slot storage",
+      __new_slots.data(),
+      static_cast<detail::__index_type>(__new_capacity),
+      __empty_slot_sentinel,
+      __stream);
+
+    __slots.swap(__new_slots);
+
+    if (!__new_slots.empty())
+    {
+      constexpr auto __block_size = detail::__default_block_size;
+      const auto __grid_size      = detail::__grid_size(static_cast<detail::__index_type>(__new_slots.size()));
+      const auto __old_storage = __storage_ref_type{__new_slots.data(), static_cast<__size_type>(__new_slots.size())};
+      const auto __new_ref     = __container.ref();
+      const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
+
+      using __new_ref_type   = decltype(__container.ref());
+      using __predicate_type = __slot_is_filled<__has_payload, __key_type>;
+      const auto __config =
+        ::cuda::make_config(::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<__block_size>());
+      const auto& __kernel =
+        __open_addressing::__rehash<__block_size, __storage_ref_type, __new_ref_type, __predicate_type>;
+      ::cuda::launch(__stream, __config, __kernel, __old_storage, __new_ref, __is_filled);
+    }
+
+    __new_slots.destroy(__stream);
+  }
+
   //! @brief Retrieves all elements in the container.
   //!
   //! @note This function synchronizes the given stream.
@@ -502,6 +574,36 @@ public:
       __env);
 
     return __output_begin + __read_counter(__counter, __stream);
+  }
+
+  //! @brief Gets the number of elements in the container.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param __stream CUDA stream used to get the number of elements
+  //!
+  //! @return The number of elements in the container
+  [[nodiscard]] _CCCL_HOST_API __size_type size(::cuda::stream_ref __stream) const
+  {
+    auto __counter = __make_counter(__stream);
+
+    const auto __input_begin = ::cuda::make_transform_iterator(
+      ::cuda::counting_iterator<__size_type>{0}, __get_slot<__has_payload, __storage_ref_type>{storage_ref()});
+    const auto __is_filled = __slot_is_filled<__has_payload, __key_type>{empty_key_sentinel(), erased_key_sentinel()};
+    const auto __env       = ::cuda::std::execution::env{__stream, __memory_resource};
+
+    _CCCL_TRY_RUNTIME_API(
+      CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
+      "cuco: failed to get the number of elements",
+      __input_begin,
+      __counter.data(),
+      capacity(),
+      ::cuda::std::plus<__size_type>{},
+      __is_filled,
+      __size_type{0},
+      __env);
+
+    return __read_counter(__counter, __stream);
   }
 
   //! @brief Returns the total number of slots.

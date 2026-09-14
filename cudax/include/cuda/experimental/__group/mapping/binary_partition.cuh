@@ -73,7 +73,7 @@ public:
 
     if (!__prev_mapping_result.is_valid())
     {
-      return _MappingResult::invalid();
+      return _MappingResult::__invalid();
     }
 
     const auto __pred      = static_cast<bool>(__fn_(__prev_mapping_result));

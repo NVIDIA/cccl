@@ -673,6 +673,30 @@ inline std::ostream& operator<<(std::ostream& os, __int128_t val)
 
   return os;
 }
+
+// NVHPC incorrectly identifies 128-bit integers as stream-insertable in Catch2's detection trait, but then fails to
+// select the global stream insertion overloads above. Explicit string makers bypass the faulty detection.
+template <>
+struct Catch::StringMaker<__uint128_t>
+{
+  static std::string convert(__uint128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
+
+template <>
+struct Catch::StringMaker<__int128_t>
+{
+  static std::string convert(__int128_t val)
+  {
+    std::ostringstream os;
+    ::operator<<(os, val);
+    return os.str();
+  }
+};
 #endif
 
 /******************************************************************************

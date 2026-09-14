@@ -15,8 +15,10 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
@@ -85,6 +87,17 @@ struct ReducePolicy
   }
 #endif // _CCCL_HOSTED()
 };
+
+namespace detail
+{
+// The arg-extremum operators are distinct reduction algorithms and take distinct tunings, so they classify as their
+// own operation kinds rather than op_kind_t::other.
+template <typename PredicateT>
+inline constexpr auto classify_op<arg_reduce_op<PredicateT>> = op_kind_t::arg_extremum;
+
+template <typename CompareOpT, bool LastMax>
+inline constexpr auto classify_op<arg_minmax_reduce_op<CompareOpT, LastMax>> = op_kind_t::argminmax;
+} // namespace detail
 
 namespace detail::reduce
 {
@@ -162,6 +175,18 @@ _CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
+
+// Classifies the element type carried inside an arg-extremum accumulator, so that tunings can be keyed per input
+// type even where the accumulator sizes coincide (KeyValuePair<int, T> shares 8 bytes across I8..F32 inputs and
+// argminmax_accum_t shares 12/24 bytes across I8/I16 and I64/F64 inputs, respectively).
+template <typename AccumT>
+inline constexpr auto classify_accum_input = type_t::other;
+
+template <typename KeyT, typename ValueT>
+inline constexpr auto classify_accum_input<KeyValuePair<KeyT, ValueT>> = classify_type<ValueT>;
+
+template <typename T, typename IndexT>
+inline constexpr auto classify_accum_input<argminmax_accum_t<T, IndexT>> = classify_type<T>;
 
 template <class AccumT,
           class OffsetT,
@@ -250,10 +275,12 @@ get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int acc
 // tunings from cub/benchmarks/bench/reduce/arg_extrema.cu. These are raw measured values and must not be passed
 // through scale_mem_bound.
 _CCCL_HOST_DEVICE_API constexpr auto
-get_argextremum_sm107_tuning(type_t accum_t, int offset_size, int accum_size) noexcept
+get_argextremum_sm107_tuning(type_t accum_t, int offset_size, int accum_size, type_t input_t) noexcept
   -> ::cuda::std::optional<sm100_tuning_values>
 {
-  if (accum_t != type_t::other || offset_size != 4)
+  // the entries were measured for built-in input types only; custom payloads (input_t == other) fall through to the
+  // default policy
+  if (accum_t != type_t::other || offset_size != 4 || input_t == type_t::other)
   {
     return {};
   }
@@ -261,17 +288,17 @@ get_argextremum_sm107_tuning(type_t accum_t, int offset_size, int accum_size) no
   if (accum_size == 8)
   {
     // ipt_16.tpb_256.ipv_2  2^28 mean 1.264 across int8/int16/int32/float, worst small-size cost -9%
-    return sm100_tuning_values{16, 256, 2};
+    return sm100_tuning_values{16, 256, 1 << 2};
   }
   if (accum_size == 16)
   {
     // ipt_17.tpb_416.ipv_2  2^28: double 1.314, int64 ~1.29
-    return sm100_tuning_values{17, 416, 2};
+    return sm100_tuning_values{17, 416, 1 << 2};
   }
   if (accum_size == 32)
   {
     // ipt_10.tpb_384.ipv_2  2^28: int128 1.345
-    return sm100_tuning_values{10, 384, 2};
+    return sm100_tuning_values{10, 384, 1 << 2};
   }
 
   return {};
@@ -284,22 +311,22 @@ _CCCL_HOST_DEVICE_API constexpr auto get_sum_sm107_tuning(type_t accum_t, int of
   if (accum_t == type_t::float64 && offset_size == 4)
   {
     // ipt_17.tpb_192.ipv_2  1.128568  1.062323  1.127248  1.197567
-    return sm100_tuning_values{17, 192, 2};
+    return sm100_tuning_values{17, 192, 1 << 2};
   }
   if (accum_t == type_t::float64 && offset_size == 8)
   {
     // ipt_19.tpb_256.ipv_1  1.077322  1.048921  1.086155  1.172982
-    return sm100_tuning_values{19, 256, 1};
+    return sm100_tuning_values{19, 256, 1 << 1};
   }
   if ((accum_t == type_t::int64 || accum_t == type_t::uint64) && offset_size == 4)
   {
     // ipt_24.tpb_448.ipv_1  1.106178  1.039921  1.108836  1.150000
-    return sm100_tuning_values{24, 448, 1};
+    return sm100_tuning_values{24, 448, 1 << 1};
   }
   if ((accum_t == type_t::int64 || accum_t == type_t::uint64) && offset_size == 8)
   {
     // ipt_19.tpb_448.ipv_2  1.075765  1.028160  1.083034  1.142857
-    return sm100_tuning_values{19, 448, 2};
+    return sm100_tuning_values{19, 448, 1 << 2};
   }
   // float32 and 4-byte-or-smaller integer accumulators: the best candidates traded a small gain at 2^28 for real
   // small-problem regressions during verification, so they are intentionally left untuned
@@ -315,7 +342,7 @@ _CCCL_HOST_DEVICE_API constexpr auto get_extremum_sm107_tuning(type_t accum_t, i
   if (accum_size == 2 && (accum_t == type_t::int16 || accum_t == type_t::uint16))
   {
     // ipt_16.tpb_128.ipv_2  2^16 1.217  2^20 1.115  2^24 1.142  2^28 1.038
-    return sm100_tuning_values{16, 128, 2};
+    return sm100_tuning_values{16, 128, 1 << 2};
   }
   // 4-byte accumulators: the best candidate traded a ~2% gain at 2^28 for 6-9% regressions at small
   // problem sizes, so they are intentionally left untuned
@@ -324,15 +351,15 @@ _CCCL_HOST_DEVICE_API constexpr auto get_extremum_sm107_tuning(type_t accum_t, i
     if (accum_t == type_t::float64)
     {
       // ipt_24.tpb_320.ipv_1  2^16 1.068  2^20 1.051  2^24 1.077  2^28 1.039
-      return sm100_tuning_values{24, 320, 1};
+      return sm100_tuning_values{24, 320, 1 << 1};
     }
     // ipt_22.tpb_320.ipv_1  2^24 1.045  2^28 1.023
-    return sm100_tuning_values{22, 320, 1};
+    return sm100_tuning_values{22, 320, 1 << 1};
   }
   if (accum_size == 16)
   {
     // ipt_24.tpb_288.ipv_2  2^20 1.049  2^24 1.058  2^28 1.021
-    return sm100_tuning_values{24, 288, 2};
+    return sm100_tuning_values{24, 288, 1 << 2};
   }
 
   return {};
@@ -445,6 +472,7 @@ struct policy_selector
   int offset_size;
   int accum_size;
   __determinism_t determinism = __determinism_t::__run_to_run;
+  type_t input_t              = type_t::other; // element type inside arg-extremum accumulators
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_deterministic_tuning(::cuda::compute_capability cc) const
     -> ReducePolicy
@@ -497,15 +525,14 @@ struct policy_selector
   {
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
-      // arg-extremum operators classify as op_kind_t::other
-      if (operation_t == op_kind_t::other)
+      if (operation_t == op_kind_t::arg_extremum)
       {
-        if (const auto sm107_tuning = get_argextremum_sm107_tuning(accum_t, offset_size, accum_size))
+        if (const auto sm107_tuning = get_argextremum_sm107_tuning(accum_t, offset_size, accum_size, input_t))
         {
           const auto rp = ReducePassPolicy{
             sm107_tuning->threads,
             sm107_tuning->items,
-            1 << sm107_tuning->items_per_vec_load,
+            sm107_tuning->items_per_vec_load,
             BLOCK_REDUCE_WARP_REDUCTIONS,
             LOAD_DEFAULT};
           return {rp, rp};
@@ -518,11 +545,7 @@ struct policy_selector
           const auto [scaled_items, scaled_threads] =
             scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
           const auto rp = ReducePassPolicy{
-            scaled_threads,
-            scaled_items,
-            1 << sm107_tuning->items_per_vec_load,
-            BLOCK_REDUCE_WARP_REDUCTIONS,
-            LOAD_DEFAULT};
+            scaled_threads, scaled_items, sm107_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
           return {rp, rp};
         }
       }
@@ -533,11 +556,7 @@ struct policy_selector
           const auto [scaled_items, scaled_threads] =
             scale_mem_bound(sm107_tuning->threads, sm107_tuning->items, accum_size);
           const auto rp = ReducePassPolicy{
-            scaled_threads,
-            scaled_items,
-            1 << sm107_tuning->items_per_vec_load,
-            BLOCK_REDUCE_WARP_REDUCTIONS,
-            LOAD_DEFAULT};
+            scaled_threads, scaled_items, sm107_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_DEFAULT};
           return {rp, rp};
         }
       }
@@ -609,7 +628,12 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ReducePolicy
   {
     constexpr auto policies = policy_selector{
-      classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}, Determinism};
+      classify_type<AccumT>,
+      classify_op<ReductionOpT>,
+      int{sizeof(OffsetT)},
+      int{sizeof(AccumT)},
+      Determinism,
+      classify_accum_input<AccumT>};
     return policies(cc);
   }
 };

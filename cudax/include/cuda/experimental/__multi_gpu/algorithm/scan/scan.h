@@ -54,8 +54,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
 namespace __detail::__scan
 {
 enum class __kind : ::cuda::std::uint8_t
@@ -74,7 +73,7 @@ template <__kind _Kind,
           class _Tp,
           class _BinaryOp>
 _CCCL_HOST_API void __scan(
-  const __result_policy_base<_Policy>&,
+  const ::cuda::experimental::__result_policy_base<_Policy>&,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
@@ -85,12 +84,12 @@ _CCCL_HOST_API void __scan(
   _Tp __ident)
 {
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
-  static_assert(::cuda::std::same_as<_Policy, distributed_t>,
+  static_assert(::cuda::std::same_as<_Policy, ::cuda::experimental::distributed_t>,
                 "Only distributed results are currently supported. Please open an issue at "
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
-    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
+    ::cuda::experimental::mgmn::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
 
   static_assert(::cuda::std::__indirectly_binary_reducible<_BinaryOp, _Tp, typename __properties::__input_iter_type>);
 
@@ -106,8 +105,7 @@ _CCCL_HOST_API void __scan(
     return;
   }
 
-  _CCCL_NVTX_RANGE_SCOPE(
-    _Kind == __kind::__exclusive ? "cuda::experimental::exclusive_scan" : "cuda::experimental::inclusive_scan");
+  _CCCL_NVTX_RANGE_SCOPE(_Kind == __kind::__exclusive ? "cuda::mgmn::exclusive_scan" : "cuda::mgmn::inclusive_scan");
 
   constexpr auto __ROOT_RANK = 0;
   auto __partials            = ::std::vector<typename __properties::__buffer_type>{};
@@ -119,7 +117,7 @@ _CCCL_HOST_API void __scan(
        ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __num_items_range))
   {
     __partials.emplace_back(
-      ::cuda::experimental::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
+      ::cuda::experimental::mgmn::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
         __ROOT_RANK, __comm, __env, __input_it, __num_items, __init, __op, __ident));
   }
 
@@ -164,7 +162,7 @@ _CCCL_HOST_API void __scan(
   for (auto&& [__comm, __env, __part, __input_it, __num_items, __out] :
        ::cuda::std::ranges::views::zip(__comms, __envs, __partials, __input_iters, __num_items_range, __output_iters))
   {
-    auto __prefix = ::cuda::experimental::__detail::__make_safe_uninitialized_buffer<_Tp>(
+    auto __prefix = ::cuda::experimental::mgmn::__detail::__make_safe_uninitialized_buffer<_Tp>(
       __part.stream(), __part.memory_resource(), /*__size=*/1, __env);
 
     {
@@ -277,7 +275,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                    _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange> _CCCL_AND
                      __detail::__range_of_output_iters<_OutputIterRange, _Tp>)
 _CCCL_HOST_API void exclusive_scan(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
@@ -287,7 +285,7 @@ _CCCL_HOST_API void exclusive_scan(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  ::cuda::experimental::__detail::__scan::__scan<::cuda::experimental::__detail::__scan::__kind::__exclusive>(
+  ::cuda::experimental::mgmn::__detail::__scan::__scan<::cuda::experimental::mgmn::__detail::__scan::__kind::__exclusive>(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
@@ -342,7 +340,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void exclusive_scan(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputIt __input_iter,
@@ -352,7 +350,7 @@ _CCCL_HOST_API void exclusive_scan(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  ::cuda::experimental::exclusive_scan(
+  ::cuda::experimental::mgmn::exclusive_scan(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
@@ -417,7 +415,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                    _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange> _CCCL_AND
                      __detail::__range_of_output_iters<_OutputIterRange, _Tp>)
 _CCCL_HOST_API void inclusive_scan(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
@@ -427,7 +425,7 @@ _CCCL_HOST_API void inclusive_scan(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  ::cuda::experimental::__detail::__scan::__scan<::cuda::experimental::__detail::__scan::__kind::__inclusive>(
+  ::cuda::experimental::mgmn::__detail::__scan::__scan<::cuda::experimental::mgmn::__detail::__scan::__kind::__inclusive>(
     __policy,
     ::cuda::std::forward<_CommRange>(__comms),
     ::cuda::std::forward<_EnvRange>(__envs),
@@ -482,7 +480,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void inclusive_scan(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputIt __input_iter,
@@ -492,7 +490,7 @@ _CCCL_HOST_API void inclusive_scan(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  ::cuda::experimental::inclusive_scan(
+  ::cuda::experimental::mgmn::inclusive_scan(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
@@ -503,7 +501,7 @@ _CCCL_HOST_API void inclusive_scan(
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 
