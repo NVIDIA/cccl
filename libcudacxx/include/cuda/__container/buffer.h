@@ -33,13 +33,12 @@
 #  include <cuda/__launch/host_launch.h>
 #  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
-#  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__iterator/concepts.h>
@@ -53,7 +52,7 @@
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
-#  include <cuda/std/cstdint>
+#  include <cuda/std/cstdint> // IWYU pragma: keep
 #  include <cuda/std/initializer_list>
 
 #  include <cuda/std/__cccl/prologue.h>

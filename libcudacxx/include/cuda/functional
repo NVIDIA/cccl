@@ -21,16 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__functional/address_stability.h>
-#include <cuda/__functional/always_true_false.h>
-#include <cuda/__functional/equal_to_value.h>
-#include <cuda/__functional/hash.h>
-#include <cuda/__functional/maximum.h>
-#include <cuda/__functional/minimum.h>
-#include <cuda/__functional/operator_properties.h>
-#include <cuda/__functional/proclaim_return_type.h>
-#include <cuda/__iterator/zip_function.h>
-#include <cuda/__memory/get_device_address.h>
-#include <cuda/std/functional>
+#include <cuda/__functional/address_stability.h> // IWYU pragma: export
+#include <cuda/__functional/always_true_false.h> // IWYU pragma: export
+#include <cuda/__functional/equal_to_value.h> // IWYU pragma: export
+#include <cuda/__functional/hash.h> // IWYU pragma: export
+#include <cuda/__functional/maximum.h> // IWYU pragma: export
+#include <cuda/__functional/minimum.h> // IWYU pragma: export
+#include <cuda/__functional/operator_properties.h> // IWYU pragma: export
+#include <cuda/__functional/proclaim_return_type.h> // IWYU pragma: export
+#include <cuda/__iterator/zip_function.h> // IWYU pragma: export
+#include <cuda/__memory/get_device_address.h> // IWYU pragma: export
+#include <cuda/std/functional> // IWYU pragma: export
 
 #endif // _CUDA_FUNCTIONAL_

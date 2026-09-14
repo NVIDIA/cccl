@@ -26,8 +26,6 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/remove_const_ref.h>
-#  include <cuda/std/__type_traits/void_t.h>
-#  include <cuda/std/__utility/declval.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

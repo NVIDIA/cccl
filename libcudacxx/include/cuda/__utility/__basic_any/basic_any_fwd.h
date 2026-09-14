@@ -23,8 +23,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/cstddef> // for max_align_t
-#include <cuda/std/cstdint> // for uint8_t
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

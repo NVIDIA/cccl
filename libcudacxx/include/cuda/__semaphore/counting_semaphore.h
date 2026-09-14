@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__semaphore/atomic_semaphore.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -27,9 +27,9 @@
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/make_unsigned.h> // IWYU pragma: keep
 #include <cuda/std/__utility/to_underlying.h>
-#include <cuda/std/limits>
+#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

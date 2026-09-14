@@ -113,3 +113,23 @@ Diagnostics:
     # The NVHPC version of _NVCXX_EXPAND_PACK macro triggers this clang error.
     # Temporarily suppressing it, but should probably fix
     - "template_param_shadow"
+
+---
+
+If:
+  PathMatch: ".*libcudacxx/include/cuda/.*"
+  PathExclude: ".*libcudacxx/include/cuda/(std|__ptx)/.*"
+
+Diagnostics:
+  Includes:
+    IgnoreHeader: "cuda/std/detail/__config"
+
+---
+
+If:
+  PathMatch: ".*libcudacxx/include/cuda/__ptx/.*"
+
+Diagnostics:
+  Suppress:
+    - "missing-includes"
+    - "unused-includes"

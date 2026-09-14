@@ -21,14 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__memory/address_space.h>
-#  include <cuda/__ptx/instructions/get_sreg.h>
+#  include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()
 
-#include <nv/target>
+#include <nv/target> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

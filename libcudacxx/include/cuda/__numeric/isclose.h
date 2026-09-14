@@ -27,7 +27,7 @@
 #include <cuda/__complex/get_real_imag.h>
 #include <cuda/__complex/traits.h>
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/__utility/in_range.h>
+#include <cuda/__utility/in_range.h> // IWYU pragma: keep
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/exponential_functions.h>

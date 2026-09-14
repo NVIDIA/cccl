@@ -26,7 +26,7 @@
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/to_underlying.h>
 
-#  include <nv/target>
+#  include <nv/target> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 

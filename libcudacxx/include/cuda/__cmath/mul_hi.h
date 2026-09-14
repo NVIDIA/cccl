@@ -26,7 +26,7 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>

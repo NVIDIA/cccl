@@ -28,7 +28,7 @@
 // <cuda/fpmp_math> alone is sufficient to get the full fpmp API. Translation
 // units that do not need math functions should include <cuda/fpmp> instead to
 // avoid the additional compile-time cost of the math header.
-#include <cuda/__fp/fpmp.h>
-#include <cuda/__fp/fpmp_math.h>
+#include <cuda/__fp/fpmp.h> // IWYU pragma: export
+#include <cuda/__fp/fpmp_math.h> // IWYU pragma: export
 
 #endif // _CUDA_FPMP_MATH

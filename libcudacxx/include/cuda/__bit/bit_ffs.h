@@ -11,7 +11,7 @@
 #ifndef _CUDA___BIT_BIT_FFS_H
 #define _CUDA___BIT_BIT_FFS_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/detail/__config> // IWYU pragma: keep
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/countr.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 
