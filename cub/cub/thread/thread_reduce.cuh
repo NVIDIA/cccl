@@ -359,13 +359,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
   auto unpacked_values = unsafe_bitcast<UnpackedType>(simd_reduction);
   // Create a reversed copy of the SIMD reduction result and apply the SIMD operator.
   // This avoids redundant instructions for converting to and from 32-bit registers
-  T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
-  auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
-  SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
+  const T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
+  auto simd_reduction_rev       = unsafe_bitcast<SimdType>(unpacked_values_rev);
+  SimdType result               = SimdReduceOp{}(simd_reduction, simd_reduction_rev); // NOLINT(misc-const-correctness)
   // repeat the same optimization for the last element
   if constexpr (length % simd_ratio == 1)
   {
-    T tail[]       = {input[length - 1], T{}};
+    const T tail[] = {input[length - 1], T{}};
     auto tail_simd = unsafe_bitcast<SimdType>(tail);
     result         = SimdReduceOp{}(result, tail_simd);
   }

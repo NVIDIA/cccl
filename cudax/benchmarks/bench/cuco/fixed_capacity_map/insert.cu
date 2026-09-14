@@ -49,7 +49,7 @@ void fixed_capacity_map_insert(nvbench::state& state, nvbench::type_list<Key, Va
     const auto size = static_cast<cuda::std::size_t>(static_cast<double>(num_keys) / occupancy);
 
     const auto device = cuda::device_ref{0};
-    cuda::stream stream{device};
+    const cuda::stream stream{device};
     const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
     const auto exec_policy                = thrust::cuda::par_nosync.on(stream.get());
 

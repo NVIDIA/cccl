@@ -49,7 +49,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
-    cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
+    const cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
     if ((threadIdx.x + threadIdx.y + threadIdx.z) % 2 == 0)
     {
       atomic++;

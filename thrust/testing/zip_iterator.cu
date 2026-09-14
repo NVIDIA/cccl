@@ -144,7 +144,7 @@ struct TestZipIteratorConstructionFromIterators
     using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
     // test construction
-    thrust::zip_iterator iter0(v0.begin(), v1.begin());
+    const thrust::zip_iterator iter0(v0.begin(), v1.begin());
     ASSERT_EQUAL(true, iter0 == ZipIterator{cuda::std::make_tuple(v0.begin(), v1.begin())});
   }
 
@@ -154,8 +154,7 @@ struct TestZipIteratorConstructionFromIterators
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorConstructionFromIterators, type_list<int>>
-  TestZipIteratorConstructionFromIteratorsInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorConstructionFromIterators, type_list<int>);
 
 template <typename T>
 struct TestZipIteratorManipulation
@@ -177,14 +176,14 @@ struct TestZipIteratorManipulation
     using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
     // test construction from tuple
-    ZipIterator iter0 = thrust::make_zip_iterator(t);
+    const ZipIterator iter0 = thrust::make_zip_iterator(t);
     ASSERT_EQUAL(true, iter0 == ZipIterator{t});
     ASSERT_EQUAL_QUIET(v0.begin(), cuda::std::get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), cuda::std::get<1>(iter0.get_iterator_tuple()));
     static_assert(cuda::std::is_same_v<decltype(thrust::zip_iterator{t}), ZipIterator>); // CTAD
 
     // test construction from pack
-    ZipIterator iter0_pack = thrust::make_zip_iterator(v0.begin(), v1.begin());
+    const ZipIterator iter0_pack = thrust::make_zip_iterator(v0.begin(), v1.begin());
     ASSERT_EQUAL(true, (iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
     ASSERT_EQUAL_QUIET(v0.begin(), cuda::std::get<0>(iter0_pack.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), cuda::std::get<1>(iter0_pack.get_iterator_tuple()));
@@ -195,9 +194,9 @@ struct TestZipIteratorManipulation
     ASSERT_EQUAL(*v1.begin(), cuda::std::get<1>(*iter0));
 
     // test equality
-    ZipIterator iter1 = iter0;
-    ZipIterator iter2 = thrust::make_zip_iterator(v0.begin(), v2.begin());
-    ZipIterator iter3 = thrust::make_zip_iterator(v1.begin(), v2.begin());
+    const ZipIterator iter1 = iter0;
+    const ZipIterator iter2 = thrust::make_zip_iterator(v0.begin(), v2.begin());
+    const ZipIterator iter3 = thrust::make_zip_iterator(v1.begin(), v2.begin());
     ASSERT_EQUAL(true, iter0 == iter1);
     ASSERT_EQUAL(true, iter0 == iter2);
     ASSERT_EQUAL(false, iter0 == iter3);
@@ -243,7 +242,7 @@ struct TestZipIteratorManipulation
     test<thrust::device_vector<T>>();
   }
 };
-SimpleUnitTest<TestZipIteratorManipulation, type_list<int>> TestZipIteratorManipulationInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorManipulation, type_list<int>);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<cuda::std::tuple<int*, int*>>>::value);
 
 template <typename T>
@@ -290,7 +289,7 @@ struct TestZipIteratorReference
     ASSERT_EQUAL(cuda::std::get<1>(ref2), cuda::std::get<1>(test2));
   } // end operator()()
 };
-SimpleUnitTest<TestZipIteratorReference, NumericTypes> TestZipIteratorReferenceInstance;
+DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorReference, NumericTypes);
 
 template <typename Vector>
 void TestZipIteratorCopy()
@@ -370,7 +369,7 @@ struct TestZipIteratorTransform
     ASSERT_EQUAL(h_result, d_result);
   }
 };
-VariableUnitTest<TestZipIteratorTransform, ThirtyTwoBitTypes> TestZipIteratorTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorTransform, ThirtyTwoBitTypes);
 
 void TestZipIteratorCopyAoSToSoA()
 {
@@ -391,14 +390,14 @@ void TestZipIteratorCopyAoSToSoA()
 
   // host to host
   thrust::host_vector<int> h_field0(n), h_field1(n);
-  host_structure_of_arrays h_soa = thrust::make_zip_iterator(h_field0.begin(), h_field1.begin());
+  const host_structure_of_arrays h_soa = thrust::make_zip_iterator(h_field0.begin(), h_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), h_soa);
   ASSERT_EQUAL_QUIET(cuda::std::make_tuple(7, 13), h_soa[0]);
 
   // host to device
   thrust::device_vector<int> d_field0(n), d_field1(n);
-  device_structure_of_arrays d_soa = thrust::make_zip_iterator(d_field0.begin(), d_field1.begin());
+  const device_structure_of_arrays d_soa = thrust::make_zip_iterator(d_field0.begin(), d_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), d_soa);
   ASSERT_EQUAL_QUIET(cuda::std::make_tuple(7, 13), d_soa[0]);
@@ -436,8 +435,8 @@ void TestZipIteratorCopySoAToAoS()
   thrust::host_vector<int> h_field0(n, 7), h_field1(n, 13);
   thrust::device_vector<int> d_field0(n, 7), d_field1(n, 13);
 
-  host_structure_of_arrays h_soa   = thrust::make_zip_iterator(h_field0.begin(), h_field1.begin());
-  device_structure_of_arrays d_soa = thrust::make_zip_iterator(d_field0.begin(), d_field1.begin());
+  const host_structure_of_arrays h_soa   = thrust::make_zip_iterator(h_field0.begin(), h_field1.begin());
+  const device_structure_of_arrays d_soa = thrust::make_zip_iterator(d_field0.begin(), d_field1.begin());
 
   host_array_of_structures h_aos(n);
   device_array_of_structures d_aos(n);
@@ -514,7 +513,7 @@ void TestZipIteratorNestedCopy()
 
     thrust::copy_n(thrust::make_zip_iterator(thrust::make_zip_iterator(a.begin())), a.size(), b.begin());
 
-    decltype(b) b_expected(b.size(), cuda::std::make_tuple(cuda::std::make_tuple(1)));
+    const decltype(b) b_expected(b.size(), cuda::std::make_tuple(cuda::std::make_tuple(1)));
 
     ASSERT_EQUAL_QUIET(b, b_expected);
   }
@@ -528,7 +527,8 @@ void TestZipIteratorNestedCopy()
                    a.size(),
                    b.begin());
 
-    decltype(b) b_expected(b.size(), cuda::std::make_tuple(cuda::std::make_tuple(1, 1), cuda::std::make_tuple(1, 1)));
+    const decltype(b) b_expected(
+      b.size(), cuda::std::make_tuple(cuda::std::make_tuple(1, 1), cuda::std::make_tuple(1, 1)));
 
     ASSERT_EQUAL_QUIET(b, b_expected);
   }
@@ -541,7 +541,7 @@ void TestZipIteratorNestedCopy()
 
     thrust::copy_n(thrust::make_zip_iterator(a.begin(), a.begin(), a.begin(), a.begin()), a.size(), b.begin());
 
-    decltype(b) b_expected(
+    const decltype(b) b_expected(
       b.size(),
       cuda::std::make_tuple(cuda::std::make_tuple(1, 1),
                             cuda::std::make_tuple(1, 1),

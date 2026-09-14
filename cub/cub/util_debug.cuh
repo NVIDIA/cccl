@@ -121,7 +121,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
   #define CUB_TEMP_DEVICE_CODE last_error = cudaGetLastError()
   #endif
 
-  cudaError_t last_error = cudaSuccess;
+  cudaError_t last_error = cudaSuccess; // NOLINT(misc-const-correctness)
 
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,

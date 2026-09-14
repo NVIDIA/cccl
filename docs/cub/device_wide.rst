@@ -85,6 +85,26 @@ Further information on CUB execution environments can be found in
 :ref:`Execution Environments <cub-environment>`.
 
 
+NVTX
+++++
+
+The `NVIDIA Tools Extension SDK (NVTX) <https://nvidia.github.io/NVTX/>`_ is a cross-platform API
+for annotating source code to provide contextual information to developer tools.
+All device-scope algorithms in CUB are annotated with NVTX ranges,
+allowing their start and stop to be visualized in profilers
+like `NVIDIA Nsight Systems <https://developer.nvidia.com/nsight-systems>`_.
+Only the public APIs available in the ``<cub/device/device_xxx.cuh>`` headers are annotated,
+excluding direct calls to the dispatch layer.
+For two phase APIs, the NVTX range is not emitted when querying the temporary storage size, only during algorithm execution.
+For single phase APIs, the NVTX range is emitted for the entire duration of the algorithm call.
+CCCL's NVTX annotations can be disabled by defining ``CCCL_NVTX_DISABLE`` during compilation.
+To disable NVTX annotations in general, define ``NVTX_DISABLE`` during compilation.
+When CUB device algorithms are called on a stream during
+`graph capture <https://developer.nvidia.com/blog/cuda-graphs/>`_,
+the NVTX range is reported for the duration of capture (where no execution happens),
+and not when a captured graph is executed later (the actual execution).
+
+
 API overview
 ++++++++++++
 

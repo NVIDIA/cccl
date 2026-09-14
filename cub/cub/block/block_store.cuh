@@ -21,6 +21,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -339,9 +341,9 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -393,9 +395,9 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -838,7 +840,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      if constexpr (::cuda::std::contiguous_iterator<OutputIteratorT> && ::cuda::std::__can_to_address<OutputIteratorT>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }

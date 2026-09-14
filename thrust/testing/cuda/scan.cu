@@ -117,7 +117,7 @@ struct TestScanDeviceSeq
     TestScanDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestScanDeviceSeq, IntegralTypes> TestScanDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanDeviceSeq, IntegralTypes);
 
 template <typename T>
 struct TestScanDeviceDevice
@@ -127,7 +127,7 @@ struct TestScanDeviceDevice
     TestScanDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestScanDeviceDevice, IntegralTypes> TestScanDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestScanDeviceDevice, IntegralTypes);
 #endif
 
 void TestScanCudaStreams()
@@ -141,7 +141,7 @@ void TestScanCudaStreams()
   Vector result{1, 4, 2, 6, 1};
   Vector output(5);
 
-  Vector input_copy(input);
+  const Vector input_copy(input);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -259,7 +259,7 @@ static void TestInclusiveScanWithConstAccumulator()
   thrust::inclusive_scan(
     data.begin(), data.end(), data.begin(), const_ref_plus_mod3<int>(thrust::raw_pointer_cast(&table[0])));
 
-  thrust::device_vector<int> ref{0, 1, 0, 1, 0, 0, 1};
+  const thrust::device_vector<int> ref{0, 1, 0, 1, 0, 0, 1};
   ASSERT_EQUAL(data, ref);
 }
 DECLARE_UNITTEST(TestInclusiveScanWithConstAccumulator);

@@ -24,9 +24,11 @@
 #include <cub/block/block_reduce.cuh>
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 
@@ -281,6 +283,73 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
         }
       }
     }
+    __idx += __loop_stride;
+  }
+}
+
+//! @brief Reinserts all filled slots from old storage into a container.
+//!
+//! Each thread examines one physical slot, so a block stages at most `_BlockSize` elements
+//! regardless of the storage's bucket size.
+//!
+//! @tparam _BlockSize Number of threads in a block
+//! @tparam _StorageRef Old slot storage reference type
+//! @tparam _ContainerRef Destination container reference type
+//! @tparam _Predicate Predicate identifying filled slots
+//!
+//! @param[in] __old_storage Old slot storage
+//! @param[in] __container_ref Destination container reference
+//! @param[in] __is_filled Predicate identifying filled slots
+template <int _BlockSize, class _StorageRef, class _ContainerRef, class _Predicate>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+__rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __is_filled)
+{
+  using __value_type = typename _ContainerRef::value_type;
+
+  // `__value_type` is not trivially default constructible, so a plain `__shared__` array would
+  // require initialization, which is not allowed for shared variables.
+  __shared__ ::cuda::__uninitialized_array<__value_type, _BlockSize> __buffer;
+  __shared__ ::cuda::std::uint32_t __buffer_size;
+
+  constexpr auto __cg_size         = _ContainerRef::cg_size;
+  constexpr auto __tiles_per_block = _BlockSize / __cg_size;
+
+  const auto __block = ::cooperative_groups::this_thread_block();
+  const auto __tile  = ::cooperative_groups::tiled_partition<__cg_size, ::cooperative_groups::thread_block>(__block);
+  const auto __thread_rank = __block.thread_rank();
+  const auto __tile_rank   = __tile.meta_group_rank();
+  const auto __loop_stride = detail::__grid_stride();
+  const auto __num_slots   = __old_storage.capacity();
+  auto __idx               = detail::__global_thread_id();
+
+  while (__idx - __thread_rank < __num_slots)
+  {
+    if (__thread_rank == 0)
+    {
+      __buffer_size = 0;
+    }
+    __block.sync();
+
+    if (__idx < __num_slots)
+    {
+      const auto __slot = *(__old_storage.data() + __idx);
+      if (__is_filled(__slot))
+      {
+        const auto __buffer_idx =
+          ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_block>{__buffer_size}.fetch_add(
+            1, ::cuda::std::memory_order_relaxed);
+        __buffer[__buffer_idx] = __slot;
+      }
+    }
+    __block.sync();
+
+    const auto __local_buffer_size = __buffer_size;
+    for (auto __buffer_idx = __tile_rank; __buffer_idx < __local_buffer_size; __buffer_idx += __tiles_per_block)
+    {
+      __container_ref.insert(__tile, __buffer[__buffer_idx]);
+    }
+    __block.sync();
+
     __idx += __loop_stride;
   }
 }

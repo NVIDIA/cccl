@@ -40,9 +40,9 @@ struct TestPairScanByKey
     // zip up pairs on the host
     thrust::transform(h_p1.begin(), h_p1.end(), h_p2.begin(), h_pairs.begin(), make_pair_functor());
 
-    thrust::device_vector<T> d_p1    = h_p1;
-    thrust::device_vector<T> d_p2    = h_p2;
-    thrust::device_vector<P> d_pairs = h_pairs;
+    const thrust::device_vector<T> d_p1 = h_p1;
+    const thrust::device_vector<T> d_p2 = h_p2;
+    thrust::device_vector<P> d_pairs    = h_pairs;
 
     thrust::host_vector<T> h_keys   = unittest::random_integers<bool>(n);
     thrust::device_vector<T> d_keys = h_keys;
@@ -60,5 +60,5 @@ struct TestPairScanByKey
     ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
   }
 };
-VariableUnitTest<TestPairScanByKey, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestPairScanByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairScanByKey,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);

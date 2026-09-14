@@ -55,7 +55,7 @@ void arg_minmax(nvbench::state& state, nvbench::type_list<T>)
       cuda::execution::tune(tuned_policy_selector{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceReduce::ArgMinLastMax,
       "ArgMinLastMax failed",
       d_in,

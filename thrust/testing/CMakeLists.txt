@@ -163,6 +163,7 @@ endforeach()
 
 # Add specialized tests:
 add_subdirectory(cmake)
+add_subdirectory(config)
 add_subdirectory(cpp)
 add_subdirectory(cuda)
 add_subdirectory(omp)

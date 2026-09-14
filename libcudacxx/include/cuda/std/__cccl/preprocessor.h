@@ -34,9 +34,9 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
 #define _CCCL_TO_STRING2(_STR) #_STR
 #define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
 
-#define _CCCL_PP_FIRST(_FIRST, ...)      _FIRST
-#define _CCCL_PP_SECOND(_, _SECOND, ...) _SECOND
-#define _CCCL_PP_THIRD(_1, _2, _THIRD)   _THIRD
+#define _CCCL_PP_FIRST(_FIRST, ...)         _FIRST
+#define _CCCL_PP_SECOND(_, _SECOND, ...)    _SECOND
+#define _CCCL_PP_THIRD(_1, _2, _THIRD, ...) _THIRD
 
 #define _CCCL_PP_EXPAND(...) __VA_ARGS__
 #define _CCCL_PP_EAT(...)

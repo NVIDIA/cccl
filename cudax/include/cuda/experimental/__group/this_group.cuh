@@ -32,6 +32,7 @@
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/implicit_hierarchy.cuh>
 #include <cuda/experimental/__group/synchronizer/level_synchronizer.cuh>
+#include <cuda/experimental/__group/traits.cuh>
 
 #if _CCCL_HAS_COOPERATIVE_GROUPS()
 #  include <cooperative_groups.h>
@@ -43,10 +44,6 @@
 
 namespace cuda::experimental
 {
-template <class _HierarchyLike>
-using __hierarchy_type_of =
-  ::cuda::std::remove_cvref_t<decltype(::cuda::__unpack_hierarchy_if_needed(::cuda::std::declval<_HierarchyLike>()))>;
-
 template <class _Level>
 struct __this_mapping_result
 {
@@ -133,6 +130,12 @@ public:
   _CCCL_DEVICE_API __this_group_base(const _HierarchyLike& __hier_like) noexcept
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
   {}
+
+  // Groups can't be copied, moved nor assigned.
+  __this_group_base(const __this_group_base&)            = delete;
+  __this_group_base(__this_group_base&&)                 = delete;
+  __this_group_base& operator=(const __this_group_base&) = delete;
+  __this_group_base& operator=(__this_group_base&&)      = delete;
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
   {

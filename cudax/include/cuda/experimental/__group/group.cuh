@@ -54,7 +54,7 @@ template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchron
   const _Unit& __unit,
   const _ParentGroup& __parent,
   const _MappingResult& __mapping_result,
-  const _Synchronizer& __synchronizer) noexcept
+  _Synchronizer&& __synchronizer) noexcept
 {
   using _ParentMappingResult  = typename _ParentGroup::__mapping_result_type;
   using _SynchronizerInstance = decltype(__synchronizer.make_instance(__unit, __parent, __mapping_result));
@@ -77,7 +77,7 @@ using __group_synchronizer_instance_t = decltype(::cuda::experimental::__make_sy
   ::cuda::std::declval<const _Unit&>(),
   ::cuda::std::declval<const _ParentGroup&>(),
   ::cuda::std::declval<const _MappingResult&>(),
-  ::cuda::std::declval<const _Synchronizer&>()));
+  ::cuda::std::declval<_Synchronizer>()));
 
 template <class _Unit, class _ParentGroup, class _MappingResult, class _SynchronizerInstance>
 class group
@@ -86,9 +86,6 @@ class group
   static_assert(is_group<_ParentGroup>);
   static_assert(__unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>,
                 "unit_type must be same as or below _ParentGroup's unit_type");
-
-  // todo(dabayer): Allow groups stacking and remove this.
-  static_assert(__is_this_group_v<_ParentGroup>);
 
   using _Hierarchy           = typename _ParentGroup::hierarchy_type;
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
@@ -110,15 +107,19 @@ public:
       std::is_same_v<_SynchronizerInstance,
                      __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>>)
   _CCCL_DEVICE_API explicit group(
-    const _Unit& __unit,
-    const _ParentGroup& __parent,
-    const _Mapping& __mapping,
-    const _Synchronizer& __synchronizer) noexcept
+    const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping, _Synchronizer&& __synchronizer) noexcept
       : __hier_{__parent.hierarchy()}
-      , __mapping_result_{::cuda::experimental::__do_group_mapping(__unit, __parent, __mapping)}
-      , __synchronizer_instance_{
-          ::cuda::experimental::__make_synchronizer_instance(__unit, __parent, __mapping_result_, __synchronizer)}
+      , __mapping_result_{::cuda::experimental::__do_group_mapping(
+          __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
+      , __synchronizer_instance_{::cuda::experimental::__make_synchronizer_instance(
+          __unit, __parent, __mapping_result_, ::cuda::std::forward<_Synchronizer>(__synchronizer))}
   {}
+
+  // Groups can't be copied, moved nor assigned.
+  group(const group&)            = delete;
+  group(group&&)                 = delete;
+  group& operator=(const group&) = delete;
+  group& operator=(group&&)      = delete;
 
   // todo(dabayer): Delete copy constructor.
   // group(const group&) = delete;
@@ -234,7 +235,7 @@ _CCCL_TEMPLATE(
   class _SynchronizerInstance = __group_synchronizer_instance_t<_Unit, _ParentGroup, _MappingResult, _Synchronizer>)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group(const _Unit&, const _ParentGroup&, const _Mapping&, const _Synchronizer&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES group(const _Unit&, const _ParentGroup&, _Mapping&&, _Synchronizer&&)
   -> group<_Unit, _ParentGroup, _MappingResult, _SynchronizerInstance>;
 } // namespace cuda::experimental
 

@@ -136,7 +136,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.large_buffer.thr
     const BufferOffsetT buffer_id = block_buffer_id;
 
     // The relative offset of this tile within the buffer it's assigned to
-    BufferSizeT tile_offset_within_buffer =
+    const BufferSizeT tile_offset_within_buffer =
       static_cast<BufferSizeT>(tile_id - buffer_tile_offsets[buffer_id]) * TILE_SIZE;
 
     // If the tile has already reached beyond the work of the end of the last buffer

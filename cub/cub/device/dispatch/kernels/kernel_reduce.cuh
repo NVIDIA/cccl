@@ -246,7 +246,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_60,
         ({
-          ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
+          const ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
           atomic_target.fetch_add(blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate,
                                   ::cuda::memory_order_relaxed);
         }),

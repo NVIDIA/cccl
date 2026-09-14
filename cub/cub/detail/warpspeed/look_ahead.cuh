@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/iket_support.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
@@ -39,6 +40,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+_CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStates);
+
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL ::cuda::std::size_t max_native_atomic_size() noexcept
 {
 #if _CCCL_CUDA_COMPILER(NVHPC)
@@ -152,6 +155,7 @@ _CCCL_DEVICE_API void warpLoadLookahead(
   int idxTileNext,
   int num_tiles)
 {
+  _CCCL_IKET_RANGE_PUSH(LoadTileStates);
   for (int i = 0; i < numTileStatesPerThread; ++i)
   {
     const int idxTileLookahead = idxTileCur + 32 * i + laneIdx;
@@ -165,6 +169,7 @@ _CCCL_DEVICE_API void warpLoadLookahead(
       outTileStates[i].state = scan_state::empty;
     }
   }
+  _CCCL_IKET_RANGE_POP();
 }
 
 // warpIncrementalLookahead takes the latest known aggrExclusiveCtaPrev and its tile index, idxTilePrev (which's

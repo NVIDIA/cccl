@@ -26,7 +26,7 @@ C2H_CCCLRT_TEST("Stream logical device without a green context", "[stream][logic
 
   SECTION("A stream on a device reports a device-backed logical device")
   {
-    cuda::stream str{device};
+    const cuda::stream str{device};
     const auto ldev = str.__logical_device();
 
     REQUIRE(ldev.kind() == cuda::__logical_device_ref::kinds::device);
@@ -37,22 +37,22 @@ C2H_CCCLRT_TEST("Stream logical device without a green context", "[stream][logic
 
   SECTION("The reported logical device equals one built from the device")
   {
-    cuda::stream str{device};
+    const cuda::stream str{device};
 
     REQUIRE(str.__logical_device() == cuda::__logical_device_ref{device});
   }
 
   SECTION("Two streams on the same device report the same logical device")
   {
-    cuda::stream str0{device};
-    cuda::stream str1{device};
+    const cuda::stream str0{device};
+    const cuda::stream str1{device};
 
     REQUIRE(str0.__logical_device() == str1.__logical_device());
   }
 
   SECTION("A stream created through the runtime reports its device")
   {
-    cuda::__ensure_current_context guard(device);
+    const cuda::__ensure_current_context guard(device);
     ::cudaStream_t handle{};
     CUDART(cudaStreamCreate(&handle));
 
@@ -66,8 +66,8 @@ C2H_CCCLRT_TEST("Stream logical device without a green context", "[stream][logic
   {
     // The fixture only checks that the stack is empty at the end of the test, so it does not catch
     // a query that pushes a context onto a non-empty stack.
-    cuda::stream str{device};
-    cuda::__ensure_current_context guard(device);
+    const cuda::stream str{device};
+    const cuda::__ensure_current_context guard(device);
 
     const auto before = ::test::count_driver_stack();
     (void) str.__logical_device();
@@ -79,7 +79,7 @@ C2H_CCCLRT_TEST("Stream logical device without a green context", "[stream][logic
     if (cuda::devices.size() > 1)
     {
       const auto second = cuda::devices[1];
-      cuda::stream str{second};
+      const cuda::stream str{second};
 
       REQUIRE(str.__logical_device() == cuda::__logical_device_ref{second});
       REQUIRE(str.__logical_device() != cuda::__logical_device_ref{device});
@@ -136,7 +136,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("The stream is valid and runs work")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{static_cast<const cuda::__logical_device_ref&>(ldev)};
+    const cuda::stream str{static_cast<const cuda::__logical_device_ref&>(ldev)};
 
     REQUIRE(str.get() != nullptr);
 
@@ -149,7 +149,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("An owning logical_device selects the same overload")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
 
     ::test::pinned<int> value(0);
     ::test::launch_kernel_single_thread(str, ::test::assign_42{}, value.get());
@@ -160,7 +160,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("The stream reports the device that owns the green context")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
     REQUIRE(str.device() == device);
     REQUIRE(str.device() == ldev.underlying_device());
   }
@@ -170,7 +170,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     // A green context stream rejects cuStreamGetCtx(), so a query that reaches for the legacy
     // context of the stream throws instead of reporting the green context.
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
 
     REQUIRE(str.__logical_device().kind() == cuda::__logical_device_ref::kinds::green_context);
     REQUIRE(str.__logical_device().green_context() == ldev.green_context());
@@ -180,7 +180,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("The reported logical device carries the context of the green context")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
 
     REQUIRE(str.__logical_device().context() == cuda::__driver::__ctxFromGreenCtx(ldev.green_context()));
     REQUIRE(str.__logical_device().context() != device.__primary_context());
@@ -189,7 +189,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("The reported logical device compares equal to the one the stream was built from")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
 
     REQUIRE(str.__logical_device() == static_cast<const cuda::__logical_device_ref&>(ldev));
   }
@@ -199,8 +199,8 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     auto ldev0 = ::make_logical_device(device);
     auto ldev1 = ::make_logical_device(device);
 
-    cuda::stream str0{ldev0};
-    cuda::stream str1{ldev1};
+    const cuda::stream str0{ldev0};
+    const cuda::stream str1{ldev1};
 
     REQUIRE(str0.__logical_device() != str1.__logical_device());
   }
@@ -208,7 +208,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("A stream_ref reports the same logical device as the owning stream")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
     const cuda::stream_ref ref{str.get()};
 
     REQUIRE(ref.__logical_device() == str.__logical_device());
@@ -217,7 +217,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("The stream belongs to the context of the green context")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
 
     const auto green_ctx  = cuda::__driver::__ctxFromGreenCtx(ldev.green_context());
     const auto stream_ctx = cuda::__driver::__streamGetCtx(str.get());
@@ -227,7 +227,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("A device-backed logical device gives a stream on the primary context")
   {
     const cuda::__logical_device_ref ldev{device};
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
 
     REQUIRE(str.get() != nullptr);
     REQUIRE(str.device() == device);
@@ -242,8 +242,8 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("A device-backed stream matches one built from the device_ref directly")
   {
     const cuda::__logical_device_ref ldev{device};
-    cuda::stream from_logical{ldev};
-    cuda::stream from_device{device};
+    const cuda::stream from_logical{ldev};
+    const cuda::stream from_device{device};
 
     REQUIRE(cuda::__driver::__streamGetCtx(from_logical.get()) == cuda::__driver::__streamGetCtx(from_device.get()));
   }
@@ -251,7 +251,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
   SECTION("The default priority is used when none is given")
   {
     auto ldev = ::make_logical_device(device);
-    cuda::stream str{ldev};
+    const cuda::stream str{ldev};
     REQUIRE(str.priority() == cuda::stream::default_priority);
   }
 
@@ -264,14 +264,14 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     int least_priority{};
     int greatest_priority{};
     {
-      cuda::__ensure_current_context guard(device);
+      const cuda::__ensure_current_context guard(device);
       CUDART(cudaDeviceGetStreamPriorityRange(&least_priority, &greatest_priority));
     }
 
     if (least_priority != greatest_priority)
     {
       const auto priority = cuda::stream::default_priority - 1;
-      cuda::stream str{ldev, priority};
+      const cuda::stream str{ldev, priority};
       REQUIRE(str.priority() == priority);
     }
     else
@@ -285,8 +285,8 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     auto ldev0 = ::make_logical_device(device);
     auto ldev1 = ::make_logical_device(device);
 
-    cuda::stream str0{ldev0};
-    cuda::stream str1{ldev1};
+    const cuda::stream str0{ldev0};
+    const cuda::stream str1{ldev1};
 
     REQUIRE(str0 != str1);
     REQUIRE(str0.id() != str1.id());
@@ -300,7 +300,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     cuda::stream source{ldev};
     const auto handle = source.get();
 
-    cuda::stream destination{cuda::std::move(source)};
+    const cuda::stream destination{cuda::std::move(source)};
     REQUIRE(destination.get() == handle);
 
     ::test::pinned<int> value(0);
@@ -315,7 +315,7 @@ C2H_CCCLRT_TEST("Stream from a logical device", "[stream][logical_device]")
     {
       const auto second = cuda::devices[1];
       auto ldev         = ::make_logical_device(second);
-      cuda::stream str{ldev};
+      const cuda::stream str{ldev};
 
       REQUIRE(str.device() == second);
 
@@ -336,11 +336,11 @@ C2H_CCCLRT_TEST("Stream from a logical device supports dependencies", "[stream][
   }
 
   auto ldev = ::make_logical_device(cuda::devices[0]);
-  cuda::stream waiter{ldev};
-  cuda::stream waitee{ldev};
+  const cuda::stream waiter{ldev};
+  const cuda::stream waitee{ldev};
 
   ::test::pinned<int> value(0);
-  ::cuda::atomic_ref atomic_value(*value);
+  ::cuda::atomic_ref atomic_value(*value); // NOLINT(misc-const-correctness)
 
   ::test::launch_kernel_single_thread(waitee, ::test::spin_until_80{}, value.get());
   ::test::launch_kernel_single_thread(waitee, ::test::assign_42{}, value.get());

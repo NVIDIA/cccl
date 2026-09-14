@@ -50,6 +50,8 @@ _BINDING_EXPORTS = (
     "native_partition_fn",
     "partition_fn_blocked",
     "partition_fn_cyclic",
+    "placement_evaluate",
+    "placement_stats",
     "read",
     "rw",
     "stackable_context",

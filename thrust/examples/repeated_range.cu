@@ -77,13 +77,13 @@ int main()
   using Iterator = thrust::device_vector<int>::iterator;
 
   // create repeated_range with elements repeated twice
-  repeated_range<Iterator> twice(data.begin(), data.end(), 2);
+  const repeated_range<Iterator> twice(data.begin(), data.end(), 2);
   std::cout << "repeated x2: ";
   thrust::copy(twice.begin(), twice.end(), std::ostream_iterator<int>(std::cout, " "));
   std::cout << '\n';
 
   // create repeated_range with elements repeated x3
-  repeated_range<Iterator> thrice(data.begin(), data.end(), 3);
+  const repeated_range<Iterator> thrice(data.begin(), data.end(), 3);
   std::cout << "repeated x3: ";
   thrust::copy(thrice.begin(), thrice.end(), std::ostream_iterator<int>(std::cout, " "));
   std::cout << '\n';

@@ -18,7 +18,7 @@ void TestSetDifferenceDispatchExplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  my_system sys(0);
+  my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::set_difference(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
@@ -57,7 +57,7 @@ void TestSetDifferenceSimple()
   Vector ref{2, 5};
   Vector result(2);
 
-  Iterator end = thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
+  const Iterator end = thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
   ASSERT_EQUAL(ref, result);
@@ -67,8 +67,8 @@ DECLARE_VECTOR_UNITTEST(TestSetDifferenceSimple);
 template <typename T>
 void TestSetDifference(const size_t n)
 {
-  size_t sizes[]   = {0, 1, n / 2, n, n + 1, 2 * n};
-  size_t num_sizes = sizeof(sizes) / sizeof(size_t);
+  size_t sizes[]         = {0, 1, n / 2, n, n + 1, 2 * n};
+  const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
 
   thrust::host_vector<T> random =
     unittest::random_integers<unittest::int8_t>(n + *thrust::max_element(sizes, sizes + num_sizes));
@@ -104,8 +104,8 @@ DECLARE_VARIABLE_UNITTEST(TestSetDifference);
 template <typename T>
 void TestSetDifferenceEquivalentRanges(const size_t n)
 {
-  thrust::host_vector<T> temp = unittest::random_integers<T>(n);
-  thrust::host_vector<T> h_a  = temp;
+  const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_a        = temp;
   thrust::sort(h_a.begin(), h_a.end());
   thrust::host_vector<T> h_b = h_a;
 
@@ -173,9 +173,9 @@ DECLARE_VARIABLE_UNITTEST(TestSetDifferenceMultiset);
 #if !_CCCL_COMPILER(MSVC)
 void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(0);
-  thrust::counting_iterator<long long> end        = begin + (1ll << magnitude);
-  thrust::counting_iterator<long long> end_longer = end + 1;
+  const thrust::counting_iterator<long long> begin(0);
+  const thrust::counting_iterator<long long> end        = begin + (1ll << magnitude);
+  const thrust::counting_iterator<long long> end_longer = end + 1;
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_vector<long long> result;

@@ -7,7 +7,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++17, c++20
 
 // <memory>
 
@@ -29,45 +28,52 @@ template <class T>
 struct no_allocate_at_least
 {
   using value_type = T;
+
   T t;
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t)
+  TEST_FUNC constexpr T* allocate(cuda::std::size_t)
   {
     return &t;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX20 void deallocate(T*, cuda::std::size_t) noexcept {}
+
+  TEST_FUNC constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
 };
 
 template <class T>
 struct has_allocate_at_least
 {
   using value_type = T;
+
   T t1;
   T t2;
 
-  TEST_FUNC TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t)
+  TEST_FUNC constexpr T* allocate(cuda::std::size_t)
   {
     return &t1;
   }
-  TEST_FUNC TEST_CONSTEXPR_CXX20 void deallocate(T*, cuda::std::size_t) noexcept {}
-  TEST_FUNC TEST_CONSTEXPR_CXX20 cuda::std::allocation_result<T*> allocate_at_least(cuda::std::size_t)
+
+  TEST_FUNC constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
+
+  TEST_FUNC constexpr cuda::std::allocation_result<T*> allocate_at_least(cuda::std::size_t)
   {
     return {&t2, 2};
   }
 };
 
-TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC constexpr bool test()
 {
   { // check that cuda::std::allocate_at_least forwards to allocator::allocate if no allocate_at_least exists
-    no_allocate_at_least<int> alloc;
-    cuda::std::same_as<cuda::std::allocation_result<int*>> decltype(auto) ret = cuda::std::allocate_at_least(alloc, 1);
+    no_allocate_at_least<int> alloc{};
+    decltype(auto) ret = cuda::std::allocate_at_least(alloc, 1);
+    static_assert(cuda::std::same_as<cuda::std::allocation_result<int*>, decltype(ret)>);
     assert(ret.count == 1);
     assert(ret.ptr == &alloc.t);
   }
 
   { // check that cuda::std::allocate_at_least forwards to allocator::allocate_at_least if allocate_at_least exists
-    has_allocate_at_least<int> alloc;
-    cuda::std::same_as<cuda::std::allocation_result<int*>> decltype(auto) ret = cuda::std::allocate_at_least(alloc, 1);
+    has_allocate_at_least<int> alloc{};
+    decltype(auto) ret = cuda::std::allocate_at_least(alloc, 1);
+    static_assert(cuda::std::same_as<cuda::std::allocation_result<int*>, decltype(ret)>);
     assert(ret.count == 2);
     assert(ret.ptr == &alloc.t2);
   }

@@ -47,6 +47,5 @@ struct TestZipIteratorStableSortByKey
     ASSERT_EQUAL_QUIET(h4, d4);
   }
 };
-VariableUnitTest<TestZipIteratorStableSortByKey,
-                 unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestZipIteratorStableSortByKeyInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorStableSortByKey,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);

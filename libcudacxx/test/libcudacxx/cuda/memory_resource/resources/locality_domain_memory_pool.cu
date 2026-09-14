@@ -212,7 +212,7 @@ C2H_CCCLRT_TEST("locality domain memory pool", "[memory_resource][locality_domai
   {
     for (auto dev : cuda::devices)
     {
-      cuda::__ensure_current_context guard{dev};
+      const cuda::__ensure_current_context guard{dev};
 
       for (auto& domain : dev.__locality_domains())
       {

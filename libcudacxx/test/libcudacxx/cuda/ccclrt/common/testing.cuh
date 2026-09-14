@@ -14,6 +14,7 @@
 #include <cuda/std/detail/__config>
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_query_result.h>
 
 #include <nv/target>
 
@@ -57,10 +58,19 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
+
+template <typename T>
+struct StringMaker<cuda::hierarchy_query_result<T>>
+{
+  static std::string convert(cuda::hierarchy_query_result<T> const& result)
+  {
+    std::ostringstream oss;
+    oss << "(" << result.x << ", " << result.y << ", " << result.z << ")";
+    return oss.str();
+  }
+};
 } // namespace Catch
 
-namespace
-{
 namespace test
 {
 inline int count_driver_stack()
@@ -105,7 +115,6 @@ struct ccclrt_test_fixture
   }
 };
 } // namespace test
-} // namespace
 
 // Test macro that should be used in all cccl-rt tests
 // It first empties the driver stack in case some other test has left it non-empty
