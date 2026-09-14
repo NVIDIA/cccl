@@ -85,7 +85,9 @@ C2H_CCCLRT_TEST("default memory pool resolved under stream capture", "[memory_re
   test::skip_if_unsupported_memory_pool<cuda::device_memory_pool_ref>();
 
   const cuda::device_ref dev = cuda::devices[0];
-  const ::CUmemLocation location{::CU_MEM_LOCATION_TYPE_DEVICE, dev.get()};
+  ::CUmemLocation location{};
+  location.type = ::CU_MEM_LOCATION_TYPE_DEVICE;
+  location.id   = dev.get();
 
   for (const auto& c : capture_modes)
   {
