@@ -200,10 +200,9 @@ The :github:`example script
 <python/cuda_coop/examples/numba_mlir/source_dumps.py>` includes the imports,
 launches, and result checks omitted from the panels below.
 
-Set the environment variables before starting Python. The shared
-``CUDA_COOP_SOURCE_DUMP_DIR`` setting takes precedence over the older
-``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR`` setting; an empty shared value disables
-dumping. The provider source is dumped on provider-cache hits too. These
+Set the environment variables before starting Python. Unset or empty
+``CUDA_COOP_SOURCE_DUMP_DIR`` disables dumping. The provider source is dumped
+on provider-cache hits too. These
 commands disable that cache and use a fresh process for each kernel so the
 captures are easy to associate with their inputs. Reusing an already compiled
 kernel in the same process can bypass provider generation entirely.
@@ -492,10 +491,6 @@ hierarchy-aware implementation. Prefix reductions, explicit CUB algorithm
 selection, and qualified custom operators take supported CUB paths. The
 same public operation can therefore have different implementation and
 storage contracts depending on its arguments.
-
-*The current stack still marks mapped warps-within-block scalar Reduce as
-an expected failure pending the separate*
-`CUDAX scratch-reuse fix <https://github.com/NVIDIA/cccl/pull/10985>`_.
 
 Payloads, layouts, and results
 -----------------------------

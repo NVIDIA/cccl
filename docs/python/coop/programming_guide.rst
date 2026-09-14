@@ -271,9 +271,7 @@ membership for excluded threads, and check the collective's participation
 requirements before using that guard around an operation.
 
 *Mapped groups of physical warps have narrower support than blocks and
-logical warps. Their explicit synchronization methods are unavailable, and
-the current stack retains an expected scalar Reduce failure pending*
-`#10985 <https://github.com/NVIDIA/cccl/pull/10985>`_.
+logical warps. Their explicit synchronization methods are unavailable.*
 *Use the block and logical-warp forms for the examples in this guide.*
 
 Ranks and sizes
