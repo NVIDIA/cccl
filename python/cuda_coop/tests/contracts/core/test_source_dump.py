@@ -37,18 +37,34 @@ def test_cross_backend_dump_names(tmp_path, monkeypatch):
     assert set(tmp_path.iterdir()) == paths
 
 
-def test_shared_setting_overrides_legacy_and_can_disable_it(tmp_path, monkeypatch):
-    legacy = "CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR"
-    monkeypatch.setenv(legacy, str(tmp_path / "legacy"))
-    monkeypatch.delenv("CUDA_COOP_SOURCE_DUMP_DIR", raising=False)
-    args = dict(backend="numba_mlir", legacy_env=legacy)
-    assert dump_source("// source", **args).parent == tmp_path / "legacy"
+@pytest.mark.parametrize("shared_value", (None, "", "shared"))
+@pytest.mark.parametrize(
+    ("backend", "retired_env"),
+    (
+        ("numba_mlir", "CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR"),
+        ("cutlass", "CUDA_COOP_CUTLASS_PROVIDER_DUMP_DIR"),
+    ),
+)
+def test_retired_settings_are_ignored(
+    tmp_path, monkeypatch, shared_value, backend, retired_env
+):
+    monkeypatch.setenv(retired_env, str(tmp_path / "retired"))
+    if shared_value is None:
+        monkeypatch.delenv("CUDA_COOP_SOURCE_DUMP_DIR", raising=False)
+    else:
+        monkeypatch.setenv(
+            "CUDA_COOP_SOURCE_DUMP_DIR",
+            str(tmp_path / shared_value) if shared_value else "",
+        )
 
-    monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", str(tmp_path / "shared"))
-    assert dump_source("// source", **args).parent == tmp_path / "shared"
-
-    monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", "")
-    assert dump_source("// source", **args) is None
+    path = dump_source("// source", backend=backend)
+    if shared_value:
+        assert path.parent == tmp_path / "shared"
+        assert path.read_text() == "// source"
+    else:
+        assert path is None
+        assert not list(tmp_path.iterdir())
+    assert not (tmp_path / "retired").exists()
 
 
 def test_source_dump_disabled_by_default(tmp_path, monkeypatch):

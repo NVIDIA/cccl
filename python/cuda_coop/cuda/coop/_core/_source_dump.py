@@ -17,18 +17,15 @@ def dump_source(
     *,
     backend: str,
     identity: tuple[object, ...] = (),
-    legacy_env: str | None = None,
 ) -> Path | None:
     """Write a backend-tagged, content-addressed CUDA translation unit.
 
-    The shared setting takes precedence, including an explicitly empty value.
-    Backends may retain their previous environment variable as a fallback.
+    CUDA_COOP_SOURCE_DUMP_DIR selects the directory. Unset or empty disables
+    dumping.
     Call before compiler/cache lookup to capture sources on cache hits too.
     """
 
     dump_dir = os.environ.get("CUDA_COOP_SOURCE_DUMP_DIR")
-    if dump_dir is None and legacy_env is not None:
-        dump_dir = os.environ.get(legacy_env)
     if not dump_dir:
         return None
 

@@ -24,7 +24,6 @@ from cuda.coop._headers._toolkit import (
 from ._artifacts import check_in, version
 from ._caching import disk_cache
 
-_NVRTC_DUMP_DIR_ENV = "CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR"
 _REQUIRED_HEADERS = (
     "cub/block/block_load.cuh",
     "cub/block/block_store.cuh",
@@ -113,7 +112,6 @@ def _dump_source(cpp, cc, code, compiler_options):
         cpp,
         backend="numba_mlir",
         identity=(cc, code, compiler_options),
-        legacy_env=_NVRTC_DUMP_DIR_ENV,
     )
 
 
