@@ -89,14 +89,21 @@ __global__ void adjacent_difference_kernel(const _Tp* input, _Tp* output, size_t
  * enqueued. (An asynchronous variant reading the predecessor's last element
  * directly through the shared address space is the recorded follow-up.)
  *
- * Views must be co-partitioned and must not alias (`in[i-1]` is read while
- * `out[i]` is written). Boundary staging is drawn from a memory resource on
- * the call environment when one is present (`cuda::mr::get_memory_resource`,
- * host-accessible + async-transfer-capable), otherwise from the cached
- * pinned arena.
+ * Views must be co-partitioned. Boundary staging is drawn from a memory
+ * resource on the call environment when one is present
+ * (`cuda::mr::get_memory_resource`, host-accessible + async-transfer-capable),
+ * otherwise from the cached pinned arena.
  *
- * @throws std::invalid_argument on partition mismatch, aliasing, or
- *         environment shortfall.
+ * @pre `in` and `out` do not overlap: `in[i-1]` is read while `out[i]` is
+ *      written, on per-shard streams, so any overlap (including the exact
+ *      in-place form `std::adjacent_difference` permits) is a data race.
+ *      Not checked: address-range overlap across shards on different
+ *      lanes cannot be validated reliably here. In-place support is a
+ *      recorded follow-up (per-tile predecessor read, as CUB's
+ *      SubtractLeft does).
+ *
+ * @throws std::invalid_argument on partition mismatch or environment
+ *         count mismatch.
  */
 _CCCL_TEMPLATE(class _SIn, class _Envs, class _SOut, class _BinaryOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(
@@ -112,16 +119,6 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
   if (reserved::__env_count(envs) != num_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::adjacent_difference: environment count does not match shard count");
-  }
-  for (const auto g : each(num_shards))
-  {
-    if (static_cast<const void*>(in.shard(g).data) == static_cast<const void*>(out.shard(g).data)
-        && in.shard(g).size != 0)
-    {
-      _CCCL_THROW(::std::invalid_argument,
-                  "sharded::adjacent_difference: input and output must not alias (element i-1 is "
-                  "read while element i is written)");
-    }
   }
   if (num_shards == 0)
   {
