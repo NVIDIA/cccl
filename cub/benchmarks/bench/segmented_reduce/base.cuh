@@ -78,7 +78,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     );
     if constexpr (is_argmin)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSegmentedReduce::ArgMin,
         "Segmented ArgMin failed",
         d_in,
@@ -89,7 +89,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSegmentedReduce::Reduce,
         "Segmented reduce failed",
         d_in,

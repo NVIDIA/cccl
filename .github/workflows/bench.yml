@@ -48,7 +48,12 @@ on:
         default: ""
         type: string
       nvbench_compare_args:
-        description: "nvbench_compare.py extra args"
+        description: "nvbench-compare-robust extra args"
+        required: false
+        default: ""
+        type: string
+      nvbench_compare_legacy_args:
+        description: "nvbench-compare-legacy extra args"
         required: false
         default: ""
         type: string
@@ -100,7 +105,12 @@ on:
         default: ""
         type: string
       nvbench_compare_args:
-        description: "nvbench_compare.py extra args"
+        description: "nvbench-compare-robust extra args"
+        required: false
+        default: ""
+        type: string
+      nvbench_compare_legacy_args:
+        description: "nvbench-compare-legacy extra args"
         required: false
         default: ""
         type: string
@@ -123,6 +133,19 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Resolve NVBench SHA
+        run: |
+          nvbench_repo="https://github.com/NVIDIA/nvbench.git"
+          nvbench_ref="refs/heads/main"
+          nvbench_remote_ref="$(git ls-remote "${nvbench_repo}" "${nvbench_ref}")"
+          read -r nvbench_sha resolved_ref <<< "${nvbench_remote_ref}"
+          if [[ "${resolved_ref:-}" != "${nvbench_ref}" || ! "${nvbench_sha}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "::error::Failed to resolve ${nvbench_repo} ${nvbench_ref}; got '${nvbench_remote_ref}'"
+            exit 1
+          fi
+          echo "Resolved NVBench ${nvbench_ref} to ${nvbench_sha}"
+          echo "CCCL_BENCH_NVBENCH_SHA=${nvbench_sha}" >> "${GITHUB_ENV}"
 
       - name: Get AWS credentials for sccache bucket
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
@@ -161,6 +184,7 @@ jobs:
           INPUT_RAW_ARGS: ${{ inputs.raw_args }}
           INPUT_NVBENCH_ARGS: ${{ inputs.nvbench_args }}
           INPUT_NVBENCH_COMPARE_ARGS: ${{ inputs.nvbench_compare_args }}
+          INPUT_NVBENCH_COMPARE_LEGACY_ARGS: ${{ inputs.nvbench_compare_legacy_args }}
         run: |
           parse_quoted_args() {
             local quoted_args="$1"
@@ -245,6 +269,9 @@ jobs:
             if [[ -n "${INPUT_NVBENCH_COMPARE_ARGS}" ]]; then
               bench_args+=(--nvbench-compare-args "${INPUT_NVBENCH_COMPARE_ARGS}")
             fi
+            if [[ -n "${INPUT_NVBENCH_COMPARE_LEGACY_ARGS}" ]]; then
+              bench_args+=(--nvbench-compare-legacy-args "${INPUT_NVBENCH_COMPARE_LEGACY_ARGS}")
+            fi
           fi
 
           if [[ "${#bench_args[@]}" -lt 2 ]]; then
@@ -315,11 +342,8 @@ jobs:
           # This adds them to a bench_args array while preserving any quotes, whitespace, etc
           mapfile -d '' -t bench_args < "/bench_args.txt"
 
-          # NVBench deps:
-          ./ci/util/retry.sh 5 30 python3 -m pip install \
-            colorama \
-            jsondiff \
-            tabulate
+          # NVBench compare deps:
+          ./ci/util/retry.sh 5 30 python3 -m pip install 'cuda-bench[compare]>=0.3.0'
 
           ./ci/bench/bench.sh "${bench_args[@]}"
           EOF
@@ -335,6 +359,7 @@ jobs:
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "CCCL_BENCH_ARTIFACT_ROOT=bench-artifacts" \
             --env "CCCL_BENCH_GPU_NAME=${GPU_NAME}" \
+            --env "CCCL_BENCH_NVBENCH_SHA=${CCCL_BENCH_NVBENCH_SHA}" \
             --env "GH_TOKEN=${GH_TOKEN:-}" \
             --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \

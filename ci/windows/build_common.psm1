@@ -9,10 +9,17 @@ Param(
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"
+
+# Invoke-Checked lives in build_common_python.psm1, which the minimal test
+# container can also import; re-exported below.
+Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 # We need the full path to cl because otherwise cmake will replace CMAKE_CXX_COMPILER with the full path
 # and keep CMAKE_CUDA_HOST_COMPILER at "cl" which breaks our cmake script
@@ -34,6 +41,9 @@ if ($script:CL_VERSION_STRING -match "Version (\d+\.\d+)\.\d+") {
 }
 
 $script:GLOBAL_CMAKE_OPTIONS = $CMAKE_OPTIONS
+if ($ENABLE_TILE) {
+    $script:GLOBAL_CMAKE_OPTIONS += ' "-DCCCL_ENABLE_TILE=ON"'
+}
 if ($CUDA_ARCH) {
     $script:GLOBAL_CMAKE_OPTIONS += ' "-DCMAKE_CUDA_ARCHITECTURES={0}"' -f $CUDA_ARCH
 }
@@ -207,26 +217,6 @@ function configure_and_build_preset {
 
     configure_preset $BUILD_NAME $PRESET $LOCAL_CMAKE_OPTIONS
     build_preset $BUILD_NAME $PRESET
-}
-
-function Invoke-Checked {
-    <#
-    .SYNOPSIS
-        Runs a script block and throws if the last native command in it exits
-        non-zero. $ErrorActionPreference = "Stop" does not make native commands
-        (python/pip/pytest/...) throw, so their $LASTEXITCODE must be checked
-        explicitly; this wraps that boilerplate into one call.
-    .EXAMPLE
-        Invoke-Checked { & $python -m pip install pytest } "pip install failed"
-    #>
-    param(
-        [Parameter(Mandatory, Position = 0)][scriptblock]$ScriptBlock,
-        [Parameter(Position = 1)][string]$ErrorMessage = "Native command failed"
-    )
-    & $ScriptBlock
-    if ($LASTEXITCODE -ne 0) {
-        throw "$ErrorMessage (exit code $LASTEXITCODE)"
-    }
 }
 
 Export-ModuleMember -Function configure_preset, build_preset, test_preset, configure_and_build_preset, Invoke-Checked

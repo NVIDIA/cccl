@@ -33,6 +33,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+#define _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT() \
+  _CCCL_TEMPLATE(class _T2 = _Tp)                \
+  _CCCL_REQUIRES((!is_const_v<_T2>) )
+
 template <typename _Tp, typename _Sco>
 struct __atomic_ref_common
 {
@@ -110,6 +114,8 @@ using __atomic_ref_impl =
           _If<is_integral_v<_Tp>,
               __atomic_ref_bitwise<_Tp, __scope_to_tag<_Sco>>,
               __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>;
+
+#undef _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

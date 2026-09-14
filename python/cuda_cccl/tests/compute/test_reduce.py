@@ -954,6 +954,96 @@ def test_reduce_with_not_guaranteed_determinism(floating_array):
     )
 
 
+def test_reduce_no_init_value():
+    num_items = 1024
+    dtype = np.dtype("int32")
+
+    h_input = random_int(num_items, dtype)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, dtype)
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=None,
+    )
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sum(h_input)
+
+
+def test_reduce_no_init_value_iterator():
+    num_items = 1024
+    dtype = np.dtype("float64")
+
+    d_input = CountingIterator(np.float64(0))
+    d_output = DeviceArray.empty(1, dtype)
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=None,
+    )
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sum(range(num_items))
+
+
+def test_reduce_no_init_value_empty_input_leaves_output_unmodified():
+    dtype = np.dtype("int32")
+    sentinel = np.array([42], dtype=dtype)
+
+    d_input = DeviceArray.from_numpy(np.ones(1, dtype=dtype))
+    d_output = DeviceArray.from_numpy(sentinel)
+
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=d_output,
+        num_items=0,
+        op=OpKind.PLUS,
+        h_init=None,
+    )
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sentinel[0]
+
+
+def test_reduce_no_init_value_with_not_guaranteed_determinism_raises():
+    dtype = np.dtype("float32")
+    d_input = DeviceArray.from_numpy(np.ones(16, dtype=dtype))
+    d_output = DeviceArray.empty(1, dtype)
+
+    with pytest.raises(ValueError, match="NOT_GUARANTEED"):
+        cuda.compute.reduce_into(
+            d_in=d_input,
+            d_out=d_output,
+            num_items=16,
+            op=OpKind.PLUS,
+            h_init=None,
+            determinism=Determinism.NOT_GUARANTEED,
+        )
+
+
+def test_reduce_device_array_init_value_raises():
+    dtype = np.dtype("int32")
+    d_input = DeviceArray.from_numpy(np.ones(16, dtype=dtype))
+    d_output = DeviceArray.empty(1, dtype)
+    d_init = DeviceArray.from_numpy(np.array([0], dtype=dtype))
+
+    with pytest.raises(ValueError, match="device array"):
+        cuda.compute.reduce_into(
+            d_in=d_input,
+            d_out=d_output,
+            num_items=16,
+            op=OpKind.PLUS,
+            h_init=d_init,
+        )
+
+
 def test_reduce_bool():
     h_init = np.array([False])
     h_input = np.array([True, False, True])
@@ -1046,6 +1136,29 @@ def test_serialize_deserialize_well_known_op_round_trip():
         num_items=h_in.size,
         op=OpKind.PLUS,
         h_init=h_init,
+    )
+
+    assert int(d_out.copy_to_host()[0]) == int(h_in.sum())
+
+
+@pytest.mark.serialization
+def test_serialize_deserialize_no_init_value_round_trip():
+    h_in = np.arange(1024, dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.from_numpy(np.zeros(1, dtype=np.int32))
+
+    reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=OpKind.PLUS, h_init=None)
+    blob = serialize(reducer)
+    assert len(blob) > 0
+
+    loaded = deserialize(blob)
+    _run_loaded_reducer(
+        loaded,
+        d_in=d_in,
+        d_out=d_out,
+        num_items=h_in.size,
+        op=OpKind.PLUS,
+        h_init=None,
     )
 
     assert int(d_out.copy_to_host()[0]) == int(h_in.sum())

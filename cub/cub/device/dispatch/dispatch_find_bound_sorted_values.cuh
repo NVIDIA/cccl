@@ -19,6 +19,7 @@
 
 #include <cub/agent/agent_find_bound_sorted_values.cuh>
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -132,6 +133,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     NV_IS_HOST,
     (::std::stringstream ss; ss << active_policy; _CubLog(
        "Dispatching find_bound_sorted_values (merge-path) to arch %d with tuning: %s\n", cc.get(), ss.str().c_str());))
+#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceFind (bound sorted values)", cc, active_policy);
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const Offset tile_size = static_cast<Offset>(active_policy.threads_per_block) * active_policy.items_per_thread;

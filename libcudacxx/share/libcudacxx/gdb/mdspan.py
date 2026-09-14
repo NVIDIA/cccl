@@ -69,7 +69,7 @@ def _find_ebco_base(value: gdb.Value) -> gdb.Value | None:
     """
     bases = _direct_bases(value.type)
     for field in bases:
-        if _EBCO_PATTERN.search(str(field.type)):
+        if _EBCO_PATTERN.search(cccl_common.public_type_name(field.type)):
             return value.cast(field.type)
     if len(bases) == 1:
         return _find_ebco_base(value.cast(bases[0].type))
@@ -82,7 +82,7 @@ def _ebco_element(ebco_value: gdb.Value, index: int) -> gdb.Value | None:
     Held in an ``__elem_`` member, or (EBCO) inherited directly for empty types.
     """
     for field in _direct_bases(ebco_value.type):
-        match = _EBCO_IMPL_PATTERN.search(str(field.type))
+        match = _EBCO_IMPL_PATTERN.search(cccl_common.public_type_name(field.type))
         if match is None or int(match.group(1)) != index:
             continue
         impl = ebco_value.cast(field.type)

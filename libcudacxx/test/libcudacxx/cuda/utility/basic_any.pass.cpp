@@ -578,6 +578,23 @@ struct BasicAnyTest : BasicAnyTestsFixture<TestType>
     assert(42 == a);
     assert(a != 43);
     assert(43 != a);
+
+    cuda::__basic_any<iregular<>> empty1;
+    cuda::__basic_any<iregular<>> empty2;
+    assert(empty1 == empty2);
+    assert(!(empty1 != empty2));
+    assert(empty1 != a);
+    assert(a != empty1);
+    assert(empty1 != 42);
+    assert(42 != empty1);
+
+    a.reset();
+    assert(a == empty1);
+
+    cuda::__basic_any<iregular<>> moved{::cuda::std::move(b)};
+    assert(!b.has_value());
+    assert(b == empty1);
+    assert(b != moved);
   }
 
   TEST_HOST_DEVICE_FUNC void test_basic_any_test_for_ambiguous_conversions()

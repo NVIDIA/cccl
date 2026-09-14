@@ -1,10 +1,18 @@
-add_custom_target(libcudacxx.test.atomics.ptx)
-
-set(libcudacxx_atomic_codegen_tests)
-if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+if (libcudacxx_codegen_filecheck_atomics_sass)
+  add_subdirectory(sass)
 endif()
 
+if (NOT libcudacxx_codegen_filecheck_atomics_ptx)
+  return()
+endif()
+
+add_custom_target(libcudacxx.test.atomics.ptx)
+
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  return()
+endif()
+
+file(GLOB libcudacxx_atomic_codegen_tests CONFIGURE_DEPENDS "*.cu")
 if (NOT libcudacxx_atomic_codegen_tests)
   return()
 endif()
@@ -18,7 +26,7 @@ libcudacxx_codegen_get_cuda_architectures(atomic_codegen_cuda_archs PTX)
 if (NOT atomic_codegen_cuda_archs)
   message(
     STATUS
-    "No compatible CUDA architectures requested; skipping atomic codegen tests"
+    "No compatible CUDA architectures requested; skipping atomic PTX codegen tests"
   )
   return()
 endif()

@@ -21,12 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/common.h>
+#include <cuda/std/__atomic/functions/host_backend.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/platform.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -61,7 +63,7 @@ struct _CCCL_ALIGNAS(sizeof(_Tp)) __atomic_alignment_wrapper
 };
 
 template <typename _Tp>
-__atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
+_CCCL_HOST_API __atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
 {
   __atomic_alignment_wrapper<_Tp>* __w =
     reinterpret_cast<__atomic_alignment_wrapper<_Tp>*>(const_cast<remove_cv_t<_Tp>*>(__a));
@@ -69,166 +71,196 @@ __atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
 }
 
 // Guard ifdef for lock free query in case it is assigned elsewhere (MSVC/CUDA)
-inline void __atomic_thread_fence_host(memory_order __order)
+_CCCL_HOST_API inline void
+__cuda_atomic_thread_fence(__cuda_atomic_host_backend, memory_order __order, __thread_scope_tag)
 {
   __atomic_thread_fence(__atomic_order_to_int(__order));
 }
 
-inline void __atomic_signal_fence_host(memory_order __order)
+_CCCL_HOST_API inline void __cuda_atomic_signal_fence(__cuda_atomic_host_backend, memory_order __order)
 {
   __atomic_signal_fence(__atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Up>
-inline void __atomic_store_host(_Tp* __a, _Up __val, memory_order __order)
+[[nodiscard]] _CCCL_HOST_API constexpr memory_order __cuda_atomic_failure_order(memory_order __order)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  __atomic_store(&__atomic_force_align_host(__a)->__atom, &__val, __atomic_order_to_int(__order));
+  return __order == memory_order_release
+         ? memory_order_relaxed
+         : (__order == memory_order_acq_rel ? memory_order_acquire : __order);
 }
 
-template <typename _Tp>
-inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> remove_cv_t<_Tp>
+template <class _Type, class _Operand, class _Mmio>
+_CCCL_HOST_API void __cuda_atomic_load(
+  __cuda_atomic_host_backend,
+  const _Type* __ptr,
+  __unv<_Type>& __dst,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag,
+  _Mmio)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  remove_cv_t<_Tp> __ret;
-  __atomic_load(&__atomic_force_align_host(__a)->__atom, &__ret, __atomic_order_to_int(__order));
-  return __ret;
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __atomic_load(&__atomic_force_align_host(__ptr)->__atom, &__dst, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Up>
-inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> remove_cv_t<_Tp>
+template <class _Type, class _Operand, class _Mmio>
+_CCCL_HOST_API void __cuda_atomic_store(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __val,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag,
+  _Mmio)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  remove_cv_t<_Tp> __ret;
-  __atomic_exchange(&__atomic_force_align_host(__a)->__atom, &__val, &__ret, __atomic_order_to_int(__order));
-  return __ret;
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __atomic_store(&__atomic_force_align_host(__ptr)->__atom, &__val, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Up>
-inline bool __atomic_compare_exchange_strong_host(
-  _Tp* __a, _Up* __expected, _Up __desired, memory_order __success, memory_order __failure)
+template <class _Type, class _Cas, class _Operand>
+_CCCL_HOST_API bool __cuda_atomic_compare_exchange(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __cmp,
+  __unv<_Type> __op,
+  _Cas __cas,
+  __cuda_atomic_runtime_cas_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __dst = __cmp;
   return __atomic_compare_exchange(
-    &__atomic_force_align_host(__a)->__atom,
-    // This is only alignment wrapped in order to prevent GCC-6 from triggering unused warning
-    &__atomic_force_align_host(__expected)->__atom,
-    &__desired,
-    false,
-    __atomic_order_to_int(__success),
-    __atomic_failure_order_to_int(__failure));
+    &__atomic_force_align_host(__ptr)->__atom,
+    // This is only alignment wrapped in order to prevent GCC-6 from triggering an unused warning.
+    &__atomic_force_align_host(&__dst)->__atom,
+    &__op,
+    ::cuda::std::__cuda_atomic_cas_is_weak(__cas),
+    __atomic_order_to_int(__order.__success),
+    __atomic_failure_order_to_int(__order.__failure));
 }
 
-template <typename _Tp, typename _Up>
-inline bool __atomic_compare_exchange_weak_host(
-  _Tp* __a, _Up* __expected, _Up __desired, memory_order __success, memory_order __failure)
+template <class _Type, class _Cas, class _Operand>
+_CCCL_HOST_API bool __cuda_atomic_compare_exchange(
+  __cuda_atomic_host_backend __backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __cmp,
+  __unv<_Type> __op,
+  _Cas __cas,
+  memory_order __order,
+  _Operand __operand,
+  __thread_scope_tag __scope)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  return __atomic_compare_exchange(
-    &__atomic_force_align_host(__a)->__atom,
-    // This is only alignment wrapped in order to prevent GCC-6 from triggering unused warning
-    &__atomic_force_align_host(__expected)->__atom,
-    &__desired,
-    true,
-    __atomic_order_to_int(__success),
-    __atomic_failure_order_to_int(__failure));
+  return ::cuda::std::__cuda_atomic_compare_exchange(
+    __backend,
+    __ptr,
+    __dst,
+    __cmp,
+    __op,
+    __cas,
+    __cuda_atomic_runtime_cas_order{__order, ::cuda::std::__cuda_atomic_failure_order(__order)},
+    __operand,
+    __scope);
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
-inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
+template <class _Type, class _Operand>
+_CCCL_HOST_API void __cuda_atomic_exchange(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
-  return __atomic_fetch_add(__a, __delta * __skip_v, __atomic_order_to_int(__order));
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __atomic_exchange(&__atomic_force_align_host(__ptr)->__atom, &__op, &__dst, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
-inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
+template <class _Type,
+          class _Operand,
+          enable_if_t<!is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
+                        && (_Operand::__size <= 64),
+                      bool> = false>
+_CCCL_HOST_API void __cuda_atomic_fetch_add(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  auto __expected = __atomic_load_host(__a, memory_order_relaxed);
-  auto __desired  = __expected + __delta;
-
-  while (!__atomic_compare_exchange_strong_host(__a, &__expected, __desired, __order, __order))
-  {
-    __desired = __expected + __delta;
-  }
-
-  return __expected;
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __dst = __atomic_fetch_add(__ptr, __op, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
-inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
+template <class _Type,
+          class _Operand,
+          enable_if_t<!is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
+                        && (_Operand::__size <= 64),
+                      bool> = false>
+_CCCL_HOST_API void __cuda_atomic_fetch_sub(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
-  return __atomic_fetch_sub(__a, __delta * __skip_v, __atomic_order_to_int(__order));
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __dst = __atomic_fetch_sub(__ptr, __op, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
-inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
+template <class _Type,
+          class _Operand,
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), int> = 0>
+_CCCL_HOST_API void __cuda_atomic_fetch_and(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  auto __expected = __atomic_load_host(__a, memory_order_relaxed);
-  auto __desired  = __expected - __delta;
-
-  while (!__atomic_compare_exchange_strong_host(__a, &__expected, __desired, __order, __order))
-  {
-    __desired = __expected - __delta;
-  }
-
-  return __expected;
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __dst = __atomic_fetch_and(__ptr, __op, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td>
-inline remove_cv_t<_Tp> __atomic_fetch_and_host(_Tp* __a, _Td __pattern, memory_order __order)
+template <class _Type,
+          class _Operand,
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), int> = 0>
+_CCCL_HOST_API void __cuda_atomic_fetch_or(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  return __atomic_fetch_and(__a, __pattern, __atomic_order_to_int(__order));
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __dst = __atomic_fetch_or(__ptr, __op, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td>
-inline remove_cv_t<_Tp> __atomic_fetch_or_host(_Tp* __a, _Td __pattern, memory_order __order)
+template <class _Type,
+          class _Operand,
+          enable_if_t<(_Operand::__op == __cuda_atomic_operand::_b) && (_Operand::__size <= 64), int> = 0>
+_CCCL_HOST_API void __cuda_atomic_fetch_xor(
+  __cuda_atomic_host_backend,
+  _Type* __ptr,
+  __unv<_Type>& __dst,
+  __unv<_Type> __op,
+  memory_order __order,
+  _Operand,
+  __thread_scope_tag)
 {
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  return __atomic_fetch_or(__a, __pattern, __atomic_order_to_int(__order));
-}
-
-template <typename _Tp, typename _Td>
-inline remove_cv_t<_Tp> __atomic_fetch_xor_host(_Tp* __a, _Td __pattern, memory_order __order)
-{
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  return __atomic_fetch_xor(__a, __pattern, __atomic_order_to_int(__order));
-}
-
-template <typename _Tp, typename _Td>
-inline remove_cv_t<_Tp> __atomic_fetch_max_host(_Tp* __a, _Td __val, memory_order __order)
-{
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  auto __expected = __atomic_load_host(__a, memory_order_relaxed);
-  auto __desired  = __expected > __val ? __expected : __val;
-
-  while (__desired == __val && !__atomic_compare_exchange_strong_host(__a, &__expected, __desired, __order, __order))
-  {
-    __desired = __expected > __val ? __expected : __val;
-  }
-
-  return __expected;
-}
-
-template <typename _Tp, typename _Td>
-inline remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_order __order)
-{
-  _LIBCUDACXX_INT128_WARN(_Tp)
-  auto __expected = __atomic_load_host(__a, memory_order_relaxed);
-  auto __desired  = __expected < __val ? __expected : __val;
-
-  while (__desired == __val && !__atomic_compare_exchange_strong_host(__a, &__expected, __desired, __order, __order))
-  {
-    __desired = __expected < __val ? __expected : __val;
-  }
-
-  return __expected;
+  _LIBCUDACXX_INT128_WARN(_Type)
+  __dst = __atomic_fetch_xor(__ptr, __op, __atomic_order_to_int(__order));
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)

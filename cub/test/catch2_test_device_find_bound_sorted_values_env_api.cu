@@ -22,8 +22,8 @@ CUB_TEST("cub::DeviceFind::LowerBoundSortedValues accepts env with stream", "[fi
   thrust::device_vector<int> d_values = {0, 3, 4, 7};
   thrust::device_vector<int> d_output(4);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFind::LowerBoundSortedValues(
     d_range.begin(),
@@ -38,7 +38,7 @@ CUB_TEST("cub::DeviceFind::LowerBoundSortedValues accepts env with stream", "[fi
     std::cerr << "cub::DeviceFind::LowerBoundSortedValues failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected = {0, 2, 2, 4};
+  const thrust::device_vector<int> expected = {0, 2, 2, 4};
   // example-end lower-bound-sorted-values-env
   stream.sync();
 
@@ -53,8 +53,8 @@ CUB_TEST("cub::DeviceFind::UpperBoundSortedValues accepts env with stream", "[fi
   thrust::device_vector<int> d_values = {0, 3, 4, 7};
   thrust::device_vector<int> d_output(4);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceFind::UpperBoundSortedValues(
     d_range.begin(),
@@ -69,7 +69,7 @@ CUB_TEST("cub::DeviceFind::UpperBoundSortedValues accepts env with stream", "[fi
     std::cerr << "cub::DeviceFind::UpperBoundSortedValues failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected = {1, 2, 3, 4};
+  const thrust::device_vector<int> expected = {1, 2, 3, 4};
   // example-end upper-bound-sorted-values-env
   stream.sync();
 

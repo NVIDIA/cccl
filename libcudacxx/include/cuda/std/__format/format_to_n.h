@@ -52,7 +52,7 @@ class __fmt_format_to_n_buffer : __fmt_buffer_select_t<_OutIt, _CharT>
   __fmt_max_output_size __max_output_size_;
 
 public:
-  using _Base _CCCL_NODEBUG_ALIAS = __fmt_buffer_select_t<_OutIt, _CharT>;
+  using _Base _CCCL_NODEBUG = __fmt_buffer_select_t<_OutIt, _CharT>;
 
   _CCCL_HOST_DEVICE_API constexpr __fmt_format_to_n_buffer(_OutIt __out_it, iter_difference_t<_OutIt> __n)
       : _Base{::cuda::std::move(__out_it), &__max_output_size_}

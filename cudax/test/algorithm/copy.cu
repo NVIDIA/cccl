@@ -12,7 +12,7 @@
 
 C2H_TEST("1d Copy", "[data_manipulation]")
 {
-  cuda::stream _stream{cuda::device_ref{0}};
+  const cuda::stream _stream{cuda::device_ref{0}};
 
   SECTION("Device resource")
   {
@@ -133,7 +133,7 @@ void test_mdspan_copy_bytes(
 
 C2H_TEST("Mdspan copy", "[data_manipulation]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
 
   SECTION("Different extents")
   {
@@ -171,7 +171,7 @@ C2H_TEST("Mdspan copy", "[data_manipulation]")
 
 C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   {
     auto fake_strided_mdspan = create_fake_strided_mdspan();
 

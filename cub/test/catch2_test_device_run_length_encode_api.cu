@@ -19,7 +19,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode legacy size-query is unambiguous", "[run
   int* d_lengths  = nullptr;
   int* d_num_runs = nullptr;
   size_t bytes    = 0;
-  int n           = 0;
+  const int n     = 0;
 
   REQUIRE(cudaSuccess == cub::DeviceRunLengthEncode::Encode(nullptr, bytes, d_in, d_unique, d_lengths, d_num_runs, n));
 }
@@ -33,7 +33,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns legacy size-query is unambiguous
   int* d_lengths  = nullptr;
   int* d_num_runs = nullptr;
   size_t bytes    = 0;
-  int n           = 0;
+  const int n     = 0;
 
   REQUIRE(cudaSuccess
           == cub::DeviceRunLengthEncode::NonTrivialRuns(nullptr, bytes, d_in, d_offsets, d_lengths, d_num_runs, n));

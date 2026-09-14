@@ -168,14 +168,32 @@ cudax_add_catch2_test(test_target group.cooperative_algorithm
 cudax_add_catch2_test(test_target group.group
     group/group.cu
 )
+cudax_add_catch2_test(test_target group.group_stacking
+    group/group_stacking.cu
+)
+cudax_add_catch2_test(test_target group.virtual_group
+    group/virtual_group.cu
+)
+cudax_add_catch2_test(test_target group.virtual_group_stacking
+    group/virtual_group_stacking.cu
+)
+cudax_add_catch2_test(test_target group.group_view
+    group/group_view.cu
+)
 cudax_add_catch2_test(test_target group.make_this_group
     group/make_this_group.cu
+)
+cudax_add_catch2_test(test_target group.implicit_hierarchy
+    group/implicit_hierarchy.cu
 )
 cudax_add_catch2_test(test_target group.segmented_algorithm
     group/segmented_algorithm.cu
 )
 cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
+)
+cudax_add_catch2_test(test_target group.coalesced_group
+    group/coalesced_group.cu
 )
 cudax_add_catch2_test(test_target group.invoke_one
     group/invoke_one.cu

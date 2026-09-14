@@ -41,7 +41,7 @@ Each program thread is related to each other program thread by one or more threa
    - Each thread in the system is related to each other thread in the system by the *system* thread scope:
      ``thread_scope_system``.
    - Each GPU thread is related to each other GPU thread in the same CUDA device and within the same `memory
-     synchronization domain <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#memory-synchronization-domains>`__
+     synchronization domain <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/memory-sync-domains.html#memory-synchronization-domains>`__
      by the *device* thread scope: ``thread_scope_device``.
    - Each GPU thread is related to each other GPU thread in the same CUDA thread block by the *block* thread scope:
      ``thread_scope_block``.
@@ -61,19 +61,19 @@ An atomic operation is atomic at the scope it specifies if:
    - it specifies a scope other than ``thread_scope_system``, **or**
    - the scope is ``thread_scope_system`` and:
 
-      -  it affects an object in `system allocated memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__ and `pageableMemoryAccess <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg49e2f8c2c0bd6fe264f2fc970912e5cddc80992427a92713e699953a6d249d6f>`__ is ``1`` [0],  **or**
+      -  it affects an object in `system allocated memory <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#unified-memory>`__ and `pageableMemoryAccess <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg49e2f8c2c0bd6fe264f2fc970912e5cddc80992427a92713e699953a6d249d6f>`__ is ``1`` [0],  **or**
       -  it affects an object in `managed
-         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__
+         memory <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#unified-memory>`__
          and
          `concurrentManagedAccess <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_116f9619ccc85e93bc456b8c69c80e78b>`__
          is ``1``, **or**
       -  it affects an object in `mapped
-         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ and
+         memory <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/understanding-memory.html#mapped-memory>`__ and
          `hostNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f>`__
          is ``1``, **or**
       -  it is a load or store that affects a naturally-aligned object of
          sizes ``1``, ``2``, ``4``, ``8``, or ``16`` bytes on `mapped
-         memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ [1],
+         memory <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/understanding-memory.html#mapped-memory>`__ [1],
          **or**
       -  it affects an object in GPU memory, only GPU threads access it, and
           - `*val` returned from `cudaDeviceGetP2PAttribute(&val, cudaDevP2PAttrNativeAtomicSupported, srcDev, dstDev) <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1g2f597e2acceab33f60bd61c41fea0c1b>`__ between each accessing `srcDev` and the GPU where the object resides, `dstDev`, is ``1``, or
@@ -83,16 +83,16 @@ An atomic operation is atomic at the scope it specifies if:
    - [0] If `PageableMemoryAccessUsesHostPagetables <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html#group__CUDART__TYPES_1gg49e2f8c2c0bd6fe264f2fc970912e5cdc228cf8983c97d0e035da72a71494eaa>`__ is ``0`` then atomic operations to memory mapped file or ``hugetlbfs`` allocations are not atomic.
    - [1] If `hostNativeAtomicSupported <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f>`__ is ``0``, atomic load or store operations at system scope that affect a
      naturally-aligned 16-byte wide object in
-     `unified memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__ or
-     `mapped memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__ require system
+     `unified memory <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#unified-memory>`__ or
+     `mapped memory <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/understanding-memory.html#mapped-memory>`__ require system
      support. NVIDIA is not aware of any system that lacks this support and there is no CUDA API query available to
      detect such systems.
 
-Refer to the `CUDA programming guide <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html>`__
+Refer to the `CUDA programming guide <https://docs.nvidia.com/cuda/cuda-programming-guide/index.html>`__
 for more information on
-`system allocated memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__,
-`managed memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#um-unified-memory-programming-hd>`__,
-`mapped memory <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#mapped-memory>`__,
+`system allocated memory <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#unified-memory>`__,
+`managed memory <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#unified-memory>`__,
+`mapped memory <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/understanding-memory.html#mapped-memory>`__,
 CPU memory, and GPU memory.
 
 Data Races

@@ -42,7 +42,7 @@ int main()
   // allocate memory for input mesh representation
   thrust::device_vector<vec2> input(9);
 
-  thrust::host_vector<vec2> h_input{
+  const thrust::host_vector<vec2> h_input{
     vec2(0, 0),
     vec2(1, 0),
     vec2(0, 1), // First Triangle

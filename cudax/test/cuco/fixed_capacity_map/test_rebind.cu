@@ -169,7 +169,7 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   constexpr int threads          = 128;
   constexpr int keys_per_block   = threads / cg_size;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   const probing_type probing_scheme = [&] {
@@ -255,7 +255,7 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
   constexpr int offset   = 1000;
   constexpr int threads  = 128;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
   map_type map{stream, mr, cudax::cuco::empty_key{-1}, cudax::cuco::empty_value{-1}};
 

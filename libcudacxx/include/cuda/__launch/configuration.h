@@ -446,7 +446,7 @@ dynamic_shared_memory(::cuda::std::size_t __n, non_portable_t) noexcept
  * This launch option causes the launched grid to be scheduled with the
  * specified priority. More about stream priorities and valid values can be
  * found in the CUDA programming guide `here
- * <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>`_
+ * <https://docs.nvidia.com/cuda/cuda-programming-guide/03-advanced/advanced-host-programming.html#stream-priorities>`_
  */
 struct launch_priority : public __detail::launch_option
 {
@@ -716,7 +716,7 @@ template <typename BottomUnit, typename... Levels, typename... Opts>
 template <int _ThreadsPerBlock>
 constexpr auto distribute(int numElements) noexcept
 {
-  int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
+  const int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
   return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
 }
 
@@ -778,7 +778,7 @@ template <typename Dimensions, typename... Options>
 {
   return ::cuda::std::apply(
     [&](auto&... config_options) {
-      cudaError_t __status = cudaSuccess;
+      cudaError_t __status = cudaSuccess; // NOLINT(misc-const-correctness)
 
       // Use short-cutting && to skip the rest on error, is this too
       // convoluted?

@@ -91,7 +91,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    ::cudaError_t __status = ::cuda::__driver::__eventQueryNoThrow(__event_);
+    const ::cudaError_t __status = ::cuda::__driver::__eventQueryNoThrow(__event_);
     if (__status == ::cudaSuccess)
     {
       return true;

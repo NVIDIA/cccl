@@ -115,7 +115,7 @@ struct dropout_pred
   __host__ __device__ bool operator()(cuda::std::size_t seed) const noexcept
   {
     Rng rng;
-    thrust::uniform_real_distribution<double> dist{0.0, 1.0};
+    thrust::uniform_real_distribution<double> dist{0.0, 1.0}; // NOLINT(misc-const-correctness)
     rng.seed(seed);
     return dist(rng) > keep_prob;
   }
@@ -235,7 +235,7 @@ public:
     if (keep_prob < 1.0)
     {
       const auto num_keys = static_cast<cuda::std::size_t>(cuda::std::distance(begin, end));
-      cuda::counting_iterator<cuda::std::size_t> seeds{static_cast<cuda::std::size_t>(rng())};
+      const cuda::counting_iterator<cuda::std::size_t> seeds{static_cast<cuda::std::size_t>(rng())};
 
       thrust::transform_if(
         exec_policy,

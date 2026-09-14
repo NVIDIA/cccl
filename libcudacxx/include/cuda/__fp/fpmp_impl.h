@@ -440,6 +440,69 @@ template <typename _Tp>
 inline constexpr bool __fpmp2_is_supported_fp_v = __fpmp2_is_fp32_v<_Tp> || __fpmp2_is_fp64_v<_Tp>;
 
 /*
+// Floating-point sources that reach the single-limb constructor of an fpmp2 with element
+// type _Fp without losing anything: _Fp itself, and float widening into a double-based
+// pair. double into a float pair is not in the set, because it generally needs the low
+// limb to be represented. Such a source must not be reachable through an implicit
+// conversion sequence, or the compiler can pick the single-limb constructor and drop the
+// low part with no diagnostic; it is routed to the _CCCL_FPMP_EXPLICIT constructor
+// instead, which populates both limbs.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_lossless_fp_v =
+  ::cuda::std::is_same_v<_Tp, _Fp> || (__fpmp2_is_fp32_v<_Tp> && __fpmp2_is_fp64_v<_Fp>);
+
+// Significand bits of one limb, counting the implicit leading bit.
+template <typename _Fp>
+inline constexpr int __fpmp2_mantissa_bits_v = __fpmp2_is_fp32_v<_Fp> ? 24 : 53;
+
+/*
+// Value bits of an integer type, i.e. excluding the sign, or -1 if _Tp is not one of the
+// standard integer types. The specialization exists because __num_bits_v answers with a
+// static_assert rather than by SFINAE, so naming it for a class type is a hard error; the
+// constraints below combine this with other predicates in a single constant expression,
+// which instantiates every operand regardless of short-circuiting. Dispatching on
+// __cccl_is_integer_v keeps __num_bits_v out of the non-integer case entirely.
+*/
+template <typename _Tp, bool = ::cuda::std::__cccl_is_integer_v<_Tp>>
+inline constexpr int __fpmp2_int_value_bits_v = -1;
+
+template <typename _Tp>
+inline constexpr int __fpmp2_int_value_bits_v<_Tp, true> =
+  static_cast<int>(::cuda::std::__num_bits_v<_Tp>) - static_cast<int>(::cuda::std::is_signed_v<_Tp>);
+
+/*
+// Integer sources that one limb already represents exactly for every value of the type:
+// int32_t and narrower into a double limb, int16_t and narrower into a float limb. The
+// low limb is provably zero, so these take the single-component constructor, which just
+// converts and zeroes lo. Routing them through the two-limb integer constructor instead
+// would be equally correct but would emit a residual computation that always yields zero
+// (4 extra PTX instructions for `fp64mp2 acc = 0;`).
+//
+// Restricted to __cccl_is_integer_v (via __fpmp2_int_value_bits_v, which reports -1 for
+// everything else) so that bool and the character types stay out of the single-component
+// constructor's constraint: they have their own delegating constructor, and letting both
+// apply would make `fpmp2 x = 'a'` ambiguous. They reach this path anyway, one hop later,
+// once that delegate has widened them to a fixed-width integer.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_int_fits_limb_v =
+  __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= __fpmp2_mantissa_bits_v<_Fp>;
+
+/*
+// Integer sources that the fpmp2 pair represents exactly for every value of the type.
+// The two limbs cover twice the significand of one, so the pair holds any integer up to
+// 2 * __fpmp2_mantissa_bits_v bits: 48 for a float pair (int32_t and narrower) and 106
+// for a double pair (every standard integer type, up to uint64_t). Unlike the narrowing
+// floating-point case, these lose nothing, so they are allowed implicitly: the ones that
+// need both limbs go to the accurate integer constructor, the rest to the cheap one.
+// Wider integers (int64_t into a float pair, __int128) are excluded and stay explicit.
+*/
+template <typename _Tp, typename _Fp>
+inline constexpr bool __fpmp2_is_lossless_int_v =
+  __fpmp2_int_value_bits_v<_Tp> >= 0 && __fpmp2_int_value_bits_v<_Tp> <= 2 * __fpmp2_mantissa_bits_v<_Fp>;
+
+/*
 // Internal basic arith operations
 // dispatched to the appropriate built-in for host and device
 // if not available, use the appropriate fallback
@@ -686,7 +749,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_add_rz(double __x, double __y) noexc
                       {
                         return __sum;
                       }
-                      double __error = fma(-1.0, __sum, __x) + __y;
+                      double __error = ::cuda::std::fma(-1.0, __sum, __x) + __y;
                       if (__error == 0.0)
                       {
                         return __sum;
@@ -712,7 +775,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_mul_rn(double __x, double __y) noexc
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_fma_rn(double __x, double __y, double __z) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fma_rn(__x, __y, __z);), (return fma(__x, __y, __z);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fma_rn(__x, __y, __z);), (return ::cuda::std::fma(__x, __y, __z);))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rcp_rn(double __x) noexcept
 {
@@ -720,7 +783,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rcp_rn(double __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API double __fpmp_rsqrt_rn(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return rsqrt(__x);), (return 1.0 / sqrt(__x);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);), (return 1.0 / ::cuda::std::sqrt(__x);))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(double __x) noexcept
 {
@@ -728,7 +791,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(double __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(double __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__double2int_rn(__x);), (return static_cast<int32_t>(round(__x));))
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE, (return ::__double2int_rn(__x);), (return static_cast<int32_t>(::cuda::std::round(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(double __x) noexcept
 {

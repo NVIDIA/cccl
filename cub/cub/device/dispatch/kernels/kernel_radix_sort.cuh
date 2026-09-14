@@ -421,7 +421,7 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
   {
-    int item_offset = ITEM * BLOCK_THREADS + threadIdx.x;
+    const int item_offset = ITEM * BLOCK_THREADS + threadIdx.x;
     if (item_offset < num_items)
     {
       d_keys_out[item_offset] = keys[ITEM];
@@ -576,12 +576,12 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_
 
   // load the bins
   OffsetT bins[BINS_PER_THREAD];
-  int bin_start = blockIdx.x * RADIX_DIGITS;
+  const int bin_start = blockIdx.x * RADIX_DIGITS;
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int u = 0; u < BINS_PER_THREAD; ++u)
   {
-    int bin = threadIdx.x * BINS_PER_THREAD + u;
+    const int bin = threadIdx.x * BINS_PER_THREAD + u;
     if (bin >= RADIX_DIGITS)
     {
       break;
@@ -596,7 +596,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int u = 0; u < BINS_PER_THREAD; ++u)
   {
-    int bin = threadIdx.x * BINS_PER_THREAD + u;
+    const int bin = threadIdx.x * BINS_PER_THREAD + u;
     if (bin >= RADIX_DIGITS)
     {
       break;

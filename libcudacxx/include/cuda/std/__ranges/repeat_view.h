@@ -61,7 +61,7 @@ _CCCL_CONCEPT __integer_like_with_usable_difference_type =
   __signed_integer_like<_Tp> || (__integer_like<_Tp> && weakly_incrementable<_Tp>);
 
 template <class _Tp>
-using __repeat_view_iterator_difference_t _CCCL_NODEBUG_ALIAS = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
+using __repeat_view_iterator_difference_t _CCCL_NODEBUG = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp, semiregular _Bound = unreachable_sentinel_t>
@@ -86,7 +86,7 @@ public:
   {
     friend class repeat_view;
 
-    using _IndexT _CCCL_NODEBUG_ALIAS = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
+    using _IndexT _CCCL_NODEBUG = conditional_t<same_as<_Bound, unreachable_sentinel_t>, ptrdiff_t, _Bound>;
 
     _CCCL_API constexpr explicit __iterator(const _Tp* __value, _IndexT __bound_sentinel = _IndexT()) noexcept(
       is_nothrow_copy_constructible_v<_IndexT>)
