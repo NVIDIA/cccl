@@ -226,7 +226,7 @@ Checks:
   - '-bugprone-std-exception-baseclass'
   - '-modernize-avoid-variadic-functions'
   - '-modernize-type-traits'
-  - '-bugprone-random-generator-seed,-cert-msc32-c'
+  - '-bugprone-random-generator-seed,-cert-msc32-c,-cert-msc51-cpp'
   - '-bugprone-command-processor,-cert-env33-c'
 
   # TODO: ironically enough, enable this someday
