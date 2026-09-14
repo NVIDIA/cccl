@@ -41,8 +41,6 @@ pytestmark = [
 _BLOCK_THREADS = 128
 _WARP_THREADS = 32
 _LOGICAL_WARP_THREADS = 8
-_WARPS_PER_MAPPED_GROUP = 2
-_MAPPED_GROUP_THREADS = _WARPS_PER_MAPPED_GROUP * _WARP_THREADS
 _ITEMS_PER_THREAD = 2
 _STATIC_BLOCK_VALID = 73
 _RUNTIME_WARP_VALID = 19
@@ -91,16 +89,19 @@ def _hierarchy_scalar_reductions(source, observed):
     )
 
 
-@cuda.jit
-def _mapped_scalar_reductions(source, observed):
-    thread = cuda.threadIdx.x
-    value = source[thread]
-    mapped_warps = root_coop.this_block().group_by(_WARPS_PER_MAPPED_GROUP)
+def _mapped_scalar_reductions(warps_per_group):
+    @cuda.jit
+    def kernel(source, observed):
+        thread = cuda.threadIdx.x
+        value = source[thread]
+        mapped_warps = root_coop.this_block().group_by(warps_per_group)
 
-    observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(mapped_warps, value)
-    observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
-        qualified_coop.this_block().group_by(_WARPS_PER_MAPPED_GROUP), value
-    )
+        observed[0 * _BLOCK_THREADS + thread] = root_coop.sum(mapped_warps, value)
+        observed[1 * _BLOCK_THREADS + thread] = qualified_coop.sum(
+            qualified_coop.this_block().group_by(warps_per_group), value
+        )
+
+    return kernel
 
 
 def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions():
@@ -139,13 +140,8 @@ def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions():
     )
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason="Mapped-Warp Reduce requires scratch isolation from "
-    "https://github.com/NVIDIA/cccl/pull/10985",
-)
-def test_both_namespaces_cover_mapped_warp_scalar_reductions():
+@pytest.mark.parametrize("warps_per_group", (1, 2))
+def test_both_namespaces_cover_mapped_warp_scalar_reductions(warps_per_group):
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
     observed = np.full(
         _MAPPED_RESULT_ROWS * _BLOCK_THREADS,
@@ -153,12 +149,14 @@ def test_both_namespaces_cover_mapped_warp_scalar_reductions():
         dtype=np.int32,
     )
 
-    _mapped_scalar_reductions[1, _BLOCK_THREADS](source, observed)
+    kernel = _mapped_scalar_reductions(warps_per_group)
+    kernel[1, _BLOCK_THREADS](source, observed)
 
+    group_threads = warps_per_group * _WARP_THREADS
     expected = np.stack(
         (
-            _broadcast_grouped_sum(source, _MAPPED_GROUP_THREADS),
-            _broadcast_grouped_sum(source, _MAPPED_GROUP_THREADS),
+            _broadcast_grouped_sum(source, group_threads),
+            _broadcast_grouped_sum(source, group_threads),
         )
     )
     np.testing.assert_array_equal(
@@ -546,11 +544,11 @@ import numpy as np
 import numba_cuda_mlir.cuda as cuda
 from pathlib import Path
 
-import cuda.coop.numba_mlir as _coop_numba_mlir
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as root_coop
 
 expected_origin = Path({str(_QUALIFIED_COOP_ORIGIN)!r})
-actual_origin = Path(_coop_numba_mlir.__file__).resolve()
+actual_origin = Path(numba_coop.__file__).resolve()
 if actual_origin != expected_origin:
     raise RuntimeError(
         f"trap probe imported cuda.coop from {{actual_origin}}, "
