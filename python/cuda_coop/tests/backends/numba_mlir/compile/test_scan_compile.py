@@ -669,3 +669,35 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers()
     assert result.metadata["cubin"]
     # One trailing reuse barrier per inlined storage-consuming call.
     assert result.metadata["mlir_module_str"].count("gpu.barrier") == 2
+
+
+def test_collective_inside_standalone_scan_callback_has_clear_diagnostic():
+    from numba_cuda_mlir.numba_cuda.core.errors import TypingError
+
+    import cuda.coop.numba_mlir as coop
+    from cuda.coop.numba_mlir._compiler._group_planner_support import GroupRewriteError
+
+    @cuda.jit(device=True)
+    def collective_prefix(aggregate):
+        return coop.inclusive_sum(coop.this_block(), aggregate)
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        thread = cuda.threadIdx.x
+        destination[thread] = coop.exclusive_sum(
+            coop.this_block(), source[thread], prefix_op=collective_prefix
+        )
+
+    key = (
+        ("grid", (1, 1, 1)),
+        ("block", (_BLOCK_THREADS, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    with pytest.raises(
+        (GroupRewriteError, TypingError),
+        match="collective_prefix.*must be inlined.*standalone callbacks",
+    ):
+        kernel._compile_launch_config_signature(
+            types.void(types.int32[::1], types.int32[::1]), key
+        )
