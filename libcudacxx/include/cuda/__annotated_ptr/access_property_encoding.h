@@ -26,11 +26,11 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h> // IWYU pragma: keep
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cstddef/types.h> // IWYU pragma: keep
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/saturating_sub.h>
 #include <cuda/std/__utility/to_underlying.h>
-#include <cuda/std/cstddef> // IWYU pragma: keep
-#include <cuda/std/cstdint> // IWYU pragma: keep
-#include <cuda/std/limits> // IWYU pragma: keep
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

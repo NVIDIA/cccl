@@ -11,7 +11,7 @@
 #ifndef _CUDA___BIT_BITMASK_H
 #define _CUDA___BIT_BITMASK_H
 
-#include <cuda/std/detail/__config> // IWYU pragma: keep
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
