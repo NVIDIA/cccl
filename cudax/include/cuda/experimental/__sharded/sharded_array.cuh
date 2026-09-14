@@ -672,28 +672,12 @@ public:
       }
       if (!event)
       {
-        int device                             = -1;
-        cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
-        if (stream)
-        {
-          cuda_safe_call(cudaStreamIsCapturing(stream, &capture_status));
-        }
-        if (stream && capture_status == cudaStreamCaptureStatusNone)
-        {
-          // stream_ref::device() is version-portable (cudaStreamGetDevice
-          // itself requires CUDA 12.8+); green-context streams report their
-          // underlying device, which is exactly the event-pool key we want.
-          device = ::cuda::stream_ref{stream}.device().get();
-        }
-        else
-        {
-          // Under capture, querying a stream's device is not permitted on
-          // every driver (CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED); the event
-          // recorded on a capturing stream only becomes a graph dependency
-          // node, so the current device is the right home for it.
-          cuda_safe_call(cudaGetDevice(&device));
-        }
-        event = fork_join_events_.fork_event(device);
+        // The fork event must live on the caller stream's device; the query
+        // is capture-safe on CTK >= 12.8 (see get_device_from_stream), and
+        // green-context streams report their underlying device, which is
+        // exactly the event-pool key we want. Same path as sharded_csr.
+        const int device = places::get_device_from_stream(stream);
+        event            = fork_join_events_.fork_event(device);
         cuda_safe_call(cudaEventRecord(event, stream));
       }
       cuda_safe_call(cudaStreamWaitEvent(s.stream, event, 0));
