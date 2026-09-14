@@ -343,7 +343,6 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
   }
 }
 
-//! @brief Default memory pool for @p __location, with an unlimited release threshold applied.
 [[nodiscard]] _CCCL_HOST_API inline ::cudaMemPool_t __get_default_memory_pool(
   const ::CUmemLocation __location, [[maybe_unused]] const ::CUmemAllocationType __allocation_type)
 {
