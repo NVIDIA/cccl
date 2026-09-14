@@ -94,10 +94,7 @@ _CCCL_HOST_API void __scan_generic(
   const char* what)
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) != num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": environment count does not match shard count");
-  }
+  reserved::__check_env_count(envs, num_shards, what);
   if (num_shards == 0)
   {
     return;

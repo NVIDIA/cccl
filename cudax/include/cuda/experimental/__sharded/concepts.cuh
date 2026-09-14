@@ -126,6 +126,19 @@ template <class _S>
 {
   return static_cast<::std::size_t>(__s.num_shards());
 }
+
+//! @brief Entry guard shared by every algorithm: a `sharded_env_range` must
+//! carry exactly one environment per shard. Extra environments are refused
+//! too, since they almost always mean a mismatched view/envs pairing.
+//! @throws std::invalid_argument prefixed with @p __what.
+template <class _Envs>
+void __check_env_count(const _Envs& __envs, ::std::size_t __num_shards, const char* __what)
+{
+  if (__env_count(__envs) != __num_shards)
+  {
+    _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": environment count does not match shard count");
+  }
+}
 } // namespace reserved
 
 template <class _Tp>

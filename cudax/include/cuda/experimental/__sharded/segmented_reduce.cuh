@@ -298,10 +298,7 @@ _CCCL_HOST_API void segmented_reduce(
     // are decided), then a small stream-ordered read-back on each lane.
     require_sync_allowed(call_env, "sharded::segmented_reduce");
     places::check_not_capturing(nullptr, "sharded::segmented_reduce");
-    if (reserved::__env_count(envs) != num_shards)
-    {
-      _CCCL_THROW(::std::invalid_argument, "sharded::segmented_reduce: environment count does not match shard count");
-    }
+    reserved::__check_env_count(envs, num_shards, "sharded::segmented_reduce");
     for (::std::size_t g = 0; g < num_shards; g++)
     {
       places::check_not_capturing(::cuda::get_stream(envs[g]).get(), "sharded::segmented_reduce");

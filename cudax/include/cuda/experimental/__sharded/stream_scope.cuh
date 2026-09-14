@@ -166,10 +166,7 @@ _CCCL_HOST_API void
 __generic_map(_S&& __data, const _Envs& __envs, const _CallEnv& __call_env, const char* __what, _PerShard __body)
 {
   const ::std::size_t __num_shards = reserved::__shard_count(__data);
-  if (reserved::__env_count(__envs) != __num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, ::std::string(__what) + ": environment count does not match shard count");
-  }
+  reserved::__check_env_count(__envs, __num_shards, __what);
 
   constexpr bool __is_async         = async_call_env<_CallEnv>;
   [[maybe_unused]] bool __bracketed = false;

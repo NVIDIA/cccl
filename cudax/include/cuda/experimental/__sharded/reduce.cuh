@@ -105,10 +105,7 @@ _CCCL_REQUIRES(
 reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) != num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::reduce: environment count does not match shard count");
-  }
+  reserved::__check_env_count(envs, num_shards, "sharded::reduce");
   if (num_shards == 0)
   {
     return init_value;
@@ -346,10 +343,7 @@ _CCCL_HOST_API void reduce_into(
   const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) != num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: environment count does not match shard count");
-  }
+  reserved::__check_env_count(envs, num_shards, "sharded::reduce_into");
   if (num_shards > reserved::__max_fold_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: more than 64 shards not supported");
@@ -484,10 +478,7 @@ _CCCL_HOST_API void
 reduce_into_lanes(const _S& data, const _Envs& envs, _OutIt outs, _ReduceOp reduce_op, _Tp init_value)
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) != num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into_lanes: environment count does not match shard count");
-  }
+  reserved::__check_env_count(envs, num_shards, "sharded::reduce_into_lanes");
   if (num_shards > reserved::__max_fold_shards)
   {
     _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into_lanes: more than 64 shards not supported");

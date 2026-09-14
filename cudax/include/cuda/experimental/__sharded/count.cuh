@@ -98,10 +98,7 @@ count_if(const _S& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env
 {
   using elem_t                   = view_element_t<_S>;
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) != num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, "sharded::count_if: environment count does not match shard count");
-  }
+  reserved::__check_env_count(envs, num_shards, "sharded::count_if");
   if (num_shards == 0)
   {
     return 0;

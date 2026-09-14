@@ -108,10 +108,7 @@ __copy_if_generic(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call
 {
   using count_type               = ::cuda::std::int64_t;
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) != num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": environment count does not match shard count");
-  }
+  reserved::__check_env_count(envs, num_shards, what);
   if (num_shards == 0)
   {
     return 0;
@@ -244,10 +241,7 @@ template <class _SIn, class _SOut, class _Envs, class _Pred, class _CallEnv>
   {
     _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": src/dst shard count mismatch");
   }
-  if (reserved::__env_count(envs) != num_shards)
-  {
-    _CCCL_THROW(::std::invalid_argument, ::std::string(what) + ": environment count does not match shard count");
-  }
+  reserved::__check_env_count(envs, num_shards, what);
   if (num_shards == 0)
   {
     return 0;
