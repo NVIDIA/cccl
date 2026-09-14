@@ -50,7 +50,9 @@ class JsonCache:
     def get_bench(self, algname):
         if algname not in self.bench_cache:
             result = self.get_jsonlist(algname, "benches")
-            self.bench_cache[algname] = json.loads(result)
+            self.bench_cache[algname] = (
+                json.loads(result) if result.strip() else {"benchmarks": []}
+            )
         return self.bench_cache[algname]
 
     def get_device(self, algname):
@@ -817,7 +819,16 @@ class Bench:
         if not self.build():
             raise Exception("Unable to build benchmark: " + self.label())
 
-        return values_to_space(first_val(self.axes_values(sub_space, True)))
+        ct_axes_values = self.axes_values(sub_space, True)
+        if not ct_axes_values:
+            Logger().info(
+                "skipping {} because the executable registered no benchmarks".format(
+                    self.algname
+                )
+            )
+            return []
+
+        return values_to_space(first_val(ct_axes_values))
 
     def rt_axes_values(self, sub_space):
         if not self.build():
