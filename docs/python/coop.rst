@@ -323,12 +323,60 @@ shared-memory allocation, storage pointer, or synchronization barrier. An
 explicit descriptor, including an unsized descriptor, is validated as
 compile-time vocabulary but does not change DIRECT code generation.
 Construct ``TempStorage`` inside the kernel; the current Numba-CUDA-MLIR
-frontend does not resolve module-global storage descriptors.
+frontend does not resolve module-global storage descriptors. A descriptor may
+be passed to a device function that Numba-CUDA-MLIR inlines into the kernel,
+which is the default, but it cannot cross into a separately compiled device
+function.
 
 The backend retains generic planning for future registered providers that do
 declare a leading storage-pointer ABI. For those providers, capacity,
 alignment, shared or exclusive ownership, reuse synchronization, and static or
 dynamic shared-memory limits are validated from the concrete lowering plan.
+Sharing selects only the slice layout: ``sharing="shared"`` overlaps every call
+that passes the same descriptor on one region, while ``sharing="exclusive"``
+gives each call site its own slice. A call site inside a loop reuses its slice
+under either layout, so ``auto_sync`` is independent of ``sharing`` and
+defaults to ``True`` for both.
+
+The synchronization model is deliberately simple. A descriptor names one
+region; distinct descriptors and compiler-owned storage never alias each
+other. With ``auto_sync`` enabled, which is the default, the compiler appends
+``cuda.syncthreads()`` for block groups or ``cuda.syncwarp(mask)`` for Warp
+groups immediately after every call that consumes the storage, including the
+last one, and never inserts a barrier before a call. That trailing barrier
+exists only to order reuse of the temporary storage; it is not a general
+barrier for the kernel's own shared-memory traffic and disappears when
+``auto_sync=False``. With ``auto_sync=False`` the caller issues
+``cuda.syncthreads()`` between consecutive uses of the descriptor, and a call
+site inside a loop counts as a reuse on every iteration. Compiler-owned storage
+always synchronizes.
+
+The compiler stages every descriptor and every compiler-owned requirement of a
+kernel into one shared-memory backing. When that backing exceeds the 48 KiB
+static limit, through an explicit ``size_in_bytes`` or through large implicit
+requirements, it moves to dynamic shared memory and the launch reserves the
+exact byte count. Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
+allocations reliably. A kernel using cooperative temporary storage must not
+also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
+cooperative backing becomes dynamic, user static shared arrays are also
+unsupported. Keep both user arrays and cooperative backing static, or move the
+user data out of shared memory. Storage-free operations do not add this
+restriction.
+
+With ``auto_sync=False``, a descriptor must originate from exactly one
+constructor site. Selecting between multiple manual-sync constructors is an
+MVP restriction: the compiler cannot prove that caller barriers protect the
+merged region, even when a particular program supplies sufficient barriers.
+
+Cooperative calls in device helpers must be inlined into the kernel; use
+``@cuda.jit(device=True, inline="always")`` when selecting the helper's
+policy explicitly. Standalone collective helpers and collectives inside
+standalone callbacks are unsupported. For the MVP, ``literal_unroll``
+values cannot determine cooperative payload extents, group dimensions,
+selectors, or descriptor constructor arguments. Write separate calls with
+explicit constants, or use an ordinary loop with one fixed cooperative shape.
+An unrelated ``literal_unroll`` loop does not add this restriction.
+
 
 Compilation and headers
 -----------------------

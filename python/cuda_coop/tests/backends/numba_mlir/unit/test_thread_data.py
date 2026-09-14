@@ -132,7 +132,9 @@ def test_temp_storage_uses_canonical_defaults_and_normalization():
     assert shared.sharing == "shared"
     assert shared.auto_sync is True
     assert exclusive.sharing == "exclusive"
-    assert exclusive.auto_sync is False
+    assert exclusive.auto_sync is True
+    assert coop.TempStorage(sharing="exclusive", auto_sync=True).auto_sync is True
+    assert coop.TempStorage(sharing="exclusive", auto_sync=False).auto_sync is False
 
 
 def test_temp_storage_rejects_string_enum_sharing():
@@ -172,11 +174,6 @@ def test_temp_storage_rejects_string_enum_sharing():
             {"sharing": 1},
             TypeError,
             "TempStorage sharing must be a string",
-        ),
-        (
-            {"sharing": "exclusive", "auto_sync": True},
-            ValueError,
-            "sharing='exclusive'.*auto_sync=True",
         ),
     ],
 )

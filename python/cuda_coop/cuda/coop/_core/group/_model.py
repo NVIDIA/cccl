@@ -454,8 +454,6 @@ class TempStorageContract:
                 not isinstance(value, int) or isinstance(value, bool) or value <= 0
             ):
                 raise ValueError(f"{name} must be a positive integer or None")
-        if self.sharing == "exclusive" and self.auto_sync:
-            raise ValueError("exclusive storage cannot request automatic sync")
 
 
 @dataclass(frozen=True)
