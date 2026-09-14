@@ -37,21 +37,23 @@ template <typename T>
 }
 
 template <typename T>
-void gen_into_device_buffer(cuda::stream_ref stream, seed_t seed, cuda::device_buffer<T>& d_items, T min, T max)
+void gen_into_device_buffer(seed_t seed, cuda::device_buffer<T>& d_items, T min, T max)
 {
-  ::c2h::detail::gen_values_between(stream, seed, d_items.first(d_items.size()), min, max);
+  ::c2h::detail::gen_values_between(d_items.stream(), seed, d_items.first(d_items.size()), min, max);
 }
 
 template <template <typename> class... Ps>
 void gen_into_device_buffer(
-  cuda::stream_ref stream,
-  seed_t seed,
-  cuda::device_buffer<custom_type_t<Ps...>>& d_items,
-  custom_type_t<Ps...> min,
-  custom_type_t<Ps...> max)
+  seed_t seed, cuda::device_buffer<custom_type_t<Ps...>>& d_items, custom_type_t<Ps...> min, custom_type_t<Ps...> max)
 {
   ::c2h::detail::gen_custom_type_state(
-    stream, seed, reinterpret_cast<char*>(d_items.data()), min, max, d_items.size(), sizeof(custom_type_t<Ps...>));
+    d_items.stream(),
+    seed,
+    reinterpret_cast<char*>(d_items.data()),
+    min,
+    max,
+    d_items.size(),
+    sizeof(custom_type_t<Ps...>));
 }
 } // namespace detail
 
@@ -83,7 +85,7 @@ template <typename T>
   const ::c2h::detail::scoped_current_device device_scope{device.get()};
 
   auto d_items = ::c2h::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
-  ::c2h::detail::gen_into_device_buffer(stream, seed, d_items, min, max);
+  ::c2h::detail::gen_into_device_buffer(seed, d_items, min, max);
 
   return d_items;
 }
