@@ -139,12 +139,6 @@ def test_both_namespaces_cover_thread_warp_and_block_scalar_reductions():
     )
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason="Mapped-Warp Reduce requires scratch isolation from "
-    "https://github.com/NVIDIA/cccl/pull/10985",
-)
 def test_both_namespaces_cover_mapped_warp_scalar_reductions():
     source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
     observed = np.full(
