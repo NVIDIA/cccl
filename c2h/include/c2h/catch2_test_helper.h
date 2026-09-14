@@ -7,6 +7,7 @@
 
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -21,6 +22,8 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+
+#include <cuda_runtime_api.h>
 
 #include <c2h/catch2_main.h>
 #include <c2h/catch2_test_macros.h>
@@ -46,6 +49,14 @@
 
 namespace c2h
 {
+//! @brief Returns a reference to the current CUDA device.
+[[nodiscard]] _CCCL_HOST_API inline cuda::device_ref current_test_device()
+{
+  int device_id{};
+  REQUIRE_CUDART(cudaGetDevice(&device_id));
+  return cuda::device_ref{device_id};
+}
+
 template <typename... Ts>
 using type_list = ::cuda::std::__type_list<Ts...>;
 

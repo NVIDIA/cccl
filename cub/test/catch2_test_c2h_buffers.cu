@@ -75,10 +75,7 @@ CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buf
 {
   STATIC_REQUIRE(cuda::mr::synchronous_resource_with<c2h::checked_device_memory_resource, cuda::mr::device_accessible>);
 
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-
-  const auto device = cuda::device_ref{device_id};
+  const auto device = c2h::current_test_device();
   const cuda::stream stream{device};
 
   REQUIRE_THROWS_AS(c2h::make_device_buffer<char>(stream, device, get_alloc_bytes(), cuda::no_init), std::bad_alloc);
@@ -108,10 +105,7 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
   STATIC_REQUIRE(
     cuda::mr::synchronous_resource_with<c2h::checked_host_buffer_memory_resource, cuda::mr::host_accessible>);
 
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-
-  const auto device = cuda::device_ref{device_id};
+  const auto device = c2h::current_test_device();
   const cuda::stream stream{device};
 
   constexpr std::size_t num_items = 256;
@@ -147,20 +141,14 @@ CUB_TEST("c2h random generator handles zero items", "[c2h][buffers][generators]"
     REQUIRE(random_data.data() == nullptr);
   }
 
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-
-  const cuda::stream stream{cuda::device_ref{device_id}};
+  const cuda::stream stream{c2h::current_test_device()};
   const auto random_data = c2h::detail::prepare_random_data(stream, seed, 0);
   REQUIRE(random_data.data() == nullptr);
 }
 
 CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][generators]", CUB_SMALL)
 {
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-
-  const auto device = cuda::device_ref{device_id};
+  const auto device = c2h::current_test_device();
   const cuda::stream stream{device};
 
   constexpr std::size_t num_items = 256;
@@ -200,10 +188,7 @@ CUB_TEST("c2h random generator supports the legacy default stream", "[c2h][buffe
 
 CUB_TEST("c2h random generator isolates in-flight streams", "[c2h][buffers][generators][streams]", CUB_SMALL)
 {
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-
-  const auto device = cuda::device_ref{device_id};
+  const auto device = c2h::current_test_device();
   const cuda::stream first_stream{device};
   const cuda::stream second_stream{device};
 
@@ -237,10 +222,8 @@ CUB_TEST("c2h random generator isolates in-flight streams", "[c2h][buffers][gene
 
 CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buffers][generators][streams]", CUB_SMALL)
 {
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-
-  const auto device = cuda::device_ref{device_id};
+  const auto device   = c2h::current_test_device();
+  const int device_id = device.get();
   const cuda::stream copy_stream{device};
 
   constexpr std::size_t num_items = 256;
@@ -324,10 +307,7 @@ CUB_TEST("c2h random generator isolates per-thread default streams", "[c2h][buff
 
 CUB_TEST("c2h random generator bounds cached stream states", "[c2h][buffers][generators][streams]", CUB_SMALL)
 {
-  int device_id{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&device_id));
-
-  const auto device = cuda::device_ref{device_id};
+  const auto device = c2h::current_test_device();
   std::vector<cuda::stream> streams;
   streams.reserve(c2h::detail::max_cached_generator_states + 1);
 
