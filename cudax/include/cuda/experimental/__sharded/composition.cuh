@@ -169,8 +169,7 @@ _CCCL_HOST_API void lane_sync(const _Envs& envs, ::std::size_t i, const _PolicyE
     _CCCL_THROW(::std::invalid_argument, "sharded::lane_sync: lane out of range");
   }
   const cudaStream_t s = ::cuda::get_stream(envs[i]).get();
-  places::check_not_capturing(nullptr, "sharded::lane_sync");
-  places::check_not_capturing(s, "sharded::lane_sync");
+  reserved::__check_stream_not_capturing(s, "sharded::lane_sync");
   cuda_safe_call(cudaStreamSynchronize(s));
 }
 } // namespace cuda::experimental::sharded
