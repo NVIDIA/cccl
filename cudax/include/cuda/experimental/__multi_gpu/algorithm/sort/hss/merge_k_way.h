@@ -39,7 +39,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail::__hss_sort
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail::__hss_sort
 {
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -57,7 +58,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
     __ret->memory_resource(),
     __ret->size(),
     ::cuda::no_init,
-    ::cuda::experimental::__detail::__sanitize_buffer_env(__env)};
+    ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(__env)};
 
   ::std::vector<::cuda::std::span<const _Tp>> __cur_level;
   ::std::vector<::cuda::std::span<const _Tp>> __next_level;
@@ -181,7 +182,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way(
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
-} // namespace cuda::experimental::__detail::__hss_sort
+} // namespace __detail::__hss_sort
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

@@ -52,8 +52,7 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
 namespace __detail::__reduce
 {
 template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, class _Tp, class _BinaryOp>
@@ -68,12 +67,12 @@ template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, 
   const _Tp& __ident)
 {
   ::cuda::stream_ref __stream = ::cuda::get_stream(__env);
-  auto __resource             = ::cuda::experimental::__detail::__resource_from_env(__env, __stream.__logical_device());
+  auto __resource = ::cuda::experimental::mgmn::__detail::__resource_from_env(__env, __stream.__logical_device());
 
   // Allocate enough storage so that we can use the buffer directly in an in-place comm all
   // gather/all reduce call. Those calls require that the receive buffer is of size nranks *
   // sendcount.
-  auto __buff = ::cuda::experimental::__detail::__make_safe_uninitialized_buffer<_Tp>(
+  auto __buff = ::cuda::experimental::mgmn::__detail::__make_safe_uninitialized_buffer<_Tp>(
     __stream, ::cuda::std::move(__resource), __comm.size(), __env);
   static_assert(::cuda::std::same_as<decltype(__buff), _Buffer>);
 
@@ -214,7 +213,7 @@ _CCCL_REQUIRES(__range_of_communicators<_CommRange> _CCCL_AND ::cuda::std::range
                    _CCCL_AND ::cuda::std::ranges::forward_range<_SizeTRange> _CCCL_AND
                      __detail::__range_of_output_iters<_OutputIterRange, _Tp>)
 _CCCL_HOST_API void reduce(
-  [[maybe_unused]] const __result_policy_base<_Policy>& __policy,
+  [[maybe_unused]] const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _CommRange&& __comms,
   _EnvRange&& __envs,
   _InputIterRange&& __input_iters,
@@ -225,12 +224,12 @@ _CCCL_HOST_API void reduce(
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
   static_assert(::cuda::std::ranges::sized_range<_CommRange>);
-  static_assert(::cuda::std::same_as<_Policy, broadcasted_t>,
+  static_assert(::cuda::std::same_as<_Policy, ::cuda::experimental::broadcasted_t>,
                 "Only broadcasted results are currently supported. Please open an issue at "
                 "github.com/NVIDIA/cccl/issue requesting support for your specified policy.");
 
   using __properties =
-    ::cuda::experimental::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
+    ::cuda::experimental::mgmn::__detail::__in_range_out_it_properties<_InputIterRange, _OutputIterRange, _EnvRange>;
 
   static_assert(::cuda::std::__indirectly_binary_reducible<_BinaryOp, _Tp, typename __properties::__input_iter_type>);
 
@@ -246,7 +245,7 @@ _CCCL_HOST_API void reduce(
     return;
   }
 
-  _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::reduce");
+  _CCCL_NVTX_RANGE_SCOPE("cuda::mgmn::reduce");
 
   auto __partials = ::std::vector<typename __properties::__buffer_type>{};
 
@@ -257,19 +256,19 @@ _CCCL_HOST_API void reduce(
        ::cuda::std::ranges::views::zip(__comms, __envs, __input_iters, __num_items_range))
   {
     __partials.emplace_back(
-      ::cuda::experimental::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
+      ::cuda::experimental::mgmn::__detail::__reduce::__local_reduction<typename __properties::__buffer_type>(
         /*__ROOT_RANK=*/0, __comm, __env, __input_it, __num_items, __init, __op, __ident));
   }
 
-  if constexpr (::cuda::experimental::__has_all_reduce<::cuda::std::ranges::range_value_t<_CommRange>,
-                                                       typename __properties::__output_type*,
-                                                       _BinaryOp>)
+  if constexpr (::cuda::experimental::mgmn::__has_all_reduce<::cuda::std::ranges::range_value_t<_CommRange>,
+                                                             typename __properties::__output_type*,
+                                                             _BinaryOp>)
   {
-    ::cuda::experimental::__detail::__reduce::__direct_reduction(__comms, __output_iters, __op, &__partials);
+    ::cuda::experimental::mgmn::__detail::__reduce::__direct_reduction(__comms, __output_iters, __op, &__partials);
   }
   else
   {
-    ::cuda::experimental::__detail::__reduce::__two_stage_gather_reduction(
+    ::cuda::experimental::mgmn::__detail::__reduce::__two_stage_gather_reduction(
       __comms, __envs, __output_iters, __op, &__partials);
   }
 }
@@ -312,7 +311,7 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(__communicator<_Comm> _CCCL_AND ::cuda::std::random_access_iterator<_InputIt>
                  _CCCL_AND ::cuda::std::output_iterator<_OutputIt, _Tp>)
 _CCCL_HOST_API void reduce(
-  const __result_policy_base<_Policy>& __policy,
+  const ::cuda::experimental::__result_policy_base<_Policy>& __policy,
   _Comm&& __comm,
   _Env&& __env,
   _InputIt __input_iter,
@@ -322,7 +321,7 @@ _CCCL_HOST_API void reduce(
   _BinaryOp __op = {},
   _Tp __ident    = ::cuda::identity_element<_BinaryOp, _Tp>())
 {
-  ::cuda::experimental::reduce(
+  ::cuda::experimental::mgmn::reduce(
     __policy,
     ::cuda::std::span<::cuda::std::remove_reference_t<_Comm>, 1>{::cuda::std::addressof(__comm), 1},
     ::cuda::std::span<::cuda::std::remove_reference_t<_Env>, 1>{::cuda::std::addressof(__env), 1},
@@ -333,7 +332,7 @@ _CCCL_HOST_API void reduce(
     ::cuda::std::move(__op),
     ::cuda::std::move(__ident));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 

@@ -85,7 +85,7 @@ template <class T>
 // One device buffer per local rank, each allocated on that rank's device and stream.
 template <class T>
 [[nodiscard]] std::vector<cuda::device_buffer<T>> make_device_inputs(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   cuda::std::span<const cuda::stream_ref> streams,
   const std::vector<std::vector<T>>& inputs)
 {
@@ -103,8 +103,8 @@ template <class T>
 // Concatenate the per-rank results in rank order. `sort` leaves the global sequence sorted when
 // the ranks are read back to back, so the concatenation is what we compare against the reference.
 template <class T>
-[[nodiscard]] std::vector<T>
-gather_outputs(cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<cuda::device_buffer<T>>& inputs)
+[[nodiscard]] std::vector<T> gather_outputs(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
+                                            const std::vector<cuda::device_buffer<T>>& inputs)
 {
   std::vector<T> ret(total_size(inputs));
 
@@ -143,7 +143,7 @@ template <class T, class Compare>
 
 // `sort` must not change how many elements a rank owns, only which elements those are.
 template <class T>
-void check_rank_sizes(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void check_rank_sizes(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
                       const std::vector<cuda::device_buffer<T>>& device_vec,
                       const std::vector<std::vector<T>>& host_inputs)
 {

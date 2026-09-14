@@ -45,7 +45,8 @@
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
 
-namespace cuda::experimental::__detail
+_CCCL_BEGIN_NAMESPACE_CUDA_MGMN
+namespace __detail
 {
 #define __CUDAX_MULTI_GPU_DISPATCH(__stream, __call, ...)                                   \
   do                                                                                        \
@@ -68,7 +69,7 @@ _CCCL_HOST_API constexpr decltype(auto) __resource_from_env(const _Env& __env, :
 
 template <class _Env>
 using __resource_type_for _CCCL_NODEBUG =
-  ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::__detail::__resource_from_env(
+  ::cuda::std::remove_cvref_t<decltype(::cuda::experimental::mgmn::__detail::__resource_from_env(
     ::cuda::std::declval<const _Env&>(), ::cuda::std::declval<::cuda::__logical_device_ref>()))>;
 
 template <class _Env>
@@ -112,7 +113,7 @@ struct __in_range_out_it_properties
 
   using __env_type _CCCL_NODEBUG = ::cuda::std::ranges::range_value_t<_EnvRange>;
 
-  using __resource_type _CCCL_NODEBUG = ::cuda::experimental::__detail::__resource_type_for<__env_type>;
+  using __resource_type _CCCL_NODEBUG = ::cuda::experimental::mgmn::__detail::__resource_type_for<__env_type>;
 
   using __buffer_type _CCCL_NODEBUG =
     ::cuda::__buffer_type_for_props<__output_type, typename __resource_type::default_queries>;
@@ -130,7 +131,8 @@ _CCCL_CONCEPT __range_of_output_iters = _CCCL_REQUIRES_EXPR((_RangeOfIters, _Tp)
   requires(
     ::cuda::std::output_iterator<::cuda::std::remove_cvref_t<::cuda::std::ranges::range_reference_t<_RangeOfIters>>,
                                  _Tp>));
-} // namespace cuda::experimental::__detail
+} // namespace __detail
+_CCCL_END_NAMESPACE_CUDA_MGMN
 
 // NOLINTEND(bugprone-reserved-identifier)
 
