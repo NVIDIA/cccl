@@ -390,7 +390,7 @@ struct dispatch_three_way_partition_if
   {
     // Get PTX version
     int ptx_version = 0;
-    if (cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version)); cudaSuccess != error)
+    if (const cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version)); cudaSuccess != error)
     {
       return error;
     }

@@ -112,8 +112,8 @@ class __physical_device
       // group of peers is needed (for cases other than peer access control)
       if (__other_id != __id)
       {
-        device_ref __dev{__id};
-        device_ref __other_dev{__other_id};
+        const device_ref __dev{__id};
+        const device_ref __other_dev{__other_id};
 
         // While in almost all practical applications peer access should be symmetrical,
         // it is possible to build a system with one directional peer access, check

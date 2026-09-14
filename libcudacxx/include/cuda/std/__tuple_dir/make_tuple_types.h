@@ -59,20 +59,42 @@ struct __make_tuple_types_flat<_Tuple<_Types...>, __tuple_indices<_Idx...>>
 template <class _Vt, size_t _Np, size_t... _Idx>
 struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
 {
+  // MSVC eagerly substitutes an alias template that discards its index argument and then no longer
+  // sees a pack to expand in `__apply_quals`.
+#if _CCCL_COMPILER(MSVC)
+  template <size_t>
+  struct __value_type
+  {
+    using type _CCCL_NODEBUG = _Vt;
+  };
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
+  using __apply_quals _CCCL_NODEBUG = __tuple_types<__type_call<_ApplyFn, typename __value_type<_Idx>::type>...>;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   template <size_t>
   using __value_type _CCCL_NODEBUG = _Vt;
   template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
   using __apply_quals _CCCL_NODEBUG = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
+#endif // !_CCCL_COMPILER(MSVC)
 };
 
 #if _CCCL_HAS_HOST_STD_LIB()
 template <class _Vt, size_t _Np, size_t... _Idx>
 struct __make_tuple_types_flat<::std::array<_Vt, _Np>, __tuple_indices<_Idx...>>
 {
+#  if _CCCL_COMPILER(MSVC)
+  template <size_t>
+  struct __value_type
+  {
+    using type _CCCL_NODEBUG = _Vt;
+  };
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
+  using __apply_quals _CCCL_NODEBUG = __tuple_types<__type_call<_ApplyFn, typename __value_type<_Idx>::type>...>;
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   template <size_t>
   using __value_type _CCCL_NODEBUG = _Vt;
   template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
   using __apply_quals _CCCL_NODEBUG = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
+#  endif // !_CCCL_COMPILER(MSVC)
 };
 #endif // _CCCL_HAS_HOST_STD_LIB()
 

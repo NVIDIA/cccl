@@ -127,7 +127,7 @@ C2H_TEST("then can be used with just_stopped", "[adaptors][then]")
 C2H_TEST("then function is not called on error", "[adaptors][then]")
 {
   bool called{false};
-  error_scheduler sched{-1};
+  const error_scheduler sched{-1};
   auto snd = ex::just(13) | ex::continues_on(sched) | ex::then([&](int x) -> int {
                called = true;
                return x + 5;
@@ -141,7 +141,7 @@ C2H_TEST("then function is not called on error", "[adaptors][then]")
 C2H_TEST("then function is not called when cancelled", "[adaptors][then]")
 {
   bool called{false};
-  stopped_scheduler sched;
+  const stopped_scheduler sched;
   auto snd = ex::just(13) | ex::continues_on(sched) | ex::then([&](int x) -> int {
                called = true;
                return x + 5;
@@ -194,9 +194,9 @@ C2H_TEST("then has the values_type corresponding to the given values", "[adaptor
 
 C2H_TEST("then keeps error_types from input sender", "[adaptors][then]")
 {
-  dummy_scheduler sched1{};
-  error_scheduler sched2{error_code{std::errc::invalid_argument}};
-  error_scheduler sched3{43};
+  const dummy_scheduler sched1{};
+  const error_scheduler sched2{error_code{std::errc::invalid_argument}};
+  const error_scheduler sched3{43};
 
   check_error_types(ex::just() | ex::continues_on(sched1) | ex::then([]() noexcept {}));
   check_error_types<error_code>(ex::just() | ex::continues_on(sched2) | ex::then([]() noexcept {}));
@@ -205,9 +205,9 @@ C2H_TEST("then keeps error_types from input sender", "[adaptors][then]")
 
 C2H_TEST("then keeps sends_stopped from input sender", "[adaptors][then]")
 {
-  dummy_scheduler sched1{};
-  error_scheduler sched2{error_code{std::errc::invalid_argument}};
-  stopped_scheduler sched3{};
+  const dummy_scheduler sched1{};
+  const error_scheduler sched2{error_code{std::errc::invalid_argument}};
+  const stopped_scheduler sched3{};
 
   check_sends_stopped<false>(ex::just() | ex::continues_on(sched1) | ex::then([] {}));
   check_sends_stopped<false>(ex::just() | ex::continues_on(sched2) | ex::then([] {}));
@@ -267,7 +267,7 @@ struct then_test_domain
 C2H_TEST("then can be customized early", "[adaptors][then]")
 {
   // The customization will return a different value
-  dummy_scheduler<then_test_domain> sched;
+  const dummy_scheduler<then_test_domain> sched;
   auto snd = ex::just(string{"hello"}) | ex::continues_on(sched) | ex::then([](string x) {
                return x + ", world";
              });
@@ -277,7 +277,7 @@ C2H_TEST("then can be customized early", "[adaptors][then]")
 C2H_TEST("then can be customized late", "[adaptors][then]")
 {
   // The customization will return a different value
-  dummy_scheduler<then_test_domain> sched;
+  const dummy_scheduler<then_test_domain> sched;
   auto snd = ex::just(string{"hello"})
            | ex::on(sched, ex::then([](string x) {
                       return x + ", world";

@@ -101,7 +101,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
     thrust::device_vector<T> q_exponents = generate(elements);
     thrust::device_vector<T> p_exponents = generate(elements);
 
-    impl::repack_pair<T> repack_op{};
+    const impl::repack_pair<T> repack_op{};
 
     cub::DeviceTransform::Transform(
       cuda::std::tuple{q_exponents.begin(), p_exponents.begin()}, input.begin(), elements, repack_op);

@@ -44,8 +44,8 @@ struct sample_kernel
       return;
     }
 
-    cuda::counting_iterator<cuda::std::size_t> first{0};
-    cuda::counting_iterator<cuda::std::size_t> last{n_};
+    const cuda::counting_iterator<cuda::std::size_t> first{0};
+    const cuda::counting_iterator<cuda::std::size_t> last{n_};
 
     auto end   = cuda::sample(first, last, out.begin(), k_, rng_);
     written[0] = end - out.begin();
@@ -109,8 +109,8 @@ struct batched_sample_kernel
     const auto rank = static_cast<cuda::std::size_t>(cuda::gpu_thread.rank(cuda::grid));
     const auto size = static_cast<cuda::std::size_t>(cuda::gpu_thread.count(cuda::grid));
 
-    cuda::counting_iterator<cuda::std::size_t> first{0};
-    cuda::counting_iterator<cuda::std::size_t> last{n_};
+    const cuda::counting_iterator<cuda::std::size_t> first{0};
+    const cuda::counting_iterator<cuda::std::size_t> last{n_};
 
     for (cuda::std::size_t i = rank; i < out.extent(0); i += size)
     {

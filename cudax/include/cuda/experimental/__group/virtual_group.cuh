@@ -51,7 +51,7 @@ namespace cuda::experimental
 {
 template <class _Unit, class _ParentGroup, class _Mapping>
 [[nodiscard]] _CCCL_DEVICE_API constexpr auto
-__do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, const _Mapping& __mapping) noexcept
+__do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping) noexcept
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   using _InitMappingResult =
@@ -92,9 +92,7 @@ __do_group_mapping(const _Unit& __unit, const _ParentGroup& __parent, const _Map
 
 template <class _Unit, class _ParentGroup, class _Mapping>
 using __group_mapping_result_t = decltype(::cuda::experimental::__do_group_mapping(
-  ::cuda::std::declval<const _Unit&>(),
-  ::cuda::std::declval<const _ParentGroup&>(),
-  ::cuda::std::declval<const _Mapping&>()));
+  ::cuda::std::declval<const _Unit&>(), ::cuda::std::declval<const _ParentGroup&>(), ::cuda::std::declval<_Mapping>()));
 
 template <class _Unit, class _ParentGroup, class _MappingResult>
 class virtual_group
@@ -122,9 +120,10 @@ public:
   _CCCL_TEMPLATE(class _Mapping)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_MappingResult, __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>>)
   _CCCL_DEVICE_API explicit virtual_group(
-    const _Unit& __unit, const _ParentGroup& __parent, const _Mapping& __mapping) noexcept
+    const _Unit& __unit, const _ParentGroup& __parent, _Mapping&& __mapping) noexcept
       : __hier_{__parent.hierarchy()}
-      , __mapping_result_{::cuda::experimental::__do_group_mapping(__unit, __parent, __mapping)}
+      , __mapping_result_{::cuda::experimental::__do_group_mapping(
+          __unit, __parent, ::cuda::std::forward<_Mapping>(__mapping))}
       , __synchronizer_instance_{__parent.__synchronizer_instance().view()}
   {
     // todo(dabayer): Remove this if we allow non-exhaustive virtual groups.
@@ -214,7 +213,7 @@ _CCCL_TEMPLATE(class _Unit,
                class _MappingResult = __group_mapping_result_t<_Unit, _ParentGroup, _Mapping>)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup> _CCCL_AND
                  __unit_same_as_or_below_v<_Unit, typename _ParentGroup::unit_type>)
-_CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, const _Mapping&)
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES virtual_group(const _Unit&, const _ParentGroup&, _Mapping&&)
   -> virtual_group<_Unit, _ParentGroup, _MappingResult>;
 } // namespace cuda::experimental
 

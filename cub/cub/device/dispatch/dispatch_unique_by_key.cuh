@@ -241,7 +241,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     // Number of input tiles
     const auto threads_per_block = policy.threads_per_block;
     const auto items_per_thread  = policy.items_per_thread;
-    int tile_size                = threads_per_block * items_per_thread;
+    const int tile_size          = threads_per_block * items_per_thread;
     int num_tiles                = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
     const auto vsmem_size        = num_tiles * vsmem_per_block;
 
@@ -572,7 +572,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     const auto threads_per_block = active_policy.threads_per_block;
     const auto items_per_thread  = active_policy.items_per_thread;
-    int tile_size                = threads_per_block * items_per_thread;
+    const int tile_size          = threads_per_block * items_per_thread;
     int num_tiles                = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
     const auto vsmem_size        = num_tiles * vsmem_per_block;
 

@@ -43,20 +43,21 @@ struct TestKernel1
     auto parent_group = cudax::make_this_group(cuda::warp, config);
     const auto rank   = cuda::gpu_thread.rank_as<cuda::std::uint32_t>(parent_group);
 
-    cudax::group group1{cuda::gpu_thread, parent_group, cudax::group_by<16>{}, cudax::lane_synchronizer{}};
+    const cudax::group group1{cuda::gpu_thread, parent_group, cudax::group_by<16>{}, cudax::lane_synchronizer{}};
     test_group_membership(group1, 16, rank % 16);
     REQUIRE(group1.count(parent_group) == 2);
     REQUIRE(group1.rank(parent_group) == rank / 16);
 
-    cudax::group group2{cuda::gpu_thread,
-                        group1,
-                        cudax::group_as{cuda::std::integer_sequence<cuda::std::size_t, 8, 8>{}},
-                        cudax::lane_synchronizer{}};
+    const cudax::group group2{
+      cuda::gpu_thread,
+      group1,
+      cudax::group_as{cuda::std::integer_sequence<cuda::std::size_t, 8, 8>{}},
+      cudax::lane_synchronizer{}};
     test_group_membership(group2, 8, rank % 8);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 16) / 8);
 
-    cudax::group group3{cuda::gpu_thread, group2, cudax::group_by{4}, cudax::lane_synchronizer{}};
+    const cudax::group group3{cuda::gpu_thread, group2, cudax::group_by{4}, cudax::lane_synchronizer{}};
     test_group_membership(group3, 4, rank % 4);
     REQUIRE(group3.count(group2) == 2);
     REQUIRE(group3.rank(group2) == (rank % 8) / 4);
@@ -77,25 +78,27 @@ struct TestKernel2
 
     auto& barriers = get_barriers<4>(cuda::block);
 
-    cudax::group group1{cuda::gpu_thread, parent_group, cudax::group_by<32>{}, cudax::barrier_synchronizer{barriers}};
+    const cudax::group group1{
+      cuda::gpu_thread, parent_group, cudax::group_by<32>{}, cudax::barrier_synchronizer{barriers}};
     test_group_membership(group1, 32, rank % 32);
     REQUIRE(group1.count(parent_group) == 4);
     REQUIRE(group1.rank(parent_group) == rank / 32);
 
-    cudax::group group2{cuda::gpu_thread,
-                        group1,
-                        cudax::group_as{cuda::std::integer_sequence<cuda::std::size_t, 16, 16>{}},
-                        cudax::lane_synchronizer{}};
+    const cudax::group group2{
+      cuda::gpu_thread,
+      group1,
+      cudax::group_as{cuda::std::integer_sequence<cuda::std::size_t, 16, 16>{}},
+      cudax::lane_synchronizer{}};
     test_group_membership(group2, 16, rank % 16);
     REQUIRE(group2.count(group1) == 2);
     REQUIRE(group2.rank(group1) == (rank % 32) / 16);
 
-    cudax::group group3{cuda::gpu_thread, group2, cudax::group_by<8>{}, cudax::level_synchronizer{}};
+    const cudax::group group3{cuda::gpu_thread, group2, cudax::group_by<8>{}, cudax::level_synchronizer{}};
     test_group_membership(group3, 8, rank % 8);
     REQUIRE(group3.count(group2) == 2);
     REQUIRE(group3.rank(group2) == (rank % 16) / 8);
 
-    cudax::group group4{cuda::gpu_thread, group3, cudax::identity_mapping{}, cudax::lane_synchronizer{}};
+    const cudax::group group4{cuda::gpu_thread, group3, cudax::identity_mapping{}, cudax::lane_synchronizer{}};
     test_group_membership(group4, 8, rank % 8);
     REQUIRE(group4.count(group3) == 1);
     REQUIRE(group4.rank(group3) == 0);
@@ -117,7 +120,7 @@ struct TestKernel3
 
     auto& barriers1 = get_barriers<2, 0>(cuda::block);
 
-    cudax::group group1{cuda::warp, parent_group, cudax::group_by<16>{}, cudax::barrier_synchronizer{barriers1}};
+    const cudax::group group1{cuda::warp, parent_group, cudax::group_by<16>{}, cudax::barrier_synchronizer{barriers1}};
     REQUIRE(cuda::warp.is_part_of(group1));
     REQUIRE(cuda::warp.count(group1) == 16);
     REQUIRE(cuda::warp.rank(group1) == rank % 16);
@@ -127,10 +130,11 @@ struct TestKernel3
     auto& barriers2a = get_barriers<2, 1>(cuda::block);
     auto& barriers2b = get_barriers<2, 3>(cuda::block);
 
-    cudax::group group2{cuda::warp,
-                        group1,
-                        cudax::group_by<8>{},
-                        cudax::barrier_synchronizer{(group1.rank(parent_group) == 0) ? barriers2a : barriers2b}};
+    const cudax::group group2{
+      cuda::warp,
+      group1,
+      cudax::group_by<8>{},
+      cudax::barrier_synchronizer{(group1.rank(parent_group) == 0) ? barriers2a : barriers2b}};
     REQUIRE(cuda::warp.is_part_of(group2));
     REQUIRE(cuda::warp.count(group2) == 8);
     REQUIRE(cuda::warp.rank(group2) == rank % 8);

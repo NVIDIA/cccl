@@ -89,7 +89,7 @@ DECLARE_UNITTEST(TestMergeByKeyDeviceDevice);
 void TestMergeByKeyCudaStreams()
 {
   const auto device = test_runtime::current_test_device();
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   auto a_key = cuda::make_device_buffer<int>(stream, device, {0, 2, 4});
   auto a_val = cuda::make_device_buffer<int>(stream, device, {13, 7, 42});

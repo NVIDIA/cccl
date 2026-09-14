@@ -40,17 +40,17 @@ struct TestPairReduce
     // zip up pairs on the host
     thrust::transform(h_p1.begin(), h_p1.end(), h_p2.begin(), h_pairs.begin(), make_pair_functor());
 
-    thrust::device_vector<T> d_p1    = h_p1;
-    thrust::device_vector<T> d_p2    = h_p2;
-    thrust::device_vector<P> d_pairs = h_pairs;
+    const thrust::device_vector<T> d_p1 = h_p1;
+    const thrust::device_vector<T> d_p2 = h_p2;
+    thrust::device_vector<P> d_pairs    = h_pairs;
 
     P init = cuda::std::make_pair(T{13}, T{13});
 
     // reduce on the host
-    P h_result = thrust::reduce(h_pairs.begin(), h_pairs.end(), init, add_pairs());
+    const P h_result = thrust::reduce(h_pairs.begin(), h_pairs.end(), init, add_pairs());
 
     // reduce on the device
-    P d_result = thrust::reduce(d_pairs.begin(), d_pairs.end(), init, add_pairs());
+    const P d_result = thrust::reduce(d_pairs.begin(), d_pairs.end(), init, add_pairs());
 
     ASSERT_EQUAL_QUIET(h_result, d_result);
   }

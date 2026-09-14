@@ -494,6 +494,16 @@ def test_a_changed_architecture_carries_the_changed_lines(compared) -> None:
     assert results["sm_90"].diff is None
 
 
+def test_the_hunk_header_names_the_kernel(compared) -> None:
+    """The hunk header carries the enclosing kernel, like `git diff`'s function
+    context, so a reader does not have to scroll to the excerpt's diff headers
+    to know which kernel changed."""
+    results = compared(BASELINE, CHANGED)
+    diff = next(entry.diff for entry in results if entry.diff is not None)
+    text = "\n".join(diff.excerpt)
+    assert "@@ _Z5otherPf" in text
+
+
 def test_the_diff_names_both_sides(compared) -> None:
     results = compared(BASELINE, CHANGED)
     diff = next(entry.diff for entry in results if entry.diff is not None)

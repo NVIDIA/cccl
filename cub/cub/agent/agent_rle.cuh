@@ -345,7 +345,7 @@ struct AgentRle
     bool head_flags[ITEMS_PER_THREAD];
     bool tail_flags[ITEMS_PER_THREAD];
 
-    OobInequalityOp<LAST_TILE> inequality_op(num_remaining, equality_op);
+    const OobInequalityOp<LAST_TILE> inequality_op(num_remaining, equality_op);
 
     if (FIRST_TILE && LAST_TILE)
     {
@@ -432,8 +432,8 @@ struct AgentRle
     LengthOffsetPair (&lengths_and_num_runs)[ITEMS_PER_THREAD])
   {
     // Perform warpscans
-    unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+    const unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
+    const int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     LengthOffsetPair identity;
     identity.key   = 0;
@@ -450,7 +450,7 @@ struct AgentRle
     //      number of non-trivial runs starts in this thread
     // `thread_aggregate.val`:
     //      number of items in the last non-trivial run in this thread
-    LengthOffsetPair thread_aggregate = cub::ThreadReduce(lengths_and_num_runs, scan_op);
+    const LengthOffsetPair thread_aggregate = cub::ThreadReduce(lengths_and_num_runs, scan_op);
     WarpScanPairs(temp_storage.aliasable.scan_storage.warp_scan[warp_id])
       .Scan(thread_aggregate, thread_inclusive, thread_exclusive_in_warp, identity, scan_op);
 
@@ -517,8 +517,8 @@ struct AgentRle
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
     ::cuda::std::true_type is_warp_time_slice)
   {
-    unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+    const unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
+    const int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     // Locally compact items within the warp (first warp)
     if (warp_id == 0)
@@ -587,8 +587,8 @@ struct AgentRle
     LengthOffsetPair (&lengths_and_offsets)[ITEMS_PER_THREAD],
     ::cuda::std::false_type is_warp_time_slice)
   {
-    unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
-    int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
+    const unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
+    const int lane_id          = static_cast<int>(::cuda::ptx::get_sreg_laneid());
 
     // Unzip
     OffsetT run_offsets[ITEMS_PER_THREAD];
@@ -921,7 +921,7 @@ struct AgentRle
       // First warp computes tile prefix in lane 0
       TilePrefixCallbackOpT prefix_op(
         tile_status, temp_storage.aliasable.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
-      unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
+      const unsigned int warp_id = ((WARPS == 1) ? 0 : threadIdx.x / WARP_THREADS);
       if (warp_id == 0)
       {
         prefix_op(tile_aggregate);
@@ -933,10 +933,10 @@ struct AgentRle
 
       __syncthreads();
 
-      LengthOffsetPair tile_exclusive_in_global = temp_storage.tile_exclusive;
+      const LengthOffsetPair tile_exclusive_in_global = temp_storage.tile_exclusive;
 
       // Update thread_exclusive_in_warp to fold in warp and tile run-lengths
-      LengthOffsetPair thread_exclusive = scan_op(tile_exclusive_in_global, warp_exclusive_in_tile);
+      const LengthOffsetPair thread_exclusive = scan_op(tile_exclusive_in_global, warp_exclusive_in_tile);
       if (thread_exclusive_in_warp.key == 0)
       {
         // If there are no non-trivial runs starts in the previous warp threads, then
@@ -1012,7 +1012,7 @@ struct AgentRle
   ConsumeRange(int num_tiles, ScanTileStateT& tile_status, NumRunsIteratorT d_num_runs_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
-    int tile_idx          = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
+    const int tile_idx    = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
     OffsetT tile_offset   = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
     OffsetT num_remaining = num_items - tile_offset; // Remaining items (including this tile)
 
@@ -1024,7 +1024,8 @@ struct AgentRle
     else if (num_remaining > 0)
     {
       // The last tile (possibly partially-full)
-      LengthOffsetPair running_total = ConsumeTile<true>(num_items, num_remaining, tile_idx, tile_offset, tile_status);
+      const LengthOffsetPair running_total =
+        ConsumeTile<true>(num_items, num_remaining, tile_idx, tile_offset, tile_status);
 
       if (threadIdx.x == 0)
       {

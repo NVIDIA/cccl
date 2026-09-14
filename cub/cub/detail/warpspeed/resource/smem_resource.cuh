@@ -47,9 +47,9 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr SmemResourceRaw
   makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
   {
-    int align       = alignof(_Tp);
-    int sizeBytes   = ::cuda::std::to_underlying(elems) * sizeof(_Tp);
-    int strideBytes = sizeBytes;
+    const int align       = alignof(_Tp);
+    const int sizeBytes   = ::cuda::std::to_underlying(elems) * sizeof(_Tp);
+    const int strideBytes = sizeBytes;
 
     void* ptrBase = smemAllocator.alloc(::cuda::std::to_underlying(stages) * strideBytes, align);
     return {syncHandler, ptrBase, sizeBytes, strideBytes, ::cuda::std::to_underlying(stages)};

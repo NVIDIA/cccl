@@ -230,7 +230,9 @@ try
     static_cast<int>(input_keys_it.value_type.size),
     static_cast<int>(input_values_it.value_type.size),
     input_keys_it.value_type.type != CCCL_STORAGE && input_keys_it.value_type.size <= 8,
-    input_values_it.value_type.type != CCCL_STORAGE && input_values_it.value_type.size <= 8};
+    input_values_it.value_type.type != CCCL_STORAGE && input_values_it.value_type.size <= 8,
+    cccl_type_enum_to_cub_type(input_keys_it.value_type.type),
+    cccl_type_enum_to_cub_type(input_values_it.value_type.type)};
 
   const auto active_policy = policy_sel(cc);
 

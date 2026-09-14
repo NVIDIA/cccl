@@ -429,7 +429,7 @@ private:
 
   _CCCL_HOST_DEVICE_API void __release_()
   {
-    __vptr_for<_Interface> __vptr = nullptr;
+    const __vptr_for<_Interface> __vptr = nullptr;
     __vptr_.__set(__vptr, false);
   }
 
@@ -468,7 +468,7 @@ private:
       }
     }
 
-    __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
+    const __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
     __vptr_.__set(__vptr, __is_small<_Tp, __movable>(__size_, __align_));
     return *::cuda::std::launder(static_cast<_Tp*>(__get_optr()));
   }

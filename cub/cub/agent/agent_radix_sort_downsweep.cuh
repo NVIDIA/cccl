@@ -276,7 +276,7 @@ struct AgentRadixSortDownsweep
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * BLOCK_THREADS)];
-      uint32_t digit             = digit_extractor().Digit(key);
+      const uint32_t digit       = digit_extractor().Digit(key);
       relative_bin_offsets[ITEM] = temp_storage.keys_and_offsets.relative_bin_offsets[digit];
 
       key = bit_ordered_conversion::from_bit_ordered(decomposer, key);
@@ -440,7 +440,7 @@ struct AgentRadixSortDownsweep
     OffsetT relative_bin_offsets[ITEMS_PER_THREAD];
 
     // Assign default (min/max) value to all keys
-    bit_ordered_type default_key =
+    const bit_ordered_type default_key =
       IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
     // Load tile of keys
@@ -462,7 +462,7 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         // Store exclusive prefix
@@ -478,7 +478,7 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         if (IS_DESCENDING)
@@ -504,7 +504,7 @@ struct AgentRadixSortDownsweep
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         bin_offset[track] -= exclusive_digit_prefix[track];
@@ -601,7 +601,7 @@ struct AgentRadixSortDownsweep
     {
       this->bin_offset[track] = bin_offset[track];
 
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
         // Short circuit if the histogram has only bin counts of only zeros or problem-size

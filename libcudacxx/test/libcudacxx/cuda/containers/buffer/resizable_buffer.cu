@@ -50,8 +50,8 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
   static_assert(cuda::std::is_nothrow_move_constructible_v<buffer_t>);
   static_assert(cuda::std::is_constructible_v<buffer_t, base_t&&>);
 
-  cuda::device_ref device{0};
-  cuda::stream stream{device};
+  const cuda::device_ref device{0};
+  const cuda::stream stream{device};
   auto resource = cuda::device_default_memory_pool(device);
   static_assert(cuda::std::is_constructible_v<buffer_t, cuda::stream_ref, decltype(resource)&>);
 
@@ -131,7 +131,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
 
   SECTION("resize with reallocation")
   {
-    cuda::stream other_stream{device};
+    const cuda::stream other_stream{device};
     cuda::std::array<int, 6> values{1, 42, 1337, 0, 12, -1};
     buffer_t buf{stream, resource, values.begin(), values.end()};
     buf.resize(stream, 3, cuda::no_init);
@@ -156,7 +156,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
 
   SECTION("resize from empty logical size with reallocation")
   {
-    cuda::stream other_stream{device};
+    const cuda::stream other_stream{device};
     buffer_t buf{stream, resource, 3, cuda::no_init};
     buf.resize(stream, 0, cuda::no_init);
 
@@ -169,7 +169,7 @@ C2H_CCCLRT_TEST("cuda::__resizable_buffer capacity and resize", "[container][buf
 
   SECTION("resize_discard")
   {
-    cuda::stream other_stream{device};
+    const cuda::stream other_stream{device};
     cuda::std::array<int, 6> values{1, 42, 1337, 0, 12, -1};
     buffer_t buf{stream, resource, values.begin(), values.end()};
 

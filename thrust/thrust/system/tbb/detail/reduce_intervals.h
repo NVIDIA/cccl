@@ -92,7 +92,7 @@ void reduce_intervals(
   RandomAccessIterator2 result,
   BinaryFunction binary_op)
 {
-  thrust::detail::it_difference_t<RandomAccessIterator1> n = last - first;
+  const thrust::detail::it_difference_t<RandomAccessIterator1> n = last - first;
 
   Size num_intervals = reduce_intervals_detail::divide_ri(n, interval_size);
 

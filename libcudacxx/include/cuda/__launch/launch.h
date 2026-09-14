@@ -398,7 +398,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   __config.attrs    = &__attrs[0];
   __config.numAttrs = 0;
 
-  ::cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel);
+  const ::cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel);
   if (__status != ::cudaSuccess)
   {
     _CCCL_THROW(::cuda::cuda_error, __status, "Failed to prepare a launch configuration");
@@ -492,7 +492,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const _Kernel& __kernel,
                            _Args&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  const __ensure_current_context __dev_setter{__submitter};
   auto __combined = __conf.combine_with_default(__kernel);
   auto __launcher = ::cuda::__get_kernel_launcher<_Kernel,
                                                   decltype(__combined),
@@ -555,7 +555,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
                            _ActArgs&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  const __ensure_current_context __dev_setter{__submitter};
   return ::cuda::__launch_impl<kernel_config<_Dimensions, _Config...>,
                                _ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
@@ -611,7 +611,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(_ExpArgs...),
                            _ActArgs&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  const __ensure_current_context __dev_setter{__submitter};
   return ::cuda::__launch_impl<_ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,

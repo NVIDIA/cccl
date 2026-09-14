@@ -76,6 +76,48 @@ def json_benches(algname):
     return JsonCache().get_bench(algname)
 
 
+def store_bench_axes(conn, algname, subbench, axes_values, cccl):
+    with conn:
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS axes (
+            algorithm TEXT NOT NULL,
+            subbench TEXT NOT NULL,
+            cccl TEXT NOT NULL,
+            axis_values TEXT NOT NULL,
+            UNIQUE(algorithm, subbench, cccl)
+        );
+        """)
+
+        recorded = conn.execute(
+            "SELECT axis_values FROM axes WHERE algorithm=? AND subbench=? AND cccl=?;",
+            (algname, subbench, cccl),
+        ).fetchone()
+
+        conn.execute(
+            """
+        INSERT INTO axes (algorithm, subbench, cccl, axis_values)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(algorithm, subbench, cccl) DO UPDATE SET
+            axis_values = excluded.axis_values;
+        """,
+            (algname, subbench, cccl, json.dumps(axes_values)),
+        )
+
+    # `score` weighs over what the benchmark declares now, so the record has to
+    # follow it or `analyze.py` would stop reproducing the score this campaign
+    # is about to print. Rows measured under the old declaration are re-weighted
+    # against the new one, which is worth saying out loud.
+    if recorded and json.loads(recorded[0]) != axes_values:
+        print(
+            "#### WARNING {}.{} declared {} when this database was last written"
+            " and declares {} now, both as CCCL {}. `git describe` does not see"
+            " uncommitted edits, so the two cannot be told apart: measurements"
+            " already stored are re-weighted against the new axes.".format(
+                algname, subbench, json.loads(recorded[0]), axes_values, cccl
+            )
+        )
+
+
 def create_benches_tables(conn, subbench, bench_axes):
     with conn:
         conn.execute("""
@@ -389,11 +431,12 @@ class BenchCache:
         alg_name = bench_base.algorithm_name()
 
         if alg_name not in self.existing_tables:
-            subbench_axes_names = bench_base.axes_names()
-            for subbench in subbench_axes_names:
-                create_benches_tables(
-                    conn, subbench, {alg_name: subbench_axes_names[subbench]}
-                )
+            config = Config()
+            declared_axes_values = bench_base.declared_axes_values()
+            for subbench in declared_axes_values:
+                axes_values = declared_axes_values[subbench]
+                create_benches_tables(conn, subbench, {alg_name: axes_values})
+                store_bench_axes(conn, alg_name, subbench, axes_values, config.cccl)
                 self.existing_tables.add(alg_name)
 
     def push_bench_centers(self, bench, result, estimator):
@@ -590,15 +633,34 @@ class Bench:
     def bench_names(self):
         return [bench["name"] for bench in json_benches(self.algname)["benchmarks"]]
 
-    def axes_names(self):
-        subbench_names = {}
+    def declared_axes_values(self):
+        subbench_space = {}
         for bench in json_benches(self.algname)["benchmarks"]:
-            names = []
+            space = {}
             for axis in bench["axes"]:
-                names.append(get_axis_name(axis))
+                space[get_axis_name(axis)] = [
+                    value["input_string"] for value in axis["values"]
+                ]
+            subbench_space[bench["name"]] = space
+        return subbench_space
 
-            subbench_names[bench["name"]] = names
-        return subbench_names
+    def declared_rt_axes_values(self):
+        return self.axes_values({}, False)
+
+    def check_axis_values_declared(self, subbench, name, requested, axis):
+        declared = [value["input_string"] for value in axis["values"]]
+        undeclared = [value for value in requested if value not in declared]
+
+        if undeclared:
+            raise Exception(
+                "{}.{} does not declare {} on axis {}, which declares {}".format(
+                    self.algname,
+                    subbench,
+                    ", ".join(undeclared),
+                    name,
+                    ", ".join(declared),
+                )
+            )
 
     def axes_values(self, sub_space, ct):
         subbench_space = {}
@@ -616,6 +678,9 @@ class Bench:
 
                 axis_space = []
                 if name in sub_space:
+                    self.check_axis_values_declared(
+                        bench["name"], name, sub_space[name], axis
+                    )
                     for value in sub_space[name]:
                         axis_space.append(value)
                 else:
@@ -803,8 +868,9 @@ class Bench:
         if not speedups:
             return float("-inf")
 
-        rt_axes_ids = compute_axes_ids(rt_values)
-        weight_matrices = compute_weight_matrices(rt_values, rt_axes_ids)
+        declared_rt_values = self.declared_rt_axes_values()
+        rt_axes_ids = compute_axes_ids(declared_rt_values)
+        weight_matrices = compute_weight_matrices(declared_rt_values, rt_axes_ids)
 
         # For importance-ordered axis, score favors last speedups:
         # score = 15% of S16 + 25% of S20 + 29% of S24 + 31% of S28
@@ -835,7 +901,10 @@ class Bench:
                 rt_workload = state_to_rt_workload(bench, state)
                 weights = weight_matrices[bench]
                 weight = get_workload_weight(
-                    rt_workload, rt_values[bench], rt_axes_ids[bench], weights
+                    rt_workload,
+                    declared_rt_values[bench],
+                    rt_axes_ids[bench],
+                    weights,
                 )
                 score = score + weight * speedups[bench][state]
                 total_weight = total_weight + weight

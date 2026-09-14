@@ -75,6 +75,8 @@ template <cub::detail::topk::select SelectDirection,
           cuda::execution::determinism::__determinism_t Determinism =
             cuda::execution::determinism::__determinism_t::__not_guaranteed,
           cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
+          cuda::execution::output_ordering::__output_ordering_t OutputOrdering =
+            cuda::execution::output_ordering::__output_ordering_t::__unsorted,
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -98,7 +100,7 @@ _CCCL_HOST_API static cudaError_t dispatch_batched_topk_pairs(
     cuda::stream_ref{stream},
     cuda::execution::require(cuda::execution::determinism::__determinism_holder_t<Determinism>{},
                              cuda::execution::tie_break::__tie_break_holder_t<TieBreak>{},
-                             cuda::execution::output_ordering::unsorted)};
+                             cuda::execution::output_ordering::__output_ordering_holder_t<OutputOrdering>{})};
   if constexpr (SelectDirection == cub::detail::topk::select::max)
   {
     return cub::DeviceBatchedTopK::MaxPairs(
@@ -137,8 +139,10 @@ DECLARE_TMPL_LAUNCH_WRAPPER(
     cub::detail::topk::select SelectDirection,
     cuda::execution::determinism::__determinism_t Determinism =
       cuda::execution::determinism::__determinism_t::__not_guaranteed,
-    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified),
-  ESCAPE_LIST(SelectDirection, Determinism, TieBreak));
+    cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified,
+    cuda::execution::output_ordering::__output_ordering_t OutputOrdering =
+      cuda::execution::output_ordering::__output_ordering_t::__unsorted),
+  ESCAPE_LIST(SelectDirection, Determinism, TieBreak, OutputOrdering));
 
 // Wrapper-test companion to expect_batched_topk_unsupported_and_skip: when the request's backend is unavailable in this
 // build, dispatch it directly (host), verify the runtime cudaErrorNotSupported, and skip the correctness checks;
@@ -196,6 +200,8 @@ using uint_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, c
 using select_direction_list =
   c2h::enum_type_list<cub::detail::topk::select, cub::detail::topk::select::min, cub::detail::topk::select::max>;
 
+using sorted_pair_key_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
+
 // Determinism/tie-break combinations used as a single compile-time axis by the determinism-aware pairs tests. The
 // selected multiset is invariant to the tie-break preference, so every combo is verified the same way; tie-break
 // preferences only pair with a deterministic requirement.
@@ -214,6 +220,12 @@ using det_tie_pair_combos =
                               cuda::execution::tie_break::__tie_break_t::__prefer_smaller_index>,
                  det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
                               cuda::execution::tie_break::__tie_break_t::__prefer_larger_index>>;
+
+using sorted_det_tie_pair_combos =
+  c2h::type_list<det_tie_pair<cuda::execution::determinism::__determinism_t::__not_guaranteed,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>,
+                 det_tie_pair<cuda::execution::determinism::__determinism_t::__gpu_to_gpu,
+                              cuda::execution::tie_break::__tie_break_t::__unspecified>>;
 
 // Consistency check: ensures values remain associated with their corresponding keys
 template <typename KeyT, typename ValueT>
@@ -238,10 +250,10 @@ bool verify_unique_indices(c2h::device_vector<ValueT>& values_out, cuda::std::in
   c2h::device_vector<ValueT> sorted_values{values_out};
   fixed_size_segmented_sort_keys(sorted_values, num_segments, k, cub::detail::topk::select::min);
 
-  auto num_items   = sorted_values.size();
-  auto counting_it = cuda::make_counting_iterator(cuda::std::int64_t{0});
-  auto seg_ids     = cuda::make_transform_iterator(counting_it, fixed_stride_segment_id_op{k});
-  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), seg_ids};
+  const auto num_items = sorted_values.size();
+  auto counting_it     = cuda::make_counting_iterator(cuda::std::int64_t{0});
+  const auto seg_ids   = cuda::make_transform_iterator(counting_it, fixed_stride_segment_id_op{k});
+  const flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), seg_ids};
   auto num_duplicates = thrust::count_if(counting_it, counting_it + (num_items - 1), flag_op);
 
   return num_duplicates == 0;
@@ -272,7 +284,7 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
                   segment_ids.begin());
   thrust::inclusive_scan(segment_ids.begin(), segment_ids.end(), segment_ids.begin());
 
-  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), segment_ids.cbegin()};
+  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), segment_ids.cbegin()}; // NOLINT(misc-const-correctness)
 
   auto num_duplicates = thrust::count_if(
     cuda::make_counting_iterator(cuda::std::size_t{0}), cuda::make_counting_iterator(num_items - 1), flag_op);
@@ -374,6 +386,71 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
 
   // Since the results of top-k are unordered, sort output segments before comparison.
   fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs return ordered sorted output",
+         "[pairs][segmented][topk][device]",
+         CUB_SMALL,
+         sorted_pair_key_types,
+         select_direction_list,
+         sorted_det_tie_pair_combos)
+{
+  using key_t           = c2h::get<0, TestType>;
+  using value_t         = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  using combo                            = c2h::get<2, TestType>;
+  constexpr auto direction               = c2h::get<1, TestType>::value;
+  constexpr auto determinism             = combo::determinism;
+  constexpr auto tie_break               = combo::tie_break;
+  constexpr segment_size_t segment_size  = 2051;
+  constexpr segment_size_t static_max_k  = 2048;
+  constexpr segment_index_t num_segments = 3;
+  const segment_size_t k                 = GENERATE_COPY(values({segment_size_t{1}, static_max_k}));
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  c2h::device_vector<value_t> values_out_buffer(num_segments * k, thrust::no_init);
+  c2h::gen(C2H_SEED(1), keys_in_buffer);
+
+  auto d_keys_in_ptr    = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr   = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto values_in_it     = cuda::make_counting_iterator(value_t{0});
+  auto d_keys_in        = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out       = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+  auto d_values_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  skip_unless_batched_topk_pairs_supported<direction, determinism, tie_break>(
+    segment_size,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::constant<segment_size>{},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<num_segments>{});
+
+  batched_topk_pairs<direction, determinism, tie_break, cuda::execution::output_ordering::__output_ordering_t::__sorted>(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cuda::args::constant<segment_size>{},
+    cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_k>()},
+    cuda::args::constant<num_segments>{});
+
+  REQUIRE(verify_pairs_consistency(keys_in_buffer, keys_out_buffer, values_out_buffer));
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k));
+
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
@@ -1023,12 +1100,12 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
     d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
 
   // Values still belong to their keys, and no source index is selected twice.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
-  c2h::host_vector<key_t> h_keys = keys_in_buffer;
+  const c2h::host_vector<key_t> h_keys = keys_in_buffer;
   const c2h::host_vector<val_t> ref =
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
@@ -1111,12 +1188,12 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs run a tiny multi-CTA segment through
     d_keys_in, d_keys_out, d_values_in, d_values_out, seg_sizes, k_param, cuda::args::immediate{num_segments}, env);
 
   // Values still belong to their keys, and no source index is selected twice.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
-  c2h::host_vector<key_t> h_keys = keys_in_buffer;
+  const c2h::host_vector<key_t> h_keys = keys_in_buffer;
   const c2h::host_vector<val_t> ref =
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
@@ -1204,12 +1281,12 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
     d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
 
   // Values still belong to their keys, and no source index is selected twice.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
   // The deterministic path must return *exactly* the index-ordered top-k. Compare per-segment selected index sets.
-  c2h::host_vector<key_t> h_keys = keys_in_buffer;
+  const c2h::host_vector<key_t> h_keys = keys_in_buffer;
   const c2h::host_vector<val_t> ref =
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
@@ -1309,7 +1386,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break streams the 
 
   // Materialize the (non-contiguous) key input for verification: same heavy-tie function of the global index.
   c2h::host_vector<key_t> h_keys(static_cast<cuda::std::size_t>(num_items));
-  heavy_tie_key_op<key_t> key_op{};
+  const heavy_tie_key_op<key_t> key_op{};
   for (segment_size_t idx = 0; idx < num_items; ++idx)
   {
     h_keys[static_cast<cuda::std::size_t>(idx)] = key_op(idx);
@@ -1447,7 +1524,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic unspecified tie-break 
   }
 
   // Sanity: values still belong to their keys and no source index repeats within a segment.
-  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+  const c2h::device_vector<key_t> expected_keys(keys_in_buffer);
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_a, values_out_a) == true);
   REQUIRE(verify_unique_indices(values_out_a, num_segments, k) == true);
   // The second run uses config B (the streaming path under gpu_to_gpu); validate its pairing/uniqueness too so a
@@ -2011,7 +2088,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
   c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);
@@ -2130,7 +2207,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with fixed-size segments and pe
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output. Input segments are fixed-size (strided); output segments are compacted (variable).
   c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
@@ -2248,7 +2325,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with variable-size segments and
   c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
-  segment_size_t total_output_size = compacted_offsets.back();
+  const segment_size_t total_output_size = compacted_offsets.back();
 
   // Prepare keys input & output
   c2h::device_vector<key_t> keys_in_buffer(num_items, thrust::no_init);

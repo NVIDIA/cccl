@@ -103,7 +103,7 @@ public:
 
     if (!__prev_mapping_result.is_valid())
     {
-      return _MappingResult::invalid();
+      return _MappingResult::__invalid();
     }
 
     const auto __prev_nunits     = __prev_mapping_result.unit_count();
@@ -128,7 +128,7 @@ public:
     {
       if (__curr_group_rank >= __curr_ngroups)
       {
-        return _MappingResult::invalid_with_group_count(__ngroups);
+        return _MappingResult::__invalid();
       }
     }
 
@@ -191,7 +191,7 @@ public:
 
     if (!__prev_mapping_result.is_valid())
     {
-      return _MappingResult::invalid();
+      return _MappingResult::__invalid();
     }
 
     const auto __prev_nunits     = __prev_mapping_result.unit_count();
@@ -209,7 +209,7 @@ public:
     {
       if (__curr_group_rank >= __curr_ngroups)
       {
-        return _MappingResult::invalid_with_group_count(__ngroups);
+        return _MappingResult::__invalid();
       }
     }
 

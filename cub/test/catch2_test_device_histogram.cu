@@ -83,7 +83,7 @@ __attribute__((optimize("no-tree-vectorize")))
 #  endif
 auto cast_if_half(array<half_t, N> a)
 {
-  __half* p = cast_if_half_pointer(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
+  const __half* p = cast_if_half_pointer(a.data()); // cast to avoid ambiguous conversion from half_t -> __half
   array<__half, N> r;
   for (size_t i = 0; i < N; i++)
   {
@@ -693,9 +693,9 @@ try
 
   auto sample_iterator = cuda::counting_iterator<sample_t>{0};
   array<counter_t*, 1> d_histogram_array{};
-  array<int, 1> num_levels_array  = {num_levels};
-  array<int, 1> lower_level_array = {0};
-  array<int, 1> upper_level_array = {num_bins};
+  const array<int, 1> num_levels_array  = {num_levels};
+  const array<int, 1> lower_level_array = {0};
+  const array<int, 1> upper_level_array = {num_bins};
 
   c2h::device_vector<counter_t> d_histogram(num_bins);
   d_histogram_array[0] = thrust::raw_pointer_cast(d_histogram.data());

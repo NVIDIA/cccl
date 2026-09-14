@@ -408,10 +408,10 @@ void assert_equal(
 
   bool failure = false;
 
-  difference_type length1 = ::cuda::std::distance(first1, last1);
-  difference_type length2 = ::cuda::std::distance(first2, last2);
+  const difference_type length1 = ::cuda::std::distance(first1, last1);
+  const difference_type length2 = ::cuda::std::distance(first2, last2);
 
-  difference_type min_length = ::cuda::std::min(length1, length2);
+  const difference_type min_length = ::cuda::std::min(length1, length2);
 
   unittest::UnitTestFailure f;
   f << "[" << filename << ":" << lineno << "] ";
@@ -514,7 +514,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::host_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_equal(A, B_host, filename, lineno);
 }
 
@@ -524,7 +524,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::device_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
   assert_equal(A_host, B, filename, lineno);
 }
 
@@ -534,8 +534,8 @@ void assert_equal(const THRUST_NS_QUALIFIER::device_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
-  THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
   assert_equal(A_host, B_host, filename, lineno);
 }
 
@@ -572,7 +572,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::device_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
   assert_equal(A_host, B, filename, lineno);
 }
 
@@ -582,7 +582,7 @@ void assert_equal(const THRUST_NS_QUALIFIER::universal_vector<T, Alloc1>& A,
                   const std::string& filename = "unknown",
                   int lineno                  = -1)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_equal(A, B_host, filename, lineno);
 }
 
@@ -616,7 +616,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_almost_equal(A, B_host, filename, lineno, a_tol, r_tol);
 }
 
@@ -629,7 +629,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc2> A_host = A;
   assert_almost_equal(A_host, B, filename, lineno, a_tol, r_tol);
 }
 
@@ -642,8 +642,8 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
-  THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T> B_host = B;
   assert_almost_equal(A_host, B_host, filename, lineno, a_tol, r_tol);
 }
 
@@ -692,7 +692,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> A_host = A;
   assert_almost_equal(A_host, B, filename, lineno, a_tol, r_tol);
 }
 
@@ -705,7 +705,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
+  const THRUST_NS_QUALIFIER::host_vector<T, Alloc1> B_host = B;
   assert_almost_equal(A, B_host, filename, lineno, a_tol, r_tol);
 }
 

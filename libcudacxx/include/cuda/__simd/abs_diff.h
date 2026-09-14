@@ -47,7 +47,7 @@ struct __abs_diff_8bit_operation
 {
   template <typename _ResultStorage, typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _ResultStorage
-  operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __lhs, const _Storage& __rhs) noexcept
   {
     using __unsigned_storage_t _CCCL_NODEBUG = ::cuda::std::simd::__simd_storage_u32_t<_ResultStorage>;
     constexpr __unsigned_storage_t __c_u{};
@@ -65,7 +65,7 @@ struct __abs_diff_32bit_operation
 {
   template <typename _ResultStorage, typename _Storage>
   [[nodiscard]] _CCCL_DEVICE_API constexpr _ResultStorage
-  operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __lhs, const _Storage& __rhs) noexcept
   {
     constexpr auto __size = ::cuda::std::simd::basic_vec<_Tp, _Abi>::size();
     _ResultStorage __result{};

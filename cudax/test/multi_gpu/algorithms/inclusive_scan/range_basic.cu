@@ -40,7 +40,7 @@ using scan_test_util::inclusive_expected_for_rank;
 // shaped.
 template <class Env, class T, class Op>
 void do_inclusive_scan(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   const std::vector<Env>& envs,
   std::vector<cuda::device_buffer<T>>& in,
   std::vector<cuda::device_buffer<T>>& out,
@@ -54,7 +54,7 @@ void do_inclusive_scan(
   INFO("init = " << init);
   INFO("ident = " << ident);
 
-  cudax::inclusive_scan(
+  cudax::mgmn::inclusive_scan(
     cudax::distributed,
     comms,
     envs,
@@ -103,7 +103,7 @@ MULTI_GPU_TEST("inclusive_scan documentation example", c2h::type_list<int>)
     outputs.emplace_back(cuda::make_device_buffer<int>(streams[i], device, input_values.size(), cuda::no_init));
   }
 
-  cudax::inclusive_scan(
+  cudax::mgmn::inclusive_scan(
     cudax::distributed,
     comms,
     // Passing streams as the environment directly

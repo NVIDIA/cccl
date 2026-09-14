@@ -312,7 +312,7 @@ inline constexpr size_t max_threshold     = (std::numeric_limits<size_t>::max)()
 
 inline std::vector<size_t> test_sizes = [] {
   std::vector<size_t> v;
-  for (size_t s : standard_test_sizes)
+  for (const size_t s : standard_test_sizes)
   {
     if (s <= default_threshold)
     {
