@@ -7,6 +7,9 @@
 
 from __future__ import annotations
 
+import os
+import re
+import shutil
 import subprocess
 import sys
 from functools import lru_cache
@@ -630,7 +633,7 @@ def _repeated_warp_exchange_kernel(width: int):
         pytest.param(_LOGICAL_WARP_THREADS, id="logical"),
     ),
 )
-def test_repeated_warp_exchange_reuses_isolated_group_storage(width: int) -> None:
+def test_warp_exchange_inverse_round_trip(width: int) -> None:
     source = _values(_TILE_ITEMS, shift=139)
     observed = np.full(_TILE_ITEMS, -2049, dtype=np.int32)
 
@@ -982,3 +985,98 @@ def test_runtime_offset_outside_signed_int32_traps_in_an_isolated_context(
             "CUDA_ERROR_LAUNCH_FAILED",
         )
     ), output
+
+
+_REUSE_THREADS = 256
+_REUSE_ROUNDS = 10
+
+
+def _run_same_direction_warp_reuse(width, *, check_output=True):
+    @cuda.jit
+    def kernel(observed):
+        thread = cuda.threadIdx.x
+        group = thread // width
+        payload = qualified_coop.ThreadData(3, dtype=types.int32)
+        # Every member of a logical group takes the same number of iterations;
+        # sibling groups need not reach their barriers together.
+        for iteration in range(8 + group % 3):
+            for item in range(3):
+                payload[item] = iteration * 997 + thread * 3 + item
+            result = qualified_coop.exchange(
+                qualified_coop.this_warp().group_by(width),
+                payload,
+                mode="blocked_to_striped",
+            )
+            for item in range(3):
+                observed[iteration * _REUSE_THREADS * 3 + thread * 3 + item] = result[
+                    item
+                ]
+
+    observed = np.full(_REUSE_ROUNDS * _REUSE_THREADS * 3, -1, dtype=np.int32)
+    kernel[1, _REUSE_THREADS](observed)
+    cuda.synchronize()
+    if check_output:
+        expected = np.full_like(observed, -1)
+        for group in range(_REUSE_THREADS // width):
+            for iteration in range(8 + group % 3):
+                for lane in range(width):
+                    for item in range(3):
+                        thread = group * width + lane
+                        index = iteration * _REUSE_THREADS * 3 + thread * 3 + item
+                        expected[index] = (
+                            iteration * 997 + group * width * 3 + item * width + lane
+                        )
+        np.testing.assert_array_equal(observed, expected)
+
+
+@pytest.mark.parametrize("width", (8, 16, 32))
+def test_warp_exchange_same_direction_reuse(width):
+    _run_same_direction_warp_reuse(width)
+
+
+@pytest.mark.parametrize("width", (8, 16, 32))
+def test_warp_exchange_reuse_racecheck(width):
+    # Expensive instrumentation is opt-in and must be scheduled serially.
+    if os.environ.get("CUDA_COOP_RUN_RACECHECK") != "1":
+        pytest.skip("set CUDA_COOP_RUN_RACECHECK=1 for serial sanitizer qualification")
+    sanitizer = shutil.which("compute-sanitizer")
+    if sanitizer is None:
+        pytest.skip("compute-sanitizer is not available")
+    for disable_barrier in (False, True):
+        script = f"""
+import runpy
+from pathlib import Path
+import cuda.coop.numba_mlir as coop
+assert Path(coop.__file__).resolve() == Path({_QUALIFIED_COOP_ORIGIN.as_posix()!r})
+namespace = runpy.run_path({str(Path(__file__).resolve())!r})
+if {disable_barrier!r}:
+    from cuda.coop.numba_mlir._compiler._rewrite_storage import _StorageRewrite
+    _StorageRewrite._emit_temp_storage_auto_sync = lambda *args, **kwargs: None
+namespace['_run_same_direction_warp_reuse']({width}, check_output={not disable_barrier!r})
+"""
+        result = subprocess.run(
+            [
+                sanitizer,
+                "--tool",
+                "racecheck",
+                "--error-exitcode",
+                "99",
+                sys.executable,
+                _SAFE_PATH_FLAG,
+                "-c",
+                script,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        output = result.stdout + result.stderr
+        summary = re.search(r"RACECHECK SUMMARY: (\d+) hazards displayed", output)
+        assert summary is not None, output
+        if disable_barrier:
+            # A clean negative control would make this an insensitive test.
+            assert result.returncode == 99, output
+            assert int(summary[1]) > 0, output
+        else:
+            assert result.returncode == 0, output
+            assert int(summary[1]) == 0, output
