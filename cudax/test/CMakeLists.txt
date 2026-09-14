@@ -1,6 +1,19 @@
 cccl_get_c2h()
 cccl_get_cudatoolkit()
 
+# Since CMake 4.4, the CUDA::cufilt target is available, before that we need to find it manually.
+if ("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "4.4")
+  set(cudax_cufilt_lib CUDA::cufilt)
+else()
+  find_library(
+    cudax_cufilt_lib
+    "cufilt"
+    PATHS "${CUDAToolkit_LIBRARY_DIR}"
+    REQUIRED
+    NO_DEFAULT_PATH
+  )
+endif()
+
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -243,6 +256,15 @@ cudax_add_catch2_test(test_target coop.shuffle_up.threads_within_warp
 cudax_add_catch2_test(test_target coop.scratch
     coop/scratch.cu
 )
+
+# Disable cudax::demangle testing on windows, due to:
+#   error LNK2038: mismatch detected for 'RuntimeLibrary': value 'MT_StaticRelease' doesn't match value
+#                  'MD_DynamicRelease' in catch2_runner.cu.obj
+# This is caused by catch2_runner.cu.obj using dynamic runtime and cu++filt.lib using static runtime.
+if (NOT WIN32)
+  cudax_add_catch2_test(test_target binutils.demangle binutils/demangle.cu)
+  target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
+endif()
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
