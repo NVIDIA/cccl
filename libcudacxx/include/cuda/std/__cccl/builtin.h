@@ -117,11 +117,19 @@
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
 // NVRTC supports __builtin_constant_p in CTK 13.4, but _CCCL_HAS_BUILTIN does not detect it.
-// NVCC doesn't recognize it in host/device code before 13.4.
-#if (_CCCL_HAS_BUILTIN(__builtin_constant_p) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >=, 13, 4)) \
-  && !_CCCL_CUDA_COMPILER(NVCC, <, 13, 4)
+#if _CCCL_HAS_BUILTIN(__builtin_constant_p) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >=, 13, 4)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // builtin_constant_p availability
+
+// NVCC doesn't recognize it in host/device code before 13.4
+#if defined(_CCCL_BUILTIN_CONSTANT_P)
+#  define _CCCL_BUILTIN_CONSTANT_P_HOST_DEVICE(...) _CCCL_BUILTIN_CONSTANT_P(__VA_ARGS__)
+#endif
+
+// exclude only NVCC, while keeping NVRTC, clang-cuda, host compilers
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 4)
+#  undef _CCCL_BUILTIN_CONSTANT_P_HOST_DEVICE
+#endif
 
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) __builtin_expect(_EXPR, _VAL)

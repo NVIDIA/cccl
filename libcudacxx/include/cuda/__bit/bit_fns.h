@@ -48,8 +48,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   {
     return -1;
   }
-#if defined(_CCCL_BUILTIN_CONSTANT_P)
-  if (_CCCL_BUILTIN_CONSTANT_P(__rank))
+#if defined(_CCCL_BUILTIN_CONSTANT_P_HOST_DEVICE)
+  if (_CCCL_BUILTIN_CONSTANT_P_HOST_DEVICE(__rank))
   {
     if (__rank == 0)
     {
@@ -60,7 +60,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
       return (__value == static_cast<_Tp>(-1)) ? __digits - 1 : -1;
     }
   }
-#endif // defined(_CCCL_BUILTIN_CONSTANT_P)
+#endif // _CCCL_BUILTIN_CONSTANT_P_HOST_DEVICE
   auto __window   = +__value; // small types are promoted to 32 bits
   int __remaining = __rank;
   int __position  = 0;
