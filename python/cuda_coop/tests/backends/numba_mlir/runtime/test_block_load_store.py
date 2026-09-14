@@ -1655,3 +1655,91 @@ def test_thread_data_alignment_with_inferred_load_store(module, alignment):
     output = cuda.device_array_like(device_source)
     kernel[1, _THREADS](device_source, output)
     np.testing.assert_array_equal(output.copy_to_host(), source)
+
+
+_LOOPED_THREADS = 1024
+_LOOPED_ITEMS_PER_THREAD = 4
+_LOOPED_TILE_ITEMS = _LOOPED_THREADS * _LOOPED_ITEMS_PER_THREAD
+_LOOPED_TILES = 8
+
+
+@lru_cache(maxsize=None)
+def _looped_exclusive_store_kernel(manual_sync: bool):
+    # One transpose store call site reuses its exclusive slice on every loop
+    # iteration. Correctness requires a reuse barrier between iterations.
+    if manual_sync:
+
+        @cuda.jit
+        def kernel(destination):
+            thread = cuda.threadIdx.x
+            storage = qualified_coop.TempStorage(
+                sharing="exclusive",
+                auto_sync=False,
+            )
+            payload = qualified_coop.ThreadData(
+                _LOOPED_ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            for tile in range(_LOOPED_TILES):
+                tile_offset = tile * _LOOPED_TILE_ITEMS
+                for item in range(_LOOPED_ITEMS_PER_THREAD):
+                    payload[item] = (
+                        tile_offset + thread * _LOOPED_ITEMS_PER_THREAD + item
+                    )
+                qualified_coop.store(
+                    qualified_coop.this_block(),
+                    destination,
+                    payload,
+                    algorithm="transpose",
+                    offset=tile_offset,
+                    temp_storage=storage,
+                )
+                cuda.syncthreads()
+
+    else:
+
+        @cuda.jit
+        def kernel(destination):
+            thread = cuda.threadIdx.x
+            storage = qualified_coop.TempStorage(sharing="exclusive")
+            payload = qualified_coop.ThreadData(
+                _LOOPED_ITEMS_PER_THREAD,
+                dtype=types.int32,
+            )
+            for tile in range(_LOOPED_TILES):
+                tile_offset = tile * _LOOPED_TILE_ITEMS
+                for item in range(_LOOPED_ITEMS_PER_THREAD):
+                    payload[item] = (
+                        tile_offset + thread * _LOOPED_ITEMS_PER_THREAD + item
+                    )
+                qualified_coop.store(
+                    qualified_coop.this_block(),
+                    destination,
+                    payload,
+                    algorithm="transpose",
+                    offset=tile_offset,
+                    temp_storage=storage,
+                )
+
+    return kernel
+
+
+@pytest.mark.parametrize(
+    "manual_sync",
+    (False, True),
+    ids=("exclusive-auto-sync", "exclusive-manual-sync"),
+)
+def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(manual_sync):
+    destination = np.full(_LOOPED_TILES * _LOOPED_TILE_ITEMS, -1, dtype=np.int32)
+
+    dispatcher = _looped_exclusive_store_kernel(manual_sync)
+    dispatcher[1, _LOOPED_THREADS](destination)
+
+    np.testing.assert_array_equal(
+        destination,
+        np.arange(_LOOPED_TILES * _LOOPED_TILE_ITEMS, dtype=np.int32),
+    )
+    compiled = next(iter(dispatcher._launch_config_overloads.values()))
+    # Exactly one block barrier per iteration: the compiler's trailing reuse
+    # barrier by default, or the caller's explicit one with auto_sync=False.
+    assert compiled.metadata["mlir_module_str"].count("gpu.barrier") == 1
