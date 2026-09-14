@@ -55,8 +55,10 @@ void gen_into_device_buffer(
 }
 } // namespace detail
 
-// `size` is the number of generated items shared by both buffers. The owning
-// buffers may contain additional capacity that is not part of the generated sequence.
+//! @brief Holds generated device and host buffers and their shared logical size.
+//!
+//! @c size is the number of generated items shared by both buffers. The owning buffers may contain additional
+//! capacity that is not part of the generated sequence.
 template <typename T>
 struct sized_device_host_buffers
 {
@@ -65,11 +67,9 @@ struct sized_device_host_buffers
   std::size_t size;
 };
 
-/**
- * @brief Generates random data with the existing c2h device generator and returns it in device memory.
- *
- * @pre If `stream` is non-default, it must have been created for `device`.
- */
+//! @brief Generates random data with the existing c2h device generator and returns it in device memory.
+//!
+//! @pre If @c stream is non-default, it must have been created for @c device.
 template <typename T>
 [[nodiscard]] cuda::device_buffer<T> gen_device_buffer(
   cuda::stream_ref stream,
@@ -88,11 +88,9 @@ template <typename T>
   return d_items;
 }
 
-/**
- * @brief Generates random data with the existing c2h device generator and returns device and host buffers.
- *
- * @pre If `stream` is non-default, it must have been created for `device`.
- */
+//! @brief Generates random data with the existing c2h device generator and returns device and host buffers.
+//!
+//! @pre If @c stream is non-default, it must have been created for @c device.
 template <typename T>
 [[nodiscard]] sized_device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
@@ -110,11 +108,9 @@ template <typename T>
   return {::cuda::std::move(d_items), ::cuda::std::move(h_items), items_count};
 }
 
-/**
- * @brief Generates random data with the existing c2h device generator and returns it in host pageable memory.
- *
- * @pre If `stream` is non-default, it must have been created for `device`.
- */
+//! @brief Generates random data with the existing c2h device generator and returns it in host pageable memory.
+//!
+//! @pre If @c stream is non-default, it must have been created for @c device.
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,
