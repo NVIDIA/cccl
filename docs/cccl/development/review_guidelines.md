@@ -3,6 +3,31 @@
 Guidelines for reviewing CCCL changes, distilled from past regressions. Each guideline
 states what a reviewer — human or AI — should flag in a diff.
 
+## Format
+
+Each guideline is a section of the form:
+
+```markdown
+## <area>.<slug> (<severity>, <scope>)
+
+<!-- provenance: #<introducing PR>→#<fixing PR> <short note>; ... -->
+
+<3–8 lines of imperative guidance: what to flag in a diff, and under which conditions
+it is acceptable. If a grep could find the pattern, end with
+"Candidate for a pre-commit grep.">
+```
+
+- `<area>.<slug>` — stable rule id; `area` is one of `build`, `correctness`, `perf`,
+  `api`, `abi`, `test`, `infra`, `docs`. New areas and slugs can be added as needed.
+- `<severity>` — `critical` (must be addressed), `important` (not addressing requires a justification),
+  or `suggestion` (worth considering, no action required).
+- `<scope>` — which files/diffs the rule applies to.
+- The provenance comment lists the historical regressions the rule was distilled from
+  (introducing PR → fixing PR); it is metadata for maintainers, not part of the rule.
+
+Rules that no longer apply move to the `Retired` section at the end, keeping their
+provenance. They will be removed at some point.
+
 ## build.compiler-matrix (important, all C++ code)
 
 <!-- provenance: #534→#536 MSVC int128/asm; #1403→#1423 VLAs; #1320→#1417 NVHPC/GCC; ICC visibility →#1152 -->
