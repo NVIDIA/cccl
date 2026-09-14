@@ -77,7 +77,7 @@ compile_time:
       gpu: rtx2080
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
-      targets: [rmm, ucxx, kvikio, cudf, cudf_kafka]
+      targets: [rapidsmpf, cudf, cudf_kafka]
       slices: *compile_time_third_party_slices
     - id: rapids-cuvs
       name: RAPIDS cuVS compile-time bench
@@ -85,7 +85,7 @@ compile_time:
       gpu: rtx2080
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
-      targets: [rmm, ucxx, raft, cuvs, nvforest, cuml]
+      targets: [ucxx, cuml, cuvs]
       slices: *compile_time_third_party_slices
     - id: rapids-cugraph
       name: RAPIDS cuGraph compile-time bench
@@ -93,7 +93,7 @@ compile_time:
       gpu: rtx2080
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
-      targets: [rmm, ucxx, raft, cuvs, cugraph, wholegraph]
+      targets: [cugraph, wholegraph]
       slices: *compile_time_third_party_slices
     - id: rapids-cuopt
       name: RAPIDS cuOpt compile-time bench
@@ -102,6 +102,14 @@ compile_time:
       launch_args: "--cuda 13.3 --host rapids-conda"
       baseline_ref: origin/main
       targets: [cuopt]
+      slices: *compile_time_third_party_slices
+    - id: rapids-raft
+      name: RAPIDS raft compile-time bench
+      project: rapids
+      gpu: rtx2080
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      targets: [rmm, raft]
       slices: *compile_time_third_party_slices
 
 # Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells

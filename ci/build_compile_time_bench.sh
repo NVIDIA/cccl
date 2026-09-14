@@ -334,8 +334,19 @@ collect_third_party_traces() {
       ;;
     rapids)
       local lib
+      local repo_path
+      declare -A collected_repo_paths=()
       for lib in "${build_targets[@]}"; do
-        collect_args+=(--input "${lib}=${HOME}/${lib}")
+        repo_path="$(
+          yq -r ".repos[] | select(.cpp[].name == \"${lib}\") | .path" \
+            "${rapids_manifest}"
+        )"
+        [[ -n "${repo_path}" && "${repo_path}" != "null" ]] \
+          || { echo "error: no RAPIDS repository contains C++ target '${lib}'" >&2; exit 1; }
+        if [[ -z "${collected_repo_paths[${repo_path}]+x}" ]]; then
+          collect_args+=(--input "${repo_path//\//-}=${HOME}/${repo_path}")
+          collected_repo_paths["${repo_path}"]=1
+        fi
       done
       ;;
     *)

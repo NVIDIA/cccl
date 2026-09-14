@@ -1588,6 +1588,36 @@ compile_time:
                 self.assertEqual(len(grouped_slices), 1)
                 self.assertEqual(grouped_slices[0]["filter"], "template-instantiation")
 
+    def test_real_matrix_uses_only_rapids_leaf_targets(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                MATRIX_PATH.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        configs = {
+            config["id"]: json.loads(config["targets_json"])
+            for config in json.loads(completed.stdout)["include"]
+            if config["project"] == "rapids"
+        }
+        self.assertEqual(
+            configs,
+            {
+                "rapids-cudf": ["rapidsmpf", "cudf", "cudf_kafka"],
+                "rapids-cuvs": ["ucxx", "cuml", "cuvs"],
+                "rapids-cugraph": ["cugraph", "wholegraph"],
+                "rapids-cuopt": ["cuopt"],
+                "rapids-raft": ["rmm", "raft"],
+            },
+        )
+
     def test_parse_matrix_requires_rapids_targets(self) -> None:
         matrix = self.work / "matrix.yaml"
         matrix.write_text(
@@ -1908,6 +1938,19 @@ compile_time:
         )
         self.assertIn('mapfile -t build_targets <<< "${rapids_targets}"', script)
         self.assertNotIn("rapids requires at least one -target library", script)
+
+    def test_wrapper_resolves_rapids_targets_to_repository_paths(self) -> None:
+        script = WRAPPER_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'select(.cpp[].name == \\"${lib}\\") | .path',
+            script,
+        )
+        self.assertIn(
+            'collect_args+=(--input "${repo_path//\\//-}=${HOME}/${repo_path}")',
+            script,
+        )
+        self.assertNotIn('collect_args+=(--input "${lib}=${HOME}/${lib}")', script)
 
     def test_render_comment_omits_empty_sections_and_splits_directions(self) -> None:
         summary = self.work / "summary.json"
