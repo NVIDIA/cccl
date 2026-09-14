@@ -435,6 +435,17 @@ and calls ``coop.load`` can be planned after it is inlined into its kernel
 caller. The descriptor then has the caller's launch context. A group
 descriptor escaping into an arbitrary runtime object or a non-inlined
 device call is not supported by this mechanism.
+Descriptor validation waits for default helper inlining and recursively follows
+aliases and conditional definitions. A surviving unsupported helper or
+descriptor escape is diagnosed with its name. Standalone callbacks cannot
+contain collectives because they lack the caller's cooperative launch context.
+
+For the MVP, ``literal_unroll`` values shaping cooperative groups, selectors,
+payloads, or storage are explicitly unsupported. The planner diagnoses those
+uses and suggests explicit calls with compile-time constants. Ordinary unrolling
+unrelated to cooperative planning remains available. Supporting shaped unrolling
+would require revisiting planner ordering; this implementation does not move
+planning after SSA or unrolling.
 
 The portable functions in ``_core/api/`` are compiler markers with shared
 signatures and validation rules. Numba's planner recognizes their identity
@@ -580,6 +591,9 @@ reuse barrier. For supported physical and logical Warp calls, it emits
 ``syncwarp`` with the participating group's mask. CUB's synchronization
 inside a collective does not generally establish that a later collective
 can immediately overwrite the same scratch.
+Automatic synchronization adds a trailing barrier after each storage-consuming
+call. It does not establish that arbitrary user control flow is safe: callers
+must still ensure that all group members reach the collective and barrier.
 
 A block operation can expose that reuse choice through ``TempStorage``:
 
@@ -601,18 +615,35 @@ Only ``size_in_bytes`` may be positional in ``TempStorage``; the other
 options are keyword-only. An explicit ``alignment`` requests a minimum,
 which the planner can strengthen to meet the requirements of its uses.
 
-``sharing="exclusive"`` allocates separate slices for distinct uses and
-disables automatic reuse synchronization. ``auto_sync=False`` on shared
-storage leaves synchronization to the caller. A loop that reaches the
-same call site again still needs safe reuse, including with an exclusive
-descriptor. For a block collective, put the required block barrier where
-every thread reaches it before the next use.
+``sharing="exclusive"`` allocates separate slices for distinct uses. Shared
+and exclusive descriptors both default to automatic synchronization; layout and
+synchronization are independent. ``auto_sync=False`` leaves synchronization to
+the caller. A loop that reaches the same call site again still needs safe reuse,
+including with an exclusive descriptor. For a block collective, put the required
+block barrier where every thread reaches it before the next use. The planner
+conservatively rejects collapsing multiple manually synchronized constructors
+into one descriptor. This is a validation limit, not proof that each rejected
+program races. Planner and rewrite contracts are cross-checked before emission
+so parser disagreement cannot silently remove a reuse barrier.
 
 The planner can switch its backing allocation to dynamic shared memory
 when the required size exceeds the static allocation limit, subject to
 the device's opt-in limit. It reports the required launch bytes through
 Numba-CUDA-MLIR's compiler metadata. The user-facing call does not need a
 manually maintained byte count.
+The launcher treats that requirement as a minimum, not an allocation added to
+user-supplied dynamic bytes. Dynamic backing accepts alignment up to 16 bytes.
+
+Until a released compiler with the shared-memory allocation fix is qualified,
+the rewrite rejects user dynamic or runtime-sized shared allocations alongside
+cooperative backing, and user static shared allocations when cooperative
+backing becomes dynamic. It inspects user allocations after helper inlining,
+including aliases and implicit oversized cooperative scratch. Static/static
+combinations remain valid, and storage-free operations introduce no conflict.
+Diagnostics identify both allocations and suggest keeping them static within
+the device limit, moving the user buffer to global memory, or using separate
+kernels. Passing coexistence tests against a development compiler alone does
+not remove the compatibility guard.
 
 These controls are operation-specific. Warp Load/Store and Warp Scan use
 compiler-owned storage and reject an explicit ``TempStorage``. Exchange
