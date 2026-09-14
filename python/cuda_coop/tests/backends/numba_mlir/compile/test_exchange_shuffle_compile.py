@@ -8,13 +8,15 @@
 from __future__ import annotations
 
 import os
+import re
 from types import SimpleNamespace
 
 import pytest
 
 pytest.importorskip("numba_cuda_mlir")
 
-from numba_cuda_mlir import types
+import numba_cuda_mlir.tools as numba_mlir_tools
+from numba_cuda_mlir import cuda, types
 
 from cuda.coop._core import ArgumentBinding, SynchronizationScope
 from cuda.coop.numba_mlir import _types
@@ -517,3 +519,105 @@ def test_untyped_load_composes_directly_into_exchange(
     assert result.metadata["ltoir"]
     assert result.metadata["cubin"]
     assert result.metadata["linked_external_link_items"]
+
+
+def _evaluate_warp_mask(definitions, operand, rank):
+    """Evaluate only the emitted mask dependencies, independently of the rewrite."""
+    expression = definitions[operand]
+    operation = expression.split()[0]
+    inputs = re.findall(r"%[\w-]+", expression)
+    if operation == "arith.constant":
+        return int(expression.split()[1])
+    if operation == "gpu.thread_id":
+        return rank if expression.split()[1] == "x" else 0
+    if operation == "gpu.block_dim":
+        return _BLOCK_THREADS if expression.split()[1] == "x" else 1
+    values = [_evaluate_warp_mask(definitions, value, rank) for value in inputs]
+    if operation in {"arith.index_cast", "arith.extui"}:
+        return values[0]
+    if operation == "arith.trunci":
+        assert expression.endswith("to i32")
+        return values[0] & 0xFFFFFFFF
+    if operation == "arith.extsi":
+        assert len(values) == 1 and expression.endswith(": i32 to i64"), expression
+        value = values[0] & 0xFFFFFFFF
+        return value - (1 << 32) if value & (1 << 31) else value
+    assert (
+        operation
+        in {
+            "arith.addi",
+            "arith.muli",
+            "arith.andi",
+            "arith.floordivsi",
+            "arith.shli",
+        }
+        and len(values) == 2
+    ), f"unexpected warp-mask operation: {expression}"
+    left, right = values
+    if operation == "arith.addi":
+        return left + right
+    if operation == "arith.muli":
+        return left * right
+    if operation == "arith.andi":
+        return left & right
+    if operation == "arith.floordivsi":
+        return left // right
+    if operation == "arith.shli":
+        return left << right
+    raise AssertionError(f"unexpected warp-mask operation: {expression}")
+
+
+@pytest.mark.parametrize("width", _LOGICAL_WARP_WIDTHS)
+def test_production_warp_exchange_emits_ordered_reuse_barriers(width, monkeypatch):
+    import cuda.coop.numba_mlir as coop
+
+    monkeypatch.setattr(
+        numba_mlir_tools,
+        "get_gpu_compute_capability",
+        lambda as_type=str: (9, 0) if as_type is tuple else "sm_90",
+    )
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        thread = cuda.threadIdx.x
+        payload = coop.ThreadData(2, dtype=types.int32)
+        payload[0] = source[thread * 2]
+        payload[1] = source[thread * 2 + 1]
+        first = coop.exchange(
+            coop.this_warp().group_by(width), payload, mode="blocked_to_striped"
+        )
+        second = coop.exchange(
+            coop.this_warp().group_by(width), first, mode="blocked_to_striped"
+        )
+        destination[thread * 2] = second[0]
+        destination[thread * 2 + 1] = second[1]
+
+    launch_key = (
+        ("grid", (1, 1, 1)),
+        ("block", (_BLOCK_THREADS, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    result = kernel._compile_launch_config_signature(
+        types.void(types.int32[::1], types.int32[::1]), launch_key
+    )
+    assert result.metadata["cubin"]
+    mlir = result.metadata["mlir_module_str"]
+    definitions = dict(re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.M))
+    operands = re.findall(r"nvvm.bar.warp.sync\s+(%[\w-]+)", mlir)
+    assert len(operands) == 2
+    assert "gpu.barrier" not in mlir
+    events = [
+        "call" if "func.call" in line else "barrier"
+        for line in mlir.splitlines()
+        if ("func.call" in line and "BlockedToStriped" in line)
+        or "nvvm.bar.warp.sync" in line
+    ]
+    assert events == ["call", "barrier", "call", "barrier"]
+    for rank in range(_BLOCK_THREADS):
+        group_start = (rank % 32 // width) * width
+        expected = sum(1 << lane for lane in range(group_start, group_start + width))
+        for operand in operands:
+            assert (
+                _evaluate_warp_mask(definitions, operand, rank) & 0xFFFFFFFF == expected
+            )
