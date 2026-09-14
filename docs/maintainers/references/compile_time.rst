@@ -53,6 +53,10 @@ The wrapper accepts build-shape parameters so it behaves like other
     -target libcudacxx.test.public_headers \
     -cmake-options "-DCMAKE_CUDA_ARCHITECTURES=native"
 
+The wrapper defaults ``PARALLEL_LEVEL`` to ``(nproc - 1) / 4`` (minimum 1) so
+device-time traces are less sensitive to machine contention. Set
+``PARALLEL_LEVEL`` explicitly to override.
+
 Useful build options include:
 
 - ``-project <cccl|pytorch|matx|rapids>``

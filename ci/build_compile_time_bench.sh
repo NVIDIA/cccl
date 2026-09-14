@@ -75,9 +75,9 @@ Build options:
   -cuda, -cxx, -std, -arch    CCCL options from ci/build_common.sh
 
 Environment:
-  PARALLEL_LEVEL              Ninja/CMake build jobs (default: 8). Keep this
-                              modest; high concurrency adds noise to
-                              --fdevice-time-trace timings.
+  PARALLEL_LEVEL              Ninja/CMake build jobs (default: (nproc-1)/4,
+                              at least 1). Keep this modest; high concurrency
+                              adds noise to --fdevice-time-trace timings.
 
 Summary options:
   -tu-csv <path>              Generated-TU summary CSV
@@ -264,9 +264,14 @@ if [[ "${project}" != "cccl" && "${#common_args[@]}" -ne 0 ]]; then
 fi
 
 set -- "${common_args[@]}"
-# Device-time traces are sensitive to machine contention. Default to a modest
-# job count instead of nproc-1 from ci/build_common.sh.
-PARALLEL_LEVEL="${PARALLEL_LEVEL:-8}"
+# Device-time traces are sensitive to machine contention. Default to a quarter
+# of (nproc-1) instead of nproc-1 from ci/build_common.sh.
+if [[ -z "${PARALLEL_LEVEL:-}" ]]; then
+  PARALLEL_LEVEL=$(( ($(nproc --all) - 1) / 4 ))
+  if (( PARALLEL_LEVEL < 1 )); then
+    PARALLEL_LEVEL=1
+  fi
+fi
 export PARALLEL_LEVEL
 # shellcheck source=ci/build_common.sh
 source "${ci_dir}/build_common.sh"
