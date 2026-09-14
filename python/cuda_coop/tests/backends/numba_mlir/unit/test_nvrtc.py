@@ -369,3 +369,36 @@ def test_shared_source_dump_runs_before_provider_cache_lookup(tmp_path, monkeypa
         cpp=source, cc=90, rdc=True, code="lto", context=_context()
     )
     assert result == b"cached"
+
+
+def test_shared_source_dump_survives_compile_failure(tmp_path, monkeypatch):
+    source = "invalid CUDA source\n"
+    monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", str(tmp_path))
+
+    def fail(**kwargs):
+        raise RuntimeError("NVRTC compilation failed")
+
+    monkeypatch.setattr(_nvrtc, "compile_impl", fail)
+    with pytest.raises(RuntimeError, match="NVRTC compilation failed"):
+        _nvrtc.compile(cpp=source, cc=90, rdc=True, code="lto", context=_context())
+
+    dumped = tuple(tmp_path.glob("cuda_coop_numba_mlir_*.cu"))
+    assert len(dumped) == 1
+    assert dumped[0].read_bytes() == source.encode("utf-8")
+
+
+@pytest.mark.parametrize("shared_value", (None, ""))
+def test_retired_source_dump_setting_is_ignored(tmp_path, monkeypatch, shared_value):
+    monkeypatch.setenv("CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR", str(tmp_path))
+    if shared_value is None:
+        monkeypatch.delenv("CUDA_COOP_SOURCE_DUMP_DIR", raising=False)
+    else:
+        monkeypatch.setenv("CUDA_COOP_SOURCE_DUMP_DIR", shared_value)
+    monkeypatch.setattr(_nvrtc, "compile_impl", lambda **kwargs: b"cached")
+
+    _, result = _nvrtc.compile(
+        cpp="// source", cc=90, rdc=True, code="lto", context=_context()
+    )
+
+    assert result == b"cached"
+    assert not list(tmp_path.iterdir())
