@@ -171,7 +171,7 @@ C2H_TEST(
 
   CAPTURE(sizeof(key_type), sizeof(mapped_type), cg_size, bucket_size, probing);
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr           = ::cuda::device_default_memory_pool(stream.device());
   const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
 
@@ -283,7 +283,7 @@ C2H_TEST("fixed_capacity_map insert_and_find reports launch failures", "[contain
   using value_type = typename map_type::value_type;
   using index_type = ::cuda::std::int64_t;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(stream.device());
   map_type map{
     stream, mr, ::cuda::std::size_t{16}, cudax::cuco::empty_key{key_type{-1}}, cudax::cuco::empty_value{key_type{-1}}};
@@ -371,7 +371,7 @@ C2H_TEST("fixed_capacity_map insert_and_find supports a nontrivial payload defau
   constexpr ::cuda::std::int32_t duplicate_offset = 107;
   CAPTURE(cg_size);
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   // execution::gpu's memory-resource binding borrows a non-const resource lvalue.
   auto mr           = ::cuda::device_default_memory_pool(stream.device());
   const auto policy = ::cuda::execution::gpu.with(::cuda::get_stream, stream).with(::cuda::mr::get_memory_resource, mr);
