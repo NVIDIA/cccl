@@ -48,7 +48,7 @@ The wrapper accepts build-shape parameters so it behaves like other
 
 .. code-block:: bash
 
-  PARALLEL_LEVEL=16 ci/build_compile_time_bench.sh \
+  PARALLEL_LEVEL=8 ci/build_compile_time_bench.sh \
     -preset all-dev \
     -target libcudacxx.test.public_headers \
     -cmake-options "-DCMAKE_CUDA_ARCHITECTURES=native"
