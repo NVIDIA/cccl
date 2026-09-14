@@ -21,11 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/disjunction.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -99,7 +100,7 @@ using __cv_cond_res = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>
 template <class _Ap, class _Bp>
 struct __common_ref<_Ap&, _Bp&, enable_if_t<is_reference_v<__cv_cond_res<_Ap, _Bp>>>>
 {
-  using __type = __cv_cond_res<_Ap, _Bp>;
+  using __type _CCCL_NODEBUG = __cv_cond_res<_Ap, _Bp>;
 };
 
 //    Otherwise, let C be remove_reference_t<COMMON-REF(X&, Y&)>&&. ...
@@ -118,7 +119,7 @@ struct __common_ref_rr<
   _Bp&&,
   enable_if_t<is_convertible_v<_Ap&&, __common_ref_C<_Ap, _Bp>> && is_convertible_v<_Bp&&, __common_ref_C<_Ap, _Bp>>>>
 {
-  using __type = __common_ref_C<_Ap, _Bp>;
+  using __type _CCCL_NODEBUG = __common_ref_C<_Ap, _Bp>;
 };
 
 template <class _Ap, class _Bp>
@@ -138,7 +139,7 @@ struct __common_ref_lr
 template <class _Ap, class _Bp>
 struct __common_ref_lr<_Ap&&, _Bp&, enable_if_t<is_convertible_v<_Ap&&, __common_ref_D<_Ap, _Bp>>>>
 {
-  using __type = __common_ref_D<_Ap, _Bp>;
+  using __type _CCCL_NODEBUG = __common_ref_D<_Ap, _Bp>;
 };
 
 template <class _Ap, class _Bp>
@@ -192,8 +193,9 @@ template <class _Tp, class _Up, class = void>
 struct __common_reference_sub_bullet1 : __common_reference_sub_bullet2<_Tp, _Up>
 {};
 
-// sub-bullet 1 - If T1 and T2 are reference types and COMMON-REF(T1, T2) is well-formed, then
-// the member typedef `type` denotes that type.
+// sub-bullet 1 - Let R be COMMON-REF(T1, T2). If T1 and T2 are reference types, R is well-formed, and
+// is_convertible_v<add_pointer_t<T1>, add_pointer_t<R>> && is_convertible_v<add_pointer_t<T2>, add_pointer_t<R>> is
+// true, then the member typedef `type` denotes R.
 template <class _Tp, class _Up>
 struct common_reference<_Tp, _Up> : __common_reference_sub_bullet1<_Tp, _Up>
 {};
@@ -202,9 +204,12 @@ template <class _Tp, class _Up>
 struct __common_reference_sub_bullet1<
   _Tp,
   _Up,
-  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<is_reference_v<_Tp> && is_reference_v<_Up>>>>
+  void_t<__common_ref_t<_Tp, _Up>,
+         enable_if_t<is_reference_v<_Tp> && is_reference_v<_Up>
+                     && is_convertible_v<add_pointer_t<_Tp>, add_pointer_t<__common_ref_t<_Tp, _Up>>>
+                     && is_convertible_v<add_pointer_t<_Up>, add_pointer_t<__common_ref_t<_Tp, _Up>>>>>>
 {
-  using type = __common_ref_t<_Tp, _Up>;
+  using type _CCCL_NODEBUG = __common_ref_t<_Tp, _Up>;
 };
 
 // sub-bullet 2 - Otherwise, if basic_common_reference<remove_cvref_t<T1>, remove_cvref_t<T2>, XREF(T1), XREF(T2)>::type
@@ -223,7 +228,7 @@ using __basic_common_reference_t _CCCL_NODEBUG =
 template <class _Tp, class _Up>
 struct __common_reference_sub_bullet2<_Tp, _Up, void_t<__basic_common_reference_t<_Tp, _Up>>>
 {
-  using type = __basic_common_reference_t<_Tp, _Up>;
+  using type _CCCL_NODEBUG = __basic_common_reference_t<_Tp, _Up>;
 };
 
 // sub-bullet 3 - Otherwise, if COND-RES(T1, T2) is well-formed,
@@ -231,7 +236,7 @@ struct __common_reference_sub_bullet2<_Tp, _Up, void_t<__basic_common_reference_
 template <class _Tp, class _Up>
 struct __common_reference_sub_bullet3<_Tp, _Up, void_t<__cond_res<_Tp, _Up>>>
 {
-  using type = __cond_res<_Tp, _Up>;
+  using type _CCCL_NODEBUG = __cond_res<_Tp, _Up>;
 };
 
 // sub-bullet 4 & 5 - Otherwise, if common_type_t<T1, T2> is well-formed,
@@ -241,11 +246,22 @@ template <class _Tp, class _Up, class>
 struct __common_reference_sub_bullet3 : common_type<_Tp, _Up>
 {};
 
-// bullet 4 - If there is such a type `C`, the member typedef type shall denote the same type, if
-//            any, as `common_reference_t<C, Rest...>`.
+// bullet 4 - Let C be the type common_reference_t<T1, T2>. If there is such a type `C`, the member typedef `type`
+//            shall denote the same type, if any, as `common_reference_t<C, Rest...>`.
+template <class...>
+struct __common_references;
+
+template <class, class = void>
+struct __common_reference_fold
+{};
+
+template <class _Tp, class _Up, class... _Rest>
+struct __common_reference_fold<__common_references<_Tp, _Up, _Rest...>, void_t<common_reference_t<_Tp, _Up>>>
+    : common_reference<common_reference_t<_Tp, _Up>, _Rest...>
+{};
+
 template <class _Tp, class _Up, class _Vp, class... _Rest>
-struct common_reference<_Tp, _Up, _Vp, void_t<common_reference_t<_Tp, _Up>>, _Rest...>
-    : common_reference<common_reference_t<_Tp, _Up>, _Vp, _Rest...>
+struct common_reference<_Tp, _Up, _Vp, _Rest...> : __common_reference_fold<__common_references<_Tp, _Up, _Vp, _Rest...>>
 {};
 
 // bullet 5 - Otherwise, there shall be no member `type`.
