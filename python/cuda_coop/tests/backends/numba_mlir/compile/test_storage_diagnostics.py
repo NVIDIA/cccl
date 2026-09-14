@@ -117,15 +117,19 @@ def test_standalone_collective_helper_reports_inline_requirement():
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
-@pytest.mark.parametrize("payload_kind", ["thread_data", "local_array"])
+@pytest.mark.parametrize(
+    "payload_kind", ["thread_data", "local_array", "local_array_keyword"]
+)
 def test_literal_unroll_cannot_determine_cooperative_payload_shape(payload_kind):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         for count in literal_unroll((1, 2)):
             if payload_kind == "thread_data":
                 payload = coop.ThreadData(count, types.int32)
-            else:
+            elif payload_kind == "local_array":
                 payload = cuda.local.array(count, types.int32)
+            else:
+                payload = cuda.local.array(shape=count, dtype=types.int32)
             coop.load(coop.this_block(), source, payload)
             destination[cuda.threadIdx.x] = payload[0]
 
