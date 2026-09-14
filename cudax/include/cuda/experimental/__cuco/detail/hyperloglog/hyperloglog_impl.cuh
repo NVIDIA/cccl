@@ -615,7 +615,7 @@ private:
     {
       // Match cuda::launch's function attributes before querying occupancy. Function attributes
       // override kernel attributes, including values previously set for a smaller sketch.
-      _CCCL_TRY_RUNTIME_API(
+      _CCCL_TRY_DRIVER_API(
         ::cuda::__driver::__functionSetAttributeNoThrow,
         "cuFuncSetAttribute failed",
         ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
