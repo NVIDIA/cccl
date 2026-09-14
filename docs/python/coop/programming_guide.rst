@@ -364,6 +364,9 @@ stronger precondition. For explicit block synchronization in Numba kernels,
 ``cuda.syncthreads()`` is also available.
 
 An operation's scratch-reuse barrier protects its temporary storage.
+Automatic synchronization inserts a trailing barrier after each call that
+consumes scratch. It does not prove that arbitrary user control flow is safe;
+every member must still reach the collective and its barrier.
 Arrange synchronization for your own shared-memory communication as well.
 Constructing a group or a ``ThreadData`` object does not synchronize threads.
 
@@ -688,11 +691,12 @@ enough for the operations using it. An explicit ``alignment`` requests a
 minimum positive power of two in bytes; the compiler can strengthen it.
 Only ``size_in_bytes`` may be positional. The other options are keyword-only.
 
-``sharing="exclusive"`` gives distinct call sites separate slices and
-disables automatic reuse synchronization. A loop can still reach the same
-call site again and reuse its slice. Account for that reuse when deciding
-where barriers belong. Exclusive storage also consumes more shared memory
-when several calls could otherwise share a slice.
+``sharing="exclusive"`` gives distinct call sites separate slices. Both shared
+and exclusive storage default to automatic synchronization. A loop can reach
+the same call site again and reuse its slice, so exclusive storage still needs
+reuse barriers. It can also consume more shared memory when several calls could
+otherwise share a slice. ``sharing`` controls allocation layout independently
+of ``auto_sync``.
 
 ``auto_sync=False`` transfers reuse synchronization to the caller. For
 example, this kernel uses explicit block barriers after each storage-using
@@ -737,6 +741,11 @@ call, including between loop iterations:
 Automatic synchronization is easier to maintain. Disable it only when you
 can account for each reuse and have a reason to place barriers yourself.
 An unrelated memory access between calls does not establish a block barrier.
+The MVP conservatively rejects merging multiple manually synchronized
+``TempStorage`` constructors into one descriptor, including conditional
+definitions. Use one constructor and keep its synchronization explicit. This
+restriction reflects what the planner can establish; it does not mean that
+every rejected program necessarily races.
 
 Scratch lasts for the kernel's execution on that block. It cannot carry
 state between blocks or kernel launches. For running scan state within a
@@ -747,11 +756,39 @@ limit, the backend can use dynamic shared memory, subject to the GPU's opt-in
 limit. Numba-CUDA-MLIR automatically includes those required bytes in the
 launch configuration. You do not need to copy a compiler-reported byte count
 into the launch yourself. Requirements above the device limit are rejected.
+The required dynamic byte count is a minimum: launch-time shared bytes are not
+added to it as a separate allocation. Dynamic cooperative backing supports
+alignment requirements up to 16 bytes.
+
+With the currently supported compiler, do not combine user dynamic or
+runtime-sized ``cuda.shared.array`` allocations with cooperative scratch.
+User static shared arrays may coexist with static cooperative backing, but are
+rejected when the cooperative backing becomes dynamic, including an implicit
+oversized allocation. These checks apply after helper inlining. Keep both
+allocations static within the device limit, use global memory for the user
+buffer, or separate the work into kernels. Storage-free operations do not
+create this conflict. The compatibility restrictions remain until a released
+compiler with the shared-memory fix has passed the coexistence tests.
 
 Extra shared memory can reduce resident blocks per multiprocessor. The
 default inferred allocation and unsized shared descriptor are sufficient
 for the kernels above; use an explicit capacity when you have a reason to
 reserve that amount of shared memory.
+
+Helpers and compile-time values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Device helpers containing collectives must be inlined into the kernel so the
+planner can resolve their groups, descriptors, and launch dimensions. Default
+helper inlining is supported. A surviving non-inlined collective helper, a
+descriptor escaping through a runtime object, or a collective inside a
+standalone callback receives a compilation error. Move the collective into the
+kernel or an inlined helper; callbacks may perform ordinary device computation.
+
+The MVP does not support ``literal_unroll`` values that determine cooperative
+groups, operation selectors, or payload and storage shapes. Write the affected
+calls explicitly with compile-time constants. Ordinary runtime loops with fixed
+cooperative shapes, and unrelated uses of ``literal_unroll``, remain supported.
 
 Reduction and result ownership
 ------------------------------
