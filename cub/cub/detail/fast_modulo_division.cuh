@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -18,6 +18,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -110,6 +111,163 @@ multiply_extract_higher_bits(T value, R multiplier)
         : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);}));
   // clang-format on
 }
+
+/***********************************************************************************************************************
+ * Fast division by a precomputed unsigned constant
+ *
+ * A divisor of zero selects the identity operation. This provides a safe default state and lets callers use zero to
+ * represent an inactive division without introducing undefined behavior.
+ **********************************************************************************************************************/
+
+template <typename UInt>
+class fast_divide_by_constant
+{
+  static_assert(::cuda::std::is_unsigned_v<UInt>, "fast_divide_by_constant requires an unsigned integer type");
+  static_assert(sizeof(UInt) == 4 || sizeof(UInt) == 8, "fast_divide_by_constant supports 32- or 64-bit integers");
+
+  static constexpr int bits = static_cast<int>(sizeof(UInt) * CHAR_BIT);
+
+  enum class mode : unsigned char
+  {
+    identity,
+    shift,
+    multiply_shift,
+    hardware
+  };
+
+  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static int ceil_log2(UInt divisor) noexcept
+  {
+    return divisor <= UInt{1} ? 0 : bits - ::cuda::std::countl_zero(divisor - UInt{1});
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static UInt multiply_high(UInt lhs, UInt rhs) noexcept
+  {
+    if constexpr (sizeof(UInt) == 4)
+    {
+      return static_cast<UInt>(
+        (static_cast<::cuda::std::uint64_t>(lhs) * static_cast<::cuda::std::uint64_t>(rhs)) >> bits);
+    }
+    else
+    {
+#if _CCCL_HAS_INT128()
+      NV_IF_ELSE_TARGET(
+        NV_IS_DEVICE,
+        (return static_cast<UInt>(
+                  __umul64hi(static_cast<unsigned long long>(lhs), static_cast<unsigned long long>(rhs)));),
+        (return static_cast<UInt>((static_cast<__uint128_t>(lhs) * static_cast<__uint128_t>(rhs)) >> bits);));
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+      NV_IF_ELSE_TARGET(
+        NV_IS_DEVICE,
+        (return static_cast<UInt>(
+                  __umul64hi(static_cast<unsigned long long>(lhs), static_cast<unsigned long long>(rhs)));),
+        ({
+          const ::cuda::std::uint64_t lhs_low   = static_cast<::cuda::std::uint32_t>(lhs);
+          const ::cuda::std::uint64_t lhs_high  = lhs >> 32;
+          const ::cuda::std::uint64_t rhs_low   = static_cast<::cuda::std::uint32_t>(rhs);
+          const ::cuda::std::uint64_t rhs_high  = rhs >> 32;
+          const ::cuda::std::uint64_t low_low   = lhs_low * rhs_low;
+          const ::cuda::std::uint64_t low_high  = lhs_low * rhs_high;
+          const ::cuda::std::uint64_t high_low  = lhs_high * rhs_low;
+          const ::cuda::std::uint64_t high_high = lhs_high * rhs_high;
+          const ::cuda::std::uint64_t middle    = (low_low >> 32) + static_cast<::cuda::std::uint32_t>(low_high)
+                                                + static_cast<::cuda::std::uint32_t>(high_low);
+          return static_cast<UInt>(high_high + (low_high >> 32) + (high_low >> 32) + (middle >> 32));
+        }));
+#endif // !_CCCL_HAS_INT128()
+    }
+  }
+
+public:
+  _CCCL_HOST_DEVICE constexpr fast_divide_by_constant() noexcept {}
+
+  _CCCL_HOST_DEVICE explicit fast_divide_by_constant(UInt divisor) noexcept
+  {
+    init(divisor);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void init(UInt divisor) noexcept
+  {
+    if (divisor <= UInt{1})
+    {
+      magic_ = UInt{0};
+      shift_ = 0;
+      mode_  = mode::identity;
+      return;
+    }
+    if ((divisor & (divisor - UInt{1})) == UInt{0})
+    {
+      magic_ = UInt{0};
+      shift_ = static_cast<unsigned char>(ceil_log2(divisor));
+      mode_  = mode::shift;
+      return;
+    }
+
+    const int log2_divisor = ceil_log2(divisor);
+    if (log2_divisor == bits)
+    {
+      magic_ = divisor;
+      shift_ = 0;
+      mode_  = mode::hardware;
+      return;
+    }
+    if constexpr (sizeof(UInt) == 8)
+    {
+#if _CCCL_HAS_INT128()
+      const __uint128_t numerator   = static_cast<__uint128_t>(1) << (bits + log2_divisor);
+      const __uint128_t denominator = static_cast<__uint128_t>(divisor);
+      magic_                        = static_cast<UInt>((numerator + denominator - 1) / denominator);
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+      UInt quotient  = 0;
+      UInt remainder = 0;
+      for (int bit = bits + log2_divisor; bit >= 0; --bit)
+      {
+        UInt next_remainder     = (remainder << 1) | (bit == bits + log2_divisor ? UInt{1} : UInt{0});
+        const bool carry        = (remainder >> (bits - 1)) != 0;
+        const UInt quotient_bit = (carry || next_remainder >= divisor) ? UInt{1} : UInt{0};
+        if (quotient_bit != 0)
+        {
+          next_remainder -= divisor;
+        }
+        remainder = next_remainder;
+        quotient  = (quotient << 1) | quotient_bit;
+      }
+      magic_ = quotient + (remainder != 0 ? UInt{1} : UInt{0});
+#endif // !_CCCL_HAS_INT128()
+    }
+    else
+    {
+      const ::cuda::std::uint64_t numerator   = ::cuda::std::uint64_t{1} << (bits + log2_divisor);
+      const ::cuda::std::uint64_t denominator = static_cast<::cuda::std::uint64_t>(divisor);
+      magic_                                  = static_cast<UInt>((numerator + denominator - 1) / denominator);
+    }
+    shift_ = static_cast<unsigned char>(log2_divisor);
+    mode_  = mode::multiply_shift;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UInt divide(UInt numerator) const noexcept
+  {
+    if (mode_ == mode::identity)
+    {
+      return numerator;
+    }
+    if (mode_ == mode::shift)
+    {
+      return numerator >> shift_;
+    }
+    if (mode_ == mode::hardware)
+    {
+      return numerator / magic_;
+    }
+
+    const UInt high = multiply_high(magic_, numerator);
+    return (((numerator - high) >> 1) + high) >> (shift_ - 1);
+  }
+
+private:
+  UInt magic_          = UInt{0};
+  unsigned char shift_ = 0;
+  mode mode_           = mode::identity;
+};
 
 /***********************************************************************************************************************
  * Fast Modulo/Division based on Precomputation
