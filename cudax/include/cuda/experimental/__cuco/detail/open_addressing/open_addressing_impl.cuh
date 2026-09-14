@@ -42,7 +42,6 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_base_of.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
 
@@ -605,21 +604,18 @@ public:
 
   //! @brief Returns the key comparison function.
   [[nodiscard]] _CCCL_HOST_API constexpr __key_equal key_eq() const
-    noexcept(::cuda::std::is_nothrow_copy_constructible_v<__key_equal>)
   {
     return __predicate;
   }
 
   //! @brief Returns the probing scheme.
   [[nodiscard]] _CCCL_HOST_API constexpr __probing_scheme_type probing_scheme() const
-    noexcept(::cuda::std::is_nothrow_copy_constructible_v<__probing_scheme_type>)
   {
     return __probing_scheme;
   }
 
   //! @brief Returns the hash function.
   [[nodiscard]] _CCCL_HOST_API constexpr __hasher hash_function() const
-    noexcept(noexcept(__hasher(probing_scheme().hash_function())))
   {
     return probing_scheme().hash_function();
   }

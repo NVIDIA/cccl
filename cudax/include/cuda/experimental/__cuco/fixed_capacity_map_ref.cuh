@@ -26,7 +26,6 @@
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/span>
 
@@ -152,11 +151,7 @@ public:
     empty_value<_Tp> __empty_value_sentinel,
     const _KeyEqual& __predicate,
     const _ProbingScheme& __probing_scheme,
-    storage_span_type __slots) noexcept(noexcept(__impl_type{
-    value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
-    __predicate,
-    __probing_scheme,
-    __storage_ref_type{__slots.data(), __checked_capacity(__slots)}}))
+    storage_span_type __slots)
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                __predicate,
                __probing_scheme,
@@ -177,12 +172,7 @@ public:
     erased_key<_Key> __erased_key_sentinel,
     const _KeyEqual& __predicate,
     const _ProbingScheme& __probing_scheme,
-    storage_span_type __slots) noexcept(noexcept(__impl_type{
-    value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
-    key_type(__erased_key_sentinel),
-    __predicate,
-    __probing_scheme,
-    __storage_ref_type{__slots.data(), __checked_capacity(__slots)}}))
+    storage_span_type __slots)
       : __impl{value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
                key_type(__erased_key_sentinel),
                __predicate,
@@ -227,7 +217,7 @@ public:
   //! @brief Returns the function used to compare keys for equality.
   //!
   //! @return The key equality comparator
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr key_equal key_eq() const noexcept(noexcept(__impl.key_eq()))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr key_equal key_eq() const
   {
     return __impl.key_eq();
   }
@@ -235,7 +225,7 @@ public:
   //! @brief Returns the function(s) used to hash keys.
   //!
   //! @return The hasher used by this ref's probing scheme
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept(noexcept(__impl.hash_function()))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return __impl.hash_function();
   }
@@ -244,7 +234,6 @@ public:
   //!
   //! @return The probing scheme object
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr probing_scheme_type probing_scheme() const
-    noexcept(noexcept(__impl.probing_scheme()))
   {
     return __impl.probing_scheme();
   }
@@ -260,13 +249,6 @@ public:
   //! @return Copy of this ref using the new key comparator
   template <class _NewKeyEqual>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_key_eq(const _NewKeyEqual& __predicate) const
-    noexcept(noexcept(fixed_capacity_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>{
-      empty_key<_Key>{empty_key_sentinel()},
-      empty_value<_Tp>{empty_value_sentinel()},
-      erased_key<_Key>{erased_key_sentinel()},
-      __predicate,
-      probing_scheme(),
-      ::cuda::std::declval<storage_span_type>()}))
   {
     using __rebound_ref =
       fixed_capacity_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>;

@@ -332,7 +332,7 @@ public:
   //! @brief Get hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const noexcept(noexcept(__ref.hash_function()))
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const
   {
     return __ref.hash_function();
   }

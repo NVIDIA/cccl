@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
@@ -43,7 +41,7 @@ struct __strong_type
   //! @brief Implicit conversion operator to the underlying value.
   //!
   //! @return The underlying value
-  _CCCL_HOST_DEVICE_API constexpr operator _Tp() const noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
+  _CCCL_HOST_DEVICE_API constexpr operator _Tp() const
   {
     return __value;
   }

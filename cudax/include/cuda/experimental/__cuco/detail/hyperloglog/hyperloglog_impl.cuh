@@ -494,7 +494,6 @@ public:
   //!
   //! @return The hash function, as exposed by the policy via `hash_function()`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __hash_function() const
-    noexcept(noexcept(__hasher(__policy.hash_function())))
   {
     return __policy.hash_function();
   }

@@ -37,7 +37,6 @@
 #include <cuda/std/__type_traits/aligned_storage.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_base_of.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
@@ -162,9 +161,7 @@ public:
     __value_type __empty_slot_sentinel,
     const __key_equal& __predicate,
     const __probing_scheme_type& __probing_scheme,
-    __storage_ref_type __storage_ref) noexcept(::cuda::std::is_nothrow_copy_constructible_v<__value_type>
-                                               && ::cuda::std::is_nothrow_copy_constructible_v<__key_equal>
-                                               && ::cuda::std::is_nothrow_copy_constructible_v<__probing_scheme_type>)
+    __storage_ref_type __storage_ref)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __predicate{__extract_key(__empty_slot_sentinel), __extract_key(__empty_slot_sentinel), __predicate}
       , __probing_scheme{__probing_scheme}
@@ -183,9 +180,7 @@ public:
     __key_type __erased_key_sentinel,
     const __key_equal& __predicate,
     const __probing_scheme_type& __probing_scheme,
-    __storage_ref_type __storage_ref) noexcept(::cuda::std::is_nothrow_copy_constructible_v<__value_type>
-                                               && ::cuda::std::is_nothrow_copy_constructible_v<__key_equal>
-                                               && ::cuda::std::is_nothrow_copy_constructible_v<__probing_scheme_type>)
+    __storage_ref_type __storage_ref)
       : __empty_slot_sentinel{__empty_slot_sentinel}
       , __predicate{__extract_key(__empty_slot_sentinel), __erased_key_sentinel, __predicate}
       , __probing_scheme{__probing_scheme}
@@ -230,7 +225,7 @@ public:
   //!
   //! @return The key equality predicate
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates>
-  predicate() const noexcept(::cuda::std::is_nothrow_copy_constructible_v<decltype(__predicate)>)
+  predicate() const
   {
     return __predicate;
   }
@@ -239,7 +234,6 @@ public:
   //!
   //! @return The comparator used to compare keys
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __key_equal key_eq() const
-    noexcept(noexcept(__key_equal(predicate().__equal)))
   {
     return predicate().__equal;
   }
@@ -248,7 +242,6 @@ public:
   //!
   //! @return The probing scheme used for the container
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __probing_scheme_type probing_scheme() const
-    noexcept(::cuda::std::is_nothrow_copy_constructible_v<__probing_scheme_type>)
   {
     return __probing_scheme;
   }
@@ -257,7 +250,6 @@ public:
   //!
   //! @return The function(s) used to hash keys
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __hasher hash_function() const
-    noexcept(noexcept(__hasher(probing_scheme().hash_function())))
   {
     return probing_scheme().hash_function();
   }
