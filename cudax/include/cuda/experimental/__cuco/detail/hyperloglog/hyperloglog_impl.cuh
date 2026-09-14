@@ -162,7 +162,7 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   _CCCL_HOST_API constexpr void __clear_async(::cuda::stream_ref __stream)
   {
-    constexpr auto __block_size = 1024;
+    [[maybe_unused]] constexpr auto __block_size = 1024;
     ::cuda::launch(__stream,
                    ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<__block_size>()),
                    ::cuda::experimental::cuco::__hyperloglog_ns::__clear<__hyperloglog_impl>,

@@ -258,9 +258,9 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
   using map_type          = cudax::cuco::
     fixed_capacity_map<int, int, capacity, ::cuda::thread_scope_device, ::cuda::std::equal_to<int>, probing_type>;
 
-  constexpr int num_keys = 32;
-  constexpr int offset   = 1000;
-  constexpr int threads  = 128;
+  constexpr int num_keys                 = 32;
+  constexpr int offset                   = 1000;
+  [[maybe_unused]] constexpr int threads = 128;
 
   const ::cuda::stream stream{::cuda::device_ref{0}};
   const auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});

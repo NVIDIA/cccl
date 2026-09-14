@@ -247,9 +247,9 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
     probing_t>;
   using value_type = typename map_type::value_type;
 
-  constexpr int num_keys   = 300;
-  constexpr int num_blocks = 8;
-  constexpr int block_size = 128;
+  constexpr int num_keys                    = 300;
+  constexpr int num_blocks                  = 8;
+  [[maybe_unused]] constexpr int block_size = 128;
 
   const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
