@@ -84,7 +84,7 @@ _CCCL_HOST_DEVICE_API inline void __atomic_wait(
   }
   while (::cuda::std::__nonatomic_compare_equal(::cuda::std::__atomic_load_dispatch(__a, __order, _Sco{}), __val))
   {
-    __atomic_try_wait_slow(__a, __val, __order, _Sco{});
+    ::cuda::std::__atomic_try_wait_slow(__a, __val, __order, _Sco{});
   }
 }
 
