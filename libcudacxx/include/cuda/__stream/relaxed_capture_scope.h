@@ -42,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! There is no query for a thread's capture mode; the exchange is the only per-thread primitive,
 //! and it has no observable effect when the thread is not capturing, so the scope needs no
 //! capture check and costs two cheap driver calls.
-struct __relaxed_capture_scope
+struct [[maybe_unused]] __relaxed_capture_scope
 {
   _CCCL_HOST_API __relaxed_capture_scope()
       : __previous_{::CU_STREAM_CAPTURE_MODE_RELAXED}

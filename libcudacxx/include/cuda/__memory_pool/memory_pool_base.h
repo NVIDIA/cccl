@@ -365,7 +365,7 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
     // it in relaxed mode so that resolving a default pool under capture (e.g. the first
     // `device_default_memory_pool` of a process) works; the write executes immediately rather
     // than being recorded, which is the intent for a process-global setting.
-    ::cuda::__relaxed_capture_scope __relaxed{};
+    const ::cuda::__relaxed_capture_scope __relaxed{};
     if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
     {
       ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
