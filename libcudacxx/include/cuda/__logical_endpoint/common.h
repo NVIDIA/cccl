@@ -27,6 +27,7 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__logical_endpoint/fwd.h>
 #  include <cuda/__memory_resource/shared_block_ptr.h>
+#  include <cuda/std/__cccl/unreachable.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
@@ -324,6 +325,8 @@ __wait_until_ready_with_backoff(_IsReady __is_ready, ::cuda::std::chrono::nanose
       ::cuda::std::__cccl_thread_yield();
     }
   }
+
+  _CCCL_UNREACHABLE();
 }
 } // namespace __detail
 
@@ -364,7 +367,7 @@ public:
   //! @return `true` if the endpoint is ready.
   [[nodiscard]] _CCCL_HOST_API bool is_ready() const
   {
-    return ::cuda::__driver::__logicalEndpointQuery(native_handle(), 1);
+    return ::cuda::__driver::__logicalEndpointQuery(native_handle(), /*__count=*/1);
   }
 
   //! @brief Waits until the referenced endpoint is ready or a timeout expires.

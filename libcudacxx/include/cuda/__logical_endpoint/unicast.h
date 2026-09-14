@@ -42,7 +42,7 @@ public:
   //!
   //! @param[in] __id The logical endpoint ID.
   _CCCL_HOST_DEVICE_API explicit constexpr unicast_logical_endpoint_ref(logical_endpoint_id __id) noexcept
-      : __base(__id)
+      : __base{__id}
   {}
 };
 
