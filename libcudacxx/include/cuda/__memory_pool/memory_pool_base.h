@@ -30,6 +30,7 @@
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/__stream/internal_streams.h>
+#  include <cuda/__stream/relaxed_capture_scope.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
@@ -341,44 +342,6 @@ _CCCL_HOST_API inline void __verify_device_supports_export_handle_type(
       ::cuda::cuda_error, ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on a given device");
   }
 }
-
-//! @brief RAII scope putting the calling thread in relaxed stream-capture mode.
-//!
-//! Some driver calls are "potentially unsafe" under an active stream capture and invalidate the
-//! capture (or fail with `CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED`) when the calling thread is in
-//! global or thread-local capture mode: memory-pool attribute reads and writes are among them.
-//! Capture mode is a per-thread property, so switching THIS thread to relaxed mode for the
-//! duration of such a call lets it execute immediately (it is not recorded into the graph) and
-//! leaves the capture valid. Nothing that should be captured may be issued inside the scope.
-//!
-//! There is no query for a thread's capture mode; the exchange is the only per-thread primitive,
-//! and it has no observable effect when the thread is not capturing, so the scope needs no
-//! capture check and costs two cheap driver calls.
-struct __relaxed_capture_scope
-{
-  _CCCL_HOST_API __relaxed_capture_scope()
-      : __previous_{::CU_STREAM_CAPTURE_MODE_RELAXED}
-  {
-    ::cuda::__driver::__threadExchangeStreamCaptureMode(__previous_);
-  }
-
-  _CCCL_HOST_API ~__relaxed_capture_scope()
-  {
-    // Restore whatever the thread had. The exchange cannot fail for a mode it returned itself,
-    // and a destructor must not throw.
-    _CCCL_TRY
-    {
-      ::cuda::__driver::__threadExchangeStreamCaptureMode(__previous_);
-    }
-    _CCCL_CATCH_ALL {}
-  }
-
-  __relaxed_capture_scope(const __relaxed_capture_scope&)            = delete;
-  __relaxed_capture_scope& operator=(const __relaxed_capture_scope&) = delete;
-
-private:
-  ::CUstreamCaptureMode __previous_;
-};
 
 //! @brief The driver's default memory pool for @p __location, with the library's retention
 //! policy applied (an unlimited release threshold, so freed memory is kept for reuse).
