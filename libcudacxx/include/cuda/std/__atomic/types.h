@@ -24,7 +24,7 @@
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/types/locked.h>
 #include <cuda/std/__atomic/types/reference.h>
-#include <cuda/std/__atomic/types/small.h>
+#include <cuda/std/__atomic/types/widened.h>
 #include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -34,14 +34,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename _Tp>
 struct __atomic_traits
 {
-  static constexpr bool __atomic_requires_lock  = !__atomic_is_always_lock_free<_Tp>::__value;
-  static constexpr bool __atomic_requires_small = sizeof(_Tp) < 4;
+  static constexpr bool __atomic_requires_lock = !__atomic_is_always_lock_free<_Tp>::__value;
+  // Sizes below 4 bytes have no hardware support at all and 5 to 7 byte sizes fall between the
+  // hardware supported power of two widths, so both widen the value into the next larger proxy
+  // type and manipulate that instead
+  static constexpr bool __atomic_requires_widened = sizeof(_Tp) < 4 || (sizeof(_Tp) > 4 && sizeof(_Tp) < 8);
 };
 
 template <typename _Tp>
 using __atomic_storage_t =
-  _If<__atomic_traits<_Tp>::__atomic_requires_small,
-      __atomic_small_storage<_Tp>,
+  _If<__atomic_traits<_Tp>::__atomic_requires_widened,
+      __atomic_widened_storage<_Tp>,
       _If<__atomic_traits<_Tp>::__atomic_requires_lock, __atomic_locked_storage<_Tp>, __atomic_storage<_Tp>>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
