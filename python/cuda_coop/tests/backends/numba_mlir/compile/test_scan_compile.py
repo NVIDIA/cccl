@@ -419,3 +419,39 @@ def test_stateless_block_and_warp_scan_callbacks_link_with_provider_lto(
         assert ".version" in _link_ltoir_files(invocable.files, name=name)
         assert invocable.temp_storage_bytes > 0
         assert invocable.temp_storage_alignment > 0
+
+
+def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers() -> (
+    None
+):
+    import cuda.coop.numba_mlir as coop
+
+    @cuda.jit(device=True)
+    def scan_with(storage, value):
+        return coop.inclusive_sum(coop.this_block(), value, temp_storage=storage)
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        # No group marker in the kernel body: every cooperative call lives in
+        # the helper and becomes visible only after inlining. Acceptance must
+        # not depend on an unrelated marker being present.
+        thread = cuda.threadIdx.x
+        storage = coop.TempStorage()
+        first = scan_with(storage, source[thread])
+        destination[thread] = scan_with(storage, first)
+
+    signature = types.void(types.int32[::1], types.int32[::1])
+    launch_config_key = (
+        ("grid", (1, 1, 1)),
+        ("block", (_BLOCK_THREADS, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    result = kernel._compile_launch_config_signature(
+        signature,
+        launch_config_key,
+    )
+
+    assert result.metadata["cubin"]
+    # One trailing reuse barrier per inlined storage-consuming call.
+    assert result.metadata["mlir_module_str"].count("gpu.barrier") == 2
