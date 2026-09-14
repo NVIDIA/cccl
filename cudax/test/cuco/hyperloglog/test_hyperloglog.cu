@@ -13,7 +13,9 @@
 
 #include <cuda/buffer>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
@@ -144,8 +146,11 @@ C2H_TEST("HyperLogLog merge", "[hyperloglog]")
 
   SECTION("device reference")
   {
-    merge_kernel<<<1, 128, 0, stream.get()>>>(destination.ref(), source.ref());
-    REQUIRE(cudaGetLastError() == cudaSuccess);
+    cuda::launch(stream,
+                 cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<128>()),
+                 merge_kernel<decltype(destination.ref())>,
+                 destination.ref(),
+                 source.ref());
   }
 
   SECTION("host estimator")
