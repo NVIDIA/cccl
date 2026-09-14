@@ -114,7 +114,7 @@ void test_refusals(place_group& group)
     (void) histogram_even(data, 8, 0LL, static_cast<long long>(n));
   });
   expect_refusal_keeps_capture(origin, [&] {
-    (void) copy_if(data, is_even_op{});
+    (void) select_if(data, is_even_op{});
   });
   expect_refusal_keeps_capture(origin, [&] {
     (void) unique(data);

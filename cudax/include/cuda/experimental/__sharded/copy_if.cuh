@@ -10,12 +10,21 @@
 
 /**
  * @file
- * @brief In-place selection over sharded arrays (`copy_if` / `filter` /
- *        `remove_if`): each place runs the device-scope primitive (CUB
- *        `DeviceSelect::If`, in place) on its shard, then the container's
- *        shard sizes and offsets are updated to the compacted result.
+ * @brief Selection over sharded arrays. Two in-place verbs of opposite
+ *        polarity and one out-of-place copy, each named after its precedent:
  *
- * These algorithms MUTATE shard sizes. That is exactly what the contiguous
+ *        - `select_if(data, pred)`   keep the elements satisfying `pred`,
+ *                                    in place (after `cub::DeviceSelect::If`);
+ *        - `remove_if(data, pred)`   drop the elements satisfying `pred`,
+ *                                    in place (after `thrust::remove_if`);
+ *        - `copy_if(src, dst, pred)` keep the elements satisfying `pred`,
+ *                                    out of place (after `thrust::copy_if`).
+ *
+ *        Each place runs the device-scope primitive (CUB `DeviceSelect::If`)
+ *        on its shard, then the destination's shard sizes and offsets are
+ *        updated to the compacted result.
+ *
+ * The in-place verbs MUTATE shard sizes. That is exactly what the contiguous
  * backing cannot represent: shrinking a shard would leave a gap between its
  * valid elements and the next shard's, falsifying the read-as-one-array
  * contract of `contiguous_data()`, while compacting across the gap would
@@ -365,9 +374,9 @@ _CCCL_TEMPLATE(class _S, class _Envs, class _Pred, class _CallEnv = default_call
 _CCCL_REQUIRES(
   owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>
     _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
-[[nodiscard]] _CCCL_HOST_API size_t copy_if(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
+[[nodiscard]] _CCCL_HOST_API size_t select_if(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
 {
-  return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::copy_if");
+  return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::select_if");
 }
 
 /// @brief Keep only the elements satisfying @p pred (generic, self-bound).
@@ -375,31 +384,10 @@ _CCCL_TEMPLATE(class _S, class _Pred, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_S>>
                  _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>)
                    _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
-[[nodiscard]] _CCCL_HOST_API size_t copy_if(_S&& data, _Pred pred, const _CallEnv& call_env = {})
+[[nodiscard]] _CCCL_HOST_API size_t select_if(_S&& data, _Pred pred, const _CallEnv& call_env = {})
 {
   const auto envs = default_envs(data);
-  return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::copy_if");
-}
-
-/// @brief Alias of `copy_if` (generic).
-_CCCL_TEMPLATE(class _S, class _Envs, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(
-  owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Envs>>
-    _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
-[[nodiscard]] _CCCL_HOST_API size_t filter(_S&& data, const _Envs& envs, _Pred pred, const _CallEnv& call_env = {})
-{
-  return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::filter");
-}
-
-/// @brief Alias of `copy_if` (generic, self-bound).
-_CCCL_TEMPLATE(class _S, class _Pred, class _CallEnv = default_call_env)
-_CCCL_REQUIRES(owning_sharded<::cuda::std::remove_cvref_t<_S>> _CCCL_AND self_bound<::cuda::std::remove_cvref_t<_S>>
-                 _CCCL_AND(!sharded_alloc_env_range<::cuda::std::remove_cvref_t<_Pred>>)
-                   _CCCL_AND(!sharded_view<::cuda::std::remove_cvref_t<_Pred>>))
-[[nodiscard]] _CCCL_HOST_API size_t filter(_S&& data, _Pred pred, const _CallEnv& call_env = {})
-{
-  const auto envs = default_envs(data);
-  return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::filter");
+  return reserved::__copy_if_generic(::cuda::std::forward<_S>(data), envs, pred, call_env, "sharded::select_if");
 }
 
 /// @brief Remove the elements satisfying @p pred (generic).
@@ -455,7 +443,7 @@ _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_SIn>> _CCCL_AND
 copy_if(const _SIn& src, const _Envs& envs, _SOut&& dst, _Pred pred, const _CallEnv& call_env = {})
 {
   return reserved::__copy_if_into_generic(
-    src, envs, ::cuda::std::forward<_SOut>(dst), pred, call_env, "sharded::copy_if (out-of-place)");
+    src, envs, ::cuda::std::forward<_SOut>(dst), pred, call_env, "sharded::copy_if");
 }
 
 /// @brief Out-of-place selection with environments derived from the
@@ -469,6 +457,6 @@ _CCCL_REQUIRES(
 {
   const auto envs = default_envs(dst);
   return reserved::__copy_if_into_generic(
-    src, envs, ::cuda::std::forward<_SOut>(dst), pred, call_env, "sharded::copy_if (out-of-place)");
+    src, envs, ::cuda::std::forward<_SOut>(dst), pred, call_env, "sharded::copy_if");
 }
 } // namespace cuda::experimental::sharded

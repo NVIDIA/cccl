@@ -231,7 +231,7 @@ int main()
     b.reset_sizes_to_capacity();
 
     iota(b, 0LL);
-    const size_t evens = copy_if(b, keep_even{}); // self-bound
+    const size_t evens = select_if(b, keep_even{}); // self-bound
     EXPECT(evens == ((size_t) n + 1) / 2);
     b.reset_sizes_to_capacity();
 
@@ -246,7 +246,7 @@ int main()
     bool threw = false;
     try
     {
-      (void) copy_if(c, keep_even{});
+      (void) select_if(c, keep_even{});
     }
     catch (const ::std::invalid_argument&)
     {

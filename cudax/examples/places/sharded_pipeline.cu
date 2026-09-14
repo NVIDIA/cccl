@@ -17,12 +17,12 @@
  *        are data-dependent — with each step a one-liner and placement,
  *        streams and temporaries handled by the shards' own bindings.
  *
- *        sort -> unique -> filter -> sum
+ *        sort -> unique -> select_if -> sum
  *
  *        `sort` orders the whole array (each shard keeps its boundaries; the
  *        engine loads across boundaries through the one address space the
  *        domains share). `unique` then removes adjacent duplicates —
- *        including runs that straddle a shard boundary — and `filter`
+ *        including runs that straddle a shard boundary — and `select_if`
  *        keeps the odd values; both shrink each shard by a data-dependent
  *        amount and commit the new sizes atomically (offsets re-tile). Every
  *        later algorithm just sees the smaller, still-valid sharded array.
@@ -66,7 +66,7 @@ int main()
 
   sort(group, data); //  globally ascending
   const size_t distinct = unique(data); //  duplicates removed (ragged shrink)
-  const size_t odds     = filter(data, is_odd{}); //  keep odd values (ragged shrink)
+  const size_t odds     = select_if(data, is_odd{}); //  keep odd values (ragged shrink)
   const long long total = sum(data); //  sum of the surviving values
 
   // Host reference over the same pipeline.

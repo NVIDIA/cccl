@@ -291,8 +291,8 @@ _CCCL_CONCEPT __has_capacity_field =
 //! additionally expose `capacity` (allocated element count, >= size) and
 //! which supports the atomic size-mutation verb `commit_sizes`.
 //!
-//! This is the home of the size-mutating algorithm family (`copy_if`,
-//! `unique`, sort): shrinking shards' logical sizes and re-tiling the global
+//! This is the home of the size-mutating algorithm family (`select_if` /
+//! `remove_if`, `unique`, sort): shrinking shards' logical sizes and re-tiling the global
 //! offsets are container-metadata operations that a non-owning view must not
 //! (and cannot) express. `commit_sizes(new_sizes)` applies one size per
 //! shard (each `<= capacity`) and restores the view invariants in a single
