@@ -8,12 +8,25 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "reduce_determinism_fail_common.cuh"
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/execution>
+
+#include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
+#include <cuda/experimental/__multi_gpu/nccl_communicator_ref.h>
 
 int main()
 {
+  namespace cudax = ::cuda::experimental;
+
+  cudax::mgmn::nccl_communicator_ref comm{::ncclComm_t{}};
+  auto env = ::cuda::std::execution::env{
+    ::cuda::stream_ref{::cudaStream_t{}}, ::cuda::execution::require(::cuda::execution::determinism::gpu_to_gpu)};
+  int* ptr{};
+
   // expected-error {{"Only run_to_run and not_guaranteed reductions are currently supported"}}
-  reduce_with_determinism(::cuda::execution::determinism::gpu_to_gpu);
+  cudax::mgmn::reduce(cudax::broadcasted, comm, env, ptr, ::cuda::std::size_t{0}, ptr);
 
   return EXIT_FAILURE;
 }
