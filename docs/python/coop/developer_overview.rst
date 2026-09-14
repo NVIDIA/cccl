@@ -205,13 +205,12 @@ The :github:`example script
 <python/cuda_coop/examples/numba_mlir/source_dumps.py>` includes the imports,
 launches, and result checks omitted from the panels below.
 
-Set the environment variables before starting Python. The shared
-``CUDA_COOP_SOURCE_DUMP_DIR`` setting takes precedence over the older
-``CUDA_COOP_NUMBA_MLIR_NVRTC_DUMP_DIR`` setting; an empty shared value disables
-dumping. The provider source is dumped on provider-cache hits too. These
-commands disable that cache and use a fresh process for each kernel so the
-captures are easy to associate with their inputs. Reusing an already compiled
-kernel in the same process can bypass provider generation entirely.
+Set the environment variables before starting Python. Unset or empty
+``CUDA_COOP_SOURCE_DUMP_DIR`` disables dumping. The provider source is dumped
+on provider-cache hits too. These commands disable that cache and use a
+fresh process for each kernel so the captures are easy to associate with
+their inputs. Reusing an already compiled kernel in the same process can
+bypass provider generation entirely.
 
 The dump contains the C++ input to NVRTC. Numba compiles the surrounding
 kernel separately, so its indexing, launches, and planner-inserted barriers
