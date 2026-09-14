@@ -31,6 +31,7 @@
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__fwd/extents.h>
 #  include <cuda/std/__memory/unique_ptr.h>
+#  include <cuda/std/__utility/declval.h>
 #  include <cuda/std/__utility/pair.h>
 
 #  include <cuda/experimental/__cuco/capacity.cuh>
@@ -710,7 +711,7 @@ public:
   //! @brief Gets the function used to compare keys for equality.
   //!
   //! @return The function used to compare keys for equality
-  [[nodiscard]] constexpr key_equal key_eq() const noexcept
+  [[nodiscard]] constexpr key_equal key_eq() const noexcept(noexcept(__impl->key_eq()))
   {
     return __impl->key_eq();
   }
@@ -718,7 +719,7 @@ public:
   //! @brief Gets the function(s) used to hash keys.
   //!
   //! @return The function(s) used to hash keys
-  [[nodiscard]] constexpr hasher hash_function() const noexcept
+  [[nodiscard]] constexpr hasher hash_function() const noexcept(noexcept(__impl->hash_function()))
   {
     return __impl->hash_function();
   }
@@ -729,7 +730,13 @@ public:
   //! — safe to pass by value to kernels. The ref's lifetime must not exceed the map's lifetime.
   //!
   //! @return A `ref_type` referring to this map
-  [[nodiscard]] auto ref() const noexcept -> ref_type
+  [[nodiscard]] auto ref() const noexcept(noexcept(ref_type{
+    empty_key{empty_key_sentinel()},
+    empty_value{empty_value_sentinel()},
+    erased_key{erased_key_sentinel()},
+    __impl->key_eq(),
+    __impl->probing_scheme(),
+    ::cuda::std::declval<typename ref_type::storage_span_type>()})) -> ref_type
   {
     auto __slots = typename ref_type::storage_span_type{__impl->storage_ref().data(), __impl->capacity()};
     return detail::__bitwise_compare(empty_key_sentinel(), erased_key_sentinel())

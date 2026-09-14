@@ -15,7 +15,9 @@
 
 #include <cuda/__cccl_config>
 #include <cuda/buffer>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
@@ -234,9 +236,14 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs", "[ref][rebind]", key_types, cg_si
   }
 
   auto found = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);
-  contains_with_rebound_ref<<<(num_keys + keys_per_block - 1) / keys_per_block, threads, 0, stream.get()>>>(
-    ref, offset, num_keys, found.data());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims((num_keys + keys_per_block - 1) / keys_per_block), cuda::block_dims<threads>()),
+    contains_with_rebound_ref<typename map_type::ref_type>,
+    ref,
+    offset,
+    num_keys,
+    found.data());
   const auto policy =
     ::cuda::execution::gpu.with(::cuda::get_stream, stream)
       .with(::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(::cuda::device_ref{0}));
@@ -272,8 +279,14 @@ C2H_TEST("fixed_capacity_map_ref rebind APIs preserve static capacity", "[ref][r
   REQUIRE(rebound_ref.storage_span().data() == ref.storage_span().data());
 
   auto found = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);
-  contains_with_rebound_ref<<<1, threads, 0, stream.get()>>>(ref, offset, num_keys, found.data());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<threads>()),
+    contains_with_rebound_ref<map_type::ref_type>,
+    ref,
+    offset,
+    num_keys,
+    found.data());
   const auto policy =
     ::cuda::execution::gpu.with(::cuda::get_stream, stream)
       .with(::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(::cuda::device_ref{0}));

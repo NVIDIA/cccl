@@ -18,7 +18,9 @@
 
 #include <cuda/buffer>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory>
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
@@ -93,11 +95,15 @@ C2H_TEST("fixed_capacity_map static extent — shared memory sizing via capacity
   const int block_size = 128;
   const int grid_size  = (num_keys + block_size - 1) / block_size;
 
-  insert_shmem_kernel<<<grid_size, block_size, 0, stream.get()>>>(
+  using pair_iterator =
+    cuda::transform_iterator<iota_pair<fixed_capacity_map_512_type::value_type>, cuda::counting_iterator<int>>;
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims(grid_size), cuda::block_dims<block_size>()),
+    insert_shmem_kernel<pair_iterator>,
     map.ref(),
-    cuda::transform_iterator(cuda::counting_iterator<int>{0}, iota_pair<fixed_capacity_map_512_type::value_type>{}),
+    pair_iterator{cuda::counting_iterator<int>{0}, iota_pair<fixed_capacity_map_512_type::value_type>{}},
     num_keys);
-  REQUIRE(cudaGetLastError() == cudaSuccess);
 
   // Verify the insertions actually landed in the global map
   auto found = ::cuda::make_buffer<int>(stream, mr, num_keys, 0);
@@ -157,8 +163,10 @@ C2H_TEST("fixed_capacity_map_ref device initialize — map fully in shared memor
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   auto thread_ok = ::cuda::make_buffer<int>(stream, mr, num_blocks * block_size, 0);
-  shmem_map_lifecycle_kernel<<<num_blocks, block_size, 0, stream.get()>>>(thread_ok.data());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(stream,
+               cuda::make_config(cuda::grid_dims<num_blocks>(), cuda::block_dims<block_size>()),
+               shmem_map_lifecycle_kernel,
+               thread_ok.data());
 
   REQUIRE(::thrust::all_of(
     ::thrust::cuda::par.on(stream.get()), thread_ok.data(), thread_ok.data() + num_blocks * block_size, is_nonzero{}));
@@ -261,9 +269,15 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
     auto pairs = cuda::transform_iterator(cuda::counting_iterator<key_type>{0}, iota_pair<value_type>{});
     map.insert(stream, pairs, pairs + num_keys);
 
-    make_copy_shmem_kernel<<<num_blocks, block_size, 0, stream.get()>>>(
-      map.ref(), num_keys, keys_exist.data(), pairs_correct.data(), copy_mutable.data());
-    REQUIRE(cudaGetLastError() == cudaSuccess);
+    cuda::launch(
+      stream,
+      cuda::make_config(cuda::grid_dims<num_blocks>(), cuda::block_dims<block_size>()),
+      make_copy_shmem_kernel<typename map_type::ref_type>,
+      map.ref(),
+      num_keys,
+      keys_exist.data(),
+      pairs_correct.data(),
+      copy_mutable.data());
 
     REQUIRE(::thrust::all_of(
       ::thrust::cuda::par.on(stream.get()), keys_exist.data(), keys_exist.data() + num_blocks * num_keys, is_nonzero{}));
@@ -278,9 +292,15 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
 
   SECTION("no key is found before insertion")
   {
-    make_copy_shmem_kernel<<<num_blocks, block_size, 0, stream.get()>>>(
-      map.ref(), num_keys, keys_exist.data(), pairs_correct.data(), copy_mutable.data());
-    REQUIRE(cudaGetLastError() == cudaSuccess);
+    cuda::launch(
+      stream,
+      cuda::make_config(cuda::grid_dims<num_blocks>(), cuda::block_dims<block_size>()),
+      make_copy_shmem_kernel<typename map_type::ref_type>,
+      map.ref(),
+      num_keys,
+      keys_exist.data(),
+      pairs_correct.data(),
+      copy_mutable.data());
 
     REQUIRE(!::thrust::any_of(
       ::thrust::cuda::par.on(stream.get()), keys_exist.data(), keys_exist.data() + num_blocks * num_keys, is_nonzero{}));
@@ -359,9 +379,14 @@ C2H_TEST("fixed_capacity_map_ref initialize and make_copy — dynamic extent in 
     probing{},
     dyn_ref_type::storage_span_type{slots.data(), capacity}};
 
-  dynamic_initialize_make_copy_kernel<<<1, block_size, 0, stream.get()>>>(
-    ref, dyn_ref_type::storage_span_type{copy_slots.data(), capacity}, num_keys, thread_ok.data());
-  REQUIRE(cudaGetLastError() == cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<block_size>()),
+    dynamic_initialize_make_copy_kernel<dyn_ref_type>,
+    ref,
+    dyn_ref_type::storage_span_type{copy_slots.data(), capacity},
+    num_keys,
+    thread_ok.data());
 
   REQUIRE(::thrust::all_of(
     ::thrust::cuda::par.on(stream.get()), thread_ok.data(), thread_ok.data() + block_size, is_nonzero{}));

@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
+
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -33,7 +35,8 @@ namespace cuda::experimental::cuco
 template <class _Key>
 struct empty_key : __strong_type<_Key>
 {
-  _CCCL_HOST_DEVICE_API explicit constexpr empty_key(_Key __value) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr empty_key(_Key __value) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Key, _Key&>)
       : __strong_type<_Key>(__value)
   {}
 };
@@ -44,7 +47,8 @@ struct empty_key : __strong_type<_Key>
 template <class _Tp>
 struct empty_value : __strong_type<_Tp>
 {
-  _CCCL_HOST_DEVICE_API explicit constexpr empty_value(_Tp __value) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr empty_value(_Tp __value) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Tp, _Tp&>)
       : __strong_type<_Tp>(__value)
   {}
 };
@@ -55,7 +59,8 @@ struct empty_value : __strong_type<_Tp>
 template <class _Key>
 struct erased_key : __strong_type<_Key>
 {
-  _CCCL_HOST_DEVICE_API explicit constexpr erased_key(_Key __value) noexcept
+  _CCCL_HOST_DEVICE_API explicit constexpr erased_key(_Key __value) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Key, _Key&>)
       : __strong_type<_Key>(__value)
   {}
 };

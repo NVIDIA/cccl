@@ -24,6 +24,9 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__container/buffer.h>
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_levels.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
@@ -37,7 +40,9 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
@@ -158,7 +163,10 @@ public:
   _CCCL_HOST_API constexpr void __clear_async(::cuda::stream_ref __stream)
   {
     constexpr auto __block_size = 1024;
-    ::cuda::experimental::cuco::__hyperloglog_ns::__clear<<<1, __block_size, 0, __stream.get()>>>(*this);
+    ::cuda::launch(__stream,
+                   ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<__block_size>()),
+                   ::cuda::experimental::cuco::__hyperloglog_ns::__clear<__hyperloglog_impl>,
+                   *this);
   }
 
   //! @brief Adds an item to the estimator.
@@ -190,14 +198,19 @@ public:
       return;
     }
 
-    int __grid_size         = 0;
-    int __block_size        = 0;
-    const int __shmem_bytes = __sketch_bytes();
-    const void* __kernel    = nullptr;
+    using __vector_kernel_type           = void (*)(const __value_type*, ::cuda::std::int64_t, __hyperloglog_impl);
+    int __grid_size                      = 0;
+    int __block_size                     = 0;
+    const int __shmem_bytes              = __sketch_bytes();
+    __vector_kernel_type __vector_kernel = nullptr;
 
-    // In case the input iterator represents a contiguous memory segment we can employ efficient
-    // vectorized loads
-    if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
+    // Vectorized loads require contiguous input with no element conversion.
+    using __input_reference = ::cuda::std::iter_reference_t<_InputIt>;
+    constexpr bool __can_vectorize =
+      ::cuda::std::contiguous_iterator<_InputIt>
+      && (::cuda::std::is_same_v<__input_reference, __value_type&>
+          || ::cuda::std::is_same_v<__input_reference, const __value_type&>);
+    if constexpr (__can_vectorize)
     {
       const auto __ptr                  = ::cuda::std::to_address(__first);
       constexpr auto __max_vector_bytes = 32;
@@ -209,23 +222,23 @@ public:
       {
         using ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized;
         case 2:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<2, __hyperloglog_impl>);
+          __vector_kernel = __add_shmem_vectorized<2, __hyperloglog_impl>;
           break;
         case 4:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<4, __hyperloglog_impl>);
+          __vector_kernel = __add_shmem_vectorized<4, __hyperloglog_impl>;
           break;
         case 8:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<8, __hyperloglog_impl>);
+          __vector_kernel = __add_shmem_vectorized<8, __hyperloglog_impl>;
           break;
         case 16:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<16, __hyperloglog_impl>);
+          __vector_kernel = __add_shmem_vectorized<16, __hyperloglog_impl>;
           break;
       };
     }
 
-    if (__kernel != nullptr && __try_reserve_shmem(__kernel, __shmem_bytes))
+    if (__vector_kernel != nullptr && __try_reserve_shmem(__vector_kernel, __shmem_bytes))
     {
-      if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
+      if constexpr (__can_vectorize)
       {
         // We make use of the occupancy calculator to get the minimum number of blocks which still
         // saturates the GPU. This reduces the shmem initialization overhead and atomic contention
@@ -235,31 +248,23 @@ public:
           "cudaOccupancyMaxPotentialBlockSize failed",
           &__grid_size,
           &__block_size,
-          __kernel,
+          __vector_kernel,
           __shmem_bytes);
 
-        const auto __ptr      = ::cuda::std::to_address(__first);
-        void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
-                                 const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
-                                 reinterpret_cast<void*>(this)};
-        _CCCL_TRY_RUNTIME_API(
-          ::cudaLaunchKernel,
-          "cudaLaunchKernel failed",
-          __kernel,
-          __grid_size,
-          __block_size,
-          __kernel_args,
-          __shmem_bytes,
-          __stream.get());
+        ::cuda::launch(
+          __stream,
+          ::cuda::make_config(::cuda::grid_dims(__grid_size),
+                              ::cuda::block_dims(__block_size),
+                              ::cuda::dynamic_shared_memory<::cuda::std::byte[]>(__shmem_bytes, ::cuda::non_portable)),
+          __vector_kernel,
+          ::cuda::std::to_address(__first),
+          __num_items,
+          *this);
       }
     }
     else
     {
-      __kernel = reinterpret_cast<const void*>(
-        ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, __hyperloglog_impl>);
-      void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__first)),
-                               const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
-                               reinterpret_cast<void*>(this)};
+      auto __kernel = ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, __hyperloglog_impl>;
       if (__try_reserve_shmem(__kernel, __shmem_bytes))
       {
         _CCCL_TRY_RUNTIME_API(
@@ -270,22 +275,21 @@ public:
           __kernel,
           __shmem_bytes);
 
-        _CCCL_TRY_RUNTIME_API(
-          ::cudaLaunchKernel,
-          "cudaLaunchKernel failed",
+        ::cuda::launch(
+          __stream,
+          ::cuda::make_config(::cuda::grid_dims(__grid_size),
+                              ::cuda::block_dims(__block_size),
+                              ::cuda::dynamic_shared_memory<::cuda::std::byte[]>(__shmem_bytes, ::cuda::non_portable)),
           __kernel,
-          __grid_size,
-          __block_size,
-          __kernel_args,
-          __shmem_bytes,
-          __stream.get());
+          __first,
+          __num_items,
+          *this);
       }
       else
       {
         // Computes sketch directly in global memory. (Fallback path in case there is not enough
         // shared memory available)
-        __kernel = reinterpret_cast<const void*>(
-          ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, __hyperloglog_impl>);
+        __kernel = ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, __hyperloglog_impl>;
 
         _CCCL_TRY_RUNTIME_API(
           ::cudaOccupancyMaxPotentialBlockSize,
@@ -295,15 +299,13 @@ public:
           __kernel,
           0);
 
-        _CCCL_TRY_RUNTIME_API(
-          ::cudaLaunchKernel,
-          "cudaLaunchKernel failed",
+        ::cuda::launch(
+          __stream,
+          ::cuda::make_config(::cuda::grid_dims(__grid_size), ::cuda::block_dims(__block_size)),
           __kernel,
-          __grid_size,
-          __block_size,
-          __kernel_args,
-          0,
-          __stream.get());
+          __first,
+          __num_items,
+          *this);
       }
     }
   }
@@ -369,7 +371,13 @@ public:
     }
 
     constexpr auto __block_size = 1024;
-    ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
+    ::cuda::launch(
+      __stream,
+      ::cuda::make_config(::cuda::grid_dims<1>(), ::cuda::block_dims<__block_size>()),
+      ::cuda::experimental::cuco::__hyperloglog_ns::__merge<__hyperloglog_impl<_Tp, _OtherScope, _Policy>,
+                                                            __hyperloglog_impl>,
+      __other,
+      *this);
   }
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator.
@@ -485,7 +493,8 @@ public:
   //! @brief Gets the hash function.
   //!
   //! @return The hash function, as exposed by the policy via `hash_function()`.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __hash_function() const
+    noexcept(noexcept(__hasher(__policy.hash_function())))
   {
     return __policy.hash_function();
   }
@@ -605,11 +614,13 @@ private:
 
     if (__shmem_bytes <= __max_shmem_bytes)
     {
+      // Match cuda::launch's function attributes before querying occupancy. Function attributes
+      // override kernel attributes, including values previously set for a smaller sketch.
       _CCCL_TRY_RUNTIME_API(
-        ::cudaFuncSetAttribute,
-        "cudaFuncSetAttribute failed",
-        reinterpret_cast<const void*>(__kernel),
-        cudaFuncAttributeMaxDynamicSharedMemorySize,
+        ::cuda::__driver::__functionSetAttributeNoThrow,
+        "cuFuncSetAttribute failed",
+        ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
+        ::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
         __shmem_bytes);
       return true;
     }
