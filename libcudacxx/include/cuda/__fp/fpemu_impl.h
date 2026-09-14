@@ -41,16 +41,16 @@
 //! appropriate decorators and provide consistent behavior across different
 //! platforms and compilers.
 #if !defined(__CUDA_LIBDEVICE__)
-#  include <cuda/std/cstdint>
-#  include <cuda/std/cstdlib>
-#  include <cuda/std/cstring>
+#  include <cuda/std/cstdint> // IWYU pragma: keep
+#  include <cuda/std/cstdlib> // IWYU pragma: keep
+#  include <cuda/std/cstring> // IWYU pragma: keep
 #endif
 
 #include <cuda/__fp/fpemu_common.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countl.h>
 
-#include <nv/target>
+#include <nv/target> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

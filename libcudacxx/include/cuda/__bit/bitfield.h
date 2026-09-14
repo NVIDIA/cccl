@@ -11,7 +11,7 @@
 #ifndef _CUDA___BIT_BITFILED_INSERT_EXTRACT_H
 #define _CUDA___BIT_BITFILED_INSERT_EXTRACT_H
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/detail/__config> // IWYU pragma: keep
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,10 +25,9 @@
 #include <cuda/std/__bit/shl.h>
 #include <cuda/std/__bit/shr.h>
 #include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
-#include <cuda/std/cstdint>
-#include <cuda/std/limits>
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

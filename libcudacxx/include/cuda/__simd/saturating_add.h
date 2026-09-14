@@ -26,13 +26,13 @@
 #include <cuda/std/__numeric/saturating_add.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/cstdint> // IWYU pragma: keep
 #if _CCCL_HAS_SIMD_SAT()
 #  include <cuda/__simd/simd_intrinsics_array.h>
 #  include <cuda/std/__simd/specializations/simd_intrinsics_array.h>
 #endif // _CCCL_HAS_SIMD_SAT()
 
-#include <nv/target>
+#include <nv/target> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

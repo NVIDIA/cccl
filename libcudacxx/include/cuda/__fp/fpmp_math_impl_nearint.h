@@ -29,7 +29,7 @@
 
 #include <cuda/__fp/fpmp_math_impl.h>
 // Sibling families whose kernels this family calls (fmin/fmax/min/max are used here).
-#include <cuda/__fp/fpmp_math_impl_classify.h>
+#include <cuda/__fp/fpmp_math_impl_classify.h> // IWYU pragma: keep
 #include <cuda/std/__floating_point/constants.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -22,15 +22,13 @@
 
 #include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/pair.h>
-#include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
 

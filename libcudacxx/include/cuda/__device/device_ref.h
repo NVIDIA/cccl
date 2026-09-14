@@ -27,7 +27,7 @@
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/std/span>
-#  include <cuda/std/string_view>
+#  include <cuda/std/string_view> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 

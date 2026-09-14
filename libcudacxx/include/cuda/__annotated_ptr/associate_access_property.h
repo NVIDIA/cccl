@@ -22,11 +22,11 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
-#include <cuda/__memory/address_space.h>
-#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/__memory/address_space.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_one_of.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

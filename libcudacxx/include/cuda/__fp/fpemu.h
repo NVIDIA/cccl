@@ -64,7 +64,7 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cstdint>
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
 // Public API surface (fpemu_accuracy selector + CCCL_FPEMU_LIB / CCCL_FPEMU_INLINE
 // compile-mode knobs) lives in fpemu_common.h; all library-internal machinery

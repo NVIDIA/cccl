@@ -21,9 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
+#include <cuda/__memory/is_valid_alignment.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

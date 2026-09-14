@@ -24,10 +24,10 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
-#  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/cassert>
-#  include <cuda/std/cstddef>
+#  include <cuda/std/cassert> // IWYU pragma: keep
+#  include <cuda/std/cstddef> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 

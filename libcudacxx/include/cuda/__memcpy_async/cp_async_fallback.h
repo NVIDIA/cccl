@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
+#include <cuda/std/cstddef> // IWYU pragma: keep
 
-#include <nv/target>
+#include <nv/target> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

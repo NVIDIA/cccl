@@ -24,13 +24,11 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__memory_pool/memory_pool_base.h>
-#  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
-#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/__type_traits/is_trivially_destructible.h>

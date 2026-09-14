@@ -27,9 +27,8 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

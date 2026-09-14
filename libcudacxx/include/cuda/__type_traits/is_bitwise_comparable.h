@@ -21,7 +21,7 @@
 #endif // no system header
 
 #include <cuda/__fwd/complex.h>
-#include <cuda/__type_traits/is_vector_type.h>
+#include <cuda/__type_traits/is_vector_type.h> // IWYU pragma: keep
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
@@ -31,7 +31,7 @@
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_aggregate.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h> // IWYU pragma: keep
 #include <cuda/std/__utility/pair.h> // required for sizeof
 
 #include <cuda/std/__cccl/prologue.h>

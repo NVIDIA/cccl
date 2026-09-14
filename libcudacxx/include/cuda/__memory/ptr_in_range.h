@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstdint>
+#include <cuda/std/cstdint> // IWYU pragma: keep
 #if _CCCL_HOST_COMPILATION()
 #  include <functional>
 #endif // _CCCL_HOST_COMPILATION()

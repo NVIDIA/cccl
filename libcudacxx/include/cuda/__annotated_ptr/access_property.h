@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property_encoding.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
+#include <cuda/std/cstddef> // IWYU pragma: keep
+#include <cuda/std/cstdint> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__latch/latch.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstddef> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

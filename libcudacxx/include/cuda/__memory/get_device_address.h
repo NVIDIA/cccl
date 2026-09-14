@@ -28,7 +28,7 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/std/__memory/addressof.h>
 
-#  include <nv/target>
+#  include <nv/target> // IWYU pragma: keep
 
 #  include <cuda/std/__cccl/prologue.h>
 

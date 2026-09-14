@@ -24,11 +24,10 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__fwd/devices.h>
-#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/cuda_error.h> // IWYU pragma: keep
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
