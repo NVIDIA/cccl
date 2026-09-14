@@ -88,9 +88,9 @@ _CCCL_REQUIRES(
   using elem_t                   = view_element_t<_S>;
   using count_type               = ::cuda::std::int64_t;
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
+  if (reserved::__env_count(envs) != num_shards)
   {
-    _CCCL_THROW(::std::invalid_argument, "sharded::unique: fewer environments than shards");
+    _CCCL_THROW(::std::invalid_argument, "sharded::unique: environment count does not match shard count");
   }
   if (num_shards == 0)
   {

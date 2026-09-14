@@ -67,8 +67,8 @@ namespace cuda::experimental::sharded
  *   environments' streams before returning (refused when the call
  *   environment carries `sync_policy::forbid`).
  *
- * @throws std::invalid_argument when fewer environments than shards are
- *         supplied.
+ * @throws std::invalid_argument when the environment count does not match
+ *         the shard count.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _UnaryOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(

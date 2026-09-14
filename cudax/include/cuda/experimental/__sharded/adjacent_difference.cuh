@@ -109,9 +109,9 @@ adjacent_difference(const _SIn& in, const _Envs& envs, _SOut&& out, _BinaryOp op
 
   reserved::__check_copartitioned(out, in, "sharded::adjacent_difference");
   const ::std::size_t num_shards = reserved::__shard_count(out);
-  if (reserved::__env_count(envs) < num_shards)
+  if (reserved::__env_count(envs) != num_shards)
   {
-    _CCCL_THROW(::std::invalid_argument, "sharded::adjacent_difference: fewer environments than shards");
+    _CCCL_THROW(::std::invalid_argument, "sharded::adjacent_difference: environment count does not match shard count");
   }
   for (const auto g : each(num_shards))
   {

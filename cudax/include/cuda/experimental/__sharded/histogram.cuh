@@ -86,9 +86,9 @@ _CCCL_REQUIRES(
   ::std::vector<size_t> counts(bins, 0);
 
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
+  if (reserved::__env_count(envs) != num_shards)
   {
-    _CCCL_THROW(::std::invalid_argument, "sharded::histogram_even: fewer environments than shards");
+    _CCCL_THROW(::std::invalid_argument, "sharded::histogram_even: environment count does not match shard count");
   }
   if (num_shards == 0)
   {

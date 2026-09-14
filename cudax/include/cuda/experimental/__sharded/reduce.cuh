@@ -95,8 +95,8 @@ namespace cuda::experimental::sharded
  * with a stream-ordered-capable resource (`cuda::mr::resource` shape) — the
  * per-shard scratch stays in the asynchronous pipeline.
  *
- * @throws std::invalid_argument when fewer environments than shards are
- *         supplied.
+ * @throws std::invalid_argument when the environment count does not match
+ *         the shard count.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _CallEnv = default_call_env)
 _CCCL_REQUIRES(
@@ -105,9 +105,9 @@ _CCCL_REQUIRES(
 reduce(const _S& data, const _Envs& envs, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env = {})
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
+  if (reserved::__env_count(envs) != num_shards)
   {
-    _CCCL_THROW(::std::invalid_argument, "sharded::reduce: fewer environments than shards");
+    _CCCL_THROW(::std::invalid_argument, "sharded::reduce: environment count does not match shard count");
   }
   if (num_shards == 0)
   {
@@ -336,8 +336,8 @@ struct __lane_events
  * (`cuda::get_stream`); environments are allocating; at most 64 shards
  * (mask-width limit of this implementation).
  *
- * @throws std::invalid_argument on fewer environments than shards or more
- *         than 64 shards.
+ * @throws std::invalid_argument when the environment count does not match
+ *         the shard count, or on more than 64 shards.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _OutIt, class _CallEnv)
 _CCCL_REQUIRES(sharded_view<::cuda::std::remove_cvref_t<_S>> _CCCL_AND
@@ -346,9 +346,9 @@ _CCCL_HOST_API void reduce_into(
   const _S& data, const _Envs& envs, _OutIt out, _ReduceOp reduce_op, _Tp init_value, const _CallEnv& call_env)
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
+  if (reserved::__env_count(envs) != num_shards)
   {
-    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: fewer environments than shards");
+    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into: environment count does not match shard count");
   }
   if (num_shards > reserved::__max_fold_shards)
   {
@@ -474,8 +474,8 @@ reduce_into(const _S& data, _OutIt out, _ReduceOp reduce_op, _Tp init_value, con
  * Requirements: allocating environments (`sharded_alloc_env_range`), one
  * per shard; at most 64 shards (mask-width limit).
  *
- * @throws std::invalid_argument on fewer environments than shards or more
- *         than 64 shards.
+ * @throws std::invalid_argument when the environment count does not match
+ *         the shard count, or on more than 64 shards.
  */
 _CCCL_TEMPLATE(class _S, class _Envs, class _Tp, class _ReduceOp, class _OutIt)
 _CCCL_REQUIRES(
@@ -484,9 +484,9 @@ _CCCL_HOST_API void
 reduce_into_lanes(const _S& data, const _Envs& envs, _OutIt outs, _ReduceOp reduce_op, _Tp init_value)
 {
   const ::std::size_t num_shards = reserved::__shard_count(data);
-  if (reserved::__env_count(envs) < num_shards)
+  if (reserved::__env_count(envs) != num_shards)
   {
-    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into_lanes: fewer environments than shards");
+    _CCCL_THROW(::std::invalid_argument, "sharded::reduce_into_lanes: environment count does not match shard count");
   }
   if (num_shards > reserved::__max_fold_shards)
   {
