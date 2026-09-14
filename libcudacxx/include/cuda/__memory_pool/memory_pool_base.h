@@ -382,14 +382,6 @@ private:
 
 //! @brief The driver's default memory pool for @p __location, with the library's retention
 //! policy applied (an unlimited release threshold, so freed memory is kept for reuse).
-//!
-//! The lookup itself is a pure query and is legal at any time. Applying the policy reads and
-//! possibly writes a pool attribute, which the driver refuses while the calling thread is
-//! capturing; that step runs in a relaxed-capture scope so that resolving a default pool
-//! lazily under an active stream capture (the first `device_default_memory_pool` of a process,
-//! a pool ref constructed while capturing) works and leaves the capture valid. The policy write
-//! executes immediately rather than being recorded, which is the intent for a process-global
-//! setting.
 //! @param[in] __location The memory location whose default pool is requested.
 //! @param[in] __allocation_type The allocation type of the pool (CTK 13.0+; ignored before).
 //! @return The default pool for @p __location, with the retention policy applied.
@@ -406,6 +398,10 @@ private:
   ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   {
+    // Reading or writing a pool attribute is refused while the calling thread is capturing. Run
+    // it in relaxed mode so that resolving a default pool under capture (e.g. the first
+    // `device_default_memory_pool` of a process) works; the write executes immediately rather
+    // than being recorded, which is the intent for a process-global setting.
     ::cuda::__relaxed_capture_scope __relaxed{};
     if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
     {
