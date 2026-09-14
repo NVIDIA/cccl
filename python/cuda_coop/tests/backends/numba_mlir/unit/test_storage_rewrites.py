@@ -720,6 +720,87 @@ def test_planned_storage_guardrails_fail_before_materialization(
     assert provider.calls == []
 
 
+@pytest.mark.parametrize("descriptor_auto_sync", [False, True], ids=["drift", "agree"])
+def test_planned_caller_storage_contract_must_match_the_descriptor(
+    descriptor_auto_sync,
+):
+    from cuda.coop._core import GroupLoadStoreAlgorithm, StorageOwnership, this_block
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(
+            algorithm=GroupLoadStoreAlgorithm.TRANSPOSE,
+            storage_ownership=StorageOwnership.CALLER,
+            storage_sharing="shared",
+            storage_auto_sync=True,
+        ),
+    )
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = coop.TempStorage(auto_sync=descriptor_auto_sync)
+        return provider(
+            value,
+            temp_storage=storage,
+            __cuda_coop_group_lowering_plan__=plan,
+        )
+
+    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
+    rewrite._materialize_invocable = lambda _match: (invocable, False)
+    entry = func_ir.blocks[min(func_ir.blocks)]
+
+    if descriptor_auto_sync:
+        assert rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+        return
+    # The planner parsed auto_sync=True into the plan while the rewrite sees
+    # auto_sync=False: neither parser may silently win.
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="disagrees between the group lowering plan",
+    ):
+        rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+
+
+def test_apply_refuses_a_plan_whose_auto_sync_disagrees_with_implicit_storage():
+    from dataclasses import replace
+
+    from cuda.coop._core import GroupLoadStoreAlgorithm, this_block
+    from tests.support.group_planning import _load_store, _plan
+
+    plan = _plan(
+        this_block(),
+        _load_store(algorithm=GroupLoadStoreAlgorithm.TRANSPOSE),
+    )
+    plan = replace(
+        plan,
+        temp_storage=replace(plan.temp_storage, auto_sync=False),
+        synchronization=replace(
+            plan.synchronization,
+            storage_reuse_barrier=SynchronizationScope.NONE,
+        ),
+    )
+    invocable = _FakeInvocable()
+    invocable.synchronization_scope = "none"
+    provider = _register_leading_pointer_provider(
+        invocable,
+        synchronization_scope=SynchronizationScope.NONE,
+    )
+
+    def kernel(value):
+        return provider(value, __cuda_coop_group_lowering_plan__=plan)
+
+    # Implementation-owned storage always carries the trailing barrier; a plan
+    # that claims otherwise must be rejected rather than drop the barrier.
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match="disagrees between the group lowering plan and the descriptor",
+    ):
+        _rewrite_registered_provider(kernel)
+
+
 def _resolved_calls(func_ir):
     resolver = object.__new__(CoopSinglePhaseRewrite)
     resolver._func_ir = func_ir

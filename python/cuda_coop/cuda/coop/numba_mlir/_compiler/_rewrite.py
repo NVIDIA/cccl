@@ -479,6 +479,22 @@ class CoopSinglePhaseRewrite(
             )
             if (
                 runtime_temp_storage_plan is not None
+                and match.lowering_plan is not None
+                and match.lowering_plan.temp_storage is not None
+                and (
+                    match.lowering_plan.temp_storage.auto_sync
+                    is not runtime_temp_storage_plan.auto_sync
+                )
+            ):
+                # Barrier emission consults both parsers; refuse to continue
+                # when they disagree instead of silently emitting nothing.
+                raise CoopSinglePhaseRewriteError(
+                    "cooperative provider TempStorage automatic synchronization "
+                    "disagrees between the group lowering plan and the "
+                    "descriptor."
+                )
+            if (
+                runtime_temp_storage_plan is not None
                 and runtime_temp_storage_plan.auto_sync
             ):
                 synchronization_scope = match.factory_metadata.synchronization_scope
