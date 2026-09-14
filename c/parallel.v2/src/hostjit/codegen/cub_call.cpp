@@ -123,6 +123,7 @@ std::string shared_includes(const std::string& cub_include, bool needs_tuple, bo
   std::string src = R"(#include <cuda_runtime.h>
 #include <cuda_fp16.h>
 #include <cuda_bf16.h>
+#include <cuda/__driver/driver_api.h>
 #include <cuda/std/iterator>
 #include <cuda/std/functional>
 #include <cuda/functional>
@@ -140,6 +141,57 @@ std::string shared_includes(const std::string& cub_include, bool needs_tuple, bo
     src += "#include <cuda/stream_ref>\n";
   }
   src += std::format("#include <{}>\n\n", cub_include);
+  src += R"(
+#if _CCCL_HOSTJIT() && !_CCCL_HOSTED() && !defined(__CUDA_ARCH__) && !defined(_WIN32)
+extern "C" void* dlopen(const char*, int);
+extern "C" void* dlsym(void*, const char*);
+#  ifndef RTLD_NOW
+#    define RTLD_NOW 2
+#  endif
+#endif
+
+static int __cccl_hostjit_init_cuda_driver()
+{
+  static int status = []() {
+#if _CCCL_HOSTJIT() && !_CCCL_HOSTED()
+#  if defined(__CUDA_ARCH__)
+  return static_cast<int>(cudaSuccess);
+#  elif defined(_WIN32)
+  return static_cast<int>(cudaErrorNotSupported);
+#  else
+  if (::cuda::__driver::__getProcAddressFn() != nullptr)
+  {
+    return static_cast<int>(cudaSuccess);
+  }
+
+  static void* driver_library = ::dlopen("libcuda.so.1", RTLD_NOW);
+  if (driver_library == nullptr)
+  {
+    return static_cast<int>(cudaErrorInitializationError);
+  }
+
+  static void* get_proc_address = ::dlsym(driver_library, "cuGetProcAddress_v2");
+  if (get_proc_address == nullptr)
+  {
+    return static_cast<int>(cudaErrorInitializationError);
+  }
+
+  auto* stored_get_proc_address = ::cuda::__driver::__getProcAddressFn(
+    reinterpret_cast<decltype(::cuGetProcAddress)*>(get_proc_address),
+    true);
+  if (stored_get_proc_address == nullptr)
+  {
+    return static_cast<int>(cudaErrorInitializationError);
+  }
+#  endif
+#endif // _CCCL_HOSTJIT() && !_CCCL_HOSTED()
+
+  return static_cast<int>(cudaSuccess);
+  }();
+  return status;
+}
+
+)";
   return src;
 }
 } // namespace
@@ -148,6 +200,48 @@ std::string CubCall::source() const
 {
   // Single-function source = shared includes + this CubCall's body.
   return shared_includes(include_, tuple_inputs_, needs_env_include(args_)) + body();
+}
+
+std::string CubCall::source(std::initializer_list<CubCall> calls)
+{
+  if (calls.size() == 0)
+  {
+    throw std::runtime_error("CubCall::source: empty CubCall list");
+  }
+
+  // All CubCalls must share the same CUB header -- we emit it once at the top
+  // of the merged TU. If a future use case needs heterogeneous includes, extend
+  // this to union the set; for now keep it strict so silent mismatches cannot
+  // slip through.
+  const std::string& shared_include = calls.begin()->include_;
+  for (const auto& cb : calls)
+  {
+    if (cb.include_ != shared_include)
+    {
+      throw std::runtime_error("CubCall::source: all CubCalls in a multi-function source must share the same "
+                               ".from(include) header");
+    }
+  }
+
+  bool any_tuple = false;
+  bool any_env   = false;
+  for (const auto& cb : calls)
+  {
+    any_tuple = any_tuple || cb.tuple_inputs_;
+    any_env   = any_env || needs_env_include(cb.args_);
+  }
+
+  std::string cuda_source = shared_includes(shared_include, any_tuple, any_env);
+  int i                   = 0;
+  for (const auto& cb : calls)
+  {
+    cuda_source += std::format("namespace fn_{} {{\n", i);
+    cuda_source += cb.body();
+    cuda_source += std::format("}} // namespace fn_{}\n\n", i);
+    ++i;
+  }
+
+  return cuda_source;
 }
 
 std::string CubCall::body() const
@@ -512,6 +606,13 @@ std::string CubCall::body() const
     }
   }
   src += ")\n{\n";
+  src += R"(    int __cccl_hostjit_driver_status = __cccl_hostjit_init_cuda_driver();
+    if (__cccl_hostjit_driver_status != static_cast<int>(cudaSuccess))
+    {
+      return __cccl_hostjit_driver_status;
+    }
+
+)";
 
   // Setup code
   for (const auto& line : setup_lines)
@@ -728,28 +829,9 @@ MultiCubCallResult CubCall::compile(
     throw std::runtime_error("CubCall::compile: empty CubCall list");
   }
 
-  // All CubCalls must share the same CUB header — we emit it once at the top
-  // of the merged TU. (If a future use case needs heterogeneous includes,
-  // extend this to union the set; for now keep it strict so silent mismatches
-  // can't slip through.)
-  const std::string& shared_include = calls.begin()->include_;
-  for (const auto& cb : calls)
-  {
-    if (cb.include_ != shared_include)
-    {
-      throw std::runtime_error("CubCall::compile: all CubCalls in a multi-compile must share the same .from(include) "
-                               "header");
-    }
-  }
-
-  // Detect whether any CubCall needs the env / tuple system includes.
-  bool any_tuple = false;
-  bool any_env   = false;
-  for (const auto& cb : calls)
-  {
-    any_tuple = any_tuple || cb.tuple_inputs_;
-    any_env   = any_env || needs_env_include(cb.args_);
-  }
+  // Build and validate the merged source before creating any temporary bitcode
+  // artifacts, so source-level failures do not need cleanup.
+  std::string cuda_source = source(calls);
 
   // entry_point_name is used to mark a single function as preserved during
   // internalization. Use the first CubCall's name as the primary entry; the
@@ -770,21 +852,7 @@ MultiCubCallResult CubCall::compile(
     cb.collect_bitcode(bitcode, op_idx, in_idx, out_idx);
   }
 
-  // Build the merged source: shared includes at TU scope, then one
-  // `namespace fn_<i> { ... body() }` per CubCall.
-  // The extern "C" _CCCL_VISIBILITY_EXPORT symbols defined inside each
-  // namespace export under the global C-linkage name (no mangling),
-  // so dlsym(handle, cb.fn_name_) finds them.
-  std::string cuda_source = shared_includes(shared_include, any_tuple, any_env);
-  int i                   = 0;
-  for (const auto& cb : calls)
-  {
-    cuda_source += std::format("namespace fn_{} {{\n", i);
-    cuda_source += cb.body();
-    cuda_source += std::format("}} // namespace fn_{}\n\n", i);
-    ++i;
-  }
-
+  // Dump/print the merged source if requested.
   if (const char* dump_path = std::getenv("CUBCALL_DUMP_SOURCE"))
   {
     std::ofstream f(dump_path);
