@@ -51,7 +51,7 @@ struct ReduceKernel
     __shared__ cuda::std::aligned_storage_t<sizeof(Barriers), alignof(Barriers)> barriers_storage;
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
-    const cudax::group group{
+    const cudax::generic_group group{
       cuda::warp, block, cudax::group_by<nwarps_in_group, false>{}, cudax::barrier_synchronizer{barriers}};
 
     // All threads that are not part of the groups should exit early.

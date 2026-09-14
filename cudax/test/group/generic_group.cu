@@ -28,7 +28,7 @@ template <class Unit, class Level, class Hierarchy, class Group>
 __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
-  static_assert(cudax::is_group<Group>);
+  static_assert(cudax::group<Group>);
 
   // Test types
   static_assert(cuda::std::is_same_v<Unit, typename Group::unit_type>);
@@ -73,8 +73,9 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
 }
 
 template <class ParentGroup, class MappingResult, class Synchronizer>
-__device__ void test_queries(const cudax::group<cuda::thread_level, ParentGroup, MappingResult, Synchronizer>& group,
-                             const ParentGroup& parent_group)
+__device__ void
+test_queries(const cudax::generic_group<cuda::thread_level, ParentGroup, MappingResult, Synchronizer>& group,
+             const ParentGroup& parent_group)
 {
   // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
   // reference. Can we find a solution that works without copying the group?
@@ -112,7 +113,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
 
     const cudax::group_by<N> mapping{};
     const cudax::barrier_synchronizer synchronizer{barriers};
-    cudax::group group{unit, parent_group, mapping, synchronizer};
+    cudax::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
     test_queries(group, parent_group);
@@ -123,7 +124,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
 
     const cudax::group_by mapping{N};
     const cudax::barrier_synchronizer synchronizer{barriers};
-    cudax::group group{unit, parent_group, mapping, synchronizer};
+    cudax::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
     test_queries(group, parent_group);

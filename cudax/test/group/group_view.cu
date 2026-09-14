@@ -182,7 +182,7 @@ __device__ void test_group_view(Config config, Level level)
     constexpr auto n = 2;
     auto& barriers   = get_barriers<cuda::warp.static_count(level, config) / n>(cuda::warp);
 
-    const cudax::group g2{cuda::warp, g, cudax::group_by<n>{}, cudax::barrier_synchronizer{barriers}};
+    const cudax::generic_group g2{cuda::warp, g, cudax::group_by<n>{}, cudax::barrier_synchronizer{barriers}};
     REQUIRE(cuda::warp.count(g2) == n);
     REQUIRE(g2.count(g) == cuda::warp.count(level) / n);
 

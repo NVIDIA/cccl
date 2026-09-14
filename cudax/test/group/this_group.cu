@@ -30,7 +30,7 @@ template <class Level, class Hierarchy, class Group>
 __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
-  static_assert(cudax::is_group<Group>);
+  static_assert(cudax::group<Group>);
 
   // Test types
   static_assert(cuda::std::is_same_v<Level, typename Group::unit_type>);
