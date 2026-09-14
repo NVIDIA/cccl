@@ -306,10 +306,10 @@ get_argextremum_sm107_tuning(type_t accum_t, int offset_size, int accum_size, ty
 
 // tunings from cub/benchmarks/bench/reduce/arg_minmax.cu. These are raw measured values and must not be passed
 // through scale_mem_bound. The benchmark launches with LOAD_DEFAULT and a vector load length of 1 << ipv.
-_CCCL_HOST_DEVICE_API constexpr auto get_sm107_argminmax_tuning(op_kind_t operation_t, int offset_size, type_t input_t)
+_CCCL_HOST_DEVICE_API constexpr auto get_sm107_argminmax_tuning(int offset_size, type_t input_t)
   -> ::cuda::std::optional<sm100_tuning_values>
 {
-  if (operation_t != op_kind_t::argminmax || offset_size != 4)
+  if (offset_size != 4)
   {
     return {};
   }
@@ -569,15 +569,18 @@ struct policy_selector
   {
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
-      if (const auto sm107_tuning = get_sm107_argminmax_tuning(operation_t, offset_size, input_t))
+      if (operation_t == op_kind_t::argminmax)
       {
-        const auto rp = ReducePassPolicy{
-          sm107_tuning->threads,
-          sm107_tuning->items,
-          sm107_tuning->items_per_vec_load,
-          BLOCK_REDUCE_WARP_REDUCTIONS,
-          LOAD_DEFAULT};
-        return {rp, rp};
+        if (const auto sm107_tuning = get_sm107_argminmax_tuning(offset_size, input_t))
+        {
+          const auto rp = ReducePassPolicy{
+            sm107_tuning->threads,
+            sm107_tuning->items,
+            sm107_tuning->items_per_vec_load,
+            BLOCK_REDUCE_WARP_REDUCTIONS,
+            LOAD_DEFAULT};
+          return {rp, rp};
+        }
       }
       if (operation_t == op_kind_t::arg_extremum)
       {
