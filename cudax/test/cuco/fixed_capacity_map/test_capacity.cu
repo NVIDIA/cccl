@@ -8,17 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-// Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
-#if defined(__CUDACC__)
-#  pragma nv_diag_suppress 20011
-#endif
-
 #include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <cuda/experimental/__cuco/capacity.cuh>
+#include <cuda/experimental/__cuco/detail/open_addressing/open_addressing_impl.cuh>
 #include <cuda/experimental/__cuco/fixed_capacity_map.cuh>
 
 #include <testing.cuh>
@@ -32,6 +29,19 @@ C2H_TEST("fixed_capacity_map dynamic capacity — capacity() reflects the valid 
 {
   constexpr ::cuda::std::size_t requested = 1000;
   using dyn_map_t                         = cudax::cuco::fixed_capacity_map<int, int>;
+  using impl_type                         = cudax::cuco::__open_addressing::__open_addressing_impl<
+    dyn_map_t::key_type,
+    dyn_map_t::value_type,
+    dyn_map_t::thread_scope,
+    dyn_map_t::key_equal,
+    dyn_map_t::probing_scheme_type,
+    dyn_map_t::bucket_size,
+    cuda::device_memory_pool_ref>;
+
+  static_assert(cuda::std::is_copy_constructible_v<impl_type>);
+  static_assert(!cuda::std::is_copy_assignable_v<impl_type>);
+  static_assert(cuda::std::is_nothrow_move_constructible_v<impl_type>);
+  static_assert(cuda::std::is_nothrow_move_assignable_v<impl_type>);
 
   static_assert(dyn_map_t::capacity_v == ::cuda::std::dynamic_extent,
                 "capacity_v must be dynamic_extent for dynamic-capacity maps");
