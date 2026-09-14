@@ -20,6 +20,7 @@ from ._rewrite_support import (
     _align_up,
     _cuda_module,
     _next_global_name,
+    _normalize_temp_storage_alignment,
     _phi_incoming_values,
     _query_device_shared_memory_limits,
     _RewriteMatch,
@@ -36,8 +37,10 @@ from ._rewrite_support import (
 
 
 class _StorageRewrite:
-    @classmethod
-    def _validate_storage_match_plan(cls, match: _RewriteMatch) -> None:
+    def _validate_storage_match_plan(
+        self, match: _RewriteMatch, *, ctor_key: str | None = None
+    ) -> None:
+        cls = type(self)
         lowering_plan = match.lowering_plan
         if lowering_plan is None:
             if (
@@ -125,6 +128,33 @@ class _StorageRewrite:
                 "cooperative provider synchronization scope disagrees with "
                 "its group lowering plan."
             )
+        if caller_owned and ctor_key is not None:
+            # The group planner and this rewrite parse the same constructor
+            # independently. The barrier is emitted only when both agree, so
+            # any drift must fail loudly rather than drop the barrier.
+            spec = self._temp_storage_ctor_specs.get(
+                self._canonical_temp_storage_ctor_key(ctor_key)
+            )
+            if spec is not None:
+                size, alignment, auto_sync, sharing = self._temp_storage_contract(spec)
+                planned_alignment = storage.requested_alignment
+                if planned_alignment is not None:
+                    planned_alignment = _normalize_temp_storage_alignment(
+                        planned_alignment
+                    )
+                planned = (
+                    storage.requested_size_in_bytes,
+                    planned_alignment,
+                    storage.auto_sync,
+                    storage.sharing,
+                )
+                if (size, alignment, auto_sync, sharing) != planned:
+                    raise CoopSinglePhaseRewriteError(
+                        "cooperative provider TempStorage contract disagrees "
+                        "between the group lowering plan "
+                        f"{planned!r} and the descriptor "
+                        f"{(size, alignment, auto_sync, sharing)!r}."
+                    )
 
     @staticmethod
     def _emit_integer_constant(
@@ -1223,7 +1253,7 @@ class _StorageRewrite:
                         )
                     )
                     if match.factory_metadata.storage_abi is StorageABI.LEADING_POINTER:
-                        self._validate_storage_match_plan(match)
+                        self._validate_storage_match_plan(match, ctor_key=ctor_key)
                         storage_uses.append((current_order, inst, match, ctor_key))
             self._validate_temp_storage_uses(func_ir, matches_by_assign)
             self._prepare_ltoir_bundle_for_matches(all_matches)
