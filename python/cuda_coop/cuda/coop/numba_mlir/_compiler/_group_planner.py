@@ -868,7 +868,7 @@ class _GroupCallPlanner:
             )
             if shape_ref is None:
                 return None
-            self._reject_literal_unroll_value(definition.args[0], "payload extent")
+            self._reject_literal_unroll_value(shape_ref, "payload extent")
             try:
                 extent = self._constant(shape_ref)
             except GroupRewriteError:
