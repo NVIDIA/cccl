@@ -31,6 +31,7 @@ from .._types import (
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
 )
+from ._group_planner_support import GroupRewriteError
 from ._operations import FactoryOperation
 from ._rewrite_support import CoopSinglePhaseRewriteError, _RewriteMatch
 
@@ -264,6 +265,9 @@ class _InvocableRewrite:
 
         Raises
         ------
+        GroupRewriteError
+            A callback reaches unsupported cooperative group planning while
+            its provider is materialized. The original diagnostic propagates.
         CoopSinglePhaseRewriteError
             Construction fails, or the result breaks the registered contract.
         """
@@ -274,15 +278,15 @@ class _InvocableRewrite:
             match.factory_metadata,
             match.factory_kwargs,
         )
-        if key in rewrite._invocable_cache:
-            return (rewrite._invocable_cache[key], False)
-        compile_cache = rewrite._state.metadata.setdefault(
+        if key in self._invocable_cache:
+            return (self._invocable_cache[key], False)
+        compile_cache = self._state.metadata.setdefault(
             "__cuda_coop_numba_mlir_invocable_cache__", {}
         )
         if key in compile_cache:
             invocable = compile_cache[key]
             self._validate_invocable(invocable, match.factory_metadata)
-            rewrite._invocable_cache[key] = invocable
+            self._invocable_cache[key] = invocable
             return (invocable, False)
         try:
             prebundled = self._prebundled_specializations.get(key)
@@ -290,13 +294,17 @@ class _InvocableRewrite:
                 invocable = make_invocable_from_specialization(prebundled)
             else:
                 invocable = match.factory(**match.factory_kwargs)
+        except GroupRewriteError:
+            # A callback can reach cooperative planning while its provider is
+            # materialized. Preserve the helper name and actionable diagnostic.
+            raise
         except Exception as e:
             raise CoopSinglePhaseRewriteError(
                 f"Failed to evaluate coop single-phase factory at compile "
                 f"time for '{match.op_name}'."
             ) from e
         self._validate_invocable(invocable, match.factory_metadata)
-        rewrite._invocable_cache[key] = invocable
+        self._invocable_cache[key] = invocable
         compile_cache[key] = invocable
         return (invocable, True)
 
