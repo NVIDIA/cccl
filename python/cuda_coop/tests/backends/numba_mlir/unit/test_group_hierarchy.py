@@ -90,7 +90,9 @@ def test_group_marker_detection_follows_merged_group_by_receivers(monkeypatch):
 
 
 @pytest.mark.parametrize("api", (portable_coop, coop), ids=("portable", "qualified"))
-def test_device_helper_group_planner_defers_without_requesting_launch(api, monkeypatch):
+def test_standalone_collective_helper_is_rejected_without_requesting_launch(
+    api, monkeypatch
+):
     from cuda.coop.numba_mlir._compiler import _group_planner
 
     def device_helper(source):
@@ -113,7 +115,8 @@ def test_device_helper_group_planner_defers_without_requesting_launch(api, monke
         ),
     )
 
-    assert not CoopGroupHierarchyPlanner(state).run()
+    with pytest.raises(GroupRewriteError, match="device_helper.*must be inlined"):
+        CoopGroupHierarchyPlanner(state).run()
     assert {
         label: tuple(block.body) for label, block in state.func_ir.blocks.items()
     } == before

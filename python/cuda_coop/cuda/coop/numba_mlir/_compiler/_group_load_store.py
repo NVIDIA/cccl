@@ -220,6 +220,8 @@ class _LoadStorePlanning:
             and payload_dtype != memory_dtype
         ):
             raise MemoryDtypeMismatchError(operation, memory_dtype, payload_dtype)
+        if operation == "load":
+            self._context.record_thread_data_dtype(payload, dtype)
 
         oob_default = (
             self._planning_oob_default(

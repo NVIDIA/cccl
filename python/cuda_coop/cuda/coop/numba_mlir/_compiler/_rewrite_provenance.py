@@ -13,6 +13,7 @@ from enum import Enum
 from ..._core.api._payload import _normalize_alignment
 from .._temp_storage import TempStorage
 from .._thread_data import ThreadData, _normalize_thread_data_alignment
+from ._descriptor_provenance import descriptor_definitions
 from ._rewrite_support import (
     _INFERENCE_EXCEPTIONS,
     _MIN_TEMP_STORAGE_ALIGNMENT,
@@ -63,10 +64,21 @@ class _ProvenanceRewrite:
                 f"coop single-phase '{op_name}' requires {lhs_name}/{rhs_name} arrays to have matching items_per_thread."
             )
 
-    def __init__(self, state, *, allow_launch_dim_deferral: bool = True):
+    def __init__(
+        self,
+        state,
+        *,
+        allow_launch_dim_deferral: bool = True,
+        post_inline: bool = False,
+    ):
         super().__init__(state)
         self._state = state
         self._allow_launch_dim_deferral = allow_launch_dim_deferral
+        # The whole-function planner runs after device-function inlining; the
+        # generic before-inference registration runs before it and must leave
+        # descriptors that flow into not-yet-inlined helpers alone.
+        self._post_inline = post_inline
+        self._deferred_post_inline = False
         self._func_ir = state.func_ir
         self._block: ir.Block | None = None
         self._block_defs: dict[str, object] = {}
@@ -76,6 +88,7 @@ class _ProvenanceRewrite:
         self._temp_storage_ctor_specs: dict[str, _TempStorageCtorSpec] = {}
         self._temp_storage_ctor_order: dict[str, int] = {}
         self._temp_storage_ctor_roots: dict[str, str] = {}
+        self._temp_storage_ctor_sites: dict[str, set[int]] = {}
         self._thread_data_func_vars: set[str] = set()
         self._typed_group_payload_func_vars: set[str] = set()
         self._thread_data_specs: dict[str, _ThreadDataSpec] = {}
@@ -192,14 +205,19 @@ class _ProvenanceRewrite:
 
     def _resolve_attribute_chain(self, func_var):
         attrs: list[str] = []
-        current = self._lookup_definition(func_var)
-        if current is None:
-            return None
-        while isinstance(current, ir.Expr) and current.op == "getattr":
-            attrs.append(current.attr)
-            current = self._lookup_definition(current.value)
-            if current is None:
-                return None
+        current = func_var
+        seen: set[str] = set()
+        while True:
+            if isinstance(current, ir.Var):
+                if current.name in seen:
+                    return None
+                seen.add(current.name)
+                current = self._lookup_definition(current)
+            elif isinstance(current, ir.Expr) and current.op == "getattr":
+                attrs.append(current.attr)
+                current = current.value
+            else:
+                break
         if isinstance(current, (ir.Global, ir.FreeVar, ir.Const)):
             root = current.value
         else:
@@ -266,6 +284,75 @@ class _ProvenanceRewrite:
         if isinstance(value, list) and len(value) == 1 and isinstance(value[0], int):
             return int(value[0])
         return None
+
+    @staticmethod
+    def _is_jitted_dispatcher(obj) -> bool:
+        """Return whether a resolved callee is a Numba dispatcher (device function)."""
+
+        return (
+            obj is not None
+            and callable(obj)
+            and hasattr(obj, "py_func")
+            and isinstance(getattr(obj, "targetoptions", None), dict)
+        )
+
+    def _descriptors_flow_into_dispatchers(self, func_ir) -> bool:
+        """Report whether a descriptor is an argument of a device-function call.
+
+        Before inlining, the real consumer of such a descriptor is invisible to
+        this pass. Validating it here would reject a program that the
+        whole-function planner accepts once the helper body is inlined, and
+        acceptance would then depend on whether the kernel body happens to
+        contain a group marker of its own.
+        """
+
+        saved_block = self._block
+        saved_block_defs = self._block_defs
+        descriptor_names: set[str] = set()
+        dispatcher_calls: list[ir.Expr] = []
+        try:
+            for label in sorted(func_ir.blocks):
+                scan_block = func_ir.blocks[label]
+                self._block = scan_block
+                self._block_defs = {
+                    inst.target.name: inst.value
+                    for inst in scan_block.body
+                    if isinstance(inst, ir.Assign)
+                }
+                for inst in scan_block.body:
+                    if not isinstance(inst, ir.Assign):
+                        continue
+                    call = inst.value
+                    if not isinstance(call, ir.Expr) or call.op != "call":
+                        continue
+                    if (
+                        self._is_temp_storage_ctor_call(call)
+                        or self._is_thread_data_ctor_call(call)
+                        or self._is_typed_group_payload_ctor_call(call)
+                    ):
+                        descriptor_names.add(inst.target.name)
+                        continue
+                    if self._is_jitted_dispatcher(
+                        self._resolve_python_value(call.func)
+                    ):
+                        dispatcher_calls.append(call)
+            if not descriptor_names or not dispatcher_calls:
+                return False
+            for call in dispatcher_calls:
+                for value in (*call.args, *(value for _, value in call.kws)):
+                    if not isinstance(value, ir.Var):
+                        continue
+                    if any(
+                        owner in descriptor_names
+                        for owner, _ in descriptor_definitions(
+                            value, self._lookup_definitions
+                        )
+                    ):
+                        return True
+            return False
+        finally:
+            self._block = saved_block
+            self._block_defs = saved_block_defs
 
     def _is_temp_storage_ctor_call(self, call: ir.Expr) -> bool:
         if self._is_common_root_member(call.func, "TempStorage"):
@@ -496,6 +583,47 @@ class _ProvenanceRewrite:
             )
         return existing
 
+    def _record_temp_storage_ctor(self, inst: ir.Assign, call: ir.Expr) -> None:
+        """Record one constructor site for the variable it defines.
+
+        The rewrite runs before SSA reconstruction, so a name rebound inside a
+        branch or loop body keeps one name for several constructor sites. Every
+        site must agree on the effective contract, and the sites are counted so
+        that auto_sync=False storage cannot be silently collapsed.
+        """
+
+        name = inst.target.name
+        spec = self._extract_temp_storage_ctor_spec(call)
+        existing = self._temp_storage_ctor_specs.get(name)
+        if existing is not None and (
+            self._temp_storage_contract(existing) != self._temp_storage_contract(spec)
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "TempStorage aliases have inconsistent contracts across "
+                f"constructor instances ({name})."
+            )
+        self._temp_storage_ctor_specs.setdefault(name, spec)
+        self._temp_storage_ctor_sites.setdefault(name, set()).add(id(inst))
+
+    @staticmethod
+    def _collapsed_manual_sync_error(
+        names: str, sites: int
+    ) -> CoopSinglePhaseRewriteError:
+        return CoopSinglePhaseRewriteError(
+            "TempStorage with auto_sync=False must be constructed at exactly one "
+            f"site; {names} reaches {sites} constructor sites. The compiler "
+            "cannot verify caller synchronization when it merges these regions. "
+            "Construct the descriptor once or keep auto_sync enabled."
+        )
+
+    def _validate_temp_storage_ctor_sites(self) -> None:
+        for name, sites in sorted(self._temp_storage_ctor_sites.items()):
+            if len(sites) < 2:
+                continue
+            spec = self._temp_storage_ctor_specs[name]
+            if not self._temp_storage_contract(spec)[2]:
+                raise self._collapsed_manual_sync_error(repr(name), len(sites))
+
     def _record_inferred_thread_data_dtype(
         self, value: ir.Var, dtype, seen: set[str] | None = None
     ) -> None:
@@ -542,6 +670,16 @@ class _ProvenanceRewrite:
                     self._record_inferred_thread_data_dtype(item, dtype, seen)
 
     def _extract_temp_storage_ctor_spec(self, call: ir.Expr) -> _TempStorageCtorSpec:
+        if (
+            getattr(call, "vararg", None) is not None
+            or getattr(call, "varkwarg", None) is not None
+        ):
+            # Starred arguments would otherwise be ignored and the descriptor
+            # parsed as if it were default-constructed.
+            raise CoopSinglePhaseRewriteError(
+                "TempStorage does not accept *args or **kwargs; pass "
+                "size_in_bytes, alignment, auto_sync, and sharing explicitly."
+            )
         kw_map = {name: value for name, value in call.kws}
         parameter_names = ("size_in_bytes", "alignment", "auto_sync", "sharing")
         if len(call.args) > 1:
@@ -624,57 +762,66 @@ class _ProvenanceRewrite:
             sharing=sharing,
         )
 
+    @staticmethod
+    def _mixed_temp_storage_binding_error(name: str) -> CoopSinglePhaseRewriteError:
+        return CoopSinglePhaseRewriteError(
+            "TempStorage variables must be bound to a TempStorage descriptor on "
+            f"every path; {name!r} is also bound to a non-descriptor value such "
+            "as None. Remove the None initializer or construct the descriptor "
+            "unconditionally."
+        )
+
     def _collect_temp_storage_ctor_keys(
-        self, value: ir.Var, seen: set[str]
+        self,
+        value: ir.Var,
+        seen: set[str],
+        *,
+        display_name: str | None = None,
     ) -> set[str]:
         if not isinstance(value, ir.Var):
             return set()
         if value.name in seen:
             return set()
-        if value.name in self._temp_storage_ctor_specs:
-            return {value.name}
-        seen.add(value.name)
+        # Diagnostics name the user's variable, not a compiler temporary that
+        # a conditional expression or an alias chain introduced.
+        if display_name is None and not value.name.startswith("$"):
+            display_name = value.name
+        shown = display_name or value.name
         keys: set[str] = set()
-        for definition in self._lookup_definitions(value):
-            if isinstance(definition, ir.Expr):
-                if definition.op == "call" and self._is_temp_storage_ctor_call(
-                    definition
-                ):
-                    spec = self._extract_temp_storage_ctor_spec(definition)
-                    self._temp_storage_ctor_specs[value.name] = (
-                        self._merge_temp_storage_ctor_specs(
-                            self._temp_storage_ctor_specs.get(value.name), spec
-                        )
+        non_descriptor = False
+        for owner, definition in descriptor_definitions(
+            value, self._lookup_definitions, seen=seen
+        ):
+            if (
+                isinstance(definition, ir.Expr)
+                and definition.op == "call"
+                and self._is_temp_storage_ctor_call(definition)
+            ):
+                spec = self._extract_temp_storage_ctor_spec(definition)
+                self._temp_storage_ctor_specs[owner] = (
+                    self._merge_temp_storage_ctor_specs(
+                        self._temp_storage_ctor_specs.get(owner), spec
                     )
-                    keys.add(value.name)
-                    continue
-                if definition.op == "cast":
-                    cast_value = getattr(definition, "value", None)
-                    if isinstance(cast_value, ir.Var):
-                        keys.update(
-                            self._collect_temp_storage_ctor_keys(cast_value, seen)
-                        )
-                    continue
-                if definition.op == "phi":
-                    for incoming in _phi_incoming_values(definition):
-                        if isinstance(incoming, ir.Var):
-                            keys.update(
-                                self._collect_temp_storage_ctor_keys(incoming, seen)
-                            )
-                    continue
-            if isinstance(definition, ir.Var):
-                keys.update(self._collect_temp_storage_ctor_keys(definition, seen))
+                )
+                keys.add(owner)
+            elif (
+                self._temp_storage_backing_emitted
+                and owner in self._temp_storage_ctor_specs
+            ):
+                # Previously validated constructors are replaced by backing
+                # slices as individual blocks are rewritten.
+                keys.add(owner)
+            else:
+                non_descriptor = True
+        if keys and non_descriptor:
+            raise self._mixed_temp_storage_binding_error(shown)
         return keys
 
     @staticmethod
     def _temp_storage_contract(
         spec: _TempStorageCtorSpec,
     ) -> tuple[int | None, int | None, bool, str]:
-        auto_sync = (
-            False
-            if spec.sharing == "exclusive"
-            else (True if spec.auto_sync is None else spec.auto_sync)
-        )
+        auto_sync = True if spec.auto_sync is None else spec.auto_sync
         return (
             spec.size_in_bytes,
             spec.alignment,
@@ -709,6 +856,19 @@ class _ProvenanceRewrite:
             raise CoopSinglePhaseRewriteError(
                 "TempStorage aliases have inconsistent contracts across "
                 f"constructor instances ({names})."
+            )
+        if len(roots) > 1 and not next(iter(contracts))[2]:
+            # Conservatively refuse this merge: caller synchronization may be
+            # sufficient, but this planner cannot prove that it protects reuse.
+            ordered = sorted(
+                roots,
+                key=lambda key: (
+                    self._temp_storage_ctor_order.get(key, 1 << 30),
+                    key,
+                ),
+            )
+            raise self._collapsed_manual_sync_error(
+                ", ".join(repr(key) for key in ordered), len(roots)
             )
         canonical = min(
             roots,
@@ -798,14 +958,7 @@ class _ProvenanceRewrite:
                 requested_alignment, _default_temp_storage_alignment(required_alignment)
             )
         _validate_temp_storage_alignment(alignment)
-        if ctor_spec.sharing == "exclusive":
-            if ctor_spec.auto_sync is True:
-                raise CoopSinglePhaseRewriteError(
-                    "TempStorage with sharing='exclusive' does not support auto_sync=True."
-                )
-            auto_sync = False
-        else:
-            auto_sync = True if ctor_spec.auto_sync is None else ctor_spec.auto_sync
+        auto_sync = True if ctor_spec.auto_sync is None else ctor_spec.auto_sync
         if not uses and (ctor_spec.sharing != "shared" or ctor_spec.auto_sync is False):
             raise CoopSinglePhaseRewriteError(
                 "TempStorage non-default sharing or auto_sync requires a "

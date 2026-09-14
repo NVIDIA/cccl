@@ -13,7 +13,9 @@ from cuda.coop._core import SynchronizationScope
 from ._operations import StorageABI
 from ._rewrite_support import (
     _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
+    _DYNAMIC_SHARED_MEMORY_ALIGNMENT,
     _GLOBAL_NAME_COUNTER,
+    _INFERENCE_EXCEPTIONS,
     _MIN_TEMP_STORAGE_ALIGNMENT,
     CoopSinglePhaseRewriteError,
     _align_up,
@@ -126,6 +128,18 @@ class _StorageRewrite:
         total_size = _align_up(offset, max_alignment)
         max_default, max_optin = self._get_device_shared_memory_limits(total_size)
         uses_dynamic_smem = total_size > max_default
+        if uses_dynamic_smem and max_alignment > _DYNAMIC_SHARED_MEMORY_ALIGNMENT:
+            # The static path honors the requested alignment through the
+            # shared array declaration; the dynamic window only guarantees
+            # its declared alignment, and telling the optimizer otherwise
+            # would be a false assumption.
+            raise CoopSinglePhaseRewriteError(
+                f"TempStorage requires {max_alignment}-byte alignment, but the "
+                f"{total_size}-byte backing exceeds the {max_default}-byte "
+                "static shared-memory limit and dynamic shared memory "
+                f"guarantees only {_DYNAMIC_SHARED_MEMORY_ALIGNMENT}-byte "
+                "alignment; reduce the requested alignment or the storage size."
+            )
         dynamic_shared_bytes = total_size if uses_dynamic_smem else 0
         if dynamic_shared_bytes > max_optin:
             raise CoopSinglePhaseRewriteError(
@@ -154,6 +168,7 @@ class _StorageRewrite:
                 )
             return self._temp_storage_backing_var
         plan = self._ensure_temp_storage_global_plan()
+        self._reject_conflicting_user_shared_arrays(plan)
         entry_block = self._func_ir.blocks[min(self._func_ir.blocks)]
         staged = ir.Block(entry_block.scope, entry_block.loc)
         backing = self._emit_temp_storage_backing(staged, plan=plan)
@@ -168,6 +183,69 @@ class _StorageRewrite:
         entry_block.body[insert_at:insert_at] = staged.body
         entry_block.verify()
         return backing
+
+    def _reject_conflicting_user_shared_arrays(
+        self, plan: _TempStorageGlobalPlan
+    ) -> None:
+        """Reject static/dynamic overlap in supported compiler releases.
+
+        Runtime-sized arrays and zero-sized views use the dynamic window.
+        Static globals currently overlap that window as well, so coexistence
+        is safe only when both user and cooperative allocations are static.
+        """
+
+        saved_block = self._block
+        saved_block_defs = self._block_defs
+        conflicts: list[tuple[str, ir.Loc]] = []
+        try:
+            for label in sorted(self._func_ir.blocks):
+                scan_block = self._func_ir.blocks[label]
+                self._block = scan_block
+                self._block_defs = {
+                    inst.target.name: inst.value
+                    for inst in scan_block.body
+                    if isinstance(inst, ir.Assign)
+                }
+                for inst in scan_block.body:
+                    if not isinstance(inst, ir.Assign):
+                        continue
+                    call = inst.value
+                    if not isinstance(call, ir.Expr) or call.op != "call":
+                        continue
+                    if not self._is_shared_array_ctor_call(call):
+                        continue
+                    shape_ref = (
+                        call.args[0] if call.args else dict(call.kws).get("shape")
+                    )
+                    try:
+                        shape = self._infer_constant(shape_ref)
+                    except _INFERENCE_EXCEPTIONS:
+                        shape = None
+                    dimensions = shape if isinstance(shape, tuple) else (shape,)
+                    is_static = bool(dimensions) and all(
+                        isinstance(extent, int) and extent > 0 for extent in dimensions
+                    )
+                    if plan.uses_dynamic_smem or not is_static:
+                        placement = "static" if is_static else "dynamic/runtime-sized"
+                        conflicts.append((placement, inst.loc))
+        finally:
+            self._block = saved_block
+            self._block_defs = saved_block_defs
+        if not conflicts:
+            return
+        placement = "dynamic" if plan.uses_dynamic_smem else "static"
+        where = ", ".join(
+            f"{kind} cuda.shared.array(...) at {loc}" for kind, loc in conflicts[:3]
+        )
+        raise CoopSinglePhaseRewriteError(
+            "cuda.coop temporary storage requires a "
+            f"{plan.total_size}-byte {placement} shared-memory backing, but "
+            f"this kernel also declares {where}. The supported numba-cuda-mlir "
+            "compiler does not separate these allocations; they would alias. "
+            "Use statically sized user shared arrays and keep the combined "
+            "cooperative backing within the static shared-memory limit, or "
+            "move the user data out of shared memory."
+        )
 
     def _emit_temp_storage_backing(
         self, block: ir.Block, *, plan: _TempStorageGlobalPlan
@@ -504,6 +582,23 @@ class _StorageRewrite:
                         consumed_ctor_keys.add(storage_key)
                         continue
                 names = ", ".join(sorted({value.name for value in descriptor_vars}))
+                if (
+                    isinstance(inst, ir.Assign)
+                    and isinstance(inst.value, ir.Expr)
+                    and inst.value.op == "call"
+                    and self._is_jitted_dispatcher(
+                        self._resolve_python_value(inst.value.func)
+                    )
+                ):
+                    helper = self._resolve_python_value(inst.value.func)
+                    helper_name = helper.py_func.__qualname__
+                    raise CoopSinglePhaseRewriteError(
+                        f"TempStorage descriptor {names!r} is passed to a device "
+                        "function that was not inlined into this kernel "
+                        f"({helper_name!r}); let Numba-CUDA-MLIR inline the "
+                        "collective helper (inline='always') or move its "
+                        "cooperative calls into the kernel."
+                    )
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage values are opaque compile-time descriptors and "
                     "may only be passed as temp_storage= to a registered "
@@ -537,6 +632,7 @@ class _StorageRewrite:
         self._temp_storage_ctor_specs = {}
         self._temp_storage_ctor_order = {}
         self._temp_storage_ctor_roots = {}
+        self._temp_storage_ctor_sites = {}
         self._implicit_temp_storage_requirements = _TempStorageRequirementSummary()
         self._implicit_temp_storage_plan = None
         try:
@@ -572,11 +668,12 @@ class _StorageRewrite:
                             )
                         )
                     elif self._is_temp_storage_ctor_call(call):
-                        self._temp_storage_ctor_specs[inst.target.name] = (
-                            self._extract_temp_storage_ctor_spec(call)
+                        self._record_temp_storage_ctor(inst, call)
+                        self._temp_storage_ctor_order.setdefault(
+                            inst.target.name, ctor_order
                         )
-                        self._temp_storage_ctor_order[inst.target.name] = ctor_order
                         ctor_order += 1
+            self._validate_temp_storage_ctor_sites()
             all_matches: list[_RewriteMatch] = []
             matches_by_assign: dict[ir.Assign, _RewriteMatch] = {}
             storage_uses: list[tuple[int, ir.Assign, _RewriteMatch, str | None]] = []

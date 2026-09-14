@@ -65,6 +65,15 @@ class CoopSinglePhaseRewrite(
             self._temp_storage_backing_var = None
             self._temp_storage_backing_emitted = False
             self._prebundled_specializations = {}
+            self._deferred_post_inline = (
+                not self._post_inline
+                and self._descriptors_flow_into_dispatchers(func_ir)
+            )
+            if self._deferred_post_inline:
+                # Device-function bodies are inlined before the whole-function
+                # planner runs; it will see the descriptor's real consumers.
+                self._func_temp_storage_requirements = {}
+                return False
             try:
                 self._func_temp_storage_requirements = (
                     self._compute_func_temp_storage_requirements(func_ir)
@@ -72,6 +81,8 @@ class CoopSinglePhaseRewrite(
             except _DeferredCoopRewrite:
                 self._func_temp_storage_requirements = {}
                 return False
+        if self._deferred_post_inline:
+            return False
         self._block = block
         self._block_defs = {
             inst.target.name: inst.value
@@ -103,9 +114,7 @@ class CoopSinglePhaseRewrite(
             if self._is_temp_storage_ctor_call(call):
                 self._temp_storage_assigns.add(inst)
                 self._temp_storage_func_vars.add(call.func.name)
-                self._temp_storage_ctor_specs[inst.target.name] = (
-                    self._extract_temp_storage_ctor_spec(call)
-                )
+                self._record_temp_storage_ctor(inst, call)
                 self._temp_storage_ctor_order.setdefault(
                     inst.target.name, len(self._temp_storage_ctor_order)
                 )
@@ -542,7 +551,7 @@ class CoopWholeFunctionPlanner(WholeFunctionPlanner):
     """Apply cooperative-provider rewrites after device-function inlining."""
 
     def run(self) -> bool:
-        rewrite = CoopSinglePhaseRewrite(self.state)
+        rewrite = CoopSinglePhaseRewrite(self.state, post_inline=True)
         modified = False
 
         def apply_matches() -> None:
@@ -563,7 +572,9 @@ class CoopWholeFunctionPlanner(WholeFunctionPlanner):
         if rewrite._deferred_launch_dim_inference and not self.is_device_function:
             require_launch_config(self.state)
             rewrite = CoopSinglePhaseRewrite(
-                self.state, allow_launch_dim_deferral=False
+                self.state,
+                allow_launch_dim_deferral=False,
+                post_inline=True,
             )
             apply_matches()
         return modified

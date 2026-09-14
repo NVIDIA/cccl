@@ -127,8 +127,6 @@ class GroupLoadStoreSemantics:
                 raise ValueError(f"{name} must be a positive integer or None")
         if not isinstance(self.storage_auto_sync, bool):
             raise TypeError("storage_auto_sync must be a bool")
-        if self.storage_sharing == "exclusive" and self.storage_auto_sync:
-            raise ValueError("exclusive storage cannot request automatic sync")
         if self.storage_ownership is StorageOwnership.NONE:
             if self.algorithm is not GroupLoadStoreAlgorithm.DIRECT:
                 raise ValueError(
