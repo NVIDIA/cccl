@@ -1,27 +1,66 @@
 import argparse
 import re
+import time
 
 import numpy as np
 
 from .bench import BaseBench, Bench
 from .cmake import CMake
 from .config import Config
+from .smoke import (
+    SMOKE_BENCHMARKS,
+    SMOKE_SUBBENCHES,
+    SMOKE_WORKLOADS,
+    smoke_runtime_bench_inputs,
+    validate_smoke_benchmarks,
+)
 from .storage import Storage
 
 
-def list_benches(algnames):
-    print("### Benchmarks")
+def benchmark_group(algname):
+    """Return the project and algorithm family"""
+    parts = algname.split(".")
+    if len(parts) >= 3 and parts[1] == "bench":
+        return parts[0], parts[2]
+    return parts[0], "other"
 
-    config = Config()
 
+def list_benches(algnames, config=None, smoke=False):
+    """Print the benchmarks grouped by project and algorithm"""
+    print("### Benchmarks ({})".format(len(algnames)))
+
+    if config is None:
+        config = Config()
+
+    current_group = None
     for algname in algnames:
-        space_size = config.variant_space_size(algname)
-        print("  * `{}`: {} variants: ".format(algname, space_size))
+        group = benchmark_group(algname)
+        if group != current_group:
+            print("\n#### {} / {}".format(*group))
+            current_group = group
 
-        for param_space in config.benchmarks[algname]:
-            param_name = param_space.label
-            param_rng = (param_space.low, param_space.high, param_space.step)
-            print("    * `{}`: {}".format(param_name, param_rng))
+        space_size = config.variant_space_size(algname)
+        variant_suffix = "" if space_size == 1 else "s"
+        print("  * `{}`: {} variant{}".format(algname, space_size, variant_suffix))
+
+        if smoke:
+            workload = SMOKE_WORKLOADS[algname]
+            values = [
+                "`{}={}`".format(axis, ",".join(axis_values))
+                for axis, axis_values in workload.items()
+            ]
+            print("    * workload: {}".format(", ".join(values)))
+            if algname in SMOKE_SUBBENCHES:
+                print(
+                    "    * subbenchmarks: {}".format(
+                        ", ".join(SMOKE_SUBBENCHES[algname])
+                    )
+                )
+        else:
+            for param_space in config.benchmarks[algname]:
+                param_name = param_space.label
+                param_rng = (param_space.low, param_space.high, param_space.step)
+                print("    * `{}`: {}".format(param_name, param_rng))
 
 
 def parse_sub_space(args):
@@ -68,7 +107,13 @@ def parse_arguments():
         default=0,
         help="Run benchmark shard RUN_SHARD from NUM_SHARDS pieces",
     )
-    parser.add_argument("-P0", action="store_true", help="Run P0 benchmarks")
+    priority = parser.add_mutually_exclusive_group()
+    priority.add_argument("-P0", action="store_true", help="Run P0 benchmarks")
+    priority.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Run representative workloads for critical CUB benchmarks.",
+    )
     return parser.parse_args()
 
 
@@ -103,22 +148,45 @@ def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
 
 
 def run_benches(algnames, sub_space, seeker, args):
+    timings = []
     for algname in algnames:
+        begin = time.perf_counter()
+        benchmark_begin = None
+        succeeded = True
         try:
             bench = BaseBench(algname)
-            ct_space = bench.ct_workload_space(sub_space)
-            rt_values = bench.rt_axes_values(sub_space)
+            algorithm_sub_space = SMOKE_WORKLOADS[algname] if args.smoke else sub_space
+
+            ct_space = bench.ct_workload_space(algorithm_sub_space)
+            rt_values = bench.rt_axes_values(algorithm_sub_space)
+            if args.smoke:
+                rt_values = smoke_runtime_bench_inputs(algname, rt_values)
             if args.P0:
                 ct_space, rt_values = filter_benchmark_space_for_p0(
                     algname, ct_space, rt_values
                 )
+            benchmark_begin = time.perf_counter()
             seeker(algname, ct_space, rt_values)
         except Exception as e:
+            succeeded = False
             print(
                 "#### ERROR exception occurred while running {}: '{}'".format(
                     algname, e
                 )
             )
+        end = time.perf_counter()
+        setup_end = benchmark_begin if benchmark_begin is not None else end
+        timings.append(
+            {
+                "algorithm": algname,
+                "elapsed_seconds": end - begin,
+                "build_seconds": setup_end - begin,
+                "benchmark_seconds": end - setup_end,
+                "succeeded": succeeded,
+            }
+        )
+
+    return timings
 
 
 def filter_benchmarks_by_regex(benchmarks, R):
@@ -149,7 +217,10 @@ def filter_benchmarks(benchmarks, args):
     ]
 
     algnames = filter_benchmarks_by_regex(benchmarks.keys(), args.R)
-    if args.P0:
+    if args.smoke:
+        validate_smoke_benchmarks(benchmarks)
+        algnames = [name for name in SMOKE_BENCHMARKS if name in algnames]
+    elif args.P0:
         non_cub_algnames = [name for name in algnames if not name.startswith("cub.")]
         non_cub_algnames = filter_benchmarks_by_regex(
             non_cub_algnames,
@@ -161,7 +232,8 @@ def filter_benchmarks(benchmarks, args):
 
         algnames = [name for name in cub_p0_benchmarks if name in algnames]
         algnames.extend(non_cub_algnames)
-    algnames.sort()
+    if not args.smoke:
+        algnames.sort()
 
     if args.num_shards > 1:
         algnames = np.array_split(algnames, args.num_shards)[args.run_shard].tolist()
@@ -191,10 +263,10 @@ def search(seeker):
 
     algnames = filter_benchmarks(config.benchmarks, args)
     if args.list_benches:
-        list_benches(algnames)
+        list_benches(algnames, config, args.smoke)
         return
 
-    run_benches(algnames, workload_sub_space, seeker, args)
+    return run_benches(algnames, workload_sub_space, seeker, args)
 
 
 class MedianCenterEstimator:
